@@ -111,6 +111,7 @@ pyfaidx==0.6.4
 pygments==2.11.2; python_full_version >= "3.6.3" and python_full_version < "4.0.0" and python_version >= "3.5"
 pyjwt==2.3.0; python_version >= "3.6"
 pykwalify==1.8.0
+pylibmagic==0.2.0; python_version >= "3.7"
 pynacl==1.5.0; python_version >= "3.6"
 pyparsing==3.0.7; python_version >= "3.6"
 pyreadline3==3.4.1; sys_platform == "win32" and python_version >= "3.8" and (python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4" or python_version >= "3.6" and python_version < "4" and python_full_version >= "3.5.0")
@@ -119,6 +120,7 @@ pyrsistent==0.18.1; python_version >= "3.7"
 pysam==0.19.0
 python-dateutil==2.8.2; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0")
 python-jose==3.3.0
+python-magic==0.4.25; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
 python-multipart==0.0.5
 python3-openid==3.2.0; python_version >= "3.0"
 pytz==2022.1; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4" and python_version >= "3.7"

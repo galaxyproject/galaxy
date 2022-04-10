@@ -1,21 +1,25 @@
 <template>
     <HistoryItemsProvider
-        :key="history.id"
+        :key="historyId"
         :history-id="historyId"
         :offset="offset"
         :filter-text="filterText"
-        v-slot="{ loading, result: payload }">
+        v-slot="{ loading, result: payload, count: totalItemsInQuery }">
         <ExpandedItems
-            :scope-key="history.id"
+            :scope-key="historyId"
             :get-item-key="(item) => item.type_id"
             v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }">
             <SelectedItems
-                :scope-key="history.id"
+                :scope-key="queryKey"
                 :get-item-key="(item) => item.type_id"
+                :filter-text="filterText"
                 v-slot="{
                     selectedItems,
                     showSelection,
+                    isQuerySelection,
+                    selectionSize,
                     setShowSelection,
+                    selectAllInCurrentQuery,
                     selectItems,
                     isSelected,
                     setSelected,
@@ -26,7 +30,7 @@
                     <HistoryFilters
                         class="content-operations-filters mx-3"
                         :filter-text.sync="filterText"
-                        :showAdvanced.sync="showAdvanced" />
+                        :show-advanced.sync="showAdvanced" />
                     <section v-if="!showAdvanced">
                         <HistoryDetails :history="history" v-on="$listeners" />
                         <HistoryMessages class="m-2" :history="history" />
@@ -34,15 +38,24 @@
                             :history="history"
                             :filter-text="filterText"
                             :content-selection="selectedItems"
+                            :selection-size="selectionSize"
+                            :is-query-selection="isQuerySelection"
                             :show-selection="showSelection"
                             :expanded-count="expandedCount"
                             :has-matches="hasMatches(payload)"
                             @update:content-selection="selectItems"
                             @update:show-selection="setShowSelection"
-                            @reset-selection="resetSelection"
                             @hide-selection="onHideSelection"
-                            @select-all="selectItems(payload)"
+                            @reset-selection="resetSelection"
                             @collapse-all="collapseAll" />
+                        <HistorySelectionStatus
+                            v-if="showSelection"
+                            class="p-2"
+                            :has-filters="hasFilters"
+                            :selection-size="selectionSize"
+                            :total-items-in-query="totalItemsInQuery"
+                            @select-all="selectAllInCurrentQuery(payload, totalItemsInQuery)"
+                            @clear-selection="resetSelection" />
                     </section>
                     <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
                         <div>
@@ -101,6 +114,7 @@ import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
 import HistoryFilters from "./HistoryFilters";
 import HistoryMessages from "./HistoryMessages";
+import HistorySelectionStatus from "./HistorySelectionStatus";
 
 export default {
     components: {
@@ -116,6 +130,7 @@ export default {
         ToolHelpModal,
         ExpandedItems,
         SelectedItems,
+        HistorySelectionStatus,
     },
     props: {
         history: { type: History, required: true },
@@ -135,14 +150,21 @@ export default {
         },
     },
     computed: {
+        /** @returns {String} */
         historyId() {
             return this.history.id;
         },
+        /** @returns {String} */
         queryKey() {
             return `${this.historyId}-${this.filterText}`;
         },
+        /** @returns {Boolean} */
         queryDefault() {
             return !this.filterText;
+        },
+        /** @returns {Boolean} */
+        hasFilters() {
+            return !this.queryDefault;
         },
     },
     methods: {

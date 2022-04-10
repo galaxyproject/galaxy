@@ -10,22 +10,22 @@
  * Use quotations (') around values containing spaces.
  */
 
-/* Converts user input to backend compatible date. */
+/** Converts user input to backend compatible date. */
 function toDate(value) {
     return Date.parse(value) / 1000;
 }
 
-/* Converts user input for case-insensitive filtering. */
+/** Converts user input for case-insensitive filtering. */
 function toLower(value) {
     return String(value).toLowerCase();
 }
 
-/* Converts user input to python boolean. */
-function toBoolPython(value) {
-    return toLower(value) == "true" ? "True" : "False";
+/** Converts user input to boolean. */
+function toBool(value) {
+    return toLower(value) == "true";
 }
 
-/* Converts user input to lower case and strips quotation marks. */
+/** Converts user input to lower case and strips quotation marks. */
 function toLowerNoQuotes(value) {
     return toLower(value).replaceAll("'", "");
 }
@@ -90,21 +90,21 @@ function compare(attribute, variant, converter = null) {
     };
 }
 
-/* Valid filter fields and handlers which can be used for text searches. */
+/** Valid filter fields and handlers which can be used for text searches. */
 const validFilters = {
     create_time: compare("create_time", "le", toDate),
     create_time_ge: compare("create_time", "ge", toDate),
     create_time_gt: compare("create_time", "gt", toDate),
     create_time_le: compare("create_time", "le", toDate),
     create_time_lt: compare("create_time", "lt", toDate),
-    deleted: equals("deleted", "deleted", toBoolPython),
+    deleted: equals("deleted", "deleted", toBool),
     extension: equals("extension"),
     hid: equals("hid"),
     hid_ge: compare("hid", "ge"),
     hid_gt: compare("hid", "gt"),
     hid_le: compare("hid", "le"),
     hid_lt: compare("hid", "lt"),
-    visible: equals("visible", "visible", toBoolPython),
+    visible: equals("visible", "visible", toBool),
     name: contains("name"),
     state: equals("state"),
     tag: contains("tags", "tag"),
@@ -115,19 +115,19 @@ const validFilters = {
     update_time_lt: compare("update_time", "lt", toDate),
 };
 
-/* Default filters are set, unless explicitly specified by the user. */
+/** Default filters are set, unless explicitly specified by the user. */
 const defaultFilters = {
     deleted: false,
     visible: true,
 };
 
-/* Add comparison aliases i.e. '*>value' is converted to '*_gt=value' */
+/** Add comparison aliases i.e. '*>value' is converted to '*_gt=value' */
 const validAlias = [
     [">", "_gt"],
     ["<", "_lt"],
 ];
 
-/* Check the value of a particular filter. */
+/** Check the value of a particular filter. */
 export function checkFilter(filterText, filterName, filterValue) {
     const re = new RegExp(`${filterName}=(\\S+)`);
     const reMatch = re.exec(filterText);
@@ -135,7 +135,7 @@ export function checkFilter(filterText, filterName, filterValue) {
     return toLowerNoQuotes(testValue) == toLowerNoQuotes(filterValue);
 }
 
-/* Parses single text input into a dict of field->value pairs. */
+/** Parses single text input into a dict of field->value pairs. */
 export function getFilters(filterText) {
     const pairSplitRE = /[^\s']+(?:'[^']*'[^\s']*)*|(?:'[^']*'[^\s']*)+/g;
     const result = {};
@@ -177,7 +177,9 @@ export function getFilters(filterText) {
     return Object.entries(result);
 }
 
-/* Returns a dictionary with query key and values. */
+/** Returns a dictionary with query key and values.
+ * @param {String} filterText The raw filter text
+ */
 export function getQueryDict(filterText) {
     const queryDict = {};
     const filters = getFilters(filterText);
@@ -189,7 +191,7 @@ export function getQueryDict(filterText) {
     return queryDict;
 }
 
-/* Test if an item passes all filters. */
+/** Test if an item passes all filters. */
 export function testFilters(filters, item) {
     for (const [key, filterValue] of filters) {
         const filterAttribute = validFilters[key].attribute;

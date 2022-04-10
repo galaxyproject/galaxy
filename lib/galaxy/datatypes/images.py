@@ -5,7 +5,6 @@ import base64
 import json
 import logging
 import zipfile
-from io import StringIO
 from urllib.parse import quote_plus
 
 import mrcfile
@@ -352,17 +351,14 @@ class Mrc2014(Binary):
     file_ext = "mrc"
 
     def sniff(self, filename):
-        # Handle the wierdness of mrcfile:
-        # https://github.com/ccpem/mrcfile/blob/master/mrcfile/validator.py#L88
         try:
             # An exception is thrown
             # if the file is not an
             # mrc2014 file.
-            if mrcfile.validate(filename, print_file=StringIO()):
-                return True
+            mrcfile.load_functions.open(filename, header_only=True)
+            return True
         except Exception:
             return False
-        return False
 
 
 class Gmaj(data.Data):
