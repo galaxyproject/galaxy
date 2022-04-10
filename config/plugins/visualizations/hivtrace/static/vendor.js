@@ -240,7 +240,7 @@
 	
 	
 	function toType( obj ) {
-		if ( obj === null ) {
+		if ( obj == null ) {
 			return obj + "";
 		}
 	
@@ -289,7 +289,7 @@
 		get: function( num ) {
 	
 			// Return all the elements in a clean array
-			if ( num === null ) {
+			if ( num == null ) {
 				return slice.call( this );
 			}
 	
@@ -495,7 +495,7 @@
 	
 		// Support: Android <=4.0 only
 		trim: function( text ) {
-			return text === null ?
+			return text == null ?
 				"" :
 				( text + "" ).replace( rtrim, "" );
 		},
@@ -519,7 +519,7 @@
 		},
 	
 		inArray: function( elem, arr, i ) {
-			return arr === null ? -1 : indexOf.call( arr, elem, i );
+			return arr == null ? -1 : indexOf.call( arr, elem, i );
 		},
 	
 		// Support: Android <=4.0 only, PhantomJS 1 only
