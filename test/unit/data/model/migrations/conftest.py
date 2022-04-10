@@ -39,6 +39,15 @@ def tmp_directory():
 # (State 0 assumes an empty database, so it needs no state fixtures.)
 
 
+# state 0-kombu
+@pytest.fixture
+def metadata_state0kombu(kombu_message_table, kombu_queue_table):
+    metadata = sa.MetaData()
+    kombu_message_table(metadata)
+    kombu_queue_table(metadata)
+    return metadata
+
+
 # state 1
 @pytest.fixture
 def metadata_state1_gxy(gxy_table1):
@@ -303,5 +312,21 @@ def sqlalchemymigrate_table():
             sa.Column("version", sa.Integer),
         )
         return table
+
+    return make_table
+
+
+@pytest.fixture
+def kombu_message_table():
+    def make_table(metadata):
+        return sa.Table("kombu_message", metadata, sa.Column("id", sa.Integer, primary_key=True))
+
+    return make_table
+
+
+@pytest.fixture
+def kombu_queue_table():
+    def make_table(metadata):
+        return sa.Table("kombu_queue", metadata, sa.Column("id", sa.Integer, primary_key=True))
 
     return make_table
