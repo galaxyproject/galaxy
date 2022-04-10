@@ -41,6 +41,7 @@
                 <span v-localize>Build Collection from Rules</span>
             </b-dropdown-item>
         </b-dropdown>
+
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
             <p v-localize>Really hide {{ numSelected }} content items?</p>
         </b-modal>
@@ -78,9 +79,6 @@ export default {
         contentSelection: { type: Map, required: true },
         selectionSize: { type: Number, required: true },
         isQuerySelection: { type: Boolean, required: true },
-        showSelection: { type: Boolean, required: true },
-        hasMatches: { type: Boolean, required: true },
-        expandedCount: { type: Number, required: false, default: 0 },
     },
     computed: {
         /** @returns {Boolean} */

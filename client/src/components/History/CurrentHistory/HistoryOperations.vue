@@ -49,6 +49,7 @@
                 </b-dropdown>
             </b-button-group>
         </nav>
+
         <b-modal id="show-all-hidden-content" title="Show Hidden Datasets" title-tag="h2" @ok="unhideAll">
             <p v-localize>Really unhide all hidden datasets?</p>
         </b-modal>
@@ -65,6 +66,7 @@
 <script>
 import { unhideAllHiddenContent, deleteAllHiddenContent, purgeAllDeletedContent } from "components/History/model/crud";
 import { iframeRedirect } from "components/plugins/legacyNavigation";
+
 export default {
     props: {
         history: { type: Object, required: true },

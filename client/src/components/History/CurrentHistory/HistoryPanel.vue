@@ -36,17 +36,10 @@
                         <HistoryMessages class="m-2" :history="history" />
                         <HistoryOperations
                             :history="history"
-                            :filter-text="filterText"
-                            :content-selection="selectedItems"
-                            :selection-size="selectionSize"
-                            :is-query-selection="isQuerySelection"
                             :show-selection="showSelection"
                             :expanded-count="expandedCount"
                             :has-matches="hasMatches(payload)"
-                            @update:content-selection="selectItems"
                             @update:show-selection="setShowSelection"
-                            @hide-selection="onHideSelection"
-                            @reset-selection="resetSelection"
                             @collapse-all="collapseAll" />
                         <HistorySelectionStatus
                             v-if="showSelection"
