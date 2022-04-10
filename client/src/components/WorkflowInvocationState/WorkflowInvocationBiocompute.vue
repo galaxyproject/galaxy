@@ -13,7 +13,7 @@
                                     type="text"
                                     class="form-control"
                                     id="fetch"
-                                    placeholder="https://biocomputeobject.org"
+                                    placeholder="https://biocomputeobject11.org"
                                     v-model="form.fetch" />
                             </div>
                             <div class="form-group">
@@ -125,21 +125,23 @@ export default {
                 .post(`${submitURL}/api/objects/drafts/create/`, bcoString, { headers: headers })
                 .then((response) => {
                     console.log("response:", response);
-                    alert(JSON.stringify(response.data[0].message));
+                    alert(JSON.parse(response.data.message));
                 })
                 .catch(function (error) {
                     if (error.response) {
-                        alert(JSON.stringify(error.response.data[0].message));
-                        console.log("Error response: ", error.response.data);
-                        console.log(error.response.status);
-                        console.log(error.response.headers);
+                        alert(JSON.parse(error));
+                        console.log("Error response: ", error.response);
                     } else if (error.request) {
                         alert(`Error request: failed to connect to server at ${submitURL}`);
                     } else {
-                        console.log("Error", error.message);
-                        alert("Error", error.message);
+                        console.log("Error", error);
+                        alert("Error", error);
                     }
                 });
+            this.form.owner_group = "";
+            this.form.authorization = "";
+            this.form.owner_group = "";
+            this.form.fetch = "";
         },
     },
 };
