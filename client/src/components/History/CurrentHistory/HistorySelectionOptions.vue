@@ -1,15 +1,21 @@
 <template>
-    <section>
+    <section class="w-100">
         <b-dropdown
             text="Selection"
             size="sm"
-            variant="link"
-            toggle-class="text-decoration-none"
+            variant="primary"
+            class="w-100"
+            toggle-class="text-decoration-none w-100"
             data-description="selected content menu"
             :disabled="!hasSelection">
-            <b-dropdown-text>
-                <span v-localize>With {{ numSelected }} selected...</span>
-            </b-dropdown-text>
+            <template v-slot:button-content>
+                <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
+                    All <b>{{ totalItemsInQuery }}</b> selected
+                </span>
+                <span v-else data-test-id="num-active-selected">
+                    <b>{{ selectionSize }}</b> of {{ totalItemsInQuery }} selected
+                </span>
+            </template>
             <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content>
                 <span v-localize>Unhide</span>
             </b-dropdown-item>
@@ -79,6 +85,7 @@ export default {
         contentSelection: { type: Map, required: true },
         selectionSize: { type: Number, required: true },
         isQuerySelection: { type: Boolean, required: true },
+        totalItemsInQuery: { type: Number, required: true },
     },
     computed: {
         /** @returns {Boolean} */

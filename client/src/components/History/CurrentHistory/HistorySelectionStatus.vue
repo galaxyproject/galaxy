@@ -10,26 +10,7 @@
                     data-test-id="empty-selection">
                     <div>No items selected</div>
                 </b-button>
-                <b-dropdown
-                    v-else
-                    text="Selection"
-                    size="sm"
-                    class="w-100"
-                    toggle-class="text-decoration-none w-100"
-                    data-description="selected content menu"
-                    :variant="selectionAlertVariant">
-                    <template v-slot:button-content>
-                        <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
-                            All <b>{{ totalItemsInQuery }}</b> selected
-                        </span>
-                        <span v-else data-test-id="num-active-selected">
-                            <b>{{ selectionSize }}</b> of {{ totalItemsInQuery }} selected
-                        </span>
-                    </template>
-                    <b-dropdown-text>
-                        <span v-localize>With {{ selectionSize }} selected...</span>
-                    </b-dropdown-text>
-                </b-dropdown>
+                <slot v-else name="selection-options" />
                 <b-button v-if="hasSelection" @click="clearSelection" data-test-id="clear-btn">
                     <span class="fa fa-fw fa-times" />
                 </b-button>
@@ -42,11 +23,6 @@
 </template>
 
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-
-Vue.use(BootstrapVue);
-
 export default {
     props: {
         hasFilters: { type: Boolean, required: true },
@@ -65,10 +41,6 @@ export default {
         /** @returns {Boolean} */
         selectionMatchesQuery() {
             return this.totalItemsInQuery === this.selectionSize;
-        },
-        /** @returns {String} */
-        selectionAlertVariant() {
-            return this.hasSelection ? "info" : "secondary";
         },
     },
     methods: {

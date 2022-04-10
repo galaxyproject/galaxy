@@ -48,7 +48,20 @@
                             :selection-size="selectionSize"
                             :total-items-in-query="totalItemsInQuery"
                             @select-all="selectAllInCurrentQuery(payload, totalItemsInQuery)"
-                            @clear-selection="resetSelection" />
+                            @clear-selection="resetSelection">
+                            <template v-slot:selection-options>
+                                <HistorySelectionOptions
+                                    :history="history"
+                                    :filter-text="filterText"
+                                    :content-selection="selectedItems"
+                                    :selection-size="selectionSize"
+                                    :is-query-selection="isQuerySelection"
+                                    :total-items-in-query="totalItemsInQuery"
+                                    @update:content-selection="selectItems"
+                                    @hide-selection="onHideSelection"
+                                    @reset-selection="resetSelection" />
+                            </template>
+                        </HistorySelectionStatus>
                     </section>
                     <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
                         <div>
@@ -106,23 +119,25 @@ import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
 import HistoryFilters from "./HistoryFilters";
 import HistoryMessages from "./HistoryMessages";
+import HistorySelectionOptions from "./HistorySelectionOptions";
 import HistorySelectionStatus from "./HistorySelectionStatus";
 
 export default {
     components: {
-        LoadingSpan,
-        Listing,
         ContentItem,
+        ExpandedItems,
         HistoryMessages,
         HistoryDetails,
         HistoryEmpty,
         HistoryFilters,
         HistoryItemsProvider,
         HistoryOperations,
-        ToolHelpModal,
-        ExpandedItems,
-        SelectedItems,
+        HistorySelectionOptions,
         HistorySelectionStatus,
+        LoadingSpan,
+        Listing,
+        SelectedItems,
+        ToolHelpModal,
     },
     props: {
         history: { type: Object, required: true },
