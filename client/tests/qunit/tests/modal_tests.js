@@ -71,7 +71,7 @@ QUnit.test("test dialog rendering", function (assert) {
 });
 
 QUnit.test("test button states", function (assert) {
-    assert.ok(this.app.getButton("Ok").html() == "Ok", "Ok has correct label");
+    assert.ok(this.app.getButton("Ok").html() === "Ok", "Ok has correct label");
     assert.ok(!this.app.getButton("Ok").prop("disabled"), "Ok is active");
     assert.ok(!this.app.getButton("Cancel").prop("disabled"), "Cancel is active");
     this.app.disableButton("Ok");
