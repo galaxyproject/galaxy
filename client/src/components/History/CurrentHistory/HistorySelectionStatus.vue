@@ -10,7 +10,7 @@
                     data-test-id="empty-selection">
                     <div>No items selected</div>
                 </b-button>
-                <slot v-else name="selection-options" />
+                <slot v-else name="selection-operations" />
                 <b-button v-if="hasSelection" @click="clearSelection" data-test-id="clear-btn">
                     <span class="fa fa-fw fa-times" />
                 </b-button>

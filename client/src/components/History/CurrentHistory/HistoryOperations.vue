@@ -24,13 +24,16 @@
             </b-button-group>
             <b-button-group>
                 <b-dropdown
-                    text="History"
+                    no-caret
                     size="sm"
                     variant="link"
                     class="rounded-0"
-                    toggle-class="text-decoration-none"
+                    toggle-class="text-decoration-none rounded-0"
                     data-description="history action menu"
                     :disabled="!hasMatches">
+                    <template v-slot:button-content>
+                        <Icon icon="cog" />
+                    </template>
                     <b-dropdown-text id="history-op-all-content">
                         <span v-localize>With entire history...</span>
                     </b-dropdown-text>
@@ -44,7 +47,7 @@
                         <span v-localize>Delete All Hidden Content</span>
                     </b-dropdown-item>
                     <b-dropdown-item v-b-modal:purge-all-deleted-content>
-                        <span v-localize>Permanently Delete All Deleted Content</span>
+                        <span v-localize>Purge All Deleted Content</span>
                     </b-dropdown-item>
                 </b-dropdown>
             </b-button-group>

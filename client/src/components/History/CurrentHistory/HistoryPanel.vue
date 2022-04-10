@@ -49,8 +49,8 @@
                             :total-items-in-query="totalItemsInQuery"
                             @select-all="selectAllInCurrentQuery(payload, totalItemsInQuery)"
                             @clear-selection="resetSelection">
-                            <template v-slot:selection-options>
-                                <HistorySelectionOptions
+                            <template v-slot:selection-operations>
+                                <HistorySelectionOperations
                                     :history="history"
                                     :filter-text="filterText"
                                     :content-selection="selectedItems"
@@ -119,7 +119,7 @@ import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
 import HistoryFilters from "./HistoryFilters";
 import HistoryMessages from "./HistoryMessages";
-import HistorySelectionOptions from "./HistorySelectionOptions";
+import HistorySelectionOperations from "./HistorySelectionOperations";
 import HistorySelectionStatus from "./HistorySelectionStatus";
 
 export default {
@@ -132,7 +132,7 @@ export default {
         HistoryFilters,
         HistoryItemsProvider,
         HistoryOperations,
-        HistorySelectionOptions,
+        HistorySelectionOperations,
         HistorySelectionStatus,
         LoadingSpan,
         Listing,
