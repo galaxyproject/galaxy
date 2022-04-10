@@ -50,7 +50,7 @@
                             @collapse-all="collapseAll" />
                         <HistorySelectionStatus
                             v-if="showSelection"
-                            class="p-2"
+                            class="m-2"
                             :has-filters="hasFilters"
                             :selection-size="selectionSize"
                             :total-items-in-query="totalItemsInQuery"

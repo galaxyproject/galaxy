@@ -1,37 +1,43 @@
 <template>
-    <div class="text-center p-0">
+    <div class="text-center">
         <div v-if="canSelectAll || hasSelection">
-            <b-button-group size="sm" class="mb-2">
-                <b-button v-if="canSelectAll" @click="selectAllItemsInQuery" data-test-id="select-all-btn">
-                    Select All
+            <b-button-group size="sm" class="m-0 p-0 w-100">
+                <b-button
+                    v-if="!hasSelection"
+                    variant="secondary"
+                    class="w-100"
+                    disabled
+                    data-test-id="empty-selection">
+                    <div>No items selected</div>
                 </b-button>
+                <b-dropdown
+                    v-else
+                    text="Selection"
+                    size="sm"
+                    class="w-100"
+                    toggle-class="text-decoration-none w-100"
+                    data-description="selected content menu"
+                    :variant="selectionAlertVariant">
+                    <template v-slot:button-content>
+                        <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
+                            All <b>{{ totalItemsInQuery }}</b> selected
+                        </span>
+                        <span v-else data-test-id="num-active-selected">
+                            <b>{{ selectionSize }}</b> of {{ totalItemsInQuery }} selected
+                        </span>
+                    </template>
+                    <b-dropdown-text>
+                        <span v-localize>With {{ selectionSize }} selected...</span>
+                    </b-dropdown-text>
+                </b-dropdown>
                 <b-button v-if="hasSelection" @click="clearSelection" data-test-id="clear-btn">
-                    Clear selection
+                    <span class="fa fa-fw fa-times" />
+                </b-button>
+                <b-button v-else @click="selectAllItemsInQuery" data-test-id="select-all-btn">
+                    <span class="fa fa-fw fa-check-double" />
                 </b-button>
             </b-button-group>
         </div>
-
-        <b-alert show :variant="selectionAlertVariant" class="mb-0 p-2">
-            <div v-if="!hasSelection" data-test-id="empty-selection">No items selected</div>
-            <div v-else>
-                <div v-if="selectionMatchesQuery">
-                    <div v-if="hasFilters" data-test-id="all-filter-selected">
-                        All <b>{{ totalItemsInQuery }}</b> items that match the filters are selected
-                    </div>
-                    <div v-else data-test-id="all-active-selected">
-                        All <b>{{ totalItemsInQuery }}</b> active items in history are selected
-                    </div>
-                </div>
-                <div v-else>
-                    <div v-if="hasFilters" data-test-id="num-filter-selected">
-                        <b>{{ selectionSize }}</b> of {{ totalItemsInQuery }} items that match the filters are selected
-                    </div>
-                    <div v-else data-test-id="num-active-selected">
-                        <b>{{ selectionSize }}</b> of {{ totalItemsInQuery }} active items in history are selected
-                    </div>
-                </div>
-            </div>
-        </b-alert>
     </div>
 </template>
 
