@@ -16,6 +16,9 @@
                     <b>{{ selectionSize }}</b> of {{ totalItemsInQuery }} selected
                 </span>
             </template>
+            <b-dropdown-text>
+                <span v-localize>With {{ numSelected }} selected...</span>
+            </b-dropdown-text>
             <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content>
                 <span v-localize>Unhide</span>
             </b-dropdown-item>
