@@ -96,7 +96,7 @@ export default {
     },
     computed: {
         downloadUrl() {
-            return prependPath(`datasets/${this.item.id}/display?to_ext=${this.item.extension}`);
+            return prependPath(`api/datasets/${this.item.id}/display?to_ext=${this.item.extension}`);
         },
         showDownloads() {
             return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);

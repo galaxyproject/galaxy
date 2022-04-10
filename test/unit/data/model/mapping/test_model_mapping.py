@@ -1548,6 +1548,18 @@ class TestHistoryDatasetAssociation(BaseTest):
 
         delete_from_database(session, [copied_from_hda, parent])
 
+    def test_detached_histories(
+        self,
+        session,
+        history,
+    ):
+        hda = model.HistoryDatasetAssociation(create_dataset=False)
+        assert hda not in session
+        session.add(history)
+        assert history in session
+        hda.history = history
+        assert hda not in session
+
     def test_relationships(
         self,
         session,

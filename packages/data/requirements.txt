@@ -13,6 +13,8 @@ numpy
 parsley
 pycryptodome
 pydantic
+pylibmagic
+python-magic
 pysam
 social-auth-core[openidconnect]==4.0.3
 SQLAlchemy>=1.4.25,<2

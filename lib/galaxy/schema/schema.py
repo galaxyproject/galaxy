@@ -783,8 +783,8 @@ class HistoryBase(BaseModel):
         extra = Extra.allow  # Allow any other extra fields
 
 
-class UpdateContentItem(HistoryBase):
-    """Used for updating a particular HDA. All fields are optional."""
+class HistoryContentItem(Model):
+    """Identifies a dataset or collection contained in a History."""
 
     history_content_type: HistoryContentType = Field(
         ...,
@@ -792,6 +792,14 @@ class UpdateContentItem(HistoryBase):
         description="The type of this item.",
     )
     id: EncodedDatabaseIdField = EncodedEntityIdField
+
+
+class UpdateContentItem(HistoryContentItem):
+    """Used for updating a particular history item. All fields are optional."""
+
+    class Config:
+        use_enum_values = True  # When using .dict()
+        extra = Extra.allow  # Allow any other extra fields
 
 
 class UpdateHistoryContentsBatchPayload(HistoryBase):
@@ -810,6 +818,29 @@ class UpdateHistoryContentsBatchPayload(HistoryBase):
                 "visible": False,
             }
         }
+
+
+class HistoryContentItemOperation(str, Enum):
+    hide = "hide"
+    unhide = "unhide"
+    delete = "delete"
+    undelete = "undelete"
+    purge = "purge"
+
+
+class HistoryContentBulkOperationPayload(Model):
+    operation: HistoryContentItemOperation
+    items: Optional[List[HistoryContentItem]]
+
+
+class BulkOperationItemError(Model):
+    item: HistoryContentItem
+    error: str
+
+
+class HistoryContentBulkOperationResult(Model):
+    success_count: int
+    errors: List[BulkOperationItemError]
 
 
 class UpdateHistoryContentsPayload(HistoryBase):
@@ -1980,6 +2011,25 @@ class GroupRoleListModel(BaseModel):
     __root__: List[GroupRoleModel]
 
 
+# Users -----------------------------------------------------------------
+
+UserIdField = Field(title="ID", description="Encoded ID of the user")
+UserEmailField = Field(title="Email", description="Email of the user")
+UserDescriptionField = Field(title="Description", description="Description of the user")
+
+# Group_Users -----------------------------------------------------------------
+
+
+class GroupUserModel(BaseModel):
+    id: EncodedDatabaseIdField = UserIdField
+    email: str = UserEmailField
+    url: RelativeUrl = RelativeUrlField
+
+
+class GroupUserListModel(BaseModel):
+    __root__: List[GroupUserModel]
+
+
 # Libraries -----------------------------------------------------------------
 
 
@@ -2462,6 +2512,14 @@ class HistoryContentsArchiveDryRunResult(BaseModel):
     __root__: List[List[str]]  # List[Tuple[str, str]]
 
 
+class HistoryContentStats(BaseModel):
+    total_matches: int = Field(
+        ...,
+        title="Total Matches",
+        description=("The total number of items that match the search query without any pagination"),
+    )
+
+
 class ContentsNearStats(BaseModel):
     """Stats used by the `contents_near` endpoint."""
 
@@ -2488,11 +2546,31 @@ class ContentsNearStats(BaseModel):
 
 
 class HistoryContentsResult(Model):
-    """Collection of history content items.
+    """List of history content items.
     Can contain different views and kinds of items.
     """
 
     __root__: List[AnyHistoryContentItem]
+
+
+class HistoryContentsWithStatsResult(BaseModel):
+    """Includes stats with items counting"""
+
+    stats: HistoryContentStats = Field(
+        ...,
+        title="Stats",
+        description=("Contains counting stats for the query."),
+    )
+    contents: List[AnyHistoryContentItem] = Field(
+        ...,
+        title="Contents",
+        description=(
+            "The items matching the search query. Only the items fitting in the current page limit will be returned."
+        ),
+    )
+
+    # This field is ignored and contains the content type associated with this model
+    __accept_type__ = "application/vnd.galaxy.history.contents.stats+json"
 
 
 class ContentsNearResult(BaseModel):

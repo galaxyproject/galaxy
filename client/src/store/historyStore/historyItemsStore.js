@@ -6,8 +6,8 @@
 import { reverse } from "lodash";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
-import { mergeArray } from "./utilities";
 import { getFilters, getQueryDict, testFilters } from "./historyItemsFiltering";
+import { mergeArray } from "./utilities";
 
 const limit = 100;
 const queue = new LastQueue();
@@ -15,6 +15,7 @@ const queue = new LastQueue();
 const state = {
     items: {},
     itemKey: "hid",
+    totalMatchesCount: undefined,
 };
 
 const getters = {
@@ -34,6 +35,9 @@ const getters = {
             });
             return reverse(filtered);
         },
+    getTotalMatchesCount: (state) => () => {
+        return state.totalMatchesCount;
+    },
 };
 
 const getQueryString = (filterText) => {
@@ -49,7 +53,11 @@ const actions = {
         const queryString = getQueryString(filterText);
         const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
         const url = `api/histories/${historyId}/contents?${params}&${queryString}`;
-        await queue.enqueue(urlData, { url }).then((payload) => {
+        const headers = { accept: "application/vnd.galaxy.history.contents.stats+json" };
+        await queue.enqueue(urlData, { url, headers }).then((data) => {
+            const stats = data.stats;
+            commit("saveQueryStats", { stats });
+            const payload = data.contents;
             commit("saveHistoryItems", { historyId, payload });
         });
     },
@@ -58,6 +66,9 @@ const actions = {
 const mutations = {
     saveHistoryItems: (state, { historyId, payload }) => {
         mergeArray(historyId, payload, state.items, state.itemKey);
+    },
+    saveQueryStats: (state, { stats }) => {
+        state.totalMatchesCount = stats.total_matches;
     },
 };
 

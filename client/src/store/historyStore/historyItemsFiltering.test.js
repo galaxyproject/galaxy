@@ -55,8 +55,8 @@ describe("historyItemsFiltering", () => {
             expect(queryDict["state-eq"]).toBe("success");
             expect(queryDict["extension-eq"]).toBe("ext");
             expect(queryDict["tag"]).toBe("first");
-            expect(queryDict["deleted"]).toBe("False");
-            expect(queryDict["visible"]).toBe("True");
+            expect(queryDict["deleted"]).toBe(false);
+            expect(queryDict["visible"]).toBe(true);
         });
     });
     test("validate filtering of a history item", () => {

@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import (
     Any,
     List,
+    Tuple,
 )
 
 from galaxy.webapps.galaxy.services.history_contents import DirectionOptions
@@ -949,3 +950,243 @@ class HistoryContentsApiNearTestCase(ApiTestCase):
             result = self._get_content(history_id, self.AFTER, hid=7, limit=3)
             assert len(result) == 1
             assert result[0]["hid"] == 8  # hid + 1
+
+
+class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
+    """
+    Test the `/api/histories/{history_id}/contents/bulk` endpoint and the new
+    `count` special view for `/api/histories/{history_id}/contents?v=dev`
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+
+    def test_explicit_items_selection(self):
+        with self.dataset_populator.test_history() as history_id:
+            datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
+
+            # All items are visible
+            for item in history_contents:
+                assert item["visible"]
+
+            # Hide 2 collections and 3 datasets, 5 in total
+            payload = {
+                "operation": "hide",
+                "items": [
+                    {
+                        "id": datasets_ids[0],
+                        "history_content_type": "dataset",
+                    },
+                    {
+                        "id": collection_ids[0],
+                        "history_content_type": "dataset_collection",
+                    },
+                    {
+                        "id": datasets_ids[1],
+                        "history_content_type": "dataset",
+                    },
+                    {
+                        "id": collection_ids[1],
+                        "history_content_type": "dataset_collection",
+                    },
+                    {
+                        "id": datasets_ids[2],
+                        "history_content_type": "dataset",
+                    },
+                ],
+            }
+            expected_hidden_item_ids = list(map(lambda item: item["id"], payload["items"]))
+            expected_hidden_item_count = len(expected_hidden_item_ids)
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            history_contents = self._get_history_contents(history_id)
+            hidden_items = self._get_hidden_items_from_history_contents(history_contents)
+
+            self._assert_bulk_success(bulk_operation_result, expected_hidden_item_count)
+            assert len(hidden_items) == expected_hidden_item_count
+            for item in hidden_items:
+                assert item["id"] in expected_hidden_item_ids
+
+    def test_dynamic_query_selection(self):
+        with self.dataset_populator.test_history() as history_id:
+            _, collection_ids, history_contents = self._create_test_history_contents(history_id)
+
+            # All items are visible
+            for item in history_contents:
+                assert item["visible"]
+
+            # Hide all collections using query
+            payload = {"operation": "hide"}
+            query = "q=history_content_type-eq&qv=dataset_collection"
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload, query)
+            history_contents = self._get_history_contents(history_id)
+            hidden_items = self._get_hidden_items_from_history_contents(history_contents)
+
+            self._assert_bulk_success(bulk_operation_result, len(collection_ids))
+            assert len(hidden_items) == len(collection_ids)
+            for item in hidden_items:
+                assert item["id"] in collection_ids
+
+    def test_bulk_operations(self):
+        with self.dataset_populator.test_history() as history_id:
+            datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
+
+            # Hide all datasets using query
+            payload = {"operation": "hide"}
+            query = "q=history_content_type-eq&qv=dataset"
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload, query)
+            history_contents = self._get_history_contents(history_id)
+            hidden_items = self._get_hidden_items_from_history_contents(history_contents)
+            self._assert_bulk_success(bulk_operation_result, len(datasets_ids))
+            assert len(hidden_items) == len(datasets_ids)
+
+            # Unhide datasets_ids[0] and datasets_ids[3]
+            payload = {
+                "operation": "unhide",
+                "items": [
+                    {
+                        "id": datasets_ids[0],
+                        "history_content_type": "dataset",
+                    },
+                    {
+                        "id": datasets_ids[3],
+                        "history_content_type": "dataset",
+                    },
+                ],
+            }
+            expected_unhidden_count = len(payload["items"])
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            history_contents = self._get_history_contents(history_id)
+            self._assert_bulk_success(bulk_operation_result, expected_unhidden_count)
+            for item in history_contents:
+                if item["id"] in [datasets_ids[0], datasets_ids[3]]:
+                    assert item["visible"] is True
+
+            # Delete all hidden datasets (total dataset - 2 previously unhidden)
+            expected_hidden_item_count = len(datasets_ids) - expected_unhidden_count
+            payload = {"operation": "delete"}
+            query = "q=history_content_type-eq&qv=dataset&q=visible&qv=False"
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload, query)
+            history_contents = self._get_history_contents(history_id)
+            hidden_items = self._get_hidden_items_from_history_contents(history_contents)
+            self._assert_bulk_success(bulk_operation_result, expected_hidden_item_count)
+            for item in hidden_items:
+                assert item["deleted"] is True
+
+            # Undelete all items in history
+            payload = {
+                "operation": "undelete",
+            }
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            history_contents = self._get_history_contents(history_id)
+            self._assert_bulk_success(bulk_operation_result, len(history_contents))
+            for item in history_contents:
+                assert item["deleted"] is False
+
+            # Purge datasets_ids[0] and collection_ids[0]
+            payload = {
+                "operation": "purge",
+                "items": [
+                    {
+                        "id": datasets_ids[0],
+                        "history_content_type": "dataset",
+                    },
+                    {
+                        "id": collection_ids[0],
+                        "history_content_type": "dataset_collection",
+                    },
+                ],
+            }
+            expected_purged_count = len(payload["items"])
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            history_contents = self._get_history_contents(history_id)
+            self._assert_bulk_success(bulk_operation_result, expected_purged_count)
+
+    def test_index_returns_expected_total_matches(self):
+        with self.dataset_populator.test_history() as history_id:
+            datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
+
+            self._test_index_total_matches(history_id, expected_total_matches=len(history_contents))
+
+            self._test_index_total_matches(
+                history_id,
+                search_query="&q=history_content_type-eq&qv=dataset_collection",
+                expected_total_matches=len(collection_ids),
+            )
+
+            self._test_index_total_matches(
+                history_id,
+                search_query="&q=history_content_type-eq&qv=dataset",
+                expected_total_matches=len(datasets_ids),
+            )
+
+    def test_index_with_stats_fails_with_non_orm_filters(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._create_test_history_contents(history_id)
+
+            invalid_filter_keys_with_stats = ["genome_build", "data_type", "annotation"]
+
+            for filter_key in invalid_filter_keys_with_stats:
+                response = self._get_contents_with_stats(
+                    history_id,
+                    search_query=f"&q={filter_key}-contains&qv=anything",
+                )
+                self._assert_status_code_is(response, 400)
+
+    def _get_contents_with_stats(self, history_id: str, search_query: str = ""):
+        headers = {"accept": "application/vnd.galaxy.history.contents.stats+json"}
+        search_response = self._get(f"histories/{history_id}/contents?v=dev{search_query}", headers=headers)
+        return search_response
+
+    def _test_index_total_matches(self, history_id: str, expected_total_matches: int, search_query: str = ""):
+        search_response = self._get_contents_with_stats(history_id, search_query)
+        self._assert_status_code_is(search_response, 200)
+        self._assert_total_matches_is(search_response.json(), expected_total_matches)
+
+    def _assert_total_matches_is(self, response, expected_total_matches: int):
+        assert response["stats"]
+        assert response["stats"]["total_matches"]
+        assert response["stats"]["total_matches"] == expected_total_matches
+
+    def _create_test_history_contents(self, history_id) -> Tuple[List[str], List[str], List[Any]]:
+        """Creates 3 collections (pairs) and their corresponding datasets (6 in total)
+
+        Returns a tuple with the list of ids for the datasets and the collections and the
+        complete history contents
+        """
+        num_expected_collections = 3
+        num_expected_datasets = num_expected_collections * 2
+        collection_ids = self._create_collection_in_history(history_id, num_expected_collections)
+        history_contents = self._get_history_contents(history_id)
+        datasets = filter(lambda item: item["history_content_type"] == "dataset", history_contents)
+        datasets_ids = list(map(lambda dataset: dataset["id"], datasets))
+        assert len(history_contents) == num_expected_datasets + num_expected_collections
+        assert len(datasets_ids) == num_expected_datasets
+        return datasets_ids, collection_ids, history_contents
+
+    def _create_collection_in_history(self, history_id, num_collections=1) -> List[str]:
+        collection_ids = []
+        for _ in range(num_collections):
+            collection_id = self.dataset_collection_populator.create_pair_in_history(history_id=history_id).json()["id"]
+            collection_ids.append(collection_id)
+        return collection_ids
+
+    def _get_history_contents(self, history_id: str):
+        return self._get(f"histories/{history_id}/contents").json()
+
+    def _get_hidden_items_from_history_contents(self, history_contents) -> List[Any]:
+        return list(filter(lambda item: item["visible"] is False, history_contents))
+
+    def _apply_bulk_operation(self, history_id: str, payload, query: str = ""):
+        if query:
+            query = f"?{query}"
+        return self._put(
+            f"histories/{history_id}/contents/bulk{query}",
+            data=payload,
+            json=True,
+        ).json()
+
+    def _assert_bulk_success(self, bulk_operation_result, expected_success_count: int):
+        assert bulk_operation_result["success_count"] == expected_success_count, bulk_operation_result
+        assert not bulk_operation_result["errors"]

@@ -10,7 +10,7 @@ from galaxy.util.custom_logging import get_logger
 log = get_logger(__name__)
 
 
-@galaxy_task(ignore_result=True, action="recalcuate a user's disk usage")
+@galaxy_task(ignore_result=True, action="recalculate a user's disk usage")
 def recalculate_user_disk_usage(session: galaxy_scoped_session, user_id=None):
     if user_id:
         user = session.query(model.User).get(user_id)

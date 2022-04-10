@@ -994,7 +994,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
                 try:
                     i = generated_sort_order[i:].index(identifier) + 1
                 except ValueError:
-                    message = f"Output collection '{name}': identifier '{element_identifier}' found out of order, expected order of {expected_sort_order} for the tool generated collection elements {eo_ids}"
+                    message = f"Output collection '{name}': identifier '{identifier}' found out of order, expected order of {expected_sort_order} for the tool generated collection elements {eo_ids}"
                     raise AssertionError(message)
 
     verify_elements(data_collection["elements"], output_collection_def.element_tests)

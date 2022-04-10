@@ -88,7 +88,7 @@
                         <span v-localize>Delete All Hidden Content</span>
                     </b-dropdown-item>
                     <b-dropdown-item v-b-modal:purge-all-deleted-content>
-                        <span v-localize>Purge All Hidden Content</span>
+                        <span v-localize>Permanently Delete All Deleted Content</span>
                     </b-dropdown-item>
                 </b-dropdown>
             </b-button-group>
@@ -123,7 +123,8 @@
         </b-modal>
 
         <b-modal id="purge-all-deleted-content" title="Purge Deleted Datasets" title-tag="h2" @ok="purgeAllDeleted">
-            <p v-localize>"Really delete all deleted datasets permanently? This cannot be undone.</p>
+            <p v-localize>Really permanently delete all deleted datasets?</p>
+            <p><strong class="text-danger" v-localize>Warning, this operation cannot be undone.</strong></p>
         </b-modal>
     </section>
 </template>
@@ -142,30 +143,37 @@ import {
 } from "components/History/model";
 import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
-import { checkFilter } from "store/historyStore/historyItemsFiltering";
+import { checkFilter, getQueryDict } from "store/historyStore/historyItemsFiltering";
 import { iframeRedirect } from "components/plugins/legacyNavigation";
 export default {
     props: {
         history: { type: History, required: true },
         filterText: { type: String, required: true },
         contentSelection: { type: Map, required: true },
+        selectionSize: { type: Number, required: true },
+        isQuerySelection: { type: Boolean, required: true },
         showSelection: { type: Boolean, required: true },
         hasMatches: { type: Boolean, required: true },
         expandedCount: { type: Number, required: false, default: 0 },
     },
     computed: {
+        /** @returns {Boolean} */
         showHidden() {
             return checkFilter(this.filterText, "visible", false);
         },
+        /** @returns {Boolean} */
         showDeleted() {
             return checkFilter(this.filterText, "deleted", true);
         },
+        /** @returns {Boolean} */
         showBuildOptions() {
-            return !this.showHidden && !this.showDeleted;
+            return !this.isQuerySelection && !this.showHidden && !this.showDeleted;
         },
+        /** @returns {Number} */
         numSelected() {
-            return this.contentSelection.size || 0;
+            return this.selectionSize;
         },
+        /** @returns {Boolean} */
         hasSelection() {
             return this.numSelected > 0;
         },
@@ -181,15 +189,12 @@ export default {
         // History-wide bulk updates, does server query first to determine "selection"
         async unhideAll(evt) {
             await unhideAllHiddenContent(this.history);
-            this.$emit("reload");
         },
         async deleteAllHidden(evt) {
             await deleteAllHiddenContent(this.history);
-            this.$emit("reload");
         },
         async purgeAllDeleted(evt) {
             await purgeAllDeletedContent(this.history);
-            this.$emit("reload");
         },
 
         // Selected content manipulation, hide/show/delete/purge
@@ -209,11 +214,19 @@ export default {
             this.runOnSelection(purgeSelectedContent);
         },
         async runOnSelection(fn) {
-            const items = Array.from(this.contentSelection.values());
-            const type_ids = items.map((o) => o.type_id);
-            await fn(this.history, type_ids);
-            this.$emit("hide-selection", items);
+            const items = this.getExplicitlySelectedItems();
+            const filters = getQueryDict(this.filterText);
+            await fn(this.history, filters, items);
             this.$emit("reset-selection");
+        },
+        getExplicitlySelectedItems() {
+            if (this.isQuerySelection) {
+                return []; // No explicit items allowed in query selection
+            }
+            const items = Array.from(this.contentSelection.values()).map((item) => {
+                return { id: item.id, history_content_type: item.history_content_type };
+            });
+            return items;
         },
 
         // collection creation, fires up a modal
