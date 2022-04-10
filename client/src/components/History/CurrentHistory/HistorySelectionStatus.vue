@@ -1,7 +1,7 @@
 <template>
     <div class="text-center">
         <div v-if="canSelectAll || hasSelection">
-            <b-button-group size="sm" class="m-0 p-0 w-100">
+            <b-button-group size="sm" class="m-0 px-2 py-0 w-100">
                 <b-button
                     v-if="!hasSelection"
                     variant="secondary"
