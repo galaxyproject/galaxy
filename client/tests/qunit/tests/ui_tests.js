@@ -29,9 +29,9 @@ QUnit.test("tabs", function (assert) {
         collection.each(function (model, index) {
             var $tab_element = tabs.$("#tab-" + model.id + " .nav-link");
             var $tab_content = tabs.$("#" + model.id);
-            var is_current = model.id === tabs.model.get("current");
-            assert.ok($tab_content.hasClass("active") === is_current, "Active state of content.");
-            assert.ok($tab_element.hasClass("active") === is_current, "Active state of element.");
+            var is_current = model.id == tabs.model.get("current");
+            assert.ok($tab_content.hasClass("active") == is_current, "Active state of content.");
+            assert.ok($tab_element.hasClass("active") == is_current, "Active state of element.");
         });
     };
     $("body").prepend(tabs.$el);
@@ -63,49 +63,49 @@ QUnit.test("button-default", function (assert) {
     var button = new Ui.Button({ title: "title" });
     var model = button.model;
     $("body").prepend(button.$el);
-    assert.ok(button.$title.html() === "title", "Has correct title");
+    assert.ok(button.$title.html() == "title", "Has correct title");
     model.set("title", "_title");
-    assert.ok(button.$title.html() === "_title", "Has correct new title");
+    assert.ok(button.$title.html() == "_title", "Has correct new title");
     assert.ok(!button.$el.attr("disabled"), "Button active");
     model.set("disabled", true);
     assert.ok(button.$el.attr("disabled"), "Button disabled");
     model.set("disabled", false);
     assert.ok(!button.$el.attr("disabled"), "Button active, again");
     model.set("wait", true);
-    assert.ok(button.$title.html() === model.get("wait_text"), "Shows correct wait text");
+    assert.ok(button.$title.html() == model.get("wait_text"), "Shows correct wait text");
     model.set("wait_text", "wait_text");
-    assert.ok(button.$title.html() === "wait_text", "Shows correct new wait text");
+    assert.ok(button.$title.html() == "wait_text", "Shows correct new wait text");
     model.set("wait", false);
-    assert.ok(button.$title.html() === model.get("title"), "Shows correct regular title");
+    assert.ok(button.$title.html() == model.get("title"), "Shows correct regular title");
 });
 
 QUnit.test("button-default", function (assert) {
     var button = new Ui.Button({ title: "title" });
     var model = button.model;
     $("body").prepend(button.$el);
-    assert.ok(button.$title.html() === "title", "Has correct title");
+    assert.ok(button.$title.html() == "title", "Has correct title");
     model.set("title", "_title");
-    assert.ok(button.$title.html() === "_title", "Has correct new title");
+    assert.ok(button.$title.html() == "_title", "Has correct new title");
     assert.ok(!button.$el.attr("disabled"), "Button active");
     model.set("disabled", true);
     assert.ok(button.$el.attr("disabled"), "Button disabled");
     model.set("disabled", false);
     assert.ok(!button.$el.attr("disabled"), "Button active, again");
     model.set("wait", true);
-    assert.ok(button.$title.html() === model.get("wait_text"), "Shows correct wait text");
+    assert.ok(button.$title.html() == model.get("wait_text"), "Shows correct wait text");
     model.set("wait_text", "wait_text");
-    assert.ok(button.$title.html() === "wait_text", "Shows correct new wait text");
+    assert.ok(button.$title.html() == "wait_text", "Shows correct new wait text");
     model.set("wait", false);
-    assert.ok(button.$title.html() === model.get("title"), "Shows correct regular title");
+    assert.ok(button.$title.html() == model.get("title"), "Shows correct regular title");
 });
 
 QUnit.test("button-check", function (assert) {
     var button = new Ui.ButtonCheck({ title: "title" });
     var model = button.model;
     $("body").prepend(button.$el);
-    assert.ok(button.$title.html() === "title", "Has correct title");
+    assert.ok(button.$title.html() == "title", "Has correct title");
     model.set("title", "_title");
-    assert.ok(button.$title.html() === "_title", "Has correct new title");
+    assert.ok(button.$title.html() == "_title", "Has correct new title");
     assert.ok(button.$icon.hasClass(button.model.get("icons")[0]), "Has correct " + model.get("value") + " value");
     button.value(1);
     assert.ok(button.$icon.hasClass(button.model.get("icons")[1]), "Has correct " + model.get("value") + " value");
