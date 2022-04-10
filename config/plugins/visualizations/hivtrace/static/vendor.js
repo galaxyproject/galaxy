@@ -7676,7 +7676,7 @@
 			}
 	
 			if ( value !== undefined ) {
-				if ( value === null ) {
+				if ( value == null ) {
 					jQuery.removeAttr( elem, name );
 					return;
 				}
@@ -8264,7 +8264,7 @@
 		};
 		if ( !support.checkOn ) {
 			jQuery.valHooks[ this ].get = function( elem ) {
-				return elem.getAttribute( "value" ) === null ? "on" : elem.value;
+				return elem.getAttribute( "value" ) == null ? "on" : elem.value;
 			};
 		}
 	} );
@@ -13089,7 +13089,7 @@
 	    return [ a, c ];
 	  };
 	  function d3_number(x) {
-	    return x === null ? NaN : +x;
+	    return x == null ? NaN : +x;
 	  }
 	  function d3_numeric(x) {
 	    return !isNaN(x);
