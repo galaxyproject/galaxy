@@ -12,7 +12,7 @@ import { buildCollectionModal } from "./buildCollectionModal";
 import { createDatasetCollection } from "components/History/model/queries";
 
 // extend existing current history panel
-export default class HistoryPanelProxy {
+export class HistoryPanelProxy {
     constructor() {
         const Galaxy = getGalaxyInstance();
         Galaxy.currHistoryPanel = this;
