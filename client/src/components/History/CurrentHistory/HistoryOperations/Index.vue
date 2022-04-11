@@ -60,5 +60,7 @@ export default {
 // remove borders around buttons in menu
 .content-operations .btn-group .btn {
     border-color: transparent !important;
+    text-decoration: none;
+    border-radius: 0px;
 }
 </style>

@@ -1,11 +1,6 @@
 <template>
     <section v-if="hasSelection">
-        <b-dropdown
-            text="Selection"
-            size="sm"
-            variant="primary"
-            toggle-class="rounded-0 text-decoration-none"
-            data-description="selected content menu">
+        <b-dropdown text="Selection" size="sm" variant="primary" data-description="selected content menu">
             <template v-slot:button-content>
                 <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
                     All <b>{{ totalItemsInQuery }}</b> selected
@@ -78,7 +73,6 @@ import {
 import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
 import { checkFilter, getQueryDict } from "store/historyStore/historyItemsFiltering";
-import { iframeRedirect } from "components/plugins/legacyNavigation";
 
 export default {
     props: {

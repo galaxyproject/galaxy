@@ -3,7 +3,7 @@
         <b-button v-if="hasSelection" variant="link" @click="resetSelection" data-test-id="clear-btn">
             <span class="fa fa-fw fa-times" />
         </b-button>
-        <b-button v-else variant="link" class="text-decoration-none" @click="selectAll" data-test-id="select-all-btn">
+        <b-button v-else variant="link" @click="selectAll" data-test-id="select-all-btn">
             <span>Select All</span>
         </b-button>
     </b-button-group>
