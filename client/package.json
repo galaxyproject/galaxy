@@ -13,7 +13,8 @@
   "browserslist": [
     "defaults",
     "not ie <= 11",
-    "not op_mini all"
+    "not op_mini all",
+    "not baidu 7.12"
   ],
   "resolutions": {
     "**/chokidar": "3.5.3"
