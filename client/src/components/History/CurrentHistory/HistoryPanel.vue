@@ -57,7 +57,7 @@
                                     v-if="showSelection"
                                     :selection-size="selectionSize"
                                     @select-all="selectAllInCurrentQuery(payload, totalItemsInQuery)"
-                                    @clear-selection="resetSelection" />
+                                    @reset-selection="resetSelection" />
                             </template>
                         </HistoryOperations>
                     </section>
