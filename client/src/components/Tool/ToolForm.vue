@@ -15,7 +15,10 @@
                         :tool-name="toolName" />
                     <Webhook v-if="showSuccess" type="tool" :tool-id="jobDef.tool_id" />
                     <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
-                        <b-alert show variant="danger">
+                        <b-alert v-if="errorMessage" show variant="danger">
+                            {{ errorMessage }}
+                        </b-alert>
+                        <b-alert show variant="warning">
                             The server could not complete this request. Please verify your parameter settings, retry
                             submission and contact the Galaxy Team if this error persists. A transcript of the submitted
                             data is shown below.
@@ -147,6 +150,7 @@ export default {
             remapAllowed: false,
             errorTitle: null,
             errorContent: null,
+            errorMessage: "",
             messageShow: false,
             messageVariant: "",
             messageText: "",
@@ -317,6 +321,7 @@ export default {
                     document.querySelector(".center-panel").scrollTop = 0;
                 },
                 (e) => {
+                    this.errorMessage = e?.response?.data?.err_msg;
                     this.showExecuting = false;
                     let genericError = true;
                     const errorData = e && e.response && e.response.data && e.response.data.err_data;
@@ -330,7 +335,7 @@ export default {
                     if (genericError) {
                         this.showError = true;
                         this.errorTitle = "Job submission failed.";
-                        this.errorContent = this.jobDef;
+                        this.errorContent = jobDef;
                     }
                 }
             );

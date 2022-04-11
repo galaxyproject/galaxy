@@ -124,16 +124,20 @@ class DefaultToolAction(ToolAction):
                 # fetch dataset details for this input from the database.
                 if collection_info and collection_info.is_mapped_over(input_name):
                     action_tuples = collection_info.map_over_action_tuples(input_name)
-                    if not trans.app.security_agent.can_access_datasets(current_user_roles, action_tuples):
+                    if not trans.user_is_admin and not trans.app.security_agent.can_access_datasets(
+                        current_user_roles, action_tuples
+                    ):
                         raise ItemAccessibilityException(
                             "User does not have permission to use a dataset provided for input."
                         )
                     for action, role_id in action_tuples:
                         record_permission(action, role_id)
                 else:
-                    if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
+                    if not trans.user_is_admin and not trans.app.security_agent.can_access_dataset(
+                        current_user_roles, data.dataset
+                    ):
                         raise ItemAccessibilityException(
-                            f"User does not have permission to use a dataset ({data.id}) provided for input."
+                            f"User does not have permission to use dataset ({data.name}) provided for input."
                         )
                     permissions = trans.app.security_agent.get_permissions(data.dataset)
                     for action, roles in permissions.items():
@@ -213,7 +217,9 @@ class DefaultToolAction(ToolAction):
                     collection = value.collection
 
                 action_tuples = collection.dataset_action_tuples
-                if not trans.app.security_agent.can_access_datasets(current_user_roles, action_tuples):
+                if not trans.user_is_admin and not trans.app.security_agent.can_access_datasets(
+                    current_user_roles, action_tuples
+                ):
                     raise ItemAccessibilityException(
                         "User does not have permission to use a dataset provided for input."
                     )
