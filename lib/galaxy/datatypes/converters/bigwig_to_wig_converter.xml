@@ -86,6 +86,16 @@ Options:
    - end=N - if set, restict output to only that under end
    - udcDir=/dir/to/cache - place to put cache for remote bigBed/bigWigs
 
-  ]]></help>
-    <expand macro="citations" />
+    ]]></help>
+    <citations>
+        <citation type="bibtex">
+            @misc{githubKent,
+            author = {Kent, Jim},
+            year = {2021},
+            title = {bigwigtowig},
+            publisher = {GitHub},
+            journal = {GitHub repository},
+            url = {https://github.com/ucscGenomeBrowser/kent}}
+        </citation>
+    </citations>
 </tool>
