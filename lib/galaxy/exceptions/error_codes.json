@@ -7,7 +7,7 @@
    {
       "name": "NO_CONTENT_GENERIC",
       "code": 204001,
-      "message": "Galaxy has not content to associate with this request."
+      "message": "Galaxy has no content to associate with this request."
    },
    {
       "name": "USER_CANNOT_RUN_AS",

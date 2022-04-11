@@ -127,7 +127,6 @@ RESOLVE = {
     "shed_tool_config_file": "managed_config_dir",
     "shed_tool_data_path": "tool_data_path",
     "shed_tool_data_table_config": "managed_config_dir",
-    "short_term_storage_directory": "cache_dir",
     "tool_data_path": "root_dir",
     "tool_path": "root_dir",
     "tool_sheds_config_file": "config_dir",
