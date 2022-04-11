@@ -55,9 +55,7 @@
                                     @reset-selection="resetSelection" />
                                 <HistorySelectionStatus
                                     v-if="showSelection"
-                                    :has-filters="hasFilters"
                                     :selection-size="selectionSize"
-                                    :total-items-in-query="totalItemsInQuery"
                                     @select-all="selectAllInCurrentQuery(payload, totalItemsInQuery)"
                                     @clear-selection="resetSelection" />
                             </template>
