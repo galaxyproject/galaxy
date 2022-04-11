@@ -13,34 +13,33 @@
  */
 
 import { mapActions, mapGetters } from "vuex";
-import { History } from "components/History/model/History";
 
 export default {
     props: {
         user: { type: Object, required: true },
     },
     computed: {
-        ...mapGetters("betaHistory", ["currentHistoryId", "currentHistory", "histories", "userHistoriesLoading"]),
+        ...mapGetters("history", ["currentHistoryId", "currentHistory", "histories", "historiesLoading"]),
 
         currentHistoryModel() {
             if (this.currentHistory !== null) {
-                return new History(this.currentHistory);
+                return Object.assign({}, this.currentHistory);
             }
             return null;
         },
         historyModels() {
-            return this.histories.map((h) => new History(h));
+            return this.histories.map((h) => Object.assign({}, h));
         },
     },
     methods: {
-        ...mapActions("betaHistory", [
+        ...mapActions("history", [
             "loadHistoryById",
             "createNewHistory",
             "updateHistory",
             "deleteHistory",
             "setCurrentHistoryId",
             "setHistory",
-            "loadUserHistories",
+            "loadHistories",
             "secureHistory",
         ]),
 
@@ -53,7 +52,7 @@ export default {
         user: {
             immediate: true,
             handler() {
-                this.loadUserHistories();
+                this.loadHistories();
             },
         },
 
@@ -70,7 +69,7 @@ export default {
             // currently selected history object, should be a full object not just a summary
             currentHistory: this.currentHistoryModel,
             currentHistoryId: this.currentHistoryId,
-            userHistoriesLoading: this.userHistoriesLoading,
+            historiesLoading: this.historiesLoading,
 
             handlers: {
                 // Updates the history in the store without a trip to the server, in the event that a

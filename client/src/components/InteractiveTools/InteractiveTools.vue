@@ -62,14 +62,9 @@
 </template>
 
 <script>
-import { Services } from "./services";
-import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
+import { Services } from "./services";
 import UtcDate from "components/UtcDate";
-import { getGalaxyInstance } from "app";
-import BootstrapVue from "bootstrap-vue";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {
@@ -119,9 +114,6 @@ export default {
         },
         isActiveToolsListEmpty() {
             return this.activeInteractiveTools.length === 0;
-        },
-        currentHistory() {
-            return getGalaxyInstance().currHistoryPanel;
         },
     },
     created() {

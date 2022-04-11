@@ -1,9 +1,6 @@
 <template>
     <CurrentUser class="d-flex flex-column" v-slot="{ user }">
-        <UserHistories
-            v-if="user"
-            :user="user"
-            v-slot="{ currentHistory, histories, handlers, userHistoriesLoading: userHistoriesLoading }">
+        <UserHistories v-if="user" :user="user" v-slot="{ currentHistory, histories, handlers, historiesLoading }">
             <div v-if="currentHistory" id="current-history-panel" class="history-index">
                 <CurrentHistory
                     v-if="!breadcrumbs.length"
@@ -13,9 +10,9 @@
                     <template v-slot:navigation>
                         <HistoryNavigation
                             v-on="handlers"
-                            :histories="histories"
                             :history="currentHistory"
-                            :user-histories-loading="userHistoriesLoading"
+                            :histories="histories"
+                            :histories-loading="historiesLoading"
                             title="Histories" />
                     </template>
                 </CurrentHistory>

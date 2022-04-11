@@ -196,7 +196,7 @@ export default {
                 selection.elements = this.uris;
             }
             selection.dataType = this.dataType;
-            Galaxy.currHistoryPanel.buildCollection("rules", selection, true);
+            Galaxy.currHistoryPanel.buildCollection("rules", selection, true, true);
             this.$emit("dismiss");
         },
     },

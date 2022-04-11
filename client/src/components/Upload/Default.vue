@@ -60,17 +60,6 @@
                 {{ btnStopTitle }}
             </b-button>
             <b-button
-                ref="btnBuild"
-                class="ui-button-default"
-                id="btn-build"
-                @click="_eventSelect"
-                v-if="selectable"
-                :disabled="!enableBuild"
-                :title="btnSelectTitle"
-                :variant="enableBuild ? 'primary' : ''">
-                {{ btnSelectTitle }}
-            </b-button>
-            <b-button
                 ref="btnStart"
                 class="ui-button-default"
                 id="btn-start"
@@ -84,7 +73,7 @@
                 ref="btnCreate"
                 class="ui-button-default"
                 id="btn-new"
-                @click="_eventCreate(true)"
+                @click="_eventCreate()"
                 :title="btnCreateTitle"
                 :disabled="!enableSources">
                 <span class="fa fa-edit"></span>{{ btnCreateTitle }}
@@ -147,7 +136,6 @@ export default {
             uploadSize: 0,
             uploadCompleted: 0,
             enableReset: false,
-            enableBuild: false,
             enableStart: false,
             enableSources: false,
             btnLocalTitle: _l("Choose local files"),
@@ -155,7 +143,6 @@ export default {
             btnStartTitle: _l("Start"),
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),
-            btnSelectTitle: _l("Select"),
         };
     },
     created() {
@@ -226,18 +213,6 @@ export default {
         },
     },
     methods: {
-        _eventSelect: function () {
-            const models = this.getUploadedModels();
-            const asDict = models.map((model) => {
-                return {
-                    id: model.attributes.id, // model.id has datatype prefix
-                    src: model.src,
-                    hid: model.attributes.hid,
-                    name: model.attributes.name,
-                };
-            });
-            this.$emit("dismiss", asDict);
-        },
         _newUploadModelProps: function (index, file) {
             return {
                 id: index,
@@ -251,10 +226,9 @@ export default {
         },
 
         /** Success */
-        _eventSuccess: function (index, message) {
-            var hids = _.pluck(message["outputs"], "hid");
+        _eventSuccess: function (index) {
             var it = this.collection.get(index);
-            it.set({ percentage: 100, status: "success", hids: hids });
+            it.set({ percentage: 100, status: "success" });
             this._updateStateForSuccess(it);
         },
 

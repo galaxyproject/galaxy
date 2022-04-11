@@ -45,12 +45,11 @@
 </template>
 
 <script>
-import { History } from "components/History/model/History";
 import { mapActions, mapGetters } from "vuex";
 
 export default {
     props: {
-        history: { type: History, required: true },
+        history: { type: Object, required: true },
     },
     data() {
         return {
@@ -82,7 +81,7 @@ export default {
         },
     },
     methods: {
-        ...mapActions("betaHistory", ["copyHistory"]),
+        ...mapActions("history", ["copyHistory"]),
 
         async copy(close) {
             this.loading = true;

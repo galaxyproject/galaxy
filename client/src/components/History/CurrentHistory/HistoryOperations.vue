@@ -130,7 +130,6 @@
 </template>
 
 <script>
-import { History } from "components/History/model/History";
 import {
     hideSelectedContent,
     unhideSelectedContent,
@@ -140,14 +139,14 @@ import {
     unhideAllHiddenContent,
     deleteAllHiddenContent,
     purgeAllDeletedContent,
-} from "components/History/model";
+} from "components/History/model/crud";
 import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
 import { checkFilter, getQueryDict } from "store/historyStore/historyItemsFiltering";
 import { iframeRedirect } from "components/plugins/legacyNavigation";
 export default {
     props: {
-        history: { type: History, required: true },
+        history: { type: Object, required: true },
         filterText: { type: String, required: true },
         contentSelection: { type: Map, required: true },
         selectionSize: { type: Number, required: true },
@@ -242,8 +241,8 @@ export default {
         async buildCollectionFromRules() {
             await this.buildNewCollection("rules");
         },
-        async buildNewCollection(collectionTypeCode) {
-            const modalResult = await buildCollectionModal(collectionTypeCode, this.history.id, this.contentSelection);
+        async buildNewCollection(collectionType) {
+            const modalResult = await buildCollectionModal(collectionType, this.history.id, this.contentSelection);
             await createDatasetCollection(this.history, modalResult);
 
             // have to hide the source items if that was requested

@@ -70,7 +70,7 @@
                                     </b-alert>
                                 </div>
                             </div>
-                            <Listing v-else :items="payload" @scroll="onScroll">
+                            <Listing v-else :items="payload" :query-key="queryKey" @scroll="onScroll">
                                 <template v-slot:item="{ item }">
                                     <ContentItem
                                         v-if="!invisible[item.hid]"
@@ -103,7 +103,6 @@ import Vue from "vue";
 import { HistoryItemsProvider } from "components/providers/storeProviders";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
-import { History } from "components/History/model";
 import { deleteContent, updateContentFields } from "components/History/model/queries";
 import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
@@ -133,7 +132,7 @@ export default {
         HistorySelectionStatus,
     },
     props: {
-        history: { type: History, required: true },
+        history: { type: Object, required: true },
     },
     data() {
         return {

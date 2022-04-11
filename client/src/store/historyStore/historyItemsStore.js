@@ -6,8 +6,8 @@
 import { reverse } from "lodash";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
+import { mergeArray } from "./model/utilities";
 import { getFilters, getQueryDict, testFilters } from "./historyItemsFiltering";
-import { mergeArray } from "./utilities";
 
 const limit = 100;
 const queue = new LastQueue();
@@ -15,6 +15,7 @@ const queue = new LastQueue();
 const state = {
     items: {},
     itemKey: "hid",
+    latestCreateTime: new Date(),
     totalMatchesCount: undefined,
 };
 
@@ -35,9 +36,8 @@ const getters = {
             });
             return reverse(filtered);
         },
-    getTotalMatchesCount: (state) => () => {
-        return state.totalMatchesCount;
-    },
+    getLatestCreateTime: (state) => () => state.latestCreateTime,
+    getTotalMatchesCount: (state) => () => state.totalMatchesCount,
 };
 
 const getQueryString = (filterText) => {
@@ -48,7 +48,7 @@ const getQueryString = (filterText) => {
 };
 
 const actions = {
-    fetchHistoryItems: async ({ commit, dispatch }, { historyId, offset, filterText }) => {
+    fetchHistoryItems: async ({ commit, dispatch }, { historyId, filterText, offset }) => {
         dispatch("startHistoryChangedItems", { historyId: historyId });
         const queryString = getQueryString(filterText);
         const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
@@ -65,7 +65,18 @@ const actions = {
 
 const mutations = {
     saveHistoryItems: (state, { historyId, payload }) => {
+        // merges incoming payload into existing state
         mergeArray(historyId, payload, state.items, state.itemKey);
+
+        // keep track of latest create time for items
+        payload.forEach((item) => {
+            if (item.state == "ok") {
+                const itemCreateTime = new Date(item.create_time);
+                if (itemCreateTime > state.latestCreateTime) {
+                    state.latestCreateTime = itemCreateTime;
+                }
+            }
+        });
     },
     saveQueryStats: (state, { stats }) => {
         state.totalMatchesCount = stats.total_matches;

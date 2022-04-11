@@ -29,6 +29,7 @@ export default {
     props: {
         loading: { type: Boolean, default: false },
         items: { type: Array, default: null },
+        queryKey: { type: String, default: null },
     },
     data() {
         return {
@@ -40,6 +41,11 @@ export default {
         this.onScrollThrottle = throttle((event) => {
             this.onScroll(event);
         }, this.throttlePeriod);
+    },
+    watch: {
+        queryKey() {
+            this.$refs.listing.scrollToOffset(0);
+        },
     },
     methods: {
         onScrollHandler(event) {

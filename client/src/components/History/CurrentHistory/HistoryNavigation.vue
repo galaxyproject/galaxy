@@ -34,8 +34,8 @@
                     title="Show history options"
                     data-description="history options">
                     <b-dropdown-text>
-                        <div v-if="userHistoriesLoading">
-                            <b-spinner small v-if="userHistoriesLoading" />
+                        <div v-if="historiesLoading">
+                            <b-spinner small v-if="historiesLoading" />
                             <span>Fetching histories from server</span>
                         </div>
                         <span v-else>You have {{ histories.length }} histories.</span>
@@ -108,7 +108,7 @@
                         <span v-localize>Export Tool Citations</span>
                     </b-dropdown-item>
 
-                    <b-dropdown-item @click="backboneRoute(history.exportLink)" data-description="export to file">
+                    <b-dropdown-item @click="backboneRoute(exportLink)" data-description="export to file">
                         <Icon fixed-width icon="file-archive" class="mr-1" />
                         <span v-localize>Export History to File</span>
                     </b-dropdown-item>
@@ -160,7 +160,6 @@
 </template>
 
 <script>
-import { History } from "components/History/model";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { switchToLegacyHistoryPanel } from "components/History/adapters/betaToggle";
 import CopyHistoryModal from "components/History/Modals/CopyModal";
@@ -174,9 +173,14 @@ export default {
     },
     props: {
         histories: { type: Array, required: true },
-        history: { type: History, required: true },
-        title: { type: String, required: false, default: "Histories" },
-        userHistoriesLoading: { type: Boolean, required: false, default: false },
+        history: { type: Object, required: true },
+        title: { type: String, default: "Histories" },
+        historiesLoading: { type: Boolean, default: false },
+    },
+    computed: {
+        exportLink() {
+            return `histories/${this.history.id}/export`;
+        },
     },
     methods: {
         switchToLegacyHistoryPanel,

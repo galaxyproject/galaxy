@@ -1253,7 +1253,7 @@ export default {
                 } else {
                     const Galaxy = getGalaxyInstance();
                     const history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
-                    history.refresh();
+                    history.refresh && history.refresh();
                     this.oncreate();
                 }
             };

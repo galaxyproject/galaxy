@@ -104,13 +104,13 @@ export default {
         },
     },
     created() {
-        this.fetchHistories();
+        this.loadHistories();
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
         this.load();
     },
     methods: {
-        ...mapActions(["fetchHistories"]),
+        ...mapActions("history", ["loadHistories"]),
         load(concat = false) {
             this.loading = true;
             this.services
@@ -151,7 +151,7 @@ export default {
             const Galaxy = getGalaxyInstance();
             this.services
                 .setHistory(item.history_id)
-                .then((history) => {
+                .then(() => {
                     Galaxy.currHistoryPanel.loadCurrentHistory();
                 })
                 .catch((error) => {
