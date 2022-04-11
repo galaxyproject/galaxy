@@ -11,7 +11,9 @@
   },
   "license": "AFL-3.0",
   "browserslist": [
-    "defaults"
+    "defaults",
+    "not ie <= 11",
+    "not op_mini all"
   ],
   "resolutions": {
     "**/chokidar": "3.5.3"
