@@ -41,8 +41,9 @@
                             :has-matches="hasMatches(payload)"
                             @update:show-selection="setShowSelection"
                             @collapse-all="collapseAll">
-                            <template v-slot:selection-status>
+                            <template v-slot:operations>
                                 <HistorySelectionOperations
+                                    v-if="showSelection"
                                     :history="history"
                                     :filter-text="filterText"
                                     :content-selection="selectedItems"
@@ -113,13 +114,13 @@ import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
 import Listing from "components/History/Layout/Listing";
 import ToolHelpModal from "components/History/Modals/ToolHelpModal";
-import HistoryOperations from "./HistoryOperations";
+import HistoryOperations from "./HistoryOperations/Index";
 import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
 import HistoryFilters from "./HistoryFilters";
 import HistoryMessages from "./HistoryMessages";
-import HistorySelectionOperations from "./HistorySelectionOperations";
-import HistorySelectionStatus from "./HistorySelectionStatus";
+import HistorySelectionOperations from "./HistoryOperations/SelectionOperations";
+import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
 
 export default {
     components: {

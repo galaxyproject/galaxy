@@ -79,6 +79,7 @@ import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
 import { checkFilter, getQueryDict } from "store/historyStore/historyItemsFiltering";
 import { iframeRedirect } from "components/plugins/legacyNavigation";
+
 export default {
     props: {
         history: { type: Object, required: true },

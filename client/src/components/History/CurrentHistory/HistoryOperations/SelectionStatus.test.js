@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "jest/helpers";
-import HistorySelectionStatus from "./HistorySelectionStatus.vue";
+import HistorySelectionStatus from "./SelectionStatus.vue";
 
 const localVue = getLocalVue();
 
