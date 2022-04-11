@@ -81,23 +81,6 @@ module.exports = (env = {}, argv = {}) => {
                     type: "javascript/auto",
                 },
                 {
-                    test: /\.js$/,
-                    /*
-                     * Babel transpile excludes for:
-                     * - all node_modules except for handsontable, bootstrap-vue
-                     * - statically included libs (like old jquery plugins, etc.)
-                     */
-                    exclude: [/(node_modules\/(?!(handsontable|bootstrap-vue)\/))/, libsBase],
-                    loader: "babel-loader",
-                    options: {
-                        cacheDirectory: true,
-                        cacheCompression: false,
-                        presets: [["@babel/preset-env", { modules: false }]],
-                        plugins: ["transform-vue-template", "@babel/plugin-syntax-dynamic-import"],
-                        ignore: ["i18n.js", "utils/localization.js", "nls/*"],
-                    },
-                },
-                {
                     test: `${libsBase}/jquery.custom.js`,
                     loader: "expose-loader",
                     options: {
