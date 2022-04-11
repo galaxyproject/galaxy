@@ -23,7 +23,7 @@
                 </b-button>
             </b-button-group>
             <b-button-group v-if="showSelection">
-                <slot name="operations" />
+                <slot name="selection-operations" />
             </b-button-group>
             <DefaultOperations
                 v-else

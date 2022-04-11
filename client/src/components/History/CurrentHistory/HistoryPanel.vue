@@ -41,7 +41,7 @@
                             :has-matches="hasMatches(payload)"
                             @update:show-selection="setShowSelection"
                             @collapse-all="collapseAll">
-                            <template v-slot:operations>
+                            <template v-slot:selection-operations>
                                 <HistorySelectionOperations
                                     v-if="showSelection"
                                     :history="history"

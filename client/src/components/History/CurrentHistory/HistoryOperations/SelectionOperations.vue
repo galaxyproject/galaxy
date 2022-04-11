@@ -72,7 +72,7 @@ import {
 } from "components/History/model/crud";
 import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
-import { checkFilter, getQueryDict } from "store/historyStore/historyItemsFiltering";
+import { checkFilter, getQueryDict } from "store/historyStore/model/filtering";
 
 export default {
     props: {
