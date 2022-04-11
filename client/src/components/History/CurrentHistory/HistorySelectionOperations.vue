@@ -1,11 +1,10 @@
 <template>
-    <section class="w-100">
+    <section>
         <b-dropdown
             text="Selection"
             size="sm"
             variant="primary"
-            class="w-100"
-            toggle-class="text-decoration-none w-100"
+            toggle-class="rounded-0 text-decoration-none"
             data-description="selected content menu"
             :disabled="!hasSelection">
             <template v-slot:button-content>
@@ -110,6 +109,10 @@ export default {
         /** @returns {Boolean} */
         hasSelection() {
             return this.numSelected > 0;
+        },
+        /** @returns {Boolean} */
+        selectionMatchesQuery() {
+            return this.totalItemsInQuery === this.selectionSize;
         },
     },
     methods: {

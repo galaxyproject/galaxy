@@ -40,28 +40,30 @@
                             :expanded-count="expandedCount"
                             :has-matches="hasMatches(payload)"
                             @update:show-selection="setShowSelection"
-                            @collapse-all="collapseAll" />
-                        <HistorySelectionStatus
-                            v-if="showSelection"
-                            class="m-2"
-                            :has-filters="hasFilters"
-                            :selection-size="selectionSize"
-                            :total-items-in-query="totalItemsInQuery"
-                            @select-all="selectAllInCurrentQuery(payload, totalItemsInQuery)"
-                            @clear-selection="resetSelection">
-                            <template v-slot:selection-operations>
-                                <HistorySelectionOperations
-                                    :history="history"
-                                    :filter-text="filterText"
-                                    :content-selection="selectedItems"
+                            @collapse-all="collapseAll">
+                            <template v-slot:selection-status>
+                                <HistorySelectionStatus
+                                    v-if="showSelection"
+                                    :has-filters="hasFilters"
                                     :selection-size="selectionSize"
-                                    :is-query-selection="isQuerySelection"
                                     :total-items-in-query="totalItemsInQuery"
-                                    @update:content-selection="selectItems"
-                                    @hide-selection="onHideSelection"
-                                    @reset-selection="resetSelection" />
+                                    @select-all="selectAllInCurrentQuery(payload, totalItemsInQuery)"
+                                    @clear-selection="resetSelection">
+                                    <template v-slot:selection-operations>
+                                        <HistorySelectionOperations
+                                            :history="history"
+                                            :filter-text="filterText"
+                                            :content-selection="selectedItems"
+                                            :selection-size="selectionSize"
+                                            :is-query-selection="isQuerySelection"
+                                            :total-items-in-query="totalItemsInQuery"
+                                            @update:content-selection="selectItems"
+                                            @hide-selection="onHideSelection"
+                                            @reset-selection="resetSelection" />
+                                    </template>
+                                </HistorySelectionStatus>
                             </template>
-                        </HistorySelectionStatus>
+                        </HistoryOperations>
                     </section>
                     <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
                         <div>

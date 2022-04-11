@@ -1,25 +1,16 @@
 <template>
-    <div class="text-center">
-        <div v-if="canSelectAll || hasSelection">
-            <b-button-group size="sm" class="m-0 px-2 py-0 w-100">
-                <b-button
-                    v-if="!hasSelection"
-                    variant="secondary"
-                    class="w-100"
-                    disabled
-                    data-test-id="empty-selection">
-                    <div>No items selected</div>
-                </b-button>
-                <slot v-else name="selection-operations" />
-                <b-button v-if="hasSelection" @click="clearSelection" data-test-id="clear-btn">
-                    <span class="fa fa-fw fa-times" />
-                </b-button>
-                <b-button v-else @click="selectAllItemsInQuery" data-test-id="select-all-btn">
-                    <span class="fa fa-fw fa-check-double" />
-                </b-button>
-            </b-button-group>
-        </div>
-    </div>
+    <b-button-group v-if="canSelectAll || hasSelection" size="sm" class="text-primary">
+        <b-button v-if="!hasSelection" variant="link" disabled data-test-id="empty-selection">
+            <div>No items selected</div>
+        </b-button>
+        <slot v-else name="selection-operations" />
+        <b-button v-if="hasSelection" variant="link" @click="clearSelection" data-test-id="clear-btn">
+            <span class="fa fa-fw fa-times" />
+        </b-button>
+        <b-button v-else variant="link" @click="selectAllItemsInQuery" data-test-id="select-all-btn">
+            <span class="fa fa-fw fa-check-double" />
+        </b-button>
+    </b-button-group>
 </template>
 
 <script>

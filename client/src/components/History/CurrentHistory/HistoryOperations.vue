@@ -22,7 +22,8 @@
                     <Icon icon="compress" />
                 </b-button>
             </b-button-group>
-            <b-button-group>
+            <slot v-if="showSelection" name="selection-status" />
+            <b-button-group v-else>
                 <b-dropdown
                     no-caret
                     size="sm"
