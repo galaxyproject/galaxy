@@ -145,6 +145,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         trans: ProvidesUserContext,
         missing_tools=False,
         show_published=None,
+        show_shared=None,
         show_hidden=False,
         show_deleted=False,
         **kwd,
@@ -158,6 +159,10 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         :type   show_hidden:         boolean
         :param  show_deleted:        if True, show deleted workflows
         :type   show_deleted:        boolean
+        :param  show_shared:         Optional boolean to include shared workflows.
+                                     If unspecified this behavior depends on show_deleted/show_hidden.
+                                     Defaulting to false if show_hidden or show_deleted is true or else
+                                     false.
         :param  missing_tools:       if True, include a list of missing tools per workflow
         :type   missing_tools:       boolean
         """
@@ -165,6 +170,16 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         show_hidden = util.string_as_bool(show_hidden)
         show_deleted = util.string_as_bool(show_deleted)
         missing_tools = util.string_as_bool(missing_tools)
+        if show_shared is None:
+            show_shared = not show_hidden and not show_deleted
+        else:
+            show_shared = util.string_as_bool(show_shared)
+        if show_shared and show_deleted:
+            message = "show_shared and show_deleted cannot both be specified as true"
+            raise exceptions.RequestParameterInvalidException(message)
+        if show_shared and show_hidden:
+            message = "show_shared and show_hidden cannot both be specified as true"
+            raise exceptions.RequestParameterInvalidException(message)
         rval = []
         filter1 = model.StoredWorkflow.user == trans.user
         user = trans.user
@@ -190,31 +205,32 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             if user is not None:
                 item["show_in_tool_panel"] = wf.show_in_tool_panel(user_id=user.id)
             rval.append(item)
-        for wf_sa in (
-            trans.sa_session.query(model.StoredWorkflowUserShareAssociation)
-            .join(model.StoredWorkflowUserShareAssociation.stored_workflow)
-            .options(joinedload("stored_workflow").joinedload("annotations"))
-            .options(
-                joinedload("stored_workflow").joinedload("latest_workflow").undefer("step_count").lazyload("steps")
-            )
-            .options(joinedload("stored_workflow").joinedload("user"))
-            .options(joinedload("stored_workflow").joinedload("tags"))
-            .filter(model.StoredWorkflowUserShareAssociation.user == trans.user)
-            .filter(model.StoredWorkflow.table.c.deleted == false())
-            .order_by(desc(model.StoredWorkflow.update_time))
-            .all()
-        ):
-            item = wf_sa.stored_workflow.to_dict(value_mapper={"id": trans.security.encode_id})
-            encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
-            item["annotations"] = [x.annotation for x in wf_sa.stored_workflow.annotations]
-            item["url"] = url_for("workflow", id=encoded_id)
-            item["slug"] = wf_sa.stored_workflow.slug
-            item["owner"] = wf_sa.stored_workflow.user.username
-            item["number_of_steps"] = wf_sa.stored_workflow.latest_workflow.step_count
-            item["show_in_tool_panel"] = False
-            if user is not None:
-                item["show_in_tool_panel"] = wf_sa.stored_workflow.show_in_tool_panel(user_id=user.id)
-            rval.append(item)
+        if show_shared:
+            for wf_sa in (
+                trans.sa_session.query(model.StoredWorkflowUserShareAssociation)
+                .join(model.StoredWorkflowUserShareAssociation.stored_workflow)
+                .options(joinedload("stored_workflow").joinedload("annotations"))
+                .options(
+                    joinedload("stored_workflow").joinedload("latest_workflow").undefer("step_count").lazyload("steps")
+                )
+                .options(joinedload("stored_workflow").joinedload("user"))
+                .options(joinedload("stored_workflow").joinedload("tags"))
+                .filter(model.StoredWorkflowUserShareAssociation.user == trans.user)
+                .filter(model.StoredWorkflow.table.c.deleted == false())
+                .order_by(desc(model.StoredWorkflow.update_time))
+                .all()
+            ):
+                item = wf_sa.stored_workflow.to_dict(value_mapper={"id": trans.security.encode_id})
+                encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
+                item["annotations"] = [x.annotation for x in wf_sa.stored_workflow.annotations]
+                item["url"] = url_for("workflow", id=encoded_id)
+                item["slug"] = wf_sa.stored_workflow.slug
+                item["owner"] = wf_sa.stored_workflow.user.username
+                item["number_of_steps"] = wf_sa.stored_workflow.latest_workflow.step_count
+                item["show_in_tool_panel"] = False
+                if user is not None:
+                    item["show_in_tool_panel"] = wf_sa.stored_workflow.show_in_tool_panel(user_id=user.id)
+                rval.append(item)
         if missing_tools:
             workflows_missing_tools = []
             workflows = []

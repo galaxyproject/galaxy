@@ -327,6 +327,22 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         workflow_index = self._get("workflows?show_hidden=false").json()
         assert not [w for w in workflow_index if w["id"] == workflow_id]
 
+    def test_index_parameter_invalid_combinations(self):
+        # these can all be called by themselves and return 200...
+        response = self._get("workflows?show_hidden=true")
+        self._assert_status_code_is(response, 200)
+        response = self._get("workflows?show_deleted=true")
+        self._assert_status_code_is(response, 200)
+        response = self._get("workflows?show_shared=true")
+        self._assert_status_code_is(response, 200)
+        # but showing shared workflows along with deleted or hidden results in an error
+        response = self._get("workflows?show_hidden=true&show_shared=true")
+        self._assert_status_code_is(response, 400)
+        self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
+        response = self._get("workflows?show_deleted=true&show_shared=true")
+        self._assert_status_code_is(response, 400)
+        self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
+
     def test_upload(self):
         self.__test_upload(use_deprecated_route=False)
 
