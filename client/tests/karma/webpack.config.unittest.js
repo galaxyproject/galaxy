@@ -31,15 +31,5 @@ module.exports = (env, argv) => {
 
     wpConfig.module = merge.merge(wpConfig.module, ignoreAssetLoaders);
 
-    // Set exclude for babel-loader to completely ignore *all* node-modules,
-    // without our exceptions to support IE as in parent webpack config.
-
-    wpConfig.module.rules = wpConfig.module.rules.map((rule) => {
-        if (rule.loader == "babel-loader") {
-            rule.exclude = [/(node_modules\/)/];
-        }
-        return rule;
-    });
-
     return wpConfig;
 };
