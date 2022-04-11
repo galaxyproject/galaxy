@@ -256,7 +256,7 @@ def metadata_contains_only_kombu_tables(metadata: MetaData) -> bool:
     Return True if metadata contains only kombu-related tables.
     (ref: https://github.com/galaxyproject/galaxy/issues/13689)
     """
-    return all(table.startswith("kombu_") or table.endswith("_sequence") for table in metadata.tables.keys())
+    return all(table.startswith("kombu_") or table.startswith("sqlite_") for table in metadata.tables.keys())
 
 
 def verify_databases_via_script(
