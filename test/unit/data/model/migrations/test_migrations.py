@@ -219,7 +219,6 @@ class TestDatabaseStateCache:
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
                 assert DatabaseStateCache(engine).is_database_empty()
-                assert not DatabaseStateCache(engine).contains_only_kombu_tables()
                 with engine.connect() as conn:
                     metadata.create_all(bind=conn)
                 assert not DatabaseStateCache(engine).is_database_empty()
