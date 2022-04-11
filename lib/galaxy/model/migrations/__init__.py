@@ -253,10 +253,10 @@ class DatabaseStateCache:
 
 def metadata_contains_only_kombu_tables(metadata: MetaData) -> bool:
     """
-    Return True if metadata contains exactly 2 tables: kombu_message and kombu_queue.
+    Return True if metadata contains only kombu-related tables.
     (ref: https://github.com/galaxyproject/galaxy/issues/13689)
     """
-    return len(metadata.tables) == 2 and "kombu_message" in metadata.tables and "kombu_queue" in metadata.tables
+    return all(table.startswith("kombu_") or table.startswith("sqlite_") for table in metadata.tables.keys())
 
 
 def verify_databases_via_script(
