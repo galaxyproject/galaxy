@@ -42,26 +42,23 @@
                             @update:show-selection="setShowSelection"
                             @collapse-all="collapseAll">
                             <template v-slot:selection-status>
+                                <HistorySelectionOperations
+                                    :history="history"
+                                    :filter-text="filterText"
+                                    :content-selection="selectedItems"
+                                    :selection-size="selectionSize"
+                                    :is-query-selection="isQuerySelection"
+                                    :total-items-in-query="totalItemsInQuery"
+                                    @update:content-selection="selectItems"
+                                    @hide-selection="onHideSelection"
+                                    @reset-selection="resetSelection" />
                                 <HistorySelectionStatus
                                     v-if="showSelection"
                                     :has-filters="hasFilters"
                                     :selection-size="selectionSize"
                                     :total-items-in-query="totalItemsInQuery"
                                     @select-all="selectAllInCurrentQuery(payload, totalItemsInQuery)"
-                                    @clear-selection="resetSelection">
-                                    <template v-slot:selection-operations>
-                                        <HistorySelectionOperations
-                                            :history="history"
-                                            :filter-text="filterText"
-                                            :content-selection="selectedItems"
-                                            :selection-size="selectionSize"
-                                            :is-query-selection="isQuerySelection"
-                                            :total-items-in-query="totalItemsInQuery"
-                                            @update:content-selection="selectItems"
-                                            @hide-selection="onHideSelection"
-                                            @reset-selection="resetSelection" />
-                                    </template>
-                                </HistorySelectionStatus>
+                                    @clear-selection="resetSelection" />
                             </template>
                         </HistoryOperations>
                     </section>

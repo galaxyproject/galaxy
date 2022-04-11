@@ -1,12 +1,11 @@
 <template>
-    <section>
+    <section v-if="hasSelection">
         <b-dropdown
             text="Selection"
             size="sm"
             variant="primary"
             toggle-class="rounded-0 text-decoration-none"
-            data-description="selected content menu"
-            :disabled="!hasSelection">
+            data-description="selected content menu">
             <template v-slot:button-content>
                 <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
                     All <b>{{ totalItemsInQuery }}</b> selected
