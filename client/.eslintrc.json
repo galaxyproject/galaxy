@@ -12,10 +12,6 @@
         "node": true,
         "jest": true
     },
-    "parserOptions": {
-        "parser": "@babel/eslint-parser",
-        "babelOptions": { "configFile": "./babel.config.json" }
-    },
     "rules": {
         // Standard rules
         "no-console": "off",
