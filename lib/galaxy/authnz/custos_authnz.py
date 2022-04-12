@@ -262,9 +262,10 @@ class CustosAuthnz(IdentityProvider):
 
         params = {'client_secret': client_secret,
                   'authorization_response': trans.request.url,
-                  'headers': {
-                            "Authorization": f"Basic {util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))}"
-                             },  # for custos
+                  'headers':
+                      {
+                          "Authorization": f"Basic {util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))}"
+                      },  # for custos
                   'verify': self._get_verify_param()
                   }
         if self.config["pkce_support"]:

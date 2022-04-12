@@ -50,7 +50,6 @@ def generate_code_verifier(length: int = 128) -> str:
         raise ValueError(msg)
     code_verifier = secrets.token_urlsafe(96)[:length]
     return code_verifier
-    
 
 
 def generate_pkce_pair(code_verifier_length: int = 128) -> Tuple[str, str]:
@@ -77,7 +76,7 @@ def generate_pkce_pair(code_verifier_length: int = 128) -> Tuple[str, str]:
     code_challenge = get_code_challenge(code_verifier)
     return code_verifier, code_challenge
 
-    
+
 def get_code_challenge(code_verifier: str) -> str:
     """Return the PKCE-compliant code challenge for a given verifier.
     Parameters
@@ -101,5 +100,3 @@ def get_code_challenge(code_verifier: str) -> str:
     encoded = base64.urlsafe_b64encode(hashed)
     code_challenge = encoded.decode('ascii')[:-1]
     return code_challenge
-
-
