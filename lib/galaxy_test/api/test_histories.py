@@ -93,7 +93,7 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         assert index_response[1]["id"] == slightly_older_history_id
 
     def test_index_query(self):
-        expected_history_name = "TestHistoryThatMatchQuery"
+        expected_history_name = f"TestHistoryThatMatchQuery_{uuid4()}"
         self._create_history(expected_history_name)["id"]
         self._create_history("TestHistoryThatDoesNotMatchQuery")
         query = f"?q=name&qv={expected_history_name}"
