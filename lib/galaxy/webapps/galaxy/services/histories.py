@@ -127,7 +127,7 @@ class HistoriesService(ServiceBase):
             filters += [model.History.user == current_user]
         # and any sent in from the query string
         filters += self.filters.parse_filters(filter_params)
-        order_by = self.build_order_by(self.manager, filter_query_params.order or DEFAULT_ORDER_BY)
+        order_by = self._build_order_by(filter_query_params.order)
 
         histories = self.manager.list(
             filters=filters, order_by=order_by, limit=filter_query_params.limit, offset=filter_query_params.offset
@@ -349,7 +349,7 @@ class HistoriesService(ServiceBase):
         """
         current_user = trans.user
         filters = self.filters.parse_query_filters(filter_query_params)
-        order_by = self.build_order_by(self.manager, filter_query_params.order or DEFAULT_ORDER_BY)
+        order_by = self._build_order_by(filter_query_params.order)
         histories = self.manager.list_shared_with(
             current_user,
             filters=filters,
@@ -373,7 +373,7 @@ class HistoriesService(ServiceBase):
         Return all histories that are published. The results can be filtered.
         """
         filters = self.filters.parse_query_filters(filter_query_params)
-        order_by = self.build_order_by(self.manager, filter_query_params.order or DEFAULT_ORDER_BY)
+        order_by = self._build_order_by(filter_query_params.order)
         histories = self.manager.list_published(
             filters=filters,
             order_by=order_by,
@@ -552,3 +552,6 @@ class HistoriesService(ServiceBase):
             history, user=trans.user, trans=trans, **serialization_params.dict()
         )
         return serialized_history
+
+    def _build_order_by(self, order: Optional[str]):
+        return self.build_order_by(self.manager, order or DEFAULT_ORDER_BY)
