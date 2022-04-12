@@ -17,6 +17,7 @@ class HistorySharingTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_sharing_valid_by_id(self):
+        self.use_legacy_history()
         user1_email, user2_email, history_id = self.setup_two_users_with_one_shared_history(share_by_id=True)
         self.submit_login(user2_email, retries=VALID_LOGIN_RETRIES)
         response = self.api_get(f"histories/{history_id}", raw=True)

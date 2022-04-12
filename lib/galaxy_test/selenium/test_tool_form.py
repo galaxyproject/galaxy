@@ -89,6 +89,7 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
     @selenium_test
     def test_rerun(self):
+        self.use_legacy_history()
         self._run_environment_test_tool()
         self.history_panel_wait_for_hid_ok(1)
         self.hda_click_primary_action_button(1, "rerun")

@@ -64,6 +64,7 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
     @selenium_test
     def test_upload_list(self):
+        self.use_legacy_history()
         self.upload_list([self.get_filename("1.tabular")], name="Test List")
         self.history_panel_wait_for_hid_ok(2)
         # Make sure modals disappeared - both List creator (TODO: upload).
@@ -76,6 +77,7 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
     @selenium_test
     def test_upload_pair(self):
+        self.use_legacy_history()
         self.upload_list([self.get_filename("1.tabular"), self.get_filename("2.tabular")], name="Test Pair")
         self.history_panel_wait_for_hid_ok(3)
         # Make sure modals disappeared - both collection creator (TODO: upload).
@@ -105,6 +107,7 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
     @selenium_test
     def test_upload_paired_list(self):
+        self.use_legacy_history()
         self.upload_paired_list(
             [self.get_filename("1.tabular"), self.get_filename("2.tabular")], name="Test Paired List"
         )

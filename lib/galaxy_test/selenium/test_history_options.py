@@ -9,6 +9,7 @@ class HistoryOptionsTestCase(SeleniumTestCase):
     def test_options(self):
         self.register()
         self.perform_upload(self.get_filename("1.txt"))
+        self.use_legacy_history()
         self.click_history_options()
 
         menu_selector = self.navigation.history_panel.selectors.options_menu
