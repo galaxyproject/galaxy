@@ -6,8 +6,7 @@
             variant="link"
             class="rounded-0"
             toggle-class="text-decoration-none rounded-0"
-            data-description="history action menu"
-            :disabled="!hasMatches">
+            data-description="history action menu">
             <template v-slot:button-content>
                 <Icon icon="cog" />
             </template>
@@ -49,7 +48,6 @@ export default {
     props: {
         history: { type: Object, required: true },
         showSelection: { type: Boolean, required: true },
-        hasMatches: { type: Boolean, required: true },
         expandedCount: { type: Number, required: false, default: 0 },
     },
     methods: {

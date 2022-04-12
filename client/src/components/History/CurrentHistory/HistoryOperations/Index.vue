@@ -29,7 +29,6 @@
                 v-else
                 :history="history"
                 :show-selection="showSelection"
-                :has-matches="hasMatches"
                 :expanded-count="expandedCount" />
         </nav>
     </section>
