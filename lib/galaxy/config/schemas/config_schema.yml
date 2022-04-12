@@ -1357,7 +1357,7 @@ mapping:
 
       beta_history_default_on:
         type: bool
-        default: false
+        default: true
         required: false
         desc: |
           Server-wide default selection of the 'beta' history during the
