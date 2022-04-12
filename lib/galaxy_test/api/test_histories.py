@@ -92,6 +92,15 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         assert index_response[0]["id"] == newer_history_id
         assert index_response[1]["id"] == slightly_older_history_id
 
+    def test_index_query(self):
+        expected_history_name = "TestHistoryThatMatchQuery"
+        self._create_history(expected_history_name)["id"]
+        self._create_history("TestHistoryThatDoesNotMatchQuery")
+        query = f"?q=name&qv={expected_history_name}"
+        index_response = self._get(f"histories{query}").json()
+        assert len(index_response) == 1
+        assert index_response[0]["name"] == expected_history_name
+
     def test_delete(self):
         # Setup a history and ensure it is in the index
         history_id = self._create_history("TestHistoryForDelete")["id"]
