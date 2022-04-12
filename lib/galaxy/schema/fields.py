@@ -1,5 +1,4 @@
 import re
-from typing import Optional
 
 from pydantic import Field
 
@@ -90,17 +89,4 @@ def ModelClassField(class_name: str) -> str:
         title="Model class",
         description="The name of the database model class.",
         const=True,  # Make this field constant
-    )
-
-
-def OrderParamField(default_order: str) -> Optional[str]:
-    return Field(
-        default=default_order,
-        title="Order",
-        description=(
-            "String containing one of the valid ordering attributes followed (optionally) "
-            "by '-asc' or '-dsc' for ascending and descending order respectively. "
-            "Orders can be stacked as a comma-separated list of values."
-        ),
-        example="name-dsc,create_time",
     )
