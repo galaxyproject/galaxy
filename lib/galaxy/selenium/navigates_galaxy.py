@@ -1409,6 +1409,12 @@ class NavigatesGalaxy(HasDriver):
             option_component = option_label_or_component
             option_component.wait_for_and_click()
 
+    def use_legacy_history(self):
+        if self.is_beta_history():
+            self.components.history_panel.histories_operation_menu.wait_for_and_click()
+            self.components.history_panel.options_use_legacy_history.wait_for_and_click()
+            self.components.history_panel.legacy.wait_for_present()
+
     def use_beta_history(self):
         if not self.is_beta_history():
             self.click_history_option(self.components.history_panel.options_use_beta_history)

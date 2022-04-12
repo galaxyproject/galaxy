@@ -13,6 +13,7 @@ from .framework import (
 class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_upload_simplest(self):
+        self.use_legacy_history()
         self.perform_upload(self.get_filename("1.sam"))
 
         self.history_panel_wait_for_hid_ok(1)
