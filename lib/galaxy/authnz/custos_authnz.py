@@ -23,8 +23,8 @@ from galaxy.model import (
     User,
 )
 from galaxy.model.orm.util import add_object_to_object_session
-from ..authnz import IdentityProvider
 from . import pkce_utils
+from ..authnz import IdentityProvider
 
 log = logging.getLogger(__name__)
 STATE_COOKIE_NAME = "galaxy-oidc-state"
@@ -72,8 +72,8 @@ class CustosAuthnz(IdentityProvider):
             extra_params["idphint"] = idphint
         if self.config["pkce_support"]:
             code_verifier, code_challenge = pkce_utils.generate_pkce_pair(96)
-            extra_params['code_challenge'] = code_challenge
-            extra_params['code_challenge_method'] = 'S256'
+            extra_params["code_challenge"] = code_challenge
+            extra_params["code_challenge_method"] = "S256"
             trans.set_cookie(value=code_verifier, name=VERIFIER_COOKIE_NAME)
         if "extra_params" in self.config:
             extra_params.update(self.config["extra_params"])
@@ -260,22 +260,19 @@ class CustosAuthnz(IdentityProvider):
         token_endpoint = self.config["token_endpoint"]
         clientIdAndSec = f"{self.config['client_id']}:{self.config['client_secret']}"  # for custos
 
-        params = {'client_secret': client_secret,
-                  'authorization_response': trans.request.url,
-                  'headers':
-                      {
-                          "Authorization": f"Basic {util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))}"
-                      },  # for custos
-                  'verify': self._get_verify_param()
-                  }
+        params = {
+            "client_secret": client_secret,
+            "authorization_response": trans.request.url,
+            "headers": {
+                "Authorization": f"Basic {util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))}"
+            },  # for custos
+            "verify": self._get_verify_param(),
+        }
         if self.config["pkce_support"]:
             code_verifier = trans.get_cookie(name=VERIFIER_COOKIE_NAME)
-            trans.set_cookie('', name=VERIFIER_COOKIE_NAME, age=-1)
-            params['code_verifier'] = code_verifier
-        return oauth2_session.fetch_token(
-            token_endpoint,
-            **params
-        )
+            trans.set_cookie("", name=VERIFIER_COOKIE_NAME, age=-1)
+            params["code_verifier"] = code_verifier
+        return oauth2_session.fetch_token(token_endpoint, **params)
 
     def _get_userinfo(self, oauth2_session):
         userinfo_endpoint = self.config["userinfo_endpoint"]

@@ -17,7 +17,10 @@ import jwt
 import requests
 
 from galaxy.app_unittest_utils.galaxy_mock import MockTrans
-from galaxy.authnz import custos_authnz, pkce_utils
+from galaxy.authnz import (
+    custos_authnz,
+    pkce_utils,
+)
 from galaxy.model import (
     CustosAuthnzToken,
     User,
