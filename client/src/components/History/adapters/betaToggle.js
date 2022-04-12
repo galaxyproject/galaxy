@@ -4,7 +4,7 @@ export const shouldUseBetaHistory = (instanceDefault) => {
     // If there's a value set, respect it.  Otherwise get instance default from config.
     const userPrefBetaHistory = sessionStorage.getItem(USE_BETA_HISTORY_STORAGE_KEY);
     if (userPrefBetaHistory != null) {
-        return userPrefBetaHistory === 1;
+        return userPrefBetaHistory === "1";
     } else {
         return instanceDefault;
     }
