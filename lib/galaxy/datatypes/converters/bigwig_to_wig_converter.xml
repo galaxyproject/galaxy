@@ -1,12 +1,8 @@
-<tool id="bigwigtowig" name="bigWigToWig" version="@TOOL_VERSION@+galaxy@SUFFIX_VERSION@" profile="20.01">
+<tool id="bigwigtowig" name="bigWigToWig" version="377+galaxy0" profile="20.01">
     <description>Convert bigWig to wig</description>
-    <xml name="requirements">
-        <token name="@TOOL_VERSION@">377</token>
-        <token name="@SUFFIX_VERSION@">0</token>
-        <requirements>
-            <requirement type="package" version="@TOOL_VERSION@">ucsc-bigwigtowig</requirement>
-        </requirements>
-    </xml>
+    <requirements>
+        <requirement type="package" version="@TOOL_VERSION@">ucsc-bigwigtowig</requirement>
+    </requirements>
     <command detect_errors="exit_code"><![CDATA[
         bigWigToWig '${bigwig_input}'
         #if $chrom
@@ -34,7 +30,7 @@
             <validator type="regex">[A-Za-z0-9 -_+]+</validator>
         </param>
         <param argument="-start" type="integer" min="0" optional="true" label="Restrict output to only that over start" help="Optional parameter. If set, restrict output to only that over start" />
-        <param argument="-end" wig_to_bigwig.xmltype="integer" min="0" optional="true" label="Restict output to only that under end" help="Optional parameter. If set, restict output to only that under end" />
+        <param argument="-end" type="integer" min="0" optional="true" label="Restict output to only that under end" help="Optional parameter. If set, restict output to only that under end" />
     </inputs>
     <outputs>
         <data name="wig_output" format="wig" from_work_dir="output.wig" label="${tool.name} on ${on_string}: wig"/>
