@@ -159,6 +159,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def setup_shared_state(self):
+        self.use_legacy_history()
         tag1 = self._get_random_name(len=5)
         tag2 = self._get_random_name(len=5)
         tag3 = self._get_random_name(len=5)

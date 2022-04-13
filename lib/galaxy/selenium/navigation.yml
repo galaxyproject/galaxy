@@ -228,6 +228,7 @@ history_panel:
 
   selectors:
     beta: '.history-index'
+    legacy: '.list-panel'
     _: '#current-history-panel'
     search: '#current-history-panel input.search-query'
     refresh_button: '.history-refresh-button'
@@ -273,9 +274,7 @@ history_panel:
     options_use_beta_history:
       type: xpath
       selector: '//a[text()="Use Beta History Panel"]'
-    options_use_legacy_history:
-      type: xpath
-      selector: '//button[contains(span, "Return to legacy history panel")]'
+    options_use_legacy_history: 'a[data-description="switch to legacy history view"]'
     
     collection_menu_button: '.collection-menu'
     collection_menu_edit_attributes: 

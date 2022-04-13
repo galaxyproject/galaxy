@@ -1391,6 +1391,15 @@ mapping:
           If this is null (the default), a simple configuration containing
           just Dockstore will be used.
 
+      use_legacy_history:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Server-wide default selection to use the legacy history during the
+          transition period, after which this option will disappear.  Users will
+          remain able to swap back and forth per their preference.
+
       user_preferences_extra_conf_path:
         type: str
         default: 'user_preferences_extra_conf.yml'
