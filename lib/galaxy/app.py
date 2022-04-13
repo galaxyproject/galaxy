@@ -268,8 +268,9 @@ class ConfiguresGalaxyMixin:
         self.container_finder = containers.ContainerFinder(app_info, mulled_resolution_cache=mulled_resolution_cache)
         self._set_enabled_container_types()
         index_help = getattr(self.config, "index_tool_help", True)
-        self.toolbox_search = ToolBoxSearch(
-            self.toolbox, index_dir=self.config.tool_search_index_dir, index_help=index_help
+        self.toolbox_search = self._register_singleton(
+            ToolBoxSearch,
+            ToolBoxSearch(self.toolbox, index_dir=self.config.tool_search_index_dir, index_help=index_help),
         )
 
     def reindex_tool_search(self):

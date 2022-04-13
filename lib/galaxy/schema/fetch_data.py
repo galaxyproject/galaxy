@@ -1,3 +1,4 @@
+import json
 from enum import Enum
 from typing import (
     List,
@@ -9,6 +10,7 @@ from pydantic import (
     BaseModel,
     Extra,
     Field,
+    validator,
 )
 from typing_extensions import (
     Annotated,
@@ -246,8 +248,14 @@ class FetchDataPayload(FetchBaseModel):
             HdcaDataItemsFromTarget,
             FtpImportTarget,
         ]
-    ] = []
+    ]
 
     class Config:
         # file payloads are just tacked on, so we need to allow everything
         extra = Extra.allow
+
+    @validator("targets", pre=True)
+    def targets_string_to_json(cls, v):
+        if isinstance(v, str):
+            return json.loads(v)
+        return v

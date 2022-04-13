@@ -1,3 +1,6 @@
+from copy import deepcopy
+from json import dumps
+
 from galaxy.schema.fetch_data import (
     FetchDataPayload,
     FileDataElement,
@@ -59,7 +62,6 @@ nested_collection_payload = {
 }
 
 ftp_hdca_target = {
-    "destination": {"type": "hdca"},
     "elements_from": "directory",
     "src": "ftp_import",
     "ftp_path": "subdir",
@@ -105,3 +107,9 @@ def test_ftp_hdca_target():
 
 def test_recursive_archive():
     FetchDataPayload(**recursive_archive_payload)
+
+
+def test_recursive_archive_form_like_data():
+    payload = deepcopy(recursive_archive_payload)
+    payload["targets"] = dumps(payload["targets"])
+    FetchDataPayload(**payload)

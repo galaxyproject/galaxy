@@ -1,6 +1,7 @@
 import ipaddress
 import logging
 import os
+import shutil
 import socket
 import tempfile
 from dataclasses import dataclass
@@ -17,6 +18,7 @@ from typing import (
 from urllib.parse import urlparse
 
 from sqlalchemy.orm import joinedload
+from starlette.datastructures import UploadFile
 from webob.compat import cgi_FieldStorage
 
 from galaxy import util
@@ -144,6 +146,13 @@ def persist_uploads(params, trans):
                 local_filename = util.mkstemp_ln(f.file.name, "upload_file_data_")
                 f.file.close()
                 upload_dataset["file_data"] = dict(filename=f.filename, local_filename=local_filename)
+            elif isinstance(f, UploadFile):
+                with tempfile.NamedTemporaryFile(
+                    dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
+                ) as dest:
+                    shutil.copyfileobj(f.file, dest)
+                f.file.close()
+                upload_dataset["file_data"] = dict(filename=f.filename, local_filename=dest.name)
             elif type(f) == dict and "local_filename" not in f:
                 raise Exception("Uploaded file was encoded in a way not understood by Galaxy.")
             if (
