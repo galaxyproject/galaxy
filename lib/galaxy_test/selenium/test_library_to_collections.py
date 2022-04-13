@@ -70,6 +70,7 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
             assert self.history_panel_name_element().text == random_name
 
     def list_of_pairs_export(self, is_new_history=False):
+        self.use_legacy_history()
         history_name = self._get_random_name()
         self.prepare_library_for_data_export(
             ["bam_from_sam.bam", "asian_chars_1.txt", "1.bam", "1.bed"], history_name if is_new_history else None
