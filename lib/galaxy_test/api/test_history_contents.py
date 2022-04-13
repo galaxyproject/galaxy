@@ -803,6 +803,10 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert len(contents_response) == expected_num_datasets
         contents_response = self._get(f"histories/{history_id}/contents?types=dataset_collection").json()
         assert len(contents_response) == expected_num_collections
+        contents_response = self._get(f"histories/{history_id}/contents?types=dataset,dataset_collection").json()
+        assert len(contents_response) == expected_num_datasets + expected_num_collections
+        contents_response = self._get(f"histories/{history_id}/contents?types=dataset&types=dataset_collection").json()
+        assert len(contents_response) == expected_num_datasets + expected_num_collections
 
     def test_elements_datatypes_field(self):
         history_id = self.dataset_populator.new_history()
