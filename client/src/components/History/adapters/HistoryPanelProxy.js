@@ -48,13 +48,6 @@ export class HistoryPanelProxy {
             },
         };
 
-        /*/ fetch to update the quota meter adding 'current' for any anon-user's id
-        Galaxy.listenTo(this.historyView, "history-size-change", () => {
-            Galaxy.user.fetch({
-                url: `${Galaxy.user.urlRoot()}/${Galaxy.user.id || "current"}`,
-            });
-        });*/
-
         // watch the store, update history id
         store.watch(
             (state, getters) => getters["history/currentHistory"],

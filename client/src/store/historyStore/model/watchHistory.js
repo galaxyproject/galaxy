@@ -8,6 +8,7 @@
 import store from "store";
 import { urlData } from "utils/url";
 import { getCurrentHistoryFromServer } from "./queries";
+import { getGalaxyInstance } from "app";
 
 const limit = 1000;
 const throttlePeriod = 3000;
@@ -42,11 +43,17 @@ export function watchHistory() {
                 if (payload && payload.length == limit) {
                     console.debug(`Reached limit of monitored changes (limit=${limit}).`);
                 }
-                // passes changed items to attached stores
+                // pass changed items to attached stores
                 store.commit("history/setHistory", history);
                 store.commit("saveDatasets", { payload });
                 store.commit("saveHistoryItems", { historyId, payload });
                 store.commit("saveCollectionObjects", { payload });
+
+                // trigger changes in legacy handler
+                const Galaxy = getGalaxyInstance();
+                Galaxy.user.fetch({
+                    url: `${Galaxy.user.urlRoot()}/${Galaxy.user.id || "current"}`,
+                });
             });
         }
         setTimeout(() => {
