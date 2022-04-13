@@ -37,6 +37,7 @@ from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHistoryContentItem,
     AnyJobStateSummary,
+    AsyncFile,
     DatasetAssociationRoles,
     DeleteHistoryContentPayload,
     DeleteHistoryContentResult,
@@ -474,6 +475,33 @@ class FastAPIHistoryContents:
         """
         archive = self.service.get_dataset_collection_archive_for_download(trans, id)
         return StreamingResponse(archive.get_iterator(), headers=archive.get_headers())
+
+    @router.post(
+        "/api/histories/{history_id}/contents/dataset_collections/{id}/prepare_download",
+        summary="Prepare an short term storage object that the collection will be downloaded to.",
+        responses={
+            200: {
+                "description": "Short term storage reference for async monitoring of this download.",
+            },
+            501: {"description": "Required asynchronous tasks required for this operation not available."},
+        },
+    )
+    @router.post(
+        "/api/dataset_collections/{id}/prepare_download",
+        summary="Prepare an short term storage object that the collection will be downloaded to.",
+        tags=["dataset collections"],
+    )
+    def prepare_collection_download(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: EncodedDatabaseIdField = HistoryHDCAIDPathParam,
+    ) -> AsyncFile:
+        """The history dataset collection will be written as a `zip` archive to the
+        returned short term storage object. Progress tracking this file's creation
+        can be tracked with the short_term_storage API.
+        """
+        return self.service.prepare_collection_download(trans, id)
 
     @router.post(
         "/api/histories/{history_id}/contents/{type}s",

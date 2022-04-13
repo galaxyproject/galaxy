@@ -2777,6 +2777,32 @@ class CreatePagePayload(PageSummaryBase):
         extra = Extra.allow  # Allow any other extra fields
 
 
+class AsyncTaskResultSummary(BaseModel):
+    id: str = Field(
+        ...,
+        title="ID",
+        description="Celery AsyncResult ID for this task",
+    )
+    ignored: bool = Field(
+        ...,
+        title="Ignored",
+        description="Indicated whether the Celery AsyncResult will be available for retrivial",
+    )
+    name: Optional[str] = Field(
+        None,
+        title="Name of task being done derived from Celery AsyncResult",
+    )
+    queue: Optional[str] = Field(
+        None,
+        title="Queue of task being done derived from Celery AsyncResult",
+    )
+
+
+class AsyncFile(BaseModel):
+    storage_request_id: str
+    task: AsyncTaskResultSummary
+
+
 class PageSummary(PageSummaryBase):
     id: EncodedDatabaseIdField = Field(
         ...,  # Required
