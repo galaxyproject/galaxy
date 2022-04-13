@@ -15,13 +15,7 @@ import { tagStore } from "./tagStore";
 import { jobMetricsStore } from "./jobMetricsStore";
 import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { invocationStore } from "./invocationStore";
-import {
-    collectionElementsStore,
-    datasetStore,
-    historyChangedItemsStore,
-    historyItemsStore,
-    historyStore,
-} from "./historyStore";
+import { collectionElementsStore, datasetStore, historyItemsStore, historyStore } from "./historyStore";
 import { userStore } from "./userStore";
 import { configStore } from "./configStore";
 import { workflowStore } from "./workflowStore";
@@ -71,7 +65,6 @@ export function createStore() {
             genomeStore: genomeStore,
             gridSearch: gridSearchStore,
             history: historyStore,
-            historyChangedItems: historyChangedItemsStore,
             historyItems: historyItemsStore,
             panels: panelStore,
             tags: tagStore,

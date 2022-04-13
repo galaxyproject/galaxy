@@ -10,6 +10,7 @@ import { mountVueComponent } from "utils/mountVueComponent";
 import HistoryIndex from "components/History/Index";
 import { buildCollectionModal } from "./buildCollectionModal";
 import { createDatasetCollection } from "components/History/model/queries";
+import { watchHistory } from "store/historyStore/model/watchHistory";
 
 // extend existing current history panel
 export class HistoryPanelProxy {
@@ -54,7 +55,7 @@ export class HistoryPanelProxy {
             });
         });*/
 
-        // Watch the store, update history id
+        // watch the store, update history id
         store.watch(
             (state, getters) => getters["history/currentHistory"],
             (history) => {
@@ -62,6 +63,9 @@ export class HistoryPanelProxy {
                 this.model.set("name", history.name);
             }
         );
+
+        // start watching the history with continuous queries
+        watchHistory();
     }
     refreshContents() {
         // to be removed after disabling legacy history
