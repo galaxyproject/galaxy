@@ -1,5 +1,9 @@
-<tool id="bigwigtowig" name="bigWigToWig" version="377+galaxy0" profile="20.01">
+<tool id="bigwigtowig" name="bigWigToWig" version="@TOOL_VERSION@+galaxy@SUFFIX_VERSION@" profile="20.01">
     <description>Convert bigWig to wig</description>
+    <macros>
+        <token name="@TOOL_VERSION@">377</token>
+        <token name="@SUFFIX_VERSION@">0</token>
+    </macros>
     <requirements>
         <requirement type="package" version="@TOOL_VERSION@">ucsc-bigwigtowig</requirement>
     </requirements>
