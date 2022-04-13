@@ -8,6 +8,7 @@ class AnonymousHistoriesTestCase(SeleniumTestCase):
     @selenium_test
     def test_anon_history_landing(self):
         self.home()
+        self.use_legacy_history()
         self.assert_initial_history_panel_state_correct()
 
         # Anonymous users can annotate or tag, these components should be absent.
@@ -41,6 +42,7 @@ class AnonymousHistoriesTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_clean_anon_history_after_logout(self):
+        self.use_legacy_history()
         self._upload_file_anonymous_then_register_user()
         self.logout_if_needed()
         # Give Galaxy the chance to load a new empty history for that now

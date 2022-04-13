@@ -1702,6 +1702,7 @@ class NavigatesGalaxy(HasDriver):
             tour_callback = NullTourCallback()
 
         self.home()
+        self.use_legacy_history()
 
         with open(path) as f:
             tour_dict = yaml.safe_load(f)

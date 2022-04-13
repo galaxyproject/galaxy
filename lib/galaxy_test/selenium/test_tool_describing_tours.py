@@ -34,7 +34,7 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
     def test_generate_tour_with_data(self):
         """Ensure a tour with data populates history."""
         self._ensure_tdt_available()
-
+        self.use_legacy_history()
         self.tool_open("md5sum")
 
         self.tool_form_generate_tour()

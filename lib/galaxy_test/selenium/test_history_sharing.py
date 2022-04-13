@@ -10,6 +10,7 @@ VALID_LOGIN_RETRIES = 3
 class HistorySharingTestCase(SeleniumTestCase):
     @selenium_test
     def test_sharing_valid(self):
+        self.use_legacy_history()
         user1_email, user2_email, history_id = self.setup_two_users_with_one_shared_history()
         self.submit_login(user2_email, retries=VALID_LOGIN_RETRIES)
         response = self.api_get(f"histories/{history_id}", raw=True)
@@ -25,6 +26,7 @@ class HistorySharingTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_unsharing(self):
+        self.use_legacy_history()
         user1_email, user2_email, history_id = self.setup_two_users_with_one_shared_history()
         self.submit_login(user1_email, retries=VALID_LOGIN_RETRIES)
         self.navigate_to_history_share_page()
@@ -58,6 +60,7 @@ class HistorySharingTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_sharing_with_invalid_user(self):
+        self.use_legacy_history()
         user1_email = self._get_random_email()
         self.register(user1_email)
         self.share_history_with_user(user_email="invalid_user@test.com")
@@ -65,6 +68,7 @@ class HistorySharingTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_sharing_with_self(self):
+        self.use_legacy_history()
         user1_email = self._get_random_email()
         self.register(user1_email)
         self.share_history_with_user(user_email=user1_email)
