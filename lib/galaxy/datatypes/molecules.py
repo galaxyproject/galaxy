@@ -895,9 +895,9 @@ class Cell(GenericMolFile):
             dataset.metadata.number_of_atoms = len(dataset.metadata.atom_data)
             dataset.metadata.chemical_formula = chemical_formula
             try:
-                dataset.metadata.is_periodic = 1 if pbc else 0
+                dataset.metadata.is_periodic = bool(pbc)
             except ValueError:  # pbc is an array
-                dataset.metadata.is_periodic = 1 if pbc.any() else 0
+                dataset.metadata.is_periodic = bool(pbc.any())
             dataset.metadata.lattice_parameters = list(lattice_parameters)
 
     def set_peek(self, dataset):
@@ -1049,9 +1049,9 @@ class CIF(GenericMolFile):
                     chemical_formula.append(block.get_chemical_formula())
                     pbc = block.get_pbc()
                     try:
-                        p = 1 if pbc else 0
+                        p = bool(pbc)
                     except ValueError:  # pbc is an array
-                        p = 1 if pbc.any() else 0
+                        p = bool(pbc.any())
                     is_periodic.append(p)
                     lattice_parameters.append(list(block.get_cell().cellpar()))
             except Exception as e:
