@@ -6,7 +6,7 @@ import Page from "layout/page";
 
 // Vue adapter emulates current features of backbone history panel
 import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy";
-import { shouldUseBetaHistory } from "components/History/adapters/betaToggle";
+import { shouldUseLegacyHistory } from "components/History/adapters/betaToggle";
 
 addInitialization((Galaxy, { options = {} }) => {
     console.log("Analysis custom page setup");
@@ -14,9 +14,7 @@ addInitialization((Galaxy, { options = {} }) => {
     // Handle beta history panel
     // Need to mock Galaxy.currHistoryPanel
     // pass config through for defaults
-    const HistoryPanel = shouldUseBetaHistory(Galaxy.config.beta_history_default_on)
-        ? HistoryPanelProxy
-        : MvcHistoryPanel;
+    const HistoryPanel = shouldUseLegacyHistory(Galaxy.config.use_legacy_history) ? MvcHistoryPanel : HistoryPanelProxy;
 
     const pageOptions = Object.assign({}, options, {
         config: Object.assign({}, options.config, {

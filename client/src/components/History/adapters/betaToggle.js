@@ -1,21 +1,21 @@
-const USE_BETA_HISTORY_STORAGE_KEY = "useBetaHistory";
+const USE_LEGACY_HISTORY_STORAGE_KEY = "useLegacyHistory";
 
-export const shouldUseBetaHistory = (instanceDefault) => {
+export const shouldUseLegacyHistory = (instanceDefaultUseLegacyHistory) => {
     // If there's a value set, respect it.  Otherwise get instance default from config.
-    const userPrefBetaHistory = sessionStorage.getItem(USE_BETA_HISTORY_STORAGE_KEY);
-    if (userPrefBetaHistory != null) {
-        return userPrefBetaHistory === "1";
+    const userPrefLegacyHistory = sessionStorage.getItem(USE_LEGACY_HISTORY_STORAGE_KEY);
+    if (userPrefLegacyHistory != null) {
+        return userPrefLegacyHistory === "1";
     } else {
-        return instanceDefault;
+        return instanceDefaultUseLegacyHistory;
     }
 };
 
 export const switchToLegacyHistoryPanel = () => {
-    sessionStorage.setItem(USE_BETA_HISTORY_STORAGE_KEY, 0);
+    sessionStorage.setItem(USE_LEGACY_HISTORY_STORAGE_KEY, 1);
     location.reload();
 };
 
 export const switchToBetaHistoryPanel = () => {
-    sessionStorage.setItem(USE_BETA_HISTORY_STORAGE_KEY, 1);
+    sessionStorage.setItem(USE_LEGACY_HISTORY_STORAGE_KEY, 0);
     location.reload();
 };
