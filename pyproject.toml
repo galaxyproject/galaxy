@@ -93,6 +93,7 @@ Whoosh = "*"
 zipstream-new = "*"
 
 [tool.poetry.dev-dependencies]
+ase = ">=3.18.1"
 cwltest = "2.2.20210901154959"
 darker = "*"
 fluent-logger = "*"
