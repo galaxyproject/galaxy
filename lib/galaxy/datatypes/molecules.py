@@ -1248,9 +1248,9 @@ class XYZ(GenericMolFile):
                     chemical_formula.append(block.get_chemical_formula())
                     pbc = block.get_pbc()
                     try:
-                        p = 1 if pbc else 0
+                        p = bool(pbc)
                     except ValueError:  # pbc is an array
-                        p = 1 if pbc.any() else 0
+                        p = bool(pbc.any())
                     is_periodic.append(p)
                     lattice_parameters.append(list(block.get_cell().cellpar()))
             except Exception as e:
