@@ -435,6 +435,7 @@ class FastAPIHistoryContents:
         "/api/dataset_collections/{id}/download",
         summary="Download the content of a dataset collection as a `zip` archive.",
         response_class=StreamingResponse,
+        tags=["dataset collections"],
     )
     def download_dataset_collection(
         self,
