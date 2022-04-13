@@ -7,6 +7,7 @@ from typing import (
     AsyncGenerator,
     Callable,
     cast,
+    Dict,
     Optional,
     Type,
     TypeVar,
@@ -329,6 +330,7 @@ def as_form(cls: Type[BaseModel]):
     ]
 
     async def _as_form(**data):
+        data = sanitize_data(data)
         return cls(**data)
 
     sig = inspect.signature(_as_form)
@@ -344,3 +346,11 @@ async def try_get_request_body_as_json(request: Request) -> Optional[Any]:
         body = await request.json()
         return body
     return None
+
+
+def sanitize_data(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Removes possible double quoting on string values"""
+    for k, v in data.items():
+        if isinstance(v, str):
+            data[k] = v.replace('"', "").replace("'", "")
+    return data
