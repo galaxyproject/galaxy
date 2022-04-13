@@ -13,8 +13,10 @@ import { getGalaxyInstance } from "app";
 const limit = 1000;
 const throttlePeriod = 3000;
 
-// last time the history has been requests
+// last time the history has changed
 let lastUpdateTime = null;
+
+// last time changed history items have been requested
 let lastRequestDate = new Date();
 
 export function watchHistory() {
@@ -48,7 +50,6 @@ export function watchHistory() {
                 store.commit("saveDatasets", { payload });
                 store.commit("saveHistoryItems", { historyId, payload });
                 store.commit("saveCollectionObjects", { payload });
-
                 // trigger changes in legacy handler
                 const Galaxy = getGalaxyInstance();
                 Galaxy.user.fetch({
