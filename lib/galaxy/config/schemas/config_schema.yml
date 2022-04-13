@@ -493,6 +493,42 @@ mapping:
           changes are found, modified tours are automatically reloaded. Takes the same values as the
           'watch_tools' option.
 
+      short_term_storage_dir:
+        type: str
+        default: short_term_web_storage
+        path_resolves_to: cache_dir
+        required: false
+        desc: |
+          Location of files available for a short time as downloads (short term storage).
+          This directory is exclusively used for serving dynamically generated downloadable
+          content. Galaxy may uses the new_file_path parameter as a general temporary directory
+          and that directory should be monitored by a tool such as tmpwatch in production
+          environments. short_term_storage_dir on the other hand is monitored by Galaxy's task
+          framework and should not require such external tooling.
+
+      short_term_storage_default_duration:
+        type: int
+        required: false
+        default: 86400
+        desc: |
+          Default duration before short term web storage files will be cleaned up by Galaxy
+          tasks (in seconds). The default duration is 1 day.
+
+      short_term_storage_maximum_duration:
+        type: int
+        required: false
+        desc: |
+          The maximum duration short term storage files can hosted before they will be marked for
+          clean up. By default there is no default.
+
+      short_term_storage_cleanup_interval:
+        type: int
+        required: false
+        default: 3600
+        desc: |
+          How many seconds between instances of short term storage being cleaned up in default
+          Celery task configuration.
+
       file_sources_config_file:
         type: str
         default: file_sources_conf.yml

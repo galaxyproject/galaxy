@@ -582,6 +582,7 @@ def populate_api_routes(webapp, app):
     )
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
     webapp.mapper.resource("search", "search", path_prefix="/api")
+
     # ---- visualizations registry ---- generic template renderer
     # @deprecated: this route should be considered deprecated
     webapp.add_route(

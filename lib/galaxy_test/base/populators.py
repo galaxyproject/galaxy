@@ -888,6 +888,27 @@ class BaseDatasetPopulator(BasePopulator):
 
         wait_on(history_has_length, desc="import history population")
 
+    def wait_on_download(self, download_request_response: Response) -> Response:
+        api_asserts.assert_status_code_is(download_request_response, 200)
+        download_async = download_request_response.json()
+        assert "storage_request_id" in download_async
+        storage_request_id = download_async["storage_request_id"]
+        return self.wait_on_download_request(storage_request_id)
+
+    def wait_on_download_request(self, storage_request_id: str) -> Response:
+        def is_ready():
+            is_ready_response = self._get(f"short_term_storage/{storage_request_id}/ready")
+            is_ready_response.raise_for_status()
+            is_ready_bool = is_ready_response.json()
+            return True if is_ready_bool else None
+
+        wait_on(is_ready, "waiting for download to become ready")
+        assert is_ready()
+
+        download_contents_response = self._get(f"short_term_storage/{storage_request_id}")
+        download_contents_response.raise_for_status()
+        return download_contents_response
+
     def history_length(self, history_id):
         contents_response = self._get(f"histories/{history_id}/contents")
         api_asserts.assert_status_code_is(contents_response, 200)

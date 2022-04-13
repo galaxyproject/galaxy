@@ -205,6 +205,7 @@ class ConfigSerializer(base.ModelSerializer):
             "release_doc_base_url": _use_config,
             "expose_user_email": _use_config,
             "enable_tool_source_display": _use_config,
+            "enable_celery_tasks": _use_config,
             "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
             "welcome_directory": _use_config,
         }
