@@ -204,20 +204,34 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         if show_shared and show_hidden:
             message = "show_shared and show_hidden cannot both be specified as true"
             raise exceptions.RequestParameterInvalidException(message)
+
         rval = []
-        filter1 = model.StoredWorkflow.user == trans.user
+        filters = [
+            model.StoredWorkflow.user == trans.user,
+        ]
         user = trans.user
+        if user and show_shared:
+            filters.append(model.StoredWorkflowUserShareAssociation.user == user)
+
         if show_published or user is None and show_published is None:
-            filter1 = or_(filter1, (model.StoredWorkflow.published == true()))
+            filters.append((model.StoredWorkflow.published == true()))
+
+        query = trans.sa_session.query(model.StoredWorkflow)
+        if show_shared:
+            query = query.outerjoin(model.StoredWorkflow.users_shared_with)
+
         query = (
-            trans.sa_session.query(model.StoredWorkflow)
-            .options(joinedload("annotations"))
+            query.options(joinedload("annotations"))
             .options(joinedload("latest_workflow").undefer("step_count").lazyload("steps"))
             .options(joinedload("tags"))
-            .filter(filter1)
         )
-        query = query.filter_by(hidden=true() if show_hidden else false(), deleted=true() if show_deleted else false())
-        for wf in query.order_by(desc(model.StoredWorkflow.table.c.update_time)).all():
+        query = query.filter(or_(*filters))
+        query = query.filter(model.StoredWorkflow.table.c.hidden == (true() if show_hidden else false()))
+        query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
+        if user:
+            query = query.order_by(desc(model.StoredWorkflow.user == user))
+        query = query.order_by(desc(model.StoredWorkflow.table.c.update_time))
+        for wf in query.all():
             item = wf.to_dict(value_mapper={"id": trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf.id)
             item["annotations"] = [x.annotation for x in wf.annotations]
@@ -229,32 +243,6 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             if user is not None:
                 item["show_in_tool_panel"] = wf.show_in_tool_panel(user_id=user.id)
             rval.append(item)
-        if show_shared:
-            for wf_sa in (
-                trans.sa_session.query(model.StoredWorkflowUserShareAssociation)
-                .join(model.StoredWorkflowUserShareAssociation.stored_workflow)
-                .options(joinedload("stored_workflow").joinedload("annotations"))
-                .options(
-                    joinedload("stored_workflow").joinedload("latest_workflow").undefer("step_count").lazyload("steps")
-                )
-                .options(joinedload("stored_workflow").joinedload("user"))
-                .options(joinedload("stored_workflow").joinedload("tags"))
-                .filter(model.StoredWorkflowUserShareAssociation.user == trans.user)
-                .filter(model.StoredWorkflow.table.c.deleted == false())
-                .order_by(desc(model.StoredWorkflow.update_time))
-                .all()
-            ):
-                item = wf_sa.stored_workflow.to_dict(value_mapper={"id": trans.security.encode_id})
-                encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
-                item["annotations"] = [x.annotation for x in wf_sa.stored_workflow.annotations]
-                item["url"] = url_for("workflow", id=encoded_id)
-                item["slug"] = wf_sa.stored_workflow.slug
-                item["owner"] = wf_sa.stored_workflow.user.username
-                item["number_of_steps"] = wf_sa.stored_workflow.latest_workflow.step_count
-                item["show_in_tool_panel"] = False
-                if user is not None:
-                    item["show_in_tool_panel"] = wf_sa.stored_workflow.show_in_tool_panel(user_id=user.id)
-                rval.append(item)
         if missing_tools:
             workflows_missing_tools = []
             workflows = []
