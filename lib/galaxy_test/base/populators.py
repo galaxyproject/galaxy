@@ -917,7 +917,9 @@ class BaseDatasetPopulator(BasePopulator):
             suffix or "",
         )
 
-    def wait_for_dataset(self, history_id, dataset_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
+    def wait_for_dataset(
+        self, history_id: str, dataset_id: str, assert_ok: bool = False, timeout: timeout_type = DEFAULT_TIMEOUT
+    ) -> str:
         return wait_on_state(
             lambda: self._get(f"histories/{history_id}/contents/{dataset_id}"),
             desc="dataset state",
@@ -1060,7 +1062,7 @@ class BaseWorkflowPopulator(BasePopulator):
 
     def wait_for_invocation(
         self, workflow_id: str, invocation_id: str, timeout: timeout_type = DEFAULT_TIMEOUT, assert_ok: bool = True
-    ):
+    ) -> str:
         url = f"invocations/{invocation_id}"
 
         def workflow_state():
@@ -1074,8 +1076,12 @@ class BaseWorkflowPopulator(BasePopulator):
         return history_invocations_response.json()
 
     def wait_for_history_workflows(
-        self, history_id, assert_ok=True, timeout=DEFAULT_TIMEOUT, expected_invocation_count=None
-    ):
+        self,
+        history_id: str,
+        assert_ok: bool = True,
+        timeout: timeout_type = DEFAULT_TIMEOUT,
+        expected_invocation_count: Optional[int] = None,
+    ) -> None:
         if expected_invocation_count is not None:
 
             def invocation_count():
@@ -1089,7 +1095,14 @@ class BaseWorkflowPopulator(BasePopulator):
             invocation_id = invocation["id"]
             self.wait_for_workflow(workflow_id, invocation_id, history_id, timeout=timeout, assert_ok=assert_ok)
 
-    def wait_for_workflow(self, workflow_id, invocation_id, history_id, assert_ok=True, timeout=DEFAULT_TIMEOUT):
+    def wait_for_workflow(
+        self,
+        workflow_id: str,
+        invocation_id: str,
+        history_id: str,
+        assert_ok: bool = True,
+        timeout: timeout_type = DEFAULT_TIMEOUT,
+    ) -> None:
         """Wait for a workflow invocation to completely schedule and then history
         to be complete."""
         self.wait_for_invocation(workflow_id, invocation_id, timeout=timeout, assert_ok=assert_ok)
@@ -1200,6 +1213,7 @@ class BaseWorkflowPopulator(BasePopulator):
             history_id = request["history"]
             if history_id.startswith("hist_id="):
                 history_id = history_id[len("hist_id=") :]
+        assert history_id
         self.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=True)
         return invoke_return
 
@@ -1393,7 +1407,9 @@ class BaseWorkflowPopulator(BasePopulator):
 
         return workflow_request, history_id, workflow_id
 
-    def wait_for_invocation_and_jobs(self, history_id, workflow_id, invocation_id, assert_ok=True):
+    def wait_for_invocation_and_jobs(
+        self, history_id: str, workflow_id: str, invocation_id: str, assert_ok: bool = True
+    ) -> None:
         state = self.wait_for_invocation(workflow_id, invocation_id)
         if assert_ok:
             assert state == "scheduled", state
@@ -1825,7 +1841,7 @@ class LibraryPopulator:
         def show():
             return self.galaxy_interactor.get(f"libraries/{library_id}/contents/{dataset_id}")
 
-        wait_on_state(show, assert_ok=True, timeout=DEFAULT_TIMEOUT)
+        wait_on_state(show, assert_ok=True)
         return show().json()
 
     def raw_library_contents_create(self, library_id, payload, files=None):
@@ -2121,7 +2137,9 @@ class BaseDatasetCollectionPopulator:
             datasets.append(self.dataset_populator.new_dataset(history_id, **new_kwds))
         return datasets
 
-    def wait_for_dataset_collection(self, create_payload, assert_ok=False, timeout=DEFAULT_TIMEOUT):
+    def wait_for_dataset_collection(
+        self, create_payload: dict, assert_ok: bool = False, timeout: timeout_type = DEFAULT_TIMEOUT
+    ) -> None:
         for element in create_payload["elements"]:
             if element["element_type"] == "hda":
                 self.dataset_populator.wait_for_dataset(
@@ -2280,7 +2298,12 @@ def stage_rules_example(galaxy_interactor, history_id, example):
 
 
 def wait_on_state(
-    state_func: Callable, desc="state", skip_states=None, ok_states=None, assert_ok=False, timeout=DEFAULT_TIMEOUT
+    state_func: Callable,
+    desc: str = "state",
+    skip_states=None,
+    ok_states=None,
+    assert_ok: bool = False,
+    timeout: timeout_type = DEFAULT_TIMEOUT,
 ) -> str:
     def get_state():
         response = state_func()
@@ -2384,5 +2407,5 @@ class GiWorkflowPopulator(GiHttpMixin, BaseWorkflowPopulator):
         self.dataset_populator = GiDatasetPopulator(gi)
 
 
-def wait_on(function, desc, timeout=DEFAULT_TIMEOUT):
+def wait_on(function: Callable, desc: str, timeout: timeout_type = DEFAULT_TIMEOUT):
     return tool_util_wait_on(function, desc, timeout)
