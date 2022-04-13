@@ -36,26 +36,30 @@
                         <HistoryMessages class="m-2" :history="history" />
                         <HistoryOperations
                             :history="history"
-                            :filter-text="filterText"
-                            :content-selection="selectedItems"
-                            :selection-size="selectionSize"
-                            :is-query-selection="isQuerySelection"
                             :show-selection="showSelection"
                             :expanded-count="expandedCount"
                             :has-matches="hasMatches(payload)"
-                            @update:content-selection="selectItems"
                             @update:show-selection="setShowSelection"
-                            @hide-selection="onHideSelection"
-                            @reset-selection="resetSelection"
-                            @collapse-all="collapseAll" />
-                        <HistorySelectionStatus
-                            v-if="showSelection"
-                            class="p-2"
-                            :has-filters="hasFilters"
-                            :selection-size="selectionSize"
-                            :total-items-in-query="totalItemsInQuery"
-                            @select-all="selectAllInCurrentQuery(payload, totalItemsInQuery)"
-                            @clear-selection="resetSelection" />
+                            @collapse-all="collapseAll">
+                            <template v-slot:selection-operations>
+                                <HistorySelectionOperations
+                                    v-if="showSelection"
+                                    :history="history"
+                                    :filter-text="filterText"
+                                    :content-selection="selectedItems"
+                                    :selection-size="selectionSize"
+                                    :is-query-selection="isQuerySelection"
+                                    :total-items-in-query="totalItemsInQuery"
+                                    @update:content-selection="selectItems"
+                                    @hide-selection="onHideSelection"
+                                    @reset-selection="resetSelection" />
+                                <HistorySelectionStatus
+                                    v-if="showSelection"
+                                    :selection-size="selectionSize"
+                                    @select-all="selectAllInCurrentQuery(payload, totalItemsInQuery)"
+                                    @reset-selection="resetSelection" />
+                            </template>
+                        </HistoryOperations>
                     </section>
                     <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
                         <div>
@@ -108,28 +112,30 @@ import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
 import Listing from "components/History/Layout/Listing";
 import ToolHelpModal from "components/History/Modals/ToolHelpModal";
-import HistoryOperations from "./HistoryOperations";
+import HistoryOperations from "./HistoryOperations/Index";
 import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
 import HistoryFilters from "./HistoryFilters";
 import HistoryMessages from "./HistoryMessages";
-import HistorySelectionStatus from "./HistorySelectionStatus";
+import HistorySelectionOperations from "./HistoryOperations/SelectionOperations";
+import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
 
 export default {
     components: {
-        LoadingSpan,
-        Listing,
         ContentItem,
+        ExpandedItems,
         HistoryMessages,
         HistoryDetails,
         HistoryEmpty,
         HistoryFilters,
         HistoryItemsProvider,
         HistoryOperations,
-        ToolHelpModal,
-        ExpandedItems,
-        SelectedItems,
+        HistorySelectionOperations,
         HistorySelectionStatus,
+        LoadingSpan,
+        Listing,
+        SelectedItems,
+        ToolHelpModal,
     },
     props: {
         history: { type: Object, required: true },
