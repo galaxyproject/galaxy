@@ -99,7 +99,10 @@ def get_index_query_params(
     v: Optional[str] = Query(  # Should this be deprecated at some point and directly use the latest version by default?
         default=None,
         title="Version",
-        description="Only `dev` value is allowed. Set it to use the latest version of this endpoint.",
+        description=(
+            "Only `dev` value is allowed. Set it to use the latest version of this endpoint. "
+            "**All parameters marked as `deprecated` will be ignored when this parameter is set.**"
+        ),
         example="dev",
     ),
     dataset_details: Optional[str] = Query(
@@ -144,7 +147,7 @@ def get_legacy_index_query_params(
         ),
         deprecated=True,
     ),
-    types: Optional[str] = Query(
+    types: Optional[List[str]] = Query(
         default=None,
         title="Types",
         description=(
@@ -156,8 +159,7 @@ def get_legacy_index_query_params(
     ),
     type: Optional[str] = Query(
         default=None,
-        title="Type",
-        description="Legacy name for the `types` parameter.",
+        include_in_schema=False,
         deprecated=True,
     ),
     details: Optional[str] = Query(
@@ -183,8 +185,7 @@ def get_legacy_index_query_params(
     correctly"""
     return parse_legacy_index_query_params(
         ids=ids,
-        types=types,
-        type=type,
+        types=types or type,
         details=details,
         deleted=deleted,
         visible=visible,
@@ -193,8 +194,7 @@ def get_legacy_index_query_params(
 
 def parse_legacy_index_query_params(
     ids: Optional[str] = None,
-    types: Optional[str] = None,
-    type: Optional[str] = None,
+    types: Optional[Union[List[str], str]] = None,
     details: Optional[str] = None,
     deleted: Optional[bool] = None,
     visible: Optional[bool] = None,
@@ -202,9 +202,11 @@ def parse_legacy_index_query_params(
 ) -> LegacyHistoryContentsIndexParams:
     """Parses (legacy) query parameters for the history contents `index` operation
     and returns a model containing the values in the correct type."""
-    types = types or type
     if types:
-        content_types = util.listify(types)
+        if isinstance(types, list) and len(types) == 1:  # Support ?types=dataset,dataset_collection
+            content_types = util.listify(types[0])
+        else:  # Support ?types=dataset&types=dataset_collection
+            content_types = util.listify(types)
     else:
         content_types = [e.value for e in HistoryContentType]
 
