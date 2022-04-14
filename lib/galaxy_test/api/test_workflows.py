@@ -364,9 +364,7 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
             their_workflow_id_2 = self.workflow_populator.simple_workflow("theirs_2")
             self.workflow_populator.share_with_user(their_workflow_id_1, my_email)
             self.workflow_populator.share_with_user(their_workflow_id_2, my_email)
-        worklfow_index_response = self._get("workflows")
-        worklfow_index_response.raise_for_status()
-        index_ids = [w["id"] for w in worklfow_index_response.json()]
+        index_ids = self.workflow_populator.index_ids()
         assert index_ids.index(my_workflow_id_1) >= 0
         assert index_ids.index(my_workflow_id_2) >= 0
         assert index_ids.index(their_workflow_id_1) >= 0
@@ -387,12 +385,40 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         ]
         refactor_response = self.workflow_populator.refactor_workflow(my_workflow_id_1, actions)
         refactor_response.raise_for_status()
-        worklfow_index_response = self._get("workflows")
-        worklfow_index_response.raise_for_status()
-        index_ids = [w["id"] for w in worklfow_index_response.json()]
+        index_ids = self.workflow_populator.index_ids()
 
         # after an update to workflow 1, it now comes before workflow 2
         assert index_ids.index(my_workflow_id_1) < index_ids.index(my_workflow_id_2)
+
+    def test_show_shared(self):
+        my_workflow_id_1 = self.workflow_populator.simple_workflow("mine_1")
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            their_workflow_id_1 = self.workflow_populator.simple_workflow("theirs_1")
+            self.workflow_populator.share_with_user(their_workflow_id_1, my_email)
+        index_ids = self.workflow_populator.index_ids()
+        assert my_workflow_id_1 in index_ids
+        assert their_workflow_id_1 in index_ids
+
+        index_ids = self.workflow_populator.index_ids(show_shared=False)
+        assert my_workflow_id_1 in index_ids
+        assert their_workflow_id_1 not in index_ids
+
+        index_ids = self.workflow_populator.index_ids(show_shared=True)
+        assert my_workflow_id_1 in index_ids
+        assert their_workflow_id_1 in index_ids
+
+    def test_index_published(self):
+        # published workflows are also the default of what is displayed for anonymous API requests
+        # this is tested in test_anonymous_published.
+        uuid = str(uuid4())
+        workflow_name = f"test_pubished_anon_{uuid}"
+        with self._different_user():
+            workflow_id = self.workflow_populator.simple_workflow(workflow_name, publish=True)
+
+        assert workflow_id not in self.workflow_populator.index_ids()
+        assert workflow_id in self.workflow_populator.index_ids(show_published=True)
+        assert workflow_id not in self.workflow_populator.index_ids(show_published=False)
 
     def test_index_parameter_invalid_combinations(self):
         # these can all be called by themselves and return 200...
