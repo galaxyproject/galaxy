@@ -339,7 +339,7 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         assert not [w for w in workflow_index if w["id"] == workflow_id]
 
     def test_index_hidden(self):
-        workflow_id = self.workflow_populator.simple_workflow("test_delete")
+        workflow_id = self.workflow_populator.simple_workflow("test_hidden")
         workflow_index = self._get("workflows").json()
         workflow = [w for w in workflow_index if w["id"] == workflow_id][0]
         workflow["hidden"] = True
@@ -352,6 +352,47 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         assert [w for w in workflow_index if w["id"] == workflow_id]
         workflow_index = self._get("workflows?show_hidden=false").json()
         assert not [w for w in workflow_index if w["id"] == workflow_id]
+
+    def test_index_ordering(self):
+        # ordered by update_time on the stored workflows with all user's workflows
+        # before workflows shared with user.
+        my_workflow_id_1 = self.workflow_populator.simple_workflow("mine_1")
+        my_workflow_id_2 = self.workflow_populator.simple_workflow("mine_2")
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            their_workflow_id_1 = self.workflow_populator.simple_workflow("theirs_1")
+            their_workflow_id_2 = self.workflow_populator.simple_workflow("theirs_2")
+            self.workflow_populator.share_with_user(their_workflow_id_1, my_email)
+            self.workflow_populator.share_with_user(their_workflow_id_2, my_email)
+        worklfow_index_response = self._get("workflows")
+        worklfow_index_response.raise_for_status()
+        index_ids = [w["id"] for w in worklfow_index_response.json()]
+        assert index_ids.index(my_workflow_id_1) >= 0
+        assert index_ids.index(my_workflow_id_2) >= 0
+        assert index_ids.index(their_workflow_id_1) >= 0
+        assert index_ids.index(their_workflow_id_2) >= 0
+
+        # ordered by update time...
+        assert index_ids.index(my_workflow_id_2) < index_ids.index(my_workflow_id_1)
+        assert index_ids.index(their_workflow_id_2) < index_ids.index(their_workflow_id_1)
+
+        # my workflows before theirs...
+        assert index_ids.index(my_workflow_id_1) < index_ids.index(their_workflow_id_1)
+        assert index_ids.index(my_workflow_id_2) < index_ids.index(their_workflow_id_1)
+        assert index_ids.index(my_workflow_id_1) < index_ids.index(their_workflow_id_2)
+        assert index_ids.index(my_workflow_id_2) < index_ids.index(their_workflow_id_2)
+
+        actions = [
+            {"action_type": "update_name", "name": "mine_1(updated)"},
+        ]
+        refactor_response = self.workflow_populator.refactor_workflow(my_workflow_id_1, actions)
+        refactor_response.raise_for_status()
+        worklfow_index_response = self._get("workflows")
+        worklfow_index_response.raise_for_status()
+        index_ids = [w["id"] for w in worklfow_index_response.json()]
+
+        # after an update to workflow 1, it now comes before workflow 2
+        assert index_ids.index(my_workflow_id_1) < index_ids.index(my_workflow_id_2)
 
     def test_index_parameter_invalid_combinations(self):
         # these can all be called by themselves and return 200...
