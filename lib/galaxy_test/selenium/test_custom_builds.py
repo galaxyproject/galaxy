@@ -9,7 +9,6 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
     @selenium_test
     def test_build_add(self):
         self._login()
-        self.use_legacy_history()
         self.navigate_to_custom_builds_page()
 
         self.add_custom_build(self.build_name1, self.build_key1)
@@ -18,7 +17,6 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
     @selenium_test
     def test_build_delete(self):
         self._login()
-        self.use_legacy_history()
         self.navigate_to_custom_builds_page()
 
         self.add_custom_build(self.build_name2, self.build_key2)

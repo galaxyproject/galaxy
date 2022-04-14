@@ -15,7 +15,6 @@ class NavigatesGalaxySeleniumTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_click_error(self):
-        self.use_legacy_history()
         self.home()
         self.upload_start_click()
         # Open the details, verify they are open and do a refresh.
