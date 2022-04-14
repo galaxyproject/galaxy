@@ -394,7 +394,8 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_custom_builds: function () {
-            const historyPanel = this.page.historyPanel.historyView;
+            const Galaxy = getGalaxyInstance();
+            const historyPanel = Galaxy.currHistoryPanel;
             if (!historyPanel || !historyPanel.model || !historyPanel.model.id) {
                 window.setTimeout(() => {
                     this.show_custom_builds();
