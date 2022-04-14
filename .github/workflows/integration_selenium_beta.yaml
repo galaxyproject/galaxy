@@ -1,4 +1,4 @@
-name: Selenium tests (beta history panel)
+name: Integration Selenium (beta history panel)
 on:
   push:
     paths-ignore:
@@ -10,16 +10,15 @@ on:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'
 env:
-  GALAXY_CONFIG_GALAXY_URL_PREFIX: '/galaxypf'
+  GALAXY_SKIP_CLIENT_BUILD: '0'
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_TEST_SELENIUM_RETRIES: 1
-  GALAXY_TEST_SELENIUM_BETA_HISTORY: 1
-  GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 1
   YARN_INSTALL_OPTS: --frozen-lockfile
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
+  GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT: '1'
 concurrency:
-  group: selenium-beta-${{ github.ref }}
+  group: integration-selenium-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   test:
@@ -27,10 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     strategy:
-      fail-fast: false
       matrix:
         python-version: ['3.7']
-        chunk: [0, 1, 2]
     services:
       postgres:
         image: postgres:13
@@ -45,6 +42,8 @@ jobs:
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
           echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
+      - name: Prune unused docker image, volumes and containers
+        run: docker system prune -a -f
       - uses: actions/checkout@v2
         with:
           path: 'galaxy root'
@@ -64,25 +63,25 @@ jobs:
         uses: actions/cache@v2
         with:
           path: 'galaxy root/.venv'
-          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-selenium-beta
+          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-integration-selenium
       - uses: mvdbeek/gha-yarn-cache@master
         with:
           yarn-lock-file: 'galaxy root/client/yarn.lock'
       - uses: nanasess/setup-chromedriver@master
       - name: Run tests
-        run: ./run_tests.sh --coverage -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }}
+        run: ./run_tests.sh --coverage -integration test/integration_selenium
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v2
         with:
-          flags: selenium-beta-history
+          flags: integration-selenium
           working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: Selenium beta history panel test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
-          path: 'galaxy root/run_selenium_tests.html'
+          name: Integration Selenium test results (${{ matrix.python-version }})
+          path: 'galaxy root/run_integration_tests.html'
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: Selenium beta history panel debug info (${{ matrix.python-version }}, ${{ matrix.chunk }})
+          name: Integration Selenium debug info (${{ matrix.python-version }})
           path: 'galaxy root/database/test_errors'

@@ -11,6 +11,7 @@ on:
     - cron: '0 0 * * 2'
 env:
   GALAXY_CONFIG_GALAXY_URL_PREFIX: '/galaxypf'
+  GALAXY_CONFIG_USE_LEGACY_HISTORY: 'true'
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_TEST_SELENIUM_RETRIES: 1
