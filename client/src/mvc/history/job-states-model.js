@@ -27,8 +27,12 @@ var JobStatesSummary = Backbone.Model.extend({
         return !this.hasDetails() || this.get("populated_state") == "new";
     },
 
+    populationFailed: function () {
+        return this.get("populated_state") === POPULATED_STATE_FAILED;
+    },
+
     errored: function () {
-        return this.get("populated_state") === POPULATED_STATE_FAILED || this.anyWithStates(ERROR_STATES);
+        return this.populationFailed() || this.anyWithStates(ERROR_STATES);
     },
 
     states: function () {
