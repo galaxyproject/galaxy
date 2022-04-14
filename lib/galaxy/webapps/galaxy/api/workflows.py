@@ -174,7 +174,10 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         """
         Displays a collection of workflows.
 
-        :param  show_published:      if True, show also published workflows
+        :param  show_published:      Optional boolean to include published workflows
+                                     If unspecified this behavior depends on whether the request
+                                     is coming from an authenticated session. The default is true
+                                     for annonymous API requests and false otherwise.
         :type   show_published:      boolean
         :param  show_hidden:         if True, show hidden workflows
         :type   show_hidden:         boolean
