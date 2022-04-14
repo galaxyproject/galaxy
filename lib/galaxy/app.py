@@ -577,6 +577,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.queue_worker = self._register_singleton(GalaxyQueueWorker, GalaxyQueueWorker(self))
 
         self._configure_tool_shed_registry()
+        self._register_singleton(tool_shed_registry.Registry, self.tool_shed_registry)
 
         self.dependency_resolvers_view = self._register_singleton(
             DependencyResolversView, DependencyResolversView(self)
