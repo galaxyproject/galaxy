@@ -1510,6 +1510,7 @@ class NavigatesGalaxy(HasDriver):
             editable_text_input_element.clear()
         editable_text_input_element.send_keys(new_name)
         self.send_enter(editable_text_input_element)
+        self.sleep_for(self.wait_types.UX_RENDER)
         return editable_text_input_element
 
     def history_panel_name_input(self):
