@@ -42,29 +42,35 @@
     <tests>
         <!--Test 01 -->
         <test expect_num_outputs="1">
-            <param name="bigwig_input" value="2.bigwig"/>
-            <output name="wig_output" value="test01_output.wig" ftype="wig"/>
+            <param name="bigwig_input" value="1.bigwig"/>
+            <output name="wig_output" value="output.wig" ftype="wig"/>
         </test>
         <!--Test 02 -->
         <test expect_num_outputs="1">
-            <param name="bigwig_input" value="2.bigwig"/>
+            <param name="bigwig_input" value="1.bigwig"/>
             <param name="chrom" value="chr21"/>
-            <output name="wig_output" value="test02_output.wig" ftype="wig"/>
+            <output name="wig_output" value="output.wig" ftype="wig"/>
             <assert_command>
-                <has_text text="-chrom=chrm21"/>
+                <has_text text="-chrom='chr21'"/>
             </assert_command>
         </test>
         <!--Test 03 -->
         <test expect_num_outputs="1">
-            <param name="bigwig_input" value="2.bigwig"/>
+            <param name="bigwig_input" value="1.bigwig"/>
             <param name="start" value="100"/>
-            <output name="wig_output" value="test03_output.wig" ftype="wig"/>
+            <output name="wig_output" value="output.wig" ftype="wig"/>
+            <assert_command>
+                <has_text text="-start=100"/>
+            </assert_command>
         </test>
         <!--Test 04 -->
         <test expect_num_outputs="1">
-            <param name="bigwig_input" value="2.bigwig"/>
-            <param name="end" value="100"/>
-            <output name="wig_output" value="test04_output.wig" ftype="wig"/>
+            <param name="bigwig_input" value="1.bigwig"/>
+            <param name="end" value="100000000"/>
+            <output name="wig_output" value="output.wig" ftype="wig"/>
+            <assert_command>
+                <has_text text="-end=100000000"/>
+            </assert_command>
         </test>
     </tests>
     <help><![CDATA[
