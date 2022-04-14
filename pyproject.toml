@@ -110,6 +110,7 @@ Whoosh = "*"
 zipstream-new = "*"
 
 [tool.poetry.dev-dependencies]
+ase = ">=3.18.1"
 black = "^22.1.0"
 cwltest = "2.2.20210901154959"
 darker = "*"
