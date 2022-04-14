@@ -53,6 +53,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_RULES_1,
 )
 from ._framework import ApiTestCase
+from .sharable import SharingApiTests
 
 WORKFLOW_SIMPLE = """
 class: GalaxyWorkflow
@@ -221,6 +222,31 @@ input1:
             assert details_dataset_new_col["history_content_type"] == "dataset", details_dataset_new_col
             assert details_dataset_new_col["metadata_endCol"] == 2
             assert details_dataset_new_col["metadata_startCol"] == 3
+
+
+class WorkflowsSharingApiTestCase(ApiTestCase, SharingApiTests):
+
+    api_name = "workflows"
+
+    def create(self, name: str) -> str:
+        """Creates a shareable resource with the given name and returns it's ID.
+
+        :param name: The name of the shareable resource to create.
+        :return: The ID of the resource.
+        """
+        workflow = self.workflow_populator.load_workflow(name=name)
+        data = dict(
+            workflow=dumps(workflow),
+        )
+        route = "workflows"
+        upload_response = self._post(route, data=data)
+
+        self._assert_status_code_is(upload_response, 200)
+        return upload_response.json()["id"]
+
+    def setUp(self):
+        super().setUp()
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
 
 # Workflow API TODO:

@@ -30,6 +30,7 @@ from galaxy import (
     util,
 )
 from galaxy.job_execution.actions.post import ActionBox
+from galaxy.managers import sharable
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.parameters import (
@@ -68,13 +69,18 @@ from .executables import artifact_class
 log = logging.getLogger(__name__)
 
 
-class WorkflowsManager:
+class WorkflowsManager(sharable.SharableModelManager):
     """Handle CRUD type operations related to workflows. More interesting
     stuff regarding workflow execution, step sorting, etc... can be found in
     the galaxy.workflow module.
     """
 
+    model_class = model.StoredWorkflow
+    foreign_key_name = "stored_workflow"
+    user_share_model = model.StoredWorkflowUserShareAssociation
+
     def __init__(self, app: MinimalManagerApp):
+        super().__init__(app)
         self.app = app
 
     def get_stored_workflow(self, trans, workflow_id, by_stored_id=True):
@@ -347,6 +353,26 @@ class WorkflowsManager:
 
 
 CreatedWorkflow = namedtuple("CreatedWorkflow", ["stored_workflow", "workflow", "missing_tools"])
+
+
+class WorkflowSerializer(sharable.SharableModelSerializer):
+    """
+    Interface/service object for serializing stored workflows into dictionaries.
+
+    These are used for simple workflow operations - much more detailed serialization operations
+    that allow recovering the workflow in its entirity or rendering it in a workflow
+    editor are available inside the WorkflowContentsManager.
+    """
+
+    model_manager_class = WorkflowsManager
+    SINGLE_CHAR_ABBR = "w"
+
+    def __init__(self, app: MinimalManagerApp):
+        super().__init__(app)
+
+    def add_serializers(self):
+        super().add_serializers()
+        self.serializers.update({})
 
 
 class WorkflowContentsManager(UsesAnnotations):
