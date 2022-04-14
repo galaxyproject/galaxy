@@ -86,7 +86,9 @@
 
                     <b-dropdown-divider></b-dropdown-divider>
 
-                    <b-dropdown-item @click="backboneRoute('/histories/sharing', { id: history.id })">
+                    <b-dropdown-item
+                        @click="backboneRoute('/histories/sharing', { id: history.id })"
+                        data-description="share or publish">
                         <Icon fixed-width icon="share-alt" class="mr-1" />
                         <span v-localize>Share or Publish</span>
                     </b-dropdown-item>

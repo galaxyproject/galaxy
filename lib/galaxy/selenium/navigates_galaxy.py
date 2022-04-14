@@ -1391,6 +1391,19 @@ class NavigatesGalaxy(HasDriver):
         component = self.components.history_panel.options_button_icon
         component.wait_for_and_click()
 
+    def click_history_option_export_to_file(self):
+        if self.is_beta_history():
+            self.use_bootstrap_dropdown(option="export to file", menu="history options")
+        else:
+            self.click_history_options()
+            self.components.history_panel.options_show_export_history_to_file.wait_for_and_click()
+
+    def click_history_option_sharing(self):
+        if self.is_beta_history():
+            self.use_bootstrap_dropdown(option="share or publish", menu="history options")
+        else:
+            self.click_history_option("Share or Publish")
+
     def click_history_option(self, option_label_or_component):
         # Open menu
         self.click_history_options()
