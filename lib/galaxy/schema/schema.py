@@ -1047,6 +1047,14 @@ class SortByEnum(str, Enum):
     none = None
 
 
+class WorkflowIndexPayload(Model):
+    show_deleted: bool = False
+    show_hidden: bool = False
+    show_published: Optional[bool] = None
+    show_shared: Optional[bool] = None
+    missing_tools: bool = False
+
+
 class InvocationIndexPayload(Model):
     workflow_id: Optional[DecodedDatabaseIdField] = Field(
         title="Workflow ID", description="Return only invocations for this Workflow ID"
