@@ -768,18 +768,26 @@ steps:
         assert reuploaded_workflow.get("source_metadata") is None
 
     def test_anonymous_published(self):
-        def anonymous_published_workflows():
-            workflows_url = self._api_url("workflows?show_published=True")
-            return get(workflows_url).json()
+        def anonymous_published_workflows(explicit_query_parameter):
+            if explicit_query_parameter:
+                index_url = "workflows?show_published=True"
+            else:
+                index_url = "workflows"
+            workflows_url = self._api_url(index_url)
+            response = get(workflows_url)
+            response.raise_for_status()
+            return response.json()
 
-        names = [w["name"] for w in anonymous_published_workflows()]
+        names = [w["name"] for w in anonymous_published_workflows(True)]
         assert "test published example" not in names
         workflow_id = self.workflow_populator.simple_workflow("test published example", publish=True)
 
-        names = [w["name"] for w in anonymous_published_workflows()]
-        assert "test published example" in names
-        ids = [w["id"] for w in anonymous_published_workflows()]
-        assert workflow_id in ids
+        for explicit_query_parameter in [True, False]:
+            workflow_index = anonymous_published_workflows(explicit_query_parameter)
+            names = [w["name"] for w in workflow_index]
+            assert "test published example" in names
+            ids = [w["id"] for w in workflow_index]
+            assert workflow_id in ids
 
     def test_import_published(self):
         workflow_id = self.workflow_populator.simple_workflow("test_import_published", publish=True)
