@@ -1055,6 +1055,9 @@ class WorkflowIndexPayload(Model):
     show_shared: Optional[bool] = None
     missing_tools: bool = False
     sort_by: Optional[WorkflowSortByEnum] = Field(title="Sort By", description="Sort Worklfows by this attribute")
+    sort_desc: Optional[bool] = Field(
+        title="Sort descending", description="Explicitly sort by descending if sort_by is specified."
+    )
 
 
 class InvocationSortByEnum(str, Enum):

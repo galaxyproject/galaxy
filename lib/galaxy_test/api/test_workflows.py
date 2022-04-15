@@ -395,8 +395,16 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         my_workflow_id_z = self.workflow_populator.simple_workflow("z_2")
         index_ids = self.workflow_populator.index_ids()
         assert index_ids.index(my_workflow_id_z) < index_ids.index(my_workflow_id_y)
+        index_ids = self.workflow_populator.index_ids(sort_by="create_time", sort_desc=True)
+        assert index_ids.index(my_workflow_id_z) < index_ids.index(my_workflow_id_y)
+        index_ids = self.workflow_populator.index_ids(sort_by="create_time", sort_desc=False)
+        assert index_ids.index(my_workflow_id_y) < index_ids.index(my_workflow_id_z)
         index_ids = self.workflow_populator.index_ids(sort_by="name")
         assert index_ids.index(my_workflow_id_y) < index_ids.index(my_workflow_id_z)
+        index_ids = self.workflow_populator.index_ids(sort_by="name", sort_desc=False)
+        assert index_ids.index(my_workflow_id_y) < index_ids.index(my_workflow_id_z)
+        index_ids = self.workflow_populator.index_ids(sort_by="name", sort_desc=True)
+        assert index_ids.index(my_workflow_id_z) < index_ids.index(my_workflow_id_y)
 
     def test_show_shared(self):
         my_workflow_id_1 = self.workflow_populator.simple_workflow("mine_1")

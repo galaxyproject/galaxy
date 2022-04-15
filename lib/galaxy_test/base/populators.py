@@ -1529,23 +1529,36 @@ class BaseWorkflowPopulator(BasePopulator):
         time.sleep(0.5)
 
     def index(
-        self, show_shared: Optional[bool] = None, show_published: Optional[bool] = None, sort_by: Optional[str] = None
+        self,
+        show_shared: Optional[bool] = None,
+        show_published: Optional[bool] = None,
+        sort_by: Optional[str] = None,
+        sort_desc: Optional[bool] = None,
     ):
         endpoint = "workflows?"
         if show_shared is not None:
-            endpoint += f"show_shared={show_shared}"
+            endpoint += f"show_shared={show_shared}&"
         if show_published is not None:
-            endpoint += f"show_published={show_published}"
+            endpoint += f"show_published={show_published}&"
         if sort_by is not None:
-            endpoint += f"sort_by={sort_by}"
+            endpoint += f"sort_by={sort_by}&"
+        if sort_desc is not None:
+            endpoint += f"sort_desc={sort_desc}&"
         response = self._get(endpoint)
         api_asserts.assert_status_code_is_ok(response)
         return response.json()
 
     def index_ids(
-        self, show_shared: Optional[bool] = None, show_published: Optional[bool] = None, sort_by: Optional[str] = None
+        self,
+        show_shared: Optional[bool] = None,
+        show_published: Optional[bool] = None,
+        sort_by: Optional[str] = None,
+        sort_desc: Optional[bool] = None,
     ):
-        return [w["id"] for w in self.index(show_shared=show_shared, show_published=show_published, sort_by=sort_by)]
+        workflows = self.index(
+            show_shared=show_shared, show_published=show_published, sort_by=sort_by, sort_desc=sort_desc
+        )
+        return [w["id"] for w in workflows]
 
     def share_with_user(self, workflow_id: str, user_id_or_email: str):
         data = {"user_ids": [user_id_or_email]}
