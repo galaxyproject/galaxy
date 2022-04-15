@@ -190,7 +190,8 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             show_shared=show_shared,
             missing_tools=missing_tools,
         )
-        return self.service.index(trans, payload)
+        workflows, _ = self.service.index(trans, payload)
+        return workflows
 
     @expose_api_anonymous_and_sessionless
     def show(self, trans: GalaxyWebTransaction, id, **kwd):
@@ -1452,6 +1453,13 @@ SortDescQueryParam: Optional[bool] = Query(
     description="Sort in descending order?",
 )
 
+LimitQueryParam: Optional[int] = Query(default=None, title="Limit number of queries.")
+
+OffsetQueryParam: Optional[int] = Query(
+    default=0,
+    title="Number of workflows to skip in sorted query (to enable pagination).",
+)
+
 
 @router.cbv
 class FastAPIWorkflows:
@@ -1464,6 +1472,7 @@ class FastAPIWorkflows:
     )
     def index(
         self,
+        response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
         show_deleted: bool = DeletedQueryParam,
         show_hidden: bool = HiddenQueryParam,
@@ -1472,6 +1481,8 @@ class FastAPIWorkflows:
         show_shared: Optional[bool] = ShowSharedQueryParam,
         sort_by: Optional[WorkflowSortByEnum] = SortByQueryParam,
         sort_desc: Optional[bool] = SortDescQueryParam,
+        limit: Optional[int] = LimitQueryParam,
+        offset: Optional[int] = OffsetQueryParam,
     ) -> List[Dict[str, Any]]:
         """Return the sharing status of the item."""
         payload = WorkflowIndexPayload(
@@ -1482,8 +1493,12 @@ class FastAPIWorkflows:
             missing_tools=missing_tools,
             sort_by=sort_by,
             sort_desc=sort_desc,
+            limit=limit,
+            offset=offset,
         )
-        return self.service.index(trans, payload)
+        workflows, total_matches = self.service.index(trans, payload, include_total_count=True)
+        response.headers["total_matches"] = str(total_matches)
+        return workflows
 
     @router.get(
         "/api/workflows/{id}/sharing",

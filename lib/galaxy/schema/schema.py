@@ -1058,6 +1058,11 @@ class WorkflowIndexPayload(Model):
     sort_desc: Optional[bool] = Field(
         title="Sort descending", description="Explicitly sort by descending if sort_by is specified."
     )
+    limit: Optional[int] = Field(
+        default=None,
+        lt=1000,
+    )
+    offset: Optional[int] = Field(default=0, description="Number of workflows to skip")
 
 
 class InvocationSortByEnum(str, Enum):
