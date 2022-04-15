@@ -87,9 +87,13 @@ class WorkflowsService(ServiceBase):
         query = query.filter(or_(*filters))
         query = query.filter(model.StoredWorkflow.table.c.hidden == (true() if show_hidden else false()))
         query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
-        if user:
-            query = query.order_by(desc(model.StoredWorkflow.user == user))
-        query = query.order_by(desc(model.StoredWorkflow.table.c.update_time))
+        if payload.sort_by is None:
+            if user:
+                query = query.order_by(desc(model.StoredWorkflow.user == user))
+            query = query.order_by(desc(model.StoredWorkflow.table.c.update_time))
+        else:
+            sort_column = getattr(model.StoredWorkflow, payload.sort_by)
+            query = query.order_by(sort_column)
         for wf in query.all():
             item = wf.to_dict(value_mapper={"id": trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf.id)

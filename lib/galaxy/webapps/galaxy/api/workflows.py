@@ -50,6 +50,7 @@ from galaxy.schema.schema import (
     ShareWithStatus,
     SharingStatus,
     WorkflowIndexPayload,
+    WorkflowSortByEnum,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -1439,6 +1440,12 @@ ShowPublishedQueryParam: Optional[bool] = Query(default=None, title="Include pub
 
 ShowSharedQueryParam: Optional[bool] = Query(default=None, title="Include shared workflows.", description="")
 
+SortByQueryParam: Optional[WorkflowSortByEnum] = Query(
+    default=None,
+    title="Sort workflow index by this attribute",
+    description="In unspecified, default ordering depends on other parameters but generally the user's own workflows appear first based on update time",
+)
+
 
 @router.cbv
 class FastAPIWorkflows:
@@ -1457,6 +1464,7 @@ class FastAPIWorkflows:
         missing_tools: bool = MissingToolsQueryParam,
         show_published: Optional[bool] = ShowPublishedQueryParam,
         show_shared: Optional[bool] = ShowSharedQueryParam,
+        sort_by: Optional[WorkflowSortByEnum] = SortByQueryParam,
     ) -> List[Dict[str, Any]]:
         """Return the sharing status of the item."""
         payload = WorkflowIndexPayload(
@@ -1465,6 +1473,7 @@ class FastAPIWorkflows:
             show_deleted=show_deleted,
             show_shared=show_shared,
             missing_tools=missing_tools,
+            sort_by=sort_by,
         )
         return self.service.index(trans, payload)
 

@@ -390,6 +390,14 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         # after an update to workflow 1, it now comes before workflow 2
         assert index_ids.index(my_workflow_id_1) < index_ids.index(my_workflow_id_2)
 
+    def test_index_sort_by(self):
+        my_workflow_id_y = self.workflow_populator.simple_workflow("y_1")
+        my_workflow_id_z = self.workflow_populator.simple_workflow("z_2")
+        index_ids = self.workflow_populator.index_ids()
+        assert index_ids.index(my_workflow_id_z) < index_ids.index(my_workflow_id_y)
+        index_ids = self.workflow_populator.index_ids(sort_by="name")
+        assert index_ids.index(my_workflow_id_y) < index_ids.index(my_workflow_id_z)
+
     def test_show_shared(self):
         my_workflow_id_1 = self.workflow_populator.simple_workflow("mine_1")
         my_email = self.dataset_populator.user_email()

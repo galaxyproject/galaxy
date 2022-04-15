@@ -1041,9 +1041,10 @@ class ExportHistoryArchivePayload(Model):
     )
 
 
-class SortByEnum(str, Enum):
+class WorkflowSortByEnum(str, Enum):
     create_time = "create_time"
     update_time = "update_time"
+    name = "name"
     none = None
 
 
@@ -1053,6 +1054,13 @@ class WorkflowIndexPayload(Model):
     show_published: Optional[bool] = None
     show_shared: Optional[bool] = None
     missing_tools: bool = False
+    sort_by: Optional[WorkflowSortByEnum] = Field(title="Sort By", description="Sort Worklfows by this attribute")
+
+
+class InvocationSortByEnum(str, Enum):
+    create_time = "create_time"
+    update_time = "update_time"
+    none = None
 
 
 class InvocationIndexPayload(Model):
@@ -1068,7 +1076,9 @@ class InvocationIndexPayload(Model):
     user_id: Optional[DecodedDatabaseIdField] = Field(
         title="User ID", description="Return invocations for this User ID"
     )
-    sort_by: Optional[SortByEnum] = Field(title="Sort By", description="Sort Workflow Invocations by this attribute")
+    sort_by: Optional[InvocationSortByEnum] = Field(
+        title="Sort By", description="Sort Workflow Invocations by this attribute"
+    )
     sort_desc: bool = Field(default=False, descritpion="Sort in descending order?")
     include_terminal: bool = Field(default=True, description="Set to false to only include terminal Invocations.")
     limit: Optional[int] = Field(
