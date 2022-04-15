@@ -433,6 +433,14 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         assert my_workflow_id_1 in index_ids
         assert their_workflow_id_1 in index_ids
 
+    def test_index_search(self):
+        name1, name2 = self.dataset_populator.get_random_name(), self.dataset_populator.get_random_name()
+        workflow_id_1 = self.workflow_populator.simple_workflow(name1)
+        self.workflow_populator.simple_workflow(name2)
+        index_ids = self.workflow_populator.index_ids(search=name1)
+        assert len(index_ids) == 1
+        assert workflow_id_1 in index_ids
+
     def test_index_published(self):
         # published workflows are also the default of what is displayed for anonymous API requests
         # this is tested in test_anonymous_published.
