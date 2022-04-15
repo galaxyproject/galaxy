@@ -1852,6 +1852,9 @@ class JobWrapper(HasResourceParameters):
                 job.job_messages = [str(e)]
 
             for dataset_assoc in output_dataset_associations:
+                if getattr(dataset_assoc.dataset, "discovered", False):
+                    # skip outputs that have been discovered
+                    continue
                 context = self.get_dataset_finish_context(job_context, dataset_assoc)
                 # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
                 # lets not allow this to occur
