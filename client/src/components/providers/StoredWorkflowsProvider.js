@@ -1,7 +1,7 @@
 import axios from "axios";
 import { cleanPaginationParameters } from "./utils";
 
-export function invocationsProvider(ctx, callback, extraParams) {
+export function storedWorkflowsProvider(ctx, callback, extraParams = {}) {
     const { apiUrl, ...requestParams } = ctx;
     const cleanParams = cleanPaginationParameters(requestParams);
     const promise = axios.get(apiUrl, { params: { ...cleanParams, ...extraParams } });

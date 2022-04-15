@@ -1,7 +1,6 @@
 <template>
     <div>
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
-        <loading-span v-else-if="loading" message="Loading workflows" />
         <div v-else>
             <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
             <b-row class="mb-3">
@@ -30,11 +29,26 @@
             </b-row>
             <b-table
                 id="workflow-table"
-                striped
                 :fields="fields"
-                :items="workflows"
-                :filter="filter"
-                @filtered="filtered">
+                :items="provider"
+                v-model="workflowItemsModel"
+                :per-page="perPage"
+                :current-page="currentPage"
+                hover
+                striped
+                caption-top
+                fixed
+                show-empty>
+                <template v-slot:empty>
+                    <loading-span v-if="loading" message="Loading workflows" />
+                    <b-alert v-else id="no-workflows" variant="info" show>
+                        <div v-if="showNotFound">
+                            No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
+                            >.
+                        </div>
+                        <div v-if="showNotAvailable">No workflows found. You may create or import new workflows.</div>
+                    </b-alert>
+                </template>
                 <template v-slot:cell(name)="row">
                     <WorkflowDropdown
                         :workflow="row.item"
@@ -70,11 +84,11 @@
                         @click.stop="executeWorkflow(row.item)" />
                 </template>
             </b-table>
-            <div v-if="showNotFound">
-                No matching entries found for: <span class="font-weight-bold">{{ this.filter }}</span
-                >.
-            </div>
-            <div v-if="showNotAvailable">No workflows found. You may create or import new workflows.</div>
+            <b-pagination
+                v-model="currentPage"
+                :per-page="perPage"
+                :total-rows="rows"
+                aria-controls="workflow-table"></b-pagination>
         </div>
     </div>
 </template>
@@ -86,6 +100,7 @@ import { faPlus, faShareAlt, faGlobe, faUpload, faSpinner, faStar } from "@forta
 import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services";
+import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
 import Tags from "components/Common/Tags";
 import WorkflowDropdown from "./WorkflowDropdown";
 import LoadingSpan from "components/LoadingSpan";
@@ -114,7 +129,7 @@ export default {
                 {
                     key: "tags",
                     label: _l("Tags"),
-                    sortable: true,
+                    sortable: false,
                 },
                 {
                     label: _l("Updated"),
@@ -124,12 +139,12 @@ export default {
                 {
                     label: _l("Sharing"),
                     key: "published",
-                    sortable: true,
+                    sortable: false,
                 },
                 {
                     label: _l("Bookmarked"),
                     key: "show_in_tool_panel",
-                    sortable: true,
+                    sortable: false,
                 },
                 {
                     key: "execute",
@@ -140,47 +155,53 @@ export default {
             loading: true,
             message: null,
             messageVariant: null,
-            nWorkflows: 0,
-            workflows: [],
             titleSearchWorkflows: _l("Search Workflows"),
             titleCreate: _l("Create"),
             titleImport: _l("Import"),
             titleRunWorkflow: _l("Run workflow"),
+            workflowItemsModel: [],
+            workflowItems: [],
+            currentPage: 1,
+            perPage: 20,
+            rows: 0,
         };
     },
     computed: {
         showNotFound() {
-            return this.nWorkflows === 0 && this.filter;
+            return this.filter;
         },
         showNotAvailable() {
-            return this.nWorkflows === 0 && !this.filter;
+            return !this.filter;
         },
         showMessage() {
             return !!this.message;
+        },
+        apiUrl() {
+            return `${getAppRoot()}api/workflows`;
         },
     },
     created() {
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
-        this.load();
+    },
+    watch: {
+        filter(val) {
+            this.refresh();
+        },
     },
     methods: {
-        load() {
-            this.loading = true;
-            this.filter = "";
-            this.services
-                .getWorkflows()
-                .then((workflows) => {
-                    this.workflows = workflows;
-                    this.nWorkflows = workflows.length;
-                    this.loading = false;
-                })
-                .catch((error) => {
-                    this.error = error;
-                });
+        provider(ctx) {
+            ctx.apiUrl = this.apiUrl;
+            const extraParams = { search: this.filter };
+            this.workflowItems = storedWorkflowsProvider(ctx, this.setRows, extraParams);
+            return this.workflowItems;
         },
-        filtered: function (items) {
-            this.nWorkflows = items.length;
+        refresh() {
+            this.$root.$emit("bv::refresh::table", "workflow-table");
+        },
+        setRows(data) {
+            this.rows = data.headers.total_matches;
+            this.loading = false;
         },
         createWorkflow: function (workflow) {
             window.location = `${this.root}workflows/create`;
@@ -210,7 +231,7 @@ export default {
                         getGalaxyInstance().config.stored_workflow_menu_entries.splice(indexToRemove, 1);
                     }
 
-                    this.workflows.find((workflow) => {
+                    this.workflowItems.find((workflow) => {
                         if (workflow.id === id) {
                             workflow.show_in_tool_panel = checked;
                             return true;
@@ -222,7 +243,7 @@ export default {
                 });
         },
         onTags: function (tags, index) {
-            const workflow = this.workflows[index];
+            const workflow = this.workflowItemsModel[index];
             workflow.tags = tags;
             this.services
                 .updateWorkflow(workflow.id, {
@@ -234,17 +255,17 @@ export default {
                 });
         },
         onAdd: function (workflow) {
-            this.workflows.unshift(workflow);
-            this.nWorkflows = this.workflows.length;
+            if (this.currentPage == 1) {
+                this.refresh();
+            } else {
+                this.currentPage = 1;
+            }
         },
         onRemove: function (id) {
-            this.workflows = this.workflows.filter((item) => item.id !== id);
-            this.nWorkflows = this.workflows.length;
+            this.refresh();
         },
         onUpdate: function (id, data) {
-            const workflow = this.workflows.find((item) => item.id === id);
-            Object.assign(workflow, data);
-            this.workflows = [...this.workflows];
+            this.refresh();
         },
         onSuccess: function (message) {
             this.message = message;
