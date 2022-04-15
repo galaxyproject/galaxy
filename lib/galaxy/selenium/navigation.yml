@@ -171,6 +171,7 @@ history_panel:
       display_button: '${_} .display-btn'
       edit_button: '${_} .edit-btn'
       delete_button: '${_} .delete-btn'
+      rerun_button: '${_} .rerun-btn'
 
       # Action buttons...
       download_button: '${_} .download-btn'

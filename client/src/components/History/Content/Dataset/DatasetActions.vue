@@ -34,7 +34,7 @@
                 </b-button>
                 <b-button
                     v-if="showRerun"
-                    class="px-1"
+                    class="rerun-btn px-1"
                     title="Run Job Again"
                     size="sm"
                     variant="link"
