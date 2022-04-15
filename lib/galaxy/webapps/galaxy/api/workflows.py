@@ -1446,6 +1446,12 @@ SortByQueryParam: Optional[WorkflowSortByEnum] = Query(
     description="In unspecified, default ordering depends on other parameters but generally the user's own workflows appear first based on update time",
 )
 
+SortDescQueryParam: Optional[bool] = Query(
+    default=None,
+    title="Sort Descending",
+    description="Sort in descending order?",
+)
+
 
 @router.cbv
 class FastAPIWorkflows:
@@ -1465,6 +1471,7 @@ class FastAPIWorkflows:
         show_published: Optional[bool] = ShowPublishedQueryParam,
         show_shared: Optional[bool] = ShowSharedQueryParam,
         sort_by: Optional[WorkflowSortByEnum] = SortByQueryParam,
+        sort_desc: Optional[bool] = SortDescQueryParam,
     ) -> List[Dict[str, Any]]:
         """Return the sharing status of the item."""
         payload = WorkflowIndexPayload(
@@ -1474,6 +1481,7 @@ class FastAPIWorkflows:
             show_shared=show_shared,
             missing_tools=missing_tools,
             sort_by=sort_by,
+            sort_desc=sort_desc,
         )
         return self.service.index(trans, payload)
 

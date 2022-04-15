@@ -1,3 +1,4 @@
+import logging
 from typing import (
     Any,
     Dict,
@@ -27,6 +28,8 @@ from galaxy.schema.schema import WorkflowIndexPayload
 from galaxy.tool_shed.tool_shed_registry import Registry
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.sharable import ShareableService
+
+log = logging.getLogger(__name__)
 
 
 class WorkflowsService(ServiceBase):
@@ -93,6 +96,8 @@ class WorkflowsService(ServiceBase):
             query = query.order_by(desc(model.StoredWorkflow.table.c.update_time))
         else:
             sort_column = getattr(model.StoredWorkflow, payload.sort_by)
+            if payload.sort_desc:
+                sort_column = sort_column.desc()
             query = query.order_by(sort_column)
         for wf in query.all():
             item = wf.to_dict(value_mapper={"id": trans.security.encode_id})
