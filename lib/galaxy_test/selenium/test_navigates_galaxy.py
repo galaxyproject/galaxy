@@ -23,7 +23,7 @@ class NavigatesGalaxySeleniumTestCase(SeleniumTestCase):
         if self.is_beta_history():
             disabled_element_selector = ".show-history-content-selectors-btn"
         else:
-            disabled_element_selector  = ".history-refresh-button"
+            disabled_element_selector = ".history-refresh-button"
         try:
             self.wait_for_selector(disabled_element_selector).click()
         except Exception as e:
