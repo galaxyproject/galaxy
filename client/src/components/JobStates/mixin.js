@@ -7,6 +7,9 @@ export default {
         isErrored() {
             return this.jobStatesSummary && this.jobStatesSummary.errored();
         },
+        isPopulationFailed() {
+            return this.jobStatesSummary && this.jobStatesSummary.populationFailed();
+        },
         isTerminal() {
             return this.jobStatesSummary && this.jobStatesSummary.terminal();
         },

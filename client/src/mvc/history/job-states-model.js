@@ -7,6 +7,7 @@ var UPDATE_DELAY = 2000;
 var NON_TERMINAL_STATES = ["new", "queued", "running", "waiting"];
 var ERROR_STATES = ["error", "deleted"];
 var TERMINAL_STATES = ["ok"].concat(ERROR_STATES);
+const POPULATED_STATE_FAILED = "failed";
 /** Fetch state on add or just wait for polling to start. */
 var FETCH_STATE_ON_ADD = false;
 var BATCH_FETCH_STATE = true;
@@ -26,8 +27,12 @@ var JobStatesSummary = Backbone.Model.extend({
         return !this.hasDetails() || this.get("populated_state") == "new";
     },
 
+    populationFailed: function () {
+        return this.get("populated_state") === POPULATED_STATE_FAILED;
+    },
+
     errored: function () {
-        return this.get("populated_state") === "error" || this.anyWithStates(ERROR_STATES);
+        return this.populationFailed() || this.anyWithStates(ERROR_STATES);
     },
 
     states: function () {
