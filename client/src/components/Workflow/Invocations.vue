@@ -80,6 +80,7 @@
         </b-table>
         <b-pagination
             v-model="currentPage"
+            v-show="rows >= perPage"
             :per-page="perPage"
             :total-rows="rows"
             aria-controls="invocation-list-table"></b-pagination>

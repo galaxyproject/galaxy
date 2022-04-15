@@ -86,6 +86,7 @@
             </b-table>
             <b-pagination
                 v-model="currentPage"
+                v-show="rows >= perPage"
                 :per-page="perPage"
                 :total-rows="rows"
                 aria-controls="workflow-table"></b-pagination>
