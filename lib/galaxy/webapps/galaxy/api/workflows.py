@@ -1460,6 +1460,12 @@ OffsetQueryParam: Optional[int] = Query(
     title="Number of workflows to skip in sorted query (to enable pagination).",
 )
 
+SearchQueryParameter: Optional[str] = Query(
+    default=None,
+    title="Search query.",
+    description="Free text used to filter the query. Currently this just filters by name but this shouldn't be considered part the API, the freetext search may search additional fields in different ways in the future.",
+)
+
 
 @router.cbv
 class FastAPIWorkflows:
@@ -1483,6 +1489,7 @@ class FastAPIWorkflows:
         sort_desc: Optional[bool] = SortDescQueryParam,
         limit: Optional[int] = LimitQueryParam,
         offset: Optional[int] = OffsetQueryParam,
+        search: Optional[str] = SearchQueryParameter,
     ) -> List[Dict[str, Any]]:
         """Return the sharing status of the item."""
         payload = WorkflowIndexPayload(
@@ -1495,6 +1502,7 @@ class FastAPIWorkflows:
             sort_desc=sort_desc,
             limit=limit,
             offset=offset,
+            search=search,
         )
         workflows, total_matches = self.service.index(trans, payload, include_total_count=True)
         response.headers["total_matches"] = str(total_matches)

@@ -1446,6 +1446,7 @@ class BaseWorkflowPopulator(BasePopulator):
         sort_desc: Optional[bool] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
+        search: Optional[str] = None,
     ):
         endpoint = "workflows?"
         if show_shared is not None:
@@ -1460,6 +1461,8 @@ class BaseWorkflowPopulator(BasePopulator):
             endpoint += f"limit={limit}&"
         if offset is not None:
             endpoint += f"offset={offset}&"
+        if search is not None:
+            endpoint += f"search={search}&"
         response = self._get(endpoint)
         api_asserts.assert_status_code_is_ok(response)
         return response.json()
@@ -1472,6 +1475,7 @@ class BaseWorkflowPopulator(BasePopulator):
         sort_desc: Optional[bool] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
+        search: Optional[str] = None,
     ):
         workflows = self.index(
             show_shared=show_shared,
@@ -1480,6 +1484,7 @@ class BaseWorkflowPopulator(BasePopulator):
             sort_desc=sort_desc,
             limit=limit,
             offset=offset,
+            search=search,
         )
         return [w["id"] for w in workflows]
 

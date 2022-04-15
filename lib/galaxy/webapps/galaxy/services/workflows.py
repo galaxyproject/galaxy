@@ -93,6 +93,10 @@ class WorkflowsService(ServiceBase):
         query = query.filter(or_(*filters))
         query = query.filter(model.StoredWorkflow.table.c.hidden == (true() if show_hidden else false()))
         query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
+        if payload.search:
+            search_query = payload.search
+            for q in search_query.split():
+                query = query.filter(model.StoredWorkflow.name.like(f"%{q}%"))
         if include_total_count:
             total_matches = query.count()
         else:
