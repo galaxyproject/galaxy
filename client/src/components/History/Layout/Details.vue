@@ -1,7 +1,7 @@
 <template>
     <section class="m-3 details" data-description="edit details">
         <b-button
-            v-if="writeable"
+            v-if="!currentUser.isAnonymous && writeable"
             class="edit-button ml-1 float-right"
             data-description="editor toggle"
             size="sm"
@@ -63,6 +63,7 @@
 </template>
 
 <script>
+import { mapGetters } from "vuex";
 import short from "components/directives/v-short";
 import { StatelessTags } from "components/Tags";
 
@@ -85,6 +86,9 @@ export default {
             editing: false,
             localProps: {},
         };
+    },
+    computed: {
+        ...mapGetters("user", ["currentUser"]),
     },
     methods: {
         onSave() {

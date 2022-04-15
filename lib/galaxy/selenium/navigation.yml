@@ -183,6 +183,7 @@ history_panel:
   editor:
     selectors:
       _: '${scope} [data-description="edit details"]'
+      name: '${_} [data-description="name display"]'
       toggle: '${_} [data-description="editor toggle"]'
       form: '${_} [data-description="edit form"]'
       name_input: '${_} [data-description="name input"]'

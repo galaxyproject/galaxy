@@ -68,7 +68,7 @@ export class HistoryPanelProxy {
     }
     switchToHistory(historyId) {
         this.model.id = historyId;
-        store.dispatch("history/loadHistoryById", historyId);
+        store.dispatch("history/setCurrentHistoryId", historyId);
     }
     async buildCollection(collectionType, selection, hideSourceItems, fromRulesInput = false) {
         let selectionContent = null;
