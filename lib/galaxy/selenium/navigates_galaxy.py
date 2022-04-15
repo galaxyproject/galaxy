@@ -485,8 +485,7 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_visible(self.navigation.history_panel.selectors.search, wait_type=WAIT_TYPES.DATABASE_OPERATION)
 
     def history_panel_wait_for_hid_hidden(self, hid, multi_history_panel=False):
-        history_item = self.hid_to_history_item(hid)
-        history_item_selector = self.history_panel_item_component(history_item, multi_history_panel=multi_history_panel)
+        history_item_selector = self.history_panel_item_component(hid=hid, multi_history_panel=multi_history_panel)
         self.wait_for_absent_or_hidden(history_item_selector, wait_type=WAIT_TYPES.JOB_COMPLETION)
         return history_item_selector
 
