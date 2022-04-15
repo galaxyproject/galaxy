@@ -1191,7 +1191,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_table_elements(self):
         self.wait_for_selector_visible("#workflow-table")
         table_elements = self.driver.find_elements_by_css_selector(
-            "#workflow-table > tbody > tr:not([style*='display: none'])"
+            "#workflow-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
         )
         return table_elements
 
