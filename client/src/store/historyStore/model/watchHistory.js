@@ -23,8 +23,9 @@ export async function watchHistory() {
     // get current history
     const history = await getCurrentHistoryFromServer();
     const historyId = history.id;
+
     // continue if the history update time has changed
-    if (lastUpdateTime != history.update_time) {
+    if (!lastUpdateTime || lastUpdateTime < history.update_time) {
         lastUpdateTime = history.update_time;
         // execute request to obtain recently changed items
         const params = {

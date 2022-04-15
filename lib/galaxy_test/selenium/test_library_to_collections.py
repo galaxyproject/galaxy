@@ -88,8 +88,7 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.collection_builder_create()
         self.home()
         self.history_panel_wait_for_hid_ok(3)
-        # TODO: Check hidden datasets in new history
-        # self.history_panel_wait_for_hid_hidden(1)
-        # self.history_panel_wait_for_hid_hidden(2)
+        self.history_panel_wait_for_hid_hidden(1)
+        self.history_panel_wait_for_hid_hidden(2)
         if is_new_history:
             assert self.history_panel_name_element().text == history_name
