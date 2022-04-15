@@ -406,6 +406,15 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         index_ids = self.workflow_populator.index_ids(sort_by="name", sort_desc=True)
         assert index_ids.index(my_workflow_id_z) < index_ids.index(my_workflow_id_y)
 
+    def test_index_limit_and_offset(self):
+        self.workflow_populator.simple_workflow("y_1")
+        self.workflow_populator.simple_workflow("z_2")
+        index_ids = self.workflow_populator.index_ids(limit=1)
+        assert len(index_ids) == 1
+        index_ids_offset = self.workflow_populator.index_ids(limit=1, offset=1)
+        assert len(index_ids_offset) == 1
+        assert index_ids[0] != index_ids_offset[0]
+
     def test_show_shared(self):
         my_workflow_id_1 = self.workflow_populator.simple_workflow("mine_1")
         my_email = self.dataset_populator.user_email()

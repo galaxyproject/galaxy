@@ -3,6 +3,8 @@ from typing import (
     Any,
     Dict,
     List,
+    Optional,
+    Tuple,
 )
 
 from sqlalchemy import (
@@ -50,7 +52,8 @@ class WorkflowsService(ServiceBase):
         self,
         trans: ProvidesUserContext,
         payload: WorkflowIndexPayload,
-    ) -> List[Dict[str, Any]]:
+        include_total_count: bool = False,
+    ) -> Tuple[List[Dict[str, Any]], Optional[int]]:
         show_published = payload.show_published
         show_hidden = payload.show_hidden
         show_deleted = payload.show_deleted
@@ -90,6 +93,10 @@ class WorkflowsService(ServiceBase):
         query = query.filter(or_(*filters))
         query = query.filter(model.StoredWorkflow.table.c.hidden == (true() if show_hidden else false()))
         query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
+        if include_total_count:
+            total_matches = query.count()
+        else:
+            total_matches = None
         if payload.sort_by is None:
             if user:
                 query = query.order_by(desc(model.StoredWorkflow.user == user))
@@ -99,6 +106,10 @@ class WorkflowsService(ServiceBase):
             if payload.sort_desc:
                 sort_column = sort_column.desc()
             query = query.order_by(sort_column)
+        if payload.limit is not None:
+            query = query.limit(payload.limit)
+        if payload.offset is not None:
+            query = query.offset(payload.offset)
         for wf in query.all():
             item = wf.to_dict(value_mapper={"id": trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf.id)
@@ -144,8 +155,8 @@ class WorkflowsService(ServiceBase):
                             workflows_by_toolshed[repo_identifier]["workflows"].append(workflow["name"])
             for repo_tag in workflows_by_toolshed:
                 workflows.append(workflows_by_toolshed[repo_tag])
-            return workflows
-        return rval
+            return workflows, total_matches
+        return rval, total_matches
 
     def __get_full_shed_url(self, url):
         for shed_url in self._tool_shed_registry.tool_sheds.values():
