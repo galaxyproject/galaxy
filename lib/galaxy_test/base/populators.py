@@ -1438,6 +1438,24 @@ class BaseWorkflowPopulator(BasePopulator):
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok)
         time.sleep(0.5)
 
+    def index(self, show_shared: Optional[bool] = None, show_published: Optional[bool] = None):
+        endpoint = "workflows?"
+        if show_shared is not None:
+            endpoint += f"show_shared={show_shared}"
+        if show_published is not None:
+            endpoint += f"show_published={show_published}"
+        response = self._get(endpoint)
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
+    def index_ids(self, show_shared: Optional[bool] = None, show_published: Optional[bool] = None):
+        return [w["id"] for w in self.index(show_shared=show_shared, show_published=show_published)]
+
+    def share_with_user(self, workflow_id: str, user_id_or_email: str):
+        data = {"user_ids": [user_id_or_email]}
+        response = self._put(f"workflows/{workflow_id}/share_with_users", data, json=True)
+        api_asserts.assert_status_code_is_ok(response)
+
 
 class RunJobsSummary(NamedTuple):
     history_id: str
