@@ -1388,7 +1388,10 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def click_history_options(self):
-        component = self.components.history_panel.options_button_icon
+        if self.is_beta_history():
+            component = self.components.history_panel.options_button_icon_beta
+        else:
+            component = self.components.history_panel.options_button_icon
         component.wait_for_and_click()
 
     def click_history_option_export_to_file(self):
@@ -1409,14 +1412,18 @@ class NavigatesGalaxy(HasDriver):
         self.click_history_options()
 
         if isinstance(option_label_or_component, str):
-            option_label = option_label_or_component
-            # Click labelled option
-            self.wait_for_visible(self.navigation.history_panel.options_menu)
-            menu_item_sizzle_selector = self.navigation.history_panel.options_menu_item(
-                option_label=option_label
-            ).selector
-            menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
-            menu_selection_element.click()
+            if self.is_beta_history():
+                component = self.beta_history_element("share or publish")
+                component.wait_for_and_click()
+            else:
+                option_label = option_label_or_component
+                # Click labeled option
+                self.wait_for_visible(self.navigation.history_panel.options_menu)
+                menu_item_sizzle_selector = self.navigation.history_panel.options_menu_item(
+                    option_label=option_label
+                ).selector
+                menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
+                menu_selection_element.click()
         else:
             option_component = option_label_or_component
             option_component.wait_for_and_click()
@@ -1510,7 +1517,7 @@ class NavigatesGalaxy(HasDriver):
             editable_text_input_element.clear()
         editable_text_input_element.send_keys(new_name)
         self.send_enter(editable_text_input_element)
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
         return editable_text_input_element
 
     def history_panel_name_input(self):

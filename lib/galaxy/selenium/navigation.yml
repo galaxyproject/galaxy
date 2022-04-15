@@ -262,7 +262,7 @@ history_panel:
 
     options_button: '#history-options-button'
     options_button_icon: '.details .menu-expand-button'
-    options_button_icon_beta: '.details .menu-expand-button'
+    options_button_icon_beta: '[data-description="history options"]'
     options_button_copy_datasets_beta: '.copy-datasets-menu-item'
     options_menu: '#history-options-button-menu'
     options_menu_item:
