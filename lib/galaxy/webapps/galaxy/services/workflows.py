@@ -85,11 +85,12 @@ class WorkflowsService(ServiceBase):
         if show_shared:
             query = query.outerjoin(model.StoredWorkflow.users_shared_with)
 
-        query = (
-            query.options(joinedload("annotations"))
-            .options(joinedload("latest_workflow").undefer("step_count").lazyload("steps"))
-            .options(joinedload("tags"))
-        )
+        latest_workflow_load = joinedload("latest_workflow")
+        if not payload.skip_step_counts:
+            latest_workflow_load = latest_workflow_load.undefer("step_count")
+        latest_workflow_load = latest_workflow_load.lazyload("steps")
+
+        query = query.options(joinedload("annotations")).options(latest_workflow_load).options(joinedload("tags"))
         query = query.filter(or_(*filters))
         query = query.filter(model.StoredWorkflow.table.c.hidden == (true() if show_hidden else false()))
         query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
@@ -121,7 +122,8 @@ class WorkflowsService(ServiceBase):
             item["url"] = web.url_for("workflow", id=encoded_id)
             item["owner"] = wf.user.username
             item["source_metadata"] = wf.latest_workflow.source_metadata
-            item["number_of_steps"] = wf.latest_workflow.step_count
+            if not payload.skip_step_counts:
+                item["number_of_steps"] = wf.latest_workflow.step_count
             item["show_in_tool_panel"] = False
             if user is not None:
                 item["show_in_tool_panel"] = wf.show_in_tool_panel(user_id=user.id)
