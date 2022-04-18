@@ -17,7 +17,7 @@
                 </b-button>
 
                 <b-button
-                    v-b-modal.history-selector-modal
+                    v-b-modal.selector-history-modal
                     data-description="switch to another history"
                     size="sm"
                     variant="link"
@@ -128,13 +128,13 @@
             </b-button-group>
         </nav>
 
-        <HistorySelectorModal
-            id="history-selector-modal"
+        <SelectorModal
+            id="selector-history-modal"
             :histories="histories"
             :current-history="history"
             @selectHistory="$emit('setCurrentHistory', $event)" />
 
-        <CopyHistoryModal id="copy-history-modal" :history="history" />
+        <CopyModal id="copy-history-modal" :history="history" />
 
         <b-modal
             id="history-privacy-modal"
@@ -165,14 +165,14 @@
 <script>
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { switchToLegacyHistoryPanel } from "components/History/adapters/betaToggle";
-import CopyHistoryModal from "components/History/Modals/CopyModal";
-import HistorySelectorModal from "components/History/Modals/HistorySelectorModal";
+import CopyModal from "components/History/Modals/CopyModal";
+import SelectorModal from "components/History/Modals/SelectorModal";
 
 export default {
     mixins: [legacyNavigationMixin],
     components: {
-        CopyHistoryModal,
-        HistorySelectorModal,
+        CopyModal,
+        SelectorModal,
     },
     props: {
         histories: { type: Array, required: true },
