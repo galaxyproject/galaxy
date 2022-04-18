@@ -1466,6 +1466,12 @@ SearchQueryParameter: Optional[str] = Query(
     description="Free text used to filter the query. Currently this just filters by name but this shouldn't be considered part the API, the freetext search may search additional fields in different ways in the future.",
 )
 
+SkipStepCountsQueryParam: bool = Query(
+    default=False,
+    title="Skip step counts.",
+    description="Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts.",
+)
+
 
 @router.cbv
 class FastAPIWorkflows:
@@ -1490,6 +1496,7 @@ class FastAPIWorkflows:
         limit: Optional[int] = LimitQueryParam,
         offset: Optional[int] = OffsetQueryParam,
         search: Optional[str] = SearchQueryParameter,
+        skip_step_counts: bool = SkipStepCountsQueryParam,
     ) -> List[Dict[str, Any]]:
         """Return the sharing status of the item."""
         payload = WorkflowIndexPayload(
@@ -1503,6 +1510,7 @@ class FastAPIWorkflows:
             limit=limit,
             offset=offset,
             search=search,
+            skip_step_counts=skip_step_counts,
         )
         workflows, total_matches = self.service.index(trans, payload, include_total_count=True)
         response.headers["total_matches"] = str(total_matches)

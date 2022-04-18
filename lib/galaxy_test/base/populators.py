@@ -1447,6 +1447,7 @@ class BaseWorkflowPopulator(BasePopulator):
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         search: Optional[str] = None,
+        skip_step_counts: Optional[bool] = None,
     ):
         endpoint = "workflows?"
         if show_shared is not None:
@@ -1463,6 +1464,8 @@ class BaseWorkflowPopulator(BasePopulator):
             endpoint += f"offset={offset}&"
         if search is not None:
             endpoint += f"search={search}&"
+        if skip_step_counts is not None:
+            endpoint += f"skip_step_counts={skip_step_counts}&"
         response = self._get(endpoint)
         api_asserts.assert_status_code_is_ok(response)
         return response.json()

@@ -1064,6 +1064,7 @@ class WorkflowIndexPayload(Model):
     )
     offset: Optional[int] = Field(default=0, description="Number of workflows to skip")
     search: Optional[str] = Field(default=None, title="Filter text", description="Freetext to search.")
+    skip_step_counts: bool = False
 
 
 class InvocationSortByEnum(str, Enum):
