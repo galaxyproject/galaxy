@@ -1189,11 +1189,9 @@ class NavigatesGalaxy(HasDriver):
         self.click_masthead_workflow()
 
     def workflow_index_table_elements(self):
-        self.wait_for_selector_visible("#workflow-table")
-        table_elements = self.driver.find_elements_by_css_selector(
-            "#workflow-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
-        )
-        return table_elements
+        workflows = self.components.workflows
+        workflows.workflow_table.wait_for_visible()
+        return workflows.workflow_rows.all()
 
     def workflow_index_table_row(self, workflow_index=0):
         return self.workflow_index_table_elements()[workflow_index]
@@ -1318,6 +1316,11 @@ class NavigatesGalaxy(HasDriver):
         inputs[1].send_keys(annotation)
         form_element.click()
         return name
+
+    def invocation_index_table_elements(self):
+        invocations = self.components.invocations
+        invocations.invocations_table.wait_for_visible()
+        return invocations.invocations_table_rows.all()
 
     def tool_open(self, tool_id, outer=False):
         if outer:

@@ -1297,6 +1297,7 @@ class BaseWorkflowPopulator(BasePopulator):
         assert_ok=True,
         client_convert=None,
         round_trip_format_conversion=False,
+        invocations=1,
         raw_yaml=False,
     ):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
@@ -1342,28 +1343,31 @@ class BaseWorkflowPopulator(BasePopulator):
             workflow_request["replacement_params"] = json.dumps(replacement_parameters)
         if has_uploads:
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        invocation_response = workflow_populator.invoke_workflow_raw(workflow_id, workflow_request)
-        api_asserts.assert_status_code_is(invocation_response, expected_response)
-        invocation = invocation_response.json()
-        if expected_response != 200:
-            assert not assert_ok
-            return invocation
-        invocation_id = invocation.get("id")
-        if invocation_id:
-            # Wait for workflow to become fully scheduled and then for all jobs
-            # complete.
-            if wait:
-                workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
-            jobs = self.dataset_populator.history_jobs(history_id)
-            return RunJobsSummary(
-                history_id=history_id,
-                workflow_id=workflow_id,
-                invocation_id=invocation_id,
-                inputs=inputs,
-                jobs=jobs,
-                invocation=invocation,
-                workflow_request=workflow_request,
-            )
+        assert invocations > 0
+        jobs = []
+        for _ in range(invocations):
+            invocation_response = workflow_populator.invoke_workflow_raw(workflow_id, workflow_request)
+            api_asserts.assert_status_code_is(invocation_response, expected_response)
+            invocation = invocation_response.json()
+            if expected_response != 200:
+                assert not assert_ok
+                return invocation
+            invocation_id = invocation.get("id")
+            if invocation_id:
+                # Wait for workflow to become fully scheduled and then for all jobs
+                # complete.
+                if wait:
+                    workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
+                jobs.extend(self.dataset_populator.history_jobs(history_id))
+        return RunJobsSummary(
+            history_id=history_id,
+            workflow_id=workflow_id,
+            invocation_id=invocation_id,
+            inputs=inputs,
+            jobs=jobs,
+            invocation=invocation,
+            workflow_request=workflow_request,
+        )
 
     def dump_workflow(self, workflow_id, style=None):
         raw_workflow = self.download_workflow(workflow_id, style=style)

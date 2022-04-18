@@ -494,8 +494,16 @@ workflows:
     save_button: '#workflow-save-button'
     search_box: "#workflow-search"
     workflow_table: "#workflow-table"
+    workflow_rows: "#workflow-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
     external_link: '.workflow-external-link'
     trs_icon: '.workflow-trs-icon'
+    pager: '.gx-workflows-grid-pager'
+    pager_page: '.gx-workflows-grid-pager .gx-grid-pager-page [aria-posinset=${page}]'
+    pager_page_next: '.gx-workflows-grid-pager .gx-grid-pager-next button'
+    pager_page_first: '.gx-workflows-grid-pager .gx-grid-pager-first button'
+    pager_page_last: '.gx-workflows-grid-pager .gx-grid-pager-last button'
+    pager_page_previous: '.gx-workflows-grid-pager .gx-grid-pager-prev button'
+    pager_page_active: '.gx-workflows-grid-pager .gx-grid-pager-page.active button'
 
 trs_search:
   selectors:
@@ -631,7 +639,15 @@ workflow_show:
 invocations:
   selectors:
     invocations_table: '.invocations-list table'
-    invocations_table_rows: '.invocations-list table tbody tr'
+    invocations_table_rows: '.invocations-list table tbody tr:not(.b-table-empty-row, [style*="display: none"])'
+    pager: '.gx-invocations-grid-pager'
+    pager_page: '.gx-invocations-grid-pager .gx-grid-pager-page [aria-posinset=${page}]'
+    pager_page_next: '.gx-invocations-grid-pager .gx-grid-pager-next button'
+    pager_page_last: '.gx-invocations-grid-pager .gx-grid-pager-last button'
+    pager_page_first: '.gx-invocations-grid-pager .gx-grid-pager-first button'
+    pager_page_previous: '.gx-invocations-grid-pager .gx-grid-pager-prev button'
+    pager_page_active: '.gx-invocations-grid-pager .gx-grid-pager-page.active button'
+
     state_details: '.workflow-invocation-state-component'
     toggle_invocation_details: '.toggle-invocation-details'
     progress_steps_note: '.workflow-invocation-state-component .steps-progress .progressNote'

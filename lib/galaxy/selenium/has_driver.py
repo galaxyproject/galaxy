@@ -19,6 +19,14 @@ class HasDriver:
     TimeoutException = TimeoutException
     driver: WebDriver
 
+    def re_get_with_query_params(self, params_str: str):
+        driver = self.driver
+        new_url = driver.current_url
+        if "?" not in new_url:
+            new_url += "?"
+        new_url += params_str
+        driver.get(new_url)
+
     def assert_xpath(self, xpath):
         assert self.driver.find_element_by_xpath(xpath)
 
