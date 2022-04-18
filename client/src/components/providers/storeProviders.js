@@ -136,8 +136,10 @@ export const JobProvider = {
 export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undefined) => {
     return {
         watch: {
-            $attrs() {
-                this.load();
+            $attrs(newVal, oldVal) {
+                if (JSON.stringify(newVal) != JSON.stringify(oldVal)) {
+                    this.load();
+                }
             },
         },
         data() {

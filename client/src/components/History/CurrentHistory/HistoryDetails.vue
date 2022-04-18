@@ -4,9 +4,9 @@
         :annotation="history.annotation"
         :tags="history.tags"
         :writeable="writeable"
-        @save="$emit('update:currentHistory', $event)">
+        @save="onSave">
         <template v-slot:name>
-            <h3 data-description="history name display" v-short="history.name || 'History'" />
+            <h3 data-description="name display" v-short="history.name || 'History'" />
             <h5 class="history-size mt-1">
                 <span v-if="history.size">{{ history.size | niceFileSize }}</span>
                 <span v-else v-localize>(empty)</span>
@@ -35,6 +35,12 @@ export default {
     props: {
         history: { type: Object, required: true },
         writeable: { type: Boolean, default: true },
+    },
+    methods: {
+        onSave(newDetails) {
+            const id = this.history.id;
+            this.$emit("updateHistory", { ...newDetails, id });
+        },
     },
 };
 </script>

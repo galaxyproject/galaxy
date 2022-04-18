@@ -49,7 +49,6 @@ const getQueryString = (filterText) => {
 
 const actions = {
     fetchHistoryItems: async ({ commit, dispatch }, { historyId, filterText, offset }) => {
-        dispatch("startHistoryChangedItems", { historyId: historyId });
         const queryString = getQueryString(filterText);
         const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
         const url = `api/histories/${historyId}/contents?${params}&${queryString}`;

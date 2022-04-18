@@ -149,8 +149,7 @@ def edit_details(f, scope=".history-index"):
         result = f(self, *args, **kwds)
         # save edits
         if self.is_beta_history():
-            save_button = self.beta_history_element("editor save button")
-            save_button.wait_for_and_click()
+            self.history_click_editor_save()
         return result
 
     return func_wrapper
@@ -302,7 +301,7 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_name_element(self):
         if self.is_beta_history():
-            component = self.beta_history_element("history name display")
+            component = self.beta_history_element("name display")
         else:
             component = self.components.history_panel.name
         return component.wait_for_present()
@@ -479,10 +478,10 @@ class NavigatesGalaxy(HasDriver):
         return rval
 
     def history_panel_wait_for_history_loaded(self):
-        # Use the search box showing up as a proxy that the history display
-        # has left the "loading" state and is showing a valid set of history contents
-        # (even if empty).
-        self.wait_for_visible(self.navigation.history_panel.selectors.search, wait_type=WAIT_TYPES.DATABASE_OPERATION)
+        # Verify that the history has been loaded and is empty.
+        self.wait_for_visible(
+            self.navigation.history_panel.selectors.empty_message, wait_type=WAIT_TYPES.DATABASE_OPERATION
+        )
 
     def history_panel_wait_for_hid_hidden(self, hid, multi_history_panel=False):
         history_item_selector = self.history_panel_item_component(hid=hid, multi_history_panel=multi_history_panel)
@@ -1388,7 +1387,10 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def click_history_options(self):
-        component = self.components.history_panel.options_button_icon
+        if self.is_beta_history():
+            component = self.components.history_panel.options_button_icon_beta
+        else:
+            component = self.components.history_panel.options_button_icon
         component.wait_for_and_click()
 
     def click_history_option_export_to_file(self):
@@ -1410,7 +1412,7 @@ class NavigatesGalaxy(HasDriver):
 
         if isinstance(option_label_or_component, str):
             option_label = option_label_or_component
-            # Click labelled option
+            # Click labeled option
             self.wait_for_visible(self.navigation.history_panel.options_menu)
             menu_item_sizzle_selector = self.navigation.history_panel.options_menu_item(
                 option_label=option_label
@@ -1451,6 +1453,11 @@ class NavigatesGalaxy(HasDriver):
         else:
             option = self.beta_history_element("create new history")
             option.wait_for_and_click()
+
+    def history_click_editor_save(self):
+        option = self.beta_history_element("editor save button")
+        option.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
 
     def history_panel_click_copy_elements(self):
         if self.is_beta_history():
@@ -1883,8 +1890,7 @@ class NavigatesGalaxy(HasDriver):
             if clear_text:
                 annotation_input.clear()
             annotation_input.send_keys(annotation)
-            save_button = self.beta_history_element("editor save button")
-            save_button.wait_for_and_click()
+            self.history_click_editor_save()
         else:
             self.ensure_history_annotation_area_displayed()
             editable = history_panel.annotation_editable_text

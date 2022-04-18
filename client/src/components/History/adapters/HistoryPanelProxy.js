@@ -10,6 +10,7 @@ import { mountVueComponent } from "utils/mountVueComponent";
 import HistoryIndex from "components/History/Index";
 import { buildCollectionModal } from "./buildCollectionModal";
 import { createDatasetCollection } from "components/History/model/queries";
+import { watchHistory } from "store/historyStore/model/watchHistory";
 
 // extend existing current history panel
 export class HistoryPanelProxy {
@@ -47,14 +48,7 @@ export class HistoryPanelProxy {
             },
         };
 
-        /*/ fetch to update the quota meter adding 'current' for any anon-user's id
-        Galaxy.listenTo(this.historyView, "history-size-change", () => {
-            Galaxy.user.fetch({
-                url: `${Galaxy.user.urlRoot()}/${Galaxy.user.id || "current"}`,
-            });
-        });*/
-
-        // Watch the store, update history id
+        // watch the store, update history id
         store.watch(
             (state, getters) => getters["history/currentHistory"],
             (history) => {
@@ -62,6 +56,9 @@ export class HistoryPanelProxy {
                 this.model.set("name", history.name);
             }
         );
+
+        // start watching the history with continuous queries
+        watchHistory();
     }
     refreshContents() {
         // to be removed after disabling legacy history
@@ -71,7 +68,7 @@ export class HistoryPanelProxy {
     }
     switchToHistory(historyId) {
         this.model.id = historyId;
-        store.dispatch("history/loadHistoryById", historyId);
+        store.dispatch("history/setCurrentHistoryId", historyId);
     }
     async buildCollection(collectionType, selection, hideSourceItems, fromRulesInput = false) {
         let selectionContent = null;

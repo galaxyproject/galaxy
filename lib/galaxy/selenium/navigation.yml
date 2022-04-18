@@ -171,6 +171,7 @@ history_panel:
       display_button: '${_} .display-btn'
       edit_button: '${_} .edit-btn'
       delete_button: '${_} .delete-btn'
+      rerun_button: '${_} .rerun-btn'
 
       # Action buttons...
       download_button: '${_} .download-btn'
@@ -183,6 +184,7 @@ history_panel:
   editor:
     selectors:
       _: '${scope} [data-description="edit details"]'
+      name: '${_} [data-description="name display"]'
       toggle: '${_} [data-description="editor toggle"]'
       form: '${_} [data-description="edit form"]'
       name_input: '${_} [data-description="name input"]'
@@ -260,7 +262,7 @@ history_panel:
 
     options_button: '#history-options-button'
     options_button_icon: '.details .menu-expand-button'
-    options_button_icon_beta: '.details .menu-expand-button'
+    options_button_icon_beta: '[data-description="history options"]'
     options_button_copy_datasets_beta: '.copy-datasets-menu-item'
     options_menu: '#history-options-button-menu'
     options_menu_item:
