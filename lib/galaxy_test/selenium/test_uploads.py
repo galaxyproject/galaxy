@@ -104,7 +104,6 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
     @selenium_test
     def test_upload_paired_list(self):
-        self.use_legacy_history()
         self.upload_paired_list(
             [self.get_filename("1.tabular"), self.get_filename("2.tabular")], name="Test Paired List"
         )
