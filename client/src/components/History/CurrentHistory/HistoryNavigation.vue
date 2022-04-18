@@ -32,6 +32,7 @@
                     toggle-class="text-decoration-none"
                     v-b-tooltip.bottom.hover
                     title="Show history options"
+                    menu-class="history-options-button-menu"
                     data-description="history options">
                     <b-dropdown-text>
                         <div v-if="historiesLoading">
