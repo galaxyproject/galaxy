@@ -8,7 +8,10 @@
         <template v-slot:name>
             <h3 data-description="name display" v-short="history.name || 'History'" />
             <h5 class="history-size mt-1">
-                <span v-if="history.size">{{ history.size | niceFileSize }}</span>
+                <span v-if="history.size">
+                    <div>{{ history.size | niceFileSize }}</div>
+                    <div>{{ shownCount }} shown, {{ hiddenCount }} hidden</div>
+                </span>
                 <span v-else v-localize>(empty)</span>
             </h5>
         </template>
@@ -17,6 +20,7 @@
 
 <script>
 import prettyBytes from "pretty-bytes";
+import store from "store";
 import short from "components/directives/v-short";
 import Details from "components/History/Layout/Details";
 
@@ -35,6 +39,14 @@ export default {
     props: {
         history: { type: Object, required: true },
         writeable: { type: Boolean, default: true },
+    },
+    computed: {
+        shownCount() {
+            return (store.getters.getHistoryItems({ historyId: this.history.id, filterText: "" })).length;
+        },
+        hiddenCount() {
+            return (store.getters.getHistoryItems({ historyId: this.history.id, filterText: "visible=false" })).length;
+        },
     },
     methods: {
         onSave(newDetails) {
