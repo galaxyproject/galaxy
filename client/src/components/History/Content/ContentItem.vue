@@ -32,8 +32,7 @@
                     <CollectionDescription
                         v-if="!isDataset"
                         :collection-type="item.collection_type"
-                        :element-count="item.element_count"
-                    />
+                        :element-count="item.element_count" />
                     <div v-if="item.tags && item.tags.length > 0" class="nametags">
                         <Nametag v-for="tag in item.tags" :key="tag" :tag="tag" />
                     </div>
