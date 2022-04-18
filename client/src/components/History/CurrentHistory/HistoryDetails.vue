@@ -42,10 +42,10 @@ export default {
     },
     computed: {
         shownCount() {
-            return (store.getters.getHistoryItems({ historyId: this.history.id, filterText: "" })).length;
+            return store.getters.getHistoryItems({ historyId: this.history.id, filterText: "" }).length;
         },
         hiddenCount() {
-            return (store.getters.getHistoryItems({ historyId: this.history.id, filterText: "visible=false" })).length;
+            return store.getters.getHistoryItems({ historyId: this.history.id, filterText: "visible=false" }).length;
         },
     },
     methods: {
