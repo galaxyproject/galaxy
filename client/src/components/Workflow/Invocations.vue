@@ -7,7 +7,7 @@
             {{ headerMessage }}
         </b-alert>
         <b-table
-            id="invocation-list-table"
+            :id="tableId"
             :fields="invocationFields"
             :items="provider"
             v-model="invocationItemsModel"
@@ -20,7 +20,8 @@
             show-empty
             class="invocations-table">
             <template v-slot:empty>
-                <b-alert id="no-invocations" variant="info" show>
+                <loading-span v-if="loading" message="Loading workflow invocations" />
+                <b-alert v-else id="no-invocations" variant="info" show>
                     {{ noInvocationsMessage }}
                 </b-alert>
             </template>
@@ -81,9 +82,8 @@
         <b-pagination
             v-model="currentPage"
             v-show="rows >= perPage"
-            :per-page="perPage"
-            :total-rows="rows"
-            aria-controls="invocation-list-table"></b-pagination>
+            class="gx-invocations-grid-pager"
+            v-bind="paginationAttrs"></b-pagination>
     </div>
 </template>
 
@@ -95,12 +95,14 @@ import { WorkflowInvocationState } from "components/WorkflowInvocationState";
 import UtcDate from "components/UtcDate";
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
+import paginationMixin from "./paginationMixin";
 
 export default {
     components: {
         UtcDate,
         WorkflowInvocationState,
     },
+    mixins: [paginationMixin],
     props: {
         noInvocationsMessage: { type: String, default: "No Workflow Invocations to display" },
         headerMessage: { type: String, default: "" },
@@ -118,13 +120,11 @@ export default {
             { key: "execute", label: "", class: "col-button" },
         ];
         return {
+            tableId: "invocation-list-table",
             invocationItems: [],
             invocationItemsModel: [],
             invocationFields: fields,
-            status: "",
-            currentPage: 1,
-            perPage: 50,
-            rows: 0,
+            perPage: this.rowsPerPage(50),
         };
     },
     computed: {
@@ -162,12 +162,6 @@ export default {
             }
             this.invocationItems = invocationsProvider(ctx, this.setRows, extraParams);
             return this.invocationItems;
-        },
-        refresh() {
-            this.$root.$emit("bv::refresh::table", "invocation-list-table");
-        },
-        setRows(data) {
-            this.rows = data.headers.total_matches;
         },
         swapRowDetails(row) {
             row.toggleDetails();

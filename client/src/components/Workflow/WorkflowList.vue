@@ -28,7 +28,7 @@
                 </b-col>
             </b-row>
             <b-table
-                id="workflow-table"
+                :id="tableId"
                 :fields="fields"
                 :items="provider"
                 v-model="workflowItemsModel"
@@ -87,9 +87,8 @@
             <b-pagination
                 v-model="currentPage"
                 v-show="rows >= perPage"
-                :per-page="perPage"
-                :total-rows="rows"
-                aria-controls="workflow-table"></b-pagination>
+                class="gx-workflows-grid-pager"
+                v-bind="paginationAttrs"></b-pagination>
         </div>
     </div>
 </template>
@@ -104,22 +103,23 @@ import { Services } from "./services";
 import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
 import Tags from "components/Common/Tags";
 import WorkflowDropdown from "./WorkflowDropdown";
-import LoadingSpan from "components/LoadingSpan";
 import UtcDate from "components/UtcDate";
 import { getGalaxyInstance } from "app";
+import paginationMixin from "./paginationMixin";
 
 library.add(faPlus, faUpload, faSpinner, faGlobe, faShareAlt, farStar, faStar);
 
 export default {
     components: {
         FontAwesomeIcon,
-        LoadingSpan,
         UtcDate,
         Tags,
         WorkflowDropdown,
     },
+    mixins: [paginationMixin],
     data() {
         return {
+            tableId: "workflow-table",
             error: null,
             fields: [
                 {
@@ -162,9 +162,7 @@ export default {
             titleRunWorkflow: _l("Run workflow"),
             workflowItemsModel: [],
             workflowItems: [],
-            currentPage: 1,
-            perPage: 20,
-            rows: 0,
+            perPage: this.rowsPerPage(20),
         };
     },
     computed: {
@@ -196,13 +194,6 @@ export default {
             const extraParams = { search: this.filter, skip_step_counts: true };
             this.workflowItems = storedWorkflowsProvider(ctx, this.setRows, extraParams);
             return this.workflowItems;
-        },
-        refresh() {
-            this.$root.$emit("bv::refresh::table", "workflow-table");
-        },
-        setRows(data) {
-            this.rows = data.headers.total_matches;
-            this.loading = false;
         },
         createWorkflow: function (workflow) {
             window.location = `${this.root}workflows/create`;
