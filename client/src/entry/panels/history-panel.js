@@ -67,6 +67,7 @@ const HistoryPanel = Backbone.View.extend({
             target: "galaxy_main",
             icon: "fa fa-cog",
             href: `${this.root}root/history_options`,
+            description: "history options",
         });
         panelHeaderButtons.push(this.buttonOptions);
 
