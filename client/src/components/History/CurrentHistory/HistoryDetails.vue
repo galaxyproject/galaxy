@@ -10,7 +10,9 @@
             <h5 class="history-size mt-1">
                 <span v-if="history.size">
                     <div>{{ history.size | niceFileSize }}</div>
-                    <div>{{ history.contents_active["active"] }} shown, {{ history.contents_active["hidden"] }} hidden</div>
+                    <div>
+                        {{ history.contents_active["active"] }} shown, {{ history.contents_active["hidden"] }} hidden
+                    </div>
                 </span>
                 <span v-else v-localize>(empty)</span>
             </h5>
