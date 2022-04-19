@@ -1,7 +1,7 @@
 <template>
     <div>
         <h2 id="jobs-title">Jobs</h2>
-        <b-alert v-if="this.message" :variant="galaxyKwdToBootstrap(status)" show>
+        <b-alert v-if="this.message" :variant="status" show>
             {{ message }}
         </b-alert>
         <p>
@@ -126,6 +126,7 @@ import JobsTable from "components/admin/JobsTable";
 import JobLock from "./JobLock";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import { commonJobFields } from "./JobFields";
+import { errorMessageAsString } from "utils/simple-error";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;
@@ -153,7 +154,7 @@ export default {
             stopMessage: "",
             filter: "",
             message: "",
-            status: "",
+            status: "info",
             loading: true,
             busy: true,
             cutoffMin: 5,
@@ -212,14 +213,13 @@ export default {
                 .get(`${getAppRoot()}api/jobs?${params}`)
                 .then((response) => {
                     this.jobs = response.data;
-                    this.message = response.data.message;
-                    this.status = response.data.status;
                     this.loading = false;
                     this.busy = false;
+                    this.status = "info";
                 })
                 .catch((error) => {
-                    this.message = error.response.data.err_msg;
-                    this.status = "error";
+                    this.message = errorMessageAsString(error);
+                    this.status = "danger";
                     console.log(error.response);
                 });
         },
@@ -235,23 +235,6 @@ export default {
         },
         toggleAll(checked) {
             this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];
-        },
-        galaxyKwdToBootstrap(status) {
-            let variant = "info";
-            if (status !== "") {
-                variant = status;
-            }
-            const galaxyKwdToBoostrapDict = {
-                done: "success",
-                info: "info",
-                warning: "warning",
-                error: "danger",
-            };
-            if (variant in galaxyKwdToBoostrapDict) {
-                return galaxyKwdToBoostrapDict[variant];
-            } else {
-                return variant;
-            }
         },
     },
     created() {
