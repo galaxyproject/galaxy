@@ -385,7 +385,7 @@ class BaseJobRunner:
                 if not self.app.config.enable_celery_tasks:
                     raise Exception("CONFIG ERROR, can't request celery metadata without enabling celery tasks")
                 if not self.app.config.celery_backend == "rpc://localhost":
-                    raise Exception(f"Boo, wrong celery backend {self.app.confg.celery_backend}")
+                    raise Exception(f"Boo, wrong celery backend {self.app.config.celery_backend}")
                 from galaxy.celery.tasks import set_job_metadata
 
                 # We're synchronously waiting for a task here. This means we have to have a result backend.

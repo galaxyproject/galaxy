@@ -133,7 +133,7 @@ class Registry:
             handling_proprietary_datatypes = False
             if isinstance(config, (str, Path)):
                 # Parse datatypes_conf.xml
-                tree = galaxy.util.parse_xml(config)
+                tree = galaxy.util.parse_xml(str(config))
                 root = tree.getroot()
                 # Load datatypes and converters from config
                 if deactivate:
