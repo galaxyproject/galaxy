@@ -357,7 +357,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
         rel_path_dir = os.path.dirname(rel_path)
         if not os.path.exists(self._get_cache_path(rel_path_dir)):
-            os.makedirs(self._get_cache_path(rel_path_dir))
+            os.makedirs(self._get_cache_path(rel_path_dir), exist_ok=True)
         # Now pull in the file
         file_ok = self._download(rel_path)
         self._fix_permissions(self._get_cache_path(rel_path_dir))
@@ -502,7 +502,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if dir_only and base_dir:
             # for JOB_WORK directory
             if not os.path.exists(rel_path):
-                os.makedirs(rel_path)
+                os.makedirs(rel_path, exist_ok=True)
             log.debug("irods_pt _exists: %s", ipt_timer)
             return True
         log.debug("irods_pt _exists: %s", ipt_timer)
@@ -530,7 +530,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             # Create given directory in cache
             cache_dir = os.path.join(self.staging_path, rel_path)
             if not os.path.exists(cache_dir):
-                os.makedirs(cache_dir)
+                os.makedirs(cache_dir, exist_ok=True)
 
             if not dir_only:
                 rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
