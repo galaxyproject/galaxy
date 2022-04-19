@@ -10,9 +10,16 @@
             caption-top
             @row-clicked="toggleDetails"
             v-model="innerValue"
-            :busy="busy">
+            :busy="busy"
+            show-empty>
             <template v-slot:table-caption>
                 {{ tableCaption }}
+            </template>
+            <template v-slot:empty>
+                <LoadingSpan v-if="loading" message="Loading jobs" />
+                <b-alert v-else class="no-jobs" variant="info" show>
+                    {{ noItemsMessage }}
+                </b-alert>
             </template>
             <template v-slot:cell(update_time)="data">
                 <utc-date :date="data.value" mode="elapsed" />
@@ -33,9 +40,10 @@
 <script>
 import UtcDate from "components/UtcDate";
 import JobDetails from "components/JobInformation/JobDetails";
+import LoadingSpan from "components/LoadingSpan";
 
 export default {
-    components: { UtcDate, JobDetails },
+    components: { UtcDate, JobDetails, LoadingSpan },
     props: {
         tableCaption: {
             type: String,
@@ -54,6 +62,14 @@ export default {
         busy: {
             type: Boolean,
             required: true,
+        },
+        loading: {
+            type: Boolean,
+            default: false,
+        },
+        noItemsMessage: {
+            type: String,
+            default: "No jobs to display.",
         },
         value: {},
     },
