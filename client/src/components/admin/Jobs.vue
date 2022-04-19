@@ -78,23 +78,14 @@
                     to show with current cutoff time of {{ cutoffMin }} minutes</template
                 >.
             </b-alert>
-            <b-table
+            <jobs-table
                 v-else
                 v-model="jobsItemsModel"
                 :fields="unfinishedJobFields"
                 :items="unfinishedJobs"
                 :filter="filter"
-                hover
-                responsive
-                striped
-                caption-top
-                @row-clicked="toggleDetails"
+                :tableCaption="runningTableCaption"
                 :busy="busy">
-                <template v-slot:table-caption>
-                    These jobs are unfinished and have had their state updated in the previous
-                    {{ cutoffMin }} minutes. For currently running jobs, the "Last Update" column should indicate the
-                    runtime so far.
-                </template>
                 <template v-slot:head(selected)>
                     <b-form-checkbox
                         v-model="allSelected"
@@ -108,41 +99,21 @@
                         :key="data.index"
                         :value="data.item['id']"></b-form-checkbox>
                 </template>
-                <template v-slot:cell(update_time)="data">
-                    <utc-date :date="data.value" mode="elapsed" />
-                </template>
-                <template v-slot:row-details="row">
-                    <job-details :job="row.item" />
-                </template>
-            </b-table>
+            </jobs-table>
 
             <template v-if="!showAllRunning">
                 <h4>Finished Jobs</h4>
                 <b-alert v-if="!finishedJobs.length" variant="secondary" show>
                     There are no recently finished jobs to show with current cutoff time of {{ cutoffMin }} minutes.
                 </b-alert>
-
-                <b-table
+                <jobs-table
                     v-else
+                    :table-caption="finishedTableCaption"
                     :fields="finishedJobFields"
                     :items="finishedJobs"
                     :filter="filter"
-                    hover
-                    responsive
-                    striped
-                    caption-top
-                    @row-clicked="toggleDetails"
                     :busy="busy">
-                    <template v-slot:table-caption>
-                        These jobs have completed in the previous {{ cutoffMin }} minutes.
-                    </template>
-                    <template v-slot:cell(update_time)="data">
-                        <utc-date :date="data.value" mode="elapsed" />
-                    </template>
-                    <template v-slot:row-details="row">
-                        <job-details :job="row.item" />
-                    </template>
-                </b-table>
+                </jobs-table>
             </template>
         </div>
     </div>
@@ -150,9 +121,8 @@
 
 <script>
 import { getAppRoot } from "onload/loadConfig";
-import UtcDate from "components/UtcDate";
 import axios from "axios";
-import JobDetails from "components/JobInformation/JobDetails";
+import JobsTable from "components/admin/JobsTable";
 import JobLock from "./JobLock";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import { commonJobFields } from "./JobFields";
@@ -163,7 +133,7 @@ function cancelJob(jobId, message) {
 }
 
 export default {
-    components: { UtcDate, JobDetails, JobLock },
+    components: { JobLock, JobsTable },
     data() {
         return {
             jobs: [],
@@ -207,7 +177,6 @@ export default {
             const unfinishedJobs = [];
             const finishedJobs = [];
             newVal.forEach((item) => {
-                item._cellVariants = { state: this.translateState(item.state) };
                 if (JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(item.state)) {
                     unfinishedJobs.push(item);
                 } else {
@@ -216,6 +185,14 @@ export default {
             });
             this.unfinishedJobs = unfinishedJobs;
             this.finishedJobs = finishedJobs;
+        },
+    },
+    computed: {
+        finishedTableCaption() {
+            return `These jobs have completed in the previous ${this.cutoffMin} minutes.`;
+        },
+        runningTableCaption() {
+            return `These jobs are unfinished and have had their state updated in the previous ${this.cutoffMin} minutes. For currently running jobs, the "Last Update" column should indicate the runtime so far.`;
         },
     },
     methods: {
@@ -256,30 +233,6 @@ export default {
                 this.stopMessage = "";
             });
         },
-
-        toggleDetails(item) {
-            this.$set(item, "_showDetails", !item._showDetails);
-        },
-        translateState(state) {
-            const translateDict = {
-                ok: "success",
-                error: "danger",
-                new: "primary",
-                queued: "secondary",
-                running: "info",
-                upload: "dark",
-            };
-            return translateDict[state] || "primary";
-        },
-        computeItems(items) {
-            return items.map((job) => {
-                return {
-                    ...job,
-                    _showDetails: false,
-                    _cellVariants: { state: this.translateState(job.state) },
-                };
-            });
-        },
         toggleAll(checked) {
             this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];
         },
@@ -306,24 +259,3 @@ export default {
     },
 };
 </script>
-
-<style>
-/* Can not be scoped because of command line tdClass */
-.break-word {
-    white-space: pre-wrap;
-    word-break: break-word;
-}
-.info-frame-container {
-    overflow: hidden;
-    padding-top: 100%;
-    position: relative;
-}
-.info-frame-container iframe {
-    border: 0;
-    height: 100%;
-    left: 0;
-    position: absolute;
-    top: 0;
-    width: 100%;
-}
-</style>
