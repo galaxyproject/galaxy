@@ -38,6 +38,7 @@ from .util import (
     build_target,
     conda_build_target_str,
     create_repository,
+    default_mulled_conda_channels_from_env,
     get_file_from_recipe_url,
     PrintProgress,
     quay_repository,
@@ -53,10 +54,7 @@ DEFAULT_BASE_IMAGE = os.environ.get("DEFAULT_BASE_IMAGE", "quay.io/bioconda/base
 DEFAULT_EXTENDED_BASE_IMAGE = os.environ.get(
     "DEFAULT_EXTENDED_BASE_IMAGE", "quay.io/bioconda/base-glibc-debian-bash:latest"
 )
-if "DEFAULT_MULLED_CONDA_CHANNELS" in os.environ:
-    DEFAULT_CHANNELS = os.environ["DEFAULT_MULLED_CONDA_CHANNELS"].split(",")
-else:
-    DEFAULT_CHANNELS = ["conda-forge", "bioconda"]
+DEFAULT_CHANNELS = default_mulled_conda_channels_from_env() or ["conda-forge", "bioconda"]
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 DEFAULT_BINDS = ["build/dist:/usr/local/"]
 DEFAULT_WORKING_DIR = "/source/"
@@ -341,7 +339,12 @@ class CondaInDockerContext(CondaContext):
     ):
         if not conda_exec:
             conda_image = CONDA_IMAGE or "continuumio/miniconda3:latest"
-            conda_exec = docker_command_list("run", [conda_image, "conda"])
+            binds = []
+            for channel in ensure_channels:
+                if channel.startswith("file://"):
+                    bind_path = channel[7:]
+                    binds.extend(["-v", f"/{bind_path}:/{bind_path}"])
+            conda_exec = docker_command_list("run", binds + [conda_image, "conda"])
         super().__init__(
             conda_prefix=conda_prefix,
             conda_exec=conda_exec,
