@@ -396,7 +396,7 @@ class BaseJobRunner:
                         extended_metadata_collection="extended" in metadata_strategy,
                     ).get()
                 except Exception:
-                    log.exception()
+                    log.exception("Metadata task failed")
                     return
             else:
                 lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
