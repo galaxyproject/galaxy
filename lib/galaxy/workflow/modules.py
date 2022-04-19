@@ -865,9 +865,9 @@ class InputParameterModule(WorkflowModule):
             )
             if param_type == "text":
                 if parameter_type == "text":
-                    text_default = parameter_def.get("default")
+                    text_default = parameter_def.get("default") or ""
                 else:
-                    text_default = None
+                    text_default = ""
                 default_source["value"] = text_default
                 input_default_value: Union[
                     TextToolParameter,
@@ -1424,7 +1424,7 @@ class ToolModule(WorkflowModule):
         return self.tool.name if self.tool else self.tool_id
 
     def get_content_id(self):
-        return self.tool_id
+        return self.tool.id if self.tool else self.tool_id
 
     def get_version(self):
         return self.tool.version if self.tool else self.tool_version
@@ -1755,8 +1755,8 @@ class ToolModule(WorkflowModule):
                         # See https://github.com/galaxyproject/galaxy/pull/1693 for context.
                         replacement = dataset_instance
                         temp = iteration_elements[prefixed_name]
-                        if hasattr(temp, 'element_identifier') and temp.element_identifier:
-                            replacement.element_identifier = temp.element_identifier  # type: ignore[attr-defined]
+                        if hasattr(temp, "element_identifier") and temp.element_identifier:
+                            replacement.element_identifier = temp.element_identifier  # type: ignore[union-attr]
                     else:
                         # If collection - just use element model object.
                         replacement = iteration_elements[prefixed_name]

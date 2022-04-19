@@ -1,4 +1,4 @@
-__version__ = "22.1.0rc1"
+__version__ = "22.1.0"
 
 PROJECT_NAME = "galaxy-web-framework"
 PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"

@@ -40,5 +40,4 @@ cd $working_directory
 $memory_statement
 $instrument_pre_commands
 $command
-echo $? > $exit_code_path
 $instrument_post_commands

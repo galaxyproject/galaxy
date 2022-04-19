@@ -264,8 +264,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         if attribute in dataset_attrs["dataset"]:
                             setattr(dataset_instance.dataset, attribute, dataset_attrs["dataset"][attribute])
                     self._attach_dataset_hashes(dataset_attrs["dataset"], dataset_instance)
-                    # TODO: Once we have a test...
-                    #    self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
+                    self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
                     if 'id' in dataset_attrs["dataset"] and self.import_options.allow_edit:
                         dataset_instance.dataset.id = dataset_attrs["dataset"]['id']
                     if job:
@@ -1079,6 +1078,10 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
                 else:
                     raise NotImplementedError()
                 new_obj = obj.copy()
+                if not new_id and self.import_options.allow_edit:
+                    # We may not have exported all job parameters, such as dces,
+                    # but we shouldn't set the object_id to none in that case.
+                    new_id = obj["id"]
                 new_obj["id"] = new_id
                 return (k, new_obj)
 

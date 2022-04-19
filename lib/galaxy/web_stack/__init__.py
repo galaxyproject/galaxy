@@ -5,7 +5,17 @@ import json
 import logging
 import multiprocessing
 import os
-from typing import Callable, Dict, FrozenSet, List, Optional, Tuple, Type
+import sys
+import threading
+from typing import (
+    Callable,
+    Dict,
+    FrozenSet,
+    List,
+    Optional,
+    Tuple,
+    Type,
+)
 from urllib.request import install_opener
 
 # The uwsgi module is automatically injected by the parent uwsgi process and only exists that way.  If anything works,
@@ -199,6 +209,8 @@ class ApplicationStack:
 
     def set_postfork_server_name(self, app):
         new_server_name = self.server_name_template.format(**self.facts)
+        if "GUNICORN_WORKER_ID" in os.environ:
+            new_server_name = f"{new_server_name}.{os.environ['GUNICORN_WORKER_ID']}"
         multiprocessing.current_process().name = app.config.server_name = new_server_name
         log.debug('server_name set to: %s', new_server_name)
 
@@ -557,6 +569,45 @@ class PasteApplicationStack(ApplicationStack):
     name = 'Python Paste'
 
 
+class GunicornApplicationStack(ApplicationStack):
+    name = "Gunicorn"
+    do_post_fork = "--preload" in os.environ.get("GUNICORN_CMD_ARGS", "") or "--preload" in sys.argv
+    postfork_functions: List[Callable] = []
+    # Will be set to True by external hook
+    late_postfork_event = threading.Event()
+
+    @classmethod
+    def register_postfork_function(cls, f, *args, **kwargs):
+        # do_post_fork determines if we need to run postfork functions
+        if cls.do_post_fork:
+            # if so, we call ApplicationStack.late_postfork once after forking ...
+            if not cls.postfork_functions:
+                os.register_at_fork(after_in_child=cls.late_postfork)
+            # ... and store everything we need to run in ApplicationStack.postfork_functions
+            cls.postfork_functions.append(lambda: f(*args, **kwargs))
+        else:
+            f(*args, **kwargs)
+
+    @classmethod
+    def run_postfork(cls):
+        cls.late_postfork_event.wait(1)
+        for f in cls.postfork_functions:
+            f()
+
+    @classmethod
+    def late_postfork(cls):
+        # We can't run postfork functions immediately, because this is before the gunicorn `post_fork` hook runs,
+        # and we depend on the `post_fork` hook to set a worker id.
+        t = threading.Thread(target=cls.run_postfork)
+        t.start()
+
+    def log_startup(self):
+        msg = [f"Galaxy server instance '{self.config.server_name}' is running"]
+        if "GUNICORN_LISTENERS" in os.environ:
+            msg.append(f'serving on {os.environ["GUNICORN_LISTENERS"]}')
+        log.info("\n".join(msg))
+
+
 class WeblessApplicationStack(ApplicationStack):
     name = 'Webless'
 
@@ -602,7 +653,9 @@ def application_stack_class() -> Type[ApplicationStack]:
     """Returns the correct ApplicationStack class for the stack under which
     this Galaxy process is running.
     """
-    if uwsgi is not None and hasattr(uwsgi, 'numproc'):
+    if "gunicorn" in os.environ.get("SERVER_SOFTWARE", ""):
+        return GunicornApplicationStack
+    elif uwsgi is not None and hasattr(uwsgi, "numproc"):
         return UWSGIApplicationStack
     else:
         # cleverer ideas welcome

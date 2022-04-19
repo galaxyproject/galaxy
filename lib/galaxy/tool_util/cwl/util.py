@@ -10,7 +10,12 @@ import tarfile
 import tempfile
 import urllib.parse
 from collections import namedtuple
-from typing import Any, List, Optional
+from typing import (
+    Any,
+    BinaryIO,
+    List,
+    Optional,
+)
 
 import yaml
 from typing_extensions import TypedDict
@@ -57,6 +62,7 @@ def output_properties(
 ) -> OutputPropertiesType:
     checksum = hashlib.sha1()
     properties: OutputPropertiesType = {"class": "File", "checksum": "", "size": 0}
+    f: BinaryIO
     if path is not None:
         properties["path"] = path
         f = open(path, "rb")

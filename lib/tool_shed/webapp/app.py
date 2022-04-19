@@ -13,6 +13,7 @@ import tool_shed.webapp.model
 from galaxy import auth
 from galaxy.app import SentryClientMixin
 from galaxy.config import configure_logging
+from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.users import UserManager
 from galaxy.model.base import SharedModelMapping
@@ -72,7 +73,8 @@ class UniverseApplication(BasicSharedApp, SentryClientMixin):
         self._register_singleton(SharedModelMapping, model)
         self._register_singleton(mapping.ToolShedModelMapping, model)
         self._register_singleton(scoped_session, self.model.context)
-        self._register_singleton(UserManager, UserManager)
+        self.user_manager = self._register_singleton(UserManager, UserManager)
+        self.api_keys_manager = self._register_singleton(ApiKeyManager)
         # initialize the Tool Shed tag handler.
         self.tag_handler = CommunityTagHandler(self)
         # Initialize the Tool Shed tool data tables.  Never pass a configuration file here

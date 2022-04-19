@@ -4,7 +4,7 @@
             <h4 class="alert-heading">Failed to access Dataset details.</h4>
             {{ errorMessage }}
         </b-alert>
-        <DatasetProvider :id="datasetId" v-slot="{ item: dataset, loading: datasetLoading }">
+        <DatasetProvider :id="datasetId" v-slot="{ result: dataset, loading: datasetLoading }">
             <JobDetailsProvider
                 v-if="!datasetLoading"
                 :jobid="dataset.creating_job"

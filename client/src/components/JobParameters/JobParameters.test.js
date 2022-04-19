@@ -24,7 +24,7 @@ const DatasetProvider = {
     render() {
         return this.$scopedSlots.default({
             loading: false,
-            item: raw,
+            result: raw,
         });
     },
 };

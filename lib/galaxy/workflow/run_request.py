@@ -89,17 +89,10 @@ def _normalize_inputs(steps, inputs, inputs_by):
         # start to ensure tool state is being preserved and loaded in a type safe way.
         assert isinstance(optional, bool)
         if not inputs_key and default_value is None and not optional:
-            message = f"Workflow cannot be run because an expected input step '{step.order_index}' ({step.label}) is not optional and no input."
+            message = f"Workflow cannot be run because an expected input step '{step.id}' ({step.label}) is not optional and no input."
             raise exceptions.MessageException(message)
         if inputs_key:
-            input_value = inputs[inputs_key]
-            if input_value is None and default_value is None and not optional:
-                # We've got a null value in a required parameter.
-                # I can't think of a situation where this should be valid,
-                # so let's fail early here
-                message = f"Workflow cannot be run because an expected input step '{step.order_index}' ({step.label}) is not optional and input is null."
-                raise exceptions.MessageException(message)
-            normalized_inputs[step.id] = input_value
+            normalized_inputs[step.id] = inputs[inputs_key]
     return normalized_inputs
 
 

@@ -11,6 +11,7 @@ from galaxy.config import (
     BaseAppConfiguration,
     CommonConfigurationMixin,
     get_database_engine_options,
+    TOOL_SHED_CONFIG_SCHEMA_PATH,
 )
 from galaxy.config import expand_pretty_datetime_format
 from galaxy.config.schema import AppSchema
@@ -18,16 +19,9 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.util import string_as_bool
 from galaxy.version import VERSION, VERSION_MAJOR, VERSION_MINOR
 
-try:
-    from importlib.resources import files  # type: ignore[attr-defined]
-except ImportError:
-    # Python < 3.9
-    from importlib_resources import files  # type: ignore[no-redef]
-
 log = logging.getLogger(__name__)
 
-TOOLSHED_APP_NAME = 'tool_shed'
-TOOLSHED_CONFIG_SCHEMA_PATH = files('tool_shed.webapp') / 'config_schema.yml'
+TOOLSHED_APP_NAME = "tool_shed"
 
 
 class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
@@ -36,7 +30,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     add_sample_file_to_defaults = {'datatypes_config_file'}
 
     def _load_schema(self):
-        return AppSchema(TOOLSHED_CONFIG_SCHEMA_PATH, TOOLSHED_APP_NAME)
+        return AppSchema(TOOL_SHED_CONFIG_SCHEMA_PATH, TOOLSHED_APP_NAME)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

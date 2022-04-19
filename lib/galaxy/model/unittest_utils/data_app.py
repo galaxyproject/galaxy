@@ -13,6 +13,7 @@ from galaxy import model, objectstore
 from galaxy.datatypes import registry
 from galaxy.model.mapping import GalaxyModelMapping, init
 from galaxy.model.security import GalaxyRBACAgent
+from galaxy.model.tags import GalaxyTagHandler
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util.bunch import Bunch
 
@@ -55,6 +56,7 @@ class GalaxyDataTestConfig(Bunch):
         self.jobs_directory = os.path.join(self.data_dir, 'jobs_directory')
         self.new_file_path = os.path.join(self.data_dir, 'tmp')
         self.file_path = os.path.join(self.data_dir, 'files')
+        self.server_name = "main"
 
     def __del__(self):
         if self._remove_root:
@@ -74,6 +76,7 @@ class GalaxyDataTestApp():
         self.object_store = objectstore.build_object_store_from_config(self.config)
         self.model = init("/tmp", self.config.database_connection, create_tables=True, object_store=self.object_store)
         self.security_agent = self.model.security_agent
+        self.tag_handler = GalaxyTagHandler(self.model.context)
         self.init_datatypes()
 
     def init_datatypes(self):

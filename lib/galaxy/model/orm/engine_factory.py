@@ -8,6 +8,7 @@ from multiprocessing.util import register_after_fork
 from sqlalchemy import (
     create_engine,
     event,
+    exc,
 )
 from sqlalchemy.engine import Engine
 
@@ -93,5 +94,22 @@ def build_engine(url, engine_options, database_query_profiling_proxy=False, trac
         connect_args['check_same_thread'] = False
     # Create the database engine
     engine = create_engine(url, connect_args=connect_args, **engine_options)
+
+    # Prevent sharing connection across fork: https://docs.sqlalchemy.org/en/14/core/pooling.html#using-connection-pools-with-multiprocessing-or-os-fork
     register_after_fork(engine, lambda e: e.dispose())
+
+    @event.listens_for(engine, "connect")
+    def connect(dbapi_connection, connection_record):
+        connection_record.info["pid"] = os.getpid()
+
+    @event.listens_for(engine, "checkout")
+    def checkout(dbapi_connection, connection_record, connection_proxy):
+        pid = os.getpid()
+        if connection_record.info["pid"] != pid:
+            connection_record.dbapi_connection = connection_proxy.dbapi_connection = None
+            raise exc.DisconnectionError(
+                "Connection record belongs to pid %s, "
+                "attempting to check out in pid %s" % (connection_record.info["pid"], pid)
+            )
+
     return engine

@@ -34,8 +34,8 @@ def schema_decoder(obj):
             assert clazz_str.startswith(SCHEMA_MODELS_PACKAGE_BASE) and ".." not in clazz_str, f"Invalid class str {clazz_str}"
             module_name, class_name = clazz_str.rsplit('.', 1)
             module = import_module(module_name)
-            clazz = getattr(module, class_name, None)
-            obj = clazz(**obj['__object__'])
+            clazz = getattr(module, class_name)
+            obj = clazz(**obj["__object__"])
             return obj
 
     return obj

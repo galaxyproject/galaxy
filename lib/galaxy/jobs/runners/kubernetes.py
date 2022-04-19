@@ -139,12 +139,17 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory,
                                    job_wrapper=job_wrapper,
                                    job_destination=job_wrapper.job_destination)
+        # Kubernetes doesn't really produce meaningful "job stdout", but file needs to be present
+        with open(ajs.output_file, 'w'):
+            pass
+        with open(ajs.error_file, 'w'):
+            pass
 
-        if not self.prepare_job(job_wrapper,
-                                include_metadata=False,
-                                modify_command_for_container=False,
-                                stdout_file=ajs.output_file,
-                                stderr_file=ajs.error_file):
+        if not self.prepare_job(
+            job_wrapper,
+            include_metadata=False,
+            modify_command_for_container=False,
+        ):
             return
 
         script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file, shell=job_wrapper.shell, galaxy_virtual_env=None)

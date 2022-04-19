@@ -12,6 +12,10 @@ from typing import Any, List, NamedTuple
 import requests
 import yaml
 from boltons.iterutils import remap
+try:
+    from gravity.util import settings_to_sample
+except ImportError:
+    settings_to_sample = None
 
 try:
     from pykwalify.core import Core
@@ -24,6 +28,8 @@ if __name__ == '__main__':
 
 from galaxy.config import (
     GALAXY_CONFIG_SCHEMA_PATH,
+    REPORTS_CONFIG_SCHEMA_PATH,
+    TOOL_SHED_CONFIG_SCHEMA_PATH,
     UWSGI_SCHEMA_PATH,
 )
 from galaxy.config.schema import (
@@ -358,16 +364,16 @@ SHED_APP = App(
     "9009",
     ["tool_shed.webapp.buildapp:app_factory"],
     "config/tool_shed.yml",
-    "lib/tool_shed/webapp/config_schema.yml",
-    'tool_shed.webapp.buildapp:uwsgi_app()',
+    str(TOOL_SHED_CONFIG_SCHEMA_PATH),
+    "tool_shed.webapp.buildapp:uwsgi_app()",
 )
 REPORTS_APP = App(
     ["reports_wsgi.ini", "config/reports.ini"],
     "9001",
     ["galaxy.webapps.reports.buildapp:app_factory"],
     "config/reports.yml",
-    "lib/galaxy/webapps/reports/config_schema.yml",
-    'galaxy.webapps.reports.buildapp:uwsgi_app()',
+    str(REPORTS_CONFIG_SCHEMA_PATH),
+    "galaxy.webapps.reports.buildapp:uwsgi_app()",
 )
 APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}
 
@@ -692,6 +698,10 @@ def _build_sample_yaml(args, app_desc):
         description = description.lstrip()
         as_comment = "\n".join(f"# {line}" for line in description.split("\n")) + "\n"
         f.write(as_comment)
+    if app_desc.app_name == "galaxy":
+        if settings_to_sample is None:
+            raise Exception("Please install gravity to rebuild the sample config")
+        f.write(settings_to_sample())
     _write_sample_section(args, f, 'uwsgi', Schema(UWSGI_OPTIONS), as_comment=False, uwsgi_hack=True)
     _write_sample_section(args, f, app_desc.app_name, schema)
     destination = os.path.join(args.galaxy_root, app_desc.sample_destination)
