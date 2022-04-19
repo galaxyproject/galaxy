@@ -10,7 +10,7 @@
             <h5 class="history-size mt-1">
                 <span v-if="history.size">
                     <div>{{ history.size | niceFileSize }}</div>
-                    <div>{{ shownCount }} shown, {{ hiddenCount }} hidden</div>
+                    <div>{{ history.contents_active["active"] }} shown, {{ history.contents_active["hidden"] }} hidden</div>
                 </span>
                 <span v-else v-localize>(empty)</span>
             </h5>
@@ -20,7 +20,6 @@
 
 <script>
 import prettyBytes from "pretty-bytes";
-import store from "store";
 import short from "components/directives/v-short";
 import Details from "components/History/Layout/Details";
 
@@ -39,14 +38,6 @@ export default {
     props: {
         history: { type: Object, required: true },
         writeable: { type: Boolean, default: true },
-    },
-    computed: {
-        shownCount() {
-            return store.getters.getHistoryItems({ historyId: this.history.id, filterText: "" }).length;
-        },
-        hiddenCount() {
-            return store.getters.getHistoryItems({ historyId: this.history.id, filterText: "visible=false" }).length;
-        },
     },
     methods: {
         onSave(newDetails) {

@@ -40,7 +40,7 @@ function formData(fields = {}) {
  */
 const stdHistoryParams = {
     view: "summary",
-    keys: "size",
+    keys: "size,contents_active",
 };
 
 /**
