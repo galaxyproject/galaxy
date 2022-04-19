@@ -1,5 +1,6 @@
 import logging
 import os
+import urllib.parse
 from typing import (
     cast,
     Dict,
@@ -497,7 +498,8 @@ def get_last_sqlalchemymigrate_version(model: ModelId) -> int:
 
 
 def get_url_string(engine: Engine) -> str:
-    return engine.url.render_as_string(hide_password=False)
+    db_url = engine.url.render_as_string(hide_password=False)
+    return urllib.parse.unquote(db_url)
 
 
 def get_alembic_manager(engine: Engine) -> AlembicManager:
