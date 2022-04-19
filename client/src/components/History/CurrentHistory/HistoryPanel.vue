@@ -95,7 +95,6 @@
                             </Listing>
                         </div>
                     </section>
-                    <ToolHelpModal />
                 </section>
             </SelectedItems>
         </ExpandedItems>
@@ -111,7 +110,6 @@ import { deleteContent, updateContentFields } from "components/History/model/que
 import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
 import Listing from "components/History/Layout/Listing";
-import ToolHelpModal from "components/History/Modals/ToolHelpModal";
 import HistoryOperations from "./HistoryOperations/Index";
 import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
@@ -135,7 +133,6 @@ export default {
         LoadingSpan,
         Listing,
         SelectedItems,
-        ToolHelpModal,
     },
     props: {
         history: { type: Object, required: true },

@@ -23,8 +23,8 @@ export class HistoryPanelProxy {
                 this.models = models;
                 this.unwatch = null;
             },
-            each(callback) {
-                const historyItems = store.getters.getHistoryItems({ historyId: model.id, filterText: "" });
+            each(callback, filterText = "") {
+                const historyItems = store.getters.getHistoryItems({ historyId: model.id, filterText: filterText });
                 historyItems.forEach((model) => {
                     callback(new Backbone.Model(model));
                 });

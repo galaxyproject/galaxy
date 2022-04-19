@@ -29,7 +29,10 @@
                     <span class="id hid">{{ id }}</span>
                     <span>:</span>
                     <span class="content-title name">{{ name }}</span>
-                    <CollectionDescription v-if="!isDataset" :item="item" />
+                    <CollectionDescription
+                        v-if="!isDataset"
+                        :collection-type="item.collection_type"
+                        :element-count="item.element_count" />
                     <div v-if="item.tags && item.tags.length > 0" class="nametags">
                         <Nametag v-for="tag in item.tags" :key="tag" :tag="tag" />
                     </div>

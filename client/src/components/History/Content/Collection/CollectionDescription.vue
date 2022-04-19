@@ -9,7 +9,8 @@
 <script>
 export default {
     props: {
-        item: { type: Object, required: true },
+        collectionType: { type: String, required: true },
+        elementCount: { type: Number, required: true },
     },
     data() {
         return {
@@ -23,12 +24,6 @@ export default {
     computed: {
         collectionLabel() {
             return this.labels[this.collectionType] || "nested list";
-        },
-        collectionType() {
-            return this.item.collection_type;
-        },
-        elementCount() {
-            return this.item.element_count;
         },
     },
 };
