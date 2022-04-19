@@ -1681,7 +1681,7 @@ class WorkflowCreateOptions(WorkflowStateResolutionOptions):
     shed_tool_conf: Optional[str] = None
 
     # for workflows imported by archive source
-    archive_source: str = ""
+    archive_source: Optional[str] = ""
     trs_tool_id: str = ""
     trs_version_id: str = ""
     trs_server: str = ""
