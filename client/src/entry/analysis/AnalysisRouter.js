@@ -49,7 +49,7 @@ import Citations from "components/Citation/Citations";
 import DisplayStructure from "components/DisplayStructured";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
-import Confirmation from "components/login/Confirmation";
+import NewUserConfirmation from "components/login/NewUserConfirmation";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import Libraries from "components/Libraries";
 import { mountVueComponent } from "utils/mountVueComponent";
@@ -149,7 +149,7 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_new_user_confirmation: function () {
-            this._display_vue_helper(Confirmation);
+            this._display_vue_helper(NewUserConfirmation);
         },
 
         show_user: function () {

@@ -64,7 +64,7 @@
             </template>
 
             <template v-else>
-                <confirmation @setRedirect="setRedirect" />
+                <new-user-confirmation @setRedirect="setRedirect" />
             </template>
 
             <div v-if="show_welcome_with_login" class="col">
@@ -80,7 +80,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
-import Confirmation from "components/login/Confirmation.vue";
+import NewUserConfirmation from "components/login/NewUserConfirmation.vue";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
@@ -88,7 +88,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         ExternalLogin,
-        Confirmation,
+        NewUserConfirmation,
     },
     props: {
         show_welcome_with_login: {
