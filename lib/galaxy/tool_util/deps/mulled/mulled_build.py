@@ -244,7 +244,7 @@ def mull_targets(
     for channel in channels:
         if channel.startswith("file://"):
             bind_path = channel[7:]
-            binds.append(f"/{bind_path}:/{bind_path}")
+            binds.append(f"{bind_path}:{bind_path}")
 
     channels = ",".join(channels)
     target_str = ",".join(map(conda_build_target_str, targets))
@@ -344,7 +344,7 @@ class CondaInDockerContext(CondaContext):
             for channel in ensure_channels:
                 if channel.startswith("file://"):
                     bind_path = channel[7:]
-                    binds.extend(["-v", f"/{bind_path}:/{bind_path}"])
+                    binds.extend(["-v", f"{bind_path}:{bind_path}"])
             conda_exec = docker_command_list("run", binds + [conda_image, "conda"])
         super().__init__(
             conda_prefix=conda_prefix,
