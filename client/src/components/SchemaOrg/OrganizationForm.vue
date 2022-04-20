@@ -45,10 +45,10 @@ import { faEyeSlash, faLink } from "@fortawesome/free-solid-svg-icons";
 library.add(faEyeSlash, faLink);
 
 export default {
-    mixins: [ThingFormMixin],
     components: {
         FontAwesomeIcon,
     },
+    mixins: [ThingFormMixin],
     props: {
         organization: {
             type: Object,

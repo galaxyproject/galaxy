@@ -21,24 +21,9 @@ import BootstrapVue from "bootstrap-vue";
 Vue.use(BootstrapVue);
 
 export default {
-    data() {
-        return {
-            login: true,
-        };
-    },
-    computed: {
-        showLogin: function () {
-            return this.login;
-        },
-    },
     components: {
         login: Login,
         register: Register,
-    },
-    methods: {
-        toggleLogin: function () {
-            this.login = !this.login;
-        },
     },
     props: {
         show_welcome_with_login: {
@@ -64,6 +49,21 @@ export default {
         server_mail_configured: {
             type: Boolean,
             required: false,
+        },
+    },
+    data() {
+        return {
+            login: true,
+        };
+    },
+    computed: {
+        showLogin: function () {
+            return this.login;
+        },
+    },
+    methods: {
+        toggleLogin: function () {
+            this.login = !this.login;
         },
     },
 };

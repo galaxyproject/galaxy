@@ -30,11 +30,6 @@ export default {
             toggle: false,
         };
     },
-    watch: {
-        query() {
-            this.toggle = this.query == this.searchKey;
-        },
-    },
     computed: {
         tooltipText() {
             if (this.toggle) {
@@ -42,6 +37,11 @@ export default {
             } else {
                 return this.tooltipToggle;
             }
+        },
+    },
+    watch: {
+        query() {
+            this.toggle = this.query == this.searchKey;
         },
     },
     methods: {

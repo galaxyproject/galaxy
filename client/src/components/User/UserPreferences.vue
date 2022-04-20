@@ -97,6 +97,9 @@ import "@fortawesome/fontawesome-svg-core";
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        ConfigProvider,
+    },
     props: {
         userId: {
             type: String,
@@ -106,9 +109,6 @@ export default {
             type: Boolean,
             required: true,
         },
-    },
-    components: {
-        ConfigProvider,
     },
     data() {
         return {
@@ -128,21 +128,6 @@ export default {
             titleForTipsOnHow: _l("for tips on how to find all of the data in your account."),
             titleLoggedInAs: _l("You are logged in as"),
         };
-    },
-    created() {
-        const message = QueryStringParsing.get("message");
-        const status = QueryStringParsing.get("status");
-        if (message && status) {
-            this.message = message;
-            this.messageVariant = status;
-        }
-        axios.get(`${getAppRoot()}api/users/${this.userId}`).then((response) => {
-            this.email = response.data.email;
-            this.diskUsage = response.data.nice_total_disk_usage;
-            this.quotaUsageString = this.enableQuotas
-                ? `Your disk quota is: <strong>${response.data.quota}</strong>.`
-                : "";
-        });
     },
     computed: {
         activeLinks() {
@@ -174,6 +159,21 @@ export default {
         showDeleteError() {
             return this.deleteError !== "";
         },
+    },
+    created() {
+        const message = QueryStringParsing.get("message");
+        const status = QueryStringParsing.get("status");
+        if (message && status) {
+            this.message = message;
+            this.messageVariant = status;
+        }
+        axios.get(`${getAppRoot()}api/users/${this.userId}`).then((response) => {
+            this.email = response.data.email;
+            this.diskUsage = response.data.nice_total_disk_usage;
+            this.quotaUsageString = this.enableQuotas
+                ? `Your disk quota is: <strong>${response.data.quota}</strong>.`
+                : "";
+        });
     },
     methods: {
         toggleNotifications() {

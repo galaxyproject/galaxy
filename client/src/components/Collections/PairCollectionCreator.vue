@@ -158,14 +158,6 @@ import BootstrapVue from "bootstrap-vue";
 Vue.use(BootstrapVue);
 export default {
     mixins: [mixin],
-    created() {
-        this._elementsSetUp();
-        this.initialSuggestedName = this._guessNameForPair(
-            this.workingElements[0],
-            this.workingElements[1],
-            this.removeExtensions
-        );
-    },
     data: function () {
         return {
             state: "build", //error
@@ -200,6 +192,14 @@ export default {
         exactlyTwoValidElements: function () {
             return this.workingElements.length == 2;
         },
+    },
+    created() {
+        this._elementsSetUp();
+        this.initialSuggestedName = this._guessNameForPair(
+            this.workingElements[0],
+            this.workingElements[1],
+            this.removeExtensions
+        );
     },
     methods: {
         l(str) {

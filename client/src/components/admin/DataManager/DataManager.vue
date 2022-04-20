@@ -84,6 +84,10 @@ export default {
     components: {
         Alert,
     },
+    beforeRouteEnter(to, from, next) {
+        console.log("beforeRouteEnter");
+        next((vm) => vm.debouncedLoad());
+    },
     props: {
         debouncePeriod: { type: Number, required: false, default: 100 },
     },
@@ -105,6 +109,11 @@ export default {
         dataTablesFiltered() {
             return this.dataTables.filter((d) => d["name"].match(new RegExp(this.filter, "i")));
         },
+    },
+    created() {
+        console.log("created");
+        this.debouncedLoad = debounce(this.load, this.debouncePeriod);
+        this.debouncedLoad();
     },
     methods: {
         kebabCase(s) {
@@ -129,15 +138,6 @@ export default {
                     this.loading = false;
                 });
         },
-    },
-    created() {
-        console.log("created");
-        this.debouncedLoad = debounce(this.load, this.debouncePeriod);
-        this.debouncedLoad();
-    },
-    beforeRouteEnter(to, from, next) {
-        console.log("beforeRouteEnter");
-        next((vm) => vm.debouncedLoad());
     },
 };
 </script>

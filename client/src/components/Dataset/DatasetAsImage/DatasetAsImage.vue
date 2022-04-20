@@ -26,6 +26,11 @@ export default {
             default: null,
         },
     },
+    data() {
+        return {
+            imageUrl: undefined,
+        };
+    },
     created() {
         if (this.path) {
             this.fetchPathDestination({ history_dataset_id: this.history_dataset_id, path: this.path }).then(() => {
@@ -35,11 +40,6 @@ export default {
         } else {
             this.imageUrl = `${getAppRoot()}dataset/display?dataset_id=${this.history_dataset_id}`;
         }
-    },
-    data() {
-        return {
-            imageUrl: undefined,
-        };
     },
     methods: {
         ...mapCacheActions(["fetchPathDestination"]),

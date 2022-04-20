@@ -32,6 +32,14 @@ export default {
             return `Click to select ${this.mode}`;
         },
     },
+    watch: {
+        localValue(newValue) {
+            this.$emit("input", newValue);
+        },
+        value(newValue) {
+            this.localValue = newValue;
+        },
+    },
     methods: {
         selectFile() {
             const props = {
@@ -41,14 +49,6 @@ export default {
             filesDialog((selected) => {
                 this.localValue = selected?.url;
             }, props);
-        },
-    },
-    watch: {
-        localValue(newValue) {
-            this.$emit("input", newValue);
-        },
-        value(newValue) {
-            this.localValue = newValue;
         },
     },
 };

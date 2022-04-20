@@ -95,6 +95,12 @@ Vue.use(BootstrapVue);
 initPermissionsIcons();
 
 export default {
+    components: {
+        PermissionsInputField,
+        FontAwesomeIcon,
+        LibraryBreadcrumb,
+        PermissionsHeader,
+    },
     props: {
         folder_id: {
             type: String,
@@ -104,12 +110,6 @@ export default {
             type: String,
             required: true,
         },
-    },
-    components: {
-        PermissionsInputField,
-        FontAwesomeIcon,
-        LibraryBreadcrumb,
-        PermissionsHeader,
     },
     data() {
         return {
@@ -123,6 +123,11 @@ export default {
             apiRootUrl: `${getAppRoot()}api/libraries/datasets`,
         };
     },
+    computed: {
+        is_unrestricted() {
+            return this.access_dataset_roles ? this.access_dataset_roles.length === 0 : false;
+        },
+    },
     created() {
         const Galaxy = getGalaxyInstance();
         this.root = getAppRoot();
@@ -134,11 +139,6 @@ export default {
         this.services.getDataset(this.dataset_id).then((response) => {
             this.dataset = response;
         });
-    },
-    computed: {
-        is_unrestricted() {
-            return this.access_dataset_roles ? this.access_dataset_roles.length === 0 : false;
-        },
     },
     methods: {
         assignFetchedPermissions(fetched_permissions) {

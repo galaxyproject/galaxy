@@ -145,12 +145,6 @@ export default {
             showAdvanced: false,
         };
     },
-    watch: {
-        queryKey() {
-            this.invisible = {};
-            this.offset = 0;
-        },
-    },
     computed: {
         /** @returns {String} */
         historyId() {
@@ -167,6 +161,12 @@ export default {
         /** @returns {Boolean} */
         hasFilters() {
             return !this.queryDefault;
+        },
+    },
+    watch: {
+        queryKey() {
+            this.invisible = {};
+            this.offset = 0;
         },
     },
     methods: {

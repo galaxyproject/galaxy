@@ -148,6 +148,36 @@ export default {
             scrolledTo: false,
         };
     },
+    computed: {
+        title() {
+            return this.label || this.name;
+        },
+        idString() {
+            return `wf-node-step-${this.id}`;
+        },
+        showRule() {
+            return this.inputs.length > 0 && this.outputs.length > 0;
+        },
+        iconClass() {
+            const iconType = WorkflowIcons[this.type];
+            if (iconType) {
+                return `icon fa fa-fw ${iconType}`;
+            }
+            return null;
+        },
+        popoverId() {
+            return `popover-${this.id}`;
+        },
+        canClone() {
+            return this.type != "subworkflow";
+        },
+        isEnabled() {
+            return getGalaxyInstance().config.enable_tool_recommendations;
+        },
+        isInput() {
+            return this.type == "data_input" || this.type == "data_collection_input" || this.type == "parameter_input";
+        },
+    },
     mounted() {
         this.canvasManager = this.getCanvasManager();
         this.activeOutputs = new ActiveOutputs();
@@ -204,36 +234,6 @@ export default {
         } else {
             this.$emit("onUpdate", this);
         }
-    },
-    computed: {
-        title() {
-            return this.label || this.name;
-        },
-        idString() {
-            return `wf-node-step-${this.id}`;
-        },
-        showRule() {
-            return this.inputs.length > 0 && this.outputs.length > 0;
-        },
-        iconClass() {
-            const iconType = WorkflowIcons[this.type];
-            if (iconType) {
-                return `icon fa fa-fw ${iconType}`;
-            }
-            return null;
-        },
-        popoverId() {
-            return `popover-${this.id}`;
-        },
-        canClone() {
-            return this.type != "subworkflow";
-        },
-        isEnabled() {
-            return getGalaxyInstance().config.enable_tool_recommendations;
-        },
-        isInput() {
-            return this.type == "data_input" || this.type == "data_collection_input" || this.type == "parameter_input";
-        },
     },
     methods: {
         onChange() {

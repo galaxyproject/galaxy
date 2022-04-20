@@ -35,13 +35,13 @@ export default {
         Slides,
         ConfigProvider,
     },
+    props: {
+        newUserDict: { type: Object, required: true },
+    },
     data() {
         return {
             position: [],
         };
-    },
-    props: {
-        newUserDict: { type: Object, required: true },
     },
     computed: {
         depth() {

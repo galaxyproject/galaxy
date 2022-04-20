@@ -39,18 +39,6 @@ export default {
         };
     },
 
-    methods: {
-        // Predefined columns with pretty headers (entries are optional)
-        prettyColumns() {
-            return [
-                { text: "Extension", dataIndex: "extension" },
-                { text: "Type", dataIndex: "type" },
-                { text: "MIME Type", dataIndex: "mimetype" },
-                { text: "Display in Upload", dataIndex: "display_in_upload" },
-            ];
-        },
-    },
-
     computed: {
         // Return predefined column headers merged
         // with all other column headers returned by the api
@@ -97,6 +85,18 @@ export default {
             .catch((error) => {
                 console.error(error);
             });
+    },
+
+    methods: {
+        // Predefined columns with pretty headers (entries are optional)
+        prettyColumns() {
+            return [
+                { text: "Extension", dataIndex: "extension" },
+                { text: "Type", dataIndex: "type" },
+                { text: "MIME Type", dataIndex: "mimetype" },
+                { text: "Display in Upload", dataIndex: "display_in_upload" },
+            ];
+        },
     },
 };
 </script>

@@ -149,6 +149,15 @@ import CurrentUser from "components/providers/CurrentUser";
 library.add(faUsers, faRedo, faBook, faDownload, faPencilAlt, faTimes, faSave);
 
 export default {
+    components: {
+        LibraryBreadcrumb,
+        CopyToClipboard,
+        FontAwesomeIcon,
+        GenomeProvider,
+        DatatypesProvider,
+        SingleItemSelector,
+        CurrentUser,
+    },
     props: {
         dataset_id: {
             type: String,
@@ -158,15 +167,6 @@ export default {
             type: String,
             required: true,
         },
-    },
-    components: {
-        LibraryBreadcrumb,
-        CopyToClipboard,
-        FontAwesomeIcon,
-        GenomeProvider,
-        DatatypesProvider,
-        SingleItemSelector,
-        CurrentUser,
     },
     data() {
         return {
@@ -180,11 +180,6 @@ export default {
             table_items: [],
             fields: [{ key: "name" }, { key: "value" }],
         };
-    },
-    async created() {
-        this.services = new Services({ root: this.root });
-        const datasetResponse = await this.services.getDataset(this.dataset_id);
-        this.populateDatasetDetailsTable(datasetResponse);
     },
     computed: {
         datasetChanges() {
@@ -202,6 +197,11 @@ export default {
             }
             return false;
         },
+    },
+    async created() {
+        this.services = new Services({ root: this.root });
+        const datasetResponse = await this.services.getDataset(this.dataset_id);
+        this.populateDatasetDetailsTable(datasetResponse);
     },
     methods: {
         populateDatasetDetailsTable(data) {

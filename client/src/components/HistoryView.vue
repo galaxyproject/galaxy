@@ -64,6 +64,9 @@ export default {
         const url = getAppRoot() + "history/view/" + this.id;
         this.ajaxCall(url);
     },
+    updated: function () {
+        this.makeHistoryView(this.historyData);
+    },
     methods: {
         ajaxCall: function (url) {
             axios
@@ -106,9 +109,6 @@ export default {
         reloadPage: function () {
             window.location.reload();
         },
-    },
-    updated: function () {
-        this.makeHistoryView(this.historyData);
     },
 };
 </script>

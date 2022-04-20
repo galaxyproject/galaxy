@@ -111,6 +111,10 @@ import { getAppRoot } from "onload/loadConfig";
 import Message from "../Message.vue";
 
 export default {
+    components: {
+        message: Message,
+        "base-grid": BaseGrid,
+    },
     data() {
         return {
             isLoaded: false,
@@ -134,11 +138,6 @@ export default {
             message: "",
             status: "",
         };
-    },
-
-    components: {
-        message: Message,
-        "base-grid": BaseGrid,
     },
 
     created() {

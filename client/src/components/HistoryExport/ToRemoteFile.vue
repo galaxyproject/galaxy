@@ -63,11 +63,6 @@ export default {
             required: true,
         },
     },
-    computed: {
-        canExport() {
-            return !!this.name && !!this.directory;
-        },
-    },
     data() {
         return {
             errorMessage: null,
@@ -77,6 +72,11 @@ export default {
             jobComplete: false,
             jobError: null,
         };
+    },
+    computed: {
+        canExport() {
+            return !!this.name && !!this.directory;
+        },
     },
     methods: {
         doExport() {

@@ -73,8 +73,8 @@
             :fields="unfinishedJobFields"
             :items="unfinishedJobs"
             :filter="filter"
-            :tableCaption="runningTableCaption"
-            :noItemsMessage="runningNoJobsMessage"
+            :table-caption="runningTableCaption"
+            :no-items-message="runningNoJobsMessage"
             :loading="loading"
             :busy="busy">
             <template v-slot:head(selected)>
@@ -99,7 +99,7 @@
                 :fields="finishedJobFields"
                 :items="finishedJobs"
                 :filter="filter"
-                :noItemsMessage="finishedNoJobsMessage"
+                :no-items-message="finishedNoJobsMessage"
                 :loading="loading"
                 :busy="busy">
             </jobs-table>
@@ -149,6 +149,25 @@ export default {
             showAllRunning: false,
         };
     },
+    computed: {
+        finishedTableCaption() {
+            return `These jobs have completed in the previous ${this.cutoffMin} minutes.`;
+        },
+        runningTableCaption() {
+            return `These jobs are unfinished and have had their state updated in the previous ${this.cutoffMin} minutes. For currently running jobs, the "Last Update" column should indicate the runtime so far.`;
+        },
+        finishedNoJobsMessage() {
+            return `There are no recently finished jobs to show with current cutoff time of ${this.cutoffMin} minutes.`;
+        },
+        runningNoJobsMessage() {
+            let message = `There are no unfinished jobs`;
+            if (!this.showAllRunning) {
+                message += ` to show with current cutoff time of ${this.cutoffMin} minutes`;
+            }
+            message += ".";
+            return message;
+        },
+    },
     watch: {
         selectedStopJobIds(newVal) {
             if (newVal.length === 0) {
@@ -176,24 +195,8 @@ export default {
             this.finishedJobs = finishedJobs;
         },
     },
-    computed: {
-        finishedTableCaption() {
-            return `These jobs have completed in the previous ${this.cutoffMin} minutes.`;
-        },
-        runningTableCaption() {
-            return `These jobs are unfinished and have had their state updated in the previous ${this.cutoffMin} minutes. For currently running jobs, the "Last Update" column should indicate the runtime so far.`;
-        },
-        finishedNoJobsMessage() {
-            return `There are no recently finished jobs to show with current cutoff time of ${this.cutoffMin} minutes.`;
-        },
-        runningNoJobsMessage() {
-            let message = `There are no unfinished jobs`;
-            if (!this.showAllRunning) {
-                message += ` to show with current cutoff time of ${this.cutoffMin} minutes`;
-            }
-            message += ".";
-            return message;
-        },
+    created() {
+        this.update();
     },
     methods: {
         update() {
@@ -235,9 +238,6 @@ export default {
         toggleAll(checked) {
             this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];
         },
-    },
-    created() {
-        this.update();
     },
 };
 </script>

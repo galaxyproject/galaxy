@@ -87,8 +87,8 @@ import { BButton, BLink } from "bootstrap-vue";
 library.add(faEdit);
 
 export default {
-    mixins: [UploadBoxMixin],
     components: { BLink, BButton, FontAwesomeIcon },
+    mixins: [UploadBoxMixin],
     data() {
         return {
             datasets: [],
@@ -105,9 +105,10 @@ export default {
             btnResetTitle: "Reset",
         };
     },
-    created() {
-        this.initCollection();
-        this.initAppProperties();
+    computed: {
+        enableReset: function () {
+            return this.sourceContent.length > 0;
+        },
     },
     watch: {
         selectionType: function (selectionType) {
@@ -140,10 +141,9 @@ export default {
                 .catch((error) => console.log(error));
         },
     },
-    computed: {
-        enableReset: function () {
-            return this.sourceContent.length > 0;
-        },
+    created() {
+        this.initCollection();
+        this.initAppProperties();
     },
     methods: {
         _eventReset: function () {

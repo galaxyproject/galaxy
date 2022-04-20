@@ -70,6 +70,9 @@ import { faCaretLeft } from "@fortawesome/free-solid-svg-icons";
 
 library.add(faCaretLeft);
 export default {
+    components: {
+        FontAwesomeIcon,
+    },
     mixins: [SelectionDialogMixin],
     props: {
         multiple: {
@@ -85,9 +88,6 @@ export default {
             type: Boolean,
             default: false,
         },
-    },
-    components: {
-        FontAwesomeIcon,
     },
     data() {
         return {
@@ -110,16 +110,16 @@ export default {
             oidcEnabled: getGalaxyInstance()?.config?.enable_oidc,
         };
     },
+    computed: {
+        fileMode() {
+            return this.mode == "file";
+        },
+    },
     created: function () {
         this.services = new Services();
         this.urlTracker = new UrlTracker("");
         this.model = new Model({ multiple: this.multiple });
         this.load();
-    },
-    computed: {
-        fileMode() {
-            return this.mode == "file";
-        },
     },
     methods: {
         /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/

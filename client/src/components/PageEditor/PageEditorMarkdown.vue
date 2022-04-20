@@ -48,11 +48,6 @@ export default {
         MarkdownEditor,
         FontAwesomeIcon,
     },
-    data: function () {
-        return {
-            markdownText: this.content,
-        };
-    },
     props: {
         pageId: {
             required: true,
@@ -74,6 +69,11 @@ export default {
             type: Object,
             default: null,
         },
+    },
+    data: function () {
+        return {
+            markdownText: this.content,
+        };
     },
     methods: {
         onUpdate(newContent) {

@@ -26,6 +26,12 @@ import { loadWebhookMenuItems } from "./_webhooks";
 
 export default {
     name: "Masthead",
+    components: {
+        BNavbar,
+        BNavbarBrand,
+        BNavbarNav,
+        MastheadItem,
+    },
     props: {
         displayGalaxyBrand: {
             type: Boolean,
@@ -58,39 +64,6 @@ export default {
         menuOptions: {
             type: Object,
             default: null,
-        },
-    },
-    components: {
-        BNavbar,
-        BNavbarBrand,
-        BNavbarNav,
-        MastheadItem,
-    },
-    methods: {
-        addItem(item) {
-            this.tabs.push(item);
-        },
-        highlight(activeTab) {
-            this.activeTab = activeTab;
-        },
-        _tabToJson(el) {
-            const defaults = {
-                visible: true,
-                target: "_parent",
-            };
-            let asJson;
-            if (el.toJSON instanceof Function) {
-                asJson = el.toJSON();
-            } else {
-                asJson = el;
-            }
-            return Object.assign({}, defaults, asJson);
-        },
-        _reflectScratchbookFrames() {
-            const frames = this.mastheadState.frame.getFrames();
-            const tab = this.mastheadState.frame.buttonLoad;
-            tab.toggle = frames.visible;
-            tab.icon = (frames.visible && "fa-eye") || "fa-eye-slash";
         },
     },
     data() {
@@ -133,6 +106,33 @@ export default {
             .on("show hide", () => {
                 this._reflectScratchbookFrames();
             });
+    },
+    methods: {
+        addItem(item) {
+            this.tabs.push(item);
+        },
+        highlight(activeTab) {
+            this.activeTab = activeTab;
+        },
+        _tabToJson(el) {
+            const defaults = {
+                visible: true,
+                target: "_parent",
+            };
+            let asJson;
+            if (el.toJSON instanceof Function) {
+                asJson = el.toJSON();
+            } else {
+                asJson = el;
+            }
+            return Object.assign({}, defaults, asJson);
+        },
+        _reflectScratchbookFrames() {
+            const frames = this.mastheadState.frame.getFrames();
+            const tab = this.mastheadState.frame.buttonLoad;
+            tab.toggle = frames.visible;
+            tab.icon = (frames.visible && "fa-eye") || "fa-eye-slash";
+        },
     },
 };
 </script>

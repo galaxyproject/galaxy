@@ -118,6 +118,13 @@ export default {
             resultMessages: [],
         };
     },
+    computed: {
+        showForm() {
+            const noResult = !this.resultMessages.length;
+            const hasError = this.resultMessages.some((msg) => msg[1] === "danger");
+            return noResult || hasError;
+        },
+    },
     methods: {
         onError(err) {
             this.errorMessage = err;
@@ -133,13 +140,6 @@ export default {
                     this.errorMessage = errorMessage;
                 }
             );
-        },
-    },
-    computed: {
-        showForm() {
-            const noResult = !this.resultMessages.length;
-            const hasError = this.resultMessages.some((msg) => msg[1] === "danger");
-            return noResult || hasError;
         },
     },
 };

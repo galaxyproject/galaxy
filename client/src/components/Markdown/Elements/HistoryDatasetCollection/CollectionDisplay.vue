@@ -81,12 +81,6 @@ export default {
             messageVariant: null,
         };
     },
-    created() {
-        this.getContent().then((data) => {
-            this.itemContent = data;
-            this.loading = false;
-        });
-    },
     computed: {
         collectionName() {
             const collection = this.collections[this.args.history_dataset_collection_id];
@@ -100,6 +94,12 @@ export default {
         downloadUrl() {
             return `${getAppRoot()}api/dataset_collections/${this.args.history_dataset_collection_id}/download`;
         },
+    },
+    created() {
+        this.getContent().then((data) => {
+            this.itemContent = data;
+            this.loading = false;
+        });
     },
     methods: {
         onCopyCollection(currentHistoryId) {

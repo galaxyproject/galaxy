@@ -56,6 +56,10 @@ import JobParametersArrayValue from "./JobParametersArrayValue";
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        JobOutputs,
+        JobParametersArrayValue,
+    },
     props: {
         jobId: {
             type: String,
@@ -78,10 +82,6 @@ export default {
             default: true,
         },
     },
-    components: {
-        JobOutputs,
-        JobParametersArrayValue,
-    },
     data() {
         return {
             parameters: [],
@@ -89,16 +89,6 @@ export default {
             hasParameterErrors: false,
             isSingleParam: false,
         };
-    },
-    created: function () {
-        let url;
-        if (this.jobId) {
-            url = `${getAppRoot()}api/jobs/${this.jobId}/parameters_display`;
-        } else {
-            url = `${getAppRoot()}api/datasets/${this.datasetId}/parameters_display?hda_ldda=${this.datasetType}`;
-        }
-        this.ajaxCall(url);
-        this.isSingleParam = this.param !== undefined && this.param !== "undefined";
     },
     computed: {
         anyNotes: function () {
@@ -117,6 +107,16 @@ export default {
             });
             return parameter ? parameter.value : `Parameter "${this.param}" is not found!`;
         },
+    },
+    created: function () {
+        let url;
+        if (this.jobId) {
+            url = `${getAppRoot()}api/jobs/${this.jobId}/parameters_display`;
+        } else {
+            url = `${getAppRoot()}api/datasets/${this.datasetId}/parameters_display?hda_ldda=${this.datasetType}`;
+        }
+        this.ajaxCall(url);
+        this.isSingleParam = this.param !== undefined && this.param !== "undefined";
     },
     methods: {
         appRoot: function () {

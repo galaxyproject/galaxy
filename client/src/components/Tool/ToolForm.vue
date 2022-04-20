@@ -165,22 +165,6 @@ export default {
             currentVersion: this.version,
         };
     },
-    created() {
-        this.requestTool().then(() => {
-            const Galaxy = getGalaxyInstance();
-            if (Galaxy && Galaxy.currHistoryPanel) {
-                console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
-                Galaxy.currHistoryPanel.collection.on("change", this.onHistoryChange, this);
-            }
-        });
-    },
-    beforeDestroy() {
-        const Galaxy = getGalaxyInstance();
-        if (Galaxy && Galaxy.currHistoryPanel) {
-            Galaxy.currHistoryPanel.collection.off("change", this.onHistoryChange, this);
-            console.debug(`ToolForm::beforeDestroy - Stopped listening to history changes. [${this.id}]`);
-        }
-    },
     computed: {
         toolName() {
             return this.formConfig.name;
@@ -205,6 +189,22 @@ export default {
                 return "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
             }
         },
+    },
+    created() {
+        this.requestTool().then(() => {
+            const Galaxy = getGalaxyInstance();
+            if (Galaxy && Galaxy.currHistoryPanel) {
+                console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
+                Galaxy.currHistoryPanel.collection.on("change", this.onHistoryChange, this);
+            }
+        });
+    },
+    beforeDestroy() {
+        const Galaxy = getGalaxyInstance();
+        if (Galaxy && Galaxy.currHistoryPanel) {
+            Galaxy.currHistoryPanel.collection.off("change", this.onHistoryChange, this);
+            console.debug(`ToolForm::beforeDestroy - Stopped listening to history changes. [${this.id}]`);
+        }
     },
     methods: {
         emailAllowed(config, user) {

@@ -108,6 +108,11 @@ export default {
             type: Array,
         },
     },
+    data() {
+        return {
+            citations: [],
+        };
+    },
     computed: {
         hasRequirements() {
             return this.requirements && this.requirements.length > 0;
@@ -126,11 +131,6 @@ export default {
                 this.hasRequirements || this.hasReferences || this.hasCreators || this.hasCitations || this.hasLicense
             );
         },
-    },
-    data() {
-        return {
-            citations: [],
-        };
     },
     watch: {
         id() {

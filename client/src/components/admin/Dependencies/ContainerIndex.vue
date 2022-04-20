@@ -105,8 +105,8 @@ const RESOLVER_TYPE_OPTIONS = _.keys(DESCRIPTION).map((resolverType) => ({ value
 RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {
-    mixins: [DependencyIndexMixin],
     components: { ContainerResolutionDetails },
+    mixins: [DependencyIndexMixin],
     data() {
         return {
             error: null,
@@ -132,54 +132,6 @@ export default {
             filterContainerType: null,
             resolutions: [],
         };
-    },
-    methods: {
-        load() {
-            this.loading = true;
-            const params = this.apiParams();
-            getContainerResolutionToolbox(params)
-                .then((resolutions) => {
-                    this.resolutions = resolutions;
-                    this.loading = false;
-                })
-                .catch(this.handleError);
-        },
-        installSelected() {
-            this.loading = true;
-            resolveContainersWithInstall(this.selectedToolIds(), this.apiParams())
-                .then((resolutions) => {
-                    this.resolutions = resolutions;
-                    this.loading = false;
-                })
-                .catch(this.handleError);
-        },
-        apiParams() {
-            const params = {};
-            if (this.containerType) {
-                params.container_type = this.containerType;
-            }
-            if (this.resolverType) {
-                params.resolver_type = this.resolverType;
-            }
-            return params;
-        },
-        selectedToolIds() {
-            return this.items.filter((item) => item.selected).map((item) => item.tool_id);
-        },
-    },
-    watch: {
-        containerType: function (val) {
-            this.load();
-        },
-        resolverType: function (val) {
-            this.load();
-        },
-        filterResolution: function (val) {
-            if (val == "unresolved") {
-                this.filterResolverType = null;
-                this.filterContainerType = null;
-            }
-        },
     },
     computed: {
         items: function () {
@@ -218,6 +170,54 @@ export default {
                         _showDetails: false,
                     };
                 });
+        },
+    },
+    watch: {
+        containerType: function (val) {
+            this.load();
+        },
+        resolverType: function (val) {
+            this.load();
+        },
+        filterResolution: function (val) {
+            if (val == "unresolved") {
+                this.filterResolverType = null;
+                this.filterContainerType = null;
+            }
+        },
+    },
+    methods: {
+        load() {
+            this.loading = true;
+            const params = this.apiParams();
+            getContainerResolutionToolbox(params)
+                .then((resolutions) => {
+                    this.resolutions = resolutions;
+                    this.loading = false;
+                })
+                .catch(this.handleError);
+        },
+        installSelected() {
+            this.loading = true;
+            resolveContainersWithInstall(this.selectedToolIds(), this.apiParams())
+                .then((resolutions) => {
+                    this.resolutions = resolutions;
+                    this.loading = false;
+                })
+                .catch(this.handleError);
+        },
+        apiParams() {
+            const params = {};
+            if (this.containerType) {
+                params.container_type = this.containerType;
+            }
+            if (this.resolverType) {
+                params.resolver_type = this.resolverType;
+            }
+            return params;
+        },
+        selectedToolIds() {
+            return this.items.filter((item) => item.selected).map((item) => item.tool_id);
         },
     },
 };

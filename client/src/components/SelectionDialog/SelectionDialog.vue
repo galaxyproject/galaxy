@@ -39,6 +39,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        FontAwesomeIcon,
+    },
     props: {
         multiple: {
             type: Boolean,
@@ -73,9 +76,6 @@ export default {
             type: Boolean,
             required: false,
         },
-    },
-    components: {
-        FontAwesomeIcon,
     },
 };
 </script>

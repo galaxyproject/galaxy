@@ -48,10 +48,6 @@ export default {
             default: null,
         },
     },
-    created() {
-        this.services = new Services();
-        this._configureTrsServers();
-    },
     data() {
         return {
             selection: null,
@@ -64,6 +60,10 @@ export default {
         showDropdown() {
             return this.trsServers.length > 1;
         },
+    },
+    created() {
+        this.services = new Services();
+        this._configureTrsServers();
     },
     methods: {
         onTrsSelection(selection) {

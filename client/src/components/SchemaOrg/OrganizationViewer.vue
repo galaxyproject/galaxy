@@ -42,10 +42,10 @@ import { faExternalLinkAlt, faBuilding } from "@fortawesome/free-solid-svg-icons
 library.add(faExternalLinkAlt, faBuilding);
 
 export default {
-    mixins: [ThingViewerMixin],
     components: {
         FontAwesomeIcon,
     },
+    mixins: [ThingViewerMixin],
     props: {
         organization: {
             type: Object,

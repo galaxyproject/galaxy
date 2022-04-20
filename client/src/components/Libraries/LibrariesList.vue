@@ -202,11 +202,6 @@ export default {
         SearchField,
         CurrentUser,
     },
-    computed: {
-        rows() {
-            return this.librariesList.length;
-        },
-    },
     data() {
         return {
             newDescriptionProperty: "newDescription",
@@ -239,6 +234,11 @@ export default {
             titlePerPage: _l("per page"),
             titleTotal: _l("total"),
         };
+    },
+    computed: {
+        rows() {
+            return this.librariesList.length;
+        },
     },
     created() {
         this.root = getAppRoot();

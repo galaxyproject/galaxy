@@ -137,6 +137,9 @@ export default {
             this.loadCredentials({ deleted });
         },
     },
+    created() {
+        this.loadCredentials();
+    },
     methods: {
         loadCredentials(params = {}) {
             this.loading = true;
@@ -198,9 +201,6 @@ export default {
                 console.warn(err);
             };
         },
-    },
-    created() {
-        this.loadCredentials();
     },
 };
 </script>

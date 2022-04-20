@@ -82,16 +82,31 @@ export default {
             readyStart: false,
         };
     },
-    created() {
-        this.initCollection();
-        this.initAppProperties();
-    },
     computed: {
         extensions() {
             const result = _.filter(this.listExtensions, (ext) => ext.composite_files);
             result.unshift({ id: "_select_", text: "Select" });
             return result;
         },
+    },
+    watch: {
+        extension: function (value) {
+            this.collection.reset();
+            const details = this.extensionDetails(value);
+            if (details && details.composite_files) {
+                _.each(details.composite_files, (item) => {
+                    this.collection.add({
+                        id: this.collection.size(),
+                        file_desc: item.description || item.name,
+                        optional: item.optional,
+                    });
+                });
+            }
+        },
+    },
+    created() {
+        this.initCollection();
+        this.initAppProperties();
     },
     mounted() {
         this.initExtensionInfo();
@@ -190,21 +205,6 @@ export default {
             this.collection.each((it) => {
                 it.set({ status: "error", info: message });
             });
-        },
-    },
-    watch: {
-        extension: function (value) {
-            this.collection.reset();
-            const details = this.extensionDetails(value);
-            if (details && details.composite_files) {
-                _.each(details.composite_files, (item) => {
-                    this.collection.add({
-                        id: this.collection.size(),
-                        file_desc: item.description || item.name,
-                        optional: item.optional,
-                    });
-                });
-            }
         },
     },
 };

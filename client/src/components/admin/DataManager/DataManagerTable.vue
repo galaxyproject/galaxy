@@ -82,6 +82,20 @@ export default {
             ];
         },
     },
+    created() {
+        axios
+            .get(`${getAppRoot()}data_manager/tool_data_table_info?table_name=${this.name}`)
+            .then((response) => {
+                this.dataTable = response.data.dataTable;
+                this.viewOnly = response.data.viewOnly;
+                this.message = response.data.message;
+                this.status = response.data.status;
+                this.loading = false;
+            })
+            .catch((error) => {
+                console.error(error);
+            });
+    },
     methods: {
         fields(columns) {
             // Columns and data are given as arrays. Use each column index as field
@@ -102,20 +116,6 @@ export default {
                     console.error(error);
                 });
         },
-    },
-    created() {
-        axios
-            .get(`${getAppRoot()}data_manager/tool_data_table_info?table_name=${this.name}`)
-            .then((response) => {
-                this.dataTable = response.data.dataTable;
-                this.viewOnly = response.data.viewOnly;
-                this.message = response.data.message;
-                this.status = response.data.status;
-                this.loading = false;
-            })
-            .catch((error) => {
-                console.error(error);
-            });
     },
 };
 </script>

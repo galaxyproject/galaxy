@@ -79,10 +79,10 @@ import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 library.add(faCaretDown);
 
 export default {
-    props: ["workflow"],
     components: {
         FontAwesomeIcon,
     },
+    props: ["workflow"],
     computed: {
         urlEdit() {
             return `${getAppRoot()}workflow/editor?id=${this.workflow.id}`;

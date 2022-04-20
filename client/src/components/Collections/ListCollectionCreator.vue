@@ -213,13 +213,8 @@ library.add(faSortAlphaDown, faUndo);
 
 Vue.use(BootstrapVue);
 export default {
-    mixins: [mixin],
-    created() {
-        this._instanceSetUp();
-        this._elementsSetUp();
-        this.saveOriginalNames();
-    },
     components: { DatasetCollectionElementView, draggable, FontAwesomeIcon },
+    mixins: [mixin],
     data: function () {
         return {
             state: "build", //error
@@ -273,6 +268,11 @@ export default {
         showDuplicateError() {
             return this.duplicateNames.length > 0;
         },
+    },
+    created() {
+        this._instanceSetUp();
+        this._elementsSetUp();
+        this.saveOriginalNames();
     },
     methods: {
         l(str) {

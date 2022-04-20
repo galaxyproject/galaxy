@@ -95,9 +95,6 @@ export default {
             hasFileSources: false,
         };
     },
-    async mounted() {
-        await this.initialize();
-    },
     computed: {
         importReady() {
             const importType = this.importType;
@@ -114,6 +111,16 @@ export default {
         historyLink() {
             return `${getAppRoot()}histories/list`;
         },
+    },
+    watch: {
+        importType() {
+            if (this.importType == "remoteFilesUri" && !this.sourceRemoteFilesUri) {
+                this.$refs.filesInput.selectFile();
+            }
+        },
+    },
+    async mounted() {
+        await this.initialize();
     },
     methods: {
         async initialize() {
@@ -150,13 +157,6 @@ export default {
             this.errorMessage = errorMessageAsString(err, "History import failed.");
             if (err?.data?.stderr) {
                 this.jobError = err.data;
-            }
-        },
-    },
-    watch: {
-        importType() {
-            if (this.importType == "remoteFilesUri" && !this.sourceRemoteFilesUri) {
-                this.$refs.filesInput.selectFile();
             }
         },
     },

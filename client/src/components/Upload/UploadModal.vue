@@ -52,6 +52,11 @@ export default {
             modalShow: false,
         };
     },
+    mounted() {
+        this.show();
+        // handles subsequent external requests to re-open a re-used modal
+        this.$root.$on("openUpload", this.show);
+    },
     methods: {
         show() {
             this.modalShow = true;
@@ -65,11 +70,6 @@ export default {
             }
             this.hide();
         },
-    },
-    mounted() {
-        this.show();
-        // handles subsequent external requests to re-open a re-used modal
-        this.$root.$on("openUpload", this.show);
     },
 };
 </script>

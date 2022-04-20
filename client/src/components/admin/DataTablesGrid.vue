@@ -20,6 +20,9 @@
 import BaseGrid from "./BaseGrid.vue";
 
 export default {
+    components: {
+        "base-grid": BaseGrid,
+    },
     props: {
         isLoaded: {
             type: Boolean,
@@ -40,10 +43,6 @@ export default {
                 { text: "Errors", dataIndex: "errors" },
             ],
         };
-    },
-
-    components: {
-        "base-grid": BaseGrid,
     },
 
     methods: {

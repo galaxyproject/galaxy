@@ -98,11 +98,6 @@ export default {
             default: "",
         },
     },
-    computed: {
-        validInput: function () {
-            return this.collectionName.length > 0;
-        },
-    },
     data: function () {
         return {
             titleForHelp: _l("Expand or Close Help"),
@@ -115,6 +110,16 @@ export default {
             removeFileExtensionsText: "Remove file extensions?",
             localHideSourceItems: this.hideSourceItems,
         };
+    },
+    computed: {
+        validInput: function () {
+            return this.collectionName.length > 0;
+        },
+    },
+    watch: {
+        localHideSourceItems() {
+            this.$emit("onUpdateHideSourceItems", this.localHideSourceItems);
+        },
     },
     methods: {
         l(str) {
@@ -130,11 +135,6 @@ export default {
         },
         _getName: function () {
             return this.collectionName;
-        },
-    },
-    watch: {
-        localHideSourceItems() {
-            this.$emit("onUpdateHideSourceItems", this.localHideSourceItems);
         },
     },
 };

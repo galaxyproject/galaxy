@@ -30,11 +30,6 @@ import { RULES, MAPPING_TARGETS } from "mvc/rules/rule-definitions";
 
 Vue.use(BootstrapVue);
 export default {
-    data: function () {
-        return {
-            savedRulesMenu: _l("Recently used rules"),
-        };
-    },
     props: {
         savedRules: {
             type: Array,
@@ -44,6 +39,11 @@ export default {
             type: Array,
             required: true,
         },
+    },
+    data: function () {
+        return {
+            savedRulesMenu: _l("Recently used rules"),
+        };
     },
     computed: {
         numOfSavedRules: function () {

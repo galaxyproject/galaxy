@@ -80,6 +80,17 @@ export default {
             fields: fields,
         };
     },
+    computed: {
+        hasErrorMessage() {
+            return this.errorMessage != null;
+        },
+        itemsComputed() {
+            return this.computeItems(this.results);
+        },
+        searchHelp() {
+            return "Search by workflow description. Tags (key:value) can be used to also search by metadata - for instance name:example. Available tags include organization and name.";
+        },
+    },
     watch: {
         query: function () {
             if (this.query == "") {
@@ -116,17 +127,6 @@ export default {
                 this.errorMessage = e;
             },
         });
-    },
-    computed: {
-        hasErrorMessage() {
-            return this.errorMessage != null;
-        },
-        itemsComputed() {
-            return this.computeItems(this.results);
-        },
-        searchHelp() {
-            return "Search by workflow description. Tags (key:value) can be used to also search by metadata - for instance name:example. Available tags include organization and name.";
-        },
     },
     created() {
         this.services = new Services();

@@ -51,6 +51,13 @@ export default {
             license: this.inputLicenseInfo,
         };
     },
+    watch: {
+        licenseId: function (newLicense, oldLicense) {
+            if (newLicense != oldLicense) {
+                this.fetchLicense();
+            }
+        },
+    },
     created() {
         if (this.license == null) {
             this.fetchLicense();
@@ -66,13 +73,6 @@ export default {
                 .then((data) => {
                     this.license = data;
                 });
-        },
-    },
-    watch: {
-        licenseId: function (newLicense, oldLicense) {
-            if (newLicense != oldLicense) {
-                this.fetchLicense();
-            }
         },
     },
 };

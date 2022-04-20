@@ -29,12 +29,6 @@ export default {
             titleSearch: _l("Search"),
         };
     },
-    methods: {
-        startSearch() {
-            this.$emit("updateSearch", this.search);
-            this.awaitingSearch = false;
-        },
-    },
     watch: {
         search: function () {
             if (!this.awaitingSearch) {
@@ -43,6 +37,12 @@ export default {
                 }, this.typingDelay);
             }
             this.awaitingSearch = true;
+        },
+    },
+    methods: {
+        startSearch() {
+            this.$emit("updateSearch", this.search);
+            this.awaitingSearch = false;
         },
     },
 };

@@ -71,12 +71,6 @@ export default {
             loading: true,
         };
     },
-    created() {
-        this.getContent().then((data) => {
-            this.itemContent = data;
-            this.loading = false;
-        });
-    },
     computed: {
         workflowName() {
             const workflow = this.workflows[this.args.workflow_id];
@@ -91,6 +85,12 @@ export default {
         itemUrl() {
             return `${getAppRoot()}api/workflows/${this.args.workflow_id}/download?style=preview`;
         },
+    },
+    created() {
+        this.getContent().then((data) => {
+            this.itemContent = data;
+            this.loading = false;
+        });
     },
     methods: {
         async getContent() {

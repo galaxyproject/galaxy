@@ -61,6 +61,14 @@ export default {
             error: null,
         };
     },
+    computed: {
+        pageLoading() {
+            return this.pageState === LOADING;
+        },
+        noResultsFound() {
+            return this.repositories.length === 0 && !this.pageLoading;
+        },
+    },
     watch: {
         toolshedUrl() {
             this.load();
@@ -72,14 +80,6 @@ export default {
             if (this.scrolled && this.pageState === READY) {
                 this.load(this.page + 1);
             }
-        },
-    },
-    computed: {
-        pageLoading() {
-            return this.pageState === LOADING;
-        },
-        noResultsFound() {
-            return this.repositories.length === 0 && !this.pageLoading;
         },
     },
     created() {

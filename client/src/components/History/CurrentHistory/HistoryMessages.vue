@@ -17,15 +17,15 @@ export default {
     props: {
         history: { type: Object, required: true },
     },
-    computed: {
-        hasMessages() {
-            return this.userOverQuota || history.isDeleted;
-        },
-    },
     data() {
         return {
             userOverQuota: false,
         };
+    },
+    computed: {
+        hasMessages() {
+            return this.userOverQuota || history.isDeleted;
+        },
     },
 };
 </script>

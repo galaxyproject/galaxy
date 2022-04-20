@@ -144,6 +144,12 @@ Vue.use(BootstrapVue);
 
 export default {
     name: "FolderTopBar",
+    components: {
+        SearchField,
+        FontAwesomeIcon,
+        LibraryBreadcrumb,
+        FolderDetails,
+    },
     props: {
         folder_id: {
             type: String,
@@ -174,12 +180,6 @@ export default {
             required: true,
         },
     },
-    components: {
-        SearchField,
-        FontAwesomeIcon,
-        LibraryBreadcrumb,
-        FolderDetails,
-    },
     data() {
         return {
             is_admin: false,
@@ -201,16 +201,6 @@ export default {
             },
         };
     },
-    created() {
-        const Galaxy = getGalaxyInstance();
-        this.services = new Services();
-        this.is_admin = Galaxy.user.attributes.is_admin;
-        this.user_library_import_dir_available = Galaxy.config.user_library_import_dir_available;
-        this.library_import_dir = Galaxy.config.library_import_dir;
-        this.allow_library_path_paste = Galaxy.config.allow_library_path_paste;
-
-        this.fetchExtAndGenomes();
-    },
     computed: {
         contains_file_or_folder: function () {
             return this.folderContents.find((el) => el.type === "folder" || el.type === "file");
@@ -223,6 +213,16 @@ export default {
             // logic from legacy code
             return !!(this.contains_file_or_folder && Galaxy.user);
         },
+    },
+    created() {
+        const Galaxy = getGalaxyInstance();
+        this.services = new Services();
+        this.is_admin = Galaxy.user.attributes.is_admin;
+        this.user_library_import_dir_available = Galaxy.config.user_library_import_dir_available;
+        this.library_import_dir = Galaxy.config.library_import_dir;
+        this.allow_library_path_paste = Galaxy.config.allow_library_path_paste;
+
+        this.fetchExtAndGenomes();
     },
     methods: {
         updateSearch: function (value) {

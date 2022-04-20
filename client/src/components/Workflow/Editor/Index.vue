@@ -298,6 +298,24 @@ export default {
             return this.isWheeled;
         },
     },
+    watch: {
+        annotation: function (newAnnotation, oldAnnotation) {
+            if (newAnnotation != oldAnnotation) {
+                this.hasChanges = true;
+            }
+        },
+        name: function (newName, oldName) {
+            if (newName != oldName) {
+                this.hasChanges = true;
+            }
+        },
+        steps: function (newSteps, oldSteps) {
+            this.hasChanges = true;
+        },
+        nodes: function (newNodes, oldNodes) {
+            this.hasChanges = true;
+        },
+    },
     created() {
         this.lastQueue = new LastQueue();
         getDatatypesMapper(false).then((mapper) => {
@@ -316,24 +334,6 @@ export default {
             }
         };
         hide_modal();
-    },
-    watch: {
-        annotation: function (newAnnotation, oldAnnotation) {
-            if (newAnnotation != oldAnnotation) {
-                this.hasChanges = true;
-            }
-        },
-        name: function (newName, oldName) {
-            if (newName != oldName) {
-                this.hasChanges = true;
-            }
-        },
-        steps: function (newSteps, oldSteps) {
-            this.hasChanges = true;
-        },
-        nodes: function (newNodes, oldNodes) {
-            this.hasChanges = true;
-        },
     },
     methods: {
         onActivate(node) {

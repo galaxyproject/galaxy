@@ -61,14 +61,22 @@ export default {
             errorMessage: null,
         };
     },
-    async created() {
-        await this.refresh();
-    },
     computed: {
         /** @returns {Boolean} */
         canClearItems() {
             return this.summary.totalItems > 0;
         },
+    },
+    watch: {
+        /** The parent signaled that `operationId` must be updated */
+        async refreshOperationId(operationId) {
+            if (this.operation.id === operationId) {
+                await this.refresh();
+            }
+        },
+    },
+    async created() {
+        await this.refresh();
     },
     methods: {
         async refresh() {
@@ -89,14 +97,6 @@ export default {
         },
         onReviewItems() {
             this.$emit("onReviewItems", this.operation, this.summary.totalItems);
-        },
-    },
-    watch: {
-        /** The parent signaled that `operationId` must be updated */
-        async refreshOperationId(operationId) {
-            if (this.operation.id === operationId) {
-                await this.refresh();
-            }
         },
     },
 };

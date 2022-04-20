@@ -49,10 +49,10 @@ import { faOrcid } from "@fortawesome/free-brands-svg-icons";
 library.add(faOrcid, faUser, faExternalLinkAlt);
 
 export default {
-    mixins: [ThingViewerMixin],
     components: {
         FontAwesomeIcon,
     },
+    mixins: [ThingViewerMixin],
     props: {
         person: {
             type: Object,

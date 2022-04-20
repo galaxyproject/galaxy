@@ -172,11 +172,6 @@ export default {
             errorText: null,
         };
     },
-    watch: {
-        id() {
-            this.errorText = null;
-        },
-    },
     computed: {
         versions() {
             return this.options.versions;
@@ -203,6 +198,11 @@ export default {
         },
         isFavorite() {
             return this.getFavorites().tools.includes(this.id);
+        },
+    },
+    watch: {
+        id() {
+            this.errorText = null;
         },
     },
     created() {

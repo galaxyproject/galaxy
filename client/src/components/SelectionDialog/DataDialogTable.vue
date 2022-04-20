@@ -140,14 +140,6 @@ export default {
             perPage: 100,
         };
     },
-    watch: {
-        items: {
-            immediate: true,
-            handler(items) {
-                this.filtered(items);
-            },
-        },
-    },
     computed: {
         fields: function () {
             const fields = [];
@@ -163,6 +155,14 @@ export default {
             }
 
             return fields;
+        },
+    },
+    watch: {
+        items: {
+            immediate: true,
+            handler(items) {
+                this.filtered(items);
+            },
         },
     },
     methods: {

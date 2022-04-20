@@ -64,14 +64,6 @@ export default {
             return this.currentRows.findIndex((h) => h.id == this.currentHistory.id);
         },
     },
-    created() {
-        this.fields = [
-            { key: "name", sortable: true },
-            { key: "tags", sortable: true },
-            { key: "update_time", label: "Updated", sortable: true },
-        ];
-        this.debounceSelectCurrentRow = debounce(this.selectCurrentRow, 100);
-    },
     watch: {
         currentRows() {
             this.selectCurrentRow();
@@ -86,6 +78,14 @@ export default {
                 this.debounceSelectCurrentRow();
             }
         },
+    },
+    created() {
+        this.fields = [
+            { key: "name", sortable: true },
+            { key: "tags", sortable: true },
+            { key: "update_time", label: "Updated", sortable: true },
+        ];
+        this.debounceSelectCurrentRow = debounce(this.selectCurrentRow, 100);
     },
     methods: {
         switchToHistory(selected) {

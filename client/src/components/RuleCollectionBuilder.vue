@@ -607,6 +607,73 @@ const deferredToPromise = (d) => {
 };
 
 export default {
+    components: {
+        TooltipOnHover,
+        HotTable,
+        RuleComponent,
+        RuleTargetComponent,
+        SavedRulesSelector,
+        RuleDisplay,
+        IdentifierDisplay,
+        ColumnSelector,
+        RegularExpressionInput,
+        StateDiv,
+        RuleModalHeader,
+        RuleModalMiddle,
+        RuleModalFooter,
+        Select2,
+    },
+    mixins: [SaveRules],
+    props: {
+        initialElements: {
+            required: true,
+        },
+        importType: {
+            type: String,
+            required: false,
+            default: "collections",
+        },
+        elementsType: {
+            type: String,
+            required: false,
+            default: "datasets",
+        },
+        // required if elementsType is "datasets" - hook into Backbone code for creating
+        // collections from HDAs, etc...
+        creationFn: {
+            required: false,
+            type: Function,
+        },
+        // required if elementsType is "collection_contents" - hook into tool form to update
+        // rule parameter
+        saveRulesFn: {
+            required: false,
+            type: Function,
+        },
+        initialRules: {
+            required: false,
+            type: Object,
+        },
+        defaultHideSourceItems: {
+            type: Boolean,
+            required: false,
+            default: true,
+        },
+        // Callbacks sent in by modal code.
+        oncancel: {
+            required: true,
+            type: Function,
+        },
+        oncreate: {
+            required: true,
+            type: Function,
+        },
+        ftpUploadSite: {
+            type: String,
+            required: false,
+            default: null,
+        },
+    },
     data: function () {
         let orientation = "vertical";
         let mapping;
@@ -751,56 +818,6 @@ export default {
             orientation: orientation,
             validityErrorHeader: _l("These issues must be resolved to proceed:"),
         };
-    },
-    props: {
-        initialElements: {
-            required: true,
-        },
-        importType: {
-            type: String,
-            required: false,
-            default: "collections",
-        },
-        elementsType: {
-            type: String,
-            required: false,
-            default: "datasets",
-        },
-        // required if elementsType is "datasets" - hook into Backbone code for creating
-        // collections from HDAs, etc...
-        creationFn: {
-            required: false,
-            type: Function,
-        },
-        // required if elementsType is "collection_contents" - hook into tool form to update
-        // rule parameter
-        saveRulesFn: {
-            required: false,
-            type: Function,
-        },
-        initialRules: {
-            required: false,
-            type: Object,
-        },
-        defaultHideSourceItems: {
-            type: Boolean,
-            required: false,
-            default: true,
-        },
-        // Callbacks sent in by modal code.
-        oncancel: {
-            required: true,
-            type: Function,
-        },
-        oncreate: {
-            required: true,
-            type: Function,
-        },
-        ftpUploadSite: {
-            type: String,
-            required: false,
-            default: null,
-        },
     },
     computed: {
         returnValidityErrorMessages: function () {
@@ -1112,7 +1129,61 @@ export default {
             return this.hotData.colHeadersPerRule;
         },
     },
-    mixins: [SaveRules],
+    watch: {
+        addColumnRegexType: function (val) {
+            if (val == "groups") {
+                this.addColumnRegexGroupCount = 1;
+            }
+            if (val == "replacement") {
+                this.addColumnRegexReplacement = null;
+            }
+        },
+    },
+    created() {
+        if (this.elementsType !== "collection_contents") {
+            let columnCount = null;
+            if (this.elementsType == "datasets") {
+                for (const element of this.initialElements) {
+                    if (element.history_content_type == "dataset_collection") {
+                        this.errorMessage =
+                            "This component can only be used with datasets, you have specified one or more collections.";
+                        this.state = "error";
+                    }
+                }
+            } else {
+                for (const row of this.initialElements) {
+                    if (columnCount == null) {
+                        columnCount = row.length;
+                    } else {
+                        if (columnCount != row.length) {
+                            this.jaggedData = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // TODO: provider...
+            UploadUtils.getUploadDatatypes(false, UploadUtils.AUTO_EXTENSION)
+                .then((extensions) => {
+                    this.extensions = extensions;
+                    this.extension = UploadUtils.DEFAULT_EXTENSION;
+                })
+                .catch((err) => {
+                    console.log("Error in RuleCollectionBuilder, unable to load datatypes", err);
+                });
+
+            // TODO: provider...
+            UploadUtils.getUploadGenomes(UploadUtils.DEFAULT_GENOME)
+                .then((genomes) => {
+                    this.genomes = genomes;
+                    this.genome = UploadUtils.DEFAULT_GENOME;
+                })
+                .catch((err) => {
+                    console.log("Error in RuleCollectionBuilder, unable to load genomes", err);
+                });
+        }
+    },
     methods: {
         restoreRules(event) {
             const json = JSON.parse(event);
@@ -1661,77 +1732,6 @@ export default {
             }
             return res;
         },
-    },
-    created() {
-        if (this.elementsType !== "collection_contents") {
-            let columnCount = null;
-            if (this.elementsType == "datasets") {
-                for (const element of this.initialElements) {
-                    if (element.history_content_type == "dataset_collection") {
-                        this.errorMessage =
-                            "This component can only be used with datasets, you have specified one or more collections.";
-                        this.state = "error";
-                    }
-                }
-            } else {
-                for (const row of this.initialElements) {
-                    if (columnCount == null) {
-                        columnCount = row.length;
-                    } else {
-                        if (columnCount != row.length) {
-                            this.jaggedData = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // TODO: provider...
-            UploadUtils.getUploadDatatypes(false, UploadUtils.AUTO_EXTENSION)
-                .then((extensions) => {
-                    this.extensions = extensions;
-                    this.extension = UploadUtils.DEFAULT_EXTENSION;
-                })
-                .catch((err) => {
-                    console.log("Error in RuleCollectionBuilder, unable to load datatypes", err);
-                });
-
-            // TODO: provider...
-            UploadUtils.getUploadGenomes(UploadUtils.DEFAULT_GENOME)
-                .then((genomes) => {
-                    this.genomes = genomes;
-                    this.genome = UploadUtils.DEFAULT_GENOME;
-                })
-                .catch((err) => {
-                    console.log("Error in RuleCollectionBuilder, unable to load genomes", err);
-                });
-        }
-    },
-    watch: {
-        addColumnRegexType: function (val) {
-            if (val == "groups") {
-                this.addColumnRegexGroupCount = 1;
-            }
-            if (val == "replacement") {
-                this.addColumnRegexReplacement = null;
-            }
-        },
-    },
-    components: {
-        TooltipOnHover,
-        HotTable,
-        RuleComponent,
-        RuleTargetComponent,
-        SavedRulesSelector,
-        RuleDisplay,
-        IdentifierDisplay,
-        ColumnSelector,
-        RegularExpressionInput,
-        StateDiv,
-        RuleModalHeader,
-        RuleModalMiddle,
-        RuleModalFooter,
-        Select2,
     },
 };
 </script>

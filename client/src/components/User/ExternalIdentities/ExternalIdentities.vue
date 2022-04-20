@@ -125,6 +125,9 @@ export default {
             this.loadIdentities({ deleted });
         },
     },
+    created() {
+        this.loadIdentities();
+    },
     methods: {
         loadIdentities() {
             this.loading = true;
@@ -188,9 +191,6 @@ export default {
                 console.warn(err);
             };
         },
-    },
-    created() {
-        this.loadIdentities();
     },
 };
 </script>

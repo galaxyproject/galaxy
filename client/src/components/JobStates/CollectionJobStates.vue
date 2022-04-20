@@ -26,14 +26,14 @@ import mixin from "./mixin";
 import ProgressBar from "components/ProgressBar";
 
 export default {
-    props: {
-        collection: { type: Object, required: true }, // backbone model
-        jobStatesSummary: { required: true },
-    },
     components: {
         ProgressBar,
     },
     mixins: [mixin],
+    props: {
+        collection: { type: Object, required: true }, // backbone model
+        jobStatesSummary: { required: true },
+    },
     computed: {
         loadingNote() {
             return `Loading job data for ${this.collectionTypeDescription}`;

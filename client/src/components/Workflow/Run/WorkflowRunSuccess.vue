@@ -76,6 +76,14 @@ export default {
             );
         },
     },
+    mounted() {
+        new Webhooks.WebhookView({
+            type: "workflow",
+            toolId: null,
+            toolVersion: null,
+        });
+        this._refreshHistory();
+    },
     methods: {
         _refreshHistory() {
             // remove when disabling backbone history
@@ -94,14 +102,6 @@ export default {
                 });
             }
         },
-    },
-    mounted() {
-        new Webhooks.WebhookView({
-            type: "workflow",
-            toolId: null,
-            toolVersion: null,
-        });
-        this._refreshHistory();
     },
 };
 </script>

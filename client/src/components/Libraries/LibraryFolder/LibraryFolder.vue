@@ -302,6 +302,16 @@ function initialFolderState() {
     };
 }
 export default {
+    components: {
+        FolderTopBar,
+        UtcDate,
+        FontAwesomeIcon,
+        CurrentUser,
+    },
+    beforeRouteUpdate(to, from, next) {
+        this.getFolder(to.params.folder_id, to.params.page);
+        next();
+    },
     props: {
         folder_id: {
             type: String,
@@ -312,12 +322,6 @@ export default {
             default: 1,
             required: false,
         },
-    },
-    components: {
-        FolderTopBar,
-        UtcDate,
-        FontAwesomeIcon,
-        CurrentUser,
     },
     data() {
         return {
@@ -336,6 +340,13 @@ export default {
                 root: getAppRoot(),
             },
         };
+    },
+    watch: {
+        perPage: {
+            handler: function (value) {
+                this.fetchFolderContents(this.include_deleted);
+            },
+        },
     },
     created() {
         this.services = new Services({ root: this.root });
@@ -627,17 +638,6 @@ export default {
                 Toast.info("Nothing has changed.");
             }
         },
-    },
-    watch: {
-        perPage: {
-            handler: function (value) {
-                this.fetchFolderContents(this.include_deleted);
-            },
-        },
-    },
-    beforeRouteUpdate(to, from, next) {
-        this.getFolder(to.params.folder_id, to.params.page);
-        next();
     },
 };
 </script>

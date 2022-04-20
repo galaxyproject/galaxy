@@ -174,11 +174,11 @@ import SelectorModal from "components/History/Modals/SelectorModal";
 import { mapGetters } from "vuex";
 
 export default {
-    mixins: [legacyNavigationMixin],
     components: {
         CopyModal,
         SelectorModal,
     },
+    mixins: [legacyNavigationMixin],
     props: {
         histories: { type: Array, required: true },
         history: { type: Object, required: true },

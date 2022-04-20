@@ -105,8 +105,8 @@ const RESOLVER_TYPE_OPTIONS = _.keys(RESOLVER_DESCRIPTIONS).map((resolverType) =
 RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {
-    mixins: [DependencyIndexMixin],
     components: { ResolutionDetails },
+    mixins: [DependencyIndexMixin],
     data() {
         return {
             toggleState: false,
@@ -119,11 +119,6 @@ export default {
             filterResolution: null,
             requirements: [],
         };
-    },
-    watch: {
-        resolverType: function (val) {
-            this.load();
-        },
     },
     computed: {
         fields: function () {
@@ -184,6 +179,11 @@ export default {
                 }
             }
             return toolIds;
+        },
+    },
+    watch: {
+        resolverType: function (val) {
+            this.load();
         },
     },
     methods: {

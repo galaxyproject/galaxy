@@ -109,6 +109,13 @@ export default {
             return this.totalItemsInQuery === this.selectionSize;
         },
     },
+    watch: {
+        hasSelection(newVal) {
+            if (newVal) {
+                this.$emit("update:show-selection", true);
+            }
+        },
+    },
     methods: {
         // Selected content manipulation, hide/show/delete/purge
         hideSelected() {
@@ -163,13 +170,6 @@ export default {
             if (modalResult.hide_source_items) {
                 this.$emit("hide-selection", this.contentSelection);
                 this.$emit("reset-selection");
-            }
-        },
-    },
-    watch: {
-        hasSelection(newVal) {
-            if (newVal) {
-                this.$emit("update:show-selection", true);
             }
         },
     },

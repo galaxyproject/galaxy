@@ -22,6 +22,16 @@ import RuleDisplayPreview from "./RuleDisplayPreview";
 import IdentifierDisplayPreview from "./IdentifierDisplayPreview";
 
 export default {
+    components: {
+        RuleDisplayPreview,
+        IdentifierDisplayPreview,
+    },
+    props: {
+        inputRules: {
+            required: false,
+            type: Object,
+        },
+    },
     data: function () {
         return {};
     },
@@ -41,16 +51,6 @@ export default {
             const columns = this.columnData.columns;
             return RuleDefs.colHeadersFor([], columns);
         },
-    },
-    props: {
-        inputRules: {
-            required: false,
-            type: Object,
-        },
-    },
-    components: {
-        RuleDisplayPreview,
-        IdentifierDisplayPreview,
     },
 };
 </script>

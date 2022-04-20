@@ -77,12 +77,6 @@ export default {
         ToolSearch,
         PanelViewButton,
     },
-    data() {
-        return {
-            query: null,
-            results: null,
-        };
-    },
     props: {
         toolbox: {
             type: Array,
@@ -106,6 +100,12 @@ export default {
             type: Array,
             required: true,
         },
+    },
+    data() {
+        return {
+            query: null,
+            results: null,
+        };
     },
     computed: {
         hasWorkflowSection() {

@@ -58,10 +58,6 @@ export default {
             default: false,
         },
     },
-    created() {
-        this.services = new Services();
-        this.toolId = this.queryTrsId;
-    },
     data() {
         return {
             trsSelection: null,
@@ -97,6 +93,10 @@ export default {
         toolId: function () {
             this.onToolId();
         },
+    },
+    created() {
+        this.services = new Services();
+        this.toolId = this.queryTrsId;
     },
     methods: {
         onTrsSelection(selection) {

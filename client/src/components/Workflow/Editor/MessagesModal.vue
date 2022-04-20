@@ -45,17 +45,17 @@ export default {
         };
     },
     computed: {},
+    watch: {
+        message() {
+            this.show = !!this.title;
+        },
+    },
     methods: {
         onHidden() {
             this.$emit("onHidden");
         },
         onOk() {
             // no-op I suppose...
-        },
-    },
-    watch: {
-        message() {
-            this.show = !!this.title;
         },
     },
 };

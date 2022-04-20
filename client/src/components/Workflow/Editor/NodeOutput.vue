@@ -95,6 +95,10 @@ export default {
     mounted() {
         this.createTerminal(this.output);
     },
+    beforeDestroy() {
+        this.$emit("onRemove", this.output);
+        this.terminal.destroy();
+    },
     methods: {
         terminalClassForOutput(output) {
             let terminalClass = Terminals.OutputTerminal;
@@ -148,10 +152,6 @@ export default {
         onToggle() {
             this.$emit("onToggle", this.output.name);
         },
-    },
-    beforeDestroy() {
-        this.$emit("onRemove", this.output);
-        this.terminal.destroy();
     },
 };
 </script>

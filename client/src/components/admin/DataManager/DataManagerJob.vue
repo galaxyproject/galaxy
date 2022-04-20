@@ -137,11 +137,6 @@ export default {
             ];
         },
     },
-    methods: {
-        outputFields(output) {
-            return Object.keys(output).reduce((acc, c) => [...acc, { key: c, label: c }], []);
-        },
-    },
     created() {
         axios
             .get(`${getAppRoot()}data_manager/job_info?id=${this.id}`)
@@ -161,6 +156,11 @@ export default {
             .catch((error) => {
                 console.error(error);
             });
+    },
+    methods: {
+        outputFields(output) {
+            return Object.keys(output).reduce((acc, c) => [...acc, { key: c, label: c }], []);
+        },
     },
 };
 </script>

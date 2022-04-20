@@ -33,6 +33,11 @@ import FormCard from "components/Form/FormCard";
 import FormDisplay from "components/Form/FormDisplay";
 
 export default {
+    components: {
+        FormCard,
+        FormDisplay,
+        UrlDataProvider,
+    },
     props: {
         id: {
             type: String,
@@ -66,11 +71,6 @@ export default {
             type: String,
             default: null,
         },
-    },
-    components: {
-        FormCard,
-        FormDisplay,
-        UrlDataProvider,
     },
     data() {
         return {

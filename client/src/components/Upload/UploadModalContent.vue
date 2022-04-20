@@ -62,58 +62,6 @@ export default {
             datatypesMapperReady: true,
         };
     },
-    created() {
-        this.model = new Backbone.Model({
-            label: "Load Data",
-            percentage: 0,
-            status: "",
-            onunload: function () {},
-            onclick: function () {},
-        });
-
-        this.model.on("change", (model) => {
-            const { changed } = model;
-            for (const [field, val] of Object.entries(changed)) {
-                this.eventHub.$emit(`upload:${field}`, val);
-            }
-        });
-
-        // load extensions
-        // TODO: provider...
-        UploadUtils.getUploadDatatypes(this.datatypesDisableAuto, this.auto)
-            .then((listExtensions) => {
-                this.extensionsSet = true;
-                this.listExtensions = listExtensions;
-            })
-            .catch((err) => {
-                console.log("Error in UploadModalContent, unable to load datatypes", err);
-            });
-
-        // load genomes
-        // TODO: provider...
-        UploadUtils.getUploadGenomes(this.defaultGenome)
-            .then((listGenomes) => {
-                this.genomesSet = true;
-                this.listGenomes = listGenomes;
-            })
-            .catch((err) => {
-                console.log("Error in uploadModalContent, unable to load genomes", err);
-            });
-
-        if (this.formats !== null) {
-            this.datatypesMapperReady = false;
-            getDatatypesMapper().then((datatypesMapper) => {
-                this.datatypesMapper = datatypesMapper;
-                this.datatypesMapperReady = true;
-            });
-        } else {
-            this.datatypesMapperReady = true;
-        }
-    },
-    beforeDestroy() {
-        const modelUnload = this.model.get("onunload");
-        modelUnload();
-    },
     computed: {
         historyAvailable() {
             return Boolean(this.currentHistoryId);
@@ -165,6 +113,58 @@ export default {
             }
             return this.multiple;
         },
+    },
+    created() {
+        this.model = new Backbone.Model({
+            label: "Load Data",
+            percentage: 0,
+            status: "",
+            onunload: function () {},
+            onclick: function () {},
+        });
+
+        this.model.on("change", (model) => {
+            const { changed } = model;
+            for (const [field, val] of Object.entries(changed)) {
+                this.eventHub.$emit(`upload:${field}`, val);
+            }
+        });
+
+        // load extensions
+        // TODO: provider...
+        UploadUtils.getUploadDatatypes(this.datatypesDisableAuto, this.auto)
+            .then((listExtensions) => {
+                this.extensionsSet = true;
+                this.listExtensions = listExtensions;
+            })
+            .catch((err) => {
+                console.log("Error in UploadModalContent, unable to load datatypes", err);
+            });
+
+        // load genomes
+        // TODO: provider...
+        UploadUtils.getUploadGenomes(this.defaultGenome)
+            .then((listGenomes) => {
+                this.genomesSet = true;
+                this.listGenomes = listGenomes;
+            })
+            .catch((err) => {
+                console.log("Error in uploadModalContent, unable to load genomes", err);
+            });
+
+        if (this.formats !== null) {
+            this.datatypesMapperReady = false;
+            getDatatypesMapper().then((datatypesMapper) => {
+                this.datatypesMapper = datatypesMapper;
+                this.datatypesMapperReady = true;
+            });
+        } else {
+            this.datatypesMapperReady = true;
+        }
+    },
+    beforeDestroy() {
+        const modelUnload = this.model.get("onunload");
+        modelUnload();
     },
     mounted() {
         this.id = String(this._uid);

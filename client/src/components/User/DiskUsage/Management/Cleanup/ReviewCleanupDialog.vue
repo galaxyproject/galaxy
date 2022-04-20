@@ -99,9 +99,6 @@ export default {
             required: false,
         },
     },
-    created() {
-        this.showDialog = this.show;
-    },
     data() {
         return {
             fields: [
@@ -142,62 +139,6 @@ export default {
             agreementText: _l("I understand that once I delete the items, they cannot be recovered."),
             isBusy: false,
         };
-    },
-    methods: {
-        toNiceSize(sizeInBytes) {
-            return bytesToString(sizeInBytes, true);
-        },
-        toggleSelectAll(checked) {
-            this.selectedItems = checked ? this.items : [];
-        },
-        hideModal() {
-            this.showDialog = false;
-        },
-        onShowModal() {
-            this.resetModal();
-        },
-        resetModal() {
-            this.selectedItems = [];
-        },
-        resetConfirmationModal() {
-            this.confirmChecked = false;
-        },
-        onConfirmCleanupSelectedItems() {
-            this.$emit("onConfirmCleanupSelectedItems", this.selectedItems);
-            this.hideModal();
-        },
-        onSort(props) {
-            this.sortBy = props.sortBy;
-            this.sortDesc = props.sortDesc;
-        },
-        async itemsProvider(ctx) {
-            try {
-                const page = ctx.currentPage > 0 ? ctx.currentPage - 1 : 0;
-                const offset = page * ctx.perPage;
-                const options = {
-                    offset: offset,
-                    limit: ctx.perPage,
-                    sortBy: this.sortBy,
-                    sortDesc: this.sortDesc,
-                };
-                const result = await this.operation.fetchItems(options);
-                return result;
-            } catch (error) {
-                return [];
-            }
-        },
-        async onSelectAllItems() {
-            this.isBusy = true;
-            const options = {
-                offset: 0,
-                limit: this.totalRows,
-                sortBy: this.sortBy,
-                sortDesc: this.sortDesc,
-            };
-            const allItems = await this.operation.fetchItems(options);
-            this.selectedItems = allItems;
-            this.isBusy = false;
-        },
     },
     computed: {
         /** @returns {Number} */
@@ -258,6 +199,65 @@ export default {
                 this.indeterminate = true;
                 this.allSelected = false;
             }
+        },
+    },
+    created() {
+        this.showDialog = this.show;
+    },
+    methods: {
+        toNiceSize(sizeInBytes) {
+            return bytesToString(sizeInBytes, true);
+        },
+        toggleSelectAll(checked) {
+            this.selectedItems = checked ? this.items : [];
+        },
+        hideModal() {
+            this.showDialog = false;
+        },
+        onShowModal() {
+            this.resetModal();
+        },
+        resetModal() {
+            this.selectedItems = [];
+        },
+        resetConfirmationModal() {
+            this.confirmChecked = false;
+        },
+        onConfirmCleanupSelectedItems() {
+            this.$emit("onConfirmCleanupSelectedItems", this.selectedItems);
+            this.hideModal();
+        },
+        onSort(props) {
+            this.sortBy = props.sortBy;
+            this.sortDesc = props.sortDesc;
+        },
+        async itemsProvider(ctx) {
+            try {
+                const page = ctx.currentPage > 0 ? ctx.currentPage - 1 : 0;
+                const offset = page * ctx.perPage;
+                const options = {
+                    offset: offset,
+                    limit: ctx.perPage,
+                    sortBy: this.sortBy,
+                    sortDesc: this.sortDesc,
+                };
+                const result = await this.operation.fetchItems(options);
+                return result;
+            } catch (error) {
+                return [];
+            }
+        },
+        async onSelectAllItems() {
+            this.isBusy = true;
+            const options = {
+                offset: 0,
+                limit: this.totalRows,
+                sortBy: this.sortBy,
+                sortDesc: this.sortDesc,
+            };
+            const allItems = await this.operation.fetchItems(options);
+            this.selectedItems = allItems;
+            this.isBusy = false;
         },
     },
 };

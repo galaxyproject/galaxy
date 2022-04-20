@@ -55,14 +55,14 @@ export default {
             titleClearSearch: _l("clear search (esc)"),
         };
     },
-    watch: {
-        tabValue() {
-            this.setQuery("");
-        },
-    },
     computed: {
         queryEmpty() {
             return !this.query || this.query.length < this.queryLength;
+        },
+    },
+    watch: {
+        tabValue() {
+            this.setQuery("");
         },
     },
     methods: {

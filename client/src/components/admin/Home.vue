@@ -132,12 +132,6 @@ export default {
             required: true,
         },
     },
-    methods: {
-        useRouter: function (ev) {
-            const Galaxy = getGalaxyInstance();
-            Galaxy.page.router.push(ev.target.pathname.slice(root.length));
-        },
-    },
     computed: {
         adminDataTypesUrl: () => `${root}admin/data_types`,
         adminDataTablesUrl: () => `${root}admin/data_tables`,
@@ -153,6 +147,12 @@ export default {
         adminFormsUrl: () => `${root}admin/forms`,
         adminToolshedUrl: () => `${root}admin/toolshed`,
         adminToolVersionsUrl: () => `${root}admin/tool_versions`,
+    },
+    methods: {
+        useRouter: function (ev) {
+            const Galaxy = getGalaxyInstance();
+            Galaxy.page.router.push(ev.target.pathname.slice(root.length));
+        },
     },
 };
 </script>

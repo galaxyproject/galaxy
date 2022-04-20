@@ -64,11 +64,6 @@ export default {
             selectedItem: {},
         };
     },
-    methods: {
-        onSelectItem(item) {
-            this.$emit("update:selected-item", item);
-        },
-    },
     computed: {
         /** @return {String} */
         loadingMessage() {
@@ -78,6 +73,11 @@ export default {
     watch: {
         items: function () {
             this.selectedItem = this.items.find((item) => item.id == this.currentItemId);
+        },
+    },
+    methods: {
+        onSelectItem(item) {
+            this.$emit("update:selected-item", item);
         },
     },
 };

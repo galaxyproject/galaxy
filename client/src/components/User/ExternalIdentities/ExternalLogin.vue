@@ -145,6 +145,13 @@ export default {
             return Object.prototype.hasOwnProperty.call(this.oidc_idps, "custos");
         },
     },
+    created() {
+        this.rememberIdp = this.getIdpPreference() !== null;
+        /* Only fetch CILogonIDPs if custos/cilogon configured */
+        if (this.cilogonListShow) {
+            this.getCILogonIdps();
+        }
+    },
     methods: {
         toggleCILogon(idp) {
             this.toggle_cilogon = !this.toggle_cilogon;
@@ -224,13 +231,6 @@ export default {
         getIdpPreference() {
             return localStorage.getItem("galaxy-remembered-idp");
         },
-    },
-    created() {
-        this.rememberIdp = this.getIdpPreference() !== null;
-        /* Only fetch CILogonIDPs if custos/cilogon configured */
-        if (this.cilogonListShow) {
-            this.getCILogonIdps();
-        }
     },
 };
 </script>

@@ -28,16 +28,16 @@
 import Multiselect from "vue-multiselect";
 export default {
     components: { Multiselect },
-    data: function () {
-        return {
-            selectedConverter: {},
-        };
-    },
     props: {
         suitableConverters: {
             type: Array,
             required: true,
         },
+    },
+    data: function () {
+        return {
+            selectedConverter: {},
+        };
     },
     methods: {
         clickedConvert: function () {

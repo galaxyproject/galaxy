@@ -100,17 +100,6 @@ export default {
             hover: false,
         };
     },
-    watch: {
-        queryFilter() {
-            this.opened = this.checkFilter();
-        },
-        opened(newVal, oldVal) {
-            if (newVal !== oldVal) {
-                const currentState = newVal ? "opened" : "closed";
-                ariaAlert(`${this.name} tools menu ${currentState}`);
-            }
-        },
-    },
     computed: {
         name() {
             return this.category.title || this.category.name;
@@ -128,6 +117,24 @@ export default {
             return this.category.links || {};
         },
     },
+    watch: {
+        queryFilter() {
+            this.opened = this.checkFilter();
+        },
+        opened(newVal, oldVal) {
+            if (newVal !== oldVal) {
+                const currentState = newVal ? "opened" : "closed";
+                ariaAlert(`${this.name} tools menu ${currentState}`);
+            }
+        },
+    },
+    created() {
+        this.eventHub.$on("openToolSection", (sectionId) => {
+            if (this.isSection && sectionId == this.category?.id) {
+                this.toggleMenu(true);
+            }
+        });
+    },
     methods: {
         checkFilter() {
             return !this.disableFilter && !!this.queryFilter;
@@ -141,13 +148,6 @@ export default {
         toggleMenu(nextState = !this.opened) {
             this.opened = nextState;
         },
-    },
-    created() {
-        this.eventHub.$on("openToolSection", (sectionId) => {
-            if (this.isSection && sectionId == this.category?.id) {
-                this.toggleMenu(true);
-            }
-        });
     },
 };
 </script>

@@ -109,8 +109,8 @@ import { uploadModelsToPayload } from "./helpers";
 import { BButton } from "bootstrap-vue";
 
 export default {
-    mixins: [UploadBoxMixin],
     components: { BButton },
+    mixins: [UploadBoxMixin],
     props: {
         multiple: {
             type: Boolean,
@@ -144,6 +144,23 @@ export default {
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),
         };
+    },
+    computed: {
+        extensions() {
+            const result = _.filter(this.listExtensions, (ext) => !ext.composite_files);
+            return result;
+        },
+        appModel() {
+            return this.app.model;
+        },
+    },
+    watch: {
+        extension: function (value) {
+            this.updateExtension(value);
+        },
+        genome: function (value) {
+            this.updateGenome(value);
+        },
     },
     created() {
         this.initCollection();
@@ -194,23 +211,6 @@ export default {
             this._eventRemove(model);
         });
         this._updateStateForCounters();
-    },
-    computed: {
-        extensions() {
-            const result = _.filter(this.listExtensions, (ext) => !ext.composite_files);
-            return result;
-        },
-        appModel() {
-            return this.app.model;
-        },
-    },
-    watch: {
-        extension: function (value) {
-            this.updateExtension(value);
-        },
-        genome: function (value) {
-            this.updateGenome(value);
-        },
     },
     methods: {
         _newUploadModelProps: function (index, file) {
