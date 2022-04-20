@@ -1,6 +1,6 @@
 <template>
     <div>
-        <job-details-provider v-on:update:result="updateJob" auto-refresh :jobid="job_id" />
+        <job-details-provider @update:result="updateJob" auto-refresh :jobid="job_id" />
         <h3>Job Information</h3>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>

@@ -340,7 +340,7 @@
                                     ref="savedRulesSelector"
                                     @update-rules="restoreRules"
                                     :saved-rules="this.savedRules"
-                                    :ruleColHeaders="colHeadersPerRule" />
+                                    :rule-col-headers="colHeadersPerRule" />
                             </span>
                             <div v-if="jaggedData" class="rule-warning">
                                 Rows contain differing numbers of columns, there was likely a problem parsing your data.
