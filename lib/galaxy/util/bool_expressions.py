@@ -14,7 +14,6 @@ from typing import (
 from pyparsing import (
     alphanums,
     CaselessKeyword,
-    Forward,
     infixNotation,
     Keyword,
     opAssoc,
@@ -132,7 +131,7 @@ class BooleanExpressionEvaluator:
         action.evaluator = evaluator
         boolOperand = TRUE | FALSE | Word(token_format or DEFAULT_TOKEN_FORMAT)
         boolOperand.setParseAction(action)
-        self.boolExpr: Forward = infixNotation(
+        self.boolExpr: ParserElement = infixNotation(
             boolOperand,
             [
                 (NOT_OP, 1, opAssoc.RIGHT, BoolNot),
