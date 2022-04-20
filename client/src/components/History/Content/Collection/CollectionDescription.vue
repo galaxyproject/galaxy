@@ -46,6 +46,10 @@ export default {
             if (this.collectionType === "list:paired") {
                 return this.pluralize("pair");
             }
+            if (!Object.keys(this.labels).includes(this.collectionType)) {
+                //Any other kind of nested collection
+                return this.pluralize("dataset collection");
+            }
             return this.pluralize("dataset");
         },
     },

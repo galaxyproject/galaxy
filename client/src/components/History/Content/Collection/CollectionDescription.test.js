@@ -34,7 +34,7 @@ describe("CollectionDescription", () => {
         expect(wrapper.text()).toBe("a list with 10 lists");
 
         await wrapper.setProps({ collectionType: "other" });
-        expect(wrapper.text()).toBe("a nested list with 10 datasets");
+        expect(wrapper.text()).toBe("a nested list with 10 dataset collections");
     });
 
     it("should display expected homogeneous descriptions", async () => {
@@ -55,6 +55,6 @@ describe("CollectionDescription", () => {
         expect(wrapper.text()).toBe(`a list with 10 ${EXPECTED_HOMOGENEOUS_DATATYPE} lists`);
 
         await wrapper.setProps({ collectionType: "other" });
-        expect(wrapper.text()).toBe(`a nested list with 10 ${EXPECTED_HOMOGENEOUS_DATATYPE} datasets`);
+        expect(wrapper.text()).toBe(`a nested list with 10 ${EXPECTED_HOMOGENEOUS_DATATYPE} dataset collections`);
     });
 });
