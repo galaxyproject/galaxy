@@ -174,6 +174,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     include_all_package_routers(app, "galaxy.webapps.galaxy.api")
     include_legacy_openapi(app, gx_app)
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
+    gx_app.haltables.append(("WSGI Middleware threadpool", wsgi_handler.executor.shutdown))
     app.mount("/", wsgi_handler)
     if gx_app.config.galaxy_url_prefix != "/":
         parent_app = FastAPI()

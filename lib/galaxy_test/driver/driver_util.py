@@ -743,7 +743,8 @@ class EmbeddedServerWrapper(ServerWrapper):
             self._app.shutdown()
             log.info(f"Application {self.name} stopped.")
 
-        log.info(f"{threading.active_count()} active after stopping embedded server")
+        thread_count = threading.active_count()
+        log.info(f"{thread_count} active after stopping embedded server")
 
 
 class GravityServerWrapper(ServerWrapper):
@@ -845,7 +846,7 @@ def launch_server(app_factory, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, gal
     if name == "galaxy":
         asgi_app = init_galaxy_fast_app(wsgi_webapp, app)
     elif name == "tool_shed":
-        asgi_app = init_tool_shed_fast_app(wsgi_webapp)
+        asgi_app = init_tool_shed_fast_app(wsgi_webapp, app)
     else:
         raise NotImplementedError(f"Launching {name} not implemented")
 
@@ -885,6 +886,11 @@ class TestDriver:
     def stop_servers(self):
         for server_wrapper in self.server_wrappers:
             server_wrapper.stop()
+        active_count = threading.active_count()
+        if active_count > 10:
+            raise Exception(
+                f"{active_count} active threads after stopping embedded server. Have all threads been shut down?"
+            )
         self.server_wrappers = []
 
     def mkdtemp(self):
