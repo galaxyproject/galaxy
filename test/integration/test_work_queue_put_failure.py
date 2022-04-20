@@ -36,7 +36,8 @@ class WorkQueuePutFailureTestCase(integration_util.IntegrationTestCase):
         config["tool_dependency_dir"] = "none"
 
     def test_job_fails(self):
-        self.dataset_populator.new_dataset(self.history_id, content="1 2 3")
+        # Set fetch_data to false so we don't bypass the job queue
+        self.dataset_populator.new_dataset(self.history_id, fetch_data=False, content="1 2 3")
         self.dataset_populator.wait_for_history(self.history_id, assert_ok=False)
         state_details = self.galaxy_interactor.get("histories/%s" % self.history_id).json()["state_details"]
         assert state_details["running"] == 0
