@@ -2,9 +2,9 @@
     "root": true,
     "extends": [
         "eslint:recommended",
-        "plugin:vue/strongly-recommended",
+        "plugin:vue/recommended",
         "plugin:compat/recommended"
-        //"airbnb-base", eventually
+        //"airbnb-base", eventually (?)
     ],
     "env": {
         "browser": true,
