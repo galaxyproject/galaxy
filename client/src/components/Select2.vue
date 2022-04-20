@@ -1,10 +1,16 @@
+<template>
+    <select>
+        <slot></slot>
+    </select>
+</template>
+
+<script>
 // Based on https://vuejs.org/v2/examples/select2.html but adapted to handle list values
 // with "multiple: true" set.
 import $ from "jquery";
 
 export default {
     props: ["options", "value", "placeholder", "containerClass", "enabled"],
-    template: `<select><slot></slot></select>`,
     mounted: function () {
         const vm = this;
         // TODO: refactor property list to objects that allow defaults and types
@@ -49,3 +55,4 @@ export default {
         $(this.$el).off().select2("destroy");
     },
 };
+</script>
