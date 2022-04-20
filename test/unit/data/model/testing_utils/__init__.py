@@ -250,5 +250,5 @@ def get_plugin_full_name(partial_module_name: str) -> str:
     if os.path.split(path)[1] == "packages":  # When running package unit tests
         prefix = "tests.data.model"
     else:
-        prefix = "test.unit.data.model"
+        prefix = "unit.data.model"
     return f"{prefix}.{partial_module_name}"
