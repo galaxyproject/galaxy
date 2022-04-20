@@ -115,7 +115,6 @@ export default {
             }
         }
         return {
-            isNullable: this.optional && this.type === "select",
             dismissSecs: 5,
             dismissCountDown: 0,
             errorMessage: "",
@@ -139,9 +138,6 @@ export default {
             },
         },
         componentName() {
-            if (this.isNullable) {
-                return Ui.NullableText;
-            }
             return this.area || this.multiple ? "b-form-textarea" : "b-form-input";
         },
         style() {
