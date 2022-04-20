@@ -58,8 +58,8 @@ colour_options, start_options = create_options(header)
 ${h.javascript_link(app_root + "dist/d3.min.js")}
 ${h.javascript_link(app_root + "dist/plotly.min.js")}
 ${h.javascript_link(app_root + "dist/pca.min.js")}
-${h.javascript_link( app_root +  "script.js" )}
-${h.stylesheet_link( app_root + "style.css" )}
+${h.javascript_link(app_root + "script.js")}
+${h.stylesheet_link(app_root + "style.css")}
 
 <script type="text/javascript">
 var data = ${data}
