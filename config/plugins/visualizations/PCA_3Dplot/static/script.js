@@ -95,9 +95,9 @@ function create_plot(pca_result, colours, annotations) {
     var layout = {
         hoverlabel: { bgcolor: "#FFF" },
         scene: {
-            xaxis: {title: 'PC 0'},
-            yaxis: {title: 'PC 1'},
-            zaxis: {title: 'PC 2',}
+            xaxis: {title: 'PC 0', zerolinecolor: "rgb(210, 210, 210)"},
+            yaxis: {title: 'PC 1', zerolinecolor: "rgb(210, 210, 210)"},
+            zaxis: {title: 'PC 2', zerolinecolor: "rgb(210, 210, 210)"}
         },
         margin: {
             l: 0,
