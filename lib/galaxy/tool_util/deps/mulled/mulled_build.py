@@ -154,8 +154,8 @@ def get_conda_hits_for_targets(targets, conda_context):
     return [r for r in search_results if r]
 
 
-def base_image_for_targets(targets, conda_context=None):
-    hits = get_conda_hits_for_targets(targets, conda_context or CondaInDockerContext())
+def base_image_for_targets(targets, conda_context):
+    hits = get_conda_hits_for_targets(targets, conda_context)
     for hit in hits:
         try:
             tarball = get_file_from_recipe_url(hit["url"])
@@ -267,7 +267,8 @@ def mull_targets(
     elif DEST_BASE_IMAGE:
         dest_base_image = DEST_BASE_IMAGE
     elif determine_base_image:
-        dest_base_image = base_image_for_targets(targets)
+        conda_context = CondaInDockerContext(ensure_channels=channels)
+        dest_base_image = base_image_for_targets(targets, conda_context)
 
     if dest_base_image:
         involucro_args.extend(["-set", f"DEST_BASE_IMAGE={dest_base_image}"])
