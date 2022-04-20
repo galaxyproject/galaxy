@@ -8,7 +8,7 @@
             @mouseleave="hover = false">
             <a class="title-link" href="javascript:void(0)" @click="toggleMenu()">
                 <span class="name">
-                    {{ this.name }}
+                    {{ name }}
                 </span>
                 <ToolPanelLinks :links="links" :show="hover" />
             </a>

@@ -17,7 +17,7 @@
                 class="dataset-icon pause fa fa-pause text-info"
                 title="The creation of this dataset has been paused." />
             <span v-else class="dataset-icon fa fa-caret-down" />
-            <span class="name">{{ this.getName }}</span>
+            <span class="name">{{ getName }}</span>
         </b-link>
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
             <a class="dropdown-item" href="#" @click.prevent="showDataset">

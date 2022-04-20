@@ -23,7 +23,7 @@
                     class="fa fa-arrow-down rule-column-selector-down"
                     @click="moveUp(index + 1)"></span>
             </li>
-            <li v-if="this.target.length < this.colHeaders.length">
+            <li v-if="target.length < colHeaders.length">
                 <span v-if="!orderedEdit" class="rule-column-selector-target-add">
                     <i @click="$emit('update:orderedEdit', true)">... {{ l("Assign Another Column") }}</i>
                 </span>

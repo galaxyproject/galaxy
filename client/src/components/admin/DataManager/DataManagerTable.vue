@@ -27,7 +27,7 @@
                             </b-container>
                         </template>
                         <b-table
-                            :fields="fields(this.dataTable['columns'])"
+                            :fields="fields(dataTable['columns'])"
                             :items="dataTable['data']"
                             small
                             hover

@@ -43,7 +43,7 @@
                     </template>
                 </b-table>
                 <div v-if="showNotFound">
-                    No matching entries found for: <span class="font-weight-bold">{{ this.filter }}</span
+                    No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
                     >.
                 </div>
                 <div v-if="showNotAvailable">No installed repositories found.</div>

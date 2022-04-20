@@ -40,7 +40,7 @@
             </td>
         </div>
         <br />
-        <job-outputs :job-outputs="this.outputs" :title="`Job Outputs`" />
+        <job-outputs :job-outputs="outputs" :title="`Job Outputs`" />
     </div>
 </template>
 

@@ -4,7 +4,7 @@
         <b-popover
             triggers="click blur"
             :placement="hoverPlacement"
-            :target="this.$refs['button'] || 'works-lazily'"
+            :target="$refs['button'] || 'works-lazily'"
             title="Person">
             <b-table striped :items="items"> </b-table>
         </b-popover>

@@ -20,7 +20,7 @@
             </b-table>
             <loading-span v-if="loading" message="Loading datasets" />
             <div v-if="showNotFound">
-                No matching entries found for: <span class="font-weight-bold">{{ this.query }}</span
+                No matching entries found for: <span class="font-weight-bold">{{ query }}</span
                 >.
             </div>
             <div v-if="showNotAvailable">No datasets found.</div>

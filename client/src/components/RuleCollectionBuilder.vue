@@ -338,7 +338,7 @@
                                     @click="viewSource"></span>
                                 <saved-rules-selector
                                     ref="savedRulesSelector"
-                                    :saved-rules="this.savedRules"
+                                    :saved-rules="savedRules"
                                     :rule-col-headers="colHeadersPerRule"
                                     @update-rules="restoreRules" />
                             </span>

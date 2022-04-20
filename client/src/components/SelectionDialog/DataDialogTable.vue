@@ -56,7 +56,7 @@
         </div>
         <div v-if="nItems === 0">
             <div v-if="filter">
-                No search results found for: <b>{{ this.filter }}</b
+                No search results found for: <b>{{ filter }}</b
                 >.
             </div>
             <div v-else>No entries.</div>

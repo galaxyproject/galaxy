@@ -17,7 +17,7 @@
             size="sm"
             aria-label="Reset Zoom Level"
             @click="onZoomReset">
-            {{ this.zoomPercentage }}%
+            {{ zoomPercentage }}%
         </b-button>
         <b-button
             v-b-tooltip.hover
