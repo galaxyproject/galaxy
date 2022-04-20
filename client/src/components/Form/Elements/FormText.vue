@@ -5,19 +5,6 @@
         </b-alert>
         <b-row align-v="center">
             <b-col>
-                <!-- type        <str> "text" or "password" -->
-                <!-- area        <bool> presumably for a textarea instead of input -->
-                <!-- readonly    <bool> -->
-                <!-- color       <str> -->
-                <!-- styleObj    <obj> applied to input element -->
-                <!-- placeholder <str> -->
-                <!-- datalist    <arr> -->
-
-                <!-- multiple <bool>
-                     Allow multiple entries to be created?
-                     Seems to use a textarea currently... line separated values?
-                 -->
-
                 <component
                     :is="componentName"
                     :id="id"
@@ -37,10 +24,13 @@
 </template>
 
 <script>
+import Utils from "utils/utils";
+import Ui from "mvc/ui/ui-misc";
+
 export default {
     props: {
         value: {
-            // String or Array for multiple
+            // String; Array for multiple
             required: false,
             default: "",
         },
@@ -52,14 +42,15 @@ export default {
             type: String,
             required: false,
             default: "text",
-            validator: (prop) => ["text", "password"].includes(prop.toLowerCase()),
         },
         area: {
+            // <textarea> instead of <input> element
             type: Boolean,
             required: false,
             default: false,
         },
         multiple: {
+            // Allow multiple entries to be created
             type: Boolean,
             required: false,
             default: false,
@@ -78,6 +69,7 @@ export default {
             required: false,
         },
         styleObj: {
+            // This will be applied to the input element
             type: Object,
             required: false,
             default: () => {},
@@ -87,9 +79,43 @@ export default {
             type: Array,
             required: false,
         },
+
+        // These last three are for handling special input cases only
+
+        optional: {
+            type: Boolean,
+            default: false,
+            required: false,
+        },
+        model_class: {
+            type: String,
+            required: false,
+        },
+        data: {
+            type: Object,  // ?
+            required: false,
+        },
     },
     data() {
+        if (
+            ["SelectTagParameter", "ColumnListParameter"].includes(this.model_class) ||
+            (this.options && this.data)
+        ) {
+            this.area = this.multiple;
+            if (Utils.isEmpty(this.value)) {
+                this.value = null;
+            } else {
+                if (Array.isArray(this.value)) {
+                    this.value = this.multiple ?
+                        this.value.reduce(
+                            (str_value, v) => str_value + String(v) + '\n',
+                            ''
+                        ) : String(this.value[i]);
+                }
+            }
+        }
         return {
+            isNullable: this.optional && this.type === "select",
             dismissSecs: 5,
             dismissCountDown: 0,
             errorMessage: "",
@@ -113,6 +139,9 @@ export default {
             },
         },
         componentName() {
+            if (this.isNullable) {
+                return Ui.NullableText;
+            }
             return this.area || this.multiple ? "b-form-textarea" : "b-form-input";
         },
         style() {
@@ -122,13 +151,6 @@ export default {
     methods: {
         onInputChange(value) {
             this.resetAlert();
-            // Some validation?
-
-            // Could we accept a validation function in props?
-
-            // if (value !== xxx) {
-            //     // Show some info alert
-            // }
         },
         showAlert(error) {
             if (error) {
