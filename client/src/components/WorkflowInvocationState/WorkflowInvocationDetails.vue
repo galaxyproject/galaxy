@@ -73,9 +73,6 @@ export default {
             type: Boolean,
         },
     },
-    created: function () {
-        this.fetchWorkflowForInstanceId(this.invocation.workflow_id);
-    },
     computed: {
         ...mapGetters(["getWorkflowByInstanceId"]),
         orderedSteps() {
@@ -84,6 +81,9 @@ export default {
         workflow() {
             return this.getWorkflowByInstanceId(this.invocation.workflow_id);
         },
+    },
+    created: function () {
+        this.fetchWorkflowForInstanceId(this.invocation.workflow_id);
     },
     methods: {
         ...mapCacheActions(["fetchWorkflowForInstanceId"]),

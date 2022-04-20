@@ -80,6 +80,14 @@ export default {
             return this.newNameValid;
         },
     },
+    watch: {
+        history: {
+            handler(newHistory) {
+                this.name = `Copy of '${newHistory.name}'`;
+            },
+            immediate: true,
+        },
+    },
     methods: {
         ...mapActions("history", ["copyHistory"]),
 
@@ -89,14 +97,6 @@ export default {
             await this.copyHistory({ history, name, copyAll });
             this.loading = false;
             close();
-        },
-    },
-    watch: {
-        history: {
-            handler(newHistory) {
-                this.name = `Copy of '${newHistory.name}'`;
-            },
-            immediate: true,
         },
     },
 };

@@ -17,10 +17,10 @@
                     <UserHistories v-if="user" v-slot="{ currentHistoryId }" :user="user">
                         <b-button
                             v-if="currentHistoryId"
+                            v-b-tooltip.hover
                             href="#"
                             role="button"
                             variant="link"
-                            v-b-tooltip.hover
                             title="Import Collection"
                             type="button"
                             class="py-0 px-1"

@@ -113,10 +113,6 @@ export default {
             polling: null,
         };
     },
-    created() {
-        this.fetchTool();
-        this.fetchSubworkflow();
-    },
     computed: {
         ...mapGetters(["getToolForId", "getToolNameById", "getWorkflowByInstanceId", "getInvocationStepById"]),
         isReady() {
@@ -154,6 +150,10 @@ export default {
         stepLabel() {
             return this.labelForWorkflowStep(this.workflowStep.id);
         },
+    },
+    created() {
+        this.fetchTool();
+        this.fetchSubworkflow();
     },
     methods: {
         ...mapCacheActions(["fetchToolForId", "fetchWorkflowForInstanceId"]),

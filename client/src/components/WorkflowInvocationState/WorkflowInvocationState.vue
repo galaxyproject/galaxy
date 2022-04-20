@@ -93,10 +93,6 @@ export default {
             jobStatesInterval: null,
         };
     },
-    created: function () {
-        this.pollStepStatesUntilTerminal();
-        this.pollJobStatesUntilTerminal();
-    },
     computed: {
         ...mapGetters(["getInvocationById", "getInvocationJobsSummaryById"]),
         indexStr() {
@@ -173,6 +169,14 @@ export default {
             return !jobsSummary ? null : new JOB_STATES_MODEL.JobStatesSummary(jobsSummary);
         },
     },
+    created: function () {
+        this.pollStepStatesUntilTerminal();
+        this.pollJobStatesUntilTerminal();
+    },
+    beforeDestroy: function () {
+        clearTimeout(this.jobStatesInterval);
+        clearTimeout(this.stepStatesInterval);
+    },
     methods: {
         ...mapActions(["fetchInvocationForId", "fetchInvocationJobsSummaryForId"]),
         pollStepStatesUntilTerminal: function () {
@@ -198,10 +202,6 @@ export default {
         cancelWorkflowScheduling: function () {
             cancelWorkflowScheduling(this.invocationId).then(this.onCancel).catch(this.onError);
         },
-    },
-    beforeDestroy: function () {
-        clearTimeout(this.jobStatesInterval);
-        clearTimeout(this.stepStatesInterval);
     },
 };
 </script>

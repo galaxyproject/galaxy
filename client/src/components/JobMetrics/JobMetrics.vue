@@ -56,13 +56,6 @@ export default {
             default: true,
         },
     },
-    created: function () {
-        if (this.jobId) {
-            this.fetchJobMetricsForJobId(this.jobId);
-        } else {
-            this.fetchJobMetricsForDatasetId({ datasetId: this.datasetId, datasetType: this.datasetType });
-        }
-    },
     computed: {
         ...mapGetters(["getJobMetricsByDatasetId", "getJobMetricsByJobId"]),
         computedAwsEstimate: function () {
@@ -126,6 +119,13 @@ export default {
         orderedPlugins: function () {
             return Object.keys(this.metricsByPlugins).sort();
         },
+    },
+    created: function () {
+        if (this.jobId) {
+            this.fetchJobMetricsForJobId(this.jobId);
+        } else {
+            this.fetchJobMetricsForDatasetId({ datasetId: this.datasetId, datasetType: this.datasetType });
+        }
     },
     methods: {
         ...mapCacheActions(["fetchJobMetricsForDatasetId", "fetchJobMetricsForJobId"]),

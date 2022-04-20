@@ -79,18 +79,6 @@ export default {
         ToolSection,
         ToolSearch,
     },
-    data() {
-        return {
-            query: null,
-            results: null,
-            queryFilter: null,
-            queryPending: false,
-            showSections: false,
-            buttonText: "",
-            buttonIcon: "",
-            titleSearchTools: _l("search tools"),
-        };
-    },
     props: {
         toolbox: {
             type: Array,
@@ -110,6 +98,18 @@ export default {
             type: String,
             default: _l("Workflows"),
         },
+    },
+    data() {
+        return {
+            query: null,
+            results: null,
+            queryFilter: null,
+            queryPending: false,
+            showSections: false,
+            buttonText: "",
+            buttonIcon: "",
+            titleSearchTools: _l("search tools"),
+        };
     },
     computed: {
         queryTooShort() {

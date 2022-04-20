@@ -5,8 +5,8 @@
             v-slot="{ currentPanel, currentPanelView }"
             :panel-view="config.default_panel_view">
             <ToolBoxWorkflow
-                :toolbox="currentPanel"
                 v-if="currentPanelView"
+                :toolbox="currentPanel"
                 :panel-views="config.panel_views"
                 :current-panel-view="currentPanelView"
                 :workflows="workflows"
