@@ -281,6 +281,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 "update_time",
                 "tags",
                 "contents_url",
+                "elements_datatypes",
             ],
         )
         self.add_view(
@@ -288,7 +289,6 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
             [
                 "populated",
                 "elements",
-                "elements_datatypes",
             ],
             include_keys_from="summary",
         )

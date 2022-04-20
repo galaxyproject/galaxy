@@ -9,7 +9,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Set,
     Union,
 )
 
@@ -763,6 +762,9 @@ class HDCASummary(HistoryItemCommon):
         title="Collection ID",
         description="The encoded ID of the dataset collection associated with this HDCA.",
     )
+    elements_datatypes: List[str] = Field(
+        ..., description="A set containing all the different element datatypes in the collection."
+    )
 
 
 class HDCADetailed(HDCASummary):
@@ -770,9 +772,6 @@ class HDCADetailed(HDCASummary):
 
     populated: bool = PopulatedField
     elements: List[DCESummary] = ElementsField
-    elements_datatypes: Set[str] = Field(
-        ..., description="A set containing all the different element datatypes in the collection."
-    )
 
 
 class HistoryBase(BaseModel):

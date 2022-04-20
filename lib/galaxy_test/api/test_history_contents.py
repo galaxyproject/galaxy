@@ -835,9 +835,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
         self._assert_status_code_is_ok(create_homogeneous_response)
 
     def _assert_collection_has_expected_elements_datatypes(self, history_id, collection_name, expected_datatypes):
-        contents_response = self._get(
-            f"histories/{history_id}/contents?v=dev&view=detailed&q=name-eq&qv={collection_name}"
-        )
+        contents_response = self._get(f"histories/{history_id}/contents?v=dev&q=name-eq&qv={collection_name}")
         self._assert_status_code_is(contents_response, 200)
         collection = contents_response.json()[0]
         self.assertCountEqual(collection["elements_datatypes"], expected_datatypes)
