@@ -10,6 +10,7 @@ class WorkflowEditorToolUpgradeWithToolShedToolTestCase(SeleniumIntegrationTestC
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls.configure_shed(config)
 
     @selenium_test

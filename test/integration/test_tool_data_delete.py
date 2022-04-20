@@ -33,6 +33,7 @@ class AdminToolDataIntegrationTestCase(integration_util.IntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls.configure_temp_tool_data_dir()
         config["tool_data_path"] = cls.temp_tool_data_dir
         config["tool_data_table_config_path"] = cls.temp_tool_data_tables_file

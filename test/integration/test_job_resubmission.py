@@ -48,6 +48,7 @@ class JobResubmissionIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = JOB_RESUBMISSION_JOB_CONFIG_FILE
         config["job_resource_params_file"] = JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE
         config["job_runner_monitor_sleep"] = 1
@@ -180,6 +181,7 @@ class JobResubmissionDefaultIntegrationTestCase(_BaseResubmissionIntegerationTes
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["default_job_resubmission_condition"] = "attempt < 2"
         config["job_config_file"] = JOB_RESUBMISSION_DEFAULT_JOB_CONFIG_FILE
         config["job_resource_params_file"] = JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE
@@ -194,6 +196,7 @@ class JobResubmissionDynamicIntegrationTestCase(_BaseResubmissionIntegerationTes
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = JOB_RESUBMISSION_DYNAMIC_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
@@ -204,6 +207,7 @@ class JobResubmissionDynamicIntegrationTestCase(_BaseResubmissionIntegerationTes
 class JobResubmissionSmallMemoryIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = JOB_RESUBMISSION_SMALL_MEMORY_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
@@ -215,6 +219,7 @@ class JobResubmissionSmallMemoryIntegrationTestCase(_BaseResubmissionIntegeratio
 class JobResubmissionSmallMemoryResubmitsToLargeIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = JOB_RESUBMISSION_SMALL_MEMORY_RESUBMISSION_TO_LARGE_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
@@ -225,6 +230,7 @@ class JobResubmissionSmallMemoryResubmitsToLargeIntegrationTestCase(_BaseResubmi
 class JobResubmissionToolDetectedErrorIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = JOB_RESUBMISSION_TOOL_DETECTED_ALWAYS_ERROR_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
@@ -236,6 +242,7 @@ class JobResubmissionToolDetectedErrorIntegrationTestCase(_BaseResubmissionInteg
 class JobResubmissionToolDetectedErrorResubmitsIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = JOB_RESUBMISSION_TOOL_DETECTED_RESUBMIT_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
@@ -246,6 +253,7 @@ class JobResubmissionToolDetectedErrorResubmitsIntegrationTestCase(_BaseResubmis
 class JobResubmissionPulsarIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = JOB_RESUBMISSION_PULSAR_JOB_CONFIG_FILE
 
     def test_resubmit_on_invalid_pulsar_url(self):

@@ -9,6 +9,7 @@ class PagesPdfExportSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["enable_beta_markdown_export"] = True
 
     @selenium_test

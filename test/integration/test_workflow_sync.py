@@ -25,6 +25,7 @@ class WorkflowSyncTestCase(integration_util.IntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls.workflow_directory = cls._test_driver.mkdtemp()
 
     def test_sync_format2(self):

@@ -207,7 +207,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         # TODO: implement metadata setting as separate job, as service or side-car
-        config["retry_metadata_internally"] = True
+        super().handle_galaxy_config_kwds(config)
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config.path

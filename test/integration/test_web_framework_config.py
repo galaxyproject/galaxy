@@ -35,6 +35,7 @@ class CorsDefaultIntegrationTestCase(BaseWebFrameworkTestCase):
 class AllowOriginIntegrationTestCase(BaseWebFrameworkTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["allowed_origin_hostnames"] = "192.168.0.101,/.*.galaxyproject.org/"
 
     def test_origin_allowed_if_configured(self):

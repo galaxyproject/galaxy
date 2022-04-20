@@ -27,6 +27,7 @@ class WorkQueuePutFailureTestCase(integration_util.IntegrationTestCase):
         cls,
         config,
     ):
+        super().handle_galaxy_config_kwds(config)
         # config["jobs_directory"] = cls.jobs_directory
         with tempfile.NamedTemporaryFile(mode="w", suffix="job_conf.yml", delete=False) as job_conf:
             job_conf.write(job_conf_yaml)

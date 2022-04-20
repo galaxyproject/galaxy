@@ -13,6 +13,7 @@ class PanelViewsFromDirectoryIntegrationTestCase(integration_util.IntegrationTes
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["panel_views_dir"] = PANEL_VIEWS_DIR_1
 
     def test_section_copy(self):
@@ -117,6 +118,7 @@ class PanelViewsFromConfigIntegrationTestCase(integration_util.IntegrationTestCa
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["panel_views"] = [
             {
                 "id": "my-custom",

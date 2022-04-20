@@ -66,6 +66,7 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
             import watchdog  # noqa: F401
         except ImportError:
             raise SkipTest("watchdog library is not available")
+        super().handle_galaxy_config_kwds(config)
         cls.configure_shed_and_conda(config)
         config["tool_data_path"] = cls.shed_tool_data_dir
         config["watch_tool_data_dir"] = True

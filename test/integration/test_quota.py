@@ -7,6 +7,7 @@ class QuotaIntegrationTestCase(integration_util.IntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["enable_quotas"] = True
 
     def setUp(self):
