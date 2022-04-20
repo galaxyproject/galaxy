@@ -783,6 +783,12 @@ def workflow_step(session, workflow):
 
 
 @pytest.fixture
+def workflow_step_annotation_association(session):
+    instance = model.WorkflowStepAnnotationAssociation()
+    yield from dbcleanup_wrapper(session, instance)
+
+
+@pytest.fixture
 def workflow_step_connection(session):
     instance = model.WorkflowStepConnection()
     yield from dbcleanup_wrapper(session, instance)
