@@ -1,5 +1,3 @@
-import tempfile
-
 import pytest
 import sqlalchemy as sa
 
