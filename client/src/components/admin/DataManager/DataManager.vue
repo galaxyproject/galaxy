@@ -28,26 +28,26 @@
                 </b-row>
             </b-container>
             <b-card-group columns>
-                <b-card no-body header="Installed Data Managers" id="data-managers-card">
+                <b-card id="data-managers-card" no-body header="Installed Data Managers">
                     <b-list-group flush>
                         <b-list-group-item v-for="(dataManager, index) in dataManagersFiltered" :key="index">
                             <b-button-group vertical>
                                 <b-button
+                                    :id="kebabCase(dataManager['name'])"
                                     :href="dataManager['toolUrl']"
                                     target="_blank"
-                                    variant="primary"
-                                    :id="kebabCase(dataManager['name'])">
+                                    variant="primary">
                                     <div>{{ dataManager["name"] }}</div>
                                     <div v-if="dataManager['description']">
                                         <i>{{ dataManager["description"] }}</i>
                                     </div>
                                 </b-button>
                                 <b-button
+                                    :id="kebabCase(dataManager['name']) + '-jobs'"
                                     :to="{
                                         name: 'DataManagerJobs',
                                         params: { id: encodeURIComponent(dataManager['id']) },
-                                    }"
-                                    :id="kebabCase(dataManager['name']) + '-jobs'">
+                                    }">
                                     Jobs
                                 </b-button>
                             </b-button-group>
@@ -58,9 +58,9 @@
                     <b-list-group flush>
                         <b-list-group-item
                             v-for="(dataTable, index) in dataTablesFiltered"
+                            :id="kebabCase(dataTable['name']) + '-table'"
                             :key="index"
                             :to="{ name: 'DataManagerTable', params: { name: dataTable['name'] } }"
-                            :id="kebabCase(dataTable['name']) + '-table'"
                             :variant="dataTable['managed'] === true ? 'primary' : 'link'">
                             {{ dataTable["name"] }}
                             <b-badge v-if="dataTable['managed'] === true" variant="primary" pill

@@ -3,7 +3,7 @@
         <b-button size="sm" class="text-decoration-none" variant="link" @click="close">
             <icon icon="angle-double-left" class="mr-1" data-description="back to history" /><span>History</span>
         </b-button>
-        <b-button size="sm" class="text-decoration-none" variant="link" v-if="previousName" @click="back">
+        <b-button v-if="previousName" size="sm" class="text-decoration-none" variant="link" @click="back">
             <span class="fa fa-angle-left mr-1" /><span>{{ previousName }}</span>
         </b-button>
     </div>

@@ -1,24 +1,24 @@
 <template>
     <click-to-edit
+        ref="annotationInput"
+        v-slot="{ toggleEdit, placeholder, stateValidator }"
+        v-b-tooltip.hover="{ boundary: 'viewport', placement: tooltipPlacement }"
         class="annotation"
         tag-name="p"
         :value="annotation"
-        ref="annotationInput"
-        v-b-tooltip.hover="{ boundary: 'viewport', placement: tooltipPlacement }"
         :title="'Edit annotation...' | localize"
-        :placeholder="'Edit annotation...' | localize"
-        v-slot="{ toggleEdit, placeholder, stateValidator }">
-        <debounced-input v-model="annotation" :delay="1000" v-slot="inputScope">
+        :placeholder="'Edit annotation...' | localize">
+        <debounced-input v-slot="inputScope" v-model="annotation" :delay="1000">
             <b-form-textarea
                 size="sm"
                 tabindex="-1"
                 rows="3"
                 no-resize
                 :value="inputScope.value"
-                @input="inputScope.input"
-                @blur="toggleEdit(false)"
                 :placeholder="placeholder"
-                :state="stateValidator(inputScope.value, annotation)"></b-form-textarea>
+                :state="stateValidator(inputScope.value, annotation)"
+                @input="inputScope.input"
+                @blur="toggleEdit(false)"></b-form-textarea>
         </debounced-input>
     </click-to-edit>
 </template>

@@ -1,8 +1,8 @@
 <template>
     <div>
         <ContentItem
-            :item="item.object"
             :id="item.element_index"
+            :item="item.object"
             :name="item.element_identifier"
             :is-dataset="item.element_type == 'hda'"
             :expand-dataset="expandDataset"

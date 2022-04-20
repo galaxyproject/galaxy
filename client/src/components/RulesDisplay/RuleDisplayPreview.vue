@@ -1,10 +1,10 @@
 <template>
     <li class="rule">
         <span class="rule-display">{{ title }} </span>
-        <span class="rule-warning" v-if="rule.warn">
+        <span v-if="rule.warn" class="rule-warning">
             {{ rule.warn }}
         </span>
-        <span class="rule-error" v-if="rule.error">
+        <span v-if="rule.error" class="rule-error">
             <span class="alert-message">{{ rule.error }}</span>
         </span>
     </li>

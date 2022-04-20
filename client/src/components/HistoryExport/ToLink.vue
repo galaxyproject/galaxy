@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-alert show variant="danger" v-if="errorMessage" dismissible @dismissed="errorMessage = null">
+        <b-alert v-if="errorMessage" show variant="danger" dismissible @dismissed="errorMessage = null">
             {{ errorMessage }}
             <JobError
                 v-if="jobError"

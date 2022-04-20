@@ -2,7 +2,7 @@
     <div class="container">
         <div class="row justify-content-md-center">
             <div class="col" :class="{ 'col-lg-6': !isAdmin }">
-                <b-alert v-html="registration_warning_message" :show="showRegistrationWarning" variant="info">
+                <b-alert :show="showRegistrationWarning" variant="info" v-html="registration_warning_message">
                 </b-alert>
                 <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
                 <b-form id="confirmation" @submit.prevent="submit()">
@@ -34,7 +34,7 @@
                                     I have read and accept these terms to create a new Galaxy account.
                                 </b-form-checkbox>
                             </b-form-group>
-                            <b-button name="confirm" type="submit" @click.prevent="submit" :disabled="!termsRead"
+                            <b-button name="confirm" type="submit" :disabled="!termsRead" @click.prevent="submit"
                                 >Yes, create new account</b-button
                             >
                             <b-button name="cancel" type="submit" @click.prevent="login">No, go back to login</b-button>

@@ -5,7 +5,7 @@
             <b-tab title="Toolshed Tools">
                 <b-tabs>
                     <b-tab title="HTML Sanitized">
-                        <base-grid :is-loaded="isLoaded" :columns="toolshedColumns" id="sanitize-allow-grid">
+                        <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="toolshedColumns">
                             <template v-slot:rows>
                                 <template v-for="(row, blockedIdx) in toolshedBlocked">
                                     <tr :key="blockedIdx">
@@ -31,7 +31,7 @@
                         </base-grid>
                     </b-tab>
                     <b-tab title="HTML Rendered">
-                        <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
+                        <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="columns">
                             <template v-slot:rows>
                                 <template v-for="(row, allowedIdx) in toolshedAllowed">
                                     <tr :key="allowedIdx">
@@ -62,7 +62,7 @@
             <b-tab title="Local Tools">
                 <b-tabs>
                     <b-tab title="HTML Sanitized">
-                        <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
+                        <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="columns">
                             <template v-slot:rows>
                                 <template v-for="(row, localBlockedIdx) in localBlocked">
                                     <tr :key="localBlockedIdx">
@@ -77,7 +77,7 @@
                         </base-grid>
                     </b-tab>
                     <b-tab title="HTML Rendered">
-                        <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
+                        <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="columns">
                             <template v-slot:rows>
                                 <template v-for="(row, localAllowedIdx) in localAllowed">
                                     <tr :key="localAllowedIdx">

@@ -1,10 +1,10 @@
 <template>
     <b-input-group size="sm">
         <b-form-input
+            id="filterInput"
             v-model="search"
             class="mr-1"
             type="search"
-            id="filterInput"
             :placeholder="titleSearch"
             @keyup.enter="startSearch()" />
     </b-input-group>

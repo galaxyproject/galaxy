@@ -15,7 +15,7 @@
                 >)
             </span>
         </span>
-        <span itemprop="email" :content="organization.email" v-else-if="email">
+        <span v-else-if="email" itemprop="email" :content="organization.email">
             {{ email }}
         </span>
         <a v-if="url" :href="url" target="_blank">

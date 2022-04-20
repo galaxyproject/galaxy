@@ -2,14 +2,14 @@
     <div class="form-row dataRow output-data-row">
         <div
             v-if="showCallout"
-            :class="['callout-terminal', output.name]"
-            @click="onToggle"
             v-b-tooltip
-            title="Unchecked outputs will be hidden and are not available as subworkflow outputs.">
+            :class="['callout-terminal', output.name]"
+            title="Unchecked outputs will be hidden and are not available as subworkflow outputs."
+            @click="onToggle">
             <i :class="['mark-terminal', activeClass]" />
         </div>
         {{ label }}
-        <div :id="id" :output-name="output.name" ref="terminal" :class="terminalClass">
+        <div :id="id" ref="terminal" :output-name="output.name" :class="terminalClass">
             <div class="icon" />
         </div>
     </div>

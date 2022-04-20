@@ -1,6 +1,6 @@
 <template>
     <div class="clickToEdit" :class="{ empty: !value.length }">
-        <component :is="tagName" class="m-0" v-if="!editing" @click="toggleEdit(true)">
+        <component :is="tagName" v-if="!editing" class="m-0" @click="toggleEdit(true)">
             <span class="editable"></span>
             <span>{{ displayValue }}</span>
             <slot name="tooltip" :editing="editing" :localValue="localValue"></slot>
@@ -17,11 +17,11 @@
                         <b-form-input
                             ref="clickToEditInput"
                             :value="debouncedValue"
-                            @input="input"
-                            @blur="toggleEdit(false)"
                             :autofocus="true"
                             :placeholder="placeholder"
-                            :state="stateValidator(debouncedValue, localValue)" />
+                            :state="stateValidator(debouncedValue, localValue)"
+                            @input="input"
+                            @blur="toggleEdit(false)" />
                     </template>
                 </debounced-input>
             </slot>

@@ -79,10 +79,10 @@
                 <collection-creator
                     :oncancel="oncancel"
                     :hide-source-items="hideSourceItems"
+                    :suggested-name="initialSuggestedName"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
-                    @remove-extensions-toggle="removeExtensionsToggle"
-                    :suggested-name="initialSuggestedName">
+                    @remove-extensions-toggle="removeExtensionsToggle">
                     <template v-slot:help-content>
                         <p>
                             {{

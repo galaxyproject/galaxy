@@ -7,10 +7,10 @@
             <h4 class="m-1">History</h4>
             <b-button-group>
                 <b-button
+                    v-b-tooltip.bottom.hover
                     data-description="create new history"
                     size="sm"
                     variant="link"
-                    v-b-tooltip.bottom.hover
                     title="Create new history"
                     @click="$emit('createNewHistory')">
                     <Icon fixed-width icon="plus" />
@@ -18,25 +18,25 @@
 
                 <b-button
                     v-b-modal.selector-history-modal
+                    v-b-tooltip.bottom.hover
                     data-description="switch to another history"
                     size="sm"
                     variant="link"
-                    v-b-tooltip.bottom.hover
                     title="Switch to history">
                     <Icon fixed-width icon="exchange-alt" />
                 </b-button>
 
                 <b-dropdown
+                    v-b-tooltip.bottom.hover
                     size="sm"
                     variant="link"
                     toggle-class="text-decoration-none"
-                    v-b-tooltip.bottom.hover
                     title="Show history options"
                     menu-class="history-options-button-menu"
                     data-description="history options">
                     <b-dropdown-text>
                         <div v-if="historiesLoading">
-                            <b-spinner small v-if="historiesLoading" />
+                            <b-spinner v-if="historiesLoading" small />
                             <span>Fetching histories from server</span>
                         </div>
                         <span v-else>You have {{ histories.length }} histories.</span>
@@ -74,8 +74,8 @@
                     </b-dropdown-item>
 
                     <b-dropdown-item
-                        @click="backboneRoute('/histories/show_structure')"
-                        data-description="show structure">
+                        data-description="show structure"
+                        @click="backboneRoute('/histories/show_structure')">
                         <Icon fixed-width icon="code-branch" class="mr-1" />
                         <span v-localize>Show Structure</span>
                     </b-dropdown-item>
@@ -115,7 +115,7 @@
                         <span v-localize>Export Tool Citations</span>
                     </b-dropdown-item>
 
-                    <b-dropdown-item @click="backboneRoute(exportLink)" data-description="export to file">
+                    <b-dropdown-item data-description="export to file" @click="backboneRoute(exportLink)">
                         <Icon fixed-width icon="file-archive" class="mr-1" />
                         <span v-localize>Export History to File</span>
                     </b-dropdown-item>

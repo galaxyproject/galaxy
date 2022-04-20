@@ -2,14 +2,14 @@
     <config-provider v-slot="{ config, loading }">
         <b-button
             v-if="!loading && canDownload(config)"
+            v-b-tooltip.hover.bottom
             class="float-right markdown-pdf-export"
             :title="title"
             variant="link"
             role="button"
-            v-b-tooltip.hover.bottom
             @click="onDownload(config)">
-            <font-awesome-icon icon="spinner" spin v-if="waiting" />
-            <font-awesome-icon icon="download" v-else />
+            <font-awesome-icon v-if="waiting" icon="spinner" spin />
+            <font-awesome-icon v-else icon="download" />
         </b-button>
     </config-provider>
 </template>

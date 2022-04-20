@@ -101,10 +101,10 @@
                 <collection-creator
                     :oncancel="oncancel"
                     :hide-source-items="hideSourceItems"
+                    :render-extensions-toggle="true"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
-                    @remove-extensions-toggle="removeExtensionsToggle"
-                    :render-extensions-toggle="true">
+                    @remove-extensions-toggle="removeExtensionsToggle">
                     <template v-slot:help-content>
                         <p>
                             {{
@@ -250,9 +250,9 @@
                                     <div
                                         class="unpaired-filter forward-unpaired-filter float-left search-input search-query input-group">
                                         <input
+                                            v-model="forwardFilter"
                                             type="text"
                                             :placeholder="filterTextPlaceholder"
-                                            v-model="forwardFilter"
                                             title="filterTextTitle" />
                                         <div class="input-group-append" :title="chooseFilterTitle">
                                             <button
@@ -303,9 +303,9 @@
                                     <div
                                         class="unpaired-filter reverse-unpaired-filter float-left search-input search-query input-group">
                                         <input
+                                            v-model="reverseFilter"
                                             type="text"
                                             :placeholder="filterTextPlaceholder"
-                                            v-model="reverseFilter"
                                             title="filterTextTitle" />
                                         <div class="input-group-append" :title="chooseFilterTitle">
                                             <button
@@ -337,22 +337,22 @@
                                             <unpaired-dataset-element-view
                                                 v-for="element in forwardElements"
                                                 :key="element.id"
-                                                @element-is-selected="forwardElementSelected"
                                                 :class="{
                                                     selected:
                                                         selectedForwardElement &&
                                                         element.id == selectedForwardElement.id,
                                                 }"
-                                                :element="element" />
+                                                :element="element"
+                                                @element-is-selected="forwardElementSelected" />
                                         </ol>
                                     </div>
                                     <div class="paired-column flex-column no-flex column truncate">
-                                        <ol class="column-datasets" v-if="forwardFilter !== '' && reverseFilter !== ''">
+                                        <ol v-if="forwardFilter !== '' && reverseFilter !== ''" class="column-datasets">
                                             <li
                                                 v-for="(pairableElement, index) in pairableElements"
                                                 :key="index"
-                                                @click="_pair(pairableElement.forward, pairableElement.reverse)"
-                                                class="dataset">
+                                                class="dataset"
+                                                @click="_pair(pairableElement.forward, pairableElement.reverse)">
                                                 {{ l("Pair these datasets") }}
                                             </li>
                                         </ol>
@@ -362,13 +362,13 @@
                                             <unpaired-dataset-element-view
                                                 v-for="element in reverseElements"
                                                 :key="element.id"
-                                                @element-is-selected="reverseElementSelected"
                                                 :class="{
                                                     selected:
                                                         selectedReverseElement &&
                                                         element.id == selectedReverseElement.id,
                                                 }"
-                                                :element="element" />
+                                                :element="element"
+                                                @element-is-selected="reverseElementSelected" />
                                         </ol>
                                     </div>
                                 </div>

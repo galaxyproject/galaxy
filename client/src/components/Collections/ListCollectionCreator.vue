@@ -156,8 +156,8 @@
                                 <font-awesome-icon icon="sort-alpha-down" />
                             </b-button>
                             <a
-                                class="clear-selected"
                                 v-if="atLeastOneDatasetIsSelected"
+                                class="clear-selected"
                                 href="javascript:void(0);"
                                 role="button"
                                 :title="titleDeselectButton"
@@ -180,14 +180,14 @@
                                 </b-alert>
                             </div>
                             <dataset-collection-element-view
-                                v-else
                                 v-for="element in returnWorkingElements"
+                                v-else
                                 :key="element.id"
+                                :class="{ selected: getSelectedDatasetElems.includes(element.id) }"
+                                :element="element"
                                 @element-is-selected="elementSelected"
                                 @element-is-discarded="elementDiscarded"
-                                @onRename="(name) => (element.name = name)"
-                                :class="{ selected: getSelectedDatasetElems.includes(element.id) }"
-                                :element="element" />
+                                @onRename="(name) => (element.name = name)" />
                         </draggable>
                     </template>
                 </collection-creator>

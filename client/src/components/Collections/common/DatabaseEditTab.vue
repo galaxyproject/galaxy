@@ -5,8 +5,8 @@
             <div class="text-right">
                 <button
                     class="save-collection-edit btn btn-primary"
-                    @click="clickedSave"
-                    :disabled="selectedGenome.id == databaseKeyFromElements">
+                    :disabled="selectedGenome.id == databaseKeyFromElements"
+                    @click="clickedSave">
                     {{ l("Save") }}
                 </button>
             </div>

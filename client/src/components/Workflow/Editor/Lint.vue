@@ -1,5 +1,5 @@
 <template>
-    <b-card header-tag="header" body-class="p-0" id="lint-panel" class="right-content">
+    <b-card id="lint-panel" header-tag="header" body-class="p-0" class="right-content">
         <template v-slot:header>
             <div class="mb-1 font-weight-bold">
                 <font-awesome-icon icon="magic" class="mr-1" />

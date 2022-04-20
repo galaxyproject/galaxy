@@ -17,9 +17,9 @@
             <div v-else>
                 <div>
                     <b>TRS ID:</b>
-                    <b-form-input v-model="debouncedToolId" id="trs-id-input" />
+                    <b-form-input id="trs-id-input" v-model="debouncedToolId" />
                 </div>
-                <trs-tool :trs-tool="trsTool" v-if="trsTool" @onImport="importVersion(trsTool.id, $event)" />
+                <trs-tool v-if="trsTool" :trs-tool="trsTool" @onImport="importVersion(trsTool.id, $event)" />
             </div>
         </b-card>
         <b-alert v-else show variant="danger" class="text-center my-2"

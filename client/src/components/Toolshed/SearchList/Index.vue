@@ -9,19 +9,19 @@
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
             <Repositories
+                v-if="!queryEmpty"
                 :query="query"
                 :scrolled="scrolled"
                 :toolshed-url="toolshedUrl"
-                @onError="setError"
-                v-if="!queryEmpty" />
+                @onError="setError" />
             <Categories
+                v-show="queryEmpty"
                 :toolshed-url="toolshedUrl"
                 :loading="loading"
                 @onCategory="setQuery"
                 @onTotal="setTotal"
                 @onError="setError"
-                @onLoading="setLoading"
-                v-show="queryEmpty" />
+                @onLoading="setLoading" />
         </div>
     </div>
 </template>

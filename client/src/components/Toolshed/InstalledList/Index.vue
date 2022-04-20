@@ -9,7 +9,7 @@
                     <span class="installed-message text-muted">
                         {{ repositories.length }} repositories installed on this instance.
                     </span>
-                    <b-link @click="toggleMonitor" class="font-weight-bold">
+                    <b-link class="font-weight-bold" @click="toggleMonitor">
                         <span v-if="showMonitor">
                             <span class="fa fa-angle-double-up" />
                             <span>Hide installation progress.</span>

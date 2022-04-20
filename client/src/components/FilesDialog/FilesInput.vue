@@ -1,5 +1,5 @@
 <template>
-    <b-form-input class="directory-form-input" v-model="localValue" :placeholder="placeholder" @click="selectFile">
+    <b-form-input v-model="localValue" class="directory-form-input" :placeholder="placeholder" @click="selectFile">
     </b-form-input>
 </template>
 

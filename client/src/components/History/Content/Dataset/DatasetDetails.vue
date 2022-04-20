@@ -1,5 +1,5 @@
 <template>
-    <DatasetProvider :id="dataset.id" auto-refresh v-slot="{ loading, result }">
+    <DatasetProvider :id="dataset.id" v-slot="{ loading, result }" auto-refresh>
         <div v-if="!loading" class="dataset">
             <div class="p-2 details">
                 <div class="summary">
@@ -8,7 +8,7 @@
                         <span class="value">{{ result.misc_blurb }}</span>
                     </div>
                     <span v-if="result.file_ext" class="datatype">
-                        <label class="prompt" v-localize>format</label>
+                        <label v-localize class="prompt">format</label>
                         <span class="value">{{ result.file_ext }}</span>
                     </span>
                     <span v-if="result.genome_build" class="dbkey">

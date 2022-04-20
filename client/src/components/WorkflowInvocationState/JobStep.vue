@@ -5,7 +5,7 @@
                 <job-provider :id="row.item.id" v-slot="{ item, loading }">
                     <div v-if="loading"><b-spinner label="Loading Job..."></b-spinner></div>
                     <div v-else>
-                        <job-information :job_id="item.id" v-if="item" />
+                        <job-information v-if="item" :job_id="item.id" />
                         <p></p>
                         <job-parameters v-if="item" :job-id="item.id" :include-title="false" />
                     </div>

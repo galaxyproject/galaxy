@@ -6,9 +6,9 @@
                     ><b>View Report {{ indexStr }}</b></a
                 >
                 <a
+                    v-b-tooltip
                     class="fa fa-print ml-1 invocation-pdf-link"
                     :href="invocationPdfLink"
-                    v-b-tooltip
                     title="Download PDF" />
             </span>
         </div>
@@ -16,9 +16,9 @@
             <span class="fa fa-spinner fa-spin" />
             <span>Invocation {{ indexStr }}...</span>
             <span
-                class="fa fa-times cancel-workflow-scheduling"
                 v-if="!invocationSchedulingTerminal"
                 v-b-tooltip.hover
+                class="fa fa-times cancel-workflow-scheduling"
                 title="Cancel scheduling of workflow invocation"
                 @click="cancelWorkflowScheduling"></span>
         </div>

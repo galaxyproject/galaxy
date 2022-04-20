@@ -8,13 +8,13 @@
             {{ titleLoggedInAs }} <strong id="user-preferences-current-email">{{ email }}</strong
             >.
         </p>
-        <b-row class="ml-3 mb-1" v-for="(link, index) in activeLinks" :key="index">
+        <b-row v-for="(link, index) in activeLinks" :key="index" class="ml-3 mb-1">
             <i :class="['pref-icon pt-1 fa fa-lg', link.icon]" />
             <div class="pref-content pr-1">
-                <a :id="link.id" v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"
+                <a v-if="link.onclick" :id="link.id" href="javascript:void(0)" @click="link.onclick"
                     ><b>{{ link.title }}</b></a
                 >
-                <a :id="link.id" v-else :href="`${baseUrl}/${link.action}`"
+                <a v-else :id="link.id" :href="`${baseUrl}/${link.action}`"
                     ><b>{{ link.title }}</b></a
                 >
                 <div class="form-text text-muted">
@@ -25,8 +25,8 @@
         <b-row class="ml-3 mb-1">
             <i class="pref-icon pt-1 fa fa-lg fa-plus-square-o" />
             <div class="pref-content pr-1">
-                <a @click="toggleNotifications" href="javascript:void(0)"><b v-localize>Enable notifications</b></a>
-                <div class="form-text text-muted" v-localize>
+                <a href="javascript:void(0)" @click="toggleNotifications"><b v-localize>Enable notifications</b></a>
+                <div v-localize class="form-text text-muted">
                     Allow push and tab notifcations on job completion. To disable, revoke the site notification
                     privilege in your browser.
                 </div>
@@ -39,11 +39,11 @@
                     <a id="delete-account" href="javascript:void(0)"
                         ><b v-b-modal.modal-prevent-closing v-localize>Delete Account</b></a
                     >
-                    <div class="form-text text-muted" v-localize>Delete your account on this Galaxy server.</div>
+                    <div v-localize class="form-text text-muted">Delete your account on this Galaxy server.</div>
                     <b-modal
                         id="modal-prevent-closing"
-                        centered
                         ref="modal"
+                        centered
                         title="Account Deletion"
                         title-tag="h2"
                         @show="resetModal"

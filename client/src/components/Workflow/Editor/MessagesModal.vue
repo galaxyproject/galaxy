@@ -3,12 +3,12 @@
         v-model="show"
         :title="title"
         scrollable
-        @ok="onOk"
         :hide-header-close="true"
         :no-close-on-esc="!error"
         :no-close-on-backdrop="!error"
         :hide-footer="!error"
         ok-only
+        @ok="onOk"
         @hidden="onHidden">
         <div class="workflow-message-modal">
             <div v-if="message == 'progress'">

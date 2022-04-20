@@ -1,12 +1,12 @@
 <template>
     <b-button
         id="tool-panel-upload-button"
-        @click="showUploadDialog"
         v-b-tooltip.hover.bottom
         :aria-label="title | localize"
         :title="title | localize"
         class="upload-button"
-        size="sm">
+        size="sm"
+        @click="showUploadDialog">
         <div class="progress">
             <div
                 class="progress-bar progress-bar-notransition"

@@ -41,9 +41,9 @@
                 <summary><b>Steps</b></summary>
                 <workflow-invocation-step
                     v-for="step in Object.values(workflow.steps)"
+                    :key="step.id"
                     :invocation="invocation"
                     :ordered-steps="orderedSteps"
-                    :key="step.id"
                     :workflow="workflow"
                     :workflow-step="step" />
             </details>

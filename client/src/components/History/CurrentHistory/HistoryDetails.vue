@@ -6,7 +6,7 @@
         :writeable="writeable"
         @save="onSave">
         <template v-slot:name>
-            <h3 data-description="name display" v-short="history.name || 'History'" />
+            <h3 v-short="history.name || 'History'" data-description="name display" />
             <h5 class="history-size mt-1">
                 <span v-if="history.size">
                     <div>{{ history.size | niceFileSize }}</div>

@@ -13,7 +13,7 @@
             </table>
         </div>
 
-        <div id="aws-estimate" v-if="aws_estimate && computedAwsEstimate">
+        <div v-if="aws_estimate && computedAwsEstimate" id="aws-estimate">
             <div class="aws">
                 <h3>AWS estimate</h3>
                 <b>{{ computedAwsEstimate.price }} USD</b><br />

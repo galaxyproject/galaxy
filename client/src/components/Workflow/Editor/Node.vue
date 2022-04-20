@@ -6,18 +6,18 @@
         :class="{ 'workflow-node': true, 'node-on-scroll-to': scrolledTo, 'node-highlight': highlight }">
         <div class="node-header unselectable clearfix">
             <b-button
+                v-b-tooltip.hover
                 class="node-destroy py-0 float-right"
                 variant="primary"
                 size="sm"
                 aria-label="destroy node"
-                v-b-tooltip.hover
                 title="Remove"
                 @click="onRemove">
                 <i class="fa fa-times" />
             </b-button>
             <b-button
-                :id="popoverId"
                 v-if="isEnabled"
+                :id="popoverId"
                 class="node-recommendations py-0 float-right"
                 variant="primary"
                 size="sm"
@@ -33,11 +33,11 @@
             </b-popover>
             <b-button
                 v-if="canClone"
+                v-b-tooltip.hover
                 class="node-clone py-0 float-right"
                 variant="primary"
                 size="sm"
                 aria-label="clone node"
-                v-b-tooltip.hover
                 title="Duplicate"
                 @click="onClone">
                 <i class="fa fa-files-o" />

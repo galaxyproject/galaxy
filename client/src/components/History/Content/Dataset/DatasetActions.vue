@@ -67,7 +67,7 @@
             </div>
         </div>
         <div v-if="showTags" class="mb-2">
-            <StatelessTags class="tags" v-model="tags" @input="onTags" />
+            <StatelessTags v-model="tags" class="tags" @input="onTags" />
         </div>
     </div>
 </template>

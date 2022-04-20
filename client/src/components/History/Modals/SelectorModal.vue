@@ -1,15 +1,15 @@
 <template>
-    <b-modal ref="modal" v-on="$listeners" v-bind="$attrs" :title="'Switch to History' | l">
+    <b-modal ref="modal" v-bind="$attrs" :title="'Switch to History' | l" v-on="$listeners">
         <b-form-group :description="'Filter histories' | l">
             <b-input v-model="filter" :placeholder="'Search Filter' | l" />
         </b-form-group>
 
         <b-table
             ref="history-list"
+            v-model="currentRows"
             striped
             hover
             sticky-header="50vh"
-            v-model="currentRows"
             primary-key="id"
             :fields="fields"
             :filter="filter"

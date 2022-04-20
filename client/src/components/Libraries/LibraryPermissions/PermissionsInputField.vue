@@ -5,7 +5,7 @@
         </h4>
         <b-row>
             <b-col>
-                <div :class="permission_type" v-if="options && value">
+                <div v-if="options && value" :class="permission_type">
                     <multiselect
                         v-model="value"
                         :options="fetched_options"
@@ -14,11 +14,11 @@
                         :multiple="true"
                         label="name"
                         track-by="id"
+                        :internal-search="false"
                         @input="valueChanged"
-                        @search-change="searchChanged"
-                        :internal-search="false">
+                        @search-change="searchChanged">
                         <template slot="afterList">
-                            <div v-observe-visibility="reachedEndOfList" v-if="hasMorePages">
+                            <div v-if="hasMorePages" v-observe-visibility="reachedEndOfList">
                                 <span class="spinner fa fa-spinner fa-spin fa-1x" />
                             </div>
                         </template>

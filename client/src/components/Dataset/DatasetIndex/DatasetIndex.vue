@@ -1,8 +1,8 @@
 <template>
     <div>
         <b-table
-            thead-class="hidden_header"
             v-if="directoryContent && !errorMessage"
+            thead-class="hidden_header"
             striped
             hover
             :fields="fields"

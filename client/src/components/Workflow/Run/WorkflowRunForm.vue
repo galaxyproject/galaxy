@@ -1,6 +1,6 @@
 <template>
     <CurrentUser v-slot="{ user }">
-        <UserHistories v-if="user" :user="user" v-slot="{ currentHistoryId }">
+        <UserHistories v-if="user" v-slot="{ currentHistoryId }" :user="user">
             <div v-if="currentHistoryId" class="workflow-expanded-form">
                 <div class="h4 clearfix mb-3">
                     <b>Workflow: {{ model.name }}</b>
@@ -24,10 +24,10 @@
                 <FormCard v-if="reuseAllowed(user)" title="Job re-use Options">
                     <template v-slot:body>
                         <FormElement
+                            v-model="useCachedJobs"
                             title="Attempt to re-use jobs with identical parameters?"
                             help="This may skip executing jobs that you have already run."
-                            type="boolean"
-                            v-model="useCachedJobs" />
+                            type="boolean" />
                     </template>
                 </FormCard>
                 <FormCard v-if="resourceInputsAvailable" title="Workflow Resource Options">

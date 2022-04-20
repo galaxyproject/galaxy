@@ -1,6 +1,6 @@
 <template>
     <loading-span v-if="license == null" message="Loading license information"> </loading-span>
-    <div class="text-muted" v-else-if="license.name">
+    <div v-else-if="license.name" class="text-muted">
         <link itemprop="license" :href="license.licenseId" />
         <span v-if="title">
             {{ title }}

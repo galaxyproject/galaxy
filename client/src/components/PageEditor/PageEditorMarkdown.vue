@@ -8,19 +8,19 @@
             <template v-slot:buttons>
                 <b-button
                     id="save-button"
+                    v-b-tooltip.hover.bottom
                     title="Save"
                     variant="link"
                     role="button"
-                    v-b-tooltip.hover.bottom
                     @click="saveContent(false)">
                     <font-awesome-icon icon="save" />
                 </b-button>
                 <b-button
                     id="view-button"
+                    v-b-tooltip.hover.bottom
                     title="Save & View"
                     variant="link"
                     role="button"
-                    v-b-tooltip.hover.bottom
                     @click="saveContent(true)">
                     <font-awesome-icon icon="eye" />
                 </b-button>

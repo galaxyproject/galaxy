@@ -1,5 +1,5 @@
 <template>
-    <b-modal id="review-cleanup-dialog" title-tag="h2" centered @show="onShowModal" v-model="showDialog" static>
+    <b-modal id="review-cleanup-dialog" v-model="showDialog" title-tag="h2" centered static @show="onShowModal">
         <template v-slot:modal-title>
             {{ title }}
             <span class="text-primary h3">{{ totalItems }}<span v-if="rowLimitReached">+</span> items</span>
@@ -18,24 +18,24 @@
             :per-page="perPage"
             :current-page="currentPage"
             :busy="isBusy"
-            @sort-changed="onSort"
             hover
             no-local-sorting
             no-provider-filtering
             sticky-header="50vh"
-            data-test-id="review-table">
+            data-test-id="review-table"
+            @sort-changed="onSort">
             <template v-slot:head(selected)>
                 <b-form-checkbox
                     v-model="allSelected"
                     :indeterminate="indeterminate"
-                    @change="toggleSelectAll"
-                    data-test-id="select-all-checkbox" />
+                    data-test-id="select-all-checkbox"
+                    @change="toggleSelectAll" />
             </template>
             <template v-slot:cell(selected)="data">
                 <b-form-checkbox
+                    :key="data.index"
                     v-model="selectedItems"
                     :checked="allSelected"
-                    :key="data.index"
                     :value="data.item"></b-form-checkbox>
             </template>
             <template v-slot:cell(update_time)="data">
@@ -46,9 +46,9 @@
             <span v-if="rowLimitReached" class="font-italic">{{ rowLimitReachedText }}</span>
             <b-pagination v-if="hasPages" v-model="currentPage" :total-rows="totalRows" :per-page="perPage" />
             <b-button
+                v-b-modal.confirmation-modal
                 :disabled="!hasItemsSelected"
                 :variant="deleteButtonVariant"
-                v-b-modal.confirmation-modal
                 class="mx-2"
                 data-test-id="delete-button">
                 {{ permanentlyDeleteText }} {{ deleteItemsText }}
@@ -62,10 +62,10 @@
             :ok-title="permanentlyDeleteText"
             :ok-variant="confirmButtonVariant"
             :ok-disabled="!confirmChecked"
-            @show="resetConfirmationModal"
-            @ok="onConfirmCleanupSelectedItems"
             static
-            centered>
+            centered
+            @show="resetConfirmationModal"
+            @ok="onConfirmCleanupSelectedItems">
             <b-form-checkbox id="confirm-delete-checkbox" v-model="confirmChecked" data-test-id="agreement-checkbox">
                 {{ agreementText }}
             </b-form-checkbox>

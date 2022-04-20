@@ -1,16 +1,16 @@
 <template>
     <b-nav-item
         v-if="!menu"
+        :id="tab.id"
+        v-b-tooltip.hover.bottom
+        v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
         :class="classes"
         :style="styles"
-        :id="tab.id"
         :href="formatUrl(tab.url)"
         :target="tab.target || '_parent'"
         role="menuitem"
         :link-classes="linkClasses"
-        v-b-tooltip.hover.bottom
         :title="tab.tooltip"
-        v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
         @click="open(tab, $event)">
         <template v-if="tab.icon">
             <span :class="iconClasses" />
@@ -21,27 +21,27 @@
         </template>
     </b-nav-item>
     <b-nav-item-dropdown
-        ref="dropdown"
         v-else
+        :id="tab.id"
+        ref="dropdown"
+        v-b-tooltip.hover.bottom
+        v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
         :class="classes"
         :style="styles"
         :text="tab.title"
-        :id="tab.id"
         href="#"
-        v-b-tooltip.hover.bottom
         :title="tab.tooltip"
-        v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
         @show="open(tab, $event)">
         <template v-for="(item, idx) in tab.menu">
-            <div v-if="item.divider" class="dropdown-divider" :key="`divider-${idx}`" />
+            <div v-if="item.divider" :key="`divider-${idx}`" class="dropdown-divider" />
             <b-dropdown-item
                 v-else-if="item.hidden !== true"
-                :href="formatUrl(item.url)"
                 :key="`item-${idx}`"
+                :href="formatUrl(item.url)"
                 :target="item.target || '_parent'"
                 role="menuitem"
-                @click="open(item, $event)"
-                :disabled="item.disabled === true">
+                :disabled="item.disabled === true"
+                @click="open(item, $event)">
                 {{ item.title }}
             </b-dropdown-item>
         </template>

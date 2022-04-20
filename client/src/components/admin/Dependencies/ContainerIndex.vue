@@ -9,15 +9,15 @@
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-container-type">Resolve containers of type</label>
                     <b-form-select
-                        class="mb-2 mr-sm-2 mb-sm-0"
                         id="manage-container-type"
                         v-model="containerType"
+                        class="mb-2 mr-sm-2 mb-sm-0"
                         :options="containerTypeOptions"></b-form-select>
                     <label class="mr-sm-2" for="manage-resolver-type">using resolvers of type</label>
                     <b-form-select
-                        class="mb-2 mr-sm-2 mb-sm-0"
                         id="manage-resolver-type"
                         v-model="resolverType"
+                        class="mb-2 mr-sm-2 mb-sm-0"
                         :options="resolverTypeOptions"></b-form-select>
                 </b-form>
             </b-row>
@@ -26,9 +26,9 @@
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
                     <b-form-select
-                        class="mb-2 mr-sm-2 mb-sm-0"
                         id="manage-filter-resolution"
-                        v-model="filterResolution">
+                        v-model="filterResolution"
+                        class="mb-2 mr-sm-2 mb-sm-0">
                         <option :value="null">*any*</option>
                         <option value="unresolved">Unresolved</option>
                         <option value="resolved">Resolved</option>
@@ -38,18 +38,18 @@
                     >
                     <b-form-select
                         v-if="filterResolution != 'unresolved'"
-                        class="mb-2 mr-sm-2 mb-sm-0"
                         id="manage-filter-container-type"
                         v-model="filterContainerType"
+                        class="mb-2 mr-sm-2 mb-sm-0"
                         :options="containerTypeOptions"></b-form-select>
                     <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-resolver-type"
                         >Resolvers of type</label
                     >
                     <b-form-select
                         v-if="filterResolution != 'unresolved'"
-                        class="mb-2 mr-sm-2 mb-sm-0"
                         id="manage-filter-resolver-type"
                         v-model="filterResolverType"
+                        class="mb-2 mr-sm-2 mb-sm-0"
                         :options="resolverTypeOptions"></b-form-select>
                 </b-form>
             </b-row>

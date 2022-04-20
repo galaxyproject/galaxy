@@ -2,16 +2,16 @@
     <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-center">
         <b-navbar-brand :href="brandLink" aria-label="homepage">
             <img alt="logo" class="navbar-brand-image" :src="brandImage" />
-            <img alt="logo" class="navbar-brand-image" :src="brandImageSecondary" v-if="brandImageSecondary" />
+            <img v-if="brandImageSecondary" alt="logo" class="navbar-brand-image" :src="brandImageSecondary" />
             <span class="navbar-brand-title">{{ brandTitle }}</span>
         </b-navbar-brand>
         <b-navbar-nav>
             <masthead-item
                 v-for="(tab, idx) in tabs"
-                :tab="tab"
-                :active-tab="activeTab"
+                v-show="!(tab.hidden === undefined ? false : tab.hidden)"
                 :key="`tab-${idx}`"
-                v-show="!(tab.hidden === undefined ? false : tab.hidden)">
+                :tab="tab"
+                :active-tab="activeTab">
             </masthead-item>
         </b-navbar-nav>
         <div ref="quota-meter-container" class="quota-meter-container" />

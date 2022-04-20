@@ -14,7 +14,7 @@
                     </tr>
                     <tr>
                         <td>Created</td>
-                        <td id="created" v-if="dataset.create_time">
+                        <td v-if="dataset.create_time" id="created">
                             <UtcDate :date="dataset.create_time" mode="pretty" />
                         </td>
                     </tr>

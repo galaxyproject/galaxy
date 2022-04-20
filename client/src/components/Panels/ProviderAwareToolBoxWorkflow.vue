@@ -1,11 +1,12 @@
 <template>
-    <ConfigProvider class="d-flex flex-column" v-slot="{ config }">
+    <ConfigProvider v-slot="{ config }" class="d-flex flex-column">
         <ToolPanelViewProvider
+            v-if="config.default_panel_view"
             v-slot="{ currentPanel, currentPanelView }"
-            :panel-view="config.default_panel_view"
-            v-if="config.default_panel_view">
+            :panel-view="config.default_panel_view">
             <ToolBoxWorkflow
                 :toolbox="currentPanel"
+                v-if="currentPanelView"
                 :panel-views="config.panel_views"
                 :current-panel-view="currentPanelView"
                 :workflows="workflows"
@@ -15,8 +16,7 @@
                 @onInsertTool="onInsertTool"
                 @onInsertModule="onInsertModule"
                 @onInsertWorkflow="onInsertWorkflow"
-                @onInsertWorkflowSteps="onInsertWorkflowSteps"
-                v-if="currentPanelView">
+                @onInsertWorkflowSteps="onInsertWorkflowSteps">
             </ToolBoxWorkflow>
         </ToolPanelViewProvider>
     </ConfigProvider>

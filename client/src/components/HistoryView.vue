@@ -1,7 +1,7 @@
 <template>
     <div id="structured-history-view">
         <div v-if="errorMessages.length > 0">
-            <div :key="index" v-for="(error, index) in errorMessages">
+            <div v-for="(error, index) in errorMessages" :key="index">
                 <div class="alert alert-danger" role="alert">{{ error }}</div>
             </div>
         </div>

@@ -4,9 +4,9 @@
             <component
                 :is="viewElement"
                 v-bind="currentNode"
+                :image-loc="config.welcome_directory"
                 @select="down"
-                @back="up"
-                :image-loc="config.welcome_directory">
+                @back="up">
             </component>
         </ConfigProvider>
     </div>

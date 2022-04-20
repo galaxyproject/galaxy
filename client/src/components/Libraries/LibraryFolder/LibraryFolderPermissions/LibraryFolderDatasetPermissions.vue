@@ -32,25 +32,25 @@
                 Changes made below will affect <strong>every</strong> library item that was created from this dataset
                 and also every history this dataset is part of.
             </div>
-            <p class="text-center" v-if="is_unrestricted">
+            <p v-if="is_unrestricted" class="text-center">
                 You can
-                <strong @click="toggleDatasetPrivacy(true)" class="make-private">
+                <strong class="make-private" @click="toggleDatasetPrivacy(true)">
                     <a id="make-private" href="javascript:void(0)">make this dataset private</a>
                 </strong>
                 to you.
             </p>
-            <p class="text-center" v-else>
+            <p v-else class="text-center">
                 You can
-                <strong @click="toggleDatasetPrivacy(false)" class="remove-restrictions">
+                <strong class="remove-restrictions" @click="toggleDatasetPrivacy(false)">
                     <a href="javascript:void(0)">remove all access restrictions</a>
                 </strong>
                 on this dataset.
             </p>
 
             <PermissionsInputField
-                ref="access_field"
                 v-if="access_dataset_roles"
                 :id="dataset_id"
+                ref="access_field"
                 :permission_type="access_dataset_roles_type"
                 :initial_value="access_dataset_roles"
                 :api-root-url="apiRootUrl"

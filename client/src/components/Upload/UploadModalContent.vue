@@ -1,6 +1,6 @@
 <template>
     <b-tabs v-if="ready">
-        <b-tab title="Regular" id="regular" button-id="tab-title-link-regular" v-if="showRegular">
+        <b-tab v-if="showRegular" id="regular" title="Regular" button-id="tab-title-link-regular">
             <default
                 :app="this"
                 :lazy-load-max="50"
@@ -9,13 +9,13 @@
                 :selectable="selectable"
                 v-on="$listeners" />
         </b-tab>
-        <b-tab title="Composite" id="composite" button-id="tab-title-link-composite" v-if="showComposite">
+        <b-tab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
             <composite :app="this" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
         </b-tab>
-        <b-tab title="Collection" id="collection" button-id="tab-title-link-collection" v-if="showCollection">
+        <b-tab v-if="showCollection" id="collection" title="Collection" button-id="tab-title-link-collection">
             <collection :app="this" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
         </b-tab>
-        <b-tab title="Rule-based" id="rule-based" button-id="tab-title-link-rule-based" v-if="showRules">
+        <b-tab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
             <rules-input :app="this" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
         </b-tab>
     </b-tabs>

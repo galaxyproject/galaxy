@@ -3,13 +3,13 @@
         <Message :message="message" :status="status" />
         <BaseGrid
             v-if="status !== 'error'"
+            id="data-types-grid"
             :columns="columns"
             :rows="dataTypes"
-            :is-loaded="isDataLoaded"
-            id="data-types-grid">
+            :is-loaded="isDataLoaded">
             <template v-slot:title>
                 <p>Current data types registry contains {{ dataTypes.length }} data types.</p>
-                <input type="checkbox" id="showAllColumns" v-model="showAllColumns" />
+                <input id="showAllColumns" v-model="showAllColumns" type="checkbox" />
                 <label for="showAllColumns">Show all columns</label>
             </template>
         </BaseGrid>

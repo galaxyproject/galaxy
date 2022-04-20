@@ -23,10 +23,10 @@
             <template v-slot:buttons>
                 <b-button
                     id="workflow-canvas-button"
+                    v-b-tooltip.hover.bottom
                     title="Return to Workflow"
                     variant="link"
                     role="button"
-                    v-b-tooltip.hover.bottom
                     @click="onEdit">
                     <span class="fa fa-times" />
                 </b-button>
@@ -56,25 +56,25 @@
                     <ZoomControl v-if="!checkWheeled" :zoom-level="zoomLevel" @onZoom="onZoom" />
                     <b-button
                         v-else
+                        v-b-tooltip.hover
                         class="reset-wheel"
-                        @click="resetWheel"
                         variant="light"
                         title="Show Zoom Buttons"
                         size="sm"
                         aria-label="Show Zoom Buttons"
-                        v-b-tooltip.hover>
+                        @click="resetWheel">
                         Zoom Controls
                     </b-button>
                     <div id="canvas-viewport">
-                        <div ref="canvas" id="canvas-container">
+                        <div id="canvas-container" ref="canvas">
                             <WorkflowNode
                                 v-for="(step, key) in steps"
                                 :id="key"
+                                :key="key"
                                 :name="step.name"
                                 :type="step.type"
                                 :content-id="step.content_id"
                                 :step="step"
-                                :key="key"
                                 :datatypes-mapper="datatypesMapper"
                                 :get-manager="getManager"
                                 :get-canvas-manager="getCanvasManager"
@@ -90,7 +90,7 @@
                     <div class="workflow-overview" aria-hidden="true">
                         <div class="workflow-overview-body">
                             <div id="overview-container">
-                                <canvas width="0" height="0" id="overview-canvas" />
+                                <canvas id="overview-canvas" width="0" height="0" />
                                 <div id="overview-viewport" />
                             </div>
                         </div>
@@ -116,7 +116,7 @@
                                     @onUpgrade="onUpgrade" />
                             </div>
                         </div>
-                        <div class="unified-panel-body workflow-right" ref="right-panel">
+                        <div ref="right-panel" class="unified-panel-body workflow-right">
                             <div class="m-2">
                                 <FormTool
                                     v-if="hasActiveNodeTool"

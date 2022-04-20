@@ -1,6 +1,6 @@
 <template>
-    <UrlDataProvider :url="url" v-slot="{ result: config, loading }" @error="onError">
-        <div :id="id" v-if="!loading">
+    <UrlDataProvider v-slot="{ result: config, loading }" :url="url" @error="onError">
+        <div v-if="!loading" :id="id">
             <b-alert v-if="config.message" :variant="configMessageVariant(config)" show>
                 {{ config.message }}
             </b-alert>

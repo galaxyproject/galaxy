@@ -13,7 +13,7 @@
             <div class="upload-rule-option">
                 <div class="upload-rule-option-title">{{ "Load tabular data from" | l }}</div>
                 <div class="rule-select-type">
-                    <select2 container-class="upload-footer-selection" v-model="selectionType">
+                    <select2 v-model="selectionType" container-class="upload-footer-selection">
                         <option value="paste">{{ "Pasted Table" | l }}</option>
                         <option value="dataset">{{ "History Dataset" | l }}</option>
                         <option v-if="ftpUploadSite" value="ftp">{{ "FTP Directory" | l }}</option>
@@ -21,10 +21,10 @@
                     </select2>
                 </div>
             </div>
-            <div id="upload-rule-dataset-option" class="upload-rule-option" v-if="selectionType == 'dataset'">
+            <div v-if="selectionType == 'dataset'" id="upload-rule-dataset-option" class="upload-rule-option">
                 <div class="upload-rule-option-title">History dataset</div>
                 <div>
-                    <b-link @click="onSelectDataset" v-if="selectedDatasetName == null">
+                    <b-link v-if="selectedDatasetName == null" @click="onSelectDataset">
                         {{ "Select" | l }}
                     </b-link>
                     <span v-else>
@@ -35,37 +35,37 @@
         </span>
         <span style="display: inline; float: right; width: 75%; height: 300px">
             <textarea
+                v-model="sourceContent"
                 class="upload-rule-source-content form-control"
                 style="height: 100%"
-                v-model="sourceContent"
                 :disabled="selectionType != 'paste'"></textarea>
         </span>
         <template v-slot:buttons>
             <b-button
+                id="btn-close"
                 ref="btnClose"
                 class="ui-button-default"
-                id="btn-close"
                 :title="btnCloseTitle"
                 @click="$emit('dismiss')">
                 {{ btnCloseTitle | l }}
             </b-button>
             <b-button
+                id="btn-build"
                 ref="btnBuild"
                 class="ui-button-default"
-                id="btn-build"
-                @click="_eventBuild"
                 :disabled="!sourceContent"
                 :title="btnBuildTitle"
-                :variant="sourceContent ? 'primary' : ''">
+                :variant="sourceContent ? 'primary' : ''"
+                @click="_eventBuild">
                 {{ btnBuildTitle | l }}
             </b-button>
             <b-button
+                id="btn-reset"
                 ref="btnReset"
                 class="ui-button-default"
-                id="btn-reset"
-                @click="_eventReset"
                 :title="btnResetTitle"
-                :disabled="!enableReset">
+                :disabled="!enableReset"
+                @click="_eventReset">
                 {{ btnResetTitle | l }}
             </b-button>
         </template>

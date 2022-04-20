@@ -2,7 +2,7 @@
     <div>
         <div v-if="!isSingleParam" class="tool-parameters">
             <h3 v-if="includeTitle">Tool Parameters</h3>
-            <table class="tabletip info_data_table" id="tool-parameters">
+            <table id="tool-parameters" class="tabletip info_data_table">
                 <thead>
                     <tr>
                         <th>Input Parameter</th>
@@ -31,7 +31,7 @@
                 One or more of your original parameters may no longer be valid or displayed properly.
             </b-alert>
         </div>
-        <div id="single-param" v-if="isSingleParam">
+        <div v-if="isSingleParam" id="single-param">
             <div v-if="Array.isArray(singleParam)">
                 <JobParametersArrayValue :parameter_value="singleParam" />
             </div>

@@ -10,13 +10,13 @@
                                 <div>
                                     <!-- standard internal galaxy login -->
                                     <b-form-group label="Public Name or Email Address">
-                                        <b-form-input name="login" type="text" v-model="login" />
+                                        <b-form-input v-model="login" name="login" type="text" />
                                     </b-form-group>
                                     <b-form-group label="Password">
-                                        <b-form-input name="password" type="password" v-model="password" />
+                                        <b-form-input v-model="password" name="password" type="password" />
                                         <b-form-text>
                                             Forgot password?
-                                            <a @click="reset" href="javascript:void(0)" role="button"
+                                            <a href="javascript:void(0)" role="button" @click="reset"
                                                 >Click here to reset your password.</a
                                             >
                                         </b-form-text>
@@ -47,7 +47,7 @@
                         </b-card>
                     </b-form>
 
-                    <b-modal centered id="duplicateEmail" ref="duplicateEmail" title="Duplicate Email" ok-only>
+                    <b-modal id="duplicateEmail" ref="duplicateEmail" centered title="Duplicate Email" ok-only>
                         <p>
                             There already exists a user with this email. To associate this external login, you must
                             first be logged in as that existing account.

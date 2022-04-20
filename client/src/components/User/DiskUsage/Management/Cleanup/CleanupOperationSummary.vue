@@ -14,8 +14,8 @@
                     v-else-if="canClearItems"
                     href="#"
                     class="card-link"
-                    @click="onReviewItems"
-                    data-test-id="review-link">
+                    data-test-id="review-link"
+                    @click="onReviewItems">
                     <b>{{ reviewAndClearText }} {{ summary.niceTotalSize }}</b>
                 </b-link>
                 <b v-else class="text-secondary" data-test-id="no-items-indicator">

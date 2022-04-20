@@ -11,10 +11,10 @@
         <div>
             <!-- <b>Search by workflow description:</b> -->
             <b-input-group class="mb-3">
-                <b-input id="trs-search-query" placeholder="search query" v-model="query" @keydown.esc="query = ''" />
+                <b-input id="trs-search-query" v-model="query" placeholder="search query" @keydown.esc="query = ''" />
                 <b-input-group-append>
                     <b-btn>
-                        <i class="fa fa-question" v-b-popover.bottom="searchHelp" title="Search Help" />
+                        <i v-b-popover.bottom="searchHelp" class="fa fa-question" title="Search Help" />
                     </b-btn>
                     <b-btn v-b-tooltip.hover title="clear search" @click="query = ''">
                         <i class="fa fa-times" />
@@ -37,8 +37,8 @@
                 hover
                 striped
                 caption-top
-                @row-clicked="showRowDetails"
-                :busy="searching">
+                :busy="searching"
+                @row-clicked="showRowDetails">
                 <template v-slot:row-details="row">
                     <b-card>
                         <trs-tool :trs-tool="row.item.data" @onImport="importVersion(row.item.data.id, $event)" />

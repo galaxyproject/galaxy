@@ -81,10 +81,10 @@
                         </div>
                     </div>
                     <div
+                        v-if="dataset_manipulation"
                         title="Download items as archive"
-                        class="dropdown dataset-manipulation mr-1"
-                        v-if="dataset_manipulation">
-                        <button type="button" id="download--btn" class="primary-button" @click="downloadData('zip')">
+                        class="dropdown dataset-manipulation mr-1">
+                        <button id="download--btn" type="button" class="primary-button" @click="downloadData('zip')">
                             <font-awesome-icon icon="download" />
                             Download
                         </button>
@@ -99,13 +99,13 @@
                         <font-awesome-icon icon="trash" />
                         Delete
                     </button>
-                    <FolderDetails class="mr-1" :id="folder_id" :metadata="metadata" />
-                    <div class="form-check logged-dataset-manipulation mr-1" v-if="canDelete">
+                    <FolderDetails :id="folder_id" class="mr-1" :metadata="metadata" />
+                    <div v-if="canDelete" class="form-check logged-dataset-manipulation mr-1">
                         <b-form-checkbox
                             id="checkbox-1"
                             :checked="include_deleted"
-                            @input="toggle_include_deleted($event)"
-                            name="checkbox-1">
+                            name="checkbox-1"
+                            @input="toggle_include_deleted($event)">
                             include deleted
                         </b-form-checkbox>
                     </div>

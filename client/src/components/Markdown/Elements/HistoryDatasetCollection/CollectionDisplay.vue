@@ -3,28 +3,28 @@
         <b-card-header>
             <span class="float-right">
                 <b-button
+                    v-b-tooltip.hover
                     :href="downloadUrl"
                     variant="link"
                     size="sm"
                     role="button"
                     title="Download Collection"
                     type="button"
-                    class="py-0 px-1"
-                    v-b-tooltip.hover>
+                    class="py-0 px-1">
                     <span class="fa fa-download" />
                 </b-button>
                 <CurrentUser v-slot="{ user }">
-                    <UserHistories v-if="user" :user="user" v-slot="{ currentHistoryId }">
+                    <UserHistories v-if="user" v-slot="{ currentHistoryId }" :user="user">
                         <b-button
                             v-if="currentHistoryId"
-                            @click="onCopyCollection(currentHistoryId)"
                             href="#"
                             role="button"
                             variant="link"
+                            v-b-tooltip.hover
                             title="Import Collection"
                             type="button"
                             class="py-0 px-1"
-                            v-b-tooltip.hover>
+                            @click="onCopyCollection(currentHistoryId)">
                             <span class="fa fa-file-import" />
                         </b-button>
                     </UserHistories>

@@ -6,12 +6,12 @@
             <b-col cols="6">
                 <b-input
                     id="interactivetool-search"
+                    v-model="filter"
                     class="m-1"
                     name="query"
                     placeholder="Search Interactive Tool"
                     autocomplete="off"
-                    type="text"
-                    v-model="filter" />
+                    type="text" />
             </b-col>
         </b-row>
         <b-table
@@ -26,8 +26,8 @@
             </template>
             <template v-slot:cell(name)="row">
                 <a
-                    :index="row.index"
                     :id="createId('link', row.item.id)"
+                    :index="row.index"
                     :href="row.item.target"
                     target="_blank"
                     :name="row.item.name"
@@ -51,8 +51,8 @@
             >.
         </div>
         <b-button
-            id="stopInteractiveTool"
             v-if="isCheckboxMarked"
+            id="stopInteractiveTool"
             v-b-tooltip.hover.bottom
             title="Terminate selected tools"
             @click.stop="stopInteractiveToolSession()"

@@ -4,13 +4,13 @@
         <div class="upload-top">
             <div class="upload-top-info" v-html="topInfo"></div>
         </div>
-        <div class="upload-box" ref="uploadBox" :style="boxStyle" :class="{ highlight: highlightBox }">
+        <div ref="uploadBox" class="upload-box" :style="boxStyle" :class="{ highlight: highlightBox }">
             <slot />
         </div>
-        <div class="upload-footer" v-if="hasFooter">
+        <div v-if="hasFooter" class="upload-footer">
             <slot name="footer" />
         </div>
-        <div class="clear" v-else />
+        <div v-else class="clear" />
         <div class="upload-buttons">
             <slot name="buttons" />
         </div>

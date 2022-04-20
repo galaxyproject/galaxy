@@ -9,16 +9,16 @@
             <b-table striped :items="items"> </b-table>
         </b-popover>
         <span v-if="name">
-            <meta itemprop="name" :content="person.name" v-if="person.name" />
-            <meta itemprop="givenName" :content="person.givenName" v-if="person.givenName" />
-            <meta itemprop="familyName" :content="person.familyName" v-if="person.familyName" />
+            <meta v-if="person.name" itemprop="name" :content="person.name" />
+            <meta v-if="person.givenName" itemprop="givenName" :content="person.givenName" />
+            <meta v-if="person.familyName" itemprop="familyName" :content="person.familyName" />
             {{ name }}
             <span v-if="email">
                 (<span itemprop="email" :content="person.email">{{ email }}</span
                 >)
             </span>
         </span>
-        <span itemprop="email" :content="person.email" v-else>
+        <span v-else itemprop="email" :content="person.email">
             {{ email }}
         </span>
         <a v-if="orcidLink" :href="orcidLink" target="_blank">

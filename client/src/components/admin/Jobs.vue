@@ -34,7 +34,7 @@
                         :disabled="showAllRunning"
                         description="in minutes">
                         <b-input-group>
-                            <b-form-input id="cutoff" type="number" v-model="cutoffMin"> </b-form-input>
+                            <b-form-input id="cutoff" v-model="cutoffMin" type="number"> </b-form-input>
                             <b-input-group-append>
                                 <b-btn type="submit">Refresh</b-btn>
                             </b-input-group-append>
@@ -85,9 +85,9 @@
             </template>
             <template v-slot:cell(selected)="data">
                 <b-form-checkbox
+                    :key="data.index"
                     v-model="selectedStopJobIds"
                     :checked="allSelected"
-                    :key="data.index"
                     :value="data.item['id']"></b-form-checkbox>
             </template>
         </jobs-table>

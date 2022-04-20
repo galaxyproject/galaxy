@@ -1,26 +1,26 @@
 <template>
     <div>
         <b-input-group>
-            <DebouncedInput v-model="localFilter" v-slot="{ value, input }">
+            <DebouncedInput v-slot="{ value, input }" v-model="localFilter">
                 <b-form-input
                     size="sm"
                     :value="value"
-                    @input="input"
-                    @keyup.esc="onReset"
                     :placeholder="'search datasets' | localize"
-                    data-description="filter text input" />
+                    data-description="filter text input"
+                    @input="input"
+                    @keyup.esc="onReset" />
             </DebouncedInput>
             <b-input-group-append>
                 <b-button
                     size="sm"
                     :pressed="showAdvanced"
                     :variant="showAdvanced ? 'info' : 'secondary'"
-                    @click="onToggle"
-                    data-description="show advanced filter toggle">
+                    data-description="show advanced filter toggle"
+                    @click="onToggle">
                     <icon v-if="showAdvanced" icon="angle-double-up" />
                     <icon v-else icon="angle-double-down" />
                 </b-button>
-                <b-button size="sm" @click="onReset" data-description="show deleted filter toggle">
+                <b-button size="sm" data-description="show deleted filter toggle" @click="onReset">
                     <icon icon="times" />
                 </b-button>
             </b-input-group-append>
@@ -53,7 +53,7 @@
             <small>Show visible:</small>
             <b-form-checkbox v-model="filterSettings['visible=']" size="sm" switch description="filter visible" />
             <div class="mt-3">
-                <b-button class="mr-1" @click="onSearch" size="sm" variant="primary" description="apply filters">
+                <b-button class="mr-1" size="sm" variant="primary" description="apply filters" @click="onSearch">
                     <icon icon="search" />
                     <span>{{ "Search" | localize }}</span>
                 </b-button>

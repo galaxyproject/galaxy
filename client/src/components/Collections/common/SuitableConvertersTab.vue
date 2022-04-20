@@ -5,8 +5,8 @@
             <div class="text-right">
                 <button
                     class="run-tool-collection-edit btn btn-primary"
-                    @click="clickedConvert"
-                    :disabled="selectedConverter == {}">
+                    :disabled="selectedConverter == {}"
+                    @click="clickedConvert">
                     {{ l("Convert Collection") }}
                 </button>
             </div>
