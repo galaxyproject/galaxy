@@ -3,15 +3,15 @@
         <component :is="tagName" v-if="!editing" class="m-0" @click="toggleEdit(true)">
             <span class="editable"></span>
             <span>{{ displayValue }}</span>
-            <slot name="tooltip" :editing="editing" :localValue="localValue"></slot>
+            <slot name="tooltip" :editing="editing" :local-value="localValue"></slot>
         </component>
 
         <component :is="tagName" v-if="editing">
             <slot
-                :toggleEdit="toggleEdit"
+                :toggle-edit="toggleEdit"
                 :editing="editing"
                 :placeholder="placeholder"
-                :stateValidator="stateValidator">
+                :state-validator="stateValidator">
                 <debounced-input v-model="localValue" :delay="debounceDelay">
                     <template v-slot="{ value: debouncedValue, input }">
                         <b-form-input
