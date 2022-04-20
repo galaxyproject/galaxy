@@ -928,8 +928,7 @@ class DistributedObjectStore(NestedObjectStore):
             # try to locate the object
             for id, store in self.backends.items():
                 if store.exists(obj, **kwargs):
-                    log.warning('%s object with ID %s found in backend object store with ID %s'
-                                % (obj.__class__.__name__, obj.id, id))
+                    log.warning(f"{obj.__class__.__name__} object with ID {obj.id} found in backend object store with ID {id}")
                     obj.object_store_id = id
                     return id
         return None
