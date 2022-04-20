@@ -7,7 +7,10 @@
         @save="$emit('update:dsc', $event)">
         <template v-slot:name>
             <h3 data-description="collection name display" v-short="dsc.name || 'Collection'" />
-            <CollectionDescription :item="dsc" />
+            <CollectionDescription
+                :collection-type="dsc.collection_type"
+                :element-count="dsc.element_count"
+                :elements-datatypes="dsc.elements_datatypes" />
         </template>
     </Details>
 </template>
