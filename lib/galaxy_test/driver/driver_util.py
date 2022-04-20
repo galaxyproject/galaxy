@@ -886,6 +886,8 @@ class TestDriver:
     def stop_servers(self):
         for server_wrapper in self.server_wrappers:
             server_wrapper.stop()
+        for th in threading.enumerate():
+            log.debug(f"After stopping all servers thread {th} is alive.")
         active_count = threading.active_count()
         if active_count > 10:
             raise Exception(
