@@ -1435,7 +1435,16 @@ class NavigatesGalaxy(HasDriver):
             self.components.history_panel.beta.wait_for_present()
 
     def is_beta_history(self):
-        return not self.components.history_panel.beta.is_absent
+        old_panel = self.components.history_panel.beta.is_absent
+        new_panel = self.components.history_panel.new_history_button.is_absent
+        if old_panel and new_panel:
+            # both absent, let page render a bit...
+            self.sleep_for(self.wait_types.UX_RENDER)
+        else:
+            return new_panel
+
+        old_panel = self.components.history_panel.beta.is_absent
+        return not old_panel
 
     # avoids problematic ID and classes on markup
     def beta_history_element(self, attribute_value, attribute_name="data-description", scope=".history-index"):
