@@ -156,7 +156,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         },
         "auto_platform": {
             "default": False,
-            "map": lambda x: x.lower() == "true",
+            "map": lambda x: str(x).lower() == "true",
         },
         "ec2_host_volumes": {
             "default": "",
@@ -164,7 +164,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         },
         "privileged": {
             "default": False,
-            "map": lambda x: x.lower() == "true",
+            "map": lambda x: str(x).lower() == "true",
         }
     }
 
@@ -220,12 +220,12 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         container_image = self._find_container(job_wrapper).container_id
         h = hashlib.new("sha256")
         h.update(smart_str(container_image))
-        s = json.dumps(destination_params, sorted=True)
+        s = json.dumps(destination_params, sort_keys=True)
         h.update(smart_str(s))
         queue_name = destination_params.get("job_queue").rsplit("/", 1)[-1]
 
         jd_name = f"galaxy_tool__{tool_id}__{h.hexdigest()}__{queue_name}"
-        jd_name = re.sub(r'[^-_A-Za-z0-9]', '-', jd_name)
+        jd_name = re.sub(r'[^-_A-Za-z0-9]', '-', jd_name)[:128]
         res = self._batch_client.describe_job_definitions(jobDefinitionName=jd_name, status="ACTIVE")
         if not res["jobDefinitions"]:
             jd_arn = self._register_job_definition(jd_name, container_image, destination_params)
@@ -451,7 +451,6 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         _write_logfile(job_state.output_file, "")
         _write_logfile(job_state.error_file, "")
         job_state.running = False
-        job_state.job_wrapper.change_state(model.Job.states.OK)
         self.mark_as_finished(job_state)
 
     def _mark_as_active(self, job_state):
