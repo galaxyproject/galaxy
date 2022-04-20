@@ -135,7 +135,6 @@ function create_plot(pca_result, colours, annotations) {
         data.push(trace);
     }
 
-    var d3 = Plotly.d3;
     var gd3 = d3.select("div[id='visualisation']");
     var res_graph = gd3.node();
     Plotly.newPlot(res_graph, data, layout);

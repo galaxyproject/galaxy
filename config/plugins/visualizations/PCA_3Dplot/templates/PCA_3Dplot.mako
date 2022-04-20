@@ -55,8 +55,9 @@ colour_options, start_options = create_options(header)
 <html>
 <head>
 
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pca-js@1.0.0/pca.min.js"></script>
+${h.javascript_link(app_root + "dist/d3.min.js")}
+${h.javascript_link(app_root + "dist/plotly.min.js")}
+${h.javascript_link(app_root + "dist/pca.min.js")}
 ${h.javascript_link( app_root +  "script.js" )}
 ${h.stylesheet_link( app_root + "style.css" )}
 
@@ -79,6 +80,6 @@ var header = ${header}
             </select>
         </div>
         <div id="visualisation"><!-- Plotly chart will be drawn inside this DIV --></div>
-    </div>  
+    </div>
 </body>
 </html>

@@ -26,6 +26,7 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "nvd3/nvd3_bar",
     "openlayers",
     "openseadragon",
+    "PCA_3Dplot",
     "pv",
     "nora",
     "venn",
