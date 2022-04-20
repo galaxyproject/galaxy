@@ -82,13 +82,16 @@ from .testing_utils import (
     has_index,
     has_unique_constraint,
 )
-from .testing_utils.gxy_model_fixtures import *  # noqa: F401, F403
 from ..testing_utils import (
     dbcleanup,
     delete_from_database,
+    get_plugin_full_name,
     get_stored_obj,
     persist,
 )
+
+model_fixtures = get_plugin_full_name("mapping.testing_utils.gxy_model_fixtures")
+pytest_plugins = [model_fixtures]
 
 
 class BaseTest(AbstractBaseTest):

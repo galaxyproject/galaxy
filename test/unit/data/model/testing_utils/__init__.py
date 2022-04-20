@@ -238,3 +238,17 @@ def _make_postgres_db_url(connection_url: DbUrl, database: str) -> DbUrl:
     url = make_url(connection_url)
     url = url.set(database=database)
     return DbUrl(str(url))
+
+
+def get_plugin_full_name(partial_module_name: str) -> str:
+    """
+    Return full module name. The partial name should be relative to the
+    test/unit/data/model directory.
+    """
+    path = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir, os.pardir)
+    path = os.path.normpath(path)
+    if os.path.split(path)[1] == "packages":  # When running package unit tests
+        prefix = "tests.data.model"
+    else:
+        prefix = "test.unit.data.model"
+    return f"{prefix}.{partial_module_name}"
