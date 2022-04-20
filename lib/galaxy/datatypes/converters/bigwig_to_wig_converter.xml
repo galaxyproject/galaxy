@@ -12,10 +12,10 @@
         #if $chrom
             -chrom='${chrom}'
         #end if
-        #if $start
+        #if str($start)
             -start=$start
         #end if
-        #if $end
+        #if str($end)
             -end=$end
         #end if
         output.wig
@@ -82,16 +82,6 @@
 bigWigToWig - Convert bigWig to wig.  This will keep more of the same structure of the
 original wig than bigWigToBedGraph does, but still will break up large stepped sections
 into smaller ones.
-
-Usage:
-   bigWigToWig in.bigWig out.wig
-
-Options:
-   - chrom=chr1 - if set restrict output to given chromosome
-   - start=N - if set, restrict output to only that over start
-   - end=N - if set, restict output to only that under end
-   - udcDir=/dir/to/cache - place to put cache for remote bigBed/bigWigs
-
     ]]></help>
     <citations>
         <citation type="bibtex">
