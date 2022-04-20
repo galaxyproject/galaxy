@@ -23,13 +23,10 @@
 
         "vue/valid-v-slot": "error",
         "vue/v-slot-style": ["error", { "atComponent": "v-slot", "default": "v-slot", "named": "longform" }],
-        "vue/order-in-components": "warn",
-        "vue/attributes-order": "warn",
 
-        // Vue TODO (enable these)
-        "vue/require-default-prop": "warn",
-        "vue/require-prop-types": "warn",
-        "vue/prop-name-casing": "warn",
+        // vue/multi-word-component names is considered an error, that we
+        // downgrade to a warning here.  It should be prioritized to get fixed
+        // and compliant.
         "vue/multi-word-component-names": "warn",
 
         // Prettier compromises/workarounds -- mostly #wontfix?
