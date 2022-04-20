@@ -112,11 +112,10 @@ class BaseObjectstoreUploadTest(UploadTestDatatypeDataTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        super().handle_galaxy_config_kwds(config)
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
         cls.object_store_config_path = os.path.join(temp_directory, "object_store_conf.xml")
-        config["metadata_strategy"] = "celery_extended"
+        config["metadata_strategy"] = "extended"
         config["outpus_to_working_dir"] = True
         config["retry_metadata_internally"] = False
         config["object_store_store_by"] = "uuid"
