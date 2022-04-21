@@ -22,7 +22,6 @@ class HistoryImportExportFtpSeleniumIntegrationTestCase(SeleniumIntegrationTestC
 
     @selenium_test
     def test_history_import_export(self):
-        self.use_legacy_history()
         email = self.get_logged_in_user()["email"]
         user_ftp_dir = os.path.join(self.ftp_dir(), email)
         os.makedirs(user_ftp_dir)
