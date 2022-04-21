@@ -74,7 +74,7 @@ def lint_tsts(tool_xml, lint_ctx):
             if name not in output_data_or_collection:
                 lint_ctx.error(
                     f"Test {test_idx}: Found {output.tag} tag with unknown name [{name}], valid names {list(output_data_or_collection)}",
-                    node=output
+                    node=output,
                 )
                 continue
 
@@ -83,26 +83,41 @@ def lint_tsts(tool_xml, lint_ctx):
             # - test/collection to outputs/output_collection
             corresponding_output = output_data_or_collection[name]
             if output.tag == "output" and corresponding_output.tag != "data":
-                lint_ctx.error(f"Test {test_idx}: test output {name} does not correspond to a 'data' output, but a '{corresponding_output.tag}'", node=output)
+                lint_ctx.error(
+                    f"Test {test_idx}: test output {name} does not correspond to a 'data' output, but a '{corresponding_output.tag}'",
+                    node=output,
+                )
             elif output.tag == "output_collection" and corresponding_output.tag != "collection":
-                lint_ctx.error(f"Test {test_idx}: test collection output '{name}' does not correspond to a 'output_collection' output, but a '{corresponding_output.tag}'", node=output)
+                lint_ctx.error(
+                    f"Test {test_idx}: test collection output '{name}' does not correspond to a 'output_collection' output, but a '{corresponding_output.tag}'",
+                    node=output,
+                )
 
             # check that discovered data is tested sufficiently
             discover_datasets = corresponding_output.find(".//discover_datasets")
             if discover_datasets is not None:
                 if output.tag == "output":
                     if "count" not in output.attrib and output.find("./discovered_datasets") is None:
-                        lint_ctx.error(f"Test {test_idx}: test output '{name}' must have a 'count' attribute and/or 'discovered_datasets' children", node=output)
+                        lint_ctx.error(
+                            f"Test {test_idx}: test output '{name}' must have a 'count' attribute and/or 'discovered_datasets' children",
+                            node=output,
+                        )
                         pass
                 else:
                     elements = output.findall("./element")
                     if "count" not in output.attrib and len(elements) == 0:
-                        lint_ctx.error(f"Test {test_idx}: test collection '{name}' must have a 'count' attribute or 'element' children", node=output)
+                        lint_ctx.error(
+                            f"Test {test_idx}: test collection '{name}' must have a 'count' attribute or 'element' children",
+                            node=output,
+                        )
                     if corresponding_output.get("type", "") in ["list:list", "list:paired"]:
                         nested_elements = output.find("./element/element")
                         element_with_count = output.find("./element[@count]")
                         if nested_elements is None and element_with_count is None:
-                            lint_ctx.error(f"Test {test_idx}: test collection '{name}' must contain nested 'element' tags and/or element childen with a 'count' attribute", node=output)
+                            lint_ctx.error(
+                                f"Test {test_idx}: test collection '{name}' must contain nested 'element' tags and/or element childen with a 'count' attribute",
+                                node=output,
+                            )
 
         if "expect_failure" in test.attrib and found_output_test:
             lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.", node=test)

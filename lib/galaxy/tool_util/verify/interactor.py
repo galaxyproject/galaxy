@@ -216,10 +216,12 @@ class GalaxyInteractorApi:
         outputs = self._get(f"jobs/{job_id}/outputs").json()
         found_datasets = 0
         for output in outputs:
-            if output["name"] == name or output["name"].startswith(f'__new_primary_file_{name}|'):
+            if output["name"] == name or output["name"].startswith(f"__new_primary_file_{name}|"):
                 found_datasets += 1
         if expected_count is not None and expected_count != found_datasets:
-            raise AssertionError(f"Output '{name}': expected to have '{expected_count}' datasets, but it had '{found_datasets}'")
+            raise AssertionError(
+                f"Output '{name}': expected to have '{expected_count}' datasets, but it had '{found_datasets}'"
+            )
         for designation, (primary_outfile, primary_attributes) in primary_datasets.items():
             primary_output = None
             for output in outputs:
@@ -994,7 +996,9 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
                 found_outputs = len(elements)
                 verify_elements(elements, element_attrib.get("elements", {}))
             if expected_count is not None and expected_count != found_outputs:
-                raise AssertionError(f"Element '{element_identifier}': expected to have '{expected_count}' elements, but it had '{found_outputs}'")
+                raise AssertionError(
+                    f"Element '{element_identifier}': expected to have '{expected_count}' elements, but it had '{found_outputs}'"
+                )
 
         if len(expected_sort_order) > 0:
             generated_sort_order = [_["element_identifier"] for _ in element_objects]

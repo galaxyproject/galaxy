@@ -1409,8 +1409,14 @@ def test_tests_asserts(lint_ctx):
 def test_tests_output_type_mismatch(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_OUTPUT_TYPE_MISMATCH)
     run_lint(lint_ctx, tests.lint_tsts, tool_source)
-    assert "Test 1: test output collection_name does not correspond to a 'data' output, but a 'collection'" in lint_ctx.error_messages
-    assert "Test 1: test collection output 'data_name' does not correspond to a 'output_collection' output, but a 'data'" in lint_ctx.error_messages
+    assert (
+        "Test 1: test output collection_name does not correspond to a 'data' output, but a 'collection'"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 1: test collection output 'data_name' does not correspond to a 'output_collection' output, but a 'data'"
+        in lint_ctx.error_messages
+    )
     assert not lint_ctx.warn_messages
     assert len(lint_ctx.error_messages) == 2
 
@@ -1418,10 +1424,22 @@ def test_tests_output_type_mismatch(lint_ctx):
 def test_tests_discover_outputs(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_DISCOVER_OUTPUTS)
     run_lint(lint_ctx, tests.lint_tsts, tool_source)
-    assert "Test 2: test output 'data_name' must have a 'count' attribute and/or 'discovered_datasets' children" in lint_ctx.error_messages
-    assert "Test 2: test collection 'collection_name' must have a 'count' attribute or 'element' children" in lint_ctx.error_messages
-    assert "Test 2: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute" in lint_ctx.error_messages
-    assert "Test 3: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute" in lint_ctx.error_messages
+    assert (
+        "Test 2: test output 'data_name' must have a 'count' attribute and/or 'discovered_datasets' children"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 2: test collection 'collection_name' must have a 'count' attribute or 'element' children"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 2: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 3: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute"
+        in lint_ctx.error_messages
+    )
     assert not lint_ctx.warn_messages
     assert len(lint_ctx.error_messages) == 4
 

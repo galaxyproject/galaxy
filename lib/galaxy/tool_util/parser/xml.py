@@ -688,9 +688,9 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
     attributes["sort"] = string_as_bool(attrib.pop("sort", False))
     attributes["decompress"] = string_as_bool(attrib.pop("decompress", False))
     try:
-        attributes['count'] = int(attrib.pop('count'))
+        attributes["count"] = int(attrib.pop("count"))
     except KeyError:
-        attributes['count'] = None
+        attributes["count"] = None
     extra_files = []
     if "ftype" in attrib:
         attributes["ftype"] = attrib["ftype"]
