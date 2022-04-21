@@ -130,7 +130,6 @@
     "babel-plugin-transform-inline-environment-variables": "^0.4.3",
     "babel-plugin-transform-vue-template": "^0.4.2",
     "buffer": "^6.0.3",
-    "chai": "^4.3.6",
     "css-loader": "^6.6.0",
     "css-minimizer-webpack-plugin": "^3.4.1",
     "del": "^6.0.0",
