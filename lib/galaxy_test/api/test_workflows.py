@@ -451,6 +451,32 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         assert len(index_ids) == 1
         assert workflow_id_1 in index_ids
 
+    def test_index_search_name(self):
+        name1, name2 = self.dataset_populator.get_random_name(), self.dataset_populator.get_random_name()
+        workflow_id_1 = self.workflow_populator.simple_workflow(name1)
+        self.workflow_populator.simple_workflow(name2)
+        self.workflow_populator.set_tags(workflow_id_1, [name2])
+        index_ids = self.workflow_populator.index_ids(search=name2)
+        # one found by tag and one found by name...
+        assert len(index_ids) == 2
+        assert workflow_id_1 in index_ids
+
+        index_ids = self.workflow_populator.index_ids(search=f"name:{name2}")
+        assert len(index_ids) == 1
+        assert workflow_id_1 not in index_ids
+
+    def test_index_search_tags(self):
+        name1, name2 = self.dataset_populator.get_random_name(), self.dataset_populator.get_random_name()
+        workflow_id_1 = self.workflow_populator.simple_workflow(name1)
+        self.workflow_populator.simple_workflow(name2)
+        index_ids = self.workflow_populator.index_ids(search="moocowatag")
+        assert len(index_ids) == 0
+        self.workflow_populator.set_tags(workflow_id_1, ["moocowatag", "moocowanothertag"])
+        index_ids = self.workflow_populator.index_ids(search="moocowatag")
+        assert workflow_id_1 in index_ids
+        index_ids = self.workflow_populator.index_ids(search="tag:moocowatag")
+        assert workflow_id_1 in index_ids
+
     def test_index_published(self):
         # published workflows are also the default of what is displayed for anonymous API requests
         # this is tested in test_anonymous_published.
