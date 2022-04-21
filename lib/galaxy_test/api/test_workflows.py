@@ -596,16 +596,16 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
 
     def test_update_tags(self):
         workflow_object = self.workflow_populator.load_workflow(name="test_import")
-        upload_response = self.__test_upload(workflow=workflow_object)
-        workflow = upload_response.json()
-        workflow["tags"] = ["a_tag", "b_tag"]
-        update_response = self._update_workflow(workflow["id"], workflow).json()
+        workflow_id = self.__test_upload(workflow=workflow_object).json()["id"]
+        update_payload = {}
+        update_payload["tags"] = ["a_tag", "b_tag"]
+        update_response = self._update_workflow(workflow_id, update_payload).json()
         assert update_response["tags"] == ["a_tag", "b_tag"]
-        del workflow["tags"]
-        update_response = self._update_workflow(workflow["id"], workflow).json()
+        del update_payload["tags"]
+        update_response = self._update_workflow(workflow_id, update_payload).json()
         assert update_response["tags"] == ["a_tag", "b_tag"]
-        workflow["tags"] = []
-        update_response = self._update_workflow(workflow["id"], workflow).json()
+        update_payload["tags"] = []
+        update_response = self._update_workflow(workflow_id, update_payload).json()
         assert update_response["tags"] == []
 
     def test_update_name(self):
