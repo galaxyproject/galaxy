@@ -7920,11 +7920,6 @@ proper-lockfile@^2.0.1:
     graceful-fs "^4.1.2"
     retry "^0.10.0"
 
-proper-skip-list@^4.1.0:
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/proper-skip-list/-/proper-skip-list-4.1.0.tgz#d23bbb844591e1e05ee66b910a740c595248da79"
-  integrity sha512-NrucFFMTdbNNe9XHZcYLBIg3mQPqXq25scUJMr3szG7MIdXyQigby2ATLvrNJdYaVI9CJbpiOA3qckhXZ2MuGQ==
-
 proto-list@~1.2.1:
   version "1.2.4"
   resolved "https://registry.yarnpkg.com/proto-list/-/proto-list-1.2.4.tgz#212d5bfe1318306a420f6402b8e26ff39647a849"

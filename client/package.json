@@ -59,7 +59,6 @@
     "object-hash": "^2.2.0",
     "popper.js": "^1.16.1",
     "pretty-bytes": "^5.6.0",
-    "proper-skip-list": "^4.1.0",
     "pyre-to-regexp": "^0.0.5",
     "querystring-es3": "^0.2.1",
     "regenerator-runtime": "^0.13.9",
