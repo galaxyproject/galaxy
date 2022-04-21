@@ -233,13 +233,16 @@ class NavigatesGalaxy(HasDriver):
         self.get()
         self.components.masthead._.wait_for_visible()
 
-    def trs_search(self) -> None:
+    def go_to_trs_search(self) -> None:
         self.driver.get(self.build_url("workflows/trs_search"))
         self.components.masthead._.wait_for_visible()
 
-    def trs_by_id(self) -> None:
+    def go_to_trs_by_id(self) -> None:
         self.driver.get(self.build_url("workflows/trs_import"))
         self.components.masthead._.wait_for_visible()
+
+    def go_to_workflow_sharing(self, workflow_id: str) -> None:
+        self.driver.get(self.build_url(f"workflow/sharing?id={workflow_id}"))
 
     def switch_to_main_panel(self):
         self.driver.switch_to.frame(GALAXY_MAIN_FRAME_ID)

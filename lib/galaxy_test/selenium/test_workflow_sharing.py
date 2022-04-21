@@ -14,8 +14,7 @@ class WorkflowSharingTestCase(SeleniumTestCase):
         user_email = self.get_logged_in_user()["email"]
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.logout()
-        sharing_url = f"workflow/sharing?id={workflow_id}"
-        self.get(sharing_url)
+        self.go_to_workflow_sharing(workflow_id)
         modal = self.components._.messages.error.wait_for_present()
         assert modal.text == "You must be logged in to Share or export Galaxy workflows."
         login_link = modal.find_element_by_tag_name("a")
