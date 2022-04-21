@@ -316,7 +316,7 @@ class UserDeserializerTestCase(BaseTestCase):
             {"username": ""},
             trans=self.trans,
         )
-        self.assertTrue('Public name cannot be empty' in str(exception))
+        self.assertTrue("Public name cannot be empty" in str(exception))
         self.assertRaises(
             base_manager.ModelDeserializingError,
             self.deserializer.deserialize,
