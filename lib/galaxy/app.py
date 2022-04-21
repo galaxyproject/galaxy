@@ -230,7 +230,7 @@ class ConfiguresGalaxyMixin:
 
     def reindex_tool_search(self):
         # Call this when tools are added or removed.
-        self.toolbox_search.build_index(tool_cache=self.tool_cache)
+        self.toolbox_search.build_index(tool_cache=self.tool_cache, toolbox=self.toolbox)
         self.tool_cache.reset_status()
 
     def _set_enabled_container_types(self):
