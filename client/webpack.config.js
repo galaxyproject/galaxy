@@ -44,7 +44,6 @@ module.exports = (env = {}, argv = {}) => {
                 storemodern$: "store/dist/store.modern.js",
                 "popper.js": path.resolve(__dirname, "node_modules/popper.js/"),
                 moment: path.resolve(__dirname, "node_modules/moment"),
-                uuid: path.resolve(__dirname, "node_modules/uuid"),
                 underscore: path.resolve(__dirname, "node_modules/underscore"),
                 // client-side application config
                 config$: path.join(scriptsBase, "config", targetEnv) + ".js",
