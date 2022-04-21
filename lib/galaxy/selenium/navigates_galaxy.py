@@ -242,7 +242,10 @@ class NavigatesGalaxy(HasDriver):
         self.components.masthead._.wait_for_visible()
 
     def go_to_workflow_sharing(self, workflow_id: str) -> None:
-        self.driver.get(self.build_url(f"workflow/sharing?id={workflow_id}"))
+        self.driver.get(self.build_url(f"workflows/sharing?id={workflow_id}"))
+
+    def go_to_workflow_export(self, workflow_id: str) -> None:
+        self.driver.get(self.build_url(f"workflow/export?id={workflow_id}"))
 
     def go_to_history_sharing(self, history_id: str) -> None:
         self.driver.get(self.build_url(f"histories/sharing?id={history_id}"))
