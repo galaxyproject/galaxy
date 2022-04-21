@@ -8,7 +8,7 @@ from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
 class GoogleDriveFilesSource(PyFilesystem2FilesSource):
-    plugin_type = 'googledrive'
+    plugin_type = "googledrive"
     required_module = GoogleDriveFS
     required_package = "fs.googledrivefs"
 
@@ -19,4 +19,4 @@ class GoogleDriveFilesSource(PyFilesystem2FilesSource):
         return handle
 
 
-__all__ = ('GoogleDriveFilesSource',)
+__all__ = ("GoogleDriveFilesSource",)

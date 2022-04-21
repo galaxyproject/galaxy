@@ -12,7 +12,10 @@ from sqlalchemy import sql
 from galaxy import model
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.util import unicodify
-from .base import ModelValidator, raise_filter_err
+from .base import (
+    ModelValidator,
+    raise_filter_err,
+)
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +31,7 @@ def _tag_str_gen(item):
 
 
 def _tags_to_strings(item):
-    if not hasattr(item, 'tags'):
+    if not hasattr(item, "tags"):
         return None
     return sorted(list(_tag_str_gen(item)))
 
@@ -42,8 +45,8 @@ def _tags_from_strings(item, tag_handler, new_tags_list, user=None):
         return
     # TODO: duped from tags manager - de-dupe when moved to taggable mixin
     tag_handler.delete_item_tags(user, item)
-    new_tags_str = ','.join(new_tags_list)
-    tag_handler.apply_item_tags(user, item, unicodify(new_tags_str, 'utf-8'))
+    new_tags_str = ",".join(new_tags_list)
+    tag_handler.apply_item_tags(user, item, unicodify(new_tags_str, "utf-8"))
     # TODO:!! does the creation of new_tags_list mean there are now more and more unused tag rows in the db?
 
 
@@ -70,9 +73,8 @@ class TaggableManagerMixin:
 
 
 class TaggableSerializerMixin:
-
     def add_serializers(self):
-        self.serializers['tags'] = self.serialize_tags
+        self.serializers["tags"] = self.serialize_tags
 
     def serialize_tags(self, item, key, **context):
         """
@@ -86,7 +88,7 @@ class TaggableDeserializerMixin:
     validate: ModelValidator
 
     def add_deserializers(self):
-        self.deserializers['tags'] = self.deserialize_tags
+        self.deserializers["tags"] = self.deserialize_tags
 
     def deserialize_tags(self, item, key, val, user=None, **context):
         """
@@ -101,24 +103,23 @@ class TaggableDeserializerMixin:
 
 class TaggableFilterMixin:
 
-    valid_ops = ('eq', 'contains', 'has')
+    valid_ops = ("eq", "contains", "has")
 
     def create_tag_filter(self, attr, op, val):
-
         def _create_tag_filter(model_class=None):
             if op not in TaggableFilterMixin.valid_ops:
-                raise_filter_err(attr, op, val, 'bad op in filter')
+                raise_filter_err(attr, op, val, "bad op in filter")
             if model_class is None:
                 return True
             class_name = model_class.__name__
-            if class_name == 'HistoryDatasetCollectionAssociation':
+            if class_name == "HistoryDatasetCollectionAssociation":
                 # Unfortunately we were a little inconsistent with our naming scheme
-                class_name = 'HistoryDatasetCollection'
+                class_name = "HistoryDatasetCollection"
             target_model = getattr(model, f"{class_name}TagAssociation")
             id_column = f"{target_model.table.name.rsplit('_tag_association')[0]}_id"
             column = target_model.table.c.user_tname + ":" + target_model.table.c.user_value
-            if op == 'eq':
-                if ':' not in val:
+            if op == "eq":
+                if ":" not in val:
                     # We require an exact match and the tag to look for has no user_value,
                     # so we can't just concatenate user_tname, ':' and user_vale
                     cond = target_model.table.c.user_tname == val
@@ -126,13 +127,9 @@ class TaggableFilterMixin:
                     cond = column == val
             else:
                 cond = column.contains(val, autoescape=True)
-            return sql.expression.and_(
-                model_class.table.c.id == getattr(target_model.table.c, id_column),
-                cond
-            )
+            return sql.expression.and_(model_class.table.c.id == getattr(target_model.table.c, id_column), cond)
+
         return _create_tag_filter
 
     def _add_parsers(self):
-        self.orm_filter_parsers.update({
-            'tag': self.create_tag_filter
-        })
+        self.orm_filter_parsers.update({"tag": self.create_tag_filter})

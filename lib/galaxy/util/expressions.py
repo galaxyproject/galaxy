@@ -54,4 +54,5 @@ class ExpressionContext(MutableMapping):
         if not self.dict and not self.parent:
             return False
         return True
+
     __nonzero__ = __bool__

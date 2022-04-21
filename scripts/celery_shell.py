@@ -7,16 +7,17 @@ ipython -i scripts/celery_shell.py -- -c config/galaxy.yml
 import logging
 import os
 
-WARNING_MODULES = ['parso', 'asyncio', 'galaxy.datatypes']
+WARNING_MODULES = ["parso", "asyncio", "galaxy.datatypes"]
 for mod in WARNING_MODULES:
     logger = logging.getLogger(mod)
-    logger.setLevel('WARNING')
+    logger.setLevel("WARNING")
 
 from scripts.db_shell import config
-os.environ['GALAXY_CONFIG_FILE'] = os.environ.get('GALAXY_CONFIG_FILE', config['config_file'])
 
-from galaxy.celery import get_galaxy_app
+os.environ["GALAXY_CONFIG_FILE"] = os.environ.get("GALAXY_CONFIG_FILE", config["config_file"])
+
 from galaxy.celery import tasks  # noqa: F401
+from galaxy.celery import get_galaxy_app
 
 HELP = """
 ============

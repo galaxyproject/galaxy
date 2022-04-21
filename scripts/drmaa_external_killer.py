@@ -29,15 +29,21 @@ def set_user(uid):
         os.setuid(uid)
     except OSError as e:
         if e.errno == errno.EPERM:
-            sys.stderr.write("error: setuid(%d) failed: permission denied. Did you setup 'sudo' correctly for this script?\n" % uid)
+            sys.stderr.write(
+                "error: setuid(%d) failed: permission denied. Did you setup 'sudo' correctly for this script?\n" % uid
+            )
             exit(1)
         else:
             pass
     if os.getuid() == 0:
-        sys.stderr.write("error: UID is 0 (root) after changing user. This script should not be run as root. aborting.\n")
+        sys.stderr.write(
+            "error: UID is 0 (root) after changing user. This script should not be run as root. aborting.\n"
+        )
         exit(1)
     if os.geteuid() == 0:
-        sys.stderr.write("error: EUID is 0 (root) after changing user. This script should not be run as root. aborting.\n")
+        sys.stderr.write(
+            "error: EUID is 0 (root) after changing user. This script should not be run as root. aborting.\n"
+        )
         exit(1)
 
 

@@ -17,14 +17,14 @@ def main():
     api_url = "%s/api/workflows" % api_base_url
     try:
         data = {}
-        data['installed_repository_file'] = sys.argv[3]
+        data["installed_repository_file"] = sys.argv[3]
         if len(sys.argv) > 4 and sys.argv[4] == "--add_to_menu":
-            data['add_to_menu'] = True
+            data["add_to_menu"] = True
     except IndexError:
-        print('usage: %s key galaxy_url workflow_file' % os.path.basename(sys.argv[0]))
+        print("usage: %s key galaxy_url workflow_file" % os.path.basename(sys.argv[0]))
         sys.exit(1)
     submit(api_key, api_url, data, return_formatted=False)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

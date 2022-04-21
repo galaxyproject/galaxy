@@ -5,7 +5,12 @@ Migration script to add the suite column to the tool table.
 import logging
 import sys
 
-from sqlalchemy import Boolean, Column, MetaData, Table
+from sqlalchemy import (
+    Boolean,
+    Column,
+    MetaData,
+    Table,
+)
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -27,12 +32,12 @@ def upgrade(migrate_engine):
     c = Column("suite", Boolean, default=False, index=True)
     try:
         # Create
-        c.create(Tool_table, index_name='ix_tool_suite')
+        c.create(Tool_table, index_name="ix_tool_suite")
         assert c is Tool_table.c.suite
         # Initialize.
-        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+        if migrate_engine.name == "mysql" or migrate_engine.name == "sqlite":
             default_false = "0"
-        elif migrate_engine.name in ['postgresql', 'postgres']:
+        elif migrate_engine.name in ["postgresql", "postgres"]:
             default_false = "false"
         migrate_engine.execute(f"UPDATE tool SET suite={default_false}")
     except Exception:

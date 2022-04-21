@@ -23,7 +23,7 @@ def __main__():
         sys.exit(0)
     species = maf_utilities.parse_species_option(sys.argv[5].strip())
 
-    maf_writer = bx.align.maf.Writer(open(output_filename1, 'w'))
+    maf_writer = bx.align.maf.Writer(open(output_filename1, "w"))
     # we want to maintain order of block file and write blocks as many times as they are listed
     failed_lines = []
     for ctr, line in enumerate(open(input_block_filename)):

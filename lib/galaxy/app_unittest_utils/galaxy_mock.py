@@ -11,6 +11,7 @@ from galaxy import (
     quota,
 )
 from galaxy.auth import AuthManager
+from galaxy.celery import set_thread_app
 from galaxy.config import CommonConfigurationMixin
 from galaxy.jobs.manager import NoopManager
 from galaxy.managers.users import UserManager
@@ -18,49 +19,61 @@ from galaxy.model import tags
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.model.unittest_utils import GalaxyDataTestApp, GalaxyDataTestConfig
+from galaxy.model.unittest_utils import (
+    GalaxyDataTestApp,
+    GalaxyDataTestConfig,
+)
 from galaxy.security import idencoding
-from galaxy.structured_app import BasicSharedApp, MinimalManagerApp, StructuredApp
+from galaxy.structured_app import (
+    BasicSharedApp,
+    MinimalManagerApp,
+    StructuredApp,
+)
 from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.web.short_term_storage import (
+    ShortTermStorageAllocator,
+    ShortTermStorageConfiguration,
+    ShortTermStorageManager,
+    ShortTermStorageMonitor,
+)
 from galaxy.web_stack import ApplicationStack
-from .celery_helper import rebind_container_to_task
 
 
 # =============================================================================
 def buildMockEnviron(**kwargs):
     environ = {
-        'CONTENT_LENGTH': '0',
-        'CONTENT_TYPE': '',
-        'HTTP_ACCEPT': '*/*',
-        'HTTP_ACCEPT_ENCODING': 'gzip, deflate',
-        'HTTP_ACCEPT_LANGUAGE': 'en-US,en;q=0.8,zh;q=0.5,ja;q=0.3',
-        'HTTP_CACHE_CONTROL': 'no-cache',
-        'HTTP_CONNECTION': 'keep-alive',
-        'HTTP_DNT': '1',
-        'HTTP_HOST': 'localhost:8000',
-        'HTTP_ORIGIN': 'http://localhost:8000',
-        'HTTP_PRAGMA': 'no-cache',
-        'HTTP_REFERER': 'http://localhost:8000',
-        'HTTP_USER_AGENT': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:43.0) Gecko/20100101 Firefox/43.0',
-        'PATH_INFO': '/',
-        'QUERY_STRING': '',
-        'REMOTE_ADDR': '127.0.0.1',
-        'REQUEST_METHOD': 'GET',
-        'SCRIPT_NAME': '',
-        'SERVER_NAME': '127.0.0.1',
-        'SERVER_PORT': '8080',
-        'SERVER_PROTOCOL': 'HTTP/1.1'
+        "CONTENT_LENGTH": "0",
+        "CONTENT_TYPE": "",
+        "HTTP_ACCEPT": "*/*",
+        "HTTP_ACCEPT_ENCODING": "gzip, deflate",
+        "HTTP_ACCEPT_LANGUAGE": "en-US,en;q=0.8,zh;q=0.5,ja;q=0.3",
+        "HTTP_CACHE_CONTROL": "no-cache",
+        "HTTP_CONNECTION": "keep-alive",
+        "HTTP_DNT": "1",
+        "HTTP_HOST": "localhost:8000",
+        "HTTP_ORIGIN": "http://localhost:8000",
+        "HTTP_PRAGMA": "no-cache",
+        "HTTP_REFERER": "http://localhost:8000",
+        "HTTP_USER_AGENT": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:43.0) Gecko/20100101 Firefox/43.0",
+        "PATH_INFO": "/",
+        "QUERY_STRING": "",
+        "REMOTE_ADDR": "127.0.0.1",
+        "REQUEST_METHOD": "GET",
+        "SCRIPT_NAME": "",
+        "SERVER_NAME": "127.0.0.1",
+        "SERVER_PORT": "8080",
+        "SERVER_PROTOCOL": "HTTP/1.1",
     }
     environ.update(**kwargs)
     return environ
 
 
 class MockApp(di.Container, GalaxyDataTestApp):
-    config: 'MockAppConfig'
+    config: "MockAppConfig"
 
     def __init__(self, config=None, **kwargs):
         super().__init__()
@@ -70,20 +83,19 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self[MinimalManagerApp] = self
         self[StructuredApp] = self
         self[idencoding.IdEncodingHelper] = self.security
-        self.name = kwargs.get('name', 'galaxy')
+        self.name = kwargs.get("name", "galaxy")
         self[SharedModelMapping] = self.model
         self[GalaxyModelMapping] = self.model
+        sts_config = ShortTermStorageConfiguration(short_term_storage_directory=os.path.join(config.data_dir, "sts"))
+        sts_manager = ShortTermStorageManager(sts_config)
+        self[ShortTermStorageAllocator] = sts_manager
+        self[ShortTermStorageMonitor] = sts_manager
         self[galaxy_scoped_session] = self.model.context
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagHandler(self.model.context)
         self[tags.GalaxyTagHandler] = self.tag_handler
         self.quota_agent = quota.DatabaseQuotaAgent(self.model)
-        self.job_config = Bunch(
-            dynamic_params=None,
-            destinations={},
-            use_messaging=False,
-            assign_handler=lambda *args, **kwargs: None
-        )
+        self.job_config = Bunch(dynamic_params=None, destinations={}, assign_handler=lambda *args, **kwargs: None)
         self.tool_data_tables = ToolDataTableManager(tool_data_path=self.config.tool_data_path)
         self.dataset_collections_service = None
         self.container_finder = NullContainerFinder()
@@ -99,10 +111,11 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self.interactivetool_manager = Bunch(create_interactivetool=lambda *args, **kwargs: None)
         self.is_job_handler = False
         self.biotools_metadata_source = None
-        rebind_container_to_task(self)
+        set_thread_app(self)
 
         def url_for(*args, **kwds):
             return "/mock/url"
+
         self.url_for = url_for
 
     def wait_for_toolbox_reload(self, toolbox):
@@ -120,19 +133,18 @@ class MockLock:
 
 
 class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
-
     class MockSchema(Bunch):
         pass
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.schema = self.MockSchema()
-        self.use_remote_user = kwargs.get('use_remote_user', False)
+        self.use_remote_user = kwargs.get("use_remote_user", False)
         self.enable_celery_tasks = False
-        self.tool_data_path = os.path.join(self.root, 'tool-data')
+        self.tool_data_path = os.path.join(self.root, "tool-data")
         self.galaxy_data_manager_data_path = self.tool_data_path
         self.tool_dependency_dir = None
-        self.metadata_strategy = 'directory'
+        self.metadata_strategy = "directory"
 
         self.user_activation_on = False
         self.new_user_dataset_access_role_default_private = False
@@ -152,8 +164,8 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.redact_email_in_job_name = False
 
         # Follow two required by GenomeBuilds
-        self.len_file_path = os.path.join('tool-data', 'shared', 'ucsc', 'chrom')
-        self.builds_file_path = os.path.join('tool-data', 'shared', 'ucsc', 'builds.txt.sample')
+        self.len_file_path = os.path.join("tool-data", "shared", "ucsc", "chrom")
+        self.builds_file_path = os.path.join("tool-data", "shared", "ucsc", "builds.txt.sample")
 
         self.shed_tool_config_file = "config/shed_tool_conf.xml"
         self.shed_tool_config_file_set = False
@@ -165,7 +177,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
 
         # set by MockDir
         self.enable_tool_document_cache = False
-        self.tool_cache_data_dir = os.path.join(self.root, 'tool_cache')
+        self.tool_cache_data_dir = os.path.join(self.root, "tool_cache")
         self.delay_tool_initialization = True
         self.external_chown_script = None
         self.check_job_script_integrity = False
@@ -173,9 +185,9 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.check_job_script_integrity_sleep = 0
 
         self.default_panel_view = "default"
-        self.panel_views_dir = ''
+        self.panel_views_dir = ""
         self.panel_views = {}
-        self.edam_panel_views = ''
+        self.edam_panel_views = ""
 
         self.config_file = None
 
@@ -189,7 +201,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.enable_tool_shed_check = False
         self.monitor_thread_join_timeout = 1
         self.integrated_tool_panel_config = None
-        self.vault_config_file = kwargs.get('vault_config_file')
+        self.vault_config_file = kwargs.get("vault_config_file")
         self.max_discovered_files = 10000
 
     @property
@@ -198,23 +210,21 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
 
     def __getattr__(self, name):
         # Handle the automatic [option]_set options: for tests, assume none are set
-        if name == 'is_set':
+        if name == "is_set":
             return lambda x: False
         # Handle the automatic config file _set options
-        if name.endswith('_file_set'):
+        if name.endswith("_file_set"):
             return False
         raise AttributeError(name)
 
 
 class MockWebapp:
-
     def __init__(self, security: idencoding.IdEncodingHelper, **kwargs):
-        self.name = kwargs.get('name', 'galaxy')
+        self.name = kwargs.get("name", "galaxy")
         self.security = security
 
 
 class MockTrans:
-
     def __init__(self, app=None, user=None, history=None, **kwargs):
         self.app = app or MockApp(**kwargs)
         self.model = self.app.model
@@ -273,14 +283,13 @@ class MockTrans:
 
 
 class MockVisualizationsRegistry:
-    BUILT_IN_VISUALIZATIONS = ['trackster']
+    BUILT_IN_VISUALIZATIONS = ["trackster"]
 
     def get_visualizations(self, trans, target):
         return []
 
 
 class MockDir:
-
     def __init__(self, structure_dict, where=None):
         self.structure_dict = structure_dict
         self.create_root(structure_dict, where)
@@ -301,7 +310,7 @@ class MockDir:
                 self.create_structure(subdir_path, v)
 
     def create_file(self, path, contents):
-        with open(path, 'w') as newfile:
+        with open(path, "w") as newfile:
             newfile.write(contents)
 
     def remove(self):

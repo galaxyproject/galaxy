@@ -10,32 +10,34 @@ SCHEMA_MODELS_PACKAGE_BASE = "galaxy.schema."
 def fullname(o):
     klass = o.__class__
     module = klass.__module__
-    if module == 'builtins':
+    if module == "builtins":
         return klass.__qualname__  # avoid outputs like 'builtins.str'
-    return module + '.' + klass.__qualname__
+    return module + "." + klass.__qualname__
 
 
 class SchemaEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, BaseModel):
             return {
-                '__type__': '__pydantic_object__',
-                '__class__': fullname(obj),
-                '__object__': obj.dict(),
+                "__type__": "__pydantic_object__",
+                "__class__": fullname(obj),
+                "__object__": obj.dict(),
             }
         else:
             return json.JSONEncoder.default(self, obj)
 
 
 def schema_decoder(obj):
-    if '__type__' in obj:
-        if obj['__type__'] == '__pydantic_object__':
-            clazz_str = obj['__class__']
-            assert clazz_str.startswith(SCHEMA_MODELS_PACKAGE_BASE) and ".." not in clazz_str, f"Invalid class str {clazz_str}"
-            module_name, class_name = clazz_str.rsplit('.', 1)
+    if "__type__" in obj:
+        if obj["__type__"] == "__pydantic_object__":
+            clazz_str = obj["__class__"]
+            assert (
+                clazz_str.startswith(SCHEMA_MODELS_PACKAGE_BASE) and ".." not in clazz_str
+            ), f"Invalid class str {clazz_str}"
+            module_name, class_name = clazz_str.rsplit(".", 1)
             module = import_module(module_name)
-            clazz = getattr(module, class_name, None)
-            obj = clazz(**obj['__object__'])
+            clazz = getattr(module, class_name)
+            obj = clazz(**obj["__object__"])
             return obj
 
     return obj

@@ -26,8 +26,6 @@ define({
 
     "Saved Visualizations": "Visualizaciones Guardadas",
 
-    "Interactive Environments": "Entornos Interactivos",
-
     Admin: "Administración",
 
     Help: "Ayuda",
@@ -40,7 +38,7 @@ define({
 
     Videos: "Videos",
 
-    Wiki: "Wiki",
+    "Community Hub": "Centro Comunitario",
 
     "How to Cite Galaxy": "Cómo citar Galaxy",
 

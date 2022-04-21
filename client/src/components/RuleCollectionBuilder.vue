@@ -339,7 +339,8 @@
                                 <saved-rules-selector
                                     ref="savedRulesSelector"
                                     @update-rules="restoreRules"
-                                    :saved-rules="this.savedRules" />
+                                    :saved-rules="this.savedRules"
+                                    :ruleColHeaders="colHeadersPerRule" />
                             </span>
                             <div v-if="jaggedData" class="rule-warning">
                                 Rows contain differing numbers of columns, there was likely a problem parsing your data.
@@ -1252,7 +1253,7 @@ export default {
                 } else {
                     const Galaxy = getGalaxyInstance();
                     const history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
-                    history.refresh();
+                    history.refresh && history.refresh();
                     this.oncreate();
                 }
             };

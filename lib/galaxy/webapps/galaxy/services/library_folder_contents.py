@@ -2,7 +2,7 @@ import logging
 
 from galaxy import (
     exceptions,
-    util
+    util,
 )
 from galaxy.managers import base as managers_base
 from galaxy.managers.folders import FolderManager
@@ -33,7 +33,9 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         """
         Convenience method to get a model object with the specified checks.
         """
-        return managers_base.get_object(trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
+        return managers_base.get_object(
+            trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted
+        )
 
     def index(self, trans, folder_id, limit=None, offset=None, search_text=None, include_deleted=False):
         """
@@ -74,14 +76,18 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             pass
         else:
             if trans.user:
-                log.warning(f"SECURITY: User (id: {trans.user.id}) without proper access rights is trying to load folder with ID of {decoded_folder_id}")
+                log.warning(
+                    f"SECURITY: User (id: {trans.user.id}) without proper access rights is trying to load folder with ID of {decoded_folder_id}"
+                )
             else:
-                log.warning(f"SECURITY: Anonymous user is trying to load restricted folder with ID of {decoded_folder_id}")
-            raise exceptions.ObjectNotFound(f'Folder with the id provided ( {folder_id} ) was not found')
+                log.warning(
+                    f"SECURITY: Anonymous user is trying to load restricted folder with ID of {decoded_folder_id}"
+                )
+            raise exceptions.ObjectNotFound(f"Folder with the id provided ( {folder_id} ) was not found")
 
         folder_contents = []
-        update_time = ''
-        create_time = ''
+        update_time = ""
+        create_time = ""
 
         folders, datasets = self._apply_preferences(folder, include_deleted, search_text)
 
@@ -92,9 +98,13 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             create_time = content_item.create_time.strftime(TIME_FORMAT)
 
             if content_item.api_type == FOLDER_TYPE_NAME:
-                encoded_id = f'F{encoded_id}'
-                can_modify = is_admin or (trans.user and trans.app.security_agent.can_modify_library_item(current_user_roles, folder))
-                can_manage = is_admin or (trans.user and trans.app.security_agent.can_manage_library_item(current_user_roles, folder))
+                encoded_id = f"F{encoded_id}"
+                can_modify = is_admin or (
+                    trans.user and trans.app.security_agent.can_modify_library_item(current_user_roles, folder)
+                )
+                can_manage = is_admin or (
+                    trans.user and trans.app.security_agent.can_manage_library_item(current_user_roles, folder)
+                )
                 update_time = content_item.update_time.strftime(TIME_FORMAT)
                 return_item.update(dict(can_modify=can_modify, can_manage=can_manage))
                 if content_item.description:
@@ -106,10 +116,19 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                 #  Access rights are checked on the dataset level, not on the ld or ldda level to maintain consistency
                 dataset = content_item.library_dataset_dataset_association.dataset
                 is_unrestricted = trans.app.security_agent.dataset_is_public(dataset)
-                is_private = not is_unrestricted and trans.user and trans.app.security_agent.dataset_is_private_to_user(trans, dataset)
+                is_private = (
+                    not is_unrestricted
+                    and trans.user
+                    and trans.app.security_agent.dataset_is_private_to_user(trans, dataset)
+                )
 
                 # Can user manage the permissions on the dataset?
-                can_manage = is_admin or (trans.user and trans.app.security_agent.can_manage_dataset(current_user_roles, content_item.library_dataset_dataset_association.dataset))
+                can_manage = is_admin or (
+                    trans.user
+                    and trans.app.security_agent.can_manage_dataset(
+                        current_user_roles, content_item.library_dataset_dataset_association.dataset
+                    )
+                )
                 raw_size = int(content_item.library_dataset_dataset_association.get_size())
                 nice_size = util.nice_size(raw_size)
                 update_time = content_item.library_dataset_dataset_association.update_time.strftime(TIME_FORMAT)
@@ -120,17 +139,21 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                 tag_manager = tags.GalaxyTagHandler(trans.sa_session)
                 ldda_tags = tag_manager.get_tags_str(content_item.library_dataset_dataset_association.tags)
 
-                return_item.update(dict(file_ext=library_dataset_dict['file_ext'],
-                                        date_uploaded=library_dataset_dict['date_uploaded'],
-                                        update_time=update_time,
-                                        is_unrestricted=is_unrestricted,
-                                        is_private=is_private,
-                                        can_manage=can_manage,
-                                        state=library_dataset_dict['state'],
-                                        file_size=nice_size,
-                                        raw_size=raw_size,
-                                        ldda_id=encoded_ldda_id,
-                                        tags=ldda_tags))
+                return_item.update(
+                    dict(
+                        file_ext=library_dataset_dict["file_ext"],
+                        date_uploaded=library_dataset_dict["date_uploaded"],
+                        update_time=update_time,
+                        is_unrestricted=is_unrestricted,
+                        is_private=is_private,
+                        can_manage=can_manage,
+                        state=library_dataset_dict["state"],
+                        file_size=nice_size,
+                        raw_size=raw_size,
+                        ldda_id=encoded_ldda_id,
+                        tags=ldda_tags,
+                    )
+                )
                 if content_item.library_dataset_dataset_association.message:
                     return_item.update(dict(message=content_item.library_dataset_dataset_association.message))
                 elif content_item.library_dataset_dataset_association.info:
@@ -138,20 +161,28 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                     return_item.update(dict(message=content_item.library_dataset_dataset_association.info))
 
             # For every item include the default metadata
-            return_item.update(dict(id=encoded_id,
-                                    type=content_item.api_type,
-                                    name=content_item.name,
-                                    update_time=update_time,
-                                    create_time=create_time,
-                                    deleted=content_item.deleted))
+            return_item.update(
+                dict(
+                    id=encoded_id,
+                    type=content_item.api_type,
+                    name=content_item.name,
+                    update_time=update_time,
+                    create_time=create_time,
+                    deleted=content_item.deleted,
+                )
+            )
             folder_contents.append(return_item)
 
         # Return the reversed path so it starts with the library node.
         full_path = self._build_path(trans, folder)[::-1]
 
-        user_can_add_library_item = is_admin or trans.app.security_agent.can_add_library_item(current_user_roles, folder)
+        user_can_add_library_item = is_admin or trans.app.security_agent.can_add_library_item(
+            current_user_roles, folder
+        )
 
-        user_can_modify_folder = is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, folder)
+        user_can_modify_folder = is_admin or trans.app.security_agent.can_modify_library_item(
+            current_user_roles, folder
+        )
 
         parent_library_id = None
         if folder.parent_library is not None:
@@ -159,13 +190,15 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
 
         total_rows = len(folders) + len(datasets)
 
-        metadata = dict(full_path=full_path,
-                        total_rows=total_rows,
-                        can_add_library_item=user_can_add_library_item,
-                        can_modify_folder=user_can_modify_folder,
-                        folder_name=folder.name,
-                        folder_description=folder.description,
-                        parent_library_id=parent_library_id)
+        metadata = dict(
+            full_path=full_path,
+            total_rows=total_rows,
+            can_add_library_item=user_can_add_library_item,
+            can_modify_folder=user_can_modify_folder,
+            folder_name=folder.name,
+            folder_description=folder.description,
+            parent_library_id=parent_library_id,
+        )
         folder_container = dict(metadata=metadata, folder_contents=folder_contents)
         return folder_container
 
@@ -197,21 +230,28 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         if trans.user_is_bootstrap_admin:
             raise exceptions.RealUserRequiredException("Only real users can create a new library file.")
         encoded_folder_id_16 = self.__decode_library_content_id(trans, encoded_folder_id)
-        from_hda_id = payload.pop('from_hda_id', None)
-        from_hdca_id = payload.pop('from_hdca_id', None)
-        ldda_message = payload.pop('ldda_message', '')
+        from_hda_id = payload.pop("from_hda_id", None)
+        from_hdca_id = payload.pop("from_hdca_id", None)
+        ldda_message = payload.pop("ldda_message", "")
         try:
             if from_hda_id:
                 decoded_hda_id = self.decode_id(from_hda_id)
-                return self._copy_hda_to_library_folder(trans, self.hda_manager, decoded_hda_id, encoded_folder_id_16, ldda_message)
+                return self._copy_hda_to_library_folder(
+                    trans, self.hda_manager, decoded_hda_id, encoded_folder_id_16, ldda_message
+                )
             if from_hdca_id:
                 decoded_hdca_id = self.decode_id(from_hdca_id)
-                return self._copy_hdca_to_library_folder(trans, self.hda_manager, decoded_hdca_id, encoded_folder_id_16, ldda_message)
+                return self._copy_hdca_to_library_folder(
+                    trans, self.hda_manager, decoded_hdca_id, encoded_folder_id_16, ldda_message
+                )
         except Exception as exc:
             # TODO handle exceptions better within the mixins
             exc_message = util.unicodify(exc)
-            if 'not accessible to the current user' in exc_message or 'You are not allowed to access this dataset' in exc_message:
-                raise exceptions.ItemAccessibilityException('You do not have access to the requested item')
+            if (
+                "not accessible to the current user" in exc_message
+                or "You are not allowed to access this dataset" in exc_message
+            ):
+                raise exceptions.ItemAccessibilityException("You do not have access to the requested item")
             else:
                 log.exception(exc)
                 raise exc
@@ -228,10 +268,12 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
 
         :raises:    MalformedId
         """
-        if ((len(encoded_folder_id) % 16 == 1) and encoded_folder_id.startswith('F')):
+        if (len(encoded_folder_id) % 16 == 1) and encoded_folder_id.startswith("F"):
             return encoded_folder_id[1:]
         else:
-            raise exceptions.MalformedId(f'Malformed folder id ( {str(encoded_folder_id)} ) specified, unable to decode.')
+            raise exceptions.MalformedId(
+                f"Malformed folder id ( {str(encoded_folder_id)} ) specified, unable to decode."
+            )
 
     def _build_path(self, trans, folder):
         """
@@ -247,7 +289,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         path_to_root = []
         # We are almost in root
         encoded_id = trans.security.encode_id(folder.id)
-        path_to_root.append((f'F{encoded_id}', folder.name))
+        path_to_root.append((f"F{encoded_id}", folder.name))
         if folder.parent_id is not None:
             # We add the current folder and traverse up one folder.
             upper_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(folder.parent_id)
@@ -280,7 +322,11 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         current_folders = self._calculate_pagination(folders, offset, limit)
 
         for subfolder in current_folders:
-            if not subfolder.deleted or is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, subfolder):
+            if (
+                not subfolder.deleted
+                or is_admin
+                or trans.app.security_agent.can_modify_library_item(current_user_roles, subfolder)
+            ):
                 # Undeleted folders are non-restricted for now.
                 # Admins or users with MODIFY permissions can see deleted folders.
                 subfolder.api_type = FOLDER_TYPE_NAME
@@ -299,7 +345,9 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                     dataset.api_type = FILE_TYPE_NAME
                     content_items.append(dataset)
             else:
-                if is_admin or trans.app.security_agent.can_access_dataset(current_user_roles, dataset.library_dataset_dataset_association.dataset):
+                if is_admin or trans.app.security_agent.can_access_dataset(
+                    current_user_roles, dataset.library_dataset_dataset_association.dataset
+                ):
                     # Admins or users with ACCESS permissions can see datasets.
                     dataset.api_type = FILE_TYPE_NAME
                     content_items.append(dataset)
@@ -308,13 +356,12 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
 
     def _calculate_pagination(self, items, offset: int, limit: int):
         if limit > 0:
-            paginated_items = items[offset:offset + limit]
+            paginated_items = items[offset : offset + limit]
         else:
             paginated_items = items[offset:]
         return paginated_items
 
     def _apply_preferences(self, folder, include_deleted: bool, search_text: str):
-
         def check_deleted(array, include_deleted):
             if include_deleted:
                 result_array = array
@@ -328,7 +375,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             elif dataset.library_dataset_dataset_association.info:
                 description = dataset.library_dataset_dataset_association.info
             else:
-                description = ''
+                description = ""
 
             return search_text in dataset.name or search_text in description
 

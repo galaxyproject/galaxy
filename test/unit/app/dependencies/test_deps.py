@@ -5,7 +5,6 @@ from tempfile import mkdtemp
 
 from galaxy.dependencies import ConditionalDependencies
 
-
 AZURE_BLOB_TEST_CONFIG = """<object_store type="azure_blob">
     blah...
 </object_store>
@@ -98,7 +97,7 @@ def test_yaml_jobconf_runners():
             "job_config_file": job_conf_file,
         }
         cds = cc.get_cond_deps(config=config)
-        assert 'job_runner_A' in cds.job_runners
+        assert "job_runner_A" in cds.job_runners
 
 
 def test_vault_custos_configured():
@@ -133,7 +132,6 @@ def _config_context():
 
 
 class ConfigContext:
-
     def __init__(self, directory):
         self.tempdir = directory
 

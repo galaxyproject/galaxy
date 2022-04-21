@@ -6,14 +6,14 @@ from pathlib import PurePath
 
 try:
     from pykube.config import KubeConfig
+    from pykube.exceptions import HTTPError
     from pykube.http import HTTPClient
     from pykube.objects import (
+        Ingress,
         Job,
         Pod,
         Service,
-        Ingress,
     )
-    from pykube.exceptions import HTTPError
 except ImportError as exc:
     KubeConfig = None
     Ingress = None
@@ -21,9 +21,11 @@ except ImportError as exc:
     Pod = None
     Service = None
     HTTPError = None
-    K8S_IMPORT_MESSAGE = ('The Python pykube package is required to use '
-                          'this feature, please install it or correct the '
-                          'following error:\nImportError %s' % str(exc))
+    K8S_IMPORT_MESSAGE = (
+        "The Python pykube package is required to use "
+        "this feature, please install it or correct the "
+        "following error:\nImportError %s" % str(exc)
+    )
 
 log = logging.getLogger(__name__)
 
@@ -31,9 +33,11 @@ DEFAULT_JOB_API_VERSION = "batch/v1"
 DEFAULT_SERVICE_API_VERSION = "v1"
 DEFAULT_INGRESS_API_VERSION = "extensions/v1beta1"
 DEFAULT_NAMESPACE = "default"
-INSTANCE_ID_INVALID_MESSAGE = ("Galaxy instance [%s] is either too long "
-                               "(>20 characters) or it includes non DNS "
-                               "acceptable characters, ignoring it.")
+INSTANCE_ID_INVALID_MESSAGE = (
+    "Galaxy instance [%s] is either too long "
+    "(>20 characters) or it includes non DNS "
+    "acceptable characters, ignoring it."
+)
 
 
 def ensure_pykube():
@@ -47,23 +51,23 @@ def pykube_client_from_dict(params):
     else:
         config_path = params.get("k8s_config_path")
         if config_path is None:
-            config_path = os.environ.get('KUBECONFIG', None)
+            config_path = os.environ.get("KUBECONFIG", None)
         if config_path is None:
-            config_path = '~/.kube/config'
+            config_path = "~/.kube/config"
         pykube_client = HTTPClient(KubeConfig.from_file(config_path))
     return pykube_client
 
 
 def produce_k8s_job_prefix(app_prefix=None, instance_id=None):
     job_name_elems = [app_prefix or "", instance_id or ""]
-    return '-'.join(elem for elem in job_name_elems if elem)
+    return "-".join(elem for elem in job_name_elems if elem)
 
 
 def pull_policy(params):
     # If this doesn't validate it returns None, that seems odd?
     if "k8s_pull_policy" in params:
-        if params['k8s_pull_policy'] in ["Always", "IfNotPresent", "Never"]:
-            return params['k8s_pull_policy']
+        if params["k8s_pull_policy"] in ["Always", "IfNotPresent", "Never"]:
+            return params["k8s_pull_policy"]
     return None
 
 
@@ -90,27 +94,22 @@ def find_pod_object_by_name(pykube_api, job_name, namespace=None):
 
 
 def is_pod_unschedulable(pykube_api, pod, namespace=None):
-    is_unschedulable = any(c.get("reason") == "Unschedulable" for c in pod.obj['status'].get('conditions', []))
-    if pod.obj['status'].get('phase') == "Pending" and is_unschedulable:
+    is_unschedulable = any(c.get("reason") == "Unschedulable" for c in pod.obj["status"].get("conditions", []))
+    if pod.obj["status"].get("phase") == "Pending" and is_unschedulable:
         return True
 
     return False
 
 
 def delete_job(job, cleanup="always"):
-    job_failed = (job.obj['status']['failed'] > 0
-                  if 'failed' in job.obj['status'] else False)
+    job_failed = job.obj["status"]["failed"] > 0 if "failed" in job.obj["status"] else False
     # Scale down the job just in case even if cleanup is never
     job.scale(replicas=0)
     api_delete = cleanup == "always"
     if not api_delete and cleanup == "onsuccess" and not job_failed:
         api_delete = True
     if api_delete:
-        delete_options = {
-            "apiVersion": "v1",
-            "kind": "DeleteOptions",
-            "propagationPolicy": "Background"
-        }
+        delete_options = {"apiVersion": "v1", "kind": "DeleteOptions", "propagationPolicy": "Background"}
         r = job.api.delete(json=delete_options, **job.api_kwargs())
         job.api.raise_for_status(r)
 
@@ -120,11 +119,7 @@ def delete_ingress(ingress, cleanup="always", job_failed=False):
     if not api_delete and cleanup == "onsuccess" and not job_failed:
         api_delete = True
     if api_delete:
-        delete_options = {
-            "apiVersion": "v1",
-            "kind": "DeleteOptions",
-            "propagationPolicy": "Background"
-        }
+        delete_options = {"apiVersion": "v1", "kind": "DeleteOptions", "propagationPolicy": "Background"}
         r = ingress.api.delete(json=delete_options, **ingress.api_kwargs())
         ingress.api.raise_for_status(r)
 
@@ -134,22 +129,18 @@ def delete_service(service, cleanup="always", job_failed=False):
     if not api_delete and cleanup == "onsuccess" and not job_failed:
         api_delete = True
     if api_delete:
-        delete_options = {
-            "apiVersion": "v1",
-            "kind": "DeleteOptions",
-            "propagationPolicy": "Background"
-        }
+        delete_options = {"apiVersion": "v1", "kind": "DeleteOptions", "propagationPolicy": "Background"}
         r = service.api.delete(json=delete_options, **service.api_kwargs())
         service.api.raise_for_status(r)
 
 
 def job_object_dict(params, job_prefix, spec):
     k8s_job_obj = {
-        "apiVersion": params.get('k8s_job_api_version', DEFAULT_JOB_API_VERSION),
+        "apiVersion": params.get("k8s_job_api_version", DEFAULT_JOB_API_VERSION),
         "kind": "Job",
         "metadata": {
-                "generateName": f"{job_prefix}-",
-                "namespace": params.get('k8s_namespace', DEFAULT_NAMESPACE),
+            "generateName": f"{job_prefix}-",
+            "namespace": params.get("k8s_namespace", DEFAULT_NAMESPACE),
         },
         "spec": spec,
     }
@@ -158,11 +149,11 @@ def job_object_dict(params, job_prefix, spec):
 
 def service_object_dict(params, service_name, spec):
     k8s_service_obj = {
-        "apiVersion": params.get('k8s_service_api_version', DEFAULT_SERVICE_API_VERSION),
+        "apiVersion": params.get("k8s_service_api_version", DEFAULT_SERVICE_API_VERSION),
         "kind": "Service",
         "metadata": {
-                "name": service_name,
-                "namespace": params.get('k8s_namespace', DEFAULT_NAMESPACE),
+            "name": service_name,
+            "namespace": params.get("k8s_namespace", DEFAULT_NAMESPACE),
         },
     }
     k8s_service_obj["metadata"].update(spec.pop("metadata", {}))
@@ -172,11 +163,11 @@ def service_object_dict(params, service_name, spec):
 
 def ingress_object_dict(params, ingress_name, spec):
     k8s_ingress_obj = {
-        "apiVersion": params.get('k8s_ingress_api_version', DEFAULT_INGRESS_API_VERSION),
+        "apiVersion": params.get("k8s_ingress_api_version", DEFAULT_INGRESS_API_VERSION),
         "kind": "Ingress",
         "metadata": {
-                "name": ingress_name,
-                "namespace": params.get('k8s_namespace', DEFAULT_NAMESPACE),
+            "name": ingress_name,
+            "namespace": params.get("k8s_namespace", DEFAULT_NAMESPACE),
             # TODO: Add default annotations
         },
     }
@@ -201,10 +192,10 @@ def parse_pvc_param_line(pvc_param):
     read_only = mode == "r"
     claim_name, _, subpath = claim.partition("/")
     return {
-        'name': claim_name.strip(),
-        'subPath': subpath.strip(),
-        'mountPath': mount_path.strip(),
-        'readOnly': read_only
+        "name": claim_name.strip(),
+        "subPath": subpath.strip(),
+        "mountPath": mount_path.strip(),
+        "readOnly": read_only,
     }
 
 
@@ -244,8 +235,8 @@ def generate_relative_mounts(pvc_param, files):
     if not pvc_param:
         return
     param_claim = parse_pvc_param_line(pvc_param)
-    claim_name = param_claim['name']
-    base_subpath = PurePath(param_claim.get('subPath', ""))
+    claim_name = param_claim["name"]
+    base_subpath = PurePath(param_claim.get("subPath", ""))
     base_mount = PurePath(param_claim["mountPath"])
     read_only = param_claim["readOnly"]
     volume_mounts = []
@@ -257,14 +248,15 @@ def generate_relative_mounts(pvc_param, files):
         relpath = file_path.relative_to(base_mount)
         subpath = base_subpath.joinpath(relpath)
         volume_mounts.append(
-            {'name': claim_name, 'mountPath': str(file_path), 'subPath': str(subpath), 'readOnly': read_only})
+            {"name": claim_name, "mountPath": str(file_path), "subPath": str(subpath), "readOnly": read_only}
+        )
     return volume_mounts
 
 
 def deduplicate_entries(obj_list):
     # remove duplicate entries in a list of dictionaries
     # based on: https://stackoverflow.com/a/9428041
-    return [i for n, i in enumerate(obj_list) if i not in obj_list[n + 1:]]
+    return [i for n, i in enumerate(obj_list) if i not in obj_list[n + 1 :]]
 
 
 def get_volume_mounts_for_job(job_wrapper, data_claim=None, working_claim=None):
@@ -273,7 +265,8 @@ def get_volume_mounts_for_job(job_wrapper, data_claim=None, working_claim=None):
         volume_mounts.extend(generate_relative_mounts(data_claim, job_wrapper.job_io.get_input_fnames()))
         # for individual output files, mount the parent folder of each output as there could be wildcard outputs
         output_folders = deduplicate_entries(
-            [str(PurePath(str(f)).parent) for f in job_wrapper.job_io.get_output_fnames()])
+            [str(PurePath(str(f)).parent) for f in job_wrapper.job_io.get_output_fnames()]
+        )
         volume_mounts.extend(generate_relative_mounts(data_claim, output_folders))
 
     if working_claim:
@@ -295,7 +288,7 @@ def galaxy_instance_id(params):
     setup of a Job that is being recovered or restarted after a downtime/reboot.
     """
     if "k8s_galaxy_instance_id" in params:
-        raw_value = params['k8s_galaxy_instance_id']
+        raw_value = params["k8s_galaxy_instance_id"]
         if re.match(r"(?!-)[a-z\d-]{1,20}(?<!-)$", raw_value):
             return raw_value
         else:
@@ -329,5 +322,5 @@ __all__ = (
     "delete_service",
     "delete_ingress",
     "get_volume_mounts_for_job",
-    "parse_pvc_param_line"
+    "parse_pvc_param_line",
 )

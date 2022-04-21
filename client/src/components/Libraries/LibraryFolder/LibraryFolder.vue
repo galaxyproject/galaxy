@@ -277,7 +277,7 @@ import UtcDate from "components/UtcDate";
 import BootstrapVue from "bootstrap-vue";
 import { Services } from "./services";
 import Utils from "utils/utils";
-import linkify from "linkifyjs/html";
+import linkifyHtml from "linkify-html";
 import { fields } from "./table-fields";
 import { Toast } from "ui/toast";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
@@ -507,7 +507,7 @@ export default {
             this.isBusy = value;
         },
         linkify(raw_text) {
-            return linkify(raw_text);
+            return linkifyHtml(raw_text);
         },
         toggleEditMode(item) {
             item.editMode = !item.editMode;

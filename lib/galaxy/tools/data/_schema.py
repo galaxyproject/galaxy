@@ -35,17 +35,12 @@ class ToolDataDetails(ToolDataEntry):
         ...,  # Mark this field as required
         title="Columns",
         description="A list of column names",
-        example=[
-            "value",
-            "dbkey",
-            "name",
-            "path"
-        ],
+        example=["value", "dbkey", "name", "path"],
     )
     # We must use an alias since the name 'fields'
     # shadows a BaseModel attribute
     fields_value: List[List[str]] = Field(
-        alias='fields',
+        alias="fields",
         default=[],
         title="Fields",
         description="",  # TODO add documentation
@@ -68,7 +63,7 @@ class ToolDataField(BaseModel):
     # shadows a BaseModel attribute
     fields_value: Dict[str, str] = Field(
         ...,  # Mark this field as required
-        alias='fields',
+        alias="fields",
         title="Fields",
         description="",  # TODO add documentation
     )
@@ -95,7 +90,9 @@ class ToolDataItem(BaseModel):
     values: str = Field(
         ...,  # Mark this field as required
         title="Values",
-        description=("A `\\t` (TAB) separated list of column __contents__."
-        " You must specify a value for each of the columns of the data table."),
+        description=(
+            "A `\\t` (TAB) separated list of column __contents__."
+            " You must specify a value for each of the columns of the data table."
+        ),
         example="value\tdbkey\tname\tpath",
     )

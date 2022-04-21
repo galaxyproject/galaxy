@@ -12,7 +12,6 @@ define({
     Visualization: "可視化",
     "New Track Browser": "新しい Track Browser",
     "Saved Visualizations": "保存された可視化",
-    "Interactive Environments": "インタラクティブ環境",
     Admin: "管理者",
     Help: "ヘルプ",
     Support: "サポート",
@@ -21,8 +20,7 @@ define({
     Search: "検索",
     "Mailing Lists": "メーリングリスト",
     Videos: "動画",
-    //"Wiki":
-    //    "ドキュメント",
+    "Community Hub": "コミュニティハブ",
     "How to Cite Galaxy": "Galaxy を引用する方法",
     "Interactive Tours": "インタラクティブツアー",
     User: "ユーザー",

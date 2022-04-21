@@ -3,13 +3,17 @@
 import os
 import string
 
-from ._base import BaseObjectStoreIntegrationTestCase, files_count
+from ._base import (
+    BaseObjectStoreIntegrationTestCase,
+    files_count,
+)
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "selection_job_conf.xml")
 JOB_RESOURCE_PARAMETERS_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "selection_job_resource_parameters_conf.xml")
 
-DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0"?>
+DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
+    """<?xml version="1.0"?>
 <object_store type="distributed" id="primary" order="0">
     <backends>
         <backend id="default" type="disk" weight="1" name="Default Store">
@@ -35,7 +39,8 @@ DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0
         </backend>
     </backends>
 </object_store>
-""")
+"""
+)
 
 
 class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase):

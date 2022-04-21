@@ -15,6 +15,9 @@ cp '$input' '$output'
         <test>
             <param name="input" value="simple_line.txt" />
             <output name="out_file1" checksum="sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041" />
+            <assert_command>
+                <not_has_text text="VERSION"/>
+            </assert_command>
         </test>
     </tests>
 </tool>

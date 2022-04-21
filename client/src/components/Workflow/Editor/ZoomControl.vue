@@ -33,7 +33,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { zoomLevels } from "./modules/canvas";
+import { zoomLevels, defaultZoomLevel } from "./modules/canvas";
 
 Vue.use(BootstrapVue);
 
@@ -46,7 +46,7 @@ export default {
     },
     data() {
         return {
-            zoomDefault: this.zoomLevel,
+            zoomDefault: defaultZoomLevel,
         };
     },
     computed: {

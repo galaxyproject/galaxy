@@ -4,30 +4,28 @@ import re
 from galaxy import util
 from . import InstrumentPlugin
 from .. import formatting
-
+from ..safety import Safety
 
 MEMINFO_LINE = re.compile(r"(\w+)\s*\:\s*(\d+) kB")
 
 # Important (non-verbose) meminfo property titles.
-MEMINFO_TITLES = {
-    "memtotal": "Total System Memory",
-    "swaptotal": "Total System Swap"
-}
+MEMINFO_TITLES = {"memtotal": "Total System Memory", "swaptotal": "Total System Swap"}
 
 
 class MemInfoFormatter(formatting.JobMetricFormatter):
-
     def format(self, key, value):
         title = MEMINFO_TITLES.get(key, key)
         return title, util.nice_size(value * 1000)  # kB = *1000, KB = *1024 - wikipedia
 
 
 class MemInfoPlugin(InstrumentPlugin):
-    """ Gather information about processor configuration from /proc/cpuinfo.
+    """Gather information about processor configuration from /proc/cpuinfo.
     Linux only.
     """
+
     plugin_type = "meminfo"
     formatter = MemInfoFormatter()
+    default_safety = Safety.SAFE
 
     def __init__(self, **kwargs):
         self.verbose = util.asbool(kwargs.get("verbose", False))
@@ -58,4 +56,4 @@ class MemInfoPlugin(InstrumentPlugin):
         return self._instrument_file_path(job_directory, "meminfo")
 
 
-__all__ = ('MemInfoPlugin', )
+__all__ = ("MemInfoPlugin",)

@@ -7,7 +7,7 @@ from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
 class S3FilesSource(PyFilesystem2FilesSource):
-    plugin_type = 's3'
+    plugin_type = "s3"
     required_module = S3FS
     required_package = "fs-s3fs"
 
@@ -17,4 +17,4 @@ class S3FilesSource(PyFilesystem2FilesSource):
         return handle
 
 
-__all__ = ('S3FilesSource',)
+__all__ = ("S3FilesSource",)

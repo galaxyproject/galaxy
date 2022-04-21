@@ -1,21 +1,24 @@
 <template>
     <div class="unified-panel">
-        <div class="unified-panel-header" unselectable="on">
+        <div unselectable="on">
             <div class="unified-panel-header-inner">
-                <div class="panel-header-buttons">
-                    <panel-view-button
-                        :panel-views="panelViews"
-                        :current-panel-view="currentPanelView"
-                        @updatePanelView="updatePanelView"
-                        v-if="panelViews && Object.keys(panelViews).length > 1" />
-                </div>
-                <div class="panel-header-text">Tools</div>
+                <nav class="d-flex justify-content-between mx-3 my-2">
+                    <h4 class="m-1" v-localize>Tools</h4>
+                    <div class="panel-header-buttons">
+                        <panel-view-button
+                            v-if="panelViews && Object.keys(panelViews).length > 1"
+                            :panel-views="panelViews"
+                            :current-panel-view="currentPanelView"
+                            @updatePanelView="updatePanelView" />
+                    </div>
+                </nav>
             </div>
         </div>
         <div class="unified-panel-controls">
             <tool-search
                 :current-panel-view="currentPanelView"
                 placeholder="search tools"
+                :query="query"
                 @onQuery="onQuery"
                 @onResults="onResults" />
         </div>

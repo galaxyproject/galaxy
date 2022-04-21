@@ -2,7 +2,7 @@ from selenium.webdriver.common.keys import Keys
 
 from .framework import (
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
 
 
@@ -58,12 +58,11 @@ class CollectionEditTestCase(SeleniumTestCase):
         depending on how fast the upload goes compared to the history polling updates, it might just
         skip to the end for a really fast upload
         """
-
         for hid in hids:
-            timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
-            row_selector = self.content_item_by_attributes(hid=hid, state="ok")
-            row = self.wait_for_present(row_selector, timeout=timeout)
-            row.send_keys(" ")
+            self.history_panel_wait_for_hid_ok(hid)
+        self.history_panel_multi_operations_show()
+        for hid in hids:
+            self.history_panel_muli_operation_select_hid(hid)
 
     def _collection_dropdown(self, option_description):
         return self.use_bootstrap_dropdown(option=option_description, menu="selected content menu")

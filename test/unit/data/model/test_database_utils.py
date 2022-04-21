@@ -72,4 +72,4 @@ def test_create_exists_mysql_database(database_name, mysql_url):
 
 def make_sqlite_url(tmp_dir, database_name):
     path = os.path.join(tmp_dir, database_name)
-    return f'sqlite:///{path}'
+    return f"sqlite:///{path}"

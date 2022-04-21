@@ -38,23 +38,28 @@ from urllib.parse import (
 )
 
 import requests
+from boltons.iterutils import (
+    default_enter,
+    remap,
+)
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
 try:
     import grp
 except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
     grp = None  # type: ignore[assignment]
-from boltons.iterutils import (
-    default_enter,
-    remap,
-)
 LXML_AVAILABLE = True
 try:
     from lxml import etree
+
+    Element = etree._Element
 except ImportError:
     LXML_AVAILABLE = False
     import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+
+    Element = etree.Element
 
 try:
     import docutils.core as docutils_core
@@ -63,14 +68,13 @@ except ImportError:
     docutils_core = None  # type: ignore[assignment]
     docutils_html4css1 = None  # type: ignore[assignment]
 
-try:
-    import uwsgi
-except ImportError:
-    uwsgi = None
-
 from .custom_logging import get_logger
 from .inflection import Inflector
-from .path import safe_contains, safe_makedirs, safe_relpath  # noqa: F401
+from .path import (  # noqa: F401
+    safe_contains,
+    safe_makedirs,
+    safe_relpath,
+)
 
 inflector = Inflector()
 
@@ -82,16 +86,16 @@ namedtuple = collections.namedtuple
 CHUNK_SIZE = 65536  # 64k
 
 DATABASE_MAX_STRING_SIZE = 32768
-DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
+DATABASE_MAX_STRING_SIZE_PRETTY = "32K"
 
 DEFAULT_SOCKET_TIMEOUT = 600
 
-gzip_magic = b'\x1f\x8b'
-bz2_magic = b'BZh'
-DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
-NULL_CHAR = b'\x00'
+gzip_magic = b"\x1f\x8b"
+bz2_magic = b"BZh"
+DEFAULT_ENCODING = os.environ.get("GALAXY_DEFAULT_ENCODING", "utf-8")
+NULL_CHAR = b"\x00"
 BINARY_CHARS = [NULL_CHAR]
-FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+FILENAME_VALID_CHARS = ".,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 RW_R__R__ = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
 RWXR_XR_X = stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH
@@ -109,23 +113,23 @@ def str_removeprefix(s: str, prefix: str):
     if sys.version_info >= (3, 9):
         return s.removeprefix(prefix)
     if s.startswith(prefix):
-        return s[len(prefix):]
+        return s[len(prefix) :]
     return s
 
 
 def remove_protocol_from_url(url):
-    """ Supplied URL may be null, if not ensure http:// or https://
+    """Supplied URL may be null, if not ensure http:// or https://
     etc... is stripped off.
     """
     if url is None:
         return url
 
     # We have a URL
-    if url.find('://') > 0:
-        new_url = url.split('://')[1]
+    if url.find("://") > 0:
+        new_url = url.split("://")[1]
     else:
         new_url = url
-    return new_url.rstrip('/')
+    return new_url.rstrip("/")
 
 
 def is_binary(value):
@@ -184,16 +188,16 @@ def directory_hash_id(id):
         # Drop the last three digits -- 1000 files per directory
         padded = padded[:-3]
         # Break into chunks of three
-        return [padded[i * 3:(i + 1) * 3] for i in range(len(padded) // 3)]
+        return [padded[i * 3 : (i + 1) * 3] for i in range(len(padded) // 3)]
     else:
         # assume it is a UUID
         return list(iter(s[0:3]))
 
 
 def get_charset_from_http_headers(headers, default=None):
-    rval = headers.get('content-type', None)
-    if rval and 'charset=' in rval:
-        rval = rval.split('charset=')[-1].split(';')[0].strip()
+    rval = headers.get("content-type", None)
+    if rval and "charset=" in rval:
+        rval = rval.split("charset=")[-1].split(";")[0].strip()
         if rval:
             return rval
     return default
@@ -201,12 +205,14 @@ def get_charset_from_http_headers(headers, default=None):
 
 def synchronized(func):
     """This wrapper will serialize access to 'func' to a single thread. Use it as a decorator."""
+
     def caller(*params, **kparams):
         _lock.acquire(True)  # Wait
         try:
             return func(*params, **kparams)
         finally:
             _lock.release()
+
     return caller
 
 
@@ -269,7 +275,7 @@ def parse_xml(fname, strip_whitespace=True, remove_comments=True):
         tree = etree.parse(fname, parser=parser)
         root = tree.getroot()
         if strip_whitespace:
-            for elem in root.iter('*'):
+            for elem in root.iter("*"):
                 if elem.text is not None:
                     elem.text = elem.text.strip()
                 if elem.tail is not None:
@@ -289,12 +295,12 @@ def parse_xml_string(xml_string, strip_whitespace=True):
     try:
         tree = etree.fromstring(xml_string)
     except ValueError as e:
-        if 'strings with encoding declaration are not supported' in unicodify(e):
-            tree = etree.fromstring(xml_string.encode('utf-8'))
+        if "strings with encoding declaration are not supported" in unicodify(e):
+            tree = etree.fromstring(xml_string.encode("utf-8"))
         else:
             raise e
     if strip_whitespace:
-        for elem in tree.iter('*'):
+        for elem in tree.iter("*"):
             if elem.text is not None:
                 elem.text = elem.text.strip()
             if elem.tail is not None:
@@ -312,18 +318,18 @@ def xml_to_string(elem, pretty=False):
     """
     try:
         if elem is not None:
-            xml_str = etree.tostring(elem, encoding='unicode')
+            xml_str = etree.tostring(elem, encoding="unicode")
         else:
-            xml_str = ''
+            xml_str = ""
     except TypeError as e:
         # we assume this is a comment
-        if hasattr(elem, 'text'):
+        if hasattr(elem, "text"):
             return f"<!-- {elem.text} -->\n"
         else:
             raise e
     if xml_str and pretty:
-        pretty_string = xml.dom.minidom.parseString(xml_str).toprettyxml(indent='    ')
-        return "\n".join(line for line in pretty_string.split('\n') if not re.match(r'^[\s\\nb\']*$', line))
+        pretty_string = xml.dom.minidom.parseString(xml_str).toprettyxml(indent="    ")
+        return "\n".join(line for line in pretty_string.split("\n") if not re.match(r"^[\s\\nb\']*$", line))
     return xml_str
 
 
@@ -366,7 +372,7 @@ def xml_element_to_dict(elem):
     if elem.text:
         text = elem.text.strip()
         if text and sub_elems or elem.attrib:
-            rval[elem.tag]['#text'] = text
+            rval[elem.tag]["#text"] = text
         else:
             rval[elem.tag] = text
 
@@ -374,7 +380,7 @@ def xml_element_to_dict(elem):
 
 
 def pretty_print_xml(elem, level=0):
-    pad = '    '
+    pad = "    "
     i = "\n" + level * pad
     if len(elem):
         if not elem.text or not elem.text.strip():
@@ -412,14 +418,16 @@ def get_file_size(value, default=None):
                 return default
 
 
-def shrink_stream_by_size(value, size, join_by=b"..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False):
+def shrink_stream_by_size(
+    value, size, join_by=b"..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False
+):
     """
     Shrinks bytes read from `value` to `size`.
 
     `value` needs to implement tell/seek, so files need to be opened in binary mode.
     Returns unicode text with invalid characters replaced.
     """
-    rval = b''
+    rval = b""
     join_by = smart_str(join_by)
     if get_file_size(value) > size:
         start = value.tell()
@@ -435,7 +443,9 @@ def shrink_stream_by_size(value, size, join_by=b"..", left_larger=True, beginnin
                 rval = value.read(size)
                 value.seek(start)
                 return rval
-            raise ValueError('With the provided join_by value (%s), the minimum size value is %i.' % (join_by, min_size))
+            raise ValueError(
+                "With the provided join_by value (%s), the minimum size value is %i." % (join_by, min_size)
+            )
         left_index = right_index = int((size - len_join_by) / 2)
         if left_index + right_index + len_join_by < size:
             if left_larger:
@@ -455,17 +465,17 @@ def shrink_stream_by_size(value, size, join_by=b"..", left_larger=True, beginnin
 
 
 def shrink_and_unicodify(stream):
-    stream = unicodify(stream, strip_null=True) or ''
-    if (len(stream) > DATABASE_MAX_STRING_SIZE):
-        stream = shrink_string_by_size(stream,
-                                       DATABASE_MAX_STRING_SIZE,
-                                       join_by="\n..\n",
-                                       left_larger=True,
-                                       beginning_on_size_error=True)
+    stream = unicodify(stream, strip_null=True) or ""
+    if len(stream) > DATABASE_MAX_STRING_SIZE:
+        stream = shrink_string_by_size(
+            stream, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True
+        )
     return stream
 
 
-def shrink_string_by_size(value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False):
+def shrink_string_by_size(
+    value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False
+):
     if len(value) > size:
         len_join_by = len(join_by)
         min_size = len_join_by + 2
@@ -474,7 +484,9 @@ def shrink_string_by_size(value, size, join_by="..", left_larger=True, beginning
                 return value[:size]
             elif end_on_size_error:
                 return value[-size:]
-            raise ValueError('With the provided join_by value (%s), the minimum size value is %i.' % (join_by, min_size))
+            raise ValueError(
+                "With the provided join_by value (%s), the minimum size value is %i." % (join_by, min_size)
+            )
         left_index = right_index = int((size - len_join_by) / 2)
         if left_index + right_index + len_join_by < size:
             if left_larger:
@@ -513,7 +525,7 @@ def pretty_print_time_interval(time=False, precise=False, utc=False):
     day_diff = diff.days
 
     if day_diff < 0:
-        return ''
+        return ""
 
     if precise:
         if day_diff == 0:
@@ -562,19 +574,21 @@ def pretty_print_json(json_data, is_json_string=False):
 valid_chars = set(string.ascii_letters + string.digits + " -=_.()/+*^,:?!")
 
 # characters that are allowed but need to be escaped
-mapped_chars = {'>': '__gt__',
-                '<': '__lt__',
-                "'": '__sq__',
-                '"': '__dq__',
-                '[': '__ob__',
-                ']': '__cb__',
-                '{': '__oc__',
-                '}': '__cc__',
-                '@': '__at__',
-                '\n': '__cn__',
-                '\r': '__cr__',
-                '\t': '__tc__',
-                '#': '__pd__'}
+mapped_chars = {
+    ">": "__gt__",
+    "<": "__lt__",
+    "'": "__sq__",
+    '"': "__dq__",
+    "[": "__ob__",
+    "]": "__cb__",
+    "{": "__oc__",
+    "}": "__cc__",
+    "@": "__at__",
+    "\n": "__cn__",
+    "\r": "__cr__",
+    "\t": "__tc__",
+    "#": "__pd__",
+}
 
 
 def restore_text(text, character_map=mapped_chars):
@@ -586,19 +600,24 @@ def restore_text(text, character_map=mapped_chars):
     return text
 
 
-def sanitize_text(text, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X'):
+def sanitize_text(text, valid_characters=valid_chars, character_map=mapped_chars, invalid_character="X"):
     """
     Restricts the characters that are allowed in text; accepts both strings
     and lists of strings; non-string entities will be cast to strings.
     """
     if isinstance(text, list):
-        return [sanitize_text(x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character) for x in text]
+        return [
+            sanitize_text(
+                x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character
+            )
+            for x in text
+        ]
     if not isinstance(text, str):
         text = smart_str(text)
     return _sanitize_text_helper(text, valid_characters=valid_characters, character_map=character_map)
 
 
-def _sanitize_text_helper(text, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X'):
+def _sanitize_text_helper(text, valid_characters=valid_chars, character_map=mapped_chars, invalid_character="X"):
     """Restricts the characters that are allowed in a string"""
 
     out = []
@@ -609,35 +628,48 @@ def _sanitize_text_helper(text, valid_characters=valid_chars, character_map=mapp
             out.append(character_map[c])
         else:
             out.append(invalid_character)  # makes debugging easier
-    return ''.join(out)
+    return "".join(out)
 
 
-def sanitize_lists_to_string(values, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X'):
+def sanitize_lists_to_string(values, valid_characters=valid_chars, character_map=mapped_chars, invalid_character="X"):
     if isinstance(values, list):
         rval = []
         for value in values:
-            rval.append(sanitize_lists_to_string(value,
-                                                 valid_characters=valid_characters,
-                                                 character_map=character_map,
-                                                 invalid_character=invalid_character))
+            rval.append(
+                sanitize_lists_to_string(
+                    value,
+                    valid_characters=valid_characters,
+                    character_map=character_map,
+                    invalid_character=invalid_character,
+                )
+            )
         values = ",".join(rval)
     else:
-        values = sanitize_text(values, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character)
+        values = sanitize_text(
+            values, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character
+        )
     return values
 
 
-def sanitize_param(value, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X'):
+def sanitize_param(value, valid_characters=valid_chars, character_map=mapped_chars, invalid_character="X"):
     """Clean incoming parameters (strings or lists)"""
     if isinstance(value, str):
-        return sanitize_text(value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character)
+        return sanitize_text(
+            value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character
+        )
     elif isinstance(value, list):
-        return [sanitize_text(x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character) for x in value]
+        return [
+            sanitize_text(
+                x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character
+            )
+            for x in value
+        ]
     else:
-        raise Exception(f'Unknown parameter type ({type(value)})')
+        raise Exception(f"Unknown parameter type ({type(value)})")
 
 
-valid_filename_chars = set(string.ascii_letters + string.digits + '_.')
-invalid_filenames = ['', '.', '..']
+valid_filename_chars = set(string.ascii_letters + string.digits + "_.")
+invalid_filenames = ["", ".", ".."]
 
 
 def sanitize_for_filename(text, default=None):
@@ -650,8 +682,8 @@ def sanitize_for_filename(text, default=None):
         if c in valid_filename_chars:
             out.append(c)
         else:
-            out.append('_')
-    out = ''.join(out)
+            out.append("_")
+    out = "".join(out)
     if out in invalid_filenames:
         if default is None:
             return sanitize_for_filename(str(unique_id()))
@@ -705,13 +737,15 @@ def mask_password_from_url(url):
             # This can manipulate the input other than just masking password,
             # so the previous string replace method is preferred when the
             # password doesn't appear twice in the url
-            split = split._replace(netloc=split.netloc.replace(f"{split.username}:{split.password}", f'{split.username}:********'))
+            split = split._replace(
+                netloc=split.netloc.replace(f"{split.username}:{split.password}", f"{split.username}:********")
+            )
             url = urlunsplit(split)
     return url
 
 
 def ready_name_for_url(raw_name):
-    """ General method to convert a string (i.e. object name) to a URL-ready
+    """General method to convert a string (i.e. object name) to a URL-ready
     slug.
 
     >>> ready_name_for_url( "My Cool Object" )
@@ -727,7 +761,7 @@ def ready_name_for_url(raw_name):
     # Remove all non-alphanumeric characters.
     slug_base = re.sub(r"[^a-zA-Z0-9\-]", "", slug_base)
     # Remove trailing '-'.
-    if slug_base.endswith('-'):
+    if slug_base.endswith("-"):
         slug_base = slug_base[:-1]
     return slug_base
 
@@ -768,7 +802,7 @@ def in_directory(file, directory, local_path_module=os.path):
     False
     """
     if local_path_module != os.path:
-        _safe_contains = importlib.import_module(f'galaxy.util.path.{local_path_module.__name__}').safe_contains
+        _safe_contains = importlib.import_module(f"galaxy.util.path.{local_path_module.__name__}").safe_contains
     else:
         directory = os.path.realpath(directory)
         _safe_contains = safe_contains
@@ -791,9 +825,7 @@ def merge_sorted_iterables(operator, *iterables):
         yield from first_iterable
     else:
         yield from __merge_two_sorted_iterables(
-            operator,
-            iter(first_iterable),
-            merge_sorted_iterables(operator, *iterables[1:])
+            operator, iter(first_iterable), merge_sorted_iterables(operator, *iterables[1:])
         )
 
 
@@ -848,7 +880,7 @@ class Params:
     """
 
     # is NEVER_SANITIZE required now that sanitizing for tool parameters can be controlled on a per parameter basis and occurs via InputValueWrappers?
-    NEVER_SANITIZE = ['file_data', 'url_paste', 'URL', 'filesystem_paths']
+    NEVER_SANITIZE = ["file_data", "url_paste", "URL", "filesystem_paths"]
 
     def __init__(self, params, sanitize=True):
         if sanitize:
@@ -857,9 +889,12 @@ class Params:
                 # name. Anything relying on NEVER_SANITIZE should be
                 # changed to not require this and NEVER_SANITIZE should be
                 # removed.
-                if (value is not None and key not in self.NEVER_SANITIZE
-                        and True not in [key.endswith(f"|{nonsanitize_parameter}") for
-                                         nonsanitize_parameter in self.NEVER_SANITIZE]):
+                if (
+                    value is not None
+                    and key not in self.NEVER_SANITIZE
+                    and True
+                    not in [key.endswith(f"|{nonsanitize_parameter}") for nonsanitize_parameter in self.NEVER_SANITIZE]
+                ):
                     self.__dict__[key] = sanitize_param(value)
                 else:
                     self.__dict__[key] = value
@@ -887,7 +922,7 @@ class Params:
         return self.__dict__.get(key, default)
 
     def __str__(self):
-        return f'{self.__dict__}'
+        return f"{self.__dict__}"
 
     def __len__(self):
         return len(self.__dict__)
@@ -918,12 +953,12 @@ def rst_to_html(s, error=False):
         "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"),
         "warning_stream": FakeStream(),
         "doctitle_xform": False,  # without option, very different rendering depending on
-                                  # number of sections in help content.
+        # number of sections in help content.
     }
 
-    return unicodify(docutils_core.publish_string(
-        s, writer=docutils_html4css1.Writer(),
-        settings_overrides=settings_overrides))
+    return unicodify(
+        docutils_core.publish_string(s, writer=docutils_html4css1.Writer(), settings_overrides=settings_overrides)
+    )
 
 
 def xml_text(root, name=None):
@@ -938,10 +973,10 @@ def xml_text(root, name=None):
     else:
         elem = root
     if elem is not None and elem.text:
-        text = ''.join(elem.text.splitlines())
+        text = "".join(elem.text.splitlines())
         return text.strip()
     # No luck, return empty string
-    return ''
+    return ""
 
 
 def parse_resource_parameters(resource_param_file):
@@ -961,8 +996,8 @@ def parse_resource_parameters(resource_param_file):
 
 
 # asbool implementation pulled from PasteDeploy
-truthy = frozenset({'true', 'yes', 'on', 'y', 't', '1'})
-falsy = frozenset({'false', 'no', 'off', 'n', 'f', '0'})
+truthy = frozenset({"true", "yes", "on", "y", "t", "1"})
+falsy = frozenset({"false", "no", "off", "n", "f", "0"})
 
 
 def asbool(obj):
@@ -978,7 +1013,7 @@ def asbool(obj):
 
 
 def string_as_bool(string: str) -> bool:
-    if str(string).lower() in ('true', 'yes', 'on', '1'):
+    if str(string).lower() in ("true", "yes", "on", "1"):
         return True
     else:
         return False
@@ -995,9 +1030,9 @@ def string_as_bool_or_none(string):
     function equivalently.
     """
     string = str(string).lower()
-    if string in ('true', 'yes', 'on'):
+    if string in ("true", "yes", "on"):
         return True
-    elif string in ['none', 'null']:
+    elif string in ["none", "null"]:
         return None
     else:
         return False
@@ -1026,18 +1061,18 @@ def listify(item, do_strip=False) -> typing.List[typing.Any]:
         return item
     elif isinstance(item, tuple):
         return list(item)
-    elif isinstance(item, str) and item.count(','):
+    elif isinstance(item, str) and item.count(","):
         if do_strip:
-            return [token.strip() for token in item.split(',')]
+            return [token.strip() for token in item.split(",")]
         else:
-            return item.split(',')
+            return item.split(",")
     else:
         return [item]
 
 
 def commaify(amount):
     orig = amount
-    new = re.sub(r"^(-?\d+)(\d{3})", r'\g<1>,\g<2>', amount)
+    new = re.sub(r"^(-?\d+)(\d{3})", r"\g<1>,\g<2>", amount)
     if orig == new:
         return new
     else:
@@ -1051,10 +1086,10 @@ def roundify(amount, sfs=2):
     if len(amount) <= sfs:
         return amount
     else:
-        return amount[0:sfs] + '0' * (len(amount) - sfs)
+        return amount[0:sfs] + "0" * (len(amount) - sfs)
 
 
-def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=False, log_exception=True):
+def unicodify(value, encoding=DEFAULT_ENCODING, error="replace", strip_null=False, log_exception=True):
     """
     Returns a Unicode string or None.
 
@@ -1085,11 +1120,13 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
             log.exception(msg)
         raise
     if strip_null:
-        return value.replace('\0', '')
+        return value.replace("\0", "")
     return value
 
 
-def filesystem_safe_string(s, max_len=255, truncation_chars='..', strip_leading_dot=True, invalid_chars=('/',), replacement_char='_'):
+def filesystem_safe_string(
+    s, max_len=255, truncation_chars="..", strip_leading_dot=True, invalid_chars=("/",), replacement_char="_"
+):
     """
     Strip unicode null chars, truncate at 255 characters.
     Optionally replace additional ``invalid_chars`` with `replacement_char` .
@@ -1099,16 +1136,16 @@ def filesystem_safe_string(s, max_len=255, truncation_chars='..', strip_leading_
     """
     sanitized_string = unicodify(s, strip_null=True)
     if strip_leading_dot:
-        sanitized_string = sanitized_string.lstrip('.')
+        sanitized_string = sanitized_string.lstrip(".")
     for invalid_char in invalid_chars:
         sanitized_string = sanitized_string.replace(invalid_char, replacement_char)
     if len(sanitized_string) > max_len:
-        sanitized_string = sanitized_string[:max_len - len(truncation_chars)]
+        sanitized_string = sanitized_string[: max_len - len(truncation_chars)]
         sanitized_string = f"{sanitized_string}{truncation_chars}"
     return sanitized_string
 
 
-def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict'):
+def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors="strict"):
     """
     Returns a bytestring version of 's', encoded as specified in 'encoding'.
 
@@ -1153,7 +1190,7 @@ def string_to_object(s):
     return binascii.unhexlify(s)
 
 
-def clean_multiline_string(multiline_string, sep='\n'):
+def clean_multiline_string(multiline_string, sep="\n"):
     """
     Dedent, split, remove first and last empty lines, rejoin.
     """
@@ -1163,12 +1200,11 @@ def clean_multiline_string(multiline_string, sep='\n'):
         string_list = string_list[1:]
     if not string_list[-1]:
         string_list = string_list[:-1]
-    return '\n'.join(string_list) + '\n'
+    return "\n".join(string_list) + "\n"
 
 
 class ParamsWithSpecs(collections.defaultdict):
-    """
-    """
+    """ """
 
     def __init__(self, specs=None, params=None):
         self.specs = specs or dict()
@@ -1176,19 +1212,19 @@ class ParamsWithSpecs(collections.defaultdict):
         for name, value in self.params.items():
             if name not in self.specs:
                 self._param_unknown_error(name)
-            if 'map' in self.specs[name]:
+            if "map" in self.specs[name]:
                 try:
-                    self.params[name] = self.specs[name]['map'](value)
+                    self.params[name] = self.specs[name]["map"](value)
                 except Exception:
                     self._param_map_error(name, value)
-            if 'valid' in self.specs[name]:
-                if not self.specs[name]['valid'](value):
+            if "valid" in self.specs[name]:
+                if not self.specs[name]["valid"](value):
                     self._param_vaildation_error(name, value)
 
         self.update(self.params)
 
     def __missing__(self, name):
-        return self.specs[name]['default']
+        return self.specs[name]["default"]
 
     def __getattr__(self, name):
         return self[name]
@@ -1216,7 +1252,7 @@ def compare_urls(url1, url2, compare_scheme=True, compare_hostname=True, compare
 
 
 def read_build_sites(filename, check_builds=True):
-    """ read db names to ucsc mappings from file, this file should probably be merged with the one above """
+    """read db names to ucsc mappings from file, this file should probably be merged with the one above"""
     build_sites = []
     try:
         for line in open(filename):
@@ -1228,9 +1264,9 @@ def read_build_sites(filename, check_builds=True):
                 site = fields[1]
                 if check_builds:
                     site_builds = fields[2].split(",")
-                    site_dict = {'name': site_name, 'url': site, 'builds': site_builds}
+                    site_dict = {"name": site_name, "url": site, "builds": site_builds}
                 else:
-                    site_dict = {'name': site_name, 'url': site}
+                    site_dict = {"name": site_name, "url": site}
                 build_sites.append(site_dict)
             except Exception:
                 continue
@@ -1266,7 +1302,7 @@ def stringify_dictionary_keys(in_dict):
     return out_dict
 
 
-def mkstemp_ln(src, prefix='mkstemp_ln_'):
+def mkstemp_ln(src, prefix="mkstemp_ln_"):
     """
     From tempfile._mkstemp_inner, generate a hard link in the same dir with a
     random name.  Created so we can persist the underlying file of a
@@ -1279,7 +1315,7 @@ def mkstemp_ln(src, prefix='mkstemp_ln_'):
         file = os.path.join(dir, prefix + name)
         try:
             os.link(src, file)
-            return (os.path.abspath(file))
+            return os.path.abspath(file)
         except OSError as e:
             if e.errno == errno.EEXIST:
                 continue  # try again
@@ -1295,18 +1331,18 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
     try:
         st = os.stat(path)
     except OSError:
-        log.exception('Unable to set permissions or group on %s', path)
+        log.exception("Unable to set permissions or group on %s", path)
         return
     # fix modes
     if stat.S_IMODE(st.st_mode) != perms:
         try:
             os.chmod(path, perms)
         except Exception as e:
-            log.warning('Unable to honor umask ({}) for {}, tried to set: {} but mode remains {}, error was: {}'.format(oct(umask),
-                                                                                                                    path,
-                                                                                                                    oct(perms),
-                                                                                                                    oct(stat.S_IMODE(st.st_mode)),
-                                                                                                                    unicodify(e)))
+            log.warning(
+                "Unable to honor umask ({}) for {}, tried to set: {} but mode remains {}, error was: {}".format(
+                    oct(umask), path, oct(perms), oct(stat.S_IMODE(st.st_mode)), unicodify(e)
+                )
+            )
     # fix group
     if gid is not None and st.st_gid != gid:
         try:
@@ -1318,16 +1354,17 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
             except Exception:
                 desired_group = gid
                 current_group = st.st_gid
-            log.warning('Unable to honor primary group ({}) for {}, group remains {}, error was: {}'.format(desired_group,
-                                                                                                        path,
-                                                                                                        current_group,
-                                                                                                        unicodify(e)))
+            log.warning(
+                "Unable to honor primary group ({}) for {}, group remains {}, error was: {}".format(
+                    desired_group, path, current_group, unicodify(e)
+                )
+            )
 
 
 def docstring_trim(docstring):
     """Trimming python doc strings. Taken from: http://www.python.org/dev/peps/pep-0257/"""
     if not docstring:
-        return ''
+        return ""
     # Convert tabs to spaces (following the normal Python rules)
     # and split into a list of lines:
     lines = docstring.expandtabs().splitlines()
@@ -1348,7 +1385,7 @@ def docstring_trim(docstring):
     while trimmed and not trimmed[0]:
         trimmed.pop(0)
     # Return a single string:
-    return '\n'.join(trimmed)
+    return "\n".join(trimmed)
 
 
 def nice_size(size):
@@ -1364,23 +1401,23 @@ def nice_size(size):
     >>> nice_size(100000000)
     '95.4 MB'
     """
-    words = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB']
-    prefix = ''
+    words = ["bytes", "KB", "MB", "GB", "TB", "PB", "EB"]
+    prefix = ""
     try:
         size = float(size)
         if size < 0:
             size = abs(size)
-            prefix = '-'
+            prefix = "-"
     except Exception:
-        return '??? bytes'
+        return "??? bytes"
     for ind, word in enumerate(words):
         step = 1024 ** (ind + 1)
         if step > size:
-            size = size / float(1024 ** ind)
-            if word == 'bytes':  # No decimals for bytes
+            size = size / float(1024**ind)
+            if word == "bytes":  # No decimals for bytes
                 return "%s%d bytes" % (prefix, size)
             return f"{prefix}{size:.1f} {word}"
-    return '??? bytes'
+    return "??? bytes"
 
 
 def size_to_bytes(size):
@@ -1405,26 +1442,26 @@ def size_to_bytes(size):
     122880
     """
     # The following number regexp is based on https://stackoverflow.com/questions/385558/extract-float-double-value/385597#385597
-    size_re = re.compile(r'(?P<number>(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$')
+    size_re = re.compile(r"(?P<number>(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$")
     size_match = size_re.match(size.lower())
     if size_match is None:
         raise ValueError(f"Could not parse string '{size}'")
     number = float(size_match.group("number"))
     multiple = size_match.group("multiple")
-    if multiple == "" or multiple.startswith('b'):
+    if multiple == "" or multiple.startswith("b"):
         return int(number)
-    elif multiple.startswith('k'):
+    elif multiple.startswith("k"):
         return int(number * 1024)
-    elif multiple.startswith('m'):
-        return int(number * 1024 ** 2)
-    elif multiple.startswith('g'):
-        return int(number * 1024 ** 3)
-    elif multiple.startswith('t'):
-        return int(number * 1024 ** 4)
-    elif multiple.startswith('p'):
-        return int(number * 1024 ** 5)
-    elif multiple.startswith('e'):
-        return int(number * 1024 ** 6)
+    elif multiple.startswith("m"):
+        return int(number * 1024**2)
+    elif multiple.startswith("g"):
+        return int(number * 1024**3)
+    elif multiple.startswith("t"):
+        return int(number * 1024**4)
+    elif multiple.startswith("p"):
+        return int(number * 1024**5)
+    elif multiple.startswith("e"):
+        return int(number * 1024**6)
     else:
         raise ValueError(f"Unknown multiplier '{multiple}' in '{size}'")
 
@@ -1455,13 +1492,13 @@ def send_mail(frm, to, subject, body, config, html=None):
 
     to = listify(to)
     if html:
-        msg = MIMEMultipart('alternative')
+        msg = MIMEMultipart("alternative")
     else:
-        msg = MIMEText(body, 'plain', 'utf-8')
+        msg = MIMEText(body, "plain", "utf-8")
 
-    msg['To'] = ', '.join(to)
-    msg['From'] = frm
-    msg['Subject'] = subject
+    msg["To"] = ", ".join(to)
+    msg["From"] = frm
+    msg["Subject"] = subject
 
     if config.smtp_server is None:
         log.error("Mail is not configured for this Galaxy instance.")
@@ -1469,12 +1506,12 @@ def send_mail(frm, to, subject, body, config, html=None):
         return
 
     if html:
-        mp_text = MIMEText(body, 'plain', 'utf-8')
-        mp_html = MIMEText(html, 'html', 'utf-8')
+        mp_text = MIMEText(body, "plain", "utf-8")
+        mp_html = MIMEText(html, "html", "utf-8")
         msg.attach(mp_text)
         msg.attach(mp_html)
 
-    smtp_ssl = asbool(getattr(config, 'smtp_ssl', False))
+    smtp_ssl = asbool(getattr(config, "smtp_ssl", False))
     if smtp_ssl:
         s = smtplib.SMTP_SSL(config.smtp_server)
     else:
@@ -1482,15 +1519,15 @@ def send_mail(frm, to, subject, body, config, html=None):
     if not smtp_ssl:
         try:
             s.starttls()
-            log.debug('Initiated SSL/TLS connection to SMTP server: %s', config.smtp_server)
+            log.debug("Initiated SSL/TLS connection to SMTP server: %s", config.smtp_server)
         except RuntimeError as e:
-            log.warning('SSL/TLS support is not available to your Python interpreter: %s', unicodify(e))
+            log.warning("SSL/TLS support is not available to your Python interpreter: %s", unicodify(e))
         except smtplib.SMTPHeloError as e:
             log.error("The server didn't reply properly to the HELO greeting: %s", unicodify(e))
             s.close()
             raise
         except smtplib.SMTPException as e:
-            log.warning('The server does not support the STARTTLS extension: %s', unicodify(e))
+            log.warning("The server does not support the STARTTLS extension: %s", unicodify(e))
     if config.smtp_username and config.smtp_password:
         try:
             s.login(config.smtp_username, config.smtp_password)
@@ -1546,8 +1583,7 @@ def move_merge(source, target):
 
 
 def safe_str_cmp(a, b):
-    """safely compare two strings in a timing-attack-resistant manner
-    """
+    """safely compare two strings in a timing-attack-resistant manner"""
     if len(a) != len(b):
         return False
     rv = 0
@@ -1558,7 +1594,7 @@ def safe_str_cmp(a, b):
 
 #  Don't use these two directly, prefer method version that "works" with packaged Galaxy.
 galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)  # type: ignore[name-defined]
-galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')  # type: ignore[name-defined]
+galaxy_samples_path = os.path.join(__path__[0], os.pardir, "config", "sample")  # type: ignore[name-defined]
 
 
 def galaxy_directory():
@@ -1569,7 +1605,7 @@ def galaxy_directory():
 
 
 def galaxy_samples_directory():
-    return os.path.join(galaxy_directory(), 'lib', 'galaxy', 'config', 'sample')
+    return os.path.join(galaxy_directory(), "lib", "galaxy", "config", "sample")
 
 
 def config_directories_from_setting(directories_setting, galaxy_root=galaxy_root_path):
@@ -1592,10 +1628,10 @@ def config_directories_from_setting(directories_setting, galaxy_root=galaxy_root
 
     for directory in listify(directories_setting):
         directory = directory.strip()
-        if not directory.startswith('/'):
+        if not directory.startswith("/"):
             directory = os.path.join(galaxy_root, directory)
         if not os.path.exists(directory):
-            log.warning('directory not found: %s', directory)
+            log.warning("directory not found: %s", directory)
             continue
         directories.append(directory)
     return directories
@@ -1640,32 +1676,32 @@ def parse_non_hex_float(s):
     """
     f = float(s)
     # successfully parsed as float if here - check for format in original string
-    if 'e' in s and not ('+' in s or '-' in s):
-        raise ValueError('could not convert string to float: ' + s)
+    if "e" in s and not ("+" in s or "-" in s):
+        raise ValueError("could not convert string to float: " + s)
     return f
 
 
-def build_url(base_url, port=80, scheme='http', pathspec=None, params=None, doseq=False):
+def build_url(base_url, port=80, scheme="http", pathspec=None, params=None, doseq=False):
     if params is None:
         params = dict()
     if pathspec is None:
         pathspec = []
     parsed_url = urlparse(base_url)
-    if scheme != 'http':
+    if scheme != "http":
         parsed_url.scheme = scheme
-    assert parsed_url.scheme in ('http', 'https', 'ftp'), f'Invalid URL scheme: {scheme}'
+    assert parsed_url.scheme in ("http", "https", "ftp"), f"Invalid URL scheme: {scheme}"
     if port != 80:
-        url = '%s://%s:%d/%s' % (parsed_url.scheme, parsed_url.netloc.rstrip('/'), int(port), parsed_url.path)
+        url = "%s://%s:%d/%s" % (parsed_url.scheme, parsed_url.netloc.rstrip("/"), int(port), parsed_url.path)
     else:
         url = f"{parsed_url.scheme}://{parsed_url.netloc.rstrip('/')}/{parsed_url.path.lstrip('/')}"
     if len(pathspec) > 0:
         url = f"{url.rstrip('/')}/{'/'.join(pathspec)}"
     if parsed_url.query:
-        for query_parameter in parsed_url.query.split('&'):
-            key, value = query_parameter.split('=')
+        for query_parameter in parsed_url.query.split("&"):
+            key, value = query_parameter.split("=")
             params[key] = value
     if params:
-        url += f'?{urlencode(params, doseq=doseq)}'
+        url += f"?{urlencode(params, doseq=doseq)}"
     return url
 
 
@@ -1697,15 +1733,17 @@ def is_url(uri, allow_list=None):
     return any(uri.startswith(scheme) for scheme in allow_list)
 
 
-def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
+def download_to_file(url, dest_file_path, timeout=30, chunk_size=2**20):
     """Download a URL to a file in chunks."""
-    with requests.get(url, timeout=timeout, stream=True) as r, open(dest_file_path, 'wb') as f:
+    with requests.get(url, timeout=timeout, stream=True) as r, open(dest_file_path, "wb") as f:
         for chunk in r.iter_content(chunk_size):
             if chunk:
                 f.write(chunk)
 
 
-def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source_error='strict', target_encoding=None, target_error='strict'):
+def stream_to_open_named_file(
+    stream, fd, filename, source_encoding=None, source_error="strict", target_encoding=None, target_error="strict"
+):
     """Writes a stream to the provided file descriptor, returns the file name. Closes file descriptor"""
     # signature and behavor is somewhat odd, due to backwards compatibility, but this can/should be done better
     CHUNK_SIZE = 1048576
@@ -1740,7 +1778,6 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
 
 
 class classproperty:
-
     def __init__(self, f):
         self.f = f
 
@@ -1749,7 +1786,6 @@ class classproperty:
 
 
 class ExecutionTimer:
-
     def __init__(self):
         self.begin = time.time()
 
@@ -1758,11 +1794,10 @@ class ExecutionTimer:
 
     @property
     def elapsed(self):
-        return (time.time() - self.begin)
+        return time.time() - self.begin
 
 
 class StructuredExecutionTimer:
-
     def __init__(self, timer_id, template, **tags):
         self.begin = time.time()
         self.timer_id = timer_id
@@ -1782,9 +1817,10 @@ class StructuredExecutionTimer:
 
     @property
     def elapsed(self):
-        return (time.time() - self.begin)
+        return time.time() - self.begin
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import doctest
+
     doctest.testmod(sys.modules[__name__], verbose=False)

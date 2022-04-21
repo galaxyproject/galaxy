@@ -9,7 +9,6 @@ from typing import (
 )
 
 from galaxy import exceptions
-from galaxy.app import MinimalManagerApp
 from galaxy.files import (
     ConfiguredFileSources,
     ProvidesUserFileSourcesUserContext,
@@ -21,6 +20,7 @@ from galaxy.schema.remote_files import (
     RemoteFilesFormat,
     RemoteFilesTarget,
 )
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import (
     jstree,
     smart_str,
@@ -58,11 +58,11 @@ class RemoteFilesManager:
             default_format = RemoteFilesFormat.flat
             default_recursive = True
         elif target == RemoteFilesTarget.importdir:
-            uri = 'gximport://'
+            uri = "gximport://"
             default_format = RemoteFilesFormat.flat
             default_recursive = True
-        elif target in [RemoteFilesTarget.ftpdir, 'ftp']:  # legacy, allow both
-            uri = 'gxftp://'
+        elif target in [RemoteFilesTarget.ftpdir, "ftp"]:  # legacy, allow both
+            uri = "gxftp://"
             default_format = RemoteFilesFormat.flat
             default_recursive = True
         else:
@@ -100,13 +100,19 @@ class RemoteFilesManager:
                 path = ent["path"]
                 path_hash = hashlib.sha1(smart_str(path)).hexdigest()
                 if ent["class"] == "Directory":
-                    path_type = 'folder'
+                    path_type = "folder"
                     disabled = True if disable == RemoteFilesDisableMode.folders else False
                 else:
-                    path_type = 'file'
+                    path_type = "file"
                     disabled = True if disable == RemoteFilesDisableMode.files else False
 
-                jstree_paths.append(jstree.Path(path, path_hash, {'type': path_type, 'state': {'disabled': disabled}, 'li_attr': {'full_path': path}}))
+                jstree_paths.append(
+                    jstree.Path(
+                        path,
+                        path_hash,
+                        {"type": path_type, "state": {"disabled": disabled}, "li_attr": {"full_path": path}},
+                    )
+                )
             userdir_jstree = jstree.JSTree(jstree_paths)
             index = userdir_jstree.jsonData()
 

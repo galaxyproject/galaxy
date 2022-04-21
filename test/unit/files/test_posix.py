@@ -24,7 +24,7 @@ from ._util import (
     write_from,
 )
 
-EMAIL = 'alice@galaxyproject.org'
+EMAIL = "alice@galaxyproject.org"
 
 
 def test_posix():
@@ -98,7 +98,9 @@ def test_posix_disable_link_security():
 
 
 def test_posix_nonexistent_parent_write():
-    file_sources = _configured_file_sources(include_allowlist=True, writable=True, plugin_extra_config={'allow_subdir_creation': False})
+    file_sources = _configured_file_sources(
+        include_allowlist=True, writable=True, plugin_extra_config={"allow_subdir_creation": False}
+    )
     e = None
     try:
         write_from(file_sources, "gxfiles://test1/notreal/myfile", "my test content")
@@ -147,7 +149,7 @@ def test_user_ftp_explicit_config():
         ftp_upload_purge=False,
     )
     plugin = {
-        'type': 'gxftp',
+        "type": "gxftp",
     }
     tmp, root = setup_root()
     file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[plugin])
@@ -215,7 +217,7 @@ def test_import_dir_explicit_config():
         library_import_dir=root,
     )
     plugin = {
-        'type': 'gximport',
+        "type": "gximport",
     }
     file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[plugin])
     write_file_fixtures(tmp, root)
@@ -315,34 +317,19 @@ def test_posix_user_access_using_boolean_rules():
     }
     file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
 
-    user_context = user_context_fixture(
-        role_names=set(),
-        group_names=set()
-    )
+    user_context = user_context_fixture(role_names=set(), group_names=set())
     _assert_user_access_prohibited(file_sources, user_context)
 
-    user_context = user_context_fixture(
-        role_names={"role1"},
-        group_names={"group1", "group2"}
-    )
+    user_context = user_context_fixture(role_names={"role1"}, group_names={"group1", "group2"})
     _assert_user_access_prohibited(file_sources, user_context)
 
-    user_context = user_context_fixture(
-        role_names={"role1", "role3"},
-        group_names={"group1", "group2", "group3"}
-    )
+    user_context = user_context_fixture(role_names={"role1", "role3"}, group_names={"group1", "group2", "group3"})
     _assert_user_access_prohibited(file_sources, user_context)
 
-    user_context = user_context_fixture(
-        role_names={"role1", "role2"},
-        group_names={"group3", "group5"}
-    )
+    user_context = user_context_fixture(role_names={"role1", "role2"}, group_names={"group3", "group5"})
     _assert_user_access_prohibited(file_sources, user_context)
 
-    user_context = user_context_fixture(
-        role_names={"role1", "role3"},
-        group_names={"group1", "group2"}
-    )
+    user_context = user_context_fixture(role_names={"role1", "role3"}, group_names={"group1", "group2"})
     _assert_user_access_granted(file_sources, user_context)
 
 
@@ -370,24 +357,26 @@ def _assert_user_access_granted(file_sources, user_context):
     assert_realizes_as(file_sources, "gxfiles://test1/a", "a\n", user_context=user_context)
 
 
-def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, per_user=False, writable=None, allow_subdir_creation=True) -> TestConfiguredFileSources:
+def _configured_file_sources(
+    include_allowlist=False, plugin_extra_config=None, per_user=False, writable=None, allow_subdir_creation=True
+) -> TestConfiguredFileSources:
     tmp, root = setup_root()
     config_kwd = {}
     if include_allowlist:
         config_kwd["symlink_allowlist"] = [tmp]
     file_sources_config = ConfiguredFileSourcesConfig(**config_kwd)
     plugin = {
-        'type': 'posix',
+        "type": "posix",
     }
     if writable is not None:
-        plugin['writable'] = writable
+        plugin["writable"] = writable
     if per_user:
-        plugin['root'] = "%s/${user.username}" % root
+        plugin["root"] = "%s/${user.username}" % root
         # setup files just for alice
         root = os.path.join(root, "alice")
         os.mkdir(root)
     else:
-        plugin['root'] = root
+        plugin["root"] = root
     plugin.update(plugin_extra_config or {})
     write_file_fixtures(tmp, root)
     file_sources = TestConfiguredFileSources(file_sources_config, conf_dict={"test1": plugin}, test_root=root)

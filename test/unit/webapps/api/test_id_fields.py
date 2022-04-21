@@ -25,12 +25,12 @@ def security() -> IdEncodingHelper:
 
 def test_decoded_id_schema_override():
     schema = DecodedIdModel.schema()
-    assert schema['properties']['id']['type'] == 'string', schema
+    assert schema["properties"]["id"]["type"] == "string", schema
 
 
 def test_encoded_id_schema_override():
     schema = EncodedIdModel.schema()
-    assert schema['properties']['id']['type'] == 'string', schema
+    assert schema["properties"]["id"]["type"] == "string", schema
 
 
 def test_decoded_database_id_field(security: IdEncodingHelper):

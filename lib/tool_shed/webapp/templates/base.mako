@@ -44,7 +44,7 @@
 ## Default stylesheets
 <%def name="stylesheets()">
     ${h.css('bootstrap-tour')}
-    ${h.css('base')}
+    ${h.dist_css('base')}
 </%def>
 
 ## Default javascripts

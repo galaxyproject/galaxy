@@ -6,11 +6,11 @@ import logging
 from typing import Dict
 
 from galaxy import model
-from galaxy.exceptions import (
-    InternalServerError,
+from galaxy.exceptions import InternalServerError
+from galaxy.managers import (
+    base,
+    sharable,
 )
-from galaxy.managers import base
-from galaxy.managers import sharable
 
 log = logging.getLogger(__name__)
 
@@ -18,32 +18,36 @@ log = logging.getLogger(__name__)
 class CloudAuthzManager(sharable.SharableModelManager):
 
     model_class = model.CloudAuthz
-    foreign_key_name = 'cloudauthz'
+    foreign_key_name = "cloudauthz"
 
 
 class CloudAuthzsSerializer(base.ModelSerializer):
     """
     Interface/service object for serializing cloud authorizations (cloudauthzs) into dictionaries.
     """
+
     model_manager_class = CloudAuthzManager
 
     def __init__(self, app, **kwargs):
         super().__init__(app, **kwargs)
         self.cloudauthzs_manager = self.manager
 
-        self.default_view = 'summary'
-        self.add_view('summary', [
-            'id',
-            'model_class',
-            'user_id',
-            'provider',
-            'config',
-            'authn_id',
-            'last_update',
-            'last_activity',
-            'create_time',
-            'description'
-        ])
+        self.default_view = "summary"
+        self.add_view(
+            "summary",
+            [
+                "id",
+                "model_class",
+                "user_id",
+                "provider",
+                "config",
+                "authn_id",
+                "last_update",
+                "last_activity",
+                "create_time",
+                "description",
+            ],
+        )
 
     def add_serializers(self):
         super().add_serializers()
@@ -53,16 +57,18 @@ class CloudAuthzsSerializer(base.ModelSerializer):
         # k  : serialized dictionary key (e.g., 'model_class', 'provider').
         # **c: a dictionary containing 'trans' and 'user' objects.
         serializers: Dict[str, base.Serializer] = {
-            'id': lambda item, key, **context: self.app.security.encode_id(item.id),
-            'model_class': lambda item, key, **context: 'CloudAuthz',
-            'user_id': lambda item, key, **context: self.app.security.encode_id(item.user_id),
-            'provider': lambda item, key, **context: str(item.provider),
-            'config': lambda item, key, **context: item.config,
-            'authn_id': lambda item, key, **context: self.app.security.encode_id(item.authn_id) if item.authn_id else None,
-            'last_update': lambda item, key, **context: str(item.last_update),
-            'last_activity': lambda item, key, **context: str(item.last_activity),
-            'create_time': lambda item, key, **context: str(item.create_time),
-            'description': lambda item, key, **context: str(item.description)
+            "id": lambda item, key, **context: self.app.security.encode_id(item.id),
+            "model_class": lambda item, key, **context: "CloudAuthz",
+            "user_id": lambda item, key, **context: self.app.security.encode_id(item.user_id),
+            "provider": lambda item, key, **context: str(item.provider),
+            "config": lambda item, key, **context: item.config,
+            "authn_id": lambda item, key, **context: self.app.security.encode_id(item.authn_id)
+            if item.authn_id
+            else None,
+            "last_update": lambda item, key, **context: str(item.last_update),
+            "last_activity": lambda item, key, **context: str(item.last_activity),
+            "create_time": lambda item, key, **context: str(item.create_time),
+            "description": lambda item, key, **context: str(item.description),
         }
         self.serializers.update(serializers)
 
@@ -72,16 +78,19 @@ class CloudAuthzsDeserializer(base.ModelDeserializer):
     Service object for validating and deserializing dictionaries that
     update/alter cloudauthz configurations.
     """
+
     model_manager_class = CloudAuthzManager
 
     def add_deserializers(self):
         super().add_deserializers()
-        self.deserializers.update({
-            'authn_id': self.deserialize_and_validate_authn_id,
-            'provider': self.default_deserializer,
-            'config': self.default_deserializer,
-            'description': self.default_deserializer
-        })
+        self.deserializers.update(
+            {
+                "authn_id": self.deserialize_and_validate_authn_id,
+                "provider": self.default_deserializer,
+                "config": self.default_deserializer,
+                "description": self.default_deserializer,
+            }
+        )
 
     def deserialize_and_validate_authn_id(self, item, key, val, **context):
         """
@@ -104,7 +113,7 @@ class CloudAuthzsDeserializer(base.ModelDeserializer):
         :return:        decoded authentication ID.
         """
 
-        decoded_authn_id = self.app.security.decode_id(val, object_name='authz')
+        decoded_authn_id = self.app.security.decode_id(val, object_name="authz")
 
         trans = context.get("trans")
         if trans is None:

@@ -4,15 +4,15 @@ from .. import formatting
 
 
 class UnameFormatter(formatting.JobMetricFormatter):
-
     def format(self, key, value):
         return "Operating System", value
 
 
 class UnamePlugin(InstrumentPlugin):
-    """ Use uname to gather operating system information about remote system
+    """Use uname to gather operating system information about remote system
     job is running on. Linux only.
     """
+
     plugin_type = "uname"
     formatter = UnameFormatter()
 
@@ -32,4 +32,4 @@ class UnamePlugin(InstrumentPlugin):
         return self._instrument_file_path(job_directory, "uname")
 
 
-__all__ = ('UnamePlugin', )
+__all__ = ("UnamePlugin",)

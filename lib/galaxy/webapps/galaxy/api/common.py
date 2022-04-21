@@ -15,25 +15,40 @@ from fastapi import (
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
+    ValueFilterQueryParams,
 )
 from galaxy.schema.schema import UpdateDatasetPermissionsPayload
 
 SerializationViewQueryParam: Optional[str] = Query(
     None,
-    title='View',
-    description='View to be passed to the serializer',
+    title="View",
+    description="View to be passed to the serializer",
 )
 
 SerializationKeysQueryParam: Optional[str] = Query(
     None,
-    title='Keys',
-    description='Comma-separated list of keys to be passed to the serializer',
+    title="Keys",
+    description="Comma-separated list of keys to be passed to the serializer",
 )
 
 SerializationDefaultViewQueryParam: Optional[str] = Query(
     None,
-    title='Default View',
-    description='The item view that will be used in case no particular view was specified.',
+    title="Default View",
+    description="The item view that will be used in case no particular view was specified.",
+)
+
+FilterQueryQueryParam: Optional[List[str]] = Query(
+    default=None,
+    title="Filter Query",
+    description="Generally a property name to filter by followed by an (often optional) hyphen and operator string.",
+    example="create_time-gt",
+)
+
+FilterValueQueryParam: Optional[List[str]] = Query(
+    default=None,
+    title="Filter Value",
+    description="The value to filter by.",
+    example="2015-01-29",
 )
 
 
@@ -45,7 +60,7 @@ def parse_serialization_params(
 ) -> SerializationParams:
     key_list = None
     if keys:
-        key_list = keys.split(',')
+        key_list = keys.split(",")
     return SerializationParams(view=view, keys=key_list, default_view=default_view)
 
 
@@ -57,19 +72,23 @@ def query_serialization_params(
     return parse_serialization_params(view=view, keys=keys, default_view=default_view)
 
 
+def get_value_filter_query_params(
+    q: Optional[List[str]] = FilterQueryQueryParam,
+    qv: Optional[List[str]] = FilterValueQueryParam,
+) -> ValueFilterQueryParams:
+    """
+    This function is meant to be used as a Dependency.
+    See https://fastapi.tiangolo.com/tutorial/dependencies/#first-steps
+    """
+    return ValueFilterQueryParams(
+        q=q,
+        qv=qv,
+    )
+
+
 def get_filter_query_params(
-    q: Optional[List[str]] = Query(
-        default=None,
-        title="Filter Query",
-        description="Generally a property name to filter by followed by an (often optional) hyphen and operator string.",
-        example="create_time-gt",
-    ),
-    qv: Optional[List[str]] = Query(
-        default=None,
-        title="Filter Value",
-        description="The value to filter by.",
-        example="2015-01-29",
-    ),
+    q: Optional[List[str]] = FilterQueryQueryParam,
+    qv: Optional[List[str]] = FilterValueQueryParam,
     offset: Optional[int] = Query(
         default=0,
         ge=0,

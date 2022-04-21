@@ -18,12 +18,7 @@ class VisualizationsService(ServiceBase):
     and pydantic models to declare its parameters and return types.
     """
 
-    def __init__(
-        self,
-        security: IdEncodingHelper,
-        manager: VisualizationManager,
-        serializer: VisualizationSerializer
-    ):
+    def __init__(self, security: IdEncodingHelper, manager: VisualizationManager, serializer: VisualizationSerializer):
         super().__init__(security)
         self.manager = manager
         self.serializer = serializer

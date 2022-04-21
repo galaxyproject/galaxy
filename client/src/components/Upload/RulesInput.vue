@@ -41,7 +41,12 @@
                 :disabled="selectionType != 'paste'"></textarea>
         </span>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
+            <b-button
+                ref="btnClose"
+                class="ui-button-default"
+                id="btn-close"
+                :title="btnCloseTitle"
+                @click="$emit('dismiss')">
                 {{ btnCloseTitle | l }}
             </b-button>
             <b-button
@@ -50,6 +55,7 @@
                 id="btn-build"
                 @click="_eventBuild"
                 :disabled="!sourceContent"
+                :title="btnBuildTitle"
                 :variant="sourceContent ? 'primary' : ''">
                 {{ btnBuildTitle | l }}
             </b-button>
@@ -58,6 +64,7 @@
                 class="ui-button-default"
                 id="btn-reset"
                 @click="_eventReset"
+                :title="btnResetTitle"
                 :disabled="!enableReset">
                 {{ btnResetTitle | l }}
             </b-button>
@@ -88,7 +95,6 @@ export default {
             ftpFiles: [],
             uris: [],
             topInfo: "Tabular source data to extract collection files and metadata from",
-            enableReset: false,
             enableBuild: false,
             dataType: "datasets",
             selectedDatasetId: null,
@@ -132,6 +138,11 @@ export default {
                     this.sourceContent = response.data;
                 })
                 .catch((error) => console.log(error));
+        },
+    },
+    computed: {
+        enableReset: function () {
+            return this.sourceContent.length > 0;
         },
     },
     methods: {
@@ -185,7 +196,7 @@ export default {
                 selection.elements = this.uris;
             }
             selection.dataType = this.dataType;
-            Galaxy.currHistoryPanel.buildCollection("rules", selection, true);
+            Galaxy.currHistoryPanel.buildCollection("rules", selection, true, true);
             this.$emit("dismiss");
         },
     },

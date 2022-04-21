@@ -130,11 +130,13 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
 - Galaxy follows [PEP-8](https://www.python.org/dev/peps/pep-0008/), with
   particular emphasis on readability being the ultimate goal:
   - 4 spaces (not tabs!) per indentation level
-  - divergences from PEP-8 are listed in the `[flake8]` section of the `setup.cfg`
-  file.
-- Python imports should be ordered following the
-  [smarkets](https://github.com/PyCQA/flake8-import-order/blob/master/tests/test_cases/complete_smarkets.py)
-  style.
+  - divergences from PEP-8 are listed in the `[flake8]` section of the
+    `setup.cfg` file
+  - The Python code base is automatically formatted using
+    [isort](https://pycqa.github.io/isort/) (for imports) and
+    [black](https://black.readthedocs.io). To easily format your Python code
+    before submitting your contribution, please either use `make diff-format`
+    or run `isort FILE; black FILE` for each FILE you modify.
 - Python [docstrings](http://www.python.org/dev/peps/pep-0257/) need to be in
   [reStructured Text (RST)](https://docutils.sourceforge.io/rst.html) format and
   compatible with [Sphinx](https://www.sphinx-doc.org).

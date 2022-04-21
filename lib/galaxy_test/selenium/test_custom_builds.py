@@ -6,25 +6,19 @@ from .framework import (
 
 
 class CustomBuildsTestcase(SharedStateSeleniumTestCase):
-
     @selenium_test
     def test_build_add(self):
         self._login()
-
         self.navigate_to_custom_builds_page()
-
         self.add_custom_build(self.build_name1, self.build_key1)
         self.assert_custom_builds_in_grid([self.build_name1])
 
     @selenium_test
     def test_build_delete(self):
         self._login()
-
         self.navigate_to_custom_builds_page()
-
         self.add_custom_build(self.build_name2, self.build_key2)
         self.assert_custom_builds_in_grid([self.build_name2])
-
         self.delete_custom_build(self.build_name2)
         self.assert_custom_builds_in_grid([self.build_name2], False)
 
@@ -54,31 +48,31 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
         option = self.wait_for_sizzle_selector_clickable('option[value="text"]')
         option.click()
         content_area = self.wait_for_and_click_selector('textarea[id="len-file-text-area"]')
-        content_area.send_keys('content')
+        content_area.send_keys("content")
 
-        self.wait_for_and_click_selector('button#save')
+        self.wait_for_and_click_selector("button#save")
 
     def delete_custom_build(self, build_name):
         delete_button = None
-        grid = self.wait_for_selector('table.grid > tbody')
-        for row in grid.find_elements_by_tag_name('tr'):
-            td = row.find_elements_by_tag_name('td')
+        grid = self.wait_for_selector("table.grid > tbody")
+        for row in grid.find_elements_by_tag_name("tr"):
+            td = row.find_elements_by_tag_name("td")
             name = td[0].text
             if name == build_name:
-                delete_button = td[3].find_element_by_css_selector('.fa-trash-o')
+                delete_button = td[3].find_element_by_css_selector(".fa-trash-o")
                 break
 
         if delete_button is None:
-            raise AssertionError(f'Failed to find custom build with name [{build_name}]')
+            raise AssertionError(f"Failed to find custom build with name [{build_name}]")
 
         delete_button.click()
 
     def get_custom_builds(self):
         self.sleep_for(self.wait_types.UX_RENDER)
         builds = []
-        grid = self.wait_for_selector('table.grid > tbody')
-        for row in grid.find_elements_by_tag_name('tr'):
-            name = row.find_elements_by_tag_name('td')[0].text
+        grid = self.wait_for_selector("table.grid > tbody")
+        for row in grid.find_elements_by_tag_name("tr"):
+            name = row.find_elements_by_tag_name("td")[0].text
             builds.append(name)
         return builds
 

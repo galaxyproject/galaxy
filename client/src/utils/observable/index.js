@@ -6,7 +6,6 @@ export { firstValueFrom } from "./firstValueFrom";
 export { hydrate } from "./hydrate";
 export { monitorBackboneModel } from "./monitorBackboneModel";
 export { monitorXHR } from "./monitorXHR";
-export { needs } from "./needs";
 export { nth } from "./nth";
 export { shareButDie } from "./shareButDie";
 export { show } from "./show";

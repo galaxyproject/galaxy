@@ -7,20 +7,24 @@ from collections import (
 from typing import Set
 
 from galaxy import exceptions
-from galaxy.util import (
-    plugin_config
-)
+from galaxy.util import plugin_config
 from galaxy.util.dictifiable import Dictifiable
 
 log = logging.getLogger(__name__)
 
-FileSourcePath = namedtuple('FileSourcePath', ['file_source', 'path'])
+FileSourcePath = namedtuple("FileSourcePath", ["file_source", "path"])
 
 
 class ConfiguredFileSources:
     """Load plugins and resolve Galaxy URIs to FileSource objects."""
 
-    def __init__(self, file_sources_config: 'ConfiguredFileSourcesConfig', conf_file=None, conf_dict=None, load_stock_plugins=False):
+    def __init__(
+        self,
+        file_sources_config: "ConfiguredFileSourcesConfig",
+        conf_file=None,
+        conf_dict=None,
+        load_stock_plugins=False,
+    ):
         self._file_sources_config = file_sources_config
         self._plugin_classes = self._file_source_plugins_dict()
         file_sources = []
@@ -39,14 +43,14 @@ class ConfiguredFileSources:
                 for file_source in file_sources:
                     if file_source.plugin_type == plugin_type:
                         return
-                stock_file_source_conf_dict.append({'type': plugin_type})
+                stock_file_source_conf_dict.append({"type": plugin_type})
 
             if file_sources_config.ftp_upload_dir is not None:
-                _ensure_loaded('gxftp')
+                _ensure_loaded("gxftp")
             if file_sources_config.library_import_dir is not None:
-                _ensure_loaded('gximport')
+                _ensure_loaded("gximport")
             if file_sources_config.user_library_import_dir is not None:
-                _ensure_loaded('gxuserimport')
+                _ensure_loaded("gxuserimport")
             if stock_file_source_conf_dict:
                 stock_plugin_source = plugin_config.plugin_source_from_dict(stock_file_source_conf_dict)
                 # insert at begining instead of append so FTP and library import appear
@@ -63,11 +67,12 @@ class ConfiguredFileSources:
 
     def _file_source_plugins_dict(self):
         import galaxy.files.sources
-        return plugin_config.plugins_dict(galaxy.files.sources, 'plugin_type')
+
+        return plugin_config.plugins_dict(galaxy.files.sources, "plugin_type")
 
     def _parse_plugin_source(self, plugin_source):
         extra_kwds = {
-            'file_sources_config': self._file_sources_config,
+            "file_sources_config": self._file_sources_config,
         }
         return plugin_config.load_plugins(
             self._plugin_classes,
@@ -104,21 +109,29 @@ class ConfiguredFileSources:
             user_login = user_context.email
             user_base_dir = self._file_sources_config.user_library_import_dir
             if user_base_dir is None:
-                raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow upload from user directories.')
+                raise exceptions.ConfigDoesNotAllowException(
+                    "The configuration of this Galaxy instance does not allow upload from user directories."
+                )
             full_import_dir = os.path.join(user_base_dir, user_login)
             if not os.path.exists(full_import_dir):
-                raise exceptions.ObjectNotFound('Your user import directory does not exist.')
+                raise exceptions.ObjectNotFound("Your user import directory does not exist.")
         elif uri.startswith("gximport://"):
             base_dir = self._file_sources_config.library_import_dir
             if base_dir is None:
-                raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow usage of import directory.')
+                raise exceptions.ConfigDoesNotAllowException(
+                    "The configuration of this Galaxy instance does not allow usage of import directory."
+                )
         elif uri.startswith("gxftp://"):
             user_ftp_base_dir = self._file_sources_config.ftp_upload_dir
             if user_ftp_base_dir is None:
-                raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow upload from FTP directories.')
+                raise exceptions.ConfigDoesNotAllowException(
+                    "The configuration of this Galaxy instance does not allow upload from FTP directories."
+                )
             user_ftp_dir = user_context.ftp_dir
             if not user_ftp_dir or not os.path.exists(user_ftp_dir):
-                raise exceptions.ObjectNotFound('Your FTP directory does not exist, attempting to upload files to it may cause it to be created.')
+                raise exceptions.ObjectNotFound(
+                    "Your FTP directory does not exist, attempting to upload files to it may cause it to be created."
+                )
 
     def get_file_source(self, id_prefix, scheme):
         for file_source in self._file_sources:
@@ -156,17 +169,21 @@ class ConfiguredFileSources:
 
     def to_dict(self, for_serialization=False, user_context=None):
         return {
-            'file_sources': self.plugins_to_dict(for_serialization=for_serialization, user_context=user_context),
-            'config': self._file_sources_config.to_dict()
+            "file_sources": self.plugins_to_dict(for_serialization=for_serialization, user_context=user_context),
+            "config": self._file_sources_config.to_dict(),
         }
 
     @staticmethod
     def from_app_config(config):
         config_file = config.file_sources_config_file
-        if not os.path.exists(config_file):
+        config_dict = None
+        if not config_file or not os.path.exists(config_file):
             config_file = None
+            config_dict = config.file_sources
         file_sources_config = ConfiguredFileSourcesConfig.from_app_config(config)
-        return ConfiguredFileSources(file_sources_config, config_file, load_stock_plugins=True)
+        return ConfiguredFileSources(
+            file_sources_config, conf_file=config_file, conf_dict=config_dict, load_stock_plugins=True
+        )
 
     @staticmethod
     def from_dict(as_dict):
@@ -181,8 +198,14 @@ class ConfiguredFileSources:
 
 
 class ConfiguredFileSourcesConfig:
-
-    def __init__(self, symlink_allowlist=None, library_import_dir=None, user_library_import_dir=None, ftp_upload_dir=None, ftp_upload_purge=True):
+    def __init__(
+        self,
+        symlink_allowlist=None,
+        library_import_dir=None,
+        user_library_import_dir=None,
+        ftp_upload_dir=None,
+        ftp_upload_purge=True,
+    ):
         symlink_allowlist = symlink_allowlist or []
         self.symlink_allowlist = symlink_allowlist
         self.library_import_dir = library_import_dir
@@ -204,31 +227,31 @@ class ConfiguredFileSourcesConfig:
 
     def to_dict(self):
         return {
-            'symlink_allowlist': self.symlink_allowlist,
-            'library_import_dir': self.library_import_dir,
-            'user_library_import_dir': self.user_library_import_dir,
-            'ftp_upload_dir': self.ftp_upload_dir,
-            'ftp_upload_purge': self.ftp_upload_purge,
+            "symlink_allowlist": self.symlink_allowlist,
+            "library_import_dir": self.library_import_dir,
+            "user_library_import_dir": self.user_library_import_dir,
+            "ftp_upload_dir": self.ftp_upload_dir,
+            "ftp_upload_purge": self.ftp_upload_purge,
         }
 
     @staticmethod
     def from_dict(as_dict):
         return ConfiguredFileSourcesConfig(
-            symlink_allowlist=as_dict['symlink_allowlist'],
-            library_import_dir=as_dict['library_import_dir'],
-            user_library_import_dir=as_dict['user_library_import_dir'],
-            ftp_upload_dir=as_dict['ftp_upload_dir'],
-            ftp_upload_purge=as_dict['ftp_upload_purge'],
+            symlink_allowlist=as_dict["symlink_allowlist"],
+            library_import_dir=as_dict["library_import_dir"],
+            user_library_import_dir=as_dict["user_library_import_dir"],
+            ftp_upload_dir=as_dict["ftp_upload_dir"],
+            ftp_upload_purge=as_dict["ftp_upload_purge"],
         )
 
 
 class FileSourceDictifiable(Dictifiable):
-    dict_collection_visible_keys = ('email', 'username', 'ftp_dir', 'preferences', 'is_admin')
+    dict_collection_visible_keys = ("email", "username", "ftp_dir", "preferences", "is_admin")
 
-    def to_dict(self, view='collection', value_mapper=None):
+    def to_dict(self, view="collection", value_mapper=None):
         rval = super().to_dict(view=view, value_mapper=value_mapper)
-        rval['role_names'] = list(self.role_names)
-        rval['group_names'] = list(self.group_names)
+        rval["role_names"] = list(self.role_names)
+        rval["group_names"] = list(self.group_names)
         return rval
 
     @property
@@ -296,7 +319,6 @@ class ProvidesUserFileSourcesUserContext(FileSourceDictifiable):
 
 
 class DictFileSourcesUserContext(FileSourceDictifiable):
-
     def __init__(self, **kwd):
         self._kwd = kwd
 

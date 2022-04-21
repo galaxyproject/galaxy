@@ -3,11 +3,12 @@ import os
 from collections import OrderedDict
 
 import yaml
+from yaml.constructor import ConstructorError
+
 try:
     from yaml import CSafeLoader as SafeLoader
 except ImportError:
     from yaml import SafeLoader  # type: ignore[misc]
-from yaml.constructor import ConstructorError
 
 
 log = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ def ordered_load(stream, merge_duplicate_keys=False):
     Otherwise, following YAML 1.2 specification which says that "each key is
     unique in the association", raise a ConstructionError exception.
     """
+
     def construct_mapping(loader, node, deep=False):
         loader.flatten_mapping(node)
         mapping = {}
@@ -45,8 +47,12 @@ def ordered_load(stream, merge_duplicate_keys=False):
             value = loader.construct_object(value_node, deep=deep)
             if key in mapping:
                 if not merge_duplicate_keys:
-                    raise ConstructorError("while constructing a mapping", node.start_mark,
-                        f"found duplicated key ({key})", key_node.start_mark)
+                    raise ConstructorError(
+                        "while constructing a mapping",
+                        node.start_mark,
+                        f"found duplicated key ({key})",
+                        key_node.start_mark,
+                    )
                 log.debug("Merging values for duplicate key '%s' into a list", key)
                 if merged_duplicate.get(key):
                     mapping[key].append(value)
@@ -57,10 +63,8 @@ def ordered_load(stream, merge_duplicate_keys=False):
                 mapping[key] = value
         return mapping
 
-    OrderedLoader.add_constructor(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        construct_mapping)
-    OrderedLoader.add_constructor('!include', OrderedLoader.include)
+    OrderedLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
+    OrderedLoader.add_constructor("!include", OrderedLoader.include)
 
     return yaml.load(stream, OrderedLoader)
 
@@ -70,8 +74,7 @@ def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
         pass
 
     def _dict_representer(dumper, data):
-        return dumper.represent_mapping(
-            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-            list(data.items()))
+        return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, list(data.items()))
+
     OrderedDumper.add_representer(OrderedDict, _dict_representer)
     return yaml.dump(data, stream, OrderedDumper, **kwds)

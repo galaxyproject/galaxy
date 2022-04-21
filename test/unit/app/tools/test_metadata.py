@@ -7,11 +7,13 @@ from galaxy.app_unittest_utils import tools_support
 from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.objectstore import ObjectStorePopulator
-from galaxy.util import galaxy_directory, safe_makedirs
+from galaxy.util import (
+    galaxy_directory,
+    safe_makedirs,
+)
 
 
 class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
-
     def setUp(self):
         super().setUp()
         self.setup_app()
@@ -57,9 +59,13 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
         self._write_job_files()
         self.exec_metadata_command(command)
         assert self.metadata_compute_strategy
-        metadata_set_successfully = self.metadata_compute_strategy.external_metadata_set_successfully(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
+        metadata_set_successfully = self.metadata_compute_strategy.external_metadata_set_successfully(
+            output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory
+        )
         assert metadata_set_successfully
-        self.metadata_compute_strategy.load_metadata(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
+        self.metadata_compute_strategy.load_metadata(
+            output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory
+        )
         assert output_dataset.metadata.data_lines == 2
         assert output_dataset.metadata.sequences == 1
 
@@ -81,15 +87,22 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
             "out_file1": output_dataset,
         }
         command = self.metadata_command(output_datasets)
-        self._write_galaxy_json("""{"type": "dataset", "dataset_id": "%s", "name": "my dynamic name", "ext": "fasta", "info": "my dynamic info"}""" % output_dataset.dataset.id)
+        self._write_galaxy_json(
+            """{"type": "dataset", "dataset_id": "%s", "name": "my dynamic name", "ext": "fasta", "info": "my dynamic info"}"""
+            % output_dataset.dataset.id
+        )
         self._write_output_dataset_contents(output_dataset, ">seq1\nGCTGCATG\n")
         self._write_job_files()
         self.exec_metadata_command(command)
         assert self.metadata_compute_strategy
-        metadata_set_successfully = self.metadata_compute_strategy.external_metadata_set_successfully(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
+        metadata_set_successfully = self.metadata_compute_strategy.external_metadata_set_successfully(
+            output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory
+        )
         assert metadata_set_successfully
         output_dataset.extension = "fasta"  # gets done in job finish...
-        self.metadata_compute_strategy.load_metadata(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
+        self.metadata_compute_strategy.load_metadata(
+            output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory
+        )
         assert output_dataset.metadata.data_lines == 2
         assert output_dataset.metadata.sequences == 1
 
@@ -113,15 +126,22 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
             "out_file1": output_dataset,
         }
         command = self.metadata_command(output_datasets)
-        self._write_galaxy_json("""{"type": "dataset", "dataset_id": "%s", "name": "my dynamic name", "ext": "fasta", "info": "my dynamic info", "metadata": {"sequences": 42}}""" % output_dataset.dataset.id)
+        self._write_galaxy_json(
+            """{"type": "dataset", "dataset_id": "%s", "name": "my dynamic name", "ext": "fasta", "info": "my dynamic info", "metadata": {"sequences": 42}}"""
+            % output_dataset.dataset.id
+        )
         self._write_output_dataset_contents(output_dataset, ">seq1\nGCTGCATG\n")
         self._write_job_files()
         self.exec_metadata_command(command)
         assert self.metadata_compute_strategy
-        metadata_set_successfully = self.metadata_compute_strategy.external_metadata_set_successfully(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
+        metadata_set_successfully = self.metadata_compute_strategy.external_metadata_set_successfully(
+            output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory
+        )
         assert metadata_set_successfully
         output_dataset.extension = "fasta"  # get done in job finish...
-        self.metadata_compute_strategy.load_metadata(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
+        self.metadata_compute_strategy.load_metadata(
+            output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory
+        )
         assert output_dataset.metadata.data_lines == 2
         assert output_dataset.metadata.sequences == 42
 
@@ -143,9 +163,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
         # Emulate job stuff here...
 
     def _create_output_dataset_collection(self, **kwd):
-        output_dataset_collection = model.HistoryDatasetCollectionAssociation(
-            **kwd
-        )
+        output_dataset_collection = model.HistoryDatasetCollectionAssociation(**kwd)
         self.history.add_dataset_collection(output_dataset_collection)
         assert output_dataset_collection.collection
         self.app.model.session.add(output_dataset_collection)
@@ -154,10 +172,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
 
     def _create_output_dataset(self, **kwd):
         output_dataset = model.HistoryDatasetAssociation(
-            sa_session=self.app.model.session,
-            create_dataset=True,
-            flush=True,
-            **kwd
+            sa_session=self.app.model.session, create_dataset=True, flush=True, **kwd
         )
         self.history.add_dataset(output_dataset)
         ObjectStorePopulator(self.app, user=self.job.user).set_object_store_id(output_dataset)
@@ -177,7 +192,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
             f.write(contents)
 
     def _write_job_files(self, stdout="tool stdout", stderr="tool stderr"):
-        with open(os.path.join(self.job_working_directory, "tool_script.sh"), 'w') as f:
+        with open(os.path.join(self.job_working_directory, "tool_script.sh"), "w") as f:
             f.write("echo hi")
         with open(os.path.join(self.job_working_directory, "tool_stdout"), "w") as f:
             f.write(stdout)
@@ -193,38 +208,42 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
         dataset_files_path = self.app.model.Dataset.file_path
         config_root = self.app.config.root
         config_file = None
-        datatypes_config = os.path.join(self.job_working_directory, 'metadata', 'registry.xml')
-        safe_makedirs(os.path.join(self.job_working_directory, 'metadata'))
+        datatypes_config = os.path.join(self.job_working_directory, "metadata", "registry.xml")
+        safe_makedirs(os.path.join(self.job_working_directory, "metadata"))
         self.app.datatypes_registry.to_xml_file(path=datatypes_config)
         job_metadata = os.path.join(self.tool_working_directory, self.tool.provided_metadata_file)
         output_fnames = [DatasetPath(o.dataset.id, o.dataset.file_name, None) for o in output_datasets.values()]
-        command = metadata_compute_strategy.setup_external_metadata(output_datasets,
-                                                                    output_collections,
-                                                                    self.app.model.session,
-                                                                    exec_dir=exec_dir,
-                                                                    tmp_dir=self.job_working_directory,  # set in jobs/runners.py - better if was default.
-                                                                    dataset_files_path=dataset_files_path,
-                                                                    config_root=config_root,
-                                                                    config_file=config_file,
-                                                                    datatypes_config=datatypes_config,
-                                                                    job_metadata=job_metadata,
-                                                                    output_fnames=output_fnames,
-                                                                    tool=self.tool,
-                                                                    job=self.job,
-                                                                    object_store_conf=self.app.object_store.to_dict(),
-                                                                    max_metadata_value_size=10000)
+        command = metadata_compute_strategy.setup_external_metadata(
+            output_datasets,
+            output_collections,
+            self.app.model.session,
+            exec_dir=exec_dir,
+            tmp_dir=self.job_working_directory,  # set in jobs/runners.py - better if was default.
+            dataset_files_path=dataset_files_path,
+            config_root=config_root,
+            config_file=config_file,
+            datatypes_config=datatypes_config,
+            job_metadata=job_metadata,
+            output_fnames=output_fnames,
+            tool=self.tool,
+            job=self.job,
+            object_store_conf=self.app.object_store.to_dict(),
+            max_metadata_value_size=10000,
+        )
         return command
 
     def exec_metadata_command(self, command):
         with open(self.stdout_path, "wb") as stdout_file, open(self.stderr_path, "wb") as stderr_file:
             _environ = os.environ.copy()
             _environ["PYTHONPATH"] = os.path.abspath("lib")
-            proc = subprocess.Popen(args=command,
-                                    shell=True,
-                                    cwd=self.job_working_directory,
-                                    env=_environ,
-                                    stdout=stdout_file,
-                                    stderr=stderr_file)
+            proc = subprocess.Popen(
+                args=command,
+                shell=True,
+                cwd=self.job_working_directory,
+                env=_environ,
+                stdout=stdout_file,
+                stderr=stderr_file,
+            )
             ret = proc.wait()
         self.print_command_output()
         assert ret == 0

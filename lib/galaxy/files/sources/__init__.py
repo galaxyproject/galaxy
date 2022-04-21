@@ -20,8 +20,7 @@ DEFAULT_WRITABLE = False
 
 
 class FilesSource(metaclass=abc.ABCMeta):
-    """
-    """
+    """ """
 
     @abc.abstractmethod
     def get_uri_root(self) -> str:
@@ -49,8 +48,7 @@ class FilesSource(metaclass=abc.ABCMeta):
         """Realize source path (relative to uri root) to local file system path."""
 
     def write_from(self, target_path, native_path, user_context=None):
-        """Write file at native path to target_path (relative to uri root).
-        """
+        """Write file at native path to target_path (relative to uri root)."""
 
     @abc.abstractmethod
     def to_dict(self, for_serialization=False, user_context=None):
@@ -79,10 +77,7 @@ class BaseFilesSource(FilesSource):
         return (
             user_context is None
             or user_context.is_admin
-            or (
-                self._user_has_required_roles(user_context)
-                and self._user_has_required_groups(user_context)
-            )
+            or (self._user_has_required_roles(user_context) and self._user_has_required_groups(user_context))
         )
 
     @property

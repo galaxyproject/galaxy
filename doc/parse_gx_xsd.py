@@ -28,7 +28,7 @@ def main():
                 toc_list.append(tag.build_toc_entry())
                 content_list.append(tag.build_help())
             elif not found_tag:
-                print(line, end='')
+                print(line, end="")
             else:
                 raise Exception("No normal text allowed after the first $tag")
     print("## Contents\n")
@@ -36,11 +36,10 @@ def main():
         print(el)
     print("\n")
     for el in content_list:
-        print(el, end='')
+        print(el, end="")
 
 
 class Tag:
-
     def __init__(self, line):
         assert line.startswith("$tag:")
         line_parts = line.split(" ")
@@ -60,9 +59,9 @@ class Tag:
     @property
     def _anchor(self):
         anchor = self.title
-        for _ in ['|', '_']:
-            anchor = anchor.replace(_, '-')
-        return '#' + anchor
+        for _ in ["|", "_"]:
+            anchor = anchor.replace(_, "-")
+        return "#" + anchor
 
     @property
     def _pretty_title(self):
@@ -93,18 +92,24 @@ def _build_tag(tag, hide_attributes):
     text = _replace_attribute_list(tag, text, attributes)
     for line in text.splitlines():
         if line.startswith("$assertions"):
-            assertions_tag = xmlschema_doc.find("//{http://www.w3.org/2001/XMLSchema}complexType[@name='TestAssertions']")
+            assertions_tag = xmlschema_doc.find(
+                "//{http://www.w3.org/2001/XMLSchema}complexType[@name='TestAssertions']"
+            )
             assertions_buffer = StringIO()
             assertions_buffer.write(_doc_or_none(assertions_tag))
             assertions_buffer.write("\n\n")
 
-            assertion_groups = assertions_tag.xpath("xs:choice/xs:group", namespaces={'xs': 'http://www.w3.org/2001/XMLSchema'})
+            assertion_groups = assertions_tag.xpath(
+                "xs:choice/xs:group", namespaces={"xs": "http://www.w3.org/2001/XMLSchema"}
+            )
             for group in assertion_groups:
-                ref = group.attrib['ref']
+                ref = group.attrib["ref"]
                 assertion_tag = xmlschema_doc.find("//{http://www.w3.org/2001/XMLSchema}group[@name='" + ref + "']")
                 doc = _doc_or_none(assertion_tag)
                 assertions_buffer.write(f"### {doc}\n\n")
-                elements = assertion_tag.findall("{http://www.w3.org/2001/XMLSchema}choice/{http://www.w3.org/2001/XMLSchema}element")
+                elements = assertion_tag.findall(
+                    "{http://www.w3.org/2001/XMLSchema}choice/{http://www.w3.org/2001/XMLSchema}element"
+                )
                 for element in elements:
                     doc = _doc_or_none(element)
                     if doc is None:
@@ -121,9 +126,12 @@ def _build_tag(tag, hide_attributes):
     best_practices = _get_bp_link(annotation_el)
     if best_practices:
         tag_help.write("\n\n### Best Practices\n")
-        tag_help.write("""
+        tag_help.write(
+            """
 Find the Intergalactic Utilities Commision suggested best practices for this
-element [here](%s).""" % best_practices)
+element [here](%s)."""
+            % best_practices
+        )
     tag_help.write(_build_attributes_table(tag, attributes, hide_attributes))
 
     return tag_help.getvalue()
@@ -139,7 +147,9 @@ def _replace_attribute_list(tag, text, attributes):
         else:
             attribute_names = attributes_str.split(",")
         header_level = int(header_level)
-        text = text.replace(line, _build_attributes_table(tag, attributes, attribute_names=attribute_names, header_level=header_level))
+        text = text.replace(
+            line, _build_attributes_table(tag, attributes, attribute_names=attribute_names, header_level=header_level)
+        )
     return text
 
 
@@ -155,7 +165,7 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
     attribute_table = StringIO()
     attribute_table.write("\n\n")
     if attributes and not hide_attributes:
-        header_prefix = '#' * header_level
+        header_prefix = "#" * header_level
         attribute_table.write("\n%s Attributes\n\n" % header_prefix)
         attribute_table.write("Attribute | Details | Required\n")
         attribute_table.write("--- | --- | ---\n")
@@ -176,25 +186,42 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
             details = details.replace("\n", " ").strip()
             best_practices = _get_bp_link(annotation_el)
             if best_practices:
-                details += """ Find the Intergalactic Utilities Commision suggested best practices for this element [here](%s).""" % best_practices
+                details += (
+                    """ Find the Intergalactic Utilities Commision suggested best practices for this element [here](%s)."""
+                    % best_practices
+                )
 
             attribute_table.write(f"``{name}`` | {details} | {use}\n")
     return attribute_table.getvalue()
 
 
 def _find_attributes(tag):
-    raw_attributes = tag.findall("{http://www.w3.org/2001/XMLSchema}attribute") or \
-        tag.findall("{http://www.w3.org/2001/XMLSchema}complexType/{http://www.w3.org/2001/XMLSchema}attribute") or \
-        tag.findall("{http://www.w3.org/2001/XMLSchema}complexContent/{http://www.w3.org/2001/XMLSchema}extension/{http://www.w3.org/2001/XMLSchema}attribute") or \
-        tag.findall("{http://www.w3.org/2001/XMLSchema}simpleContent/{http://www.w3.org/2001/XMLSchema}extension/{http://www.w3.org/2001/XMLSchema}attribute")
-    attribute_groups = tag.findall("{http://www.w3.org/2001/XMLSchema}attributeGroup") or \
-        tag.findall("{http://www.w3.org/2001/XMLSchema}complexType/{http://www.w3.org/2001/XMLSchema}attributeGroup") or \
-        tag.findall("{http://www.w3.org/2001/XMLSchema}complexContent/{http://www.w3.org/2001/XMLSchema}extension/{http://www.w3.org/2001/XMLSchema}attributeGroup") or \
-        tag.findall("{http://www.w3.org/2001/XMLSchema}simpleContent/{http://www.w3.org/2001/XMLSchema}extension/{http://www.w3.org/2001/XMLSchema}attributeGroup")
+    raw_attributes = (
+        tag.findall("{http://www.w3.org/2001/XMLSchema}attribute")
+        or tag.findall("{http://www.w3.org/2001/XMLSchema}complexType/{http://www.w3.org/2001/XMLSchema}attribute")
+        or tag.findall(
+            "{http://www.w3.org/2001/XMLSchema}complexContent/{http://www.w3.org/2001/XMLSchema}extension/{http://www.w3.org/2001/XMLSchema}attribute"
+        )
+        or tag.findall(
+            "{http://www.w3.org/2001/XMLSchema}simpleContent/{http://www.w3.org/2001/XMLSchema}extension/{http://www.w3.org/2001/XMLSchema}attribute"
+        )
+    )
+    attribute_groups = (
+        tag.findall("{http://www.w3.org/2001/XMLSchema}attributeGroup")
+        or tag.findall("{http://www.w3.org/2001/XMLSchema}complexType/{http://www.w3.org/2001/XMLSchema}attributeGroup")
+        or tag.findall(
+            "{http://www.w3.org/2001/XMLSchema}complexContent/{http://www.w3.org/2001/XMLSchema}extension/{http://www.w3.org/2001/XMLSchema}attributeGroup"
+        )
+        or tag.findall(
+            "{http://www.w3.org/2001/XMLSchema}simpleContent/{http://www.w3.org/2001/XMLSchema}extension/{http://www.w3.org/2001/XMLSchema}attributeGroup"
+        )
+    )
     attributes = list(raw_attributes)
     for attribute_group in attribute_groups:
         attribute_group_name = attribute_group.get("ref")
-        attribute_group_def = xmlschema_doc.find("//{http://www.w3.org/2001/XMLSchema}attributeGroup/[@name='%s']" % attribute_group_name)
+        attribute_group_def = xmlschema_doc.find(
+            "//{http://www.w3.org/2001/XMLSchema}attributeGroup/[@name='%s']" % attribute_group_name
+        )
         attributes.extend(_find_attributes(attribute_group_def))
     return attributes
 
@@ -222,5 +249,5 @@ def _doc_or_none(tag):
         return doc_el.text
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

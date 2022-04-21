@@ -34,6 +34,9 @@ module.exports = (env = {}, argv = {}) => {
                 timers: require.resolve("timers-browserify"),
                 stream: require.resolve("stream-browserify"),
                 "process/browser": require.resolve("process/browser"),
+                querystring: require.resolve("querystring-es3"),
+                util: require.resolve("util/"),
+                assert: require.resolve("assert/"),
             },
             alias: {
                 jquery$: `${libsBase}/jquery.custom.js`,
@@ -208,7 +211,7 @@ module.exports = (env = {}, argv = {}) => {
                 },
             },
             devMiddleware: {
-                publicPath: '/static/dist'
+                publicPath: "/static/dist",
             },
             hot: true,
             port: 8081,
@@ -221,7 +224,7 @@ module.exports = (env = {}, argv = {}) => {
                     target: process.env.GALAXY_URL || "http://localhost:8080",
                     secure: process.env.CHANGE_ORIGIN ? !process.env.CHANGE_ORIGIN : true,
                     changeOrigin: !!process.env.CHANGE_ORIGIN,
-                    logLevel: 'debug'
+                    logLevel: "debug",
                 },
             },
         },
