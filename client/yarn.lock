@@ -942,7 +942,7 @@
     "@babel/types" "^7.4.4"
     esutils "^2.0.2"
 
-"@babel/runtime@^7.12.1", "@babel/runtime@^7.12.5", "@babel/runtime@^7.14.0", "@babel/runtime@^7.8.4", "@babel/runtime@^7.9.2":
+"@babel/runtime@^7.12.5", "@babel/runtime@^7.14.0", "@babel/runtime@^7.8.4", "@babel/runtime@^7.9.2":
   version "7.16.7"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.16.7.tgz#03ff99f64106588c9c403c6ecb8c3bafbbdff1fa"
   integrity sha512-9E9FJowqAsytyOY6LG+1KuueckRL+aQW+mKvXRXnuFGyRAyepJPmEo9vgMfXUA6O9u3IeEdv9MAkppFcaQwogQ==
@@ -5732,13 +5732,6 @@ istanbul-reports@^3.1.3:
   dependencies:
     html-escaper "^2.0.0"
     istanbul-lib-report "^3.0.0"
-
-iter-tools@7.2.0:
-  version "7.2.0"
-  resolved "https://registry.yarnpkg.com/iter-tools/-/iter-tools-7.2.0.tgz#7476bac62ff521781e65185ff6abbc49ebc75152"
-  integrity sha512-wU0BpT8CaJCvXuhBy3WvshLhDwrsrrxWv77B4cSECnqWRm0tv2ozQRQm7M5dCkzoaQCLyRmGO0P2jDVSw5Hjvw==
-  dependencies:
-    "@babel/runtime" "^7.12.1"
 
 jest-changed-files@^27.4.2:
   version "27.4.2"
