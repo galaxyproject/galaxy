@@ -36,7 +36,6 @@ describe("watchHistory", () => {
 
     afterEach(() => {
         axiosMock.restore();
-        axiosMock.reset();
     });
 
     it("store initialization", async () => {

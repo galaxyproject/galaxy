@@ -26,7 +26,7 @@ describe("Invocations.vue without invocation", () => {
     });
 
     afterEach(() => {
-        axiosMock.reset();
+        axiosMock.restore();
     });
 
     it("title should be shown", async () => {
