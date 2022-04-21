@@ -10,9 +10,15 @@
 </template>
 
 <script>
+import { BButton, BButtonGroup } from "bootstrap-vue";
+
 export default {
     props: {
         selectionSize: { type: Number, required: true },
+    },
+    components: {
+        "b-button": BButton,
+        "b-button-group": BButtonGroup,
     },
     computed: {
         /** @returns {Boolean} */
