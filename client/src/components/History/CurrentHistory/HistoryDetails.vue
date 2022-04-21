@@ -11,9 +11,15 @@
                 <span v-if="history.size">
                     <div>{{ history.size | niceFileSize }}</div>
                     <div class="dataCounts">
-                        <a href="javascript:void(0)" @click="filterText('')">{{ history.contents_active.active }} active, </a>
-                        <a href="javascript:void(0)" @click="filterText('deleted=true')">{{ history.contents_active.deleted }} deleted, </a>
-                        <a href="javascript:void(0)" @click="filterText('visible=false')">{{ history.contents_active.hidden }} hidden</a>
+                        <a href="javascript:void(0)" @click="filterText('')"
+                            >{{ history.contents_active.active }} active,
+                        </a>
+                        <a href="javascript:void(0)" @click="filterText('deleted=true')"
+                            >{{ history.contents_active.deleted }} deleted,
+                        </a>
+                        <a href="javascript:void(0)" @click="filterText('visible=false')"
+                            >{{ history.contents_active.hidden }} hidden</a
+                        >
                     </div>
                 </span>
                 <span v-else v-localize>(empty)</span>
@@ -49,7 +55,7 @@ export default {
             this.$emit("updateHistory", { ...newDetails, id });
         },
         filterText(newFilterText) {
-            this.$emit("detailsFilter",newFilterText);
+            this.$emit("detailsFilter", newFilterText);
         },
     },
 };
