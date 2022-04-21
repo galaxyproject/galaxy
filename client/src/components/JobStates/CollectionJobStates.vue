@@ -1,5 +1,5 @@
 <template>
-    <div v-if="!jobSourceType || jobSourceType == 'Job' || isTerminal">
+    <div v-if="!jobSourceType || jobSourceType == 'Job' || (isTerminal && !isErrored)">
         {{ simpleDescription }}
     </div>
     <div v-else-if="!jobStatesSummary || !jobStatesSummary.hasDetails()">
@@ -51,6 +51,9 @@ export default {
             return DC_VIEW.collectionDescription(this.collection);
         },
         errorDescription() {
+            if (this.isPopulationFailed) {
+                return `${this.collection.get("populated_state_message")}`;
+            }
             var jobCount = this.jobCount;
             var errorCount = this.jobStatesSummary.numInError();
             return `a ${this.collectionTypeDescription} with ${errorCount} / ${jobCount} jobs in error`;
