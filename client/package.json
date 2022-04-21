@@ -89,7 +89,6 @@
     "vue-prismjs": "^1.2.0",
     "vue-router": "^3.5.3",
     "vue-rx": "^6.2.0",
-    "vue-scrollto": "^2.20.0",
     "vue-virtual-scroll-list": "^2.3.3",
     "vuedraggable": "2.24.3",
     "vueisotope": "^3.1.2",
