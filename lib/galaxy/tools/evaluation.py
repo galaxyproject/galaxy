@@ -519,7 +519,7 @@ class ToolEvaluator:
                 # Explicit filename was requested, this is implemented as symbolic link
                 # to the actual config file that is placed in tool working directory
                 directory = os.path.join(self.local_working_directory, "working")
-                os.symlink(config_filename, os.path.join(directory, filename))
+                os.link(config_filename, os.path.join(directory, filename))
             self.__write_workdir_file(config_filename, config_text, param_dict, is_template=is_template)
             self.__register_extra_file(name, config_filename)
             config_filenames.append(config_filename)
