@@ -19,10 +19,6 @@ export class HistoryPanelProxy {
         Galaxy.currHistoryPanel = this;
         const model = (this.model = new Backbone.Model({}));
         this.collection = {
-            constructor(models) {
-                this.models = models;
-                this.unwatch = null;
-            },
             each(callback, filterText = "") {
                 const historyItems = store.getters.getHistoryItems({ historyId: model.id, filterText: filterText });
                 historyItems.forEach((model) => {
