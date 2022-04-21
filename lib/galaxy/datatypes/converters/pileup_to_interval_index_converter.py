@@ -29,7 +29,7 @@ def main():
             index.add(chrom, start, start + 1, offset)
             offset += len(line)
 
-    with open(output_fname, 'wb') as out:
+    with open(output_fname, "wb") as out:
         index.write(out)
 
 

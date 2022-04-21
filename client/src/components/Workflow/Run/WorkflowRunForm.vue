@@ -1,7 +1,7 @@
 <template>
     <CurrentUser v-slot="{ user }">
         <UserHistories v-if="user" :user="user" v-slot="{ currentHistoryId }">
-            <div v-if="currentHistoryId">
+            <div v-if="currentHistoryId" class="workflow-expanded-form">
                 <div class="h4 clearfix mb-3">
                     <b>Workflow: {{ model.name }}</b>
                     <ButtonSpinner
@@ -63,7 +63,7 @@ import CurrentUser from "components/providers/CurrentUser";
 import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
-import UserHistories from "components/providers/History/UserHistories";
+import UserHistories from "components/providers/UserHistories";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunToolStep from "./WorkflowRunToolStep";
 import { invokeWorkflow } from "./services";
@@ -206,6 +206,9 @@ export default {
                 // Tool form always wants a list of invocations back
                 // so that inputs can be batched.
                 batch: true,
+                // the user is already warned if tool versions are wrong,
+                // they can still choose to invoke the workflow anyway.
+                require_exact_tool_versions: false,
             };
 
             console.debug("WorkflowRunForm::onExecute()", "Ready for submission.", jobDef);

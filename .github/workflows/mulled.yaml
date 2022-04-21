@@ -4,10 +4,12 @@ on:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
   pull_request:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
 concurrency:
   group: mulled-${{ github.ref }}
   cancel-in-progress: true

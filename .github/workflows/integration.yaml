@@ -4,14 +4,21 @@ on:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
   pull_request:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
+  schedule:
+    # Run at midnight UTC every Tuesday
+    - cron: '0 0 * * 2'
 env:
   GALAXY_TEST_AMQP_URL: 'amqp://localhost:5672//'
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
+  GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
+  GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT: '1'
 concurrency:
   group: integration-${{ github.ref }}
   cancel-in-progress: true
@@ -38,6 +45,11 @@ jobs:
         ports:
           - 5672:5672
     steps:
+      - if: github.event_name == 'schedule'
+        run: |
+          echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
+          # Skip outputs_to_working_directory: true in integration tests, doesn't work with pulsar
+          # echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
       - name: Prune unused docker image, volumes and containers
         run: docker system prune -a -f
       - name: Clean dotnet folder for space
@@ -71,15 +83,19 @@ jobs:
       - name: Cache galaxy venv
         uses: actions/cache@v2
         with:
-          path: .venv
+          path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-integration
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get -y install ffmpeg
       - name: Run tests
         run: |
           . .ci/minikube-test-setup/start_services.sh
-          ./run_tests.sh -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
+          ./run_tests.sh --coverage -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
+      - uses: codecov/codecov-action@v2
+        with:
+          flags: integration
+          working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v2
         if: failure()
         with:

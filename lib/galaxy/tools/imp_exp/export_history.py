@@ -21,10 +21,10 @@ def create_archive(export_directory, out_file, gzip=False):
     try:
         tar_export_directory(export_directory, out_file, gzip)
         # Status.
-        print('Created history archive.')
+        print("Created history archive.")
         return 0
     except Exception as e:
-        print(f'Error creating history archive: {unicodify(e)}', file=sys.stderr)
+        print(f"Error creating history archive: {unicodify(e)}", file=sys.stderr)
         return 1
     finally:
         shutil.rmtree(export_directory, ignore_errors=True)
@@ -33,9 +33,11 @@ def create_archive(export_directory, out_file, gzip=False):
 def main(argv=None):
     # Parse command line.
     parser = optparse.OptionParser()
-    parser.add_option('-G', '--gzip', dest='gzip', action="store_true", help='Compress archive using gzip.')
-    parser.add_option('--galaxy-version', dest='galaxy_version', help='Galaxy version that initiated the command.', default=None)
-    parser.add_option('--file-sources', type=str, help='file sources json')
+    parser.add_option("-G", "--gzip", dest="gzip", action="store_true", help="Compress archive using gzip.")
+    parser.add_option(
+        "--galaxy-version", dest="galaxy_version", help="Galaxy version that initiated the command.", default=None
+    )
+    parser.add_option("--file-sources", type=str, help="file sources json")
     (options, args) = parser.parse_args(argv)
     galaxy_version = options.galaxy_version
     if galaxy_version is None:
@@ -71,6 +73,7 @@ def _write_to_destination(file_sources_path, out_file, destination_uri):
 def get_file_sources(file_sources_path):
     assert os.path.exists(file_sources_path), f"file sources path [{file_sources_path}] does not exist"
     from galaxy.files import ConfiguredFileSources
+
     with open(file_sources_path) as f:
         file_sources_as_dict = json.load(f)
     file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)

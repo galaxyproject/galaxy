@@ -7,7 +7,7 @@ import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 
 import MockCurrentUser from "../providers/MockCurrentUser";
-import MockCurrentHistory from "components/providers/History/UserHistories/MockCurrentHistory";
+import MockCurrentHistory from "../providers/MockCurrentHistory";
 
 jest.mock("app");
 

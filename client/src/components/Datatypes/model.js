@@ -1,6 +1,9 @@
 export class DatatypesMapperModel {
     constructor(typesAndMapping) {
-        this.datatypes = typesAndMapping.datatypes;
+        // create a shallow copy of the datatypes, otherwise sort mutates in place
+        // and causes a possible infinite render update loop.
+        this.datatypes = [...typesAndMapping.datatypes];
+        this.datatypes.sort();
         this.datatypesMapping = typesAndMapping.datatypes_mapping;
     }
 

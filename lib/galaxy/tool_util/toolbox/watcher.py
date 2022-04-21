@@ -6,6 +6,7 @@ try:
     from watchdog.events import FileSystemEventHandler
     from watchdog.observers import Observer
     from watchdog.observers.polling import PollingObserver
+
     can_watch = True
 except ImportError:
     Observer = None
@@ -38,7 +39,6 @@ def get_tool_watcher(toolbox, config):
 
 
 class ToolFileEventHandler(FileSystemEventHandler):
-
     def __init__(self, tool_watcher):
         self.tool_watcher = tool_watcher
 
@@ -49,7 +49,7 @@ class ToolFileEventHandler(FileSystemEventHandler):
         # modified events will only have src path, move events will
         # have dest_path and src_path but we only care about dest. So
         # look at dest if it exists else use src.
-        path = getattr(event, 'dest_path', None) or event.src_path
+        path = getattr(event, "dest_path", None) or event.src_path
         path = os.path.abspath(path)
         tool_id = self.tool_watcher.tool_file_ids.get(path, None)
         if tool_id:
@@ -68,7 +68,6 @@ class ToolFileEventHandler(FileSystemEventHandler):
 
 
 class ToolConfWatcher:
-
     def __init__(self, reload_callback, tool_cache=None):
         self.paths = {}
         self.cache = tool_cache
@@ -168,7 +167,6 @@ class ToolConfWatcher:
 
 
 class ToolWatcher(BaseWatcher):
-
     def __init__(self, observer_class, event_handler_class, toolbox):
         super().__init__(observer_class, event_handler_class)
         self.toolbox = toolbox

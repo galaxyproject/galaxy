@@ -2,31 +2,41 @@ import argparse
 import math
 import os
 import shutil
-import string
 import sys
 import tempfile
 from io import StringIO
 from textwrap import TextWrapper
-from typing import Any, List, NamedTuple
+from typing import (
+    Any,
+    List,
+    NamedTuple,
+)
 
-import requests
 import yaml
 from boltons.iterutils import remap
+
+try:
+    from gravity.util import settings_to_sample
+except ImportError:
+    settings_to_sample = None
 
 try:
     from pykwalify.core import Core
 except ImportError:
     Core = None
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
 
 
-from galaxy.config import GALAXY_CONFIG_SCHEMA_PATH
+from galaxy.config import (
+    GALAXY_CONFIG_SCHEMA_PATH,
+    REPORTS_CONFIG_SCHEMA_PATH,
+    TOOL_SHED_CONFIG_SCHEMA_PATH,
+)
 from galaxy.config.schema import (
     AppSchema,
     OPTION_DEFAULTS,
-    Schema,
 )
 from galaxy.util import safe_makedirs
 from galaxy.util.properties import nice_config_parser
@@ -34,7 +44,6 @@ from galaxy.util.yaml_util import (
     ordered_dump,
     ordered_load,
 )
-
 
 DESCRIPTION = "Convert configuration files."
 
@@ -46,152 +55,16 @@ EXTRA_SERVER_MESSAGE = "Additional server section after [%s] encountered [%s], w
 MISSING_FILTER_TYPE_MESSAGE = "Missing filter type for section [%s], it will be ignored."
 UNHANDLED_FILTER_TYPE_MESSAGE = "Unhandled filter type encountered [%s] for section [%s]."
 NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults throughout."
-YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ", break_long_words=False, break_on_hyphens=False)
-RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ", break_long_words=False, break_on_hyphens=False)
-UWSGI_SCHEMA_PATH = "lib/galaxy/webapps/uwsgi_schema.yml"
-
-UWSGI_OPTIONS = dict([
-    ('http', {
-        'desc': """The address and port on which to listen.  By default, only listen to localhost ($app_name will not be accessible over the network).  Use ':$default_port' to listen on all available network interfaces.""",
-        'default': '127.0.0.1:$default_port',
-        'type': 'str',
-    }),
-    ('buffer-size', {
-        'desc': """By default uWSGI allocates a very small buffer (4096 bytes) for the headers of each request. If you start receiving "invalid request block size" in your logs, it could mean you need a bigger buffer. We recommend at least 16384.""",
-        'default': 16384,
-        'type': 'int',
-    }),
-    ('processes', {
-        'desc': """Number of web server (worker) processes to fork after the application has loaded. If this is set to greater than 1, thunder-lock likely should be enabled below.""",
-        'default': 1,
-        'type': 'int',
-    }),
-    ('threads', {
-        'desc': """Number of threads for each web server process.""",
-        'default': 4,
-        'type': 'int',
-    }),
-    ('offload-threads', {
-        'desc': """Number of threads for serving static content and handling internal routing requests.""",
-        'default': 2,
-        'type': 'int',
-    }),
-    ('static-map.1', {
-        'key': 'static-map',
-        'desc': """Mapping to serve static content.""",
-        'default': '/static=static',
-        'type': 'str',
-    }),
-    ('static-map.2', {
-        'key': 'static-map',
-        'desc': """Mapping to serve the favicon.""",
-        'default': '/favicon.ico=static/favicon.ico',
-        'type': 'str',
-    }),
-    ('static-safe', {
-        'key': 'static-safe',
-        'desc': """Allow serving certain assets out of `client`.  Most modern Galaxy interfaces bundle all of this, but some older pages still serve these via symlink, requiring this rule.""",
-        'default': 'client/src/assets',
-        'type': 'str',
-    }),
-    ('master', {
-        'desc': """Enable the master process manager. Disabled by default for maximum compatibility with CTRL+C, but should be enabled for use with --daemon and/or production deployments.""",
-        'default': False,
-        'type': 'bool',
-    }),
-    ('virtualenv', {
-        'desc': """Path to the application's Python virtual environment. If using Conda for Galaxy's framework dependencies (not tools!), do not set this.""",
-        'default': '.venv',
-        'type': 'str',
-    }),
-    ('pythonpath', {
-        'desc': """Path to the application's Python library.""",
-        'default': 'lib',
-        'type': 'str',
-    }),
-    ('module', {
-        'desc': """The entry point which returns the web application (e.g. Galaxy, Reports, etc.) that you are loading.""",
-        'default': '$uwsgi_module',
-        'type': 'str',
-    }),
-    ('#mount', {
-        'desc': """Mount the web application (e.g. Galaxy, Reports, etc.) at the given URL prefix. Cannot be used together with 'module:' above.""",
-        'default': '/galaxy=$uwsgi_module',
-        'type': 'str',
-    }),
-    ('manage-script-name', {
-        'desc': """Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to mount-points. Set this to true if a URL prefix is used.""",
-        'default': False,
-        'type': 'bool',
-    }),
-    ('thunder-lock', {
-        'desc': """It is usually a good idea to set this to ``true`` if processes is greater than 1.""",
-        'default': False,
-        'type': 'bool',
-    }),
-    ('die-on-term', {
-        'desc': """Cause uWSGI to respect the traditional behavior of dying on SIGTERM (its default is to brutally reload workers)""",
-        'default': True,
-        'type': 'bool',
-    }),
-    ('hook-master-start.1', {
-        'key': 'hook-master-start',
-        'desc': """Cause uWSGI to gracefully reload workers and mules upon receipt of SIGINT (its default is to brutally kill workers)""",
-        'default': 'unix_signal:2 gracefully_kill_them_all',
-        'type': 'str',
-    }),
-    ('hook-master-start.2', {
-        'key': 'hook-master-start',
-        'desc': """Cause uWSGI to gracefully reload workers and mules upon receipt of SIGTERM (its default is to brutally kill workers)""",
-        'default': 'unix_signal:15 gracefully_kill_them_all',
-        'type': 'str',
-    }),
-    ('py-call-osafterfork', {
-        'desc': """Feature necessary for proper mule signal handling on Python versions below 3.7.2. The default is set to false to prevent a runtime error under Python 3.7.2 and newer (see https://github.com/unbit/uwsgi/issues/1978).""",
-        'default': False,
-        'type': 'bool',
-    }),
-    ('enable-threads', {
-        'desc': """Ensure application threads will run if `threads` is unset.""",
-        'default': True,
-        'type': 'bool',
-    }),
-    ('umask', {
-        'desc': """uWSGI default umask. On some systems uWSGI has a default umask of 000, for Galaxy a somewhat safer default is chosen. If Galaxy submits jobs as real user then all users needs to be able to read the files, i.e. the umask needs to be '022' or the Galaxy users need to be in the same group as the Galaxy system user""",
-        'default': '027',
-        'type': 'str',
-    }),
-    # ('route-uri', {
-    #     'default': '^/proxy/ goto:proxy'
-    # }),
-    # ('route', {
-    #     'default': '.* last:'
-    # }),
-    # ('route-label', {
-    #     'default': 'proxy'
-    # }),
-    # ('route-run', {
-    #     'default': 'rpcvar:TARGET_HOST galaxy_dynamic_proxy_mapper ${HTTP_HOST} ${cookie[galaxysession]}'
-    # }),
-    # ('route-run', {
-    #     'default': "['log:Proxy ${HTTP_HOST} to ${TARGET_HOST}', 'httpdumb:${TARGET_HOST}']",
-    # }),
-    # ('http-raw-body', {
-    #     'default': True
-    # }),
-])
-
-SHED_ONLY_UWSGI_OPTIONS = [('cron', {
-    'desc': """Task for rebuilding Toolshed search indexes using the uWSGI cron-like interface.""",
-    'default': "0 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.yml --config-section tool_shed",
-    'type': 'str',
-})]
-
+YAML_COMMENT_WRAPPER = TextWrapper(
+    initial_indent="# ", subsequent_indent="# ", break_long_words=False, break_on_hyphens=False
+)
+RST_DESCRIPTION_WRAPPER = TextWrapper(
+    initial_indent="    ", subsequent_indent="    ", break_long_words=False, break_on_hyphens=False
+)
 DROP_OPTION_VALUE = object()
 
 
 class _OptionAction:
-
     def converted(self, args, app_desc, key, value):
         pass
 
@@ -200,13 +73,11 @@ class _OptionAction:
 
 
 class _DeprecatedAction(_OptionAction):
-
     def lint(self, args, app_desc, key, value):
         print(f"Option [{key}] has been deprecated, this will likely be dropped in future releases of Galaxy.")
 
 
 class _DeprecatedAndDroppedAction(_OptionAction):
-
     def converted(self, args, app_desc, key, value):
         print(f"Option [{key}] has been deprecated and dropped. It is not included in converted configuration.")
         return DROP_OPTION_VALUE
@@ -216,7 +87,6 @@ class _DeprecatedAndDroppedAction(_OptionAction):
 
 
 class _PasteAppFactoryAction(_OptionAction):
-
     def converted(self, args, app_desc, key, value):
         if value not in app_desc.expected_app_factories:
             raise Exception(f"Ending convert process - unknown paste factory encountered [{value}]")
@@ -228,7 +98,6 @@ class _PasteAppFactoryAction(_OptionAction):
 
 
 class _ProductionUnsafe(_OptionAction):
-
     def __init__(self, unsafe_value):
         self.unsafe_value = unsafe_value
 
@@ -240,7 +109,6 @@ class _ProductionUnsafe(_OptionAction):
 
 
 class _ProductionPerformance(_OptionAction):
-
     def lint(self, args, app_desc, key, value):
         template = "Problem - option [%s] should not be set to [%s] in production environments - it may cause performance issues or instability."
         message = template % (key, value)
@@ -248,14 +116,12 @@ class _ProductionPerformance(_OptionAction):
 
 
 class _HandleFilterWithAction(_OptionAction):
-
     def converted(self, args, app_desc, key, value):
         print("filter-with converted to prefixed module load of uwsgi module, dropping from converted configuration")
         return DROP_OPTION_VALUE
 
 
 class _RenameAction(_OptionAction):
-
     def __init__(self, new_name):
         self.new_name = new_name
 
@@ -269,48 +135,50 @@ class _RenameAction(_OptionAction):
 
 
 OPTION_ACTIONS = {
-    'use_beaker_session': _DeprecatedAndDroppedAction(),
-    'use_interactive': _DeprecatedAndDroppedAction(),
-    'session_type': _DeprecatedAndDroppedAction(),
-    'session_data_dir': _DeprecatedAndDroppedAction(),
-    'session_key': _DeprecatedAndDroppedAction(),
-    'session_secret': _DeprecatedAndDroppedAction(),
-    'paste.app_factory': _PasteAppFactoryAction(),
-    'filter-with': _HandleFilterWithAction(),
-    'debug': _ProductionUnsafe(True),
-    'serve_xss_vulnerable_mimetypes': _ProductionUnsafe(True),
-    'use_printdebug': _ProductionUnsafe(True),
-    'id_secret': _ProductionUnsafe('USING THE DEFAULT IS NOT SECURE!'),
-    'master_api_key': _ProductionUnsafe('changethis'),
-    'external_service_type_config_file': _DeprecatedAndDroppedAction(),
-    'external_service_type_path': _DeprecatedAndDroppedAction(),
-    'enable_sequencer_communication': _DeprecatedAndDroppedAction(),
-    'run_workflow_toolform_upgrade': _DeprecatedAndDroppedAction(),
+    "use_beaker_session": _DeprecatedAndDroppedAction(),
+    "use_interactive": _DeprecatedAndDroppedAction(),
+    "session_type": _DeprecatedAndDroppedAction(),
+    "session_data_dir": _DeprecatedAndDroppedAction(),
+    "session_key": _DeprecatedAndDroppedAction(),
+    "session_secret": _DeprecatedAndDroppedAction(),
+    "paste.app_factory": _PasteAppFactoryAction(),
+    "filter-with": _HandleFilterWithAction(),
+    "debug": _ProductionUnsafe(True),
+    "serve_xss_vulnerable_mimetypes": _ProductionUnsafe(True),
+    "use_printdebug": _ProductionUnsafe(True),
+    "id_secret": _ProductionUnsafe("USING THE DEFAULT IS NOT SECURE!"),
+    "master_api_key": _ProductionUnsafe("changethis"),
+    "external_service_type_config_file": _DeprecatedAndDroppedAction(),
+    "external_service_type_path": _DeprecatedAndDroppedAction(),
+    "enable_sequencer_communication": _DeprecatedAndDroppedAction(),
+    "run_workflow_toolform_upgrade": _DeprecatedAndDroppedAction(),
     # Next 4 were from library search which is no longer available.
-    'enable_lucene_library_search': _DeprecatedAndDroppedAction(),
-    'fulltext_max_size': _DeprecatedAndDroppedAction(),
-    'fulltext_noindex_filetypes': _DeprecatedAndDroppedAction(),
-    'fulltext_url': _DeprecatedAndDroppedAction(),
-    'enable_beta_job_managers': _DeprecatedAndDroppedAction(),
-    'enable_legacy_sample_tracking_api': _DeprecatedAction(),
-    'enable_new_user_preferences': _DeprecatedAndDroppedAction(),
-    'force_beta_workflow_scheduled_for_collections': _DeprecatedAndDroppedAction(),
-    'force_beta_workflow_scheduled_min_steps': _DeprecatedAndDroppedAction(),
-    'history_local_serial_workflow_scheduling': _ProductionPerformance(),
-    'allow_library_path_paste': _RenameAction("allow_path_paste"),
-    'trust_ipython_notebook_conversion': _RenameAction("trust_jupyter_notebook_conversion"),
-    'enable_beta_tool_command_isolation': _DeprecatedAndDroppedAction(),
-    'enable_beta_ts_api_install': _DeprecatedAndDroppedAction(),
-    'single_user': _ProductionUnsafe(True),
-    'tool_submission_burst_threads': _DeprecatedAndDroppedAction(),
-    'tool_submission_burst_at': _DeprecatedAndDroppedAction(),
-    'toolform_upgrade': _DeprecatedAndDroppedAction(),
-    'enable_beta_mulled_containers': _DeprecatedAndDroppedAction(),
-    'enable_communication_server': _DeprecatedAndDroppedAction(),
-    'communication_server_host': _DeprecatedAndDroppedAction(),
-    'communication_server_port': _DeprecatedAndDroppedAction(),
-    'persistent_communication_rooms': _DeprecatedAndDroppedAction(),
-    'legacy_eager_objectstore_initialization': _DeprecatedAndDroppedAction(),
+    "enable_lucene_library_search": _DeprecatedAndDroppedAction(),
+    "fulltext_max_size": _DeprecatedAndDroppedAction(),
+    "fulltext_noindex_filetypes": _DeprecatedAndDroppedAction(),
+    "fulltext_url": _DeprecatedAndDroppedAction(),
+    "enable_beta_job_managers": _DeprecatedAndDroppedAction(),
+    "enable_legacy_sample_tracking_api": _DeprecatedAction(),
+    "enable_new_user_preferences": _DeprecatedAndDroppedAction(),
+    "force_beta_workflow_scheduled_for_collections": _DeprecatedAndDroppedAction(),
+    "force_beta_workflow_scheduled_min_steps": _DeprecatedAndDroppedAction(),
+    "history_local_serial_workflow_scheduling": _ProductionPerformance(),
+    "allow_library_path_paste": _RenameAction("allow_path_paste"),
+    "trust_ipython_notebook_conversion": _RenameAction("trust_jupyter_notebook_conversion"),
+    "enable_beta_tool_command_isolation": _DeprecatedAndDroppedAction(),
+    "enable_beta_ts_api_install": _DeprecatedAndDroppedAction(),
+    "single_user": _ProductionUnsafe(True),
+    "tool_submission_burst_threads": _DeprecatedAndDroppedAction(),
+    "tool_submission_burst_at": _DeprecatedAndDroppedAction(),
+    "toolform_upgrade": _DeprecatedAndDroppedAction(),
+    "enable_beta_mulled_containers": _DeprecatedAndDroppedAction(),
+    "enable_communication_server": _DeprecatedAndDroppedAction(),
+    "communication_server_host": _DeprecatedAndDroppedAction(),
+    "communication_server_port": _DeprecatedAndDroppedAction(),
+    "persistent_communication_rooms": _DeprecatedAndDroppedAction(),
+    "legacy_eager_objectstore_initialization": _DeprecatedAndDroppedAction(),
+    "enable_openid": _DeprecatedAndDroppedAction(),
+    "openid_consumer_cache_path": _DeprecatedAndDroppedAction(),
 }
 
 
@@ -320,7 +188,6 @@ class App(NamedTuple):
     expected_app_factories: List[str]
     destination: str
     schema_path: str
-    uwsgi_module: str
 
     @property
     def app_name(self):
@@ -344,26 +211,23 @@ class OptionValue(NamedTuple):
 GALAXY_APP = App(
     ["universe_wsgi.ini", "config/galaxy.ini"],
     "8080",
-    ["galaxy.web.buildapp:app_factory"],  # TODO: Galaxy could call factory a few different things and they'd all be fine.
+    ["galaxy.web.buildapp:app_factory"],
     "config/galaxy.yml",
-    GALAXY_CONFIG_SCHEMA_PATH,
-    'galaxy.webapps.galaxy.buildapp:uwsgi_app()',
+    str(GALAXY_CONFIG_SCHEMA_PATH),
 )
 SHED_APP = App(
     ["tool_shed_wsgi.ini", "config/tool_shed.ini"],
     "9009",
     ["tool_shed.webapp.buildapp:app_factory"],
     "config/tool_shed.yml",
-    "lib/tool_shed/webapp/config_schema.yml",
-    'tool_shed.webapp.buildapp:uwsgi_app()',
+    str(TOOL_SHED_CONFIG_SCHEMA_PATH),
 )
 REPORTS_APP = App(
     ["reports_wsgi.ini", "config/reports.ini"],
     "9001",
     ["galaxy.webapps.reports.buildapp:app_factory"],
     "config/reports.yml",
-    "lib/galaxy/webapps/reports/config_schema.yml",
-    'galaxy.webapps.reports.buildapp:uwsgi_app()',
+    str(REPORTS_CONFIG_SCHEMA_PATH),
 )
 APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}
 
@@ -382,15 +246,11 @@ def main(argv=None):
 
 def _arg_parser():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument('action', metavar='ACTION', type=str,
-                        choices=list(ACTIONS.keys()),
-                        help='action to perform')
-    parser.add_argument('app', metavar='APP', type=str, nargs="?",
-                        help=APP_DESCRIPTION)
-    parser.add_argument('--add-comments', default=False, action="store_true")
-    parser.add_argument('--dry-run', default=False, action="store_true",
-                        help=DRY_RUN_DESCRIPTION)
-    parser.add_argument('--galaxy_root', default=".", type=str)
+    parser.add_argument("action", metavar="ACTION", type=str, choices=list(ACTIONS.keys()), help="action to perform")
+    parser.add_argument("app", metavar="APP", type=str, nargs="?", help=APP_DESCRIPTION)
+    parser.add_argument("--add-comments", default=False, action="store_true")
+    parser.add_argument("--dry-run", default=False, action="store_true", help=DRY_RUN_DESCRIPTION)
+    parser.add_argument("--galaxy_root", default=".", type=str)
     return parser
 
 
@@ -431,43 +291,6 @@ def _write_option_rst(args, rst, key, heading_level, option_value):
     if type:
         rst.write(f":Type: {type}\n")
     rst.write("\n\n")
-
-
-def _build_uwsgi_schema(args, app_desc):
-    req = requests.get('https://raw.githubusercontent.com/unbit/uwsgi-docs/master/Options.rst')
-    rst_options = req.text
-    last_line = None
-    current_opt = None
-
-    options = {}
-    option = None
-    for line in rst_options.splitlines():
-        line = line.strip()
-        dots = "*" * len(line)
-        if line and (line == dots):
-            current_opt = last_line
-            option = {
-                'type': 'any',
-            }
-            options[current_opt] = option
-
-        if line.startswith("``parser``"):
-            parser = line.split(":", 1)[1].strip()
-            if parser == "uwsgi_opt_set_int":
-                option["type"] = "int"
-            # TODO: disptch on parser...
-        elif line.startswith("``help``"):
-            option["desc"] = line.split(":", 1)[1]
-
-        last_line = line
-    schema = {
-        "type": "map",
-        "desc": "uwsgi definition, see https://uwsgi-docs.readthedocs.io/en/latest/Options.html",
-        "mapping": options
-    }
-    path = os.path.join(args.galaxy_root, UWSGI_SCHEMA_PATH)
-    contents = ordered_dump(schema)
-    _write_to_file(args, contents, path)
 
 
 def _find_config(args, app_desc):
@@ -531,14 +354,14 @@ def _validate(args, app_desc):
     if raw_config.get(app_desc.app_name) is None:
         raw_config[app_desc.app_name] = {}
     # Rewrite the file any way to merge any duplicate keys
-    with tempfile.NamedTemporaryFile('w', delete=False, suffix=".yml") as config_p:
+    with tempfile.NamedTemporaryFile("w", delete=False, suffix=".yml") as config_p:
         ordered_dump(raw_config, config_p)
 
     def _clean(p, k, v):
-        return k not in ['reloadable', 'path_resolves_to', 'per_host']
+        return k not in ["reloadable", "path_resolves_to", "per_host"]
 
     clean_schema = remap(app_desc.schema.raw_schema, _clean)
-    with tempfile.NamedTemporaryFile('w', suffix=".yml") as fp:
+    with tempfile.NamedTemporaryFile("w", suffix=".yml") as fp:
         ordered_dump(clean_schema, fp)
         fp.flush()
         c = Core(
@@ -550,14 +373,12 @@ def _validate(args, app_desc):
 
 
 class PrefixFilter:
-
     def __init__(self, name, prefix):
         self.name = name
         self.prefix = prefix
 
 
 class GzipFilter:
-
     def __init__(self, name):
         self.name = name
 
@@ -572,53 +393,7 @@ def _run_conversion(args, app_desc):
         sys.exit(1)
 
     p = nice_config_parser(ini_config)
-    server_section = None
-    filters = {}
-    for section in p.sections():
-        if section.startswith("server:"):
-            if server_section:
-                _warn(EXTRA_SERVER_MESSAGE % (server_section, section))
-            else:
-                server_section = section
-
-        if section.startswith("filter:"):
-            filter_name = section[len("filter:"):]
-            filter_type = p.get(section, "use")
-            if filter_type is None:
-                MISSING_FILTER_TYPE_MESSAGE
-                message = EXTRA_SERVER_MESSAGE % section
-                _warn(message)
-                continue
-
-            if filter_type == "egg:PasteDeploy#prefix":
-                prefix = p.get(section, "prefix")
-                filters[filter_name] = PrefixFilter(filter_name, prefix)
-            elif filter_type == "egg:Paste#gzip":
-                filters[filter_name] = GzipFilter(filter_name)
-            else:
-                message = UNHANDLED_FILTER_TYPE_MESSAGE % (filter_type, section)
-                _warn(message)
-                continue
-
-    if not server_section:
-        _warn("No server section found, using default uwsgi server definition.")
-        server_config = {}
-    else:
-        server_config = dict(p.items(server_section))
-
     app_items = _find_app_options_from_config_parser(p)
-    applied_filters = []
-    if filters:
-        for key, value in app_items.items():
-            if key == "filter-with":
-                if value in filters:
-                    applied_filters.append(filters[value])
-                else:
-                    _warn(f"Unknown filter found [{value}], exiting...")
-                    sys.exit(1)
-
-    uwsgi_dict = _server_paste_to_uwsgi(app_desc, server_config, applied_filters)
-
     app_dict = {}
     schema = app_desc.schema
     for key, value in app_items.items():
@@ -645,7 +420,6 @@ def _run_conversion(args, app_desc):
         app_dict[key] = option_value
 
     f = StringIO()
-    _write_section(args, f, "uwsgi", uwsgi_dict, uwsgi_hack=True)
     _write_section(args, f, app_desc.app_name, app_dict)
     destination = os.path.join(args.galaxy_root, app_desc.destination)
     _replace_file(args, f, app_desc, ini_config, destination)
@@ -666,30 +440,17 @@ def _replace_file(args, f, app_desc, from_path, to_path):
 
 
 def _build_sample_yaml(args, app_desc):
-    if app_desc.app_name in ["tool_shed"]:
-        UWSGI_OPTIONS.update(SHED_ONLY_UWSGI_OPTIONS)
     schema = app_desc.schema
     f = StringIO()
-    for value in UWSGI_OPTIONS.values():
-        for field in ["desc", "default"]:
-            if field not in value:
-                continue
-            field_value = value[field]
-            if not isinstance(field_value, str):
-                continue
-
-            new_field_value = string.Template(field_value).safe_substitute(**{
-                'default_port': str(app_desc.default_port),
-                'app_name': app_desc.app_name,
-                'uwsgi_module': app_desc.uwsgi_module,
-            })
-            value[field] = new_field_value
     description = getattr(schema, "description", None)
     if description:
         description = description.lstrip()
         as_comment = "\n".join(f"# {line}" for line in description.split("\n")) + "\n"
         f.write(as_comment)
-    _write_sample_section(args, f, 'uwsgi', Schema(UWSGI_OPTIONS), as_comment=False, uwsgi_hack=True)
+    if app_desc.app_name == "galaxy":
+        if settings_to_sample is None:
+            raise Exception("Please install gravity to rebuild the sample config")
+        f.write(settings_to_sample())
     _write_sample_section(args, f, app_desc.app_name, schema)
     destination = os.path.join(args.galaxy_root, app_desc.sample_destination)
     _write_to_file(args, f, destination)
@@ -715,32 +476,31 @@ def _order_load_path(path):
     """Load (with ``_ordered_load``) on specified path (a YAML file)."""
     with open(path) as f:
         # Allow empty mapping (not allowed by pykwalify)
-        raw_config = ordered_load(f, merge_duplicate_keys=True)
+        raw_config = ordered_load(f)
         return raw_config
 
 
-def _write_sample_section(args, f, section_header, schema, as_comment=True, uwsgi_hack=False):
+def _write_sample_section(args, f, section_header, schema, as_comment=True):
     _write_header(f, section_header)
     for key, value in schema.app_schema.items():
         default = None if "default" not in value else value["default"]
         option = schema.get_app_option(key)
         option_value = OptionValue(key, default, option)
-        # support uWSGI "dumb YAML parser" (unbit/uwsgi#863)
-        key = option.get('key', key)
-        _write_option(args, f, key, option_value, as_comment=as_comment, uwsgi_hack=uwsgi_hack)
+        key = option.get("key", key)
+        _write_option(args, f, key, option_value, as_comment=as_comment)
 
 
-def _write_section(args, f, section_header, section_dict, uwsgi_hack=False):
+def _write_section(args, f, section_header, section_dict):
     _write_header(f, section_header)
     for key, option_value in section_dict.items():
-        _write_option(args, f, key, option_value, uwsgi_hack=uwsgi_hack)
+        _write_option(args, f, key, option_value)
 
 
 def _write_header(f, section_header):
     f.write(f"{section_header}:\n\n")
 
 
-def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False):
+def _write_option(args, f, key, option_value, as_comment=False):
     option, value = _parse_option_value(option_value)
     desc = _get_option_desc(option)
     comment = ""
@@ -749,12 +509,7 @@ def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False
         # for double newlines which are replaced with a single newline.
         comment += "\n".join("\n".join(YAML_COMMENT_WRAPPER.wrap(_)) for _ in desc.split("\n\n")) + "\n"
     as_comment_str = "#" if as_comment else ""
-    if uwsgi_hack:
-        if option.get("type", "str") == "bool":
-            value = str(value).lower()
-        key_val_str = f"{key}: {value}"
-    else:
-        key_val_str = yaml.dump({key: value}, width=math.inf).lstrip("{").rstrip("\n}")
+    key_val_str = yaml.dump({key: value}, width=math.inf).lstrip("{").rstrip("\n}")
     lines = f"{comment}{as_comment_str}{key_val_str}"
     lines_idented = "\n".join(f"  {line}" for line in lines.split("\n"))
     f.write(f"{lines_idented}\n\n")
@@ -768,43 +523,13 @@ def _parse_option_value(option_value):
         if option.get("type", "str") == "bool":
             value = str(value).lower() == "true"
         elif option.get("type", "str") == "int":
+            if value is None:
+                raise Exception(f"Failed to parse value for {option}, expected int got None")
             value = int(value)
     else:
         value = option_value
         option = OPTION_DEFAULTS
     return option, value
-
-
-def _server_paste_to_uwsgi(app_desc, server_config, applied_filters):
-    uwsgi_dict = {}
-    port = server_config.get("port", app_desc.default_port)
-    host = server_config.get("host", "127.0.0.1")
-
-    if server_config.get("use", "egg:Paste#http") != "egg:Paste#http":
-        raise Exception("Unhandled paste server 'use' value [%s], file must be manually migrate.")
-
-    uwsgi_dict["http"] = f"{host}:{port}"
-    # default changing from 10 to 8
-    uwsgi_dict["threads"] = int(server_config.get("threadpool_workers", 8))
-    # required for static...
-    uwsgi_dict["http-raw-body"] = True
-    uwsgi_dict["offload-threads"] = 8
-
-    # Handle paste filters during conversion.
-    prefix = None
-    for applied_filter in applied_filters:
-        if isinstance(applied_filter, PrefixFilter):
-            prefix = applied_filter.prefix
-            break
-        elif isinstance(applied_filter, GzipFilter):
-            uwsgi_dict["http-auto-gzip"] = True
-
-    if prefix:
-        uwsgi_dict["mount"] = f"{prefix}={app_desc.uwsgi_module}"
-        uwsgi_dict["manage-script-name"] = True
-    else:
-        uwsgi_dict["module"] = app_desc.uwsgi_module
-    return uwsgi_dict
 
 
 def _warn(message):
@@ -825,10 +550,9 @@ ACTIONS = {
     "build_sample_yaml": _build_sample_yaml,
     "validate": _validate,
     "lint": _lint,
-    "build_uwsgi_yaml": _build_uwsgi_schema,
     "build_rst": _to_rst,
 }
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

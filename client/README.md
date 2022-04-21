@@ -75,8 +75,7 @@ This will start up an extra client development server running on port 8081.
 Open your browser to http://localhost:8081 (instead of the default 8080 that
 Galaxy would run on), and you should see Galaxy like normal.  Except now, when
 you change client code it'll automatically rebuild *and* reload the relevant
-portion of the application for you.  Note that unlike previous versions of this
-functionality, it is no longer required to use uWSGI for this.  Lastly, if you
+portion of the application for you. Lastly, if you
 are running Galaxy at a location other than the default, you can specify a
 different proxy target (in this example, port 8000) using the GALAXY_URL
 environment variable:
@@ -91,7 +90,7 @@ Sometimes you want to run your local UI against a remote Galaxy server. This is 
 
 Galaxy uses Sass for its styling, which is a superset of CSS that compiles down
 to regular CSS. Most Galaxy styling source (.scss) files are kept in
-`client/src/style/scss. There are additionally style blocks alongside some Vue
+`client/src/style/scss`. There are additionally style blocks alongside some Vue
 components -- styles that are particular to that individual component and do
 not apply site-wide.
 

@@ -9,7 +9,6 @@ import requests
 
 
 class RemoteGalaxy:
-
     def __init__(self, url, api_key):
         self.url = url
         self.api_key = api_key
@@ -17,15 +16,17 @@ class RemoteGalaxy:
     def get(self, path):
         c_url = self.url + path
         params = {}
-        params['key'] = self.api_key
+        params["key"] = self.api_key
         req = requests.get(c_url, params=params)
         return req.json()
 
     def post(self, path, payload):
         c_url = self.url + path
         params = {}
-        params['key'] = self.api_key
-        req = requests.post(c_url, data=json.dumps(payload), params=params, headers={'Content-Type': 'application/json'})
+        params["key"] = self.api_key
+        req = requests.post(
+            c_url, data=json.dumps(payload), params=params, headers={"Content-Type": "application/json"}
+        )
         return req.json()
 
 

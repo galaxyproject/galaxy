@@ -3,9 +3,13 @@ on:
   push:
     paths:
       - '**.py'
+      - '.github/workflows/lint.yaml'
+      - lib/galaxy/dependencies/**
   pull_request:
     paths:
       - '**.py'
+      - '.github/workflows/lint.yaml'
+      - lib/galaxy/dependencies/**
 concurrency:
   group: py-lint-${{ github.ref }}
   cancel-in-progress: true
@@ -43,3 +47,5 @@ jobs:
         run: tox -e lint_docstring_include_list
       - name: Run mypy checks
         run: tox -e mypy
+      - uses: psf/black@stable
+      - uses: jamescurtin/isort-action@master

@@ -4,10 +4,15 @@ on:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
   pull_request:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
+  schedule:
+    # Run at midnight UTC every Tuesday
+    - cron: '0 0 * * 2'
 env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
 concurrency:
@@ -30,6 +35,10 @@ jobs:
         ports:
           - 5432:5432
     steps:
+      - if: github.event_name == 'schedule'
+        run: |
+          echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
+          echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
       - uses: actions/checkout@v2
         with:
           path: 'galaxy root'
@@ -48,7 +57,7 @@ jobs:
       - name: Cache galaxy venv
         uses: actions/cache@v2
         with:
-          path: .venv
+          path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-performance
       - name: Run tests
         run: ./run_tests.sh --ci_test_metrics --structured_data_html --structured_data_report_file "test.json" --skip_flakey_fails -api lib/galaxy_test/performance

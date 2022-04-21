@@ -72,16 +72,15 @@ export function matchCase(input, value) {
 }
 
 /** Match server validation response to highlight errors
- * @param{dict}   response  - Nested dictionary with error messages
  * @param{dict}   index     - Index of input elements
+ * @param{dict}   response  - Nested dictionary with error messages
  */
-export function matchErrors(response, index) {
+export function matchErrors(index, response) {
     var result = {};
     function search(id, head) {
         if (typeof head === "string") {
-            var input_id = index[id];
-            if (input_id) {
-                result[input_id] = head;
+            if (index[id]) {
+                result[id] = head;
             }
         } else {
             for (var i in head) {
@@ -159,17 +158,4 @@ export function validateInputs(index, values) {
         }
     }
     return null;
-}
-
-/** Input element DOM identifiers are required to uniquely tag input elements for tours, testing and error highlighting.
- * DOM identifiers are not allowed to contain any other characters than [a-zA-Z0-9], hyphen(-) and underscore(_). This
- * is function applies a naive approach to sanitize input identifiers and might require to be revisited for a more resilient
- * approach and to cover corner cases.
- * @param{string}   id      - Input identifier e.g. "repeat_0|name"
- */
-export function getElementId(id) {
-    if (id) {
-        const clearId = id.replace(/\|/g, "-");
-        return `form-element-${clearId}`;
-    }
 }

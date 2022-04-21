@@ -1,4 +1,4 @@
-<tool id="multi_output_recurse" name="multi_output_recurse" version="0.1.0" profile="18.01">
+<tool id="multi_output_recurse" name="multi_output_recurse" version="0.1.0" profile="21.09">
   <command><![CDATA[
     echo "Hello" > '$report';
     mkdir subdir1;

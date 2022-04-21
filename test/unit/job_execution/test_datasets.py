@@ -9,7 +9,9 @@ def test_dataset_path():
     assert dataset_path_1.mutable
     assert str(dataset_path_1) == "/galaxy/database/files/dataset_1.dat"
 
-    dataset_path_2 = DatasetPath(2, "/galaxy/database/files/dataset_2.dat", false_path="/mnt/galaxyData/files/dataset_2.dat", mutable=False)
+    dataset_path_2 = DatasetPath(
+        2, "/galaxy/database/files/dataset_2.dat", false_path="/mnt/galaxyData/files/dataset_2.dat", mutable=False
+    )
     assert dataset_path_2.dataset_id == 2
     assert dataset_path_2.real_path == "/galaxy/database/files/dataset_2.dat"
     assert dataset_path_2.false_path == "/mnt/galaxyData/files/dataset_2.dat"

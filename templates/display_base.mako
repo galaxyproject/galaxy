@@ -77,7 +77,7 @@
 </%def>
 
 <%def name="render_item_header( item )">
-    <h3>${get_item_name( item )| h}</h3>
+    <h3 class="item_name">${get_item_name( item )| h}</h3>
     %if hasattr( item, "annotation") and item.annotation is not None:
         <div class="annotation">Annotation: ${item.annotation}</div>
     %endif
@@ -114,7 +114,7 @@
         href_to_user_items = href_to_user_items.replace( 'xxx', 'f-username')
     %>
     <div class="page-body p-3">
-        <div>
+        <div class="page-item-header">
             ${self.render_item_header( item )}
         </div>
         ${self.render_item( item, item_data )}

@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <CurrentUser v-slot="{ user }">
         <div>
             <FolderTopBar
                 @updateSearch="updateSearchValue($event)"
@@ -208,7 +208,7 @@
                             Edit
                         </b-button>
                         <b-button
-                            v-if="row.item.can_manage && !row.item.deleted"
+                            v-if="user.is_admin"
                             size="sm"
                             class="lib-btn permission_lib_btn"
                             :title="`Permissions of ${row.item.name}`"
@@ -267,7 +267,7 @@
                 </b-row>
             </b-container>
         </div>
-    </div>
+    </CurrentUser>
 </template>
 
 <script>
@@ -277,13 +277,14 @@ import UtcDate from "components/UtcDate";
 import BootstrapVue from "bootstrap-vue";
 import { Services } from "./services";
 import Utils from "utils/utils";
-import linkify from "linkifyjs/html";
+import linkifyHtml from "linkify-html";
 import { fields } from "./table-fields";
 import { Toast } from "ui/toast";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
 import { initFolderTableIcons } from "components/Libraries/icons";
 import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE } from "components/Libraries/library-utils";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import CurrentUser from "components/providers/CurrentUser";
 
 initFolderTableIcons();
 
@@ -316,6 +317,7 @@ export default {
         FolderTopBar,
         UtcDate,
         FontAwesomeIcon,
+        CurrentUser,
     },
     data() {
         return {
@@ -505,7 +507,7 @@ export default {
             this.isBusy = value;
         },
         linkify(raw_text) {
-            return linkify(raw_text);
+            return linkifyHtml(raw_text);
         },
         toggleEditMode(item) {
             item.editMode = !item.editMode;

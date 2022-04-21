@@ -6,14 +6,16 @@ Galaxy Markdown. Keeping things isolated to allow re-use of these utilities in o
 projects (e.g. gxformat2).
 """
 import re
-from typing import cast, Dict, List, Union
-
-
-BLOCK_FENCE_START = re.compile(r'```.*')
-BLOCK_FENCE_END = re.compile(r'```[\s]*')
-GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
-    r"```\s*galaxy\s*"
+from typing import (
+    cast,
+    Dict,
+    List,
+    Union,
 )
+
+BLOCK_FENCE_START = re.compile(r"```.*")
+BLOCK_FENCE_END = re.compile(r"```[\s]*")
+GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(r"```\s*galaxy\s*")
 VALID_CONTAINER_END_PATTERN = re.compile(r"^```\s*$")
 
 
@@ -48,12 +50,12 @@ VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
     "invocation_inputs": [],
 }
 GALAXY_FLAVORED_MARKDOWN_CONTAINERS = list(VALID_ARGUMENTS.keys())
-GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = r'(?P<container>%s)' % "|".join(GALAXY_FLAVORED_MARKDOWN_CONTAINERS)
+GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = r"(?P<container>%s)" % "|".join(GALAXY_FLAVORED_MARKDOWN_CONTAINERS)
 
-ARG_VAL_REGEX = r'''[\w_\-]+|\"[^\"]+\"|\'[^\']+\''''
-FUNCTION_ARG = r'\s*[\w\|]+\s*=\s*(?:%s)\s*' % ARG_VAL_REGEX
+ARG_VAL_REGEX = r"""[\w_\-]+|\"[^\"]+\"|\'[^\']+\'"""
+FUNCTION_ARG = r"\s*[\w\|]+\s*=\s*(?:%s)\s*" % ARG_VAL_REGEX
 # embed commas between arguments
-FUNCTION_MULTIPLE_ARGS = fr'(?P<firstargcall>{FUNCTION_ARG})(?P<restargcalls>(?:,{FUNCTION_ARG})*)'
+FUNCTION_MULTIPLE_ARGS = rf"(?P<firstargcall>{FUNCTION_ARG})(?P<restargcalls>(?:,{FUNCTION_ARG})*)"
 FUNCTION_MULTIPLE_ARGS_PATTERN = re.compile(FUNCTION_MULTIPLE_ARGS)
 FUNCTION_CALL_LINE_TEMPLATE = f"\\s*%s\\s*\\((?:{FUNCTION_MULTIPLE_ARGS})?\\)\\s*"
 GALAXY_MARKDOWN_FUNCTION_CALL_LINE = re.compile(FUNCTION_CALL_LINE_TEMPLATE % GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX)
@@ -75,7 +77,11 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
 
         expecting_container_close = expecting_container_close_for is not None
         if not fenced and expecting_container_close:
-            invalid_line("[{line}] is not expected close line for [{expected_for}]", line=line, expected_for=expecting_container_close_for)
+            invalid_line(
+                "[{line}] is not expected close line for [{expected_for}]",
+                line=line,
+                expected_for=expecting_container_close_for,
+            )
             continue
         elif not fenced:
             continue
@@ -86,7 +92,11 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
         elif open_fence and GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN.match(line):
             if expecting_container_close:
                 if not VALID_CONTAINER_END_PATTERN.match(line):
-                    invalid_line("Invalid command close line [{line}] for [{expected_for}]", line=line, expected_for=expecting_container_close_for)
+                    invalid_line(
+                        "Invalid command close line [{line}] for [{expected_for}]",
+                        line=line,
+                        expected_for=expecting_container_close_for,
+                    )
                 # else closing container and we're done
                 expecting_container_close_for = None
                 function_calls = 0
@@ -159,6 +169,6 @@ def _split_markdown_lines(markdown):
 
 
 __all__ = (
-    'validate_galaxy_markdown',
-    'GALAXY_MARKDOWN_FUNCTION_CALL_LINE',
+    "validate_galaxy_markdown",
+    "GALAXY_MARKDOWN_FUNCTION_CALL_LINE",
 )

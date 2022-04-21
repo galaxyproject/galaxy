@@ -8,8 +8,7 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "dropbox_file_sources_conf.yml")
 
 skip_if_no_dropbox_access_token = pytest.mark.skipif(
-    not os.environ.get('GALAXY_TEST_DROPBOX_ACCESS_TOKEN'),
-    reason="GALAXY_TEST_DROPBOX_ACCESS_TOKEN not set"
+    not os.environ.get("GALAXY_TEST_DROPBOX_ACCESS_TOKEN"), reason="GALAXY_TEST_DROPBOX_ACCESS_TOKEN not set"
 )
 
 

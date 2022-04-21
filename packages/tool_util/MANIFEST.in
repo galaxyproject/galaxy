@@ -3,3 +3,4 @@ include galaxy/tool_util/deps/mulled/invfile.lua
 include galaxy/tool_util/deps/resolvers/default_conda_mapping.yml
 include galaxy/tool_util/verify/test_config.sample.yml
 include galaxy/tool_util/xsd/*
+include galaxy/tool_util/ontologies/*tsv

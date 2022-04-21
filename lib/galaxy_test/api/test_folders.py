@@ -3,7 +3,6 @@ from ._framework import ApiTestCase
 
 
 class FoldersApiTestCase(ApiTestCase):
-
     def setUp(self):
         super().setUp()
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
@@ -33,7 +32,7 @@ class FoldersApiTestCase(ApiTestCase):
         data = {
             "add_ids[]": [role_id],
             "manage_ids[]": role_id,  # string-lists also supported
-            "modify_ids[]": [role_id]
+            "modify_ids[]": [role_id],
         }
         response = self._post(f"folders/{folder_id}/permissions?action={action}", data=data, admin=True, json=True)
         self._assert_status_code_is(response, 200)
@@ -128,7 +127,7 @@ class FoldersApiTestCase(ApiTestCase):
             "update_time",
             "deleted",
             "library_path",
-            "parent_library_id"
+            "parent_library_id",
         )
 
     def _assert_valid_permissions(self, permissions):

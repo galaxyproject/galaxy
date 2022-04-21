@@ -56,7 +56,7 @@ export default {
             return this.hasCallback ? "Cancel" : "Close";
         },
         history_id() {
-            const storeId = this.$store?.getters["betaHistory/currentHistoryId"];
+            const storeId = this.$store?.getters["history/currentHistoryId"];
             if (storeId) {
                 return storeId;
             }
@@ -288,12 +288,8 @@ export default {
             }
         },
         /** Create a new file */
-        _eventCreate: function (withNewFile) {
-            if (withNewFile == true) {
-                this.uploadbox.add([{ name: defaultNewFileName, size: 0, mode: "new" }]);
-            } else if (withNewFile == false) {
-                this.uploadbox.add([{ size: 0, mode: "new" }]);
-            }
+        _eventCreate: function () {
+            this.uploadbox.add([{ name: defaultNewFileName, size: 0, mode: "new" }]);
         },
         /** Pause upload process */
         _eventStop: function () {
@@ -369,15 +365,6 @@ export default {
                     model.set("genome", genome);
                 }
             });
-        },
-        getUploadedModels: function () {
-            const Galaxy = getGalaxyInstance();
-            const allHids = [];
-            this.collection.models.forEach((upload) => {
-                allHids.push.apply(allHids, upload.get("hids"));
-            });
-            const models = allHids.map((hid) => Galaxy.currHistoryPanel.collection.getByHid(hid));
-            return models;
         },
         getRequestUrl: function (items, history_id) {
             return `${getAppRoot()}api/tools/fetch`;

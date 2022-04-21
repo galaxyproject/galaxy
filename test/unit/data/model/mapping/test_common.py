@@ -11,10 +11,13 @@ from sqlalchemy import (
     Index,
     Integer,
     select,
-    UniqueConstraint
+    UniqueConstraint,
 )
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import registry, Session
+from sqlalchemy.orm import (
+    registry,
+    Session,
+)
 
 from galaxy.model import _HasTable
 from .common import (
@@ -50,7 +53,7 @@ def test_get_stored_obj_must_have_obj_id_xor_where_clause():
     Verify that function must be called with either obj_id or where_clause, but not both.
     """
     with pytest.raises(AssertionError):
-        get_stored_obj(None, None, obj_id=1, where_clause='a')
+        get_stored_obj(None, None, obj_id=1, where_clause="a")
     with pytest.raises(AssertionError):
         get_stored_obj(None, None, obj_id=None, where_clause=None)
 
@@ -136,6 +139,7 @@ def test_dbcleanup_wrapper(session):
     Verify dbcleanup_wrapper has same effect as dbcleanup context manager,
     and yields the object instance.
     """
+
     @contextmanager  # we need a context manager to similate scope
     def managed(a, b):
         yield from dbcleanup_wrapper(a, b)
@@ -153,13 +157,13 @@ def test_dbcleanup_wrapper(session):
 
 
 def test_has_index(session):
-    assert has_index(Bar.__table__, ('field1',))
-    assert not has_index(Foo.__table__, ('field1',))
+    assert has_index(Bar.__table__, ("field1",))
+    assert not has_index(Foo.__table__, ("field1",))
 
 
 def test_has_unique_constraint(session):
-    assert has_unique_constraint(Bar.__table__, ('field2',))
-    assert not has_unique_constraint(Foo.__table__, ('field1',))
+    assert has_unique_constraint(Bar.__table__, ("field2",))
+    assert not has_unique_constraint(Foo.__table__, ("field1",))
 
 
 def test_collection_consists_of_objects(session):
@@ -204,31 +208,31 @@ mapper_registry = registry()
 
 @mapper_registry.mapped
 class Foo(_HasTable):
-    __tablename__ = 'foo'
+    __tablename__ = "foo"
     id = Column(Integer, primary_key=True)
     field1 = Column(Integer)
 
 
 @mapper_registry.mapped
 class Bar(_HasTable):
-    __tablename__ = 'bar'
+    __tablename__ = "bar"
     id = Column(Integer, primary_key=True)
     field1 = Column(Integer)
     field2 = Column(Integer)
     __table_args__ = (
-        Index('ix', 'field1'),
-        UniqueConstraint('field2'),
+        Index("ix", "field1"),
+        UniqueConstraint("field2"),
     )
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def engine():
     """Create connection engine. (Fixture is module-scoped)."""
-    db_uri = 'sqlite:///:memory:'  # We only need sqlite for these tests
+    db_uri = "sqlite:///:memory:"  # We only need sqlite for these tests
     return create_engine(db_uri)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def init(engine):
     """Create database objects. (Fixture is module-scoped)."""
     mapper_registry.metadata.create_all(engine)

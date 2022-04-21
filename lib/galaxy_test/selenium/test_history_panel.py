@@ -1,14 +1,11 @@
 import pytest
 
-from galaxy.selenium.navigates_galaxy import (
-    edit_details
-)
+from galaxy.selenium.navigates_galaxy import edit_details
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
     SeleniumTestCase,
 )
-
 
 NEW_HISTORY_NAME = "New History Name"
 
@@ -23,7 +20,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         name_element = self.history_panel_name_element()
         if self.is_beta_history():
             # look for the editor icon
-            editor = self.components.history_panel.editor.selector(scope=".beta.history")
+            editor = self.components.history_panel.editor.selector(scope=".history-index")
             toggle = editor.toggle
             toggle.wait_for_visible()
         else:
@@ -41,7 +38,9 @@ class HistoryPanelTestCase(SeleniumTestCase):
     @selenium_test
     def test_history_rename_confirm_with_click(self):
         if self.is_beta_history():
-            raise pytest.skip("Beta History Panel has explicit editing toggle mode, so can not click off to the side to save")
+            raise pytest.skip(
+                "Beta History Panel has explicit editing toggle mode, so can not click off to the side to save"
+            )
         editable_text_input_element = self.history_panel_name_input()
         editable_text_input_element.send_keys(NEW_HISTORY_NAME)
         self.click_center()
@@ -61,7 +60,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
     @edit_details
     def test_history_tags_and_annotations_buttons(self):
         if self.is_beta_history():
-            history_editor = self.components.history_panel.editor.selector(scope=".beta.history")
+            history_editor = self.components.history_panel.editor.selector(scope=".history-index")
             history_editor.annotation_input.wait_for_clickable()
             history_editor.tags_input.wait_for_clickable()
         else:
@@ -100,18 +99,15 @@ class HistoryPanelTestCase(SeleniumTestCase):
         history_panel = self.components.history_panel
 
         @retry_assertion_during_transitions
-        def assert_current_annotation(expected, error_message="History annotation",
-                                      is_equal=True):
+        def assert_current_annotation(expected, error_message="History annotation", is_equal=True):
 
             text_component = history_panel.annotation_editable_text
             current_annotation = text_component.wait_for_visible()
             error_message += " given: [%s] expected [%s] "
             if is_equal:
-                assert current_annotation.text == expected, error_message % (
-                    current_annotation.text, expected)
+                assert current_annotation.text == expected, error_message % (current_annotation.text, expected)
             else:
-                assert current_annotation.text != expected, error_message % (
-                    current_annotation.text, expected)
+                assert current_annotation.text != expected, error_message % (current_annotation.text, expected)
 
         def set_random_annotation(clear_text=True):
             random_annotation = self._get_random_name(prefix="arbitrary_annotation_")
@@ -128,15 +124,17 @@ class HistoryPanelTestCase(SeleniumTestCase):
         # change annotation text
         changed_annotation = set_random_annotation()
 
-        assert_current_annotation(initial_annotation, error_message="History annotation was not changed!",
-                                  is_equal=False)
-        assert_current_annotation(changed_annotation,
-                                  error_message="History annotation was changed, but annotation text is wrong!",
-                                  is_equal=True)
+        assert_current_annotation(
+            initial_annotation, error_message="History annotation was not changed!", is_equal=False
+        )
+        assert_current_annotation(
+            changed_annotation,
+            error_message="History annotation was changed, but annotation text is wrong!",
+            is_equal=True,
+        )
 
     @selenium_test
     def test_history_panel_tags_change(self):
-
         def create_tags(size):
             history_panel_tags = list()
             for i in range(size):
@@ -160,7 +158,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         # looks like this is intended to check if the tag editor is open
         def assert_no_tags():
             if self.is_beta_history():
-                tags_component = self.components.history_panel.tag_editor.selector(scope=".beta.history")
+                tags_component = self.components.history_panel.tag_editor.selector(scope=".history-index")
                 tags_component.display.assert_absent_or_hidden()
             else:
                 self.components.history_panel.tag_area.assert_absent_or_hidden()
@@ -174,18 +172,21 @@ class HistoryPanelTestCase(SeleniumTestCase):
 
         # add more tags to non-empty tags area
         tags += add_tags(tags_size)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        if self.is_beta_history():
+            tags.sort()
         assert_current_tags(tags)
 
         # delete all tags
         expected_tags_len = len(tags)
         self.clear_tags(expected_tags_len)
-
+        self.sleep_for(self.wait_types.UX_RENDER)
         assert_no_tags()
 
     # after about 5 tags, a toggle link shows up and you have to click it to see the full list
     def open_tags(self):
-        tags_component = self.components.history_panel.tag_editor.selector(scope=".beta.history")
-        if not tags_component.toggle.is_absent:
+        tags_component = self.components.history_panel.tag_editor.selector(scope=".history-index")
+        if tags_component.tag_area.is_absent:
             tags_component.toggle.wait_for_and_click()
         tags_component.display.wait_for_visible()
         return tags_component.display
@@ -194,7 +195,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
     def clear_tags(self, expected_tags_size):
         if self.is_beta_history():
             self.open_tags()
-            tags = self.components.history_panel.tag_editor.selector(scope=".beta.history")
+            tags = self.components.history_panel.tag_editor.selector(scope=".history-index")
             close_tag_buttons = tags.tag_close_btn.all()
         else:
             close_tag_buttons = self.components.history_panel.tag_close_btn.all()

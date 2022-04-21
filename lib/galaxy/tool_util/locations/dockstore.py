@@ -4,9 +4,7 @@ import requests
 import yaml
 
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
-from ..locations import (
-    ToolLocationResolver,
-)
+from ..locations import ToolLocationResolver
 
 
 class DockStoreResolver(ToolLocationResolver):
@@ -15,7 +13,7 @@ class DockStoreResolver(ToolLocationResolver):
 
     def get_tool_source_path(self, uri_like):
         assert uri_like.startswith("dockstore://")
-        tool_id = uri_like[len("dockstore://"):]
+        tool_id = uri_like[len("dockstore://") :]
         if ":" in tool_id:
             tool_id, version = tool_id.split(":", 1)
         else:
@@ -28,7 +26,6 @@ class DockStoreResolver(ToolLocationResolver):
 
 
 class _Ga4ghToolClient:
-
     def __init__(self, base_url="https://www.dockstore.org:8443/api"):
         self.base_url = base_url
 

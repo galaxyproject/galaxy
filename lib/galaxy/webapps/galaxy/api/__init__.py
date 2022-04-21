@@ -5,11 +5,13 @@ import inspect
 from typing import (
     Any,
     AsyncGenerator,
+    Callable,
     cast,
     Optional,
     Type,
     TypeVar,
 )
+from urllib.parse import urlencode
 
 from fastapi import (
     Cookie,
@@ -24,13 +26,14 @@ from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
 from pydantic.main import BaseModel
 from starlette.routing import NoMatchFound
+
 try:
     from starlette_context import context as request_context
 except ImportError:
     request_context = None  # type: ignore[assignment]
 
+from galaxy import app as galaxy_app
 from galaxy import (
-    app as galaxy_app,
     model,
     web,
 )
@@ -60,7 +63,7 @@ def get_app() -> StructuredApp:
 
 async def get_app_with_request_session() -> AsyncGenerator[StructuredApp, None]:
     app = get_app()
-    request_id = request_context.data['X-Request-ID']
+    request_id = request_context.data["X-Request-ID"]
     app.model.set_request_id(request_id)
     try:
         yield app
@@ -82,12 +85,11 @@ class GalaxyTypeDepends(Depends):
         self.galaxy_type_depends = dep_type
 
 
-def depends(dep_type: Type[T]) -> Any:
-
+def depends(dep_type: Type[T]) -> T:
     def _do_resolve(request: Request):
         return get_app().resolve(dep_type)
 
-    return GalaxyTypeDepends(_do_resolve, dep_type)
+    return cast(T, GalaxyTypeDepends(_do_resolve, dep_type))
 
 
 def get_session_manager(app: StructuredApp = DependsOnApp) -> GalaxySessionManager:
@@ -95,9 +97,11 @@ def get_session_manager(app: StructuredApp = DependsOnApp) -> GalaxySessionManag
     return GalaxySessionManager(app.model)
 
 
-def get_session(session_manager: GalaxySessionManager = Depends(get_session_manager),
-                security: IdEncodingHelper = depends(IdEncodingHelper),
-                galaxysession: Optional[str] = Cookie(None)) -> Optional[model.GalaxySession]:
+def get_session(
+    session_manager: GalaxySessionManager = Depends(get_session_manager),
+    security: IdEncodingHelper = depends(IdEncodingHelper),
+    galaxysession: Optional[str] = Cookie(None),
+) -> Optional[model.GalaxySession]:
     if galaxysession:
         session_key = security.decode_guid(galaxysession)
         if session_key:
@@ -107,18 +111,18 @@ def get_session(session_manager: GalaxySessionManager = Depends(get_session_mana
 
 
 def get_api_user(
-        security: IdEncodingHelper = depends(IdEncodingHelper),
-        user_manager: UserManager = depends(UserManager),
-        key: Optional[str] = Query(None),
-        x_api_key: Optional[str] = Header(None),
-        run_as: Optional[EncodedDatabaseIdField] = Header(
-            default=None,
-            title='Run as User',
-            description=(
-                'The user ID that will be used to effectively make this API call. '
-                'Only admins and designated users can make API calls on behalf of other users.'
-            )
-        )
+    security: IdEncodingHelper = depends(IdEncodingHelper),
+    user_manager: UserManager = depends(UserManager),
+    key: Optional[str] = Query(None),
+    x_api_key: Optional[str] = Header(None),
+    run_as: Optional[EncodedDatabaseIdField] = Header(
+        default=None,
+        title="Run as User",
+        description=(
+            "The user ID that will be used to effectively make this API call. "
+            "Only admins and designated users can make API calls on behalf of other users."
+        ),
+    ),
 ) -> Optional[User]:
     api_key = key or x_api_key
     if not api_key:
@@ -136,25 +140,35 @@ def get_api_user(
     return user
 
 
-def get_user(galaxy_session: Optional[model.GalaxySession] = Depends(get_session), api_user: Optional[User] = Depends(get_api_user)) -> Optional[User]:
+def get_user(
+    galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
+    api_user: Optional[User] = Depends(get_api_user),
+) -> Optional[User]:
     if galaxy_session:
         return galaxy_session.user
     return api_user
 
 
 class UrlBuilder:
-
     def __init__(self, request: Request):
         self.request = request
 
     def __call__(self, name: str, **path_params):
         qualified = path_params.pop("qualified", False)
+        # starlette does not support query parameters in url_path_for: https://github.com/encode/starlette/issues/560
+        query_params = path_params.pop("query_params", None)
         try:
             if qualified:
-                return self.request.url_for(name, **path_params)
-            return self.request.app.url_path_for(name, **path_params)
+                url = self.request.url_for(name, **path_params)
+            else:
+                url = self.request.app.url_path_for(name, **path_params)
+            if query_params:
+                url = f"{url}?{urlencode(query_params)}"
+            return url
         except NoMatchFound:
             # Fallback to legacy url_for
+            if query_params:
+                path_params.update(query_params)
             return web.url_for(name, **path_params)
 
 
@@ -199,14 +213,19 @@ def get_current_history_from_session(galaxy_session: Optional[model.GalaxySessio
     return None
 
 
-def get_trans(request: Request, response: Response, app: StructuredApp = DependsOnApp, user: Optional[User] = Depends(get_user),
-              galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
-              ) -> SessionRequestContext:
+def get_trans(
+    request: Request,
+    response: Response,
+    app: StructuredApp = DependsOnApp,
+    user: Optional[User] = Depends(get_user),
+    galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
+) -> SessionRequestContext:
     url_builder = UrlBuilder(request)
     galaxy_request = GalaxyASGIRequest(request)
     galaxy_response = GalaxyASGIResponse(response)
     return SessionRequestContext(
-        app=app, user=user,
+        app=app,
+        user=user,
         galaxy_session=galaxy_session,
         url_builder=url_builder,
         request=galaxy_request,
@@ -228,30 +247,50 @@ AdminUserRequired = Depends(get_admin_user)
 
 
 class BaseGalaxyAPIController(BaseAPIController):
-
     def __init__(self, app: StructuredApp):
         super().__init__(app)
 
 
 class Router(InferringRouter):
-    """A FastAPI Inferring Router tailored to Galaxy.
-    """
+    """A FastAPI Inferring Router tailored to Galaxy."""
+
+    def wrap_with_alias(self, method: Callable, *args, alias: Optional[str] = None, **kwd):
+        """
+        Wraps FastAPI methods with additional alias keyword and require_admin handling.
+
+        @router.get("/api/thing", alias="/api/deprecated_thing") will then create
+        routes for /api/thing and /api/deprecated_thing.
+        """
+        kwd = self._handle_galaxy_kwd(kwd)
+        decorated_route = method(*args, **kwd)
+        if alias:
+            redecorated_route = method(alias, **kwd)
+
+            def dec(f):
+                return decorated_route(redecorated_route(f))
+
+            return dec
+        return decorated_route
 
     def get(self, *args, **kwd):
         """Extend FastAPI.get to accept a require_admin Galaxy flag."""
-        return super().get(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(super().get, *args, **kwd)
+
+    def patch(self, *args, **kwd):
+        """Extend FastAPI.patch to accept a require_admin Galaxy flag."""
+        return self.wrap_with_alias(super().patch, *args, **kwd)
 
     def put(self, *args, **kwd):
         """Extend FastAPI.put to accept a require_admin Galaxy flag."""
-        return super().put(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(super().put, *args, **kwd)
 
     def post(self, *args, **kwd):
         """Extend FastAPI.post to accept a require_admin Galaxy flag."""
-        return super().post(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(super().post, *args, **kwd)
 
     def delete(self, *args, **kwd):
         """Extend FastAPI.delete to accept a require_admin Galaxy flag."""
-        return super().delete(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(super().delete, *args, **kwd)
 
     def _handle_galaxy_kwd(self, kwd):
         require_admin = kwd.pop("require_admin", False)
@@ -260,6 +299,7 @@ class Router(InferringRouter):
                 kwd["dependencies"].append(AdminUserRequired)
             else:
                 kwd["dependencies"] = [AdminUserRequired]
+
         return kwd
 
     @property
@@ -293,8 +333,8 @@ def as_form(cls: Type[BaseModel]):
 
     sig = inspect.signature(_as_form)
     sig = sig.replace(parameters=new_params)
-    _as_form.__signature__ = sig    # type: ignore[attr-defined]
-    cls.as_form = _as_form          # type: ignore[attr-defined]
+    _as_form.__signature__ = sig  # type: ignore[attr-defined]
+    cls.as_form = _as_form  # type: ignore[attr-defined]
     return cls
 
 

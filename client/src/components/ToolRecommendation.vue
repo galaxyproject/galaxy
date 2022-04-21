@@ -55,7 +55,7 @@ export default {
                 tool_sequence: toolId,
             };
             getToolPredictions(requestData).then((responsePred) => {
-                getDatatypesMapper().then((datatypesMapper) => {
+                getDatatypesMapper(false).then((datatypesMapper) => {
                     const predData = responsePred.predicted_data;
                     this.deprecated = predData.is_deprecated;
                     this.deprecatedMessage = predData.message;

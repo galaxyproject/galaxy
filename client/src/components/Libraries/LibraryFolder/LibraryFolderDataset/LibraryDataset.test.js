@@ -62,7 +62,7 @@ const UNRESTRICTED_MESSAGE = '[data-test-id="unrestricted-msg"]';
 const DATASET_TABLE = '[data-test-id="dataset-table"]';
 const PEEK_VIEW = '[data-test-id="peek-view"]';
 
-async function mountLibraryDatasetWrapper(localVue, expectDatasetId) {
+async function mountLibraryDatasetWrapper(localVue, expectDatasetId, isAdmin = false) {
     const propsData = {
         dataset_id: expectDatasetId,
         folder_id: FOLDER_ID,
@@ -73,6 +73,13 @@ async function mountLibraryDatasetWrapper(localVue, expectDatasetId) {
         stubs: {
             DatatypesProvider: mockDatatypesProvider,
             GenomeProvider: mockGenomeProvider,
+            CurrentUser: {
+                render() {
+                    return this.$scopedSlots.default({
+                        user: { is_admin: isAdmin },
+                    });
+                },
+            },
         },
     });
     await flushPromises();
@@ -82,8 +89,9 @@ async function mountLibraryDatasetWrapper(localVue, expectDatasetId) {
 describe("Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset.vue", () => {
     const localVue = getLocalVue();
 
-    it("should display all buttons when user can modify and manage dataset", async () => {
-        const wrapper = await mountLibraryDatasetWrapper(localVue, UNRESTRICTED_DATASET_ID);
+    it("should display all buttons when user is Admin", async () => {
+        const isAdmin = true;
+        const wrapper = await mountLibraryDatasetWrapper(localVue, UNRESTRICTED_DATASET_ID, isAdmin);
 
         expect(wrapper.find(MODIFY_BUTTON).exists()).toBe(true);
         expect(wrapper.find(AUTO_DETECT_BUTTON).exists()).toBe(true);
@@ -97,8 +105,9 @@ describe("Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset.vue", () =
         expect(wrapper.find(AUTO_DETECT_BUTTON).exists()).toBe(false);
     });
 
-    it("should not display 'Permissions' button when user cannot manage dataset", async () => {
-        const wrapper = await mountLibraryDatasetWrapper(localVue, CANNOT_MANAGE_DATASET_ID);
+    it("should not display 'Permissions' button when user is not an administrator", async () => {
+        const isAdmin = false;
+        const wrapper = await mountLibraryDatasetWrapper(localVue, CANNOT_MANAGE_DATASET_ID, isAdmin);
 
         expect(wrapper.find(PERMISSIONS_BUTTON).exists()).toBe(false);
     });

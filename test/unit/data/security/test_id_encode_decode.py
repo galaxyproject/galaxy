@@ -1,6 +1,5 @@
 from galaxy.security import idencoding
 
-
 test_helper_1 = idencoding.IdEncodingHelper(id_secret="secu1")
 test_helper_2 = idencoding.IdEncodingHelper(id_secret="secu2")
 

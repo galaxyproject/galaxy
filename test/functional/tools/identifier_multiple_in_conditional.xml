@@ -18,6 +18,7 @@
             </when>
             <when value="false" />
         </conditional>
+        <param name="thedata" type="data" optional="true" label="Optional dummy data"/>
     </inputs>
     <outputs>
         <data name="output1" format="tabular" from_work_dir="output1" />

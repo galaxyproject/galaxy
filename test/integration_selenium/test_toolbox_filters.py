@@ -2,15 +2,14 @@ from selenium.common.exceptions import NoSuchElementException
 
 from .framework import (
     selenium_test,
-    SeleniumIntegrationTestCase
+    SeleniumIntegrationTestCase,
 )
 
-TEST_FILTER_MODULES = 'galaxy.selenium.toolbox'
-TEST_SECTION_FILTERS = 'filters:restrict_test'
+TEST_FILTER_MODULES = "galaxy.selenium.toolbox"
+TEST_SECTION_FILTERS = "filters:restrict_test"
 
 
 class ToolboxFiltersSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["user_tool_section_filters"] = TEST_SECTION_FILTERS
@@ -18,20 +17,20 @@ class ToolboxFiltersSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
 
     @selenium_test
     def test_toolbox_filters(self):
-        '''
+        """
         Test applying and removing a toolbox filter.
 
         This test applies the filter galaxy.selenium.filters.toolbox:restrict_test and confirms that
         the specified section is no longer displayed in the browser.
-        '''
+        """
         self.register()
         # The tool panel section should be visible and clickable at this stage
-        section = self.driver.find_element_by_link_text('Test Section')
+        section = self.driver.find_element_by_link_text("Test Section")
         self.action_chains().move_to_element(section).click().perform()
         self.navigate_to_user_preferences()
         self.components.preferences.toolbox_filters.wait_for_and_click()
         self.screenshot("toolbox_filters_landing")
-        sibling_text = 'This tool filter will disable the Test Section section.'
+        sibling_text = "This tool filter will disable the Test Section section."
         component = self.components.toolbox_filters.input(description=sibling_text)
         filter_upload = component.wait_for_visible()
         self.action_chains().move_to_element(filter_upload).click().perform()
@@ -41,4 +40,4 @@ class ToolboxFiltersSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.home()
         # But now it should raise NoSuchElementException
-        self.assertRaises(NoSuchElementException, lambda: self.driver.find_element_by_link_text('Test Section'))
+        self.assertRaises(NoSuchElementException, lambda: self.driver.find_element_by_link_text("Test Section"))

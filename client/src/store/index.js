@@ -5,7 +5,8 @@
 import Vue from "vue";
 import Vuex from "vuex";
 import createCache from "vuex-cache";
-import createPersistedState from "vuex-persistedstate";
+import VuexPersistence from "vuex-persist";
+import localForage from "localforage";
 
 import config from "config";
 
@@ -14,7 +15,7 @@ import { tagStore } from "./tagStore";
 import { jobMetricsStore } from "./jobMetricsStore";
 import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { invocationStore } from "./invocationStore";
-import { historyStore } from "./historyStore";
+import { collectionElementsStore, datasetStore, historyItemsStore, historyStore } from "./historyStore";
 import { userStore } from "./userStore";
 import { configStore } from "./configStore";
 import { workflowStore } from "./workflowStore";
@@ -27,42 +28,49 @@ import { genomeStore } from "./genomeStore";
 import { datatypeStore } from "./datatypeStore";
 import { panelStore } from "./panelStore";
 
-// beta features
-import { historyStore as betaHistoryStore } from "components/History/model/historyStore";
-
 // Syncs vuex to Galaxy store until Galaxy vals to not exist
 import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
 
 Vue.use(Vuex);
 
-const panelsState = createPersistedState({
-    paths: ["panels"],
+const galaxyStorage = localForage.createInstance({});
+galaxyStorage.config({
+    driver: [localForage.INDEXEDDB, localForage.LOCALSTORAGE],
+    name: "galaxyIndexedDB",
+    version: 1.0,
+    storeName: "galaxyStore",
+});
+
+const panelsPersistence = new VuexPersistence({
+    storage: galaxyStorage,
+    asyncStorage: true,
+    modules: ["panels"],
 });
 
 export function createStore() {
     const storeConfig = {
-        plugins: [createCache(), panelsState],
+        plugins: [createCache(), panelsPersistence.plugin],
         modules: {
-            user: userStore,
-            config: configStore,
-            betaHistory: betaHistoryStore,
-            panels: panelStore,
-
-            // TODO: please namespace all store modules
-            gridSearch: gridSearchStore,
-            histories: historyStore,
-            tags: tagStore,
-            jobMetrics: jobMetricsStore,
-            destinationParameters: jobDestinationParametersStore,
-            datasetPathDestination: datasetPathDestinationStore,
-            datasetExtFiles: datasetExtFilesStore,
-            invocations: invocationStore,
-            workflows: workflowStore,
-            informationStore: jobStore,
-            tools: toolStore,
             collectionAttributesStore: collectionAttributesStore,
-            genomeStore: genomeStore,
+            collectionElements: collectionElementsStore,
+            config: configStore,
+            destinationParameters: jobDestinationParametersStore,
+            dataset: datasetStore,
+            datasetExtFiles: datasetExtFilesStore,
+            datasetPathDestination: datasetPathDestinationStore,
             datatypeStore: datatypeStore,
+            informationStore: jobStore,
+            invocations: invocationStore,
+            jobMetrics: jobMetricsStore,
+            genomeStore: genomeStore,
+            gridSearch: gridSearchStore,
+            history: historyStore,
+            historyItems: historyItemsStore,
+            panels: panelStore,
+            tags: tagStore,
+            tools: toolStore,
+            user: userStore,
+            workflows: workflowStore,
         },
     };
 

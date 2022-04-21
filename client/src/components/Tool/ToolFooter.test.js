@@ -48,7 +48,7 @@ describe("ToolFooter", () => {
         const referenceA = wrapper.find(".formatted-reference .csl-entry");
         expect(referenceA.attributes()["data-csl-entry-id"]).toBe("entry_a");
         expect(referenceA.text()).toContain("1111");
-        wrapper.setProps({ id: "tool_b" });
+        await wrapper.setProps({ id: "tool_b" });
         await flushPromises();
         const referenceB = wrapper.find(".formatted-reference .csl-entry");
         expect(referenceB.attributes()["data-csl-entry-id"]).toBe("entry_b");

@@ -38,7 +38,7 @@ class Dataset:
         self.datatype = Datatype(file_ext)
         self.ext = file_ext
         self.metadata = dict()
-        self.metadata['sequences'] = value
+        self.metadata["sequences"] = value
 
     def get_metadata(self):
         return self.metadata
@@ -87,15 +87,24 @@ class JobConfig:
         self.default_id = "cluster_default"
         self.defNativeSpec = "-q test.q"
         self.defRunner = "drmaa"
-        self.keys = {tool_id: Info(self.tool_id, self.nativeSpec, self.defRunner),
-                     "cluster_default": Info(self.default_id, self.defNativeSpec, self.defRunner), }
+        self.keys = {
+            tool_id: Info(self.tool_id, self.nativeSpec, self.defRunner),
+            "cluster_default": Info(self.default_id, self.defNativeSpec, self.defRunner),
+        }
 
     def get_destination(self, tool_id):
-        invalid_destinations = ["cluster-kow", "destinationf", "thig",
-                                "not_true_destination", "cluster_kow",
-                                "Destination_3_med", "fake_destination",
-                                "cluster_defaut", "even_lamerr_cluster",
-                                "no_such_dest"]
+        invalid_destinations = [
+            "cluster-kow",
+            "destinationf",
+            "thig",
+            "not_true_destination",
+            "cluster_kow",
+            "Destination_3_med",
+            "fake_destination",
+            "cluster_defaut",
+            "even_lamerr_cluster",
+            "no_such_dest",
+        ]
         if tool_id in invalid_destinations:
             return None
         else:
@@ -110,6 +119,6 @@ class JobMappingException(Exception):
 class JobDestination:
     def __init__(self, params=None, **kwd):
         params = params or {}
-        self.id = kwd.get('id')
-        self.nativeSpec = params['nativeSpecification']
-        self.runner = kwd.get('runner')
+        self.id = kwd.get("id")
+        self.nativeSpec = params["nativeSpecification"]
+        self.runner = kwd.get("runner")

@@ -130,6 +130,7 @@ var ButtonLink = Button.extend({
                 title: options.title,
                 target: options.target || "_top",
                 disabled: options.disabled,
+                "data-description": options.description,
             })
             .css("display", options.visible ? "inline-block" : "none")
             .tooltip({ placement: "bottom" })

@@ -8,10 +8,12 @@ from sqlalchemy import and_
 import galaxy.model
 from galaxy.util import (
     restore_text,
-    unicodify
+    unicodify,
 )
-from galaxy.webapps.base.controller import BaseUIController, web
-
+from galaxy.webapps.base.controller import (
+    BaseUIController,
+    web,
+)
 
 log = logging.getLogger(__name__)
 
@@ -27,8 +29,8 @@ def int_to_octet(size):
         return "???"
     units = ("o", "Ko", "Mo", "Go", "To")
     no_unit = 0
-    while (size >= 1000):
-        size /= 1000.
+    while size >= 1000:
+        size /= 1000.0
         no_unit += 1
     try:
         return f"{size:.2f} {units[no_unit]}"
@@ -45,18 +47,18 @@ class Tools(BaseUIController):
     """
 
     def formatted(self, date, colored=False):
-        splited = str(date).split(',')
+        splited = str(date).split(",")
         if len(splited) == 2:
-            returned = "%s %dH" % (splited[0], int(splited[1].split(':')[0]))
+            returned = "%s %dH" % (splited[0], int(splited[1].split(":")[0]))
             if colored:
-                return f"<font color=\"red\">{returned}</font>"
+                return f'<font color="red">{returned}</font>'
             return returned
         else:
-            splited = tuple(float(_) for _ in str(date).split(':'))
+            splited = tuple(float(_) for _ in str(date).split(":"))
             if splited[0]:
-                returned = '%d h. %d min.' % splited[:2]
+                returned = "%d h. %d min." % splited[:2]
                 if colored:
-                    return f"<font color=\"orange\">{returned}</font>"
+                    return f'<font color="orange">{returned}</font>'
                 return returned
             if splited[1]:
                 return "%d min. %d sec." % splited[1:3]
@@ -71,34 +73,37 @@ class Tools(BaseUIController):
             - the number of jobs using this tool in error
         """
 
-        message = escape(restore_text(kwd.get('message', '')))
-        user_cutoff = int(kwd.get('user_cutoff', 60))
+        message = escape(restore_text(kwd.get("message", "")))
+        user_cutoff = int(kwd.get("user_cutoff", 60))
 
         # sort by history space, or by user mail or by number of history/dataset
-        sort_by = kwd.get('sorting', 'Tool')
-        sorting = 0 if sort_by == 'Tool' else 1 if sort_by == 'ok' else 2
-        descending = 1 if kwd.get('descending', 'desc') == 'desc' else -1
+        sort_by = kwd.get("sorting", "Tool")
+        sorting = 0 if sort_by == "Tool" else 1 if sort_by == "ok" else 2
+        descending = 1 if kwd.get("descending", "desc") == "desc" else -1
         reverse = descending == 1
         sort_keys = (
             lambda v: v.lower(),
             lambda v: tools_and_jobs_ok.get(v, 0),
-            lambda v: tools_and_jobs_error.get(v, 0))
+            lambda v: tools_and_jobs_error.get(v, 0),
+        )
 
         data = {}
 
         # select count(id), tool_id from job where state='ok' group by tool_id;
-        tools_and_jobs_ok = sa.select((galaxy.model.Job.table.c.tool_id .label('tool'),
-                                       sa.func.count(galaxy.model.Job.table.c.id).label('job')),
-                                      from_obj=[galaxy.model.Job.table],
-                                      whereclause=(galaxy.model.Job.table.c.state == 'ok'),
-                                      group_by=['tool'])
+        tools_and_jobs_ok = sa.select(
+            (galaxy.model.Job.table.c.tool_id.label("tool"), sa.func.count(galaxy.model.Job.table.c.id).label("job")),
+            from_obj=[galaxy.model.Job.table],
+            whereclause=(galaxy.model.Job.table.c.state == "ok"),
+            group_by=["tool"],
+        )
 
         # select count(id), tool_id from job where state='error' group by tool_id;
-        tools_and_jobs_error = sa.select((galaxy.model.Job.table.c.tool_id .label('tool'),
-                                          sa.func.count(galaxy.model.Job.table.c.id).label('job')),
-                                         from_obj=[galaxy.model.Job.table],
-                                         whereclause=(galaxy.model.Job.table.c.state == 'error'),
-                                         group_by=['tool'])
+        tools_and_jobs_error = sa.select(
+            (galaxy.model.Job.table.c.tool_id.label("tool"), sa.func.count(galaxy.model.Job.table.c.id).label("job")),
+            from_obj=[galaxy.model.Job.table],
+            whereclause=(galaxy.model.Job.table.c.state == "error"),
+            group_by=["tool"],
+        )
 
         tools_and_jobs_ok = dict(list(trans.sa_session.execute(tools_and_jobs_ok)))
         tools_and_jobs_error = dict(list(trans.sa_session.execute(tools_and_jobs_error)))
@@ -108,14 +113,16 @@ class Tools(BaseUIController):
         tools.sort(key=sort_keys[sorting], reverse=reverse)
 
         for tool in tools:
-            data[tool] = (str(tools_and_jobs_ok.get(tool, '-')), str(tools_and_jobs_error.get(tool, '-')))
+            data[tool] = (str(tools_and_jobs_ok.get(tool, "-")), str(tools_and_jobs_error.get(tool, "-")))
 
-        return trans.fill_template('/webapps/reports/tools_and_job_state.mako',
-                                   data=data,
-                                   user_cutoff=user_cutoff,
-                                   sorting=sorting,
-                                   descending=descending,
-                                   message=message)
+        return trans.fill_template(
+            "/webapps/reports/tools_and_job_state.mako",
+            data=data,
+            user_cutoff=user_cutoff,
+            sorting=sorting,
+            descending=descending,
+            message=message,
+        )
 
     @web.expose
     def tools_and_job_state_per_month(self, trans, **kwd):
@@ -126,14 +133,14 @@ class Tools(BaseUIController):
             - the number of jobs using this tool in error
         """
 
-        message = escape(restore_text(kwd.get('message', '')))
-        user_cutoff = int(kwd.get('user_cutoff', 60))
+        message = escape(restore_text(kwd.get("message", "")))
+        user_cutoff = int(kwd.get("user_cutoff", 60))
 
         # sort by history space, or by user mail or by number of history/dataset
         # sort_by = kwd.get( 'sorting', 'Tool' )
         # sorting = 0 if sort_by == 'Tool' else 1 if sort_by == 'ok' else 2
         # descending = 1 if kwd.get( 'descending', 'desc' ) == 'desc' else -1
-        tool = kwd.get('tool', None)
+        tool = kwd.get("tool", None)
 
         if tool is None:
             raise TypeError("Tool can't be None")
@@ -141,18 +148,26 @@ class Tools(BaseUIController):
         data = {}
 
         # select count(id), create_time from job where state='ok' and tool_id=$tool group by date;
-        date_and_jobs_ok = sa.select((sa.func.date(galaxy.model.Job.table.c.create_time).label('date'),
-                                      sa.func.count(galaxy.model.Job.table.c.id).label('job')),
-                                     from_obj=[galaxy.model.Job.table],
-                                     whereclause=and_(galaxy.model.Job.table.c.state == 'ok', galaxy.model.Job.table.c.tool_id == tool),
-                                     group_by=['date'])
+        date_and_jobs_ok = sa.select(
+            (
+                sa.func.date(galaxy.model.Job.table.c.create_time).label("date"),
+                sa.func.count(galaxy.model.Job.table.c.id).label("job"),
+            ),
+            from_obj=[galaxy.model.Job.table],
+            whereclause=and_(galaxy.model.Job.table.c.state == "ok", galaxy.model.Job.table.c.tool_id == tool),
+            group_by=["date"],
+        )
 
         # select count(id), create_time from job where state='error' and tool_id=$tool group by date;
-        date_and_jobs_error = sa.select((sa.func.date(galaxy.model.Job.table.c.create_time).label('date'),
-                                         sa.func.count(galaxy.model.Job.table.c.id).label('job')),
-                                        from_obj=[galaxy.model.Job.table],
-                                        whereclause=and_(galaxy.model.Job.table.c.state == 'error', galaxy.model.Job.table.c.tool_id == tool),
-                                        group_by=['date'])
+        date_and_jobs_error = sa.select(
+            (
+                sa.func.date(galaxy.model.Job.table.c.create_time).label("date"),
+                sa.func.count(galaxy.model.Job.table.c.id).label("job"),
+            ),
+            from_obj=[galaxy.model.Job.table],
+            whereclause=and_(galaxy.model.Job.table.c.state == "error", galaxy.model.Job.table.c.tool_id == tool),
+            group_by=["date"],
+        )
 
         date_and_jobs_ok = dict(list(trans.sa_session.execute(date_and_jobs_ok)))
         date_and_jobs_error = dict(list(trans.sa_session.execute(date_and_jobs_error)))
@@ -168,11 +183,13 @@ class Tools(BaseUIController):
                 data[date_key][0] += int(date_and_jobs_ok.get(date, 0))
                 data[date_key][1] += int(date_and_jobs_error.get(date, 0))
 
-        return trans.fill_template('/webapps/reports/tools_and_job_state_per_month.mako',
-                                   data=data,
-                                   tool=tool,
-                                   user_cutoff=user_cutoff,
-                                   message=message)
+        return trans.fill_template(
+            "/webapps/reports/tools_and_job_state_per_month.mako",
+            data=data,
+            tool=tool,
+            user_cutoff=user_cutoff,
+            message=message,
+        )
 
     @web.expose
     def tool_execution_time(self, trans, **kwd):
@@ -187,27 +204,29 @@ class Tools(BaseUIController):
         # liste des tools + temps moyen d'exec du job + temps d'execution du dernier job + tps min et max / mois (?)
         user_cutoff = int(kwd.get("user_cutoff", 60))
         sort_by = kwd.get("sort_by", "tool")
-        descending = 1 if kwd.get('descending', 'desc') == 'desc' else -1
+        descending = 1 if kwd.get("descending", "desc") == "desc" else -1
         reverse = descending == 1
         sort_by = 0 if sort_by == "tool" else 1 if sort_by == "avg" else 2 if sort_by == "min" else 3
-        color = True if kwd.get("color", '') == "True" else False
+        color = True if kwd.get("color", "") == "True" else False
 
         data = {}
         ordered_data = {}
 
-        sort_keys = (
-            lambda v: v.lower(),
-            lambda v: data[v]['avg'],
-            lambda v: data[v]['min'],
-            lambda v: data[v]['max'])
+        sort_keys = (lambda v: v.lower(), lambda v: data[v]["avg"], lambda v: data[v]["min"], lambda v: data[v]["max"])
 
-        jobs_times = sa.select((galaxy.model.Job.table.c.tool_id.label("name"),
-                                galaxy.model.Job.table.c.create_time.label("create_time"),
-                                galaxy.model.Job.table.c.update_time.label("update_time"),
-                                galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time),
-                               from_obj=[galaxy.model.Job.table])
+        jobs_times = sa.select(
+            (
+                galaxy.model.Job.table.c.tool_id.label("name"),
+                galaxy.model.Job.table.c.create_time.label("create_time"),
+                galaxy.model.Job.table.c.update_time.label("update_time"),
+                galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time,
+            ),
+            from_obj=[galaxy.model.Job.table],
+        )
 
-        jobs_times = [(name, (create, update, time)) for name, create, update, time in trans.sa_session.execute(jobs_times)]
+        jobs_times = [
+            (name, (create, update, time)) for name, create, update, time in trans.sa_session.execute(jobs_times)
+        ]
         for tool, attr in jobs_times:
             if tool not in data:
                 data[tool] = {"last": [(attr[1], attr[0])], "avg": [attr[2]]}
@@ -227,16 +246,20 @@ class Tools(BaseUIController):
             tools = tools[:user_cutoff]
         tools.sort(key=sort_keys[sort_by], reverse=reverse)
         for tool in tools:
-            ordered_data[tool] = {"min": self.formatted(data[tool]["min"], color),
-                                  "max": self.formatted(data[tool]["max"], color),
-                                  "avg": self.formatted(data[tool]["avg"], color),
-                                  "last": self.formatted(data[tool]["last"], color)}
+            ordered_data[tool] = {
+                "min": self.formatted(data[tool]["min"], color),
+                "max": self.formatted(data[tool]["max"], color),
+                "avg": self.formatted(data[tool]["avg"], color),
+                "last": self.formatted(data[tool]["last"], color),
+            }
 
-        return trans.fill_template('/webapps/reports/tool_execution_time.mako',
-                                   data=ordered_data,
-                                   descending=descending,
-                                   user_cutoff=user_cutoff,
-                                   sort_by=sort_by)
+        return trans.fill_template(
+            "/webapps/reports/tool_execution_time.mako",
+            data=ordered_data,
+            descending=descending,
+            user_cutoff=user_cutoff,
+            sort_by=sort_by,
+        )
 
     @web.expose
     def tool_execution_time_per_month(self, trans, **kwd):
@@ -250,11 +273,11 @@ class Tools(BaseUIController):
         # liste des tools + temps moyen d'exec du job + temps d'execution du dernier job + tps min et max / mois(?)
         user_cutoff = int(kwd.get("user_cutoff", 60))
         sort_by = kwd.get("sort_by", "month")
-        descending = 1 if kwd.get('descending', 'desc') == 'desc' else -1
+        descending = 1 if kwd.get("descending", "desc") == "desc" else -1
         reverse = descending == 1
         sort_by = 0 if sort_by == "month" else 1 if sort_by == "min" else 2 if sort_by == "max" else 3
         tool = kwd.get("tool", None)
-        color = True if kwd.get("color", '') == "True" else False
+        color = True if kwd.get("color", "") == "True" else False
 
         if tool is None:
             raise ValueError("Tool can't be None")
@@ -262,13 +285,17 @@ class Tools(BaseUIController):
         ordered_data = {}
         sort_keys = [(lambda v, i=i: v[i]) for i in range(4)]
 
-        jobs_times = sa.select((sa.func.date_trunc('month', galaxy.model.Job.table.c.create_time).label('date'),
-                                sa.func.max(galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time),
-                                sa.func.avg(galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time),
-                                sa.func.min(galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time)),
-                               from_obj=[galaxy.model.Job.table],
-                               whereclause=galaxy.model.Job.table.c.tool_id == tool,
-                               group_by=['date'])
+        jobs_times = sa.select(
+            (
+                sa.func.date_trunc("month", galaxy.model.Job.table.c.create_time).label("date"),
+                sa.func.max(galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time),
+                sa.func.avg(galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time),
+                sa.func.min(galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time),
+            ),
+            from_obj=[galaxy.model.Job.table],
+            whereclause=galaxy.model.Job.table.c.tool_id == tool,
+            group_by=["date"],
+        )
 
         months = list(trans.sa_session.execute(jobs_times.execute))
         months.sort(key=sort_keys[sort_by], reverse=reverse)
@@ -276,27 +303,29 @@ class Tools(BaseUIController):
             months = months[:user_cutoff]
 
         for month in months:
-            ordered_data[str(month[0]).split(' ')[0][:-3]] = (self.formatted(month[1], color),
-                                                              self.formatted(month[2], color),
-                                                              self.formatted(month[3], color))
+            ordered_data[str(month[0]).split(" ")[0][:-3]] = (
+                self.formatted(month[1], color),
+                self.formatted(month[2], color),
+                self.formatted(month[3], color),
+            )
 
-        return trans.fill_template('/webapps/reports/tool_execution_time_per_month.mako',
-                                   data=ordered_data,
-                                   tool=tool,
-                                   descending=descending,
-                                   user_cutoff=user_cutoff,
-                                   sort_by=sort_by)
+        return trans.fill_template(
+            "/webapps/reports/tool_execution_time_per_month.mako",
+            data=ordered_data,
+            tool=tool,
+            descending=descending,
+            user_cutoff=user_cutoff,
+            sort_by=sort_by,
+        )
 
     @web.expose
     def tool_error_messages(self, trans, **kwd):
         tool_name = kwd.get("tool", None)
-        descending = 1 if kwd.get("descending", 'desc') == "desc" else -1
+        descending = 1 if kwd.get("descending", "desc") == "desc" else -1
         reverse = descending == 1
         sort_by = 0 if kwd.get("sort_by", "time") == "time" else 1
         cutoff = int(kwd.get("user_cutoff", 60))
-        sort_keys = (
-            lambda v: counter[v][1],
-            lambda v: counter[v][0])
+        sort_keys = (lambda v: counter[v][1], lambda v: counter[v][0])
 
         if tool_name is None:
             raise ValueError("Tool can't be none")
@@ -330,12 +359,12 @@ class Tools(BaseUIController):
             keys = keys[:cutoff]
         keys.sort(key=sort_keys[sort_by], reverse=reverse)
 
-        spaces = [' ', '\t', '    ']
+        spaces = [" ", "\t", "    "]
         for key in keys:
-            new_key = '</br>'.join(_ for _ in key.split('\n') if _ and _ not in spaces)
+            new_key = "</br>".join(_ for _ in key.split("\n") if _ and _ not in spaces)
             if len(new_key) >= 100:
                 to_replace = []
-                words = key.split('\n')
+                words = key.split("\n")
                 for word in words:
                     if word in to_replace:
                         continue
@@ -351,9 +380,11 @@ class Tools(BaseUIController):
                         new_key = new_key.replace(sentence, f"</br>{word}{' [this line in %d times]' % count}")
             data[new_key] = counter[key]
 
-        return trans.fill_template("/webapps/reports/tool_error_messages.mako",
-                                   data=data,
-                                   descending=descending,
-                                   tool_name=tool_name,
-                                   sort_by=sort_by,
-                                   user_cutoff=cutoff)
+        return trans.fill_template(
+            "/webapps/reports/tool_error_messages.mako",
+            data=data,
+            descending=descending,
+            tool_name=tool_name,
+            sort_by=sort_by,
+            user_cutoff=cutoff,
+        )

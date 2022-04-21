@@ -14,7 +14,7 @@
                     :key="input.id"
                     :data-label="dataInputStepLabel(key, input)">
                     <b>{{ dataInputStepLabel(key, input) }}</b>
-                    <generic-history-content :data_item="input" />
+                    <generic-history-item :item-id="input.id" :item-src="input.src" />
                 </div>
             </details>
         </div>
@@ -23,7 +23,7 @@
                 <summary><b>Outputs</b></summary>
                 <div v-for="(output, key) in invocation.outputs" :key="output.id">
                     <b>{{ key }}:</b>
-                    <generic-history-content :data_item="output" />
+                    <generic-history-item :item-id="output.id" :item-src="output.src" />
                 </div>
             </details>
         </div>
@@ -32,7 +32,7 @@
                 <summary><b>Output Collections</b></summary>
                 <div v-for="(output, key) in invocation.output_collections" :key="output.id">
                     <b>{{ key }}:</b>
-                    <generic-history-content :data_item="output" />
+                    <generic-history-item :item-id="output.id" :item-src="output.src" />
                 </div>
             </details>
         </div>
@@ -51,17 +51,16 @@
     </div>
 </template>
 <script>
-import ParameterStep from "./ParameterStep.vue";
-import GenericHistoryContent from "components/History/ContentItem/GenericContentItem/GenericHistoryContent";
+import ParameterStep from "./ParameterStep";
+import GenericHistoryItem from "components/History/Content/GenericItem";
 import WorkflowInvocationStep from "./WorkflowInvocationStep";
-import { monitorHistoryUntilTrue } from "components/providers/monitors";
 
 import { mapGetters } from "vuex";
 import { mapCacheActions } from "vuex-cache";
 
 export default {
     components: {
-        GenericHistoryContent,
+        GenericHistoryItem,
         WorkflowInvocationStep,
         ParameterStep,
     },
@@ -76,7 +75,6 @@ export default {
     },
     created: function () {
         this.fetchWorkflowForInstanceId(this.invocation.workflow_id);
-        this.monitorHistory();
     },
     computed: {
         ...mapGetters(["getWorkflowByInstanceId"]),
@@ -100,18 +98,6 @@ export default {
                 }
             }
             return label;
-        },
-        // prettier-ignore
-        monitorHistory() {
-            // rework this into history or invocation subscription in the future ...
-            if (!this.invocationAndJobTerminal) {
-                const stopFn = () => this.invocationAndJobTerminal == true;
-                const monitor$ = monitorHistoryUntilTrue(stopFn, this.invocation.history_id)
-                this.listenTo(monitor$, {
-                    error: (err) => console.error("An error occured while monitoring history for datasets", err),
-                    complete: () => console.log("Invocation finished, stopping history dataset monitor"),
-                });
-            }
         },
     },
 };

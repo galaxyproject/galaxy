@@ -39,7 +39,12 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
+            <b-button
+                ref="btnClose"
+                class="ui-button-default"
+                id="btn-close"
+                :title="btnCloseTitle"
+                @click="$emit('dismiss')">
                 {{ btnCloseTitle | localize }}
             </b-button>
             <b-button
@@ -47,6 +52,7 @@
                 class="ui-button-default"
                 id="btn-reset"
                 @click="_eventReset"
+                :title="btnResetTitle"
                 :disabled="!enableReset">
                 {{ btnResetTitle }}
             </b-button>
@@ -55,6 +61,7 @@
                 class="ui-button-default"
                 id="btn-stop"
                 @click="_eventStop"
+                :title="btnStopTitle"
                 :disabled="counterRunning == 0">
                 {{ btnStopTitle }}
             </b-button>
@@ -64,6 +71,7 @@
                 id="btn-build"
                 @click="_eventBuild"
                 :disabled="!enableBuild"
+                :title="btnBuildTitle"
                 :variant="enableBuild ? 'primary' : ''">
                 {{ btnBuildTitle }}
             </b-button>
@@ -72,6 +80,7 @@
                 class="ui-button-default"
                 id="btn-start"
                 @click="_eventStart"
+                :title="btnStartTitle"
                 :disabled="!enableStart"
                 :variant="enableStart ? 'primary' : ''">
                 {{ btnStartTitle }}
@@ -80,7 +89,8 @@
                 ref="btnCreate"
                 class="ui-button-default"
                 id="btn-new"
-                @click="_eventCreate(false)"
+                @click="_eventCreate()"
+                :title="btnCreateTitle"
                 :disabled="!enableSources">
                 <span class="fa fa-edit"></span>{{ btnCreateTitle }}
             </b-button>
@@ -233,10 +243,12 @@ export default {
         },
 
         /** Success */
-        _eventSuccess: function (index, message) {
-            var hids = _.pluck(message["outputs"], "hid");
+        _eventSuccess: function (index, incoming) {
             var it = this.collection.get(index);
-            it.set({ percentage: 100, status: "success", hids: hids });
+            console.debug("Incoming upload response.", incoming);
+            // accounts for differences in the response format between upload methods
+            const outputs = incoming.outputs || incoming.data.outputs || {};
+            it.set({ percentage: 100, status: "success", outputs });
             this._updateStateForSuccess(it);
             const Galaxy = getGalaxyInstance();
             Galaxy.currHistoryPanel.refreshContents();
@@ -244,10 +256,20 @@ export default {
 
         _eventBuild: function () {
             const Galaxy = getGalaxyInstance();
-            const models = this.getUploadedModels();
-            const selection = new Galaxy.currHistoryPanel.collection.constructor(models);
-            // I'm building the selection wrong because I need to set this historyId directly.
-            selection.historyId = Galaxy.currHistoryPanel.collection.historyId;
+            const models = {};
+            this.collection.models.forEach((model) => {
+                const outputs = model.get("outputs");
+                if (outputs) {
+                    Object.entries(outputs).forEach((output) => {
+                        const outputDetails = output[1];
+                        models[outputDetails.id] = outputDetails;
+                    });
+                } else {
+                    console.debug("Warning, upload response does not contain outputs.", model);
+                }
+            });
+            const selection = new Galaxy.currHistoryPanel.collection.constructor(Object.values(models));
+            selection.historyId = Galaxy.currHistoryPanel.model.id;
             Galaxy.currHistoryPanel.buildCollection(this.collectionType, selection, true);
             this.counterRunning = 0;
             this._updateStateForCounters();

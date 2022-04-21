@@ -19,10 +19,8 @@ from sqlalchemy import (
     true,
 )
 
-from galaxy import (
-    exceptions as glx_exceptions,
-    model
-)
+from galaxy import exceptions as glx_exceptions
+from galaxy import model
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.histories import (
@@ -57,6 +55,8 @@ from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 
 log = logging.getLogger(__name__)
+
+DEFAULT_ORDER_BY = "create_time-dsc"
 
 
 class HistoriesService(ServiceBase):
@@ -127,13 +127,16 @@ class HistoriesService(ServiceBase):
             filters += [model.History.user == current_user]
         # and any sent in from the query string
         filters += self.filters.parse_filters(filter_params)
-        order_by = self.build_order_by(self.manager, filter_query_params.order)
+        order_by = self._build_order_by(filter_query_params.order)
 
         histories = self.manager.list(
-            filters=filters, order_by=order_by,
-            limit=filter_query_params.limit, offset=filter_query_params.offset)
+            filters=filters, order_by=order_by, limit=filter_query_params.limit, offset=filter_query_params.offset
+        )
 
-        rval = [self._serialize_history(trans, history, serialization_params, default_view="summary") for history in histories]
+        rval = [
+            self._serialize_history(trans, history, serialization_params, default_view="summary")
+            for history in histories
+        ]
         return rval
 
     def _get_deleted_filter(self, deleted: Optional[bool], filter_params: List[Tuple[str, str, str]]):
@@ -142,7 +145,7 @@ class HistoriesService(ServiceBase):
         try:
             # the consumer must explicitly ask for both deleted and non-deleted
             #   but pull it from the parsed params (as the filter system will error on None)
-            deleted_filter_index = filter_params.index(('deleted', 'eq', 'None'))
+            deleted_filter_index = filter_params.index(("deleted", "eq", "None"))
             filter_params.pop(deleted_filter_index)
             return []
         except ValueError:
@@ -154,7 +157,7 @@ class HistoriesService(ServiceBase):
 
         # the third option not handled here is 'return only deleted'
         #   if this is passed in (in the form below), simply return and let the filter system handle it
-        if ('deleted', 'eq', 'True') in filter_params:
+        if ("deleted", "eq", "True") in filter_params:
             return []
 
         # otherwise, do the default filter of removing the deleted histories
@@ -193,7 +196,9 @@ class HistoriesService(ServiceBase):
                 raise glx_exceptions.MessageException("Please provide a url or file.")
             job = self.manager.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
             job_dict = job.to_dict()
-            job_dict["message"] = f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
+            job_dict[
+                "message"
+            ] = f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
             job_dict = trans.security.encode_all_ids(job_dict)
             return JobImportHistoryResponse.parse_obj(job_dict)
 
@@ -250,16 +255,10 @@ class HistoriesService(ServiceBase):
         """
         if history_id is None:  # By default display the most recent history
             history = self.manager.most_recent(
-                trans.user,
-                filters=(model.History.deleted == false()),
-                current_history=trans.history
+                trans.user, filters=(model.History.deleted == false()), current_history=trans.history
             )
         else:
-            history = self.manager.get_accessible(
-                self.decode_id(history_id),
-                trans.user,
-                current_history=trans.history
-            )
+            history = self.manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
         return self._serialize_history(trans, history, serialization_params)
 
     def update(
@@ -350,11 +349,18 @@ class HistoriesService(ServiceBase):
         """
         current_user = trans.user
         filters = self.filters.parse_query_filters(filter_query_params)
-        order_by = self.build_order_by(self.manager, filter_query_params.order)
-        histories = self.manager.list_shared_with(current_user,
-            filters=filters, order_by=order_by,
-            limit=filter_query_params.limit, offset=filter_query_params.offset)
-        rval = [self._serialize_history(trans, history, serialization_params, default_view="summary") for history in histories]
+        order_by = self._build_order_by(filter_query_params.order)
+        histories = self.manager.list_shared_with(
+            current_user,
+            filters=filters,
+            order_by=order_by,
+            limit=filter_query_params.limit,
+            offset=filter_query_params.offset,
+        )
+        rval = [
+            self._serialize_history(trans, history, serialization_params, default_view="summary")
+            for history in histories
+        ]
         return rval
 
     def published(
@@ -367,12 +373,17 @@ class HistoriesService(ServiceBase):
         Return all histories that are published. The results can be filtered.
         """
         filters = self.filters.parse_query_filters(filter_query_params)
-        order_by = self.build_order_by(self.manager, filter_query_params.order)
+        order_by = self._build_order_by(filter_query_params.order)
         histories = self.manager.list_published(
-            filters=filters, order_by=order_by,
-            limit=filter_query_params.limit, offset=filter_query_params.offset,
+            filters=filters,
+            order_by=order_by,
+            limit=filter_query_params.limit,
+            offset=filter_query_params.offset,
         )
-        rval = [self._serialize_history(trans, history, serialization_params, default_view="summary") for history in histories]
+        rval = [
+            self._serialize_history(trans, history, serialization_params, default_view="summary")
+            for history in histories
+        ]
         return rval
 
     def citations(self, trans: ProvidesHistoryContext, history_id: EncodedDatabaseIdField):
@@ -481,9 +492,9 @@ class HistoriesService(ServiceBase):
         return self.manager.get_ready_history_export_file_path(trans, jeha)
 
     def get_archive_media_type(self, jeha: model.JobExportHistoryArchive):
-        media_type = 'application/x-tar'
+        media_type = "application/x-tar"
         if jeha.compressed:
-            media_type = 'application/x-gzip'
+            media_type = "application/x-gzip"
         return media_type
 
     # TODO: remove this function and HistoryManager.legacy_serve_ready_history_export when
@@ -512,20 +523,25 @@ class HistoriesService(ServiceBase):
         installed_builds = []
         for build in glob.glob(os.path.join(trans.app.config.len_file_path, "*.len")):
             installed_builds.append(os.path.basename(build).split(".len")[0])
-        fasta_hdas = trans.sa_session.query(model.HistoryDatasetAssociation) \
-            .filter_by(history=history, extension="fasta", deleted=False) \
+        fasta_hdas = (
+            trans.sa_session.query(model.HistoryDatasetAssociation)
+            .filter_by(history=history, extension="fasta", deleted=False)
             .order_by(model.HistoryDatasetAssociation.hid.desc())
+        )
         return CustomBuildsMetadataResponse(
             installed_builds=[LabelValuePair(label=ins, value=ins) for ins in installed_builds],
-            fasta_hdas=[LabelValuePair(label=f'{hda.hid}: {hda.name}', value=trans.security.encode_id(hda.id)) for hda in fasta_hdas],
+            fasta_hdas=[
+                LabelValuePair(label=f"{hda.hid}: {hda.name}", value=trans.security.encode_id(hda.id))
+                for hda in fasta_hdas
+            ],
         )
 
     def _serialize_history(
-            self,
-            trans: ProvidesHistoryContext,
-            history: model.History,
-            serialization_params: SerializationParams,
-            default_view: str = "detailed",
+        self,
+        trans: ProvidesHistoryContext,
+        history: model.History,
+        serialization_params: SerializationParams,
+        default_view: str = "detailed",
     ) -> AnyHistoryView:
         """
         Returns a dictionary with the corresponding values depending on the
@@ -533,9 +549,9 @@ class HistoriesService(ServiceBase):
         """
         serialization_params.default_view = default_view
         serialized_history = self.serializer.serialize_to_view(
-            history,
-            user=trans.user,
-            trans=trans,
-            **serialization_params.dict()
+            history, user=trans.user, trans=trans, **serialization_params.dict()
         )
         return serialized_history
+
+    def _build_order_by(self, order: Optional[str]):
+        return self.build_order_by(self.manager, order or DEFAULT_ORDER_BY)

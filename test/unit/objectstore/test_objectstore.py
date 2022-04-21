@@ -12,8 +12,8 @@ from galaxy.objectstore.azure_blob import AzureBlobObjectStore
 from galaxy.objectstore.cloud import Cloud
 from galaxy.objectstore.pithos import PithosObjectStore
 from galaxy.objectstore.s3 import S3ObjectStore
+from galaxy.objectstore.unittest_utils import Config as TestConfig
 from galaxy.objectstore.unittest_utils import (
-    Config as TestConfig,
     DISK_TEST_CONFIG,
     DISK_TEST_CONFIG_YAML,
 )
@@ -119,7 +119,10 @@ def test_disk_store_by_uuid():
 
             # Write non-empty dataset in backend 1, test it is not emtpy & exists.
             hello_world_dataset = MockDataset(3)
-            directory.write("Hello World!", f"files1/{hello_world_dataset.rel_path_for_uuid_test()}/dataset_{hello_world_dataset.uuid}.dat")
+            directory.write(
+                "Hello World!",
+                f"files1/{hello_world_dataset.rel_path_for_uuid_test()}/dataset_{hello_world_dataset.uuid}.dat",
+            )
             assert object_store.exists(hello_world_dataset)
             assert not object_store.empty(hello_world_dataset)
 
@@ -145,7 +148,12 @@ def test_disk_store_by_uuid():
 
             # Test update_from_file test
             output_dataset = MockDataset(4)
-            output_real_path = os.path.join(directory.temp_directory, "files1", output_dataset.rel_path_for_uuid_test(), "dataset_%s.dat" % output_dataset.uuid)
+            output_real_path = os.path.join(
+                directory.temp_directory,
+                "files1",
+                output_dataset.rel_path_for_uuid_test(),
+                "dataset_%s.dat" % output_dataset.uuid,
+            )
             assert not os.path.exists(output_real_path)
             output_working_path = directory.write("NEW CONTENTS", "job_working_directory1/example_output")
             object_store.update_from_file(output_dataset, file_name=output_working_path, create=True)
@@ -153,7 +161,10 @@ def test_disk_store_by_uuid():
 
             # Test delete
             to_delete_dataset = MockDataset(5)
-            to_delete_real_path = directory.write("content to be deleted!", f"files1/{to_delete_dataset.rel_path_for_uuid_test()}/dataset_{to_delete_dataset.uuid}.dat")
+            to_delete_real_path = directory.write(
+                "content to be deleted!",
+                f"files1/{to_delete_dataset.rel_path_for_uuid_test()}/dataset_{to_delete_dataset.uuid}.dat",
+            )
             assert object_store.exists(to_delete_dataset)
             assert object_store.delete(to_delete_dataset)
             assert not object_store.exists(to_delete_dataset)
@@ -161,7 +172,7 @@ def test_disk_store_by_uuid():
 
 
 def test_disk_store_alt_name_relpath():
-    """ Test that alt_name cannot be used to access arbitrary paths using a
+    """Test that alt_name cannot be used to access arbitrary paths using a
     relative path
     """
     with TestConfig(DISK_TEST_CONFIG) as (directory, object_store):
@@ -169,29 +180,25 @@ def test_disk_store_alt_name_relpath():
         directory.write("", "files1/000/dataset_1.dat")
         directory.write("foo", "foo.txt")
         try:
-            assert object_store.get_data(
-                empty_dataset,
-                extra_dir='dataset_1_files',
-                alt_name='../../../foo.txt') != 'foo'
+            assert (
+                object_store.get_data(empty_dataset, extra_dir="dataset_1_files", alt_name="../../../foo.txt") != "foo"
+            )
         except ObjectInvalid:
             pass
 
 
 def test_disk_store_alt_name_abspath():
-    """ Test that alt_name cannot be used to access arbitrary paths using a
+    """Test that alt_name cannot be used to access arbitrary paths using a
     absolute path
     """
     with TestConfig(DISK_TEST_CONFIG) as (directory, object_store):
         empty_dataset = MockDataset(1)
         directory.write("", "files1/000/dataset_1.dat")
         absfoo = os.path.abspath(os.path.join(directory.temp_directory, "foo.txt"))
-        with open(absfoo, 'w') as f:
+        with open(absfoo, "w") as f:
             f.write("foo")
         try:
-            assert object_store.get_data(
-                empty_dataset,
-                extra_dir='dataset_1_files',
-                alt_name=absfoo) != 'foo'
+            assert object_store.get_data(empty_dataset, extra_dir="dataset_1_files", alt_name=absfoo) != "foo"
         except ObjectInvalid:
             pass
 
@@ -397,25 +404,21 @@ def test_distributed_store():
 # we can at least stub out initializing and test the configuration of these things from
 # XML and dicts.
 class UnitializedPithosObjectStore(PithosObjectStore):
-
     def _initialize(self):
         pass
 
 
 class UnitializeS3ObjectStore(S3ObjectStore):
-
     def _initialize(self):
         pass
 
 
 class UnitializedAzureBlobObjectStore(AzureBlobObjectStore):
-
     def _initialize(self):
         pass
 
 
 class UnitializedCloudObjectStore(Cloud):
-
     def _initialize(self):
         pass
 
@@ -664,9 +667,14 @@ extra_dirs:
 
 
 def test_config_parse_cloud():
-    for config_str in [CLOUD_AWS_TEST_CONFIG, CLOUD_AWS_TEST_CONFIG_YAML,
-                       CLOUD_AZURE_TEST_CONFIG, CLOUD_AZURE_TEST_CONFIG_YAML,
-                       CLOUD_GOOGLE_TEST_CONFIG, CLOUD_GOOGLE_TEST_CONFIG_YAML]:
+    for config_str in [
+        CLOUD_AWS_TEST_CONFIG,
+        CLOUD_AWS_TEST_CONFIG_YAML,
+        CLOUD_AZURE_TEST_CONFIG,
+        CLOUD_AZURE_TEST_CONFIG_YAML,
+        CLOUD_GOOGLE_TEST_CONFIG,
+        CLOUD_GOOGLE_TEST_CONFIG_YAML,
+    ]:
         if "google" in config_str:
             tmpdir = mkdtemp()
             if not os.path.exists(tmpdir):
@@ -857,7 +865,6 @@ def test_config_parse_azure():
 
 
 class MockDataset:
-
     def __init__(self, id):
         self.id = id
         self.object_store_id = None

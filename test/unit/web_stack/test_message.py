@@ -5,10 +5,10 @@ from galaxy.web_stack.message import (
 
 
 def test_validate_job_handler_message():
-    message = JobHandlerMessage(task='setup', job_id=42)
+    message = JobHandlerMessage(task="setup", job_id=42)
     message.validate()
 
-    message = JobHandlerMessage(task='setup')
+    message = JobHandlerMessage(task="setup")
     error = None
     try:
         message.validate()
@@ -18,10 +18,10 @@ def test_validate_job_handler_message():
 
 
 def test_validate_workflow_handler_message():
-    message = WorkflowSchedulingMessage(task='setup', workflow_invocation_id=42)
+    message = WorkflowSchedulingMessage(task="setup", workflow_invocation_id=42)
     message.validate()
 
-    message = WorkflowSchedulingMessage(task='setup')
+    message = WorkflowSchedulingMessage(task="setup")
     error = None
     try:
         message.validate()

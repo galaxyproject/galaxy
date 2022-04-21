@@ -90,7 +90,7 @@
                         </button>
                     </div>
                     <button
-                        v-if="logged_dataset_manipulation"
+                        v-if="canDelete"
                         data-toggle="tooltip"
                         title="Mark items deleted"
                         class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1"
@@ -100,7 +100,7 @@
                         Delete
                     </button>
                     <FolderDetails class="mr-1" :id="folder_id" :metadata="metadata" />
-                    <div class="form-check logged-dataset-manipulation mr-1" v-if="logged_dataset_manipulation">
+                    <div class="form-check logged-dataset-manipulation mr-1" v-if="canDelete">
                         <b-form-checkbox
                             id="checkbox-1"
                             :checked="include_deleted"
@@ -215,10 +215,8 @@ export default {
         contains_file_or_folder: function () {
             return this.folderContents.find((el) => el.type === "folder" || el.type === "file");
         },
-        logged_dataset_manipulation: function () {
-            const Galaxy = getGalaxyInstance();
-            // logic from legacy code
-            return !!(this.contains_file_or_folder && Galaxy.user && !Galaxy.user.isAnonymous());
+        canDelete: function () {
+            return !!(this.contains_file_or_folder && this.is_admin);
         },
         dataset_manipulation: function () {
             const Galaxy = getGalaxyInstance();

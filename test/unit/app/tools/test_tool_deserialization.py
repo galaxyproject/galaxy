@@ -39,7 +39,8 @@ outputs:
 
 
 class ToolApp(GalaxyDataTestApp):
-    name = 'galaxy'
+    name = "galaxy"
+    biotools_metadata_source = None
     job_search = None
 
 
@@ -56,18 +57,18 @@ def _deserialize(app, tool_source_class, raw_tool_source):
 
 def test_deserialize_xml_tool(tool_app):
 
-    tool = _deserialize(tool_app, tool_source_class='XmlToolSource', raw_tool_source=XML_TOOL)
-    assert tool.id == 'tool_id'
-    assert tool.name == 'xml tool'
+    tool = _deserialize(tool_app, tool_source_class="XmlToolSource", raw_tool_source=XML_TOOL)
+    assert tool.id == "tool_id"
+    assert tool.name == "xml tool"
 
 
 def test_deserialize_yaml_tool(tool_app):
-    tool = _deserialize(tool_app, tool_source_class='YamlToolSource', raw_tool_source=YAML_TOOL)
-    assert tool.id == 'simple_constructs_y'
-    assert tool.name == 'simple_constructs_y'
+    tool = _deserialize(tool_app, tool_source_class="YamlToolSource", raw_tool_source=YAML_TOOL)
+    assert tool.id == "simple_constructs_y"
+    assert tool.name == "simple_constructs_y"
 
 
 def test_deserialize_cwl_tool(tool_app):
     # Can't verify much about cwl tools at this point
-    tool_source = get_tool_source(tool_app, tool_source_class='CwlToolSource', raw_tool_source=CWL_TOOL)
+    tool_source = get_tool_source(tool_app, tool_source_class="CwlToolSource", raw_tool_source=CWL_TOOL)
     assert isinstance(tool_source, CwlToolSource)

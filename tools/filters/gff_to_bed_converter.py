@@ -7,7 +7,7 @@ from galaxy.datatypes.util.gff_util import parse_gff_attributes
 
 
 def get_bed_line(chrom, name, strand, blocks):
-    """ Returns a BED line for given data. """
+    """Returns a BED line for given data."""
 
     if len(blocks) == 1:
         # Use simple BED format if there is only a single block:
@@ -45,9 +45,18 @@ def get_bed_line(chrom, name, strand, blocks):
     # we analyze the block names, but making everything thick makes more sense than
     # making everything thin.
     #
-    return "%s\t%i\t%i\t%s\t0\t%s\t%i\t%i\t0\t%i\t%s\t%s\n" % \
-        (chrom, t_start, t_end, name, strand, t_start, t_end, len(block_starts),
-        ",".join(block_sizes), ",".join(block_starts))
+    return "%s\t%i\t%i\t%s\t0\t%s\t%i\t%i\t0\t%i\t%s\t%s\n" % (
+        chrom,
+        t_start,
+        t_end,
+        name,
+        strand,
+        t_start,
+        t_end,
+        len(block_starts),
+        ",".join(block_sizes),
+        ",".join(block_starts),
+    )
 
 
 def __main__():
@@ -60,18 +69,18 @@ def __main__():
     cur_transcript_id = None
     cur_transcript_strand = None
     cur_transcripts_blocks = []  # (start, end) for each block.
-    with open(output_name, 'w') as out, open(input_name) as in_fh:
+    with open(output_name, "w") as out, open(input_name) as in_fh:
         for i, line in enumerate(in_fh):
-            line = line.rstrip('\r\n')
-            if line and not line.startswith('#'):
+            line = line.rstrip("\r\n")
+            if line and not line.startswith("#"):
                 try:
                     # GFF format: chrom source, name, chromStart, chromEnd, score, strand, attributes
-                    elems = line.split('\t')
+                    elems = line.split("\t")
                     start = str(int(elems[3]) - 1)
                     coords = [int(start), int(elems[4])]
                     strand = elems[6]
-                    if strand not in ['+', '-']:
-                        strand = '+'
+                    if strand not in ["+", "-"]:
+                        strand = "+"
                     attributes = parse_gff_attributes(elems[8])
                     t_id = attributes.get("transcript_id", None)
 
@@ -83,7 +92,14 @@ def __main__():
                         # Write previous transcript.
                         if cur_transcript_id:
                             # Write BED entry.
-                            out.write(get_bed_line(cur_transcript_chrome, cur_transcript_id, cur_transcript_strand, cur_transcripts_blocks))
+                            out.write(
+                                get_bed_line(
+                                    cur_transcript_chrome,
+                                    cur_transcript_id,
+                                    cur_transcript_strand,
+                                    cur_transcripts_blocks,
+                                )
+                            )
 
                         # Replace any spaces in the name with underscores so UCSC will not complain.
                         name = elems[2].replace(" ", "_")
@@ -104,7 +120,11 @@ def __main__():
                     # Write previous transcript.
                     if cur_transcript_id:
                         # Write BED entry.
-                        out.write(get_bed_line(cur_transcript_chrome, cur_transcript_id, cur_transcript_strand, cur_transcripts_blocks))
+                        out.write(
+                            get_bed_line(
+                                cur_transcript_chrome, cur_transcript_id, cur_transcript_strand, cur_transcripts_blocks
+                            )
+                        )
 
                     # Start new transcript.
                     cur_transcript_chrome = elems[0]
@@ -124,10 +144,15 @@ def __main__():
         # Write last transcript.
         if cur_transcript_id:
             # Write BED entry.
-            out.write(get_bed_line(cur_transcript_chrome, cur_transcript_id, cur_transcript_strand, cur_transcripts_blocks))
+            out.write(
+                get_bed_line(cur_transcript_chrome, cur_transcript_id, cur_transcript_strand, cur_transcripts_blocks)
+            )
     info_msg = "%i lines converted to BED.  " % (i + 1 - skipped_lines)
     if skipped_lines > 0:
-        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (skipped_lines, first_skipped_line)
+        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (
+            skipped_lines,
+            first_skipped_line,
+        )
     print(info_msg)
 
 
