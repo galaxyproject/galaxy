@@ -1,12 +1,24 @@
+import pytest
+
 from galaxy import model
-from ..testing_utils import (
+from ..testing_utils import (  # noqa: F401
+    create_and_drop_database,
     dbcleanup,
+    disposing_engine,
     get_plugin_full_name,
     get_stored_obj,
+    url,
 )
 
 model_fixtures = get_plugin_full_name("mapping.testing_utils.gxy_model_fixtures")
 pytest_plugins = [model_fixtures]
+
+
+@pytest.fixture(scope="module")
+def engine(url):  # noqa: F811
+    with create_and_drop_database(url):
+        with disposing_engine(url) as engine:
+            yield engine
 
 
 def test_history_annotation_associations(session, history_annotation_association, user, history):

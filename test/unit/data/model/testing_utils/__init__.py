@@ -91,6 +91,22 @@ def url_factory(tmp_directory: str) -> Callable[[], DbUrl]:
     return url
 
 
+@pytest.fixture(scope="module")
+def url(tmp_directory: str) -> str:
+    """
+    Return a database url with a unique database name.
+    If _get_connection_url() returns a value, the database is postgresql; otherwise, it's
+    sqlite (referring to a location witin the /tmp directory).
+    """
+    # TODO this duplication should be removed (see url_factory).
+    database = _generate_unique_database_name()
+    connection_url = _get_connection_url()
+    if connection_url:
+        return _make_postgres_db_url(DbUrl(connection_url), database)
+    else:
+        return _make_sqlite_db_url(tmp_directory, database)
+
+
 def initialize_model(mapper_registry, engine):
     mapper_registry.metadata.create_all(engine)
 
