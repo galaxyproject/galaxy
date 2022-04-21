@@ -15,15 +15,10 @@ class WorkflowSharingTestCase(SeleniumTestCase):
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.logout()
         self.go_to_workflow_sharing(workflow_id)
-        modal = self.components._.messages.error.wait_for_present()
-        assert modal.text == "You must be logged in to Share or export Galaxy workflows."
-        login_link = modal.find_element_by_tag_name("a")
-        assert login_link.text == "logged in"
+        self.assert_error_message(contains="You must be logged in to share or export Galaxy workflows.")
         self.sleep_for(self.wait_types.UX_RENDER)
-        login_link.click()
-        form = self.wait_for_visible(self.navigation.login.selectors.form)
-        self.fill(form, {"login": user_email, "password": self.default_password})
-        self.wait_for_and_click(self.navigation.login.selectors.submit)
+        self.components._.messages.require_login.wait_for_and_click()
+        self.fill_login_and_submit(user_email)
         self.wait_for_logged_in()
         accessible_via_link_button = self.wait_for_selector(".make-accessible")
         accessible_via_link_button.click()

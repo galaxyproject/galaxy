@@ -244,6 +244,9 @@ class NavigatesGalaxy(HasDriver):
     def go_to_workflow_sharing(self, workflow_id: str) -> None:
         self.driver.get(self.build_url(f"workflow/sharing?id={workflow_id}"))
 
+    def go_to_history_sharing(self, history_id: str) -> None:
+        self.driver.get(self.build_url(f"histories/sharing?id={history_id}"))
+
     def switch_to_main_panel(self):
         self.driver.switch_to.frame(GALAXY_MAIN_FRAME_ID)
 
@@ -584,19 +587,9 @@ class NavigatesGalaxy(HasDriver):
         return "".join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(len))
 
     def submit_login(self, email, password=None, assert_valid=True, retries=0):
-        if password is None:
-            password = self.default_password
-        login_info = {
-            "login": email,
-            "password": password,
-        }
         self.components.masthead.register_or_login.wait_for_and_click()
         self.sleep_for(WAIT_TYPES.UX_RENDER)
-        form = self.wait_for_visible(self.navigation.login.selectors.form)
-        self.fill(form, login_info)
-        self.snapshot("logging-in")
-        self.wait_for_and_click(self.navigation.login.selectors.submit)
-        self.snapshot("login-submitted")
+        self.fill_login_and_submit(email, password=password)
         if assert_valid:
             try:
                 self.wait_for_logged_in()
@@ -607,6 +600,19 @@ class NavigatesGalaxy(HasDriver):
                 else:
                     raise
             self.snapshot("logged-in")
+
+    def fill_login_and_submit(self, email, password=None):
+        if password is None:
+            password = self.default_password
+        login_info = {
+            "login": email,
+            "password": password,
+        }
+        form = self.wait_for_visible(self.navigation.login.selectors.form)
+        self.fill(form, login_info)
+        self.snapshot("logging-in")
+        self.wait_for_and_click(self.navigation.login.selectors.submit)
+        self.snapshot("login-submitted")
 
     def register(self, email=None, password=None, username=None, confirm=None, assert_valid=True):
         if email is None:

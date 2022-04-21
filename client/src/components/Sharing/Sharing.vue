@@ -1,9 +1,11 @@
 <template>
-    <div v-if="ready">
-        <h3>Share or Publish {{ modelClass }} `{{ item.title }}`</h3>
+    <div>
+        <h3>
+            Share or Publish {{ modelClass }} <span v-if="ready">`{{ item.title }}`</span>
+        </h3>
         <div v-for="error in errors" :key="error">
             <b-alert show variant="danger" dismissible @dismissed="errors = errors.filter((e) => e !== error)">
-                {{ error }}
+                <ErrorMessage :message="error" :root="root()"> </ErrorMessage>
             </b-alert>
         </div>
         <br />
@@ -14,7 +16,7 @@
             </form>
             <b-button type="submit" variant="primary" @click="setUsername()">Set Username</b-button>
         </div>
-        <div v-else>
+        <div v-else-if="ready">
             <b-form-checkbox switch class="make-accessible" v-model="item.importable" @change="onImportable">
                 Make {{ modelClass }} accessible
             </b-form-checkbox>
@@ -277,6 +279,8 @@ import Multiselect from "vue-multiselect";
 import { copy } from "utils/clipboard";
 import ConfigProvider from "components/providers/ConfigProvider";
 import CurrentUser from "components/providers/CurrentUser";
+import { errorMessageAsString } from "utils/simple-error";
+import ErrorMessage from "./ErrorMessage";
 
 Vue.use(BootstrapVue);
 library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);
@@ -290,6 +294,7 @@ const defaultExtra = () => {
 export default {
     components: {
         ConfigProvider,
+        ErrorMessage,
         FontAwesomeIcon,
         SlugInput,
         Multiselect,
@@ -406,6 +411,9 @@ export default {
         this.getSharing();
     },
     methods: {
+        root() {
+            return getAppRoot();
+        },
         permissionsChangeRequired(item) {
             if (!item.extra) {
                 return false;
@@ -419,6 +427,9 @@ export default {
             if (this.multiselectValues.currentUserSearch && !isValueChosen && !isAdmin) {
                 this.multiselectValues.sharingCandidates.push({ email: this.multiselectValues.currentUserSearch });
             }
+        },
+        onError(axiosError) {
+            this.addError(errorMessageAsString(axiosError));
         },
         addError(newError) {
             // temporary turning Set into Array, until we update till Vue 3.0, that supports Set reactivity
@@ -456,7 +467,7 @@ export default {
                     new_slug: newSlug,
                 })
                 .then(() => (this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`))
-                .catch((error) => this.addError(error.response.data.err_msg));
+                .catch(this.onError);
         },
         onImportable(importable) {
             if (importable) {
@@ -480,7 +491,7 @@ export default {
             axios
                 .get(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`)
                 .then((response) => this.assignItem(response.data, true))
-                .catch((error) => this.addError(error.response.data.err_msg));
+                .catch(this.onError);
         },
         setUsername() {
             const Galaxy = getGalaxyInstance();
@@ -492,7 +503,7 @@ export default {
                     this.hasUsername = true;
                     this.getSharing();
                 })
-                .catch((error) => this.addError(error.response.data.err_msg));
+                .catch(this.onError);
         },
         setSharing(action, user_id, share_option) {
             let user_ids = undefined;
@@ -517,7 +528,7 @@ export default {
                         this.dismissCountDown = 3;
                     }
                 })
-                .catch((error) => this.addError(error.response.data.err_msg));
+                .catch(this.onError);
         },
         searchChanged(searchValue, exposedUsers) {
             this.multiselectValues.currentUserSearch = searchValue;
@@ -536,7 +547,7 @@ export default {
                                 !this.multiselectValues.sharingCandidates.map(({ email }) => email).includes(email)
                         );
                     })
-                    .catch((error) => this.addError(error.response.data.err_msg));
+                    .catch(this.onError);
             }
         },
     },
