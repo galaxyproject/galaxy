@@ -59,7 +59,7 @@
                         @onError="onError" />
                 </template>
                 <template v-slot:cell(tags)="row">
-                    <Tags :index="row.index" :tags="row.item.tags" @input="onTags" />
+                    <Tags :index="row.index" :tags="row.item.tags" @input="onTags" @tag-click="onTagClick" />
                 </template>
                 <template v-slot:cell(published)="row">
                     <font-awesome-icon v-if="row.item.published" v-b-tooltip.hover title="Published" icon="globe" />
@@ -245,6 +245,15 @@ export default {
                 .catch((error) => {
                     this.onError(error);
                 });
+        },
+        onTagClick: function (tag) {
+            const tagFilter = `tag:${tag.text}`;
+            const initialFilter = this.filter;
+            if (initialFilter.length === 0) {
+                this.filter = tagFilter;
+            } else if (initialFilter.indexOf(tagFilter) < 0) {
+                this.filter = `${tagFilter} ${initialFilter}`;
+            }
         },
         onAdd: function (workflow) {
             if (this.currentPage == 1) {
