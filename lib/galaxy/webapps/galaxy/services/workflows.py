@@ -8,6 +8,7 @@ from typing import (
 )
 
 from sqlalchemy import (
+    and_,
     desc,
     false,
     or_,
@@ -28,10 +29,19 @@ from galaxy.managers.workflows import (
 )
 from galaxy.schema.schema import WorkflowIndexPayload
 from galaxy.tool_shed.tool_shed_registry import Registry
+from galaxy.util.search import parse_filters
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 
 log = logging.getLogger(__name__)
+
+
+INDEX_SEARCH_FILTERS = {
+    "name": "name",
+    "tag": "tag",
+    "n": "name",
+    "t": "tag",
+}
 
 
 class WorkflowsService(ServiceBase):
@@ -84,20 +94,46 @@ class WorkflowsService(ServiceBase):
         query = trans.sa_session.query(model.StoredWorkflow)
         if show_shared:
             query = query.outerjoin(model.StoredWorkflow.users_shared_with)
+        query = query.outerjoin(model.StoredWorkflow.tags)
 
         latest_workflow_load = joinedload("latest_workflow")
         if not payload.skip_step_counts:
             latest_workflow_load = latest_workflow_load.undefer("step_count")
         latest_workflow_load = latest_workflow_load.lazyload("steps")
 
-        query = query.options(joinedload("annotations")).options(latest_workflow_load).options(joinedload("tags"))
+        query = query.options(joinedload(model.StoredWorkflow.annotations))
+        query = query.options(latest_workflow_load)
         query = query.filter(or_(*filters))
         query = query.filter(model.StoredWorkflow.table.c.hidden == (true() if show_hidden else false()))
         query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
         if payload.search:
             search_query = payload.search
-            for q in search_query.split():
-                query = query.filter(model.StoredWorkflow.name.like(f"%{q}%"))
+            keyed_terms, description_term = parse_filters(search_query, INDEX_SEARCH_FILTERS)
+
+            def tag_filter(term):
+                if ":" in term:
+                    key, value = term.rsplit(":", 1)
+                    return and_(
+                        model.StoredWorkflowTagAssociation.user_tname.like(f"%{key}%"),
+                        model.StoredWorkflowTagAssociation.user_value.like(f"%{value}%"),
+                    )
+                else:
+                    return model.StoredWorkflowTagAssociation.user_tname.like(f"%{term}%")
+
+            if keyed_terms:
+                for (key, q) in keyed_terms:
+                    if key == "tag":
+                        query = query.filter(tag_filter(q))
+                    elif key == "name":
+                        query = query.filter(model.StoredWorkflow.name.like(f"%{q}%"))
+            if description_term:
+                for q in description_term.split():
+                    query = query.filter(
+                        or_(
+                            model.StoredWorkflow.name.like(f"%{q}%"),
+                            tag_filter(q),
+                        )
+                    )
         if include_total_count:
             total_matches = query.count()
         else:

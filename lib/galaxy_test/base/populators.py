@@ -1348,6 +1348,11 @@ class BaseWorkflowPopulator(BasePopulator):
         else:
             return ordered_load(response.text)
 
+    def set_tags(self, workflow_id: str, tags: List[str]) -> None:
+        update_payload = {"tags": tags}
+        response = self.update_workflow(workflow_id, update_payload)
+        response.raise_for_status()
+
     def update_workflow(self, workflow_id: str, workflow_object: dict) -> Response:
         data = dict(workflow=workflow_object)
         raw_url = f"workflows/{workflow_id}"
