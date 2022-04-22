@@ -1,4 +1,4 @@
-<tool id="expect_num_outputs" name="expect_num_outputs" version="1.0.0">
+<tool id="expect_num_outputs" name="expect_num_outputs" version="1.0.0" profile="22.05">
     <description>test for test's expect_num_outputs attribute</description>
     <macros>
         <macro name="content_assertion">
