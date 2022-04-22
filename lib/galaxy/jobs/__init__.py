@@ -784,7 +784,7 @@ class JobConfiguration(ConfiguresHandlers):
         Destinations are not deepcopied, so they should not be passed to
         anything which might modify them.
         """
-        return self.destinations.get(id_or_tag, None)
+        return self.destinations.get(id_or_tag, [])
 
     def get_job_runner_plugins(self, handler_id):
         """Load all configured job runner plugins
