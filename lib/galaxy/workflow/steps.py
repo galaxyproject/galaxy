@@ -28,7 +28,7 @@ def order_workflow_steps(steps):
     """
     Perform topological sort of the steps, return ordered or None
     """
-    position_data_available = True
+    position_data_available = True if steps else False
     for step in steps:
         if not step.position or "left" not in step.position or "top" not in step.position:
             position_data_available = False
