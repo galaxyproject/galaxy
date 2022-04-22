@@ -117,7 +117,9 @@
                                             <div v-else>{{ charactersThresholdWarning }}</div>
                                         </template>
                                         <template slot="tag" slot-scope="{ option, remove }">
-                                            <span class="multiselect__tag">
+                                            <span
+                                                class="multiselect__tag remove_sharing_with"
+                                                :data-email="option.email">
                                                 <span>{{ option.email }}</span>
                                                 <i
                                                     aria-hidden="true"

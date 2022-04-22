@@ -1980,6 +1980,44 @@ class NavigatesGalaxy(HasDriver):
             editor = self.components.history_panel.editor.selector(scope=scope)
             self.assert_absent_or_hidden(editor)
 
+    def share_ensure_by_user_available(self, sharing_component):
+        collapse = sharing_component.share_with_collapse
+        collapse.wait_for_visible()
+        if collapse.has_class("collapsed"):
+            collapse.wait_for_and_click()
+        sharing_component.share_with_multiselect.wait_for_visible()
+
+    def share_unshare_with_user(self, sharing_component, email):
+        self.share_ensure_by_user_available(sharing_component)
+        unshare_user_button = self.components.histories.sharing.unshare_with_user_button(email=email)
+        unshare_user_button.wait_for_and_click()
+        self.components.histories.sharing.submit_sharing_with.wait_for_and_click()
+        unshare_user_button.wait_for_absent_or_hidden()
+
+    def share_with_user(
+        self,
+        sharing_component,
+        user_id=None,
+        user_email=None,
+        screenshot_before_submit=None,
+        screenshot_after_submit=None,
+        assert_valid=False,
+    ):
+        self.share_ensure_by_user_available(sharing_component)
+        multiselect = sharing_component.share_with_multiselect.wait_for_and_click()
+        sharing_component.share_with_input.wait_for_and_send_keys(user_id or user_email)
+        self.send_enter(multiselect)
+
+        self.screenshot_if(screenshot_before_submit)
+        sharing_component.submit_sharing_with.wait_for_and_click()
+
+        if assert_valid:
+            self.assert_no_error_message()
+
+            xpath = f'//span[contains(text(), "{user_email}")]'
+            self.wait_for_xpath_visible(xpath)
+        self.screenshot_if(screenshot_after_submit)
+
 
 class NotLoggedInException(TimeoutException):
     def __init__(self, timeout_exception, user_info, dom_message):

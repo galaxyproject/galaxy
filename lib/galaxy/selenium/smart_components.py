@@ -97,7 +97,8 @@ class SmartTarget:
         self._has_driver.assert_absent_or_hidden_after_transitions(self._target, **kwds)
 
     def has_class(self, class_name):
-        return class_name in self._has_driver.driver.find_element(*self._target.element_locator).get_attribute("class")
+        classes_str = self._has_driver.driver.find_element(*self._target.element_locator).get_attribute("class") or ""
+        return class_name in classes_str.split(" ")
 
     def wait_for_and_send_keys(self, *text):
         self.wait_for_visible().send_keys(*text)

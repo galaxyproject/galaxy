@@ -43,7 +43,10 @@ from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     get_ip_address,
 )
-from galaxy_test.base.populators import load_data_dict
+from galaxy_test.base.populators import (
+    load_data_dict,
+    skip_if_github_down,
+)
 from galaxy_test.base.testcase import FunctionalTestCase
 
 try:
@@ -536,6 +539,22 @@ class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
         item_body = self.history_panel_item_component(hid=hid)
         hid_text = item_body.hid.wait_for_text()
         assert hid_text == str(hid), hid_text
+
+
+EXAMPLE_WORKFLOW_URL_1 = (
+    "https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga"
+)
+
+
+class UsesWorkflowAssertions(NavigatesGalaxyMixin):
+    @retry_assertion_during_transitions
+    def _assert_showing_n_workflows(self, n):
+        assert len(self.workflow_index_table_elements()) == n
+
+    @skip_if_github_down
+    def _workflow_import_from_url(self, url=EXAMPLE_WORKFLOW_URL_1):
+        self.workflow_index_click_import()
+        self.workflow_import_submit_url(url)
 
 
 class RunsWorkflows(GalaxyTestSeleniumContext):

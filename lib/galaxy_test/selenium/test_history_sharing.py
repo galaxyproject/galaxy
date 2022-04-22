@@ -28,14 +28,14 @@ class HistorySharingTestCase(SeleniumTestCase):
         self.submit_login(user1_email, retries=VALID_LOGIN_RETRIES)
         self.home()
         self.click_history_option_sharing()
-        self.components.histories.sharing.share_with_collapse.wait_for_and_click()
-
-        unshare_user_button = self.components.histories.sharing.unshare_user_button
-        unshare_user_button.wait_for_and_click()
-        self.components.histories.sharing.submit_sharing_with.wait_for_and_click()
+        sharing = self.components.histories.sharing
+        self.share_unshare_with_user(sharing, user2_email)
 
         self.home()
         self.click_history_option_sharing()
+
+        self.share_ensure_by_user_available(sharing)
+        unshare_user_button = sharing.unshare_with_user_button(email=user2_email)
         unshare_user_button.assert_absent()
 
         self.logout_if_needed()
@@ -63,6 +63,7 @@ class HistorySharingTestCase(SeleniumTestCase):
         self.register(user1_email)
         self.share_history_with_user(user_email="invalid_user@test.com")
         self.assert_error_message(contains="is not a valid Galaxy user")
+        self.screenshot("history_sharing_invalid_user")
 
     @selenium_test
     def test_sharing_with_self(self):
@@ -70,6 +71,7 @@ class HistorySharingTestCase(SeleniumTestCase):
         self.register(user1_email)
         self.share_history_with_user(user_email=user1_email)
         self.assert_error_message(contains="You cannot share resources with yourself")
+        self.screenshot("history_sharing_invalid_with_self")
 
     def setup_two_users_with_one_shared_history(self, share_by_id=False):
         user1_email = self._get_random_email()
@@ -78,7 +80,9 @@ class HistorySharingTestCase(SeleniumTestCase):
         self.register(user1_email)
         self.logout_if_needed()
         self.register(user2_email)
-        user2_id = self.api_get("users")[0]["id"]
+        user2_id = None
+        if share_by_id:
+            user2_id = self.api_get("users")[0]["id"]
         self.logout_if_needed()
 
         self.submit_login(user1_email, retries=VALID_LOGIN_RETRIES)
@@ -88,10 +92,7 @@ class HistorySharingTestCase(SeleniumTestCase):
 
         history_id = self.current_history_id()
 
-        if share_by_id:
-            self.share_history_with_user(user_email=user2_email, assert_valid=True)
-        else:
-            self.share_history_with_user(user_id=user2_id, user_email=user2_email, assert_valid=True)
+        self.share_history_with_user(user_id=user2_id, user_email=user2_email, assert_valid=True)
         self.logout_if_needed()
 
         return user1_email, user2_email, history_id
@@ -105,21 +106,18 @@ class HistorySharingTestCase(SeleniumTestCase):
         """
         self.home()
         self.click_history_option_sharing()
-        self.components.histories.sharing.share_with_collapse.wait_for_and_click()
-        multiselect = self.components.histories.sharing.share_with_multiselect.wait_for_and_click()
-        self.components.histories.sharing.share_with_input.wait_for_and_send_keys(user_id or user_email)
-        self.send_enter(multiselect)
-
+        share_kwd = {}
         if screenshot:
-            self.screenshot("history_sharing_user")
+            share_kwd["screenshot_before_submit"] = "history_sharing_user_before_submit"
+            share_kwd["screenshot_after_submit"] = "history_sharing_user_after_submit"
 
-        self.components.histories.sharing.submit_sharing_with.wait_for_and_click()
-
-        if assert_valid:
-            self.assert_no_error_message()
-
-            xpath = f'//span[contains(text(), "{user_email}")]'
-            self.wait_for_xpath_visible(xpath)
+        self.share_with_user(
+            self.components.histories.sharing,
+            user_id=user_id,
+            user_email=user_email,
+            assert_valid=assert_valid,
+            **share_kwd,
+        )
 
 
 class HistoryRequiresLoginSeleniumTestCase(SeleniumTestCase):
