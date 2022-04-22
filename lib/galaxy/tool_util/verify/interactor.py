@@ -987,15 +987,15 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
 
             element_type = element["element_type"]
             if element_type != "dataset_collection":
-                found_outputs = 1
+                element_count = 1
                 verify_dataset(element, element_attrib, element_outfile)
             else:
                 elements = element["object"]["elements"]
-                found_outputs = len(elements)
+                element_count = len(elements)
                 verify_elements(elements, element_attrib.get("elements", {}))
-            if expected_count is not None and expected_count != found_outputs:
+            if expected_count is not None and expected_count != element_count:
                 raise AssertionError(
-                    f"Element '{element_identifier}': expected to have {expected_count} elements, but it had {found_outputs}"
+                    f"Element '{element_identifier}': expected to have {expected_count} elements, but it had {element_count}"
                 )
 
         if len(expected_sort_order) > 0:
