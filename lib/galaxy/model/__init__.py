@@ -3410,12 +3410,20 @@ class Dataset(StorableObject, Serializable, _HasTable):
         return self.state in self.ready_states
 
     def get_file_name(self):
+        if self.purged:
+            log.warning(f"Attempt to get file name of purged dataset {self.id}")
+            return ""
         if not self.external_filename:
             assert self.object_store is not None, f"Object Store has not been initialized for dataset {self.id}"
             if self.object_store.exists(self):
-                return self.object_store.get_filename(self)
+                file_name = self.object_store.get_filename(self)
             else:
-                return ""
+                file_name = ""
+            if not file_name and self.state not in (self.states.NEW, self.states.QUEUED):
+                # Queued datasets can be assigned an object store and have a filename, but they aren't guaranteed to.
+                # Anything after queued should have a file name.
+                log.warning(f"Failed to determine file name for dataset {self.id}")
+            return file_name
         else:
             filename = self.external_filename
         # Make filename absolute

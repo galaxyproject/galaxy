@@ -961,6 +961,13 @@ mapping:
         desc: |
           Lock directory used by beaker for caching mulled resolution requests.
 
+      mulled_resolution_cache_expire:
+        type: int
+        default: 3600
+        required: false
+        desc: |
+          Seconds until the beaker cache is considered old and a new value is created.
+
       object_store_config_file:
         type: str
         default: object_store_conf.xml
