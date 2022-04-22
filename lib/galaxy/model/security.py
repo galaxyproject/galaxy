@@ -1507,12 +1507,18 @@ class GalaxyRBACAgent(RBACAgent):
             return True, ""
         action = self.permitted_actions.DATASET_ACCESS
 
+        LibraryDataset = self.model.LibraryDataset
+        LibraryDatasetDatasetAssociation = self.model.LibraryDatasetDatasetAssociation
         lddas = (
-            self.sa_session.query(self.model.LibraryDatasetDatasetAssociation)
-            .join("library_dataset")
-            .filter(self.model.LibraryDataset.folder == folder)
-            .join("dataset")
-            .options(joinedload("dataset").joinedload("actions"))
+            self.sa_session.query(LibraryDatasetDatasetAssociation)
+            .join(LibraryDatasetDatasetAssociation.library_dataset)
+            .filter(LibraryDataset.folder == folder)
+            .join(LibraryDatasetDatasetAssociation.dataset)
+            .options(
+                joinedload(LibraryDatasetDatasetAssociation.dataset).joinedload(
+                    LibraryDatasetDatasetAssociation.actions
+                )
+            )
             .all()
         )
 
