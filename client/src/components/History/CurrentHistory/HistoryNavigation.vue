@@ -44,7 +44,7 @@
 
                     <b-dropdown-divider></b-dropdown-divider>
 
-                    <b-dropdown-item v-b-modal:copy-history-modal>
+                    <b-dropdown-item v-if="!currentUser.isAnonymous" v-b-modal:copy-history-modal>
                         <Icon fixed-width icon="copy" class="mr-1" />
                         <span v-localize>Copy this History</span>
                     </b-dropdown-item>
@@ -66,7 +66,9 @@
                         <span v-localize>Resume Paused Jobs</span>
                     </b-dropdown-item>
 
-                    <b-dropdown-item @click="iframeRedirect('/workflow/build_from_current_history')">
+                    <b-dropdown-item
+                        v-if="!currentUser.isAnonymous"
+                        @click="iframeRedirect('/workflow/build_from_current_history')">
                         <Icon fixed-width icon="file-export" class="mr-1" />
                         <span v-localize>Extract Workflow</span>
                     </b-dropdown-item>
@@ -79,31 +81,33 @@
                     </b-dropdown-item>
 
                     <b-dropdown-item
+                        v-if="!currentUser.isAnonymous"
                         data-description="switch to multi history view"
                         @click="redirect('/history/view_multiple')">
                         <Icon fixed-width class="mr-1" icon="columns" />
                         <span v-localize>Show Histories Side-by-Side</span>
                     </b-dropdown-item>
 
-                    <b-dropdown-divider></b-dropdown-divider>
+                    <template v-if="!currentUser.isAnonymous">
+                        <b-dropdown-divider></b-dropdown-divider>
 
-                    <b-dropdown-item
-                        @click="backboneRoute('/histories/sharing', { id: history.id })"
-                        data-description="share or publish">
-                        <Icon fixed-width icon="share-alt" class="mr-1" />
-                        <span v-localize>Share or Publish</span>
-                    </b-dropdown-item>
+                        <b-dropdown-item
+                            @click="backboneRoute('/histories/sharing', { id: history.id })"
+                            data-description="share or publish">
+                            <Icon fixed-width icon="share-alt" class="mr-1" />
+                            <span v-localize>Share or Publish</span>
+                        </b-dropdown-item>
 
-                    <b-dropdown-item @click="backboneRoute('/histories/permissions', { id: history.id })">
-                        <Icon fixed-width icon="user-lock" class="mr-1" />
-                        <span v-localize>Set Permissions</span>
-                    </b-dropdown-item>
+                        <b-dropdown-item @click="backboneRoute('/histories/permissions', { id: history.id })">
+                            <Icon fixed-width icon="user-lock" class="mr-1" />
+                            <span v-localize>Set Permissions</span>
+                        </b-dropdown-item>
 
-                    <b-dropdown-item v-b-modal:history-privacy-modal>
-                        <Icon fixed-width icon="lock" class="mr-1" />
-                        <span v-localize>Make Private</span>
-                    </b-dropdown-item>
-
+                        <b-dropdown-item v-b-modal:history-privacy-modal>
+                            <Icon fixed-width icon="lock" class="mr-1" />
+                            <span v-localize>Make Private</span>
+                        </b-dropdown-item>
+                    </template>
                     <b-dropdown-divider></b-dropdown-divider>
 
                     <b-dropdown-item @click="backboneRoute('/histories/citations', { id: history.id })">
@@ -167,6 +171,7 @@ import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { switchToLegacyHistoryPanel } from "components/History/adapters/betaToggle";
 import CopyModal from "components/History/Modals/CopyModal";
 import SelectorModal from "components/History/Modals/SelectorModal";
+import { mapGetters } from "vuex";
 
 export default {
     mixins: [legacyNavigationMixin],
@@ -181,6 +186,7 @@ export default {
         historiesLoading: { type: Boolean, default: false },
     },
     computed: {
+        ...mapGetters("user", ["currentUser"]),
         exportLink() {
             return `histories/${this.history.id}/export`;
         },
