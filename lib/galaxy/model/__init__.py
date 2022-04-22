@@ -2942,7 +2942,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
                 .filter(not_(HistoryDatasetCollectionAssociation.deleted))
                 .filter(HistoryDatasetCollectionAssociation.visible)
                 .order_by(HistoryDatasetCollectionAssociation.table.c.hid.asc())
-                .options(joinedload("collection"), joinedload("tags"))
+                .options(
+                    joinedload(HistoryDatasetCollectionAssociation.collection),
+                    joinedload(HistoryDatasetCollectionAssociation.tags),
+                )
             )
             self._active_visible_dataset_collections = query.all()
         return self._active_visible_dataset_collections
