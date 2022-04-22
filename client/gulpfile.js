@@ -42,7 +42,6 @@ const PATHS = {
         backbone: ["backbone.js", "backbone.js"],
         "@galaxyproject/bootstrap-tour": ["build/js/bootstrap-tour.js", "bootstrap-tour.js"],
         jquery: ["dist/jquery.js", "jquery/jquery.js"],
-        "jquery.cookie": ["jquery.cookie.js", "jquery/jquery.cookie.js"],
         "jquery-migrate": ["dist/jquery-migrate.js", "jquery/jquery.migrate.js"],
         "jquery-mousewheel": ["jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],
         requirejs: ["require.js", "require.js"],
