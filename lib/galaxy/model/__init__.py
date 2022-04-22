@@ -2911,10 +2911,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             .filter(not_(HistoryDatasetAssociation.deleted))
             .order_by(HistoryDatasetAssociation.table.c.hid.asc())
             .options(
-                joinedload("dataset"),
-                joinedload("dataset.actions"),
-                joinedload("dataset.actions.role"),
-                joinedload("tags"),
+                joinedload(HistoryDatasetAssociation.dataset),
+                joinedload(HistoryDatasetAssociation.dataset.actions),
+                joinedload(HistoryDatasetAssociation.dataset.actions.role),
+                joinedload(HistoryDatasetAssociation.tags),
             )
         )
 
