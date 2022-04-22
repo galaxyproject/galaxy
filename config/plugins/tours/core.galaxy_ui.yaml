@@ -91,8 +91,6 @@ steps:
       element: '.center-panel'
       intro: "Your tool is loaded into the main Galaxy page and ready for use."
       position: "right"
-      #backdropContainer: 'background'
-      #backdrop: true
 
     - title: "Tool parameters"
       element: '.center-panel .portlet-content'
@@ -120,44 +118,39 @@ steps:
               grey this means you are queued and need to wait until your tool can be started. If your dataset turns into red, an error has occurred. Please report the bug to the Galaxy team with the bug report button."
       position: "left"
 
-    - title: "Rename history"
-      element: "#current-history-panel > div.controls > div.title > div"
-      intro: "Name your history here and press enter."
-      position: "left"
-      preclick:
-        - "#current-history-panel > div.controls > div.title > div"
-
     - title: "View dataset"
-      element: "#current-history-panel .fa-eye:eq(0)"
+      element: "#current-history-panel div.content-item button[title='Display']"
       intro: "View your dataset by clicking the eye button."
       position: "left"
-      #preclick:
-      #  - "#current-history-panel .fa-eye:eq(0)"
 
     - title: "Rename dataset"
-      element: "#current-history-panel .fa-pencil:eq(0)"
+      element: "#current-history-panel div.content-item button[title='Edit attributes']"
       intro: "Rename your dataset by clicking the pencil button."
-      position: "left"
-      #preclick:
-      #  - "#current-history-panel .fa-pencil:eq(0)"
-
-    - title: "Remove dataset"
-      element: "#current-history-panel .fa-times:eq(0)"
-      intro: "Delete your dataset by clicking the x-button."
       position: "left"
 
     - title: "Dataset information"
-      element: "div.title-bar.clear:eq(0)"
+      element: "div.content-item .content-title"
+      intro: "This is your dataset. You can get more informations and options like different visualizations by clicking on it."
+      position: "left"
+      postclick:
+        - "div.content-item .content-title"
+
+    - title: "Remove dataset"
+      element: "#current-history-panel div.content-item button[title='Delete']"
+      intro: "Delete your dataset by clicking the trash-button."
+      position: "left"
+
+    - title: "Dataset information"
+      element: "#current-history-panel div.content-item button[title='Dataset Details']"
       intro: "Clicking on your dataset provides you with more information regarding your dataset (e.g. filetype or size)."
       position: "left"
       preclick:
-        - "div.title-bar.clear:eq(0)"
+        - "#current-history-panel div.content-item button[title='Dataset Details']"
 
     - title: "Re-run tool"
-      element: "#current-history-panel .fa-redo:first"
+      element: "#current-history-panel div.content-item button[title='Run Job Again']"
       intro: "By clicking the reload button, you can re-run your tool again (e.g. with different parameters or on another dataset)."
       position: "left"
-
 
     - title: "Panel collapse"
       element: "#left > div.unified-panel-footer > div.panel-collapse.left"
