@@ -22,7 +22,7 @@
     ]]></command>
     <inputs>
         <param name="bigwig_input" type="data" format="bigwig" label="BigWig input"/>
-        <param argument="-chrom" type="text" value="" optional="true" label="Restrict output to given chromosome" help="Optional parameter. If set restrict output to given chromosome">
+        <param argument="-chrom" type="text" value="" optional="true" label="Restrict output to given chromosome" help="If set restrict output to given chromosome">
             <sanitizer invalid_char="">
                 <valid initial="string.letters,string.digits">
                     <add value="+" />
@@ -33,8 +33,8 @@
             </sanitizer>
             <validator type="regex">[A-Za-z0-9 -_+]+</validator>
         </param>
-        <param argument="-start" type="integer" min="0" optional="true" label="Restrict output to only that over start" help="Optional parameter. If set, restrict output to only that over start" />
-        <param argument="-end" type="integer" min="0" optional="true" label="Restict output to only that under end" help="Optional parameter. If set, restict output to only that under end" />
+        <param argument="-start" type="integer" min="0" optional="true" label="Restrict output to only that over start" help="If set, restrict output to only that over start" />
+        <param argument="-end" type="integer" min="0" optional="true" label="Restict output to only that under end" help="If set, restict output to only that under end" />
     </inputs>
     <outputs>
         <data name="wig_output" format="wig" from_work_dir="output.wig" label="${tool.name} on ${on_string}: wig"/>
