@@ -971,6 +971,7 @@ class HistoriesContentsService(ServiceBase):
                 f"Invalid filter found. When requesting stats, please avoid filtering by {non_orm_filter_keys}"
             )
 
+        serialization_params = self._handle_extra_serialization_for_media_type(serialization_params, accept)
         filter_query_params.order = filter_query_params.order or "hid-asc"
         order_by = self.build_order_by(self.history_contents_manager, filter_query_params.order)
         contents = self.history_contents_manager.contents(
@@ -998,6 +999,18 @@ class HistoriesContentsService(ServiceBase):
             stats = HistoryContentStats.construct(total_matches=total_matches)
             return HistoryContentsWithStatsResult.construct(contents=items, stats=stats)
         return HistoryContentsResult.construct(__root__=items)
+
+    def _handle_extra_serialization_for_media_type(
+        self,
+        serialization_params: SerializationParams,
+        request_media_type: str,
+    ) -> SerializationParams:
+        """According to the requested media type the response may include extra information."""
+        if request_media_type == HistoryContentsWithStatsResult.__accept_type__:
+            if not serialization_params.keys:
+                serialization_params.keys = []
+            serialization_params.keys.append("elements_datatypes")
+        return serialization_params
 
     def _serialize_legacy_content_item(
         self,

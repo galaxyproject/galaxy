@@ -1138,6 +1138,20 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
                 )
                 self._assert_status_code_is(response, 400)
 
+    def test_index_with_stats_has_extra_serialization(self):
+        expected_extra_keys_in_collections = ["elements_datatypes"]
+        with self.dataset_populator.test_history() as history_id:
+            self._create_collection_in_history(history_id)
+            response = self._get_contents_with_stats(
+                history_id,
+                search_query="&q=history_content_type-eq&qv=dataset_collection",
+            )
+            self._assert_status_code_is(response, 200)
+            contents_with_stats = response.json()
+            assert contents_with_stats["contents"]
+            collection = contents_with_stats["contents"][0]
+            self._assert_has_keys(collection, *expected_extra_keys_in_collections)
+
     def _get_contents_with_stats(self, history_id: str, search_query: str = ""):
         headers = {"accept": "application/vnd.galaxy.history.contents.stats+json"}
         search_response = self._get(f"histories/{history_id}/contents?v=dev{search_query}", headers=headers)
