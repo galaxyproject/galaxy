@@ -107,6 +107,6 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
 
     @retry_assertion_during_transitions
     def select_add_items_permission_option(self, option_text):
-        el = self.components.libraries.add_items_permission_option.wait_for_visible()
+        el = self.components.libraries.add_items_permission_option.wait_for_clickable()
         assert option_text == el.text
         el.click()
