@@ -3,6 +3,7 @@
 import collections
 import hashlib
 import logging
+import os
 import re
 import sys
 import tarfile
@@ -18,6 +19,13 @@ QUAY_REPOSITORY_API_ENDPOINT = "https://quay.io/api/v1/repository"
 BUILD_NUMBER_REGEX = re.compile(r"\d+$")
 PARSED_TAG = collections.namedtuple("PARSED_TAG", "tag version build_string build_number")
 MULLED_SOCKET_TIMEOUT = 12
+
+
+def default_mulled_conda_channels_from_env():
+    if "DEFAULT_MULLED_CONDA_CHANNELS" in os.environ:
+        return os.environ["DEFAULT_MULLED_CONDA_CHANNELS"].split(",")
+    else:
+        return None
 
 
 def create_repository(namespace, repo_name, oauth_token):

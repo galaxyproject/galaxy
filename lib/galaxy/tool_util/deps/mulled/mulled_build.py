@@ -38,6 +38,7 @@ from .util import (
     build_target,
     conda_build_target_str,
     create_repository,
+    default_mulled_conda_channels_from_env,
     get_file_from_recipe_url,
     PrintProgress,
     quay_repository,
@@ -53,10 +54,7 @@ DEFAULT_BASE_IMAGE = os.environ.get("DEFAULT_BASE_IMAGE", "quay.io/bioconda/base
 DEFAULT_EXTENDED_BASE_IMAGE = os.environ.get(
     "DEFAULT_EXTENDED_BASE_IMAGE", "quay.io/bioconda/base-glibc-debian-bash:latest"
 )
-if "DEFAULT_MULLED_CONDA_CHANNELS" in os.environ:
-    DEFAULT_CHANNELS = os.environ["DEFAULT_MULLED_CONDA_CHANNELS"].split(",")
-else:
-    DEFAULT_CHANNELS = ["conda-forge", "bioconda"]
+DEFAULT_CHANNELS = default_mulled_conda_channels_from_env() or ["conda-forge", "bioconda"]
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 DEFAULT_BINDS = ["build/dist:/usr/local/"]
 DEFAULT_WORKING_DIR = "/source/"
@@ -156,8 +154,8 @@ def get_conda_hits_for_targets(targets, conda_context):
     return [r for r in search_results if r]
 
 
-def base_image_for_targets(targets, conda_context=None):
-    hits = get_conda_hits_for_targets(targets, conda_context or CondaInDockerContext())
+def base_image_for_targets(targets, conda_context):
+    hits = get_conda_hits_for_targets(targets, conda_context)
     for hit in hits:
         try:
             tarball = get_file_from_recipe_url(hit["url"])
@@ -246,7 +244,7 @@ def mull_targets(
     for channel in channels:
         if channel.startswith("file://"):
             bind_path = channel[7:]
-            binds.append(f"/{bind_path}:/{bind_path}")
+            binds.append(f"{bind_path}:{bind_path}")
 
     channels = ",".join(channels)
     target_str = ",".join(map(conda_build_target_str, targets))
@@ -269,7 +267,8 @@ def mull_targets(
     elif DEST_BASE_IMAGE:
         dest_base_image = DEST_BASE_IMAGE
     elif determine_base_image:
-        dest_base_image = base_image_for_targets(targets)
+        conda_context = CondaInDockerContext(ensure_channels=channels)
+        dest_base_image = base_image_for_targets(targets, conda_context)
 
     if dest_base_image:
         involucro_args.extend(["-set", f"DEST_BASE_IMAGE={dest_base_image}"])
@@ -341,7 +340,12 @@ class CondaInDockerContext(CondaContext):
     ):
         if not conda_exec:
             conda_image = CONDA_IMAGE or "continuumio/miniconda3:latest"
-            conda_exec = docker_command_list("run", [conda_image, "conda"])
+            binds = []
+            for channel in ensure_channels:
+                if channel.startswith("file://"):
+                    bind_path = channel[7:]
+                    binds.extend(["-v", f"{bind_path}:{bind_path}"])
+            conda_exec = docker_command_list("run", binds + [conda_image, "conda"])
         super().__init__(
             conda_prefix=conda_prefix,
             conda_exec=conda_exec,

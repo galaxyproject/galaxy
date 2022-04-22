@@ -3,6 +3,7 @@ import pytest
 from galaxy.tool_util.deps.mulled.mulled_build import (
     base_image_for_targets,
     build_target,
+    CondaInDockerContext,
     DEFAULT_BASE_IMAGE,
     DEFAULT_EXTENDED_BASE_IMAGE,
     mull_targets,
@@ -22,7 +23,8 @@ from ..util import external_dependency_management
 @external_dependency_management
 def test_base_image_for_targets(target, version, base_image):
     target = build_target(target, version=version)
-    assert base_image_for_targets([target]) == base_image
+    conda_context = CondaInDockerContext()
+    assert base_image_for_targets([target], conda_context) == base_image
 
 
 @external_dependency_management

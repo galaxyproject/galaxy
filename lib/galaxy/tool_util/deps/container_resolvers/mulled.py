@@ -30,6 +30,7 @@ from ..mulled.mulled_build import (
 )
 from ..mulled.mulled_build_tool import requirements_to_mulled_targets
 from ..mulled.util import (
+    default_mulled_conda_channels_from_env,
     mulled_tags_for,
     split_tag,
     v1_image_name,
@@ -647,10 +648,12 @@ class BuildMulledDockerContainerResolver(CliContainerResolver):
         self.auto_install = string_as_bool(auto_install)
         self._mulled_kwds = {
             "namespace": namespace,
-            "channels": self._get_config_option("mulled_channels", DEFAULT_CHANNELS),
             "hash_func": self.hash_func,
             "command": "build-and-test",
         }
+        self._mulled_kwds["channels"] = default_mulled_conda_channels_from_env() or self._get_config_option(
+            "mulled_channels", DEFAULT_CHANNELS
+        )
         self.auto_init = self._get_config_option("involucro_auto_init", True)
 
     def resolve(self, enabled_container_types, tool_info, install=False, **kwds):
