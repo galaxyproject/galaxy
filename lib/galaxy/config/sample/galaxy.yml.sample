@@ -847,6 +847,10 @@ galaxy:
   # <cache_dir>.
   #mulled_resolution_cache_lock_dir: mulled/locks
 
+  # Seconds until the beaker cache is considered old and a new value is
+  # created.
+  #mulled_resolution_cache_expire: 3600
+
   # Configuration file for the object store If this is set and exists,
   # it overrides any other objectstore settings.
   # The value of this option will be resolved with respect to

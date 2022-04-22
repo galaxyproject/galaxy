@@ -218,9 +218,10 @@ class ConfiguresGalaxyMixin:
         mulled_resolution_cache = None
         if self.config.mulled_resolution_cache_type:
             cache_opts = {
-                'cache.type': self.config.mulled_resolution_cache_type,
-                'cache.data_dir': self.config.mulled_resolution_cache_data_dir,
-                'cache.lock_dir': self.config.mulled_resolution_cache_lock_dir,
+                "cache.type": self.config.mulled_resolution_cache_type,
+                "cache.data_dir": self.config.mulled_resolution_cache_data_dir,
+                "cache.lock_dir": self.config.mulled_resolution_cache_lock_dir,
+                "cache.expire": self.config.mulled_resolution_cache_expire,
             }
             mulled_resolution_cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache('mulled_resolution')
         self.container_finder = containers.ContainerFinder(app_info, mulled_resolution_cache=mulled_resolution_cache)
