@@ -1,4 +1,4 @@
-import { mount } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "jest/helpers";
 import HistorySelectionStatus from "./SelectionStatus.vue";
@@ -17,7 +17,7 @@ const SOMETHING_SELECTED = {
 };
 
 async function mountHistorySelectionStatusWith(props) {
-    const wrapper = mount(HistorySelectionStatus, { propsData: props }, localVue);
+    const wrapper = shallowMount(HistorySelectionStatus, { propsData: props }, localVue);
     await flushPromises();
     return wrapper;
 }
