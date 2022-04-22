@@ -237,7 +237,7 @@ def looks_like_a_cwl_artifact(path, classes=None):
         return False
 
     is_yaml, as_dict = as_dict_if_looks_like_yaml_or_cwl_with_class(path, classes)
-    if not is_yaml is None:
+    if not is_yaml:
         return False
 
     file_cwl_version = as_dict.get("cwlVersion", None)
