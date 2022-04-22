@@ -25,7 +25,8 @@
                 }"
                 :scope-key="queryKey"
                 :get-item-key="(item) => item.type_id"
-                :filter-text="filterText">
+                :filter-text="filterText"
+                :total-items-in-query="totalItemsInQuery">
                 <section class="history-layout d-flex flex-column">
                     <slot name="navigation" :history="history" />
                     <HistoryFilters
@@ -58,7 +59,7 @@
                                 <HistorySelectionStatus
                                     v-if="showSelection"
                                     :selection-size="selectionSize"
-                                    @select-all="selectAllInCurrentQuery(payload, totalItemsInQuery)"
+                                    @select-all="selectAllInCurrentQuery(payload)"
                                     @reset-selection="resetSelection" />
                             </template>
                         </HistoryOperations>
