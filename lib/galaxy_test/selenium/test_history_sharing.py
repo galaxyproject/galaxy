@@ -120,3 +120,20 @@ class HistorySharingTestCase(SeleniumTestCase):
 
             xpath = f'//span[contains(text(), "{user_email}")]'
             self.wait_for_xpath_visible(xpath)
+
+
+class HistoryRequiresLoginSeleniumTestCase(SeleniumTestCase):
+
+    ensure_registered = True
+
+    @selenium_test
+    def test_share_history_login_redirect(self):
+        user_email = self.get_logged_in_user()["email"]
+        history_id = self.current_history_id()
+        self.logout()
+        self.go_to_history_sharing(history_id)
+        self.assert_error_message(contains="Must be logged in to manage Galaxy items")
+        self.components._.messages.require_login.wait_for_and_click()
+        self.fill_login_and_submit(user_email)
+        self.wait_for_logged_in()
+        self.wait_for_selector(".make-accessible")

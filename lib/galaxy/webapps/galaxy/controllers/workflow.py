@@ -367,7 +367,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         )
 
     @web.expose
-    @web.require_login("Share or export Galaxy workflows")
+    @web.require_login("share or export Galaxy workflows")
     def sharing(self, trans, id, **kwargs):
         """Handle workflow sharing."""
         session = trans.sa_session
