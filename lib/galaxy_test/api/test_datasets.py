@@ -63,20 +63,24 @@ class DatasetsApiTestCase(ApiTestCase):
 
     def test_search_datasets(self):
         hda_id = self.dataset_populator.new_dataset(self.history_id)["id"]
-        payload = {"limit": 1, "offset": 0}
+        payload = {"limit": 1, "offset": 0, "history_id": self.history_id}
         index_response = self._get("datasets", payload).json()
         assert len(index_response) == 1
         assert index_response[0]["id"] == hda_id
-        hdca_id = self.dataset_collection_populator.create_list_in_history(
+        fetch_response = self.dataset_collection_populator.create_list_in_history(
             self.history_id, contents=["1\n2\n3"]
-        ).json()["id"]
-        index_payload_1 = {"limit": 3, "offset": 0}
+        ).json()
+        hdca_id = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)["id"]
+        index_payload_1 = {"limit": 3, "offset": 0, "order": "hid", "history_id": self.history_id}
         index_response = self._get("datasets", index_payload_1).json()
         assert len(index_response) == 3
-        assert index_response[0]["id"] == hdca_id
-        assert index_response[0]["history_content_type"] == "dataset_collection"
-        assert index_response[2]["id"] == hda_id
+        assert index_response[0]["hid"] == 3
+        assert index_response[1]["hid"] == 2
+        assert index_response[2]["hid"] == 1
         assert index_response[2]["history_content_type"] == "dataset"
+        assert index_response[2]["id"] == hda_id
+        assert index_response[1]["history_content_type"] == "dataset_collection"
+        assert index_response[1]["id"] == hdca_id
         index_payload_2 = {"limit": 2, "offset": 0, "q": ["history_content_type"], "qv": ["dataset"]}
         index_response = self._get("datasets", index_payload_2).json()
         assert index_response[1]["id"] == hda_id
@@ -89,7 +93,13 @@ class DatasetsApiTestCase(ApiTestCase):
         updated_hda = self._put(f"histories/{self.history_id}/contents/{hda_id}", update_payload, json=True).json()
         assert "cool:new_tag" in updated_hda["tags"]
         assert "cool:another_tag" in updated_hda["tags"]
-        payload = {"limit": 10, "offset": 0, "q": ["history_content_type", "tag"], "qv": ["dataset", "cool:new_tag"]}
+        payload = {
+            "limit": 10,
+            "offset": 0,
+            "q": ["history_content_type", "tag"],
+            "qv": ["dataset", "cool:new_tag"],
+            "history_id": self.history_id,
+        }
         index_response = self._get("datasets", payload).json()
         assert len(index_response) == 1
         payload = {
@@ -97,36 +107,55 @@ class DatasetsApiTestCase(ApiTestCase):
             "offset": 0,
             "q": ["history_content_type", "tag-contains"],
             "qv": ["dataset", "new_tag"],
+            "history_id": self.history_id,
         }
         index_response = self._get("datasets", payload).json()
         assert len(index_response) == 1
-        payload = {"limit": 10, "offset": 0, "q": ["history_content_type", "tag-contains"], "qv": ["dataset", "notag"]}
+        payload = {
+            "limit": 10,
+            "offset": 0,
+            "q": ["history_content_type", "tag-contains"],
+            "qv": ["dataset", "notag"],
+            "history_id": self.history_id,
+        }
         index_response = self._get("datasets", payload).json()
         assert len(index_response) == 0
 
     def test_search_by_tool_id(self):
         self.dataset_populator.new_dataset(self.history_id)
-        payload = {"limit": 1, "offset": 0, "q": ["history_content_type", "tool_id"], "qv": ["dataset", "upload1"]}
+        payload = {
+            "limit": 1,
+            "offset": 0,
+            "q": ["history_content_type", "tool_id"],
+            "qv": ["dataset", "__DATA_FETCH__"],
+            "history_id": self.history_id,
+        }
         assert len(self._get("datasets", payload).json()) == 1
-        payload = {"limit": 1, "offset": 0, "q": ["history_content_type", "tool_id"], "qv": ["dataset", "uploadX"]}
+        payload = {
+            "limit": 1,
+            "offset": 0,
+            "q": ["history_content_type", "tool_id"],
+            "qv": ["dataset", "__DATA_FETCH__X"],
+            "history_id": self.history_id,
+        }
         assert len(self._get("datasets", payload).json()) == 0
         payload = {
             "limit": 1,
             "offset": 0,
             "q": ["history_content_type", "tool_id-contains"],
-            "qv": ["dataset", "pload1"],
+            "qv": ["dataset", "ATA_FETCH"],
+            "history_id": self.history_id,
         }
         assert len(self._get("datasets", payload).json()) == 1
         self.dataset_collection_populator.create_list_in_history(
-            self.history_id, name="search by tool id", contents=["1\n2\n3"]
-        ).json()
-        self.dataset_populator.wait_for_history(self.history_id)
+            self.history_id, name="search by tool id", contents=["1\n2\n3"], wait=True
+        )
         payload = {
             "limit": 10,
             "offset": 0,
-            "history_id": self.history_id,
             "q": ["name", "tool_id"],
-            "qv": ["search by tool id", "upload1"],
+            "qv": ["search by tool id", "__DATA_FETCH__"],
+            "history_id": self.history_id,
         }
         result = self._get("datasets", payload).json()
         assert result[0]["name"] == "search by tool id", result
@@ -135,6 +164,7 @@ class DatasetsApiTestCase(ApiTestCase):
             "offset": 0,
             "q": ["history_content_type", "tool_id"],
             "qv": ["dataset_collection", "uploadX"],
+            "history_id": self.history_id,
         }
         result = self._get("datasets", payload).json()
         assert len(result) == 0
@@ -289,8 +319,7 @@ class DatasetsApiTestCase(ApiTestCase):
         assert deleted_result["success_count"] == len(expected_purged_source_ids)
 
         for purged_source_id in expected_purged_source_ids:
-            dataset = self._get(f"histories/{history_id}/contents/{purged_source_id['id']}").json()
-            assert dataset["purged"] is True
+            self.dataset_populator.wait_for_purge(history_id, purged_source_id["id"])
 
     def test_delete_batch_error(self):
         num_datasets = 4

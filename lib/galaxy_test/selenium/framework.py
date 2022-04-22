@@ -31,6 +31,7 @@ from galaxy.selenium.navigates_galaxy import (
     NavigatesGalaxy,
     retry_during_transitions,
 )
+from galaxy.tool_util.verify.interactor import prepare_request_params
 from galaxy.util import (
     asbool,
     classproperty,
@@ -672,59 +673,36 @@ class SeleniumSessionGetPostMixin:
 
     def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
-        if data is None:
-            data = {}
-
-        if files is None:
-            files = data.get("__files", None)
-            if files is not None:
-                del data["__files"]
-
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        request_kwd = self._prepare_request_data(
-            dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT, files=files), data, as_json=json
-        )
-        response = requests.post(full_url, **request_kwd)
+        request_kwd = prepare_request_params(data=data, files=files, as_json=json, headers=headers, cookies=cookies)
+        response = requests.post(full_url, timeout=DEFAULT_SOCKET_TIMEOUT, **request_kwd)
         return response
 
     def _delete(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
-        data = data or {}
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        request_kwd = self._prepare_request_data(
-            dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT), data, as_json=json
-        )
-        response = requests.delete(full_url, **request_kwd)
+        request_kwd = prepare_request_params(data=data, as_json=json, headers=headers, cookies=cookies)
+        response = requests.delete(full_url, timeout=DEFAULT_SOCKET_TIMEOUT, **request_kwd)
         return response
 
     def _put(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
-        data = data or {}
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        request_kwd = self._prepare_request_data(
-            dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT), data, as_json=json
-        )
+        request_kwd = prepare_request_params(data=data, as_json=json, headers=headers, cookies=cookies)
         response = requests.put(full_url, **request_kwd)
         return response
-
-    def _prepare_request_data(self, request_kwd: Dict[str, Any], data: Dict[str, Any], as_json: bool = False):
-        if as_json:
-            request_kwd["json"] = data
-        else:
-            request_kwd["data"] = data
-        return request_kwd
 
 
 class SeleniumSessionDatasetPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetPopulator):
