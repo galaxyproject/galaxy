@@ -31,7 +31,7 @@ export default {
     },
     computed: {
         elapsedTime: function () {
-            return `${formatDistanceToNow(this.parsedDate)} ago`;
+            return formatDistanceToNow(this.parsedDate, {addSuffix: true});
         },
         fullISO: function () {
             return this.parsedDate.toISOString();
