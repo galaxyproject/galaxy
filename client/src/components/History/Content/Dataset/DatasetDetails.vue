@@ -29,7 +29,7 @@
 </template>
 
 <script>
-import STATES from "components/History/Content/contentStates";
+import { STATES } from "components/History/Content/model/states";
 import { DatasetProvider } from "components/providers/storeProviders";
 import DatasetActions from "./DatasetActions";
 

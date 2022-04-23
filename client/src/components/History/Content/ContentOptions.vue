@@ -82,7 +82,7 @@ export default {
             if (this.editDisabled) {
                 return "This dataset is not yet editable.";
             }
-            return "Edit Attributes";
+            return "Edit attributes";
         },
         editDisabled() {
             return this.isPurged || ["discarded", "new", "upload", "queued", "running", "waiting"].includes(this.state);

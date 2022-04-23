@@ -49,7 +49,7 @@
                     @display="onDisplay"
                     @edit="onEdit"
                     @undelete="$emit('undelete')"
-                    @unhide="$emit('delete')" />
+                    @unhide="$emit('unhide')" />
             </div>
         </div>
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
@@ -62,10 +62,10 @@
 <script>
 import { backboneRoute, useGalaxy, iframeRedirect } from "components/plugins/legacyNavigation";
 import { Nametag } from "components/Nametags";
+import { STATES } from "./model/states";
 import CollectionDescription from "./Collection/CollectionDescription";
 import ContentOptions from "./ContentOptions";
 import DatasetDetails from "./Dataset/DatasetDetails";
-import STATES from "./contentStates";
 
 export default {
     components: {
@@ -76,10 +76,10 @@ export default {
     },
     props: {
         expandDataset: { type: Boolean, required: true },
-        item: { type: Object, required: true },
         id: { type: Number, required: true },
         isDataset: { type: Boolean, default: true },
         isHistoryItem: { type: Boolean, default: true },
+        item: { type: Object, required: true },
         name: { type: String, required: true },
         selected: { type: Boolean, default: false },
         selectable: { type: Boolean, default: false },

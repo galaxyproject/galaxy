@@ -2,7 +2,7 @@
     Client representation of state and state messages. See: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py#L3292
     for a list of available states.
 */
-export default {
+export const STATES = {
     /** deleted while uploading */
     discarded: {
         status: "danger",

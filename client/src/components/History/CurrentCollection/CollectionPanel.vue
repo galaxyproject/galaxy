@@ -26,8 +26,8 @@
                                     :item="item.object"
                                     :id="item.element_index"
                                     :name="item.element_identifier"
-                                    :is-dataset="item.element_type == 'hda'"
                                     :expand-dataset="isExpanded(item)"
+                                    :is-dataset="item.element_type == 'hda'"
                                     :is-history-item="false"
                                     @update:expand-dataset="setExpanded(item, $event)"
                                     @view-collection="onViewSubCollection" />
