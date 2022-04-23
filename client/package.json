@@ -94,7 +94,7 @@
     "build": "NODE_ENV=development gulp && webpack && yarn run save-build-hash",
     "build-production": "NODE_ENV=production gulp && yarn run webpack-production && yarn run save-build-hash",
     "build-production-maps": "NODE_ENV=production gulp && yarn run webpack-production-maps && yarn run save-build-hash",
-    "build-stats": "webpack --profile --json=webpack-stats.json",
+    "build-stats": "NODE_ENV=production webpack --profile --json=webpack-stats.json",
     "view-stats": "webpack-bundle-analyzer webpack-stats.json ../static/dist/",
     "webpack-watch": "webpack --watch",
     "webpack-production": "NODE_ENV=production webpack",
