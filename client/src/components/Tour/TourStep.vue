@@ -2,8 +2,7 @@
     <div
         class="tour-element"
         :class="{ 'tour-element-sticky': !targetElement, 'tour-has-title': !!step.title }"
-        :id="id"
-        :ref="id">
+        ref="tour-element">
         <div v-if="step.title" class="tour-header">
             <div class="tour-title" v-html="step.title"></div>
         </div>
@@ -27,7 +26,6 @@
 
 <script>
 import { createPopper } from "@popperjs/core";
-import sum from "hash-sum";
 
 export default {
     props: {
@@ -41,17 +39,19 @@ export default {
             type: Boolean,
         },
     },
-    data() {
-        return {
-            id: `tour-element-${sum(this.step.element)}`,
-            targetElement: document.querySelector(this.step.element),
-        };
+    computed: {
+        targetElement() {
+            if (this.step.element) {
+                return document.querySelector(this.step.element);
+            }
+            return null;
+        },
     },
     methods: {
         createStep() {
             if (this.targetElement) {
                 this.targetElement.scrollIntoView({ behavior: "smooth" });
-                createPopper(this.targetElement, this.$refs[this.id], {
+                createPopper(this.targetElement, this.$refs["tour-element"], {
                     modifiers: [
                         {
                             name: "preventOverflow",
