@@ -38,57 +38,18 @@
                         <Nametag v-for="tag in item.tags" :key="tag" :tag="tag" />
                     </div>
                 </span>
-                <span class="align-self-start btn-group">
-                    <b-button
-                        v-if="isDataset"
-                        :disabled="displayDisabled"
-                        :title="displayButtonTitle"
-                        class="px-1"
-                        size="sm"
-                        variant="link"
-                        @click.stop="onDisplay">
-                        <icon icon="eye" />
-                    </b-button>
-                    <b-button
-                        v-if="isHistoryItem"
-                        :disabled="editDisabled"
-                        class="px-1"
-                        title="Edit attributes"
-                        size="sm"
-                        variant="link"
-                        @click.stop="onEdit">
-                        <icon icon="pen" />
-                    </b-button>
-                    <b-button
-                        v-if="isHistoryItem && !item.deleted"
-                        class="px-1"
-                        title="Delete"
-                        size="sm"
-                        variant="link"
-                        :disabled="item.purged"
-                        @click.stop="$emit('delete', item)">
-                        <icon icon="trash" />
-                    </b-button>
-                    <b-button
-                        v-if="isHistoryItem && item.deleted"
-                        class="px-1"
-                        title="Undelete"
-                        size="sm"
-                        variant="link"
-                        :disabled="item.purged"
-                        @click.stop="$emit('undelete', item)">
-                        <icon icon="trash-restore" />
-                    </b-button>
-                    <b-button
-                        v-if="isHistoryItem && !item.visible"
-                        class="px-1"
-                        title="Unhide"
-                        size="sm"
-                        variant="link"
-                        @click.stop="$emit('unhide', item)">
-                        <icon icon="unlock" />
-                    </b-button>
-                </span>
+                <ContentOptions
+                    :is-dataset="isDataset"
+                    :is-deleted="item.deleted"
+                    :is-history-item="isHistoryItem"
+                    :is-purged="item.purged"
+                    :is-visible="item.visible"
+                    :state="state"
+                    @delete="$emit('delete')"
+                    @display="onDisplay"
+                    @edit="onEdit"
+                    @undelete="$emit('undelete')"
+                    @unhide="$emit('delete')" />
             </div>
         </div>
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
@@ -102,12 +63,14 @@
 import { backboneRoute, useGalaxy, iframeRedirect } from "components/plugins/legacyNavigation";
 import { Nametag } from "components/Nametags";
 import CollectionDescription from "./Collection/CollectionDescription";
+import ContentOptions from "./ContentOptions";
 import DatasetDetails from "./Dataset/DatasetDetails";
 import STATES from "./contentStates";
 
 export default {
     components: {
         CollectionDescription,
+        ContentOptions,
         DatasetDetails,
         Nametag,
     },
@@ -138,32 +101,6 @@ export default {
         contentState() {
             return STATES[this.state] && STATES[this.state];
         },
-        displayButtonTitle() {
-            if (this.item.purged) {
-                return "Cannot display datasets removed from disk.";
-            }
-            if (this.displayDisabled) {
-                return "This dataset is not yet viewable.";
-            }
-            return "Display";
-        },
-        displayDisabled() {
-            return this.item.purged || ["discarded", "new", "upload"].includes(this.state);
-        },
-        editButtonTitle() {
-            if (this.item.purged) {
-                return "Cannot edit attributes of datasets removed from disk.";
-            }
-            if (this.editDisabled) {
-                return "This dataset is not yet editable.";
-            }
-            return "Edit Attributes";
-        },
-        editDisabled() {
-            return (
-                this.item.purged || ["discarded", "new", "upload", "queued", "running", "waiting"].includes(this.state)
-            );
-        },
         hasStateIcon() {
             return this.contentState && this.contentState.icon;
         },
@@ -181,10 +118,12 @@ export default {
         },
     },
     methods: {
-        onDragStart(evt) {
-            evt.dataTransfer.dropEffect = "move";
-            evt.dataTransfer.effectAllowed = "move";
-            evt.dataTransfer.setData("text", JSON.stringify([this.item]));
+        onClick() {
+            if (this.isDataset) {
+                this.$emit("update:expand-dataset", !this.expandDataset);
+            } else {
+                this.$emit("view-collection", this.item, this.name);
+            }
         },
         onDisplay() {
             const id = this.item.id;
@@ -196,18 +135,16 @@ export default {
                 }
             });
         },
+        onDragStart(evt) {
+            evt.dataTransfer.dropEffect = "move";
+            evt.dataTransfer.effectAllowed = "move";
+            evt.dataTransfer.setData("text", JSON.stringify([this.item]));
+        },
         onEdit() {
             if (this.item.collection_type) {
                 backboneRoute(`collection/edit/${this.item.id}`);
             } else {
                 backboneRoute("datasets/edit", { dataset_id: this.item.id });
-            }
-        },
-        onClick() {
-            if (this.isDataset) {
-                this.$emit("update:expand-dataset", !this.expandDataset);
-            } else {
-                this.$emit("view-collection", this.item, this.name);
             }
         },
     },

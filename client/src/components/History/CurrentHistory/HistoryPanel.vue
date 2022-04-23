@@ -88,9 +88,9 @@
                                         @update:expand-dataset="setExpanded(item, $event)"
                                         @update:selected="setSelected(item, $event)"
                                         @view-collection="$emit('view-collection', item)"
-                                        @delete="onDelete"
-                                        @undelete="onUndelete"
-                                        @unhide="onUnhide" />
+                                        @delete="onDelete(item)"
+                                        @undelete="onUndelete(item)"
+                                        @unhide="onUnhide(item)" />
                                 </template>
                             </Listing>
                         </div>
