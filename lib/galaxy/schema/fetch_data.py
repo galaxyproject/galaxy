@@ -109,6 +109,7 @@ class BaseDataElement(FetchBaseModel):
     space_to_tab: bool = False
     to_posix_lines: bool = False
     tags: Optional[List[str]]
+    created_from_basename: Optional[str]
     extra_files: Optional[ExtraFiles]
     auto_decompress: bool = AutoDecompressField
     items_from: Optional[ElementsFromType] = Field(alias="elements_from")
