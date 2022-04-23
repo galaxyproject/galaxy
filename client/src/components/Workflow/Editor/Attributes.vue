@@ -54,7 +54,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import moment from "moment";
+import { format } from "date-fns";
 import { Services } from "components/Workflow/services";
 import Tags from "components/Common/Tags";
 import LicenseSelector from "components/License/LicenseSelector";
@@ -136,7 +136,7 @@ export default {
             const versions = [];
             for (let i = 0; i < this.versions.length; i++) {
                 const current_wf = this.versions[i];
-                const update_time = moment.utc(current_wf.update_time).format("MMM Do YYYY");
+                const update_time = format(Date.parse(current_wf.update_time), "MMM do yyyy");
                 const label = `${current_wf.version + 1}: ${update_time}, ${current_wf.steps} steps`;
                 versions.push({
                     version: i,
