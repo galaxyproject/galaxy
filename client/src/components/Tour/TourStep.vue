@@ -2,8 +2,8 @@
     <div
         class="tour-element"
         :class="{ 'tour-element-sticky': !targetElement, 'tour-has-title': !!step.title }"
-        :id="'tour-element-' + hash"
-        :ref="'tour-element-' + hash">
+        :id="id"
+        :ref="id">
         <div v-if="step.title" class="tour-header">
             <div class="tour-title" v-html="step.title"></div>
         </div>
@@ -43,15 +43,15 @@ export default {
     },
     data() {
         return {
-            hash: sum(this.step.target),
-            targetElement: document.querySelector(this.step.target),
+            id: `tour-element-${sum(this.step.element)}`,
+            targetElement: document.querySelector(this.step.element),
         };
     },
     methods: {
         createStep() {
             if (this.targetElement) {
                 this.targetElement.scrollIntoView({ behavior: "smooth" });
-                createPopper(this.targetElement, this.$refs["tour-element-" + this.hash], {
+                createPopper(this.targetElement, this.$refs[this.id], {
                     modifiers: [
                         {
                             name: "preventOverflow",
