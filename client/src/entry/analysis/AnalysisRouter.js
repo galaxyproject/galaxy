@@ -22,7 +22,7 @@ import UserPreferences from "components/User/UserPreferences";
 import DatasetList from "components/Dataset/DatasetList";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import CustomBuilds from "components/User/CustomBuilds";
-import Tours from "mvc/tours";
+import { runTour } from "components/Tour/runTour";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
 import JobDetails from "components/JobInformation/JobDetails";
@@ -142,10 +142,9 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_tours: function (tour_id) {
+            this.home();
             if (tour_id) {
-                Tours.giveTourById(tour_id);
-            } else {
-                this.page.display(new Tours.ToursView());
+                runTour(tour_id);
             }
         },
 
@@ -429,7 +428,7 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         /**  */
-        home: function (params) {
+        home: function (params = {}) {
             // TODO: to router, remove Globals
             // load a tool by id (tool_id) or rerun a previous tool execution (job_id)
             if (params.tool_id || params.job_id) {

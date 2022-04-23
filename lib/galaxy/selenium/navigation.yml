@@ -658,13 +658,11 @@ invocations:
 tour:
   popover:
     selectors:
-      _: '.popover'
-
-      title: '${_} .popover-header'
-      content: '${_} .popover-body'
-      next: '${_} button[data-role="next"]'
-      previous: '${_} button[data-role="prev"]'
-      end: '${_} button[data-role="end"]'
+      _: '.tour-element'
+      title: '${_} .tour-title'
+      content: '${_} .tour-content'
+      next: '${_} .tour-next'
+      end: '${_} .tour-end'
 
 admin:
 

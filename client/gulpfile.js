@@ -40,7 +40,6 @@ const PATHS = {
         // automatically.  Eventually, this dictionary and staging step will
         // not be necessary.
         backbone: ["backbone.js", "backbone.js"],
-        "@galaxyproject/bootstrap-tour": ["build/js/bootstrap-tour.js", "bootstrap-tour.js"],
         jquery: ["dist/jquery.js", "jquery/jquery.js"],
         "jquery-migrate": ["dist/jquery-migrate.js", "jquery/jquery.migrate.js"],
         "jquery-mousewheel": ["jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],
