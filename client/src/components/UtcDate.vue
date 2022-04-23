@@ -31,7 +31,7 @@ export default {
     },
     computed: {
         elapsedTime: function () {
-            return formatDistanceToNow(this.parsedDate, {addSuffix: true});
+            return formatDistanceToNow(this.parsedDate, { addSuffix: true });
         },
         fullISO: function () {
             return this.parsedDate.toISOString();
@@ -39,14 +39,13 @@ export default {
         parsedDate: function () {
             if (this.customFormat !== undefined) {
                 return parse(this.date, this.customFormat, new Date());
-                // return moment(this.date, this.customFormat).format();
             } else {
                 // assume ISO format date, except in Galaxy this won't have TZinfo -- it will always be Zulu
                 return parseISO(`${this.date}Z`);
             }
         },
         pretty: function () {
-            return `${formatInTimeZone(this.parsedDate, 'Etc/Zulu', "eeee MMM do H:mm:ss yyyy")} UTC`;
+            return `${formatInTimeZone(this.parsedDate, "Etc/Zulu", "eeee MMM do H:mm:ss yyyy")} UTC`;
         },
     },
 };
