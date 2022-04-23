@@ -2345,7 +2345,7 @@ def load_data_dict(
             collection_type = value.get("collection_type", "")
             if collection_type == "list:paired":
                 fetch_response = dataset_collection_populator.create_list_of_pairs_in_history(
-                    history_id, contents=elements, **new_collection_kwds
+                    history_id, contents=elements, wait=True, **new_collection_kwds
                 ).json()
             elif collection_type and ":" in collection_type:
                 fetch_response = {
@@ -2357,11 +2357,11 @@ def load_data_dict(
                 }
             elif collection_type == "list":
                 fetch_response = dataset_collection_populator.create_list_in_history(
-                    history_id, contents=elements, direct_upload=True, **new_collection_kwds
+                    history_id, contents=elements, direct_upload=True, wait=True, **new_collection_kwds
                 ).json()
             else:
                 fetch_response = dataset_collection_populator.create_pair_in_history(
-                    history_id, contents=elements or None, direct_upload=True, **new_collection_kwds
+                    history_id, contents=elements or None, direct_upload=True, wait=True, **new_collection_kwds
                 ).json()
             hdca_output = fetch_response["outputs"][0]
             hdca = dataset_populator.ds_entry(hdca_output)
