@@ -12,7 +12,7 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
     def test_create_new_old_slides_next(self):
         history_id = self.current_history_id()
         input_collection = self.dataset_collection_populator.create_list_in_history(
-            history_id, contents=["0", "1", "0", "1"]
+            history_id, contents=["0", "1", "0", "1"], wait=True
         ).json()
         input_hid = input_collection["outputs"][0]["hid"]
 
