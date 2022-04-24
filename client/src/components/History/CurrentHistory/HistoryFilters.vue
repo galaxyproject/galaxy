@@ -4,6 +4,7 @@
             <DebouncedInput v-model="localFilter" v-slot="{ value, input }">
                 <b-form-input
                     size="sm"
+                    :class="[inputBorders]"
                     :value="value"
                     @input="input"
                     @keyup.esc="onReset"
@@ -106,6 +107,11 @@ export default {
                     this.updateFilter(newVal);
                 }
             },
+        },
+        inputBorders() {
+            if (this.filterText) {
+                return "yesText";
+            }
         },
     },
     methods: {
