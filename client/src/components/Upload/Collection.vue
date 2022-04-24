@@ -272,8 +272,6 @@ export default {
             const selection = {
                 models: Object.values(models),
                 historyId: Galaxy.currHistoryPanel.model.id,
-                // Unwatch is unused?
-                unwatch: null,
             };
             Galaxy.currHistoryPanel.buildCollection(this.collectionType, selection, true);
             this.counterRunning = 0;
