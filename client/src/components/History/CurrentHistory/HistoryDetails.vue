@@ -23,7 +23,7 @@
                         size="sm"
                         class="text-decoration-none"
                         @click="setFilter('')">
-                        <icon icon="star" />
+                        <span class="fa fa-map-marker" />
                         <span>{{ history.contents_active.active }}</span>
                     </b-button>
                     <b-button
