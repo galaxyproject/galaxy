@@ -268,8 +268,11 @@ export default {
                     console.debug("Warning, upload response does not contain outputs.", model);
                 }
             });
-            const selection = new Galaxy.currHistoryPanel.collection.constructor(Object.values(models));
-            selection.historyId = Galaxy.currHistoryPanel.model.id;
+            // Build selection object
+            const selection = {
+                models: Object.values(models),
+                historyId: Galaxy.currHistoryPanel.model.id,
+            };
             Galaxy.currHistoryPanel.buildCollection(this.collectionType, selection, true);
             this.counterRunning = 0;
             this._updateStateForCounters();
