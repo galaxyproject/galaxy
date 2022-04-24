@@ -32,7 +32,7 @@
                         :filter-text.sync="filterText"
                         :show-advanced.sync="showAdvanced" />
                     <section v-if="!showAdvanced">
-                        <HistoryDetails :history="history" @detailsFilter="onDetailsFilter" v-on="$listeners" />
+                        <HistoryDetails :history="history" :filter-text.sync="filterText" v-on="$listeners" />
                         <HistoryMessages class="m-2" :history="history" />
                         <HistoryOperations
                             :history="history"
@@ -198,9 +198,6 @@ export default {
         },
         setInvisible(item) {
             Vue.set(this.invisible, item.hid, true);
-        },
-        onDetailsFilter(newFilterText) {
-            this.filterText = newFilterText;
         },
     },
 };

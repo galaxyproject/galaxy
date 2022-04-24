@@ -1,5 +1,6 @@
 <template>
     <section class="m-3 details" data-description="edit details">
+        <slot name="header" />
         <b-button
             v-if="!currentUser.isAnonymous && writeable"
             class="edit-button ml-1 float-right"
