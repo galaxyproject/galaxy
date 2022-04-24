@@ -2,7 +2,6 @@
  * This is an adapter for the History component. It's required since the previous
  * history provided the same interface for other components.
  */
-import $ from "jquery";
 import Backbone from "backbone";
 import store from "store";
 import { getGalaxyInstance } from "app";
@@ -94,10 +93,12 @@ export class HistoryPanelProxy {
     }
     render() {
         const container = document.createElement("div");
-        $("#right > .unified-panel-header").remove();
-        $("#right > .unified-panel-controls").remove();
-        $("#right > .unified-panel-body").remove();
-        $("#right").addClass("beta").prepend(container);
+        document.querySelector("#right > .unified-panel-header").remove();
+        document.querySelector("#right > .unified-panel-controls").remove();
+        document.querySelector("#right > .unified-panel-body").remove();
+        const parent = document.querySelector("#right");
+        parent.classList.add("beta");
+        parent.prepend(container);
         const mountFn = mountVueComponent(HistoryIndex);
         mountFn({}, container);
     }

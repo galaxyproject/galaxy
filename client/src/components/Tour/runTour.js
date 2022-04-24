@@ -16,21 +16,31 @@ async function getTourData(tourId) {
 
 // returns the selected element
 function getElement(selector) {
-    return document.querySelector(selector);
+    if (selector) {
+        try {
+            return document.querySelector(selector);
+        } catch (error) {
+            throw `Tour - Invalid selector. ${selector}`;
+        }
+    }
 }
 
 // wait for element
 function waitForElement(selector, resolve, reject, tries) {
-    const el = getElement(selector);
-    if (el) {
-        resolve();
-    } else if (tries > 0) {
-        setTimeout(() => {
-            waitForElement(selector, resolve, reject, tries - 1);
-        }, delay);
+    if (selector) {
+        const el = getElement(selector);
+        if (el) {
+            resolve();
+        } else if (tries > 0) {
+            setTimeout(() => {
+                waitForElement(selector, resolve, reject, tries - 1);
+            }, delay);
+        } else {
+            console.error("Tour - Element not found.", selector);
+            reject();
+        }
     } else {
-        console.error("Tours - Element not found.", selector);
-        reject();
+        resolve();
     }
 }
 
@@ -42,7 +52,7 @@ function doClick(targets) {
             if (el) {
                 el.click();
             } else {
-                console.error("Tours - Click target not found.", selector);
+                console.error("Tour - Click target not found.", selector);
             }
         });
     }
@@ -57,7 +67,7 @@ function doInsert(selector, value) {
             const event = new Event("input");
             el.dispatchEvent(event);
         } else {
-            console.error("Tours - Insert target not found.", selector);
+            console.error("Tour - Insert target not found.", selector);
         }
     }
 }
@@ -71,7 +81,12 @@ function mountTour(props) {
     return mountFn(props, container);
 }
 
-// executes tour
+/**
+ * Runs a Tour by identifier or from provided data.
+ * @param {String} Unique Tour identifier (for api request)
+ * @param {Object} Tour data
+ * @returns mounted instance
+ */
 export async function runTour(tourId, tourData = null) {
     if (!tourData) {
         tourData = await getTourData(tourId);
@@ -79,23 +94,21 @@ export async function runTour(tourId, tourData = null) {
     const steps = [];
     Object.values(tourData.steps).forEach((step) => {
         steps.push({
-            target: step.element,
+            element: step.element,
             title: step.title,
             content: step.content,
             onBefore: () => {
                 return new Promise((resolve, reject) => {
-                    if (step.element) {
-                        // wait for element before continuing tour
-                        waitForElement(step.element, resolve, reject, attempts);
-                    } else {
-                        resolve();
-                    }
+                    // wait for element before continuing tour
+                    waitForElement(step.element, resolve, reject, attempts);
                 }).then(() => {
+                    // pre-actions
                     doClick(step.preclick);
                     doInsert(step.element, step.textinsert);
                 });
             },
             onNext: () => {
+                // post-actions
                 doClick(step.postclick);
             },
         });

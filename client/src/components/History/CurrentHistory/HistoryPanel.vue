@@ -82,15 +82,15 @@
                                         :id="item.hid"
                                         :name="item.name"
                                         :expand-dataset="isExpanded(item)"
-                                        :is-dataset="item.history_content_type == 'dataset'"
+                                        :is-dataset="isDataset(item)"
                                         :selected="isSelected(item)"
                                         :selectable="showSelection"
                                         @update:expand-dataset="setExpanded(item, $event)"
                                         @update:selected="setSelected(item, $event)"
                                         @view-collection="$emit('view-collection', item)"
-                                        @delete="onDelete"
-                                        @undelete="onUndelete"
-                                        @unhide="onUnhide" />
+                                        @delete="onDelete(item)"
+                                        @undelete="onUndelete(item)"
+                                        @unhide="onUnhide(item)" />
                                 </template>
                             </Listing>
                         </div>
@@ -173,17 +173,20 @@ export default {
         hasMatches(payload) {
             return !!payload && payload.length > 0;
         },
-        onScroll(offset) {
-            this.offset = offset;
+        isDataset(item) {
+            return item.history_content_type == "dataset";
+        },
+        onDelete(item) {
+            this.setInvisible(item);
+            deleteContent(item);
         },
         onHideSelection(selectedItems) {
             selectedItems.forEach((item) => {
                 this.setInvisible(item);
             });
         },
-        onDelete(item) {
-            this.setInvisible(item);
-            deleteContent(item);
+        onScroll(offset) {
+            this.offset = offset;
         },
         onUndelete(item) {
             this.setInvisible(item);
