@@ -82,6 +82,7 @@
 bigWigToWig - Convert bigWig to wig.  This will keep more of the same structure of the
 original wig than bigWigToBedGraph does, but still will break up large stepped sections
 into smaller ones.
+
     ]]></help>
     <citations>
         <citation type="bibtex">
