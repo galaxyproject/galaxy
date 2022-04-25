@@ -99,7 +99,8 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkfl
         self._assert_showing_n_workflows(4)
 
         self.workflow_index_click_tag("mytag", workflow_index=3)
-        self._assert_showing_n_workflows(3)
+        self._assert_showing_n_workflows(2)
+        self.screenshot("workflow_manage_search_by_tag_exact")
 
     @selenium_test
     def test_index_search(self):
