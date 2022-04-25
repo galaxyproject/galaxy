@@ -91,6 +91,7 @@
       <display file="igb/bb.xml"/>
     </datatype>
     <datatype extension="bigwig" type="galaxy.datatypes.binary:BigWig" mimetype="application/octet-stream" display_in_upload="true">
+      <converter file="bigwig_to_wig_converter.xml" target_datatype="wig"/>
       <display file="ucsc/bigwig.xml"/>
       <display file="igb/bigwig.xml"/>
       <display file="igv/bigwig.xml"/>
