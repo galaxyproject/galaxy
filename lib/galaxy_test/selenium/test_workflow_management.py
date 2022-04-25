@@ -72,8 +72,7 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers):
         self.workflow_index_open()
         self._workflow_import_from_url()
 
-        self.workflow_index_click_tag_display()
-        self.tagging_add(["cooltag"])
+        self.workflow_index_add_tag("cooltag")
 
         @retry_assertion_during_transitions
         def check_tags():
@@ -81,6 +80,29 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers):
 
         check_tags()
         self.screenshot("workflow_manage_tags")
+
+    @selenium_test
+    def test_tag_filtering(self):
+        self.workflow_index_open()
+        self._workflow_import_from_url()
+        self.workflow_index_add_tag("mytag")
+        self._workflow_import_from_url()
+        self.workflow_index_add_tag("mytag")
+        self._workflow_import_from_url()
+        self.workflow_index_add_tag("mytaglonger")
+        self._workflow_import_from_url()
+
+        self.workflow_index_search_for("mytag")
+        self._assert_showing_n_workflows(3)
+        self.screenshot("workflow_manage_search_by_tag_freetext")
+        self.workflow_index_search_for("thisisnotatag")
+        self._assert_showing_n_workflows(0)
+
+        self.workflow_index_search_for()
+        self._assert_showing_n_workflows(4)
+
+        self.workflow_index_click_tag("mytag", workflow_index=3)
+        self._assert_showing_n_workflows(3)
 
     @selenium_test
     def test_index_search(self):

@@ -1251,15 +1251,36 @@ class NavigatesGalaxy(HasDriver):
         tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
         tag_display.click()
 
+    def workflow_index_add_tag(self, tag: str, workflow_index: int = 0):
+        self.workflow_index_click_tag_display(workflow_index=workflow_index)
+        self.tagging_add([tag])
+
     @retry_during_transitions
     def workflow_index_tags(self, workflow_index=0):
-        workflow_row_element = self.workflow_index_table_row(workflow_index)
-        tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
-        tag_spans = tag_display.find_elements_by_css_selector(".tag-name")
+        tag_spans = self.workflow_index_tag_elements(workflow_index=workflow_index)
         tags = []
         for tag_span in tag_spans:
             tags.append(tag_span.text)
         return tags
+
+    @retry_during_transitions
+    def workflow_index_tag_elements(self, workflow_index=0):
+        workflow_row_element = self.workflow_index_table_row(workflow_index)
+        tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
+        tag_spans = tag_display.find_elements_by_css_selector(".tag-name")
+        return tag_spans
+
+    @retry_during_transitions
+    def workflow_index_click_tag(self, tag, workflow_index=0):
+        tag_spans = self.workflow_index_tag_elements(workflow_index=workflow_index)
+        clicked = False
+        for tag_span in tag_spans:
+            if tag_span.text == tag:
+                tag_span.click()
+                clicked = True
+                break
+        if not clicked:
+            raise KeyError(f"Failed to find tag {tag} on workflow with index {workflow_index}")
 
     def workflow_import_submit_url(self, url):
         form_button = self.wait_for_selector_visible("#workflow-import-button")
