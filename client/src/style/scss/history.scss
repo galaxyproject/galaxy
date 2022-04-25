@@ -346,16 +346,6 @@
     }
 }
 
-// ---------------------------------------------------------------------------- history-filters
-
-.yesText {
-    border-color: #5494cc;
-    background-color: $state-info-bg;
-}
-.yesText:focus {
-    background-color: $state-info-bg;
-}
-
 // ---------------------------------------------------------------------------- multi-view / multi-panel
 .multi-panel-history {
     $mph-column_width: 312px;
