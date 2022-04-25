@@ -1,4 +1,3 @@
-import json
 import operator
 import os
 import shutil
@@ -103,7 +102,7 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
                 "destination": {"type": "hdas"},
                 "elements": [element],
             }
-            targets = json.dumps([target])
+            targets = [target]
             payload = {
                 "history_id": history_id,
                 "targets": targets,
@@ -123,7 +122,7 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
                 "destination": {"type": "hdas"},
                 "elements": [element],
             }
-            targets = json.dumps([target])
+            targets = [target]
             payload = {
                 "history_id": history_id,
                 "targets": targets,

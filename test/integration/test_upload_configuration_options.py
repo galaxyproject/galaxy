@@ -19,7 +19,6 @@ These options include:
    framework but tested here for FTP uploads.
 """
 
-import json
 import os
 import re
 import shutil
@@ -60,7 +59,7 @@ class BaseUploadContentConfigurationInstance(integration_util.IntegrationInstanc
     def fetch_target(self, target, assert_ok=False, attach_test_file=False, wait=False):
         payload: Dict[str, Any] = {
             "history_id": self.history_id,
-            "targets": json.dumps([target]),
+            "targets": [target],
         }
         if attach_test_file:
             payload["__files"] = {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))}
