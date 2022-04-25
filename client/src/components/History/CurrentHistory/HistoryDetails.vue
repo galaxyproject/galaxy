@@ -6,7 +6,7 @@
         :writeable="writeable"
         @save="onSave">
         <template v-slot:header>
-            <nav v-if="history.size" class="history-size my-1 w-100 d-flex justify-content-between">
+            <div v-if="history.size" class="history-size my-1 w-100 d-flex justify-content-between">
                 <b-button
                     title="Access Dashboard"
                     variant="link"
@@ -47,7 +47,7 @@
                         <span>{{ history.contents_active.hidden }}</span>
                     </b-button>
                 </b-button-group>
-            </nav>
+            </div>
         </template>
         <template v-slot:name>
             <h3 data-description="name display" class="my-2" v-short="history.name || 'History'" />
