@@ -6,7 +6,6 @@
  */
 
 import axios from "axios";
-import moment from "moment";
 import { prependPath } from "utils/redirect";
 import { History } from "./History";
 
@@ -57,11 +56,9 @@ export async function getHistoryList() {
  * Load one history by id
  * @param {String} id
  */
-export async function getHistoryById(id, since) {
+export async function getHistoryById(id) {
     const path = `api/histories/${id}`;
-    const sinceParam = since !== undefined ? moment.utc(since).toISOString() : null;
-    const url = sinceParam ? `${path}?q=update_time-gt&qv=${sinceParam}` : path;
-    const response = await axios.get(prependPath(url), { params: stdHistoryParams });
+    const response = await axios.get(prependPath(path), { params: stdHistoryParams });
     const props = doResponse(response);
     return new History(props);
 }

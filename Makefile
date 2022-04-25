@@ -178,7 +178,7 @@ client-production-maps: node-deps ## Rebuild client-side artifacts for a product
 	cd client && yarn run build-production-maps
 
 client-format: node-deps ## Reformat client code
-	cd client && yarn run prettier
+	cd client && yarn run format
 
 client-watch: node-deps ## A useful target for parallel development building.  See also client-dev-server.
 	cd client && yarn run watch
@@ -196,7 +196,7 @@ client-eslint: node-deps # Run client linting
 	cd client && yarn run eslint
 
 client-format-check: node-deps # Run client formatting check
-	cd client && yarn run prettier-check
+	cd client && yarn run format-check
 
 client-lint: client-eslint client-format-check ## ES lint and check format of client
 

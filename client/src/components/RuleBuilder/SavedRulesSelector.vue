@@ -15,7 +15,8 @@
                 class="rule-link dropdown-item saved-rule-item"
                 :title="formatPreview(session.rule, index)"
                 @click="$emit('update-rules', session.rule)"
-                >Saved rule from {{ formatDate(session.dateTime) }}
+                >Saved rule from
+                <UtcDate :date="session.dateTime" mode="elapsed" />
             </a>
         </div>
     </div>
@@ -25,11 +26,14 @@
 import Vue from "vue";
 import _l from "utils/localization";
 import BootstrapVue from "bootstrap-vue";
-import moment from "moment";
 import { RULES, MAPPING_TARGETS } from "mvc/rules/rule-definitions";
+import UtcDate from "components/UtcDate";
 
 Vue.use(BootstrapVue);
 export default {
+    components: {
+        UtcDate,
+    },
     props: {
         savedRules: {
             type: Array,
@@ -54,9 +58,6 @@ export default {
         },
     },
     methods: {
-        formatDate(dateTime) {
-            return moment.utc(dateTime).from(moment().utc());
-        },
         formatPreview(savedRuleJson, index) {
             let prettyString = "";
             let delim = "";
