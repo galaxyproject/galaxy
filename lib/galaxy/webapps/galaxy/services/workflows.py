@@ -29,7 +29,11 @@ from galaxy.managers.workflows import (
 )
 from galaxy.schema.schema import WorkflowIndexPayload
 from galaxy.tool_shed.tool_shed_registry import Registry
-from galaxy.util.search import parse_filters
+from galaxy.util.search import (
+    FilteredTerm,
+    parse_filters_structured,
+    RawTextTerm,
+)
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 
@@ -108,30 +112,48 @@ class WorkflowsService(ServiceBase):
         query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
         if payload.search:
             search_query = payload.search
-            keyed_terms, description_term = parse_filters(search_query, INDEX_SEARCH_FILTERS)
+            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
 
-            def tag_filter(term):
-                if ":" in term:
-                    key, value = term.rsplit(":", 1)
-                    return and_(
-                        model.StoredWorkflowTagAssociation.user_tname.like(f"%{key}%"),
-                        model.StoredWorkflowTagAssociation.user_value.like(f"%{value}%"),
-                    )
+            def tag_filter(term_text: str, quoted: bool):
+                term_text = term.text
+                if ":" in term_text:
+                    key, value = term_text.rsplit(":", 1)
+                    if not quoted:
+                        return and_(
+                            model.StoredWorkflowTagAssociation.user_tname == key,
+                            model.StoredWorkflowTagAssociation.user_value.like(f"%{value}%"),
+                        )
+                    else:
+                        return and_(
+                            model.StoredWorkflowTagAssociation.user_tname == key,
+                            model.StoredWorkflowTagAssociation.user_value == value,
+                        )
                 else:
-                    return model.StoredWorkflowTagAssociation.user_tname.like(f"%{term}%")
+                    if not quoted:
+                        return model.StoredWorkflowTagAssociation.user_tname.like(f"%{term_text}%")
+                    else:
+                        return model.StoredWorkflowTagAssociation.user_tname == term_text
 
-            if keyed_terms:
-                for (key, q) in keyed_terms:
+            def name_filter(text, quoted):
+                if not quoted:
+                    filter = model.StoredWorkflow.name.like(f"%{text}%")
+                else:
+                    filter = model.StoredWorkflow.name == text
+                return filter
+
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
                     if key == "tag":
-                        query = query.filter(tag_filter(q))
+                        query = query.filter(tag_filter(term.text, term.quoted))
                     elif key == "name":
-                        query = query.filter(model.StoredWorkflow.name.like(f"%{q}%"))
-            if description_term:
-                for q in description_term.split():
+                        query = query.filter(name_filter(q, term.quoted))
+                elif isinstance(term, RawTextTerm):
                     query = query.filter(
                         or_(
-                            model.StoredWorkflow.name.like(f"%{q}%"),
-                            tag_filter(q),
+                            name_filter(term.text, False),
+                            tag_filter(term.text, False),
                         )
                     )
         if include_total_count:
