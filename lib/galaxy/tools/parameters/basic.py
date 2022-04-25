@@ -1690,9 +1690,9 @@ class DrillDownSelectToolParameter(SelectToolParameter):
             rval = value
         else:
             for val in value:
-                for o in get_options_list(val):
-                    if o not in rval:
-                        rval.append(o)
+                options = get_options_list(val)
+                rval.extend(options)
+            rval = list(dict.fromkeys(rval))
         if len(rval) > 1 and not self.multiple:
             raise ParameterValueError(
                 "multiple values provided but parameter is not expecting multiple values", self.name
