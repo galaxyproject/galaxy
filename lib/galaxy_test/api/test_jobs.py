@@ -182,8 +182,7 @@ steps:
         jobs = self.__jobs_index(data={"history_id": history_id, "limit": 0})
         assert len(jobs) == 0
 
-    @uses_test_history(require_new=True)
-    def test_index_user_filter(self, history_id):
+    def test_index_user_filter(self):
         test_user_email = "user_for_jobs_index_test@bx.psu.edu"
         user = self._setup_user(test_user_email)
         with self._different_user(email=test_user_email):

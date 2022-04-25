@@ -74,7 +74,7 @@ StateQueryParam: Optional[str] = Query(
 UserDetailsQueryParam: bool = Query(
     default=False,
     title="Include user details",
-    description="If true, and requestor is an admin, will return external job id and user email.",
+    description="If true, and requestor is an admin, will return external job id and user email. This is only available to admins.",
 )
 
 UserIdQueryParam: Optional[str] = Query(
@@ -216,6 +216,8 @@ class FastAPIJobs:
             else:
                 query = trans.sa_session.query(model.Job)
         else:
+            if user_details:
+                raise exceptions.AdminRequiredException("Only admins can index the jobs with user details enabled")
             if decoded_user_id is not None and decoded_user_id != trans.user.id:
                 raise exceptions.AdminRequiredException("Only admins can index the jobs of others")
             query = trans.sa_session.query(model.Job).filter(model.Job.user_id == trans.user.id)
