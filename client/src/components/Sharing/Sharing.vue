@@ -17,7 +17,7 @@
             <b-button type="submit" variant="primary" @click="setUsername()">Set Username</b-button>
         </div>
         <div v-else-if="ready">
-            <b-form-checkbox switch class="make-accessible" v-model="item.importable" @change="onImportable">
+            <b-form-checkbox v-model="item.importable" switch class="make-accessible" @change="onImportable">
                 Make {{ modelClass }} accessible
             </b-form-checkbox>
             <b-form-checkbox

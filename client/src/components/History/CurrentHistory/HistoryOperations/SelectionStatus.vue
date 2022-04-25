@@ -13,12 +13,12 @@
 import { BButton, BButtonGroup } from "bootstrap-vue";
 
 export default {
-    props: {
-        selectionSize: { type: Number, required: true },
-    },
     components: {
         "b-button": BButton,
         "b-button-group": BButtonGroup,
+    },
+    props: {
+        selectionSize: { type: Number, required: true },
     },
     computed: {
         /** @returns {Boolean} */

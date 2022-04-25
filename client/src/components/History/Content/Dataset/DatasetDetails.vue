@@ -12,8 +12,8 @@
                         <span class="value">{{ result.file_ext }}</span>
                     </span>
                     <span v-if="result.genome_build" class="dbkey">
-                        <label class="prompt" v-localize>database</label>
-                        <b-link class="value" @click.stop="$emit('edit')" data-label="Database/Build">{{
+                        <label v-localize class="prompt">database</label>
+                        <b-link class="value" data-label="Database/Build" @click.stop="$emit('edit')">{{
                             result.genome_build
                         }}</b-link>
                     </span>
