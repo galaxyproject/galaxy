@@ -193,7 +193,6 @@ def lint_inputs(tool_xml, lint_ctx):
 
             # lint dynamic options
             if len(options) == 1:
-
                 filters = options[0].findall("./filter")
                 # lint filters
                 # TODO check if dataset is available for filters referring other datasets
