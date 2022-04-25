@@ -32,8 +32,9 @@
                         :filter-text.sync="filterText"
                         :show-advanced.sync="showAdvanced" />
                     <section v-if="!showAdvanced">
-                        <HistoryDetails :history="history" :filter-text.sync="filterText" v-on="$listeners" />
-                        <HistoryMessages class="m-2" :history="history" />
+                        <HistoryDetails :history="history" @update:history="$emit('updateHistory', $event)" />
+                        <HistoryMessages :history="history" />
+                        <HistoryCounter :history="history" :filter-text.sync="filterText" />
                         <HistoryOperations
                             :history="history"
                             :show-selection="showSelection"
@@ -110,6 +111,7 @@ import { deleteContent, updateContentFields } from "components/History/model/que
 import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
 import Listing from "components/History/Layout/Listing";
+import HistoryCounter from "./HistoryCounter";
 import HistoryOperations from "./HistoryOperations/Index";
 import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
@@ -122,6 +124,7 @@ export default {
     components: {
         ContentItem,
         ExpandedItems,
+        HistoryCounter,
         HistoryMessages,
         HistoryDetails,
         HistoryEmpty,
