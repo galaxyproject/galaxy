@@ -247,7 +247,7 @@ export default {
                 });
         },
         onTagClick: function (tag) {
-            const tagFilter = `tag:${tag.text}`;
+            const tagFilter = `tag:'${tag.text}'`;
             const initialFilter = this.filter;
             if (initialFilter.length === 0) {
                 this.filter = tagFilter;
