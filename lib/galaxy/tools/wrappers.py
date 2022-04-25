@@ -51,7 +51,7 @@ log = logging.getLogger(__name__)
 # field names and all such fields are assumed to be paths. This is to allow
 # remote ComputeEnvironments (such as one used by Pulsar) determine what values to
 # rewrite or transfer...
-PATH_ATTRIBUTES = ["path"]
+PATH_ATTRIBUTES = ["len_path", "path"]
 
 
 class ToolParameterValueWrapper:
