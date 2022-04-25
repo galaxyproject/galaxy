@@ -5,12 +5,17 @@ from typing import (
     Any,
     cast,
     Dict,
+    List,
     Optional,
 )
 
-from fastapi import Request
-from fastapi.exceptions import RequestValidationError
-from pydantic import ValidationError
+from fastapi import (
+    Body,
+    Depends,
+    Request,
+    UploadFile,
+)
+from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from galaxy import (
     exceptions,
@@ -36,6 +41,8 @@ from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.services.tools import ToolsService
 from . import (
+    APIContentTypeRoute,
+    as_form,
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
@@ -51,37 +58,50 @@ PROTECTED_TOOLS = ["__DATA_FETCH__"]
 SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
 
 
+class FormDataApiRoute(APIContentTypeRoute):
+
+    match_content_type = "multipart/form-data"
+
+
+class JsonApiRoute(APIContentTypeRoute):
+
+    match_content_type = "application/json"
+
+
 router = Router(tags=["tools"])
+
+FormDataPayload = as_form(FetchDataPayload)
 
 
 @router.cbv
-class FastAPITools:
+class FetchTools:
     service: ToolsService = depends(ToolsService)
+
+    @router.post("/api/tools/fetch", summary="Upload files to Galaxy", route_class_override=JsonApiRoute)
+    async def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
+        return self.service._create_fetch(trans, payload)
 
     @router.post(
         "/api/tools/fetch",
-        responses={
-            200: {
-                "content": {
-                    "application/json": {"schema": FetchDataPayload.schema()},
-                    "multipart/form-data": {"schema": FetchDataPayload.schema()},
-                }
-            }
-        },
         summary="Upload files to Galaxy",
+        route_class_override=FormDataApiRoute,
     )
-    async def fetch(self, request: Request, trans: ProvidesHistoryContext = DependsOnTrans):
-        content_type = request.headers["content-type"]
-        if content_type == "application/json":
-            data = await request.json()
-        elif content_type.startswith("multipart/form-data"):
+    async def fetch_form(
+        self,
+        request: Request,
+        payload: FetchDataPayload = Depends(FormDataPayload.as_form),
+        files: Optional[List[UploadFile]] = None,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ):
+        files = files or []
+        # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
+        cast(List[StarletteUploadFile], files)
+        if not files:
             data = await request.form()
-        else:
-            raise exceptions.MessageException(f"Invalid content-type {content_type} for request")
-        try:
-            return self.service._create_fetch(trans, FetchDataPayload(**data))
-        except ValidationError as e:
-            raise RequestValidationError(e.raw_errors)
+            for value in data.values():
+                if isinstance(value, StarletteUploadFile):
+                    files.append(value)
+        return self.service._create_fetch(trans, payload, files)
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):

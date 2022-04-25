@@ -239,6 +239,11 @@ class HdcaDataItemsFromTarget(BaseCollectionTarget, ItemsFromModel):
     items_from: ElementsFromType = Field(..., alias="elements_from")
 
 
+class FilesPayload(BaseModel):
+    filename: str
+    local_filename: str
+
+
 class FetchDataPayload(FetchBaseModel):
     history_id: EncodedDatabaseIdField = HistoryIdField
     targets: List[

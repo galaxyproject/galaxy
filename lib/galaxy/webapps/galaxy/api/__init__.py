@@ -2,12 +2,13 @@
 This module *does not* contain API routes. It exclusively contains dependencies to be used in FastAPI routes
 """
 import inspect
+from enum import Enum
 from typing import (
     Any,
     AsyncGenerator,
-    Callable,
     cast,
     Optional,
+    Tuple,
     Type,
     TypeVar,
 )
@@ -22,10 +23,16 @@ from fastapi import (
     Response,
 )
 from fastapi.params import Depends
+from fastapi.routing import APIRoute
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
 from pydantic.main import BaseModel
-from starlette.routing import NoMatchFound
+from starlette.datastructures import Headers
+from starlette.routing import (
+    Match,
+    NoMatchFound,
+)
+from starlette.types import Scope
 
 try:
     from starlette_context import context as request_context
@@ -251,10 +258,19 @@ class BaseGalaxyAPIController(BaseAPIController):
         super().__init__(app)
 
 
+class RestVerb(str, Enum):
+    get = "GET"
+    post = "POST"
+    put = "PUT"
+    patch = "PATCH"
+    delete = "DELETE"
+    options = "OPTIONS"
+
+
 class Router(InferringRouter):
     """A FastAPI Inferring Router tailored to Galaxy."""
 
-    def wrap_with_alias(self, method: Callable, *args, alias: Optional[str] = None, **kwd):
+    def wrap_with_alias(self, verb: RestVerb, *args, alias: Optional[str] = None, **kwd):
         """
         Wraps FastAPI methods with additional alias keyword and require_admin handling.
 
@@ -262,35 +278,54 @@ class Router(InferringRouter):
         routes for /api/thing and /api/deprecated_thing.
         """
         kwd = self._handle_galaxy_kwd(kwd)
-        decorated_route = method(*args, **kwd)
+
+        def decorate_route(route):
+
+            # Decorator solely exists to allow passing `route_class_override` to add_api_route
+            def decorated_route(func):
+                self.add_api_route(
+                    route,
+                    endpoint=func,
+                    methods=[verb],
+                    **kwd,
+                )
+                return func
+
+            return decorated_route
+
+        route = decorate_route(args[0])
+
         if alias:
-            redecorated_route = method(alias, **kwd)
+            redecorated_route = decorate_route(alias)
 
             def dec(f):
-                return decorated_route(redecorated_route(f))
+                return route(redecorated_route(f))
 
             return dec
-        return decorated_route
+        return route
 
     def get(self, *args, **kwd):
         """Extend FastAPI.get to accept a require_admin Galaxy flag."""
-        return self.wrap_with_alias(super().get, *args, **kwd)
+        return self.wrap_with_alias(RestVerb.get, *args, **kwd)
 
     def patch(self, *args, **kwd):
         """Extend FastAPI.patch to accept a require_admin Galaxy flag."""
-        return self.wrap_with_alias(super().patch, *args, **kwd)
+        return self.wrap_with_alias(RestVerb.patch, *args, **kwd)
 
     def put(self, *args, **kwd):
         """Extend FastAPI.put to accept a require_admin Galaxy flag."""
-        return self.wrap_with_alias(super().put, *args, **kwd)
+        return self.wrap_with_alias(RestVerb.put, *args, **kwd)
 
     def post(self, *args, **kwd):
         """Extend FastAPI.post to accept a require_admin Galaxy flag."""
-        return self.wrap_with_alias(super().post, *args, **kwd)
+        return self.wrap_with_alias(RestVerb.post, *args, **kwd)
 
     def delete(self, *args, **kwd):
         """Extend FastAPI.delete to accept a require_admin Galaxy flag."""
-        return self.wrap_with_alias(super().delete, *args, **kwd)
+        return self.wrap_with_alias(RestVerb.delete, *args, **kwd)
+
+    def options(self, *args, **kwd):
+        return self.wrap_with_alias(RestVerb.options, *args, **kwd)
 
     def _handle_galaxy_kwd(self, kwd):
         require_admin = kwd.pop("require_admin", False)
@@ -310,6 +345,32 @@ class Router(InferringRouter):
         https://fastapi-utils.davidmontague.xyz/user-guide/class-based-views/
         """
         return cbv(self)
+
+
+class APIContentTypeRoute(APIRoute):
+    """
+    Determines endpoint to match using content-type.
+    """
+
+    match_content_type: str
+
+    def accept_matches(self, scope: Scope) -> Tuple[Match, Scope]:
+        content_type_header = Headers(scope=scope).get("content-type", None)
+        if not content_type_header:
+            return Match.PARTIAL, scope
+        if self.match_content_type not in content_type_header:
+            return Match.NONE, scope
+        return Match.FULL, scope
+
+    def matches(self, scope: Scope) -> Tuple[Match, Scope]:
+        accept_match, accept_scope = self.accept_matches(scope)
+        if accept_match == Match.NONE:
+            return accept_match, accept_scope
+        match, child_scope = super().matches(accept_scope)
+        return (
+            match if match.value < accept_match.value else accept_match,
+            child_scope,
+        )
 
 
 def as_form(cls: Type[BaseModel]):
