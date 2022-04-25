@@ -36,6 +36,11 @@ from galaxy.managers.jobs import (
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.util import listify
+from galaxy.util.search import (
+    FilteredTerm,
+    parse_filters_structured,
+    RawTextTerm,
+)
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -147,6 +152,12 @@ OffsetQueryParam: int = Query(
     description="Return jobs starting from this specified position. For example, if ``limit`` is set to 100 and ``offset`` to 200, jobs 200-299 will be returned.",
 )
 
+SearchQueryParameter: Optional[str] = Query(
+    default=None,
+    title="Search query.",
+    description="Free text used to filter the query. Currently this just filters by the tool ID corresponding to the job.",
+)
+
 
 @router.cbv
 class FastAPIJobs:
@@ -188,6 +199,7 @@ class FastAPIJobs:
         workflow_id: Optional[str] = WorkflowIdQueryParam,
         invocation_id: Optional[str] = InvocationIdQueryParam,
         order_by: JobIndexSortByEnum = SortByQueryParam,
+        search: Optional[str] = SearchQueryParameter,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
     ) -> List[Dict[str, Any]]:
@@ -215,6 +227,9 @@ class FastAPIJobs:
                 query = trans.sa_session.query(model.Job).filter(model.Job.user_id == decoded_user_id)
             else:
                 query = trans.sa_session.query(model.Job)
+            if user_details:
+                query = query.outerjoin(model.Job.user)
+
         else:
             if user_details:
                 raise exceptions.AdminRequiredException("Only admins can index the jobs with user details enabled")
@@ -269,6 +284,39 @@ class FastAPIJobs:
             )
             query = query1.union(query2)
 
+        if search:
+            search_filters = {
+                "tool": "tool",
+                "t": "tool",
+                "user": "user",
+                "u": "user",
+            }
+            parsed_search = parse_filters_structured(search, search_filters)
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
+                    if key == "user":
+                        if term.quoted:
+                            query = query.filter(model.User.email == q)
+                        else:
+                            query = query.filter(model.User.email.ilike(f"%{q}%"))
+                    elif key == "tool":
+                        if term.quoted:
+                            query = query.filter(model.Job.tool_id == q)
+                        else:
+                            query = query.filter(model.Job.tool_id.ilike(f"%{q}%"))
+                elif isinstance(term, RawTextTerm):
+                    q = term.text
+                    filters = []
+                    filters.append(model.Job.tool_id.ilike(f"%{q}%"))
+                    if user_details:
+                        filters.append(model.User.email.ilike(f"%{q}%"))
+                    if len(filters) > 1:
+                        query = query.filter(or_(*filters))
+                    else:
+                        query = query.filter(filters[0])
+
         if order_by == JobIndexSortByEnum.create_time:
             order_by = model.Job.create_time.desc()
         else:
@@ -277,7 +325,6 @@ class FastAPIJobs:
 
         query = query.offset(offset)
         query = query.limit(limit)
-
         out = []
         for job in query.yield_per(model.YIELD_PER_ROWS):
             job_dict = job.to_dict(view, system_details=is_admin)
