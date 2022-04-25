@@ -4,7 +4,7 @@
             <DebouncedInput v-model="localFilter" v-slot="{ value, input }">
                 <b-form-input
                     size="sm"
-                    :class="filterText && 'font-weight-bold text-info'"
+                    :class="filterText && 'font-weight-bold text-primary'"
                     :value="value"
                     @input="input"
                     @keyup.esc="onReset"
