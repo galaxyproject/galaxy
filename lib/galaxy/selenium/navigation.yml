@@ -494,6 +494,8 @@ workflows:
     save_button: '#workflow-save-button'
     search_box: "#workflow-search"
     workflow_table: "#workflow-table"
+    workflow_rows: "#workflow-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
+    workflow_row: "#workflow-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])[aria-rowindex='${index}']"
     external_link: '.workflow-external-link'
     trs_icon: '.workflow-trs-icon'
 

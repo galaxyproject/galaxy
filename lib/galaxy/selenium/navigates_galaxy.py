@@ -1196,11 +1196,12 @@ class NavigatesGalaxy(HasDriver):
         return table_elements
 
     def workflow_index_table_row(self, workflow_index=0):
-        return self.workflow_index_table_elements()[workflow_index]
+        workflows = self.components.workflows
+        return workflows.workflow_row(index=workflow_index + 1).wait_for_visible()
 
     @retry_during_transitions
     def workflow_index_column_text(self, column_index, workflow_index=0):
-        row_element = self.workflow_index_table_row()
+        row_element = self.workflow_index_table_row(workflow_index=workflow_index)
         columns = row_element.find_elements_by_css_selector("td")
         return columns[column_index].text
 
