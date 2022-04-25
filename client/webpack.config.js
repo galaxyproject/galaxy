@@ -43,7 +43,6 @@ module.exports = (env = {}, argv = {}) => {
                 jqueryVendor$: `${libsBase}/jquery/jquery.js`,
                 storemodern$: "store/dist/store.modern.js",
                 "popper.js": path.resolve(__dirname, "node_modules/popper.js/"),
-                moment: path.resolve(__dirname, "node_modules/moment"),
                 underscore: path.resolve(__dirname, "node_modules/underscore"),
                 // client-side application config
                 config$: path.join(scriptsBase, "config", targetEnv) + ".js",
