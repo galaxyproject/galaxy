@@ -182,6 +182,37 @@ steps:
         jobs = self.__jobs_index(data={"history_id": history_id, "limit": 0})
         assert len(jobs) == 0
 
+    @uses_test_history(require_new=True)
+    def test_index_search_filter_tool_id(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs = self.__jobs_index(data={"history_id": history_id})
+        assert len(jobs) > 0
+        length = len(jobs)
+        jobs = self.__jobs_index(data={"history_id": history_id, "search": "emptyresult"})
+        assert len(jobs) == 0
+        jobs = self.__jobs_index(data={"history_id": history_id, "search": "FETCH"})
+        assert len(jobs) == length
+        jobs = self.__jobs_index(data={"history_id": history_id, "search": "tool:'FETCH'"})
+        assert len(jobs) == 0
+
+    @uses_test_history(require_new=True)
+    def test_index_search_filter_email(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs = self.__jobs_index(data={"history_id": history_id, "search": "FETCH"})
+        user_email = self.dataset_populator.user_email()
+        jobs = self.__jobs_index(data={"history_id": history_id, "search": user_email})
+        assert len(jobs) == 0
+        # we can search on email...
+        jobs = self.__jobs_index(
+            data={"history_id": history_id, "search": user_email, "user_details": True}, admin=True
+        )
+        assert len(jobs) == 1
+        # but only if user details are joined in.
+        jobs = self.__jobs_index(
+            data={"history_id": history_id, "search": user_email, "user_details": False}, admin=True
+        )
+        assert len(jobs) == 0
+
     def test_index_user_filter(self):
         test_user_email = "user_for_jobs_index_test@bx.psu.edu"
         user = self._setup_user(test_user_email)
