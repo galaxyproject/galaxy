@@ -7,9 +7,10 @@ from typing import (
     Dict,
     List,
     Optional,
+    Union,
 )
 
-from fastapi import UploadFile
+from starlette.datastructures import UploadFile
 
 from galaxy import (
     exceptions,
@@ -24,6 +25,7 @@ from galaxy.managers.context import (
 from galaxy.managers.histories import HistoryManager
 from galaxy.model import PostJobAction
 from galaxy.schema.fetch_data import (
+    FetchDataFormPayload,
     FetchDataPayload,
     FilesPayload,
 )
@@ -50,23 +52,16 @@ class ToolsService(ServiceBase):
         self.history_manager = history_manager
 
     def _create_fetch(
-        self, trans: ProvidesHistoryContext, fetch_payload: FetchDataPayload, files: Optional[List[UploadFile]] = None
+        self,
+        trans: ProvidesHistoryContext,
+        fetch_payload: Union[FetchDataFormPayload, FetchDataPayload],
+        files: Optional[List[UploadFile]] = None,
     ):
         payload = fetch_payload.dict(exclude_unset=True)
         request_version = "1"
         history_id = payload.pop("history_id")
-        validate_and_normalize_targets(trans, payload)
-        payload["check_content"] = self.config.check_upload_content
-        request = dumps(payload)
-        create_payload = {
-            "tool_id": "__DATA_FETCH__",
-            "history_id": history_id,
-            "inputs": {
-                "request_version": request_version,
-                "request_json": request,
-                "file_count": str(len(payload)),
-            },
-        }
+        clean_payload = {}
+        files_payload = {}
         if files:
             for i, upload_file in enumerate(files):
                 with tempfile.NamedTemporaryFile(
@@ -74,9 +69,29 @@ class ToolsService(ServiceBase):
                 ) as dest:
                     shutil.copyfileobj(upload_file.file, dest)
                 upload_file.file.close()
-                create_payload[f"files_{i}|file_data"] = FilesPayload(
+                files_payload[f"files_{i}|file_data"] = FilesPayload(
                     filename=upload_file.filename, local_filename=dest.name
                 )
+        for key, value in payload.items():
+            if key == "key":
+                continue
+            if key.startswith("files_") or key.startswith("__files_"):
+                files_payload[key] = value
+                continue
+            clean_payload[key] = value
+        clean_payload["check_content"] = self.config.check_upload_content
+        validate_and_normalize_targets(trans, clean_payload)
+        request = dumps(clean_payload)
+        create_payload = {
+            "tool_id": "__DATA_FETCH__",
+            "history_id": history_id,
+            "inputs": {
+                "request_version": request_version,
+                "request_json": request,
+                "file_count": str(len(files_payload)),
+            },
+        }
+        create_payload.update(files_payload)
         return self._create(trans, create_payload)
 
     def _create(self, trans: ProvidesHistoryContext, payload, **kwd):

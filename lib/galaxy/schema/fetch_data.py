@@ -10,6 +10,7 @@ from pydantic import (
     BaseModel,
     Extra,
     Field,
+    Json,
     validator,
 )
 from typing_extensions import (
@@ -244,24 +245,36 @@ class FilesPayload(BaseModel):
     local_filename: str
 
 
-class FetchDataPayload(FetchBaseModel):
+class BaseDataPayload(FetchBaseModel):
     history_id: EncodedDatabaseIdField = HistoryIdField
-    targets: List[
-        Union[
-            DataElementsTarget,
-            HdcaDataItemsTarget,
-            DataElementsFromTarget,
-            HdcaDataItemsFromTarget,
-            FtpImportTarget,
-        ]
-    ]
 
     class Config:
         # file payloads are just tacked on, so we need to allow everything
         extra = Extra.allow
 
-    @validator("targets", pre=True)
+    @validator("targets", pre=True, check_fields=False)
     def targets_string_to_json(cls, v):
         if isinstance(v, str):
             return json.loads(v)
         return v
+
+
+Targets = List[
+    Union[
+        DataElementsTarget,
+        HdcaDataItemsTarget,
+        DataElementsFromTarget,
+        HdcaDataItemsFromTarget,
+        FtpImportTarget,
+    ]
+]
+
+
+class FetchDataPayload(BaseDataPayload):
+
+    targets: Targets
+
+
+class FetchDataFormPayload(BaseDataPayload):
+
+    targets: Union[Json[Targets], Targets]  # type: ignore[type-arg]  # https://github.com/samuelcolvin/pydantic/issues/2990

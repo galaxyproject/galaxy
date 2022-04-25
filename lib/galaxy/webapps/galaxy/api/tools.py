@@ -27,7 +27,10 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
-from galaxy.schema.fetch_data import FetchDataPayload
+from galaxy.schema.fetch_data import (
+    FetchDataFormPayload,
+    FetchDataPayload,
+)
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
@@ -70,7 +73,7 @@ class JsonApiRoute(APIContentTypeRoute):
 
 router = Router(tags=["tools"])
 
-FormDataPayload = as_form(FetchDataPayload)
+FetchDataForm = as_form(FetchDataFormPayload)
 
 
 @router.cbv
@@ -89,19 +92,19 @@ class FetchTools:
     async def fetch_form(
         self,
         request: Request,
-        payload: FetchDataPayload = Depends(FormDataPayload.as_form),
+        payload: FetchDataFormPayload = Depends(FetchDataForm.as_form),
         files: Optional[List[UploadFile]] = None,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ):
-        files = files or []
+        files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
+
         # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
-        cast(List[StarletteUploadFile], files)
-        if not files:
+        if not files2:
             data = await request.form()
             for value in data.values():
                 if isinstance(value, StarletteUploadFile):
-                    files.append(value)
-        return self.service._create_fetch(trans, payload, files)
+                    files2.append(value)
+        return self.service._create_fetch(trans, payload, files2)
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):

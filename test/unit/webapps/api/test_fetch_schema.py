@@ -83,7 +83,7 @@ recursive_archive_payload = {
 
 def test_fetch_data_schema():
     payload = FetchDataPayload(**example_payload)
-    elements = payload.targets[0].items
+    elements = payload.targets[0].items  # type: ignore[union-attr]  # alias doesn't type check properly
     assert len(elements) == 3
     assert isinstance(elements[0], PastedDataElement)
     assert isinstance(elements[1], UrlDataElement)
@@ -96,7 +96,7 @@ def test_data_items():
 
 def test_nested_collection():
     payload = FetchDataPayload(**nested_collection_payload)
-    collection_element = payload.targets[0].items[0]
+    collection_element = payload.targets[0].items[0]  # type: ignore[union-attr]  # alias doesn't type check properly
     assert isinstance(collection_element, NestedElement)
     assert isinstance(collection_element.items[0], FileDataElement)
 
