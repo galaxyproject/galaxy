@@ -1,7 +1,17 @@
 import re
+from typing import (
+    Dict,
+    List,
+    Optional,
+    Tuple,
+)
+
+KeyedQueryT = Tuple[str, str]
 
 
-def parse_filters(search_term, filters):
+def parse_filters(
+    search_term: str, filters: Optional[Dict[str, str]] = None
+) -> Tuple[Optional[List[KeyedQueryT]], Optional[str]]:
     """Support github-like filters for narrowing the results.
 
     Order of chunks does not matter, only recognized filter names are allowed.
@@ -16,6 +26,7 @@ def parse_filters(search_term, filters):
     allow_terms = []
     search_term_without_filters = None
     search_space = search_term.replace('"', "'")
+    filters = filters or {}
     filter_keys = "|".join(list(filters.keys()))
     pattern = rf"({filter_keys}):(?:\s+)?([\w-]+|\'.*?\')"
     reserved = re.compile(pattern)
