@@ -465,6 +465,22 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         assert len(index_ids) == 1
         assert workflow_id_1 not in index_ids
 
+    def test_index_search_name_exact_vs_inexact(self):
+        name_prefix = self.dataset_populator.get_random_name()
+        workflow_id_1 = self.workflow_populator.simple_workflow(name_prefix)
+        longer_name = f"{name_prefix}_some_stuff_on_it"
+        workflow_id_2 = self.workflow_populator.simple_workflow(longer_name)
+        index_ids = self.workflow_populator.index_ids(search=f"name:{name_prefix}")
+        assert len(index_ids) == 2
+        assert workflow_id_1 in index_ids
+        assert workflow_id_2 in index_ids
+
+        # quoting it will ensure the name matches exactly.
+        index_ids = self.workflow_populator.index_ids(search=f"name:'{name_prefix}'")
+        assert len(index_ids) == 1
+        assert workflow_id_1 in index_ids
+        assert workflow_id_2 not in index_ids
+
     def test_index_search_tags(self):
         name1, name2 = self.dataset_populator.get_random_name(), self.dataset_populator.get_random_name()
         workflow_id_1 = self.workflow_populator.simple_workflow(name1)
@@ -476,6 +492,24 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         assert workflow_id_1 in index_ids
         index_ids = self.workflow_populator.index_ids(search="tag:moocowatag")
         assert workflow_id_1 in index_ids
+
+    def test_index_search_tags_exact(self):
+        name1, name2 = self.dataset_populator.get_random_name(), self.dataset_populator.get_random_name()
+        workflow_id_1 = self.workflow_populator.simple_workflow(name1)
+        workflow_id_2 = self.workflow_populator.simple_workflow(name2)
+        index_ids = self.workflow_populator.index_ids(search="exacttagtosearch")
+        assert len(index_ids) == 0
+        self.workflow_populator.set_tags(workflow_id_1, ["exacttagtosearch"])
+        self.workflow_populator.set_tags(workflow_id_2, ["exacttagtosearchlonger"])
+        index_ids = self.workflow_populator.index_ids(search="exacttagtosearch")
+        assert workflow_id_1 in index_ids
+        assert workflow_id_2 in index_ids
+        index_ids = self.workflow_populator.index_ids(search="tag:exacttagtosearch")
+        assert workflow_id_1 in index_ids
+        assert workflow_id_2 in index_ids
+        index_ids = self.workflow_populator.index_ids(search="tag:'exacttagtosearch'")
+        assert workflow_id_1 in index_ids
+        assert workflow_id_2 not in index_ids
 
     def test_index_published(self):
         # published workflows are also the default of what is displayed for anonymous API requests
