@@ -62,11 +62,12 @@ export default {
             this.resetQuerySelection();
         },
         resetQuerySelection() {
-            this.allSelected = this.totalItemsInQuery === this.items.size;
+            this.allSelected = false;
         },
         reset() {
             this.items = new Map();
             this.resetQuerySelection();
+            this.showSelection = false;
         },
     },
     watch: {
