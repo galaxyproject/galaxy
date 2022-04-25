@@ -4,7 +4,7 @@
             <DebouncedInput v-model="localFilter" v-slot="{ value, input }">
                 <b-form-input
                     size="sm"
-                    :class="[inputBg]"
+                    :class="filterText && 'font-weight-bold text-info'"
                     :value="value"
                     @input="input"
                     @keyup.esc="onReset"
@@ -107,13 +107,6 @@ export default {
                     this.updateFilter(newVal);
                 }
             },
-        },
-        inputBg() {
-            if (this.filterText) {
-                return "has-text";
-            } else {
-                return "";
-            }
         },
     },
     methods: {
