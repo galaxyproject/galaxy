@@ -34,9 +34,9 @@ from .components import (
 )
 from .data import load_root_component
 from .has_driver import (
+    exception_indicates_click_intercepted,
     exception_indicates_not_clickable,
     exception_indicates_stale_element,
-    execetion_indicates_click_intercepted,
     HasDriver,
     TimeoutException,
 )
@@ -102,7 +102,7 @@ def exception_seems_to_indicate_transition(e):
     return (
         exception_indicates_stale_element(e)
         or exception_indicates_not_clickable(e)
-        or execetion_indicates_click_intercepted(e)
+        or exception_indicates_click_intercepted(e)
     )
 
 

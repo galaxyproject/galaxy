@@ -219,7 +219,7 @@ class HasDriver:
         )
 
 
-def execetion_indicates_click_intercepted(exception):
+def exception_indicates_click_intercepted(exception):
     return "click intercepted" in str(exception)
 
 
@@ -232,7 +232,7 @@ def exception_indicates_stale_element(exception):
 
 
 __all__ = (
-    "execetion_indicates_click_intercepted",
+    "exception_indicates_click_intercepted",
     "exception_indicates_not_clickable",
     "exception_indicates_stale_element",
     "HasDriver",
