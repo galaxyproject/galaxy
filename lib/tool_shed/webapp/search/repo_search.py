@@ -209,6 +209,6 @@ class RepoSearch:
         }
         allow_query, search_term_without_filters = parse_filters(search_term, filters)
         allow_query = (
-            And([Term(t, v) for (t, v) in allow_query] if len(allow_query) > 0 else None) if allow_query else None
+            And([Term(t, v) for (t, v, _) in allow_query] if len(allow_query) > 0 else None) if allow_query else None
         )
         return allow_query, search_term_without_filters
