@@ -1,16 +1,13 @@
-from galaxy_test.base.populators import skip_if_github_down
 from .framework import (
+    EXAMPLE_WORKFLOW_URL_1,
     retry_assertion_during_transitions,
     selenium_test,
     SeleniumTestCase,
-)
-
-EXAMPLE_WORKFLOW_URL_1 = (
-    "https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga"
+    UsesWorkflowAssertions,
 )
 
 
-class WorkflowManagementTestCase(SeleniumTestCase):
+class WorkflowManagementTestCase(SeleniumTestCase, UsesWorkflowAssertions):
 
     ensure_registered = True
 
@@ -97,12 +94,3 @@ class WorkflowManagementTestCase(SeleniumTestCase):
 
         self.workflow_index_search_for("searchforthis")
         self._assert_showing_n_workflows(1)
-
-    @retry_assertion_during_transitions
-    def _assert_showing_n_workflows(self, n):
-        self.assertEqual(len(self.workflow_index_table_elements()), n)
-
-    @skip_if_github_down
-    def _workflow_import_from_url(self, url=EXAMPLE_WORKFLOW_URL_1):
-        self.workflow_index_click_import()
-        self.workflow_import_submit_url(url)
