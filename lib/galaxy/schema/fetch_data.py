@@ -46,7 +46,7 @@ class ItemsFromSrc(str, Enum):
     files = "files"
     path = "path"
     ftp_import = "ftp_import"
-    server_dir = "server_id"
+    server_dir = "server_dir"
 
 
 class Src(str, Enum):
