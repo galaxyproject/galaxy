@@ -58,7 +58,7 @@ export default {
         isDataset: { type: Boolean, required: true },
         isDeleted: { type: Boolean, required: true },
         isHistoryItem: { type: Boolean, required: true },
-        isPurged: { type: Boolean, required: true },
+        isPurged: { type: Boolean, default: false },
         isVisible: { type: Boolean, required: true },
         state: { type: String, default: "" },
     },

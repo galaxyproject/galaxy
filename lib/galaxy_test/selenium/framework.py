@@ -392,16 +392,10 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
     def assert_initial_history_panel_state_correct(self):
         # Move into a TestsHistoryPanel mixin
         unnamed_name = self.components.history_panel.new_name.text
-
         name_element = self.history_panel_name_element()
+
         assert name_element.is_displayed()
         assert unnamed_name in name_element.text
-
-        initial_size_str = self.components.history_panel.new_size.text
-        size_selector = self.components.history_panel.size
-        size_text = size_selector.wait_for_text()
-
-        assert initial_size_str in size_text, f"{initial_size_str} not in {size_text}"
 
         self.components.history_panel.empty_message.wait_for_visible()
 

@@ -298,7 +298,6 @@ history_panel:
   text:
     tooltip_name: 'Rename history...'
     new_name: 'Unnamed history'
-    new_size: '(empty)'
 
 
 history_structure:
