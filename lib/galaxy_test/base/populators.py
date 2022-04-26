@@ -886,7 +886,7 @@ class BaseDatasetPopulator(BasePopulator):
 
     def setup_history_for_export_testing(self, history_name):
         history_id = self.new_history(name=history_name)
-        hda = self.new_dataset(history_id, content="1 2 3")
+        hda = self.new_dataset(history_id, content="1 2 3", wait=True)
         tags = ["name:name"]
         response = self.tag_dataset(history_id, hda["id"], tags=tags)
         assert response["tags"] == tags

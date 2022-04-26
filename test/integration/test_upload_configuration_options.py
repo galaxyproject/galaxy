@@ -506,7 +506,7 @@ class AdvancedFtpUploadFetchTestCase(BaseFtpUploadConfigurationTestCase):
             "ftp_path": "subdir",
             "collection_type": "list",
         }
-        self.fetch_target(target, assert_ok=True)
+        self.fetch_target(target, assert_ok=True, wait=True)
         hdca = self.dataset_populator.get_history_collection_details(self.history_id, hid=1)
         assert len(hdca["elements"]) == 3, hdca
         element0 = hdca["elements"][0]
