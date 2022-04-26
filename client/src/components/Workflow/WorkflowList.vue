@@ -162,7 +162,7 @@ export default {
             titleRunWorkflow: _l("Run workflow"),
             workflowItemsModel: [],
             workflowItems: [],
-            perPage: this.rowsPerPage(20),
+            perPage: this.rowsPerPage(50),
         };
     },
     computed: {
