@@ -1,4 +1,4 @@
-<tool id="interactive_tool_rstudio" tool_type="interactive" name="RStudio" version="0.2">
+<tool id="interactive_tool_rstudio" tool_type="interactive" name="RStudio" version="0.2" profile="22.01">
     <requirements>
         <!--container type="docker">quay.io/erasche/docker-rstudio-notebook:19.09</container-->
         <container type="docker">quay.io/erasche/docker-rstudio-notebook:ie2</container>
