@@ -3761,7 +3761,7 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
         if (
             dbkey
         ):  # dbkey is stored in metadata, only set if non-zero, or else we could clobber one supplied by input 'metadata'
-            self._metadata["dbkey"] = dbkey
+            self._metadata["dbkey"] = listify(dbkey)
         self.deleted = deleted
         self.visible = visible
         self.validated_state = validated_state

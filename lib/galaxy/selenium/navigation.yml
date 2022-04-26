@@ -298,7 +298,6 @@ history_panel:
   text:
     tooltip_name: 'Rename history...'
     new_name: 'Unnamed history'
-    new_size: '(empty)'
 
 
 history_structure:
@@ -401,6 +400,7 @@ histories:
   sharing:
     selectors:
       unshare_user_button: '.share_with_view .multiselect__tag-icon'
+      unshare_with_user_button: '.share_with_view [data-email="${email}"] .multiselect__tag-icon'
       user_email_input: '.user-email-input-form'
       submit_sharing_with: '.submit-sharing-with'
       share_with_collapse: '.share-with-collapse'

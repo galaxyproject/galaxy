@@ -53,6 +53,10 @@
                 <span class="fa fa-share-alt fa-fw mr-1" />
                 <span>Share</span>
             </a>
+            <a class="dropdown-item" :href="urlExport">
+                <span class="fa fa-file-export fa-fw mr-1" />
+                <span>Export</span>
+            </a>
             <a class="dropdown-item" :href="urlView">
                 <span class="fa fa-eye fa-fw mr-1" />
                 <span>View</span>
@@ -91,7 +95,10 @@ export default {
             return `${getAppRoot()}api/workflows/${this.workflow.id}/download?format=json-download`;
         },
         urlShare() {
-            return `${getAppRoot()}workflow/sharing?id=${this.workflow.id}`;
+            return `${getAppRoot()}workflows/sharing?id=${this.workflow.id}`;
+        },
+        urlExport() {
+            return `${getAppRoot()}workflow/export?id=${this.workflow.id}`;
         },
         urlView() {
             return `${getAppRoot()}workflow/display_by_id?id=${this.workflow.id}`;

@@ -815,6 +815,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state="ok"):
                     final_job_state=state,
                     storage_callbacks=storage_callbacks,
                 )
+                dataset.discovered = True
                 if not hda_id:
                     datasets.append(dataset)
 

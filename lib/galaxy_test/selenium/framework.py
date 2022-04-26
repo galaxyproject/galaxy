@@ -31,6 +31,7 @@ from galaxy.selenium.navigates_galaxy import (
     NavigatesGalaxy,
     retry_during_transitions,
 )
+from galaxy.tool_util.verify.interactor import prepare_request_params
 from galaxy.util import (
     asbool,
     classproperty,
@@ -43,7 +44,10 @@ from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     get_ip_address,
 )
-from galaxy_test.base.populators import load_data_dict
+from galaxy_test.base.populators import (
+    load_data_dict,
+    skip_if_github_down,
+)
 from galaxy_test.base.testcase import FunctionalTestCase
 
 try:
@@ -388,16 +392,10 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
     def assert_initial_history_panel_state_correct(self):
         # Move into a TestsHistoryPanel mixin
         unnamed_name = self.components.history_panel.new_name.text
-
         name_element = self.history_panel_name_element()
+
         assert name_element.is_displayed()
         assert unnamed_name in name_element.text
-
-        initial_size_str = self.components.history_panel.new_size.text
-        size_selector = self.components.history_panel.size
-        size_text = size_selector.wait_for_text()
-
-        assert initial_size_str in size_text, f"{initial_size_str} not in {size_text}"
 
         self.components.history_panel.empty_message.wait_for_visible()
 
@@ -538,6 +536,22 @@ class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
         assert hid_text == str(hid), hid_text
 
 
+EXAMPLE_WORKFLOW_URL_1 = (
+    "https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga"
+)
+
+
+class UsesWorkflowAssertions(NavigatesGalaxyMixin):
+    @retry_assertion_during_transitions
+    def _assert_showing_n_workflows(self, n):
+        assert len(self.workflow_index_table_elements()) == n
+
+    @skip_if_github_down
+    def _workflow_import_from_url(self, url=EXAMPLE_WORKFLOW_URL_1):
+        self.workflow_index_click_import()
+        self.workflow_import_submit_url(url)
+
+
 class RunsWorkflows(GalaxyTestSeleniumContext):
     def workflow_upload_yaml_with_random_name(self, content: str, **kwds) -> str:
         name = self._get_random_name()
@@ -672,59 +686,36 @@ class SeleniumSessionGetPostMixin:
 
     def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
-        if data is None:
-            data = {}
-
-        if files is None:
-            files = data.get("__files", None)
-            if files is not None:
-                del data["__files"]
-
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        request_kwd = self._prepare_request_data(
-            dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT, files=files), data, as_json=json
-        )
-        response = requests.post(full_url, **request_kwd)
+        request_kwd = prepare_request_params(data=data, files=files, as_json=json, headers=headers, cookies=cookies)
+        response = requests.post(full_url, timeout=DEFAULT_SOCKET_TIMEOUT, **request_kwd)
         return response
 
     def _delete(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
-        data = data or {}
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        request_kwd = self._prepare_request_data(
-            dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT), data, as_json=json
-        )
-        response = requests.delete(full_url, **request_kwd)
+        request_kwd = prepare_request_params(data=data, as_json=json, headers=headers, cookies=cookies)
+        response = requests.delete(full_url, timeout=DEFAULT_SOCKET_TIMEOUT, **request_kwd)
         return response
 
     def _put(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
-        data = data or {}
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        request_kwd = self._prepare_request_data(
-            dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT), data, as_json=json
-        )
+        request_kwd = prepare_request_params(data=data, as_json=json, headers=headers, cookies=cookies)
         response = requests.put(full_url, **request_kwd)
         return response
-
-    def _prepare_request_data(self, request_kwd: Dict[str, Any], data: Dict[str, Any], as_json: bool = False):
-        if as_json:
-            request_kwd["json"] = data
-        else:
-            request_kwd["data"] = data
-        return request_kwd
 
 
 class SeleniumSessionDatasetPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetPopulator):

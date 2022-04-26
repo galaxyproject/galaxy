@@ -339,7 +339,7 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         assert not [w for w in workflow_index if w["id"] == workflow_id]
 
     def test_index_hidden(self):
-        workflow_id = self.workflow_populator.simple_workflow("test_hidden")
+        workflow_id = self.workflow_populator.simple_workflow("test_delete")
         workflow_index = self._get("workflows").json()
         workflow = [w for w in workflow_index if w["id"] == workflow_id][0]
         workflow["hidden"] = True
@@ -1364,9 +1364,10 @@ steps:
     def test_workflow_run_output_collection_mapping(self):
         workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING)
         with self.dataset_populator.test_history() as history_id:
-            hdca1 = self.dataset_collection_populator.create_list_in_history(
+            fetch_response = self.dataset_collection_populator.create_list_in_history(
                 history_id, contents=["a\nb\nc\nd\n", "e\nf\ng\nh\n"]
             ).json()
+            hdca1 = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             inputs = {
                 "0": self._ds_entry(hdca1),
@@ -2764,9 +2765,10 @@ input1:
             workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_map_reduce_pause")
             uploaded_workflow_id = self.workflow_populator.create_workflow(workflow)
             hda1 = self.dataset_populator.new_dataset(history_id, content="reviewed\nunreviewed")
-            hdca1 = self.dataset_collection_populator.create_list_in_history(
+            fetch_response = self.dataset_collection_populator.create_list_in_history(
                 history_id, contents=["1\n2\n3", "4\n5\n6"]
             ).json()
+            hdca1 = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
             index_map = {
                 "0": self._ds_entry(hda1),
                 "1": self._ds_entry(hdca1),
@@ -2844,14 +2846,16 @@ steps:
 """
             )
             DELETED = 0
-            PAUSED_1 = 3
-            PAUSED_2 = 5
-            hdca1 = self.dataset_collection_populator.create_list_in_history(
-                history_id, contents=[("sample1-1", "1 2 3")]
+            PAUSED_1 = 1
+            PAUSED_2 = 2
+            fetch_response = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=[("sample1-1", "1 2 3")], wait=True
             ).json()
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            hdca1 = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
             deleted_id = hdca1["elements"][DELETED]["object"]["id"]
-            r = self._delete(f"histories/{history_id}/contents/{deleted_id}?purge={purge}")
+            self.dataset_populator.delete_dataset(
+                history_id=history_id, content_id=deleted_id, purge=purge, wait_for_purge=True
+            )
             label_map = {"input1": self._ds_entry(hdca1)}
             workflow_request = dict(
                 history=f"hist_id={history_id}",
@@ -2865,14 +2869,12 @@ steps:
             self.workflow_populator.wait_for_invocation_and_jobs(
                 workflow_id, history_id, invocation_id, assert_ok=False
             )
-            # Why is this sleep needed? -John
-            if not purge:
-                time.sleep(5)
             contents = self.__history_contents(history_id)
-            assert contents[DELETED]["deleted"]
+            datasets = [content for content in contents if content["history_content_type"] == "dataset"]
+            assert datasets[DELETED]["deleted"]
             state = "error" if purge else "paused"
-            assert contents[PAUSED_1]["state"] == state
-            assert contents[PAUSED_2]["state"] == "paused"
+            assert datasets[PAUSED_1]["state"] == state
+            assert datasets[PAUSED_2]["state"] == "paused"
 
     def test_run_with_implicit_connection(self):
         with self.dataset_populator.test_history() as history_id:
@@ -3437,6 +3439,8 @@ outer_input:
             hdca2 = self.dataset_collection_populator.create_list_in_history(
                 history_id, contents=[("sample1-2", "4 5 6"), ("sample2-2", "0 a b")]
             ).json()
+            hdca1 = self.dataset_collection_populator.wait_for_fetched_collection(hdca1)
+            hdca2 = self.dataset_collection_populator.wait_for_fetched_collection(hdca2)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             label_map = {"list1": self._ds_entry(hdca1), "list2": self._ds_entry(hdca2)}
             workflow_request = dict(
@@ -4596,10 +4600,10 @@ steps:
         workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_batch")
         workflow_id = self.workflow_populator.create_workflow(workflow)
         with self.dataset_populator.test_history() as history_id:
-            hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
-            hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6")
-            hda3 = self.dataset_populator.new_dataset(history_id, content="7 8 9")
-            hda4 = self.dataset_populator.new_dataset(history_id, content="10 11 12")
+            hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
+            hda2 = self.dataset_populator.new_dataset(history_id, content="4 5 6", wait=True)
+            hda3 = self.dataset_populator.new_dataset(history_id, content="7 8 9", wait=True)
+            hda4 = self.dataset_populator.new_dataset(history_id, content="10 11 12", wait=True)
             parameters = {
                 "0": {
                     "input": {
@@ -5397,10 +5401,8 @@ test_data:
             inputs_by="name",
             inputs=json.dumps({"input1": self._ds_entry(hda1)}),
         )
-        self.workflow_populator.invoke_workflow_and_assert_ok(
-            workflow_id, history_id=history_id, request=workflow_request
-        )
+        self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id, request=workflow_request)
         self.assertEqual(
             "Hello World Second!\nhello world 2\n",
-            self.dataset_populator.get_history_dataset_content(history_id, hid=4),
+            self.dataset_populator.get_history_dataset_content(history_id),
         )

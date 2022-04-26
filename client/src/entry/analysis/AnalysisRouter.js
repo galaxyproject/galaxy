@@ -84,6 +84,7 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)workflows/trs_import": "show_workflows_trs_import",
             "(/)workflows/trs_search": "show_workflows_trs_search",
             "(/)workflows/run(/)": "show_workflows_run",
+            "(/)workflows(/)sharing(/)": "show_workflows_sharing",
             "(/)workflows(/)list": "show_workflows",
             "(/)workflows/invocations": "show_workflow_invocations",
             "(/)workflows/invocations/report": "show_workflow_invocation_report",
@@ -344,6 +345,14 @@ export const getAnalysisRouter = (Galaxy) => {
                 id: QueryStringParsing.get("id"),
                 pluralName: "Pages",
                 modelClass: "Page",
+            });
+        },
+
+        show_workflows_sharing: function () {
+            this._display_vue_helper(Sharing, {
+                id: QueryStringParsing.get("id"),
+                pluralName: "Workflows",
+                modelClass: "Workflow",
             });
         },
 

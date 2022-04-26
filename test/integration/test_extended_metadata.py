@@ -1,6 +1,4 @@
 """Integration tests for the Pulsar embedded runner."""
-import json
-
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
@@ -60,7 +58,7 @@ class ExtendedMetadataIntegrationTestCase(integration_util.IntegrationTestCase):
             "destination": {"type": "hdas"},
             "elements": [element],
         }
-        targets = json.dumps([target])
+        targets = [target]
         upload_content = "abcdef"
         payload = {"history_id": history_id, "targets": targets, "__files": {"files_0|file_data": upload_content}}
         new_dataset = self.dataset_populator.fetch(payload, assert_ok=True).json()["outputs"][0]
