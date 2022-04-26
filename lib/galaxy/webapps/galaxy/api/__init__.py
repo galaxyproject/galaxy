@@ -20,9 +20,11 @@ from fastapi import (
     Request,
     Response,
 )
+from fastapi.exceptions import RequestValidationError
 from fastapi.params import Depends
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
+from pydantic import ValidationError
 from pydantic.main import BaseModel
 from starlette.routing import NoMatchFound
 try:
@@ -297,7 +299,10 @@ def as_form(cls: Type[BaseModel]):
     ]
 
     async def _as_form(**data):
-        return cls(**data)
+        try:
+            return cls(**data)
+        except ValidationError as e:
+            raise RequestValidationError(e.raw_errors)
 
     sig = inspect.signature(_as_form)
     sig = sig.replace(parameters=new_params)
