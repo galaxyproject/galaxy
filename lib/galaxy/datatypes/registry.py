@@ -2,9 +2,10 @@
 Provides mapping between extensions and datatypes, mime-types, etc.
 """
 
-import imp
+import importlib.util
 import logging
 import os
+import pkgutil
 from string import Template
 from typing import (
     Dict,
@@ -108,10 +109,15 @@ class Registry:
         registry has been initialized at server startup, its contents cannot be overridden by newly introduced conflicting data types.
         """
 
-        def __import_module(full_path, datatype_module, datatype_class_name):
-            open_file_obj, file_name, description = imp.find_module(datatype_module, [full_path])
-            imported_module = imp.load_module(datatype_class_name, open_file_obj, file_name, description)
-            return imported_module
+        def __import_module(full_path: str, datatype_module: str):
+            path_entry_finder = pkgutil.get_importer(full_path)
+            assert path_entry_finder, "path_entry_finder is None"
+            spec = path_entry_finder.find_spec(datatype_module)
+            assert spec, "spec is None"
+            module = importlib.util.module_from_spec(spec)
+            assert spec.loader, "spec.loader is None"
+            spec.loader.exec_module(module)
+            return module
 
         if root_dir and config:
             # If handling_proprietary_datatypes is determined as True below, we'll have an elem that looks something like this:
@@ -260,9 +266,7 @@ class Registry:
                                     # TODO: previously comments suggested this needs to be locked because it modifies
                                     # the sys.path, probably true but the previous lock wasn't doing that.
                                     try:
-                                        imported_module = __import_module(
-                                            proprietary_path, proprietary_datatype_module, datatype_class_name
-                                        )
+                                        imported_module = __import_module(proprietary_path, proprietary_datatype_module)
                                         if imported_module not in self.imported_modules:
                                             self.imported_modules.append(imported_module)
                                         if hasattr(imported_module, datatype_class_name):
@@ -272,7 +276,7 @@ class Registry:
                                         self.log.debug(
                                             "Exception importing proprietary code file %s: %s",
                                             full_path,
-                                            galaxy.util.unicodify(e),
+                                            e,
                                         )
                                 # Either the above exception was thrown because the proprietary_datatype_module is not derived from a class
                                 # in the repository, or we are loading Galaxy's datatypes. In either case we'll look in the registry.
