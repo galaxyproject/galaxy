@@ -1,4 +1,4 @@
-<tool id="interactive_tool_pangeo_notebook" tool_type="interactive" name="Interactive Pangeo Notebook" version="1c0f66b">
+<tool id="interactive_tool_pangeo_notebook" tool_type="interactive" name="Interactive Pangeo Notebook" version="22.01" profile="22.01">
     <requirements>
         <container type="docker">quay.io/nordicesmhub/docker-pangeo-notebook:1c0f66b</container>
     </requirements>
