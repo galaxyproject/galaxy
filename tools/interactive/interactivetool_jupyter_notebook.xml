@@ -1,6 +1,6 @@
 <tool id="interactive_tool_jupyter_notebook" tool_type="interactive" name="Interactive Jupyter Notebook" version="0.2">
     <requirements>
-        <container type="docker">quay.io/bgruening/docker-jupyter-notebook:ie2</container>
+        <container type="docker">quay.io/bgruening/docker-jupyter-notebook:2021-03-05</container>
     </requirements>
     <entry_points>
         <entry_point name="Jupyter Interactive Tool" requires_domain="True">
