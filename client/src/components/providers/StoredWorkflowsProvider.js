@@ -1,5 +1,8 @@
 import axios from "axios";
+import { getAppRoot } from "onload/loadConfig";
 import { cleanPaginationParameters } from "./utils";
+import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
+import { rethrowSimple } from "utils/simple-error";
 
 export function storedWorkflowsProvider(ctx, callback, extraParams = {}) {
     const { apiUrl, ...requestParams } = ctx;
@@ -15,3 +18,15 @@ export function storedWorkflowsProvider(ctx, callback, extraParams = {}) {
         return items || [];
     });
 }
+
+async function storedWorkflowDetails({ storedWorkflowId }) {
+    const url = `${getAppRoot()}api/workflows/${storedWorkflowId}?instance=true`;
+    try {
+        const { data } = await axios.get(url);
+        return data;
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
+
+export const StoredWorkflowDetailsProvider = SingleQueryProvider(storedWorkflowDetails);

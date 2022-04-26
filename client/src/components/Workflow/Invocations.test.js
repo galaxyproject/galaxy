@@ -8,7 +8,7 @@ import { parseISO, formatDistanceToNow } from "date-fns";
 
 const localVue = getLocalVue();
 
-describe("Invocations.vue without invocation", () => {
+describe("Invocations.vue without invocations", () => {
     let axiosMock;
     let wrapper;
     let propsData;
@@ -31,6 +31,38 @@ describe("Invocations.vue without invocation", () => {
 
     it("title should be shown", async () => {
         expect(wrapper.find("#invocations-title").text()).toBe("Workflow Invocations");
+    });
+
+    it("no invocations message should be shown when not loading", async () => {
+        expect(wrapper.find("#no-invocations").exists()).toBe(true);
+    });
+});
+
+describe("Invocations.vue for a workflow invocations", () => {
+    let axiosMock;
+    let wrapper;
+    let propsData;
+
+    beforeEach(async () => {
+        axiosMock = new MockAdapter(axios);
+        axiosMock.onAny().reply(200, [], { total_matches: "0" });
+        propsData = {
+            ownerGrid: false,
+            storedWorkflowName: "My Workflow",
+            storedWorkflowId: "abcde145678",
+        };
+        wrapper = mount(Invocations, {
+            propsData,
+            localVue,
+        });
+    });
+
+    afterEach(() => {
+        axiosMock.restore();
+    });
+
+    it("title should be shown", async () => {
+        expect(wrapper.find("#invocations-title").text()).toBe("Workflow Invocations for My Workflow");
     });
 
     it("no invocations message should be shown when not loading", async () => {

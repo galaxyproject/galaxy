@@ -1,7 +1,7 @@
 <template>
     <div class="invocations-list">
         <h2 class="mb-3">
-            <span id="invocations-title">Workflow Invocations</span>
+            <span id="invocations-title">{{ title }}</span>
         </h2>
         <b-alert v-if="headerMessage" variant="info" show>
             {{ headerMessage }}
@@ -22,7 +22,7 @@
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflow invocations" />
                 <b-alert v-else id="no-invocations" variant="info" show>
-                    {{ noInvocationsMessage }}
+                    {{ effectiveNoInvocationsMessage }}
                 </b-alert>
             </template>
             <template v-slot:row-details="row">
@@ -108,6 +108,8 @@ export default {
         headerMessage: { type: String, default: "" },
         ownerGrid: { type: Boolean, default: true },
         userId: { type: String, default: null },
+        storedWorkflowId: { type: String, default: null },
+        storedWorkflowName: { type: String, default: null },
     },
     data() {
         const fields = [
@@ -133,6 +135,20 @@ export default {
         apiUrl() {
             return `${getAppRoot()}api/invocations`;
         },
+        title() {
+            let title = `Workflow Invocations`;
+            if (this.storedWorkflowName) {
+                title += ` for ${this.storedWorkflowName}`;
+            }
+            return title;
+        },
+        effectiveNoInvocationsMessage() {
+            let message = this.noInvocationsMessage;
+            if (this.storedWorkflowName) {
+                message += ` for ${this.storedWorkflowName}`;
+            }
+            return message;
+        },
     },
     watch: {
         invocationItems: function (promise) {
@@ -157,6 +173,9 @@ export default {
         provider(ctx) {
             ctx.apiUrl = this.apiUrl;
             const extraParams = this.ownerGrid ? {} : { include_terminal: false };
+            if (this.storedWorkflowId) {
+                extraParams["workflow_id"] = this.storedWorkflowId;
+            }
             if (this.userId) {
                 extraParams["user_id"] = this.userId;
             }
