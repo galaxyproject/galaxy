@@ -253,7 +253,13 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 log.exception("Exception occured while setting dataset peek")
 
     def populate_collection_elements(
-        self, collection, root_collection_builder, filenames, name=None, metadata_source_name=None, final_job_state="ok"
+        self,
+        collection,
+        root_collection_builder,
+        discovered_files,
+        name=None,
+        metadata_source_name=None,
+        final_job_state="ok",
     ):
         # TODO: allow configurable sorting.
         #    <sort by="lexical" /> <!-- default -->
@@ -263,7 +269,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         if name is None:
             name = "unnamed output"
         if self.flush_per_n_datasets and self.flush_per_n_datasets > 0:
-            for chunk in chunk_iterable(filenames.items(), size=self.flush_per_n_datasets):
+            for chunk in chunk_iterable(discovered_files, size=self.flush_per_n_datasets):
                 self._populate_elements(
                     chunk=chunk,
                     name=name,
@@ -278,7 +284,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                     self.flush()
         else:
             self._populate_elements(
-                chunk=filenames.items(),
+                chunk=discovered_files,
                 name=name,
                 root_collection_builder=root_collection_builder,
                 metadata_source_name=metadata_source_name,
@@ -293,7 +299,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             "paths": [],
             "extra_files": [],
         }
-        for filename, discovered_file in chunk:
+        for discovered_file in chunk:
+            filename = discovered_file.path
             create_dataset_timer = ExecutionTimer()
             fields_match = discovered_file.match
             if not fields_match:
@@ -688,7 +695,7 @@ def persist_elements_to_hdca(
     hdca,
     collector=None,
 ):
-    filenames = {}
+    discovered_files = []
 
     def add_to_discovered_files(elements, parent_identifiers=None):
         parent_identifiers = parent_identifiers or []
@@ -699,7 +706,7 @@ def persist_elements_to_hdca(
                 discovered_file = discovered_file_for_element(
                     element, model_persistence_context, parent_identifiers, collector=collector
                 )
-                filenames[discovered_file.path] = discovered_file
+                discovered_files.append(discovered_file)
 
     add_to_discovered_files(elements)
 
@@ -708,7 +715,7 @@ def persist_elements_to_hdca(
     model_persistence_context.populate_collection_elements(
         collection,
         collection_builder,
-        filenames,
+        discovered_files,
     )
     collection_builder.populate()
 

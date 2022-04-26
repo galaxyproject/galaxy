@@ -199,14 +199,14 @@ class BaseJobContext(ModelPersistenceContext):
     def add_dataset_collection(self, collection):
         pass
 
-    def find_files(self, output_name, collection, dataset_collectors):
-        filenames = {}
+    def find_files(self, output_name, collection, dataset_collectors) -> list:
+        discovered_files = []
         for discovered_file in discover_files(
             output_name, self.tool_provided_metadata, dataset_collectors, self.job_working_directory, collection
         ):
             self.increment_discovered_file_count()
-            filenames[discovered_file.path] = discovered_file
-        return filenames
+            discovered_files.append(discovered_file)
+        return discovered_files
 
     def get_job_id(self):
         return None  # overwritten in subclasses
