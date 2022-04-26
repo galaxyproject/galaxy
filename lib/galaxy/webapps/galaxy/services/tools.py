@@ -51,7 +51,7 @@ class ToolsService(ServiceBase):
         self.toolbox_search = toolbox_search
         self.history_manager = history_manager
 
-    def _create_fetch(
+    def create_fetch(
         self,
         trans: ProvidesHistoryContext,
         fetch_payload: Union[FetchDataFormPayload, FetchDataPayload],
