@@ -1,4 +1,4 @@
-<tool id="interactive_tool_climate_notebook" tool_type="interactive" name="Interactive Climate Notebook" version="0.4">
+<tool id="interactive_tool_climate_notebook" tool_type="interactive" name="Interactive Climate Notebook" version="0.4" profile="22.01">
     <requirements>
         <container type="docker">quay.io/nordicesmhub/docker-climate-notebook:2021-03-18</container>
     </requirements>
