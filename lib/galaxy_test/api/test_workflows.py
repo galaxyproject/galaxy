@@ -493,6 +493,21 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         index_ids = self.workflow_populator.index_ids(search="tag:moocowatag")
         assert workflow_id_1 in index_ids
 
+    def test_search_casing(self):
+        name1, name2 = (
+            self.dataset_populator.get_random_name().upper(),
+            self.dataset_populator.get_random_name().upper(),
+        )
+        workflow_id_1 = self.workflow_populator.simple_workflow(name1)
+        self.workflow_populator.simple_workflow(name2)
+        self.workflow_populator.set_tags(workflow_id_1, ["searchcasingtag", "searchcasinganothertag"])
+        index_ids = self.workflow_populator.index_ids(search=name1.lower())
+        assert len(index_ids) == 1
+        assert workflow_id_1 in index_ids
+        index_ids = self.workflow_populator.index_ids(search="SEARCHCASINGTAG")
+        assert len(index_ids) == 1
+        assert workflow_id_1 in index_ids
+
     def test_index_search_tags_exact(self):
         name1, name2 = self.dataset_populator.get_random_name(), self.dataset_populator.get_random_name()
         workflow_id_1 = self.workflow_populator.simple_workflow(name1)

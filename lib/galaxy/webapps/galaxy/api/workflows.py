@@ -1460,10 +1460,10 @@ OffsetQueryParam: Optional[int] = Query(
     title="Number of workflows to skip in sorted query (to enable pagination).",
 )
 
-SearchQueryParameter: Optional[str] = Query(
+SearchQueryParam: Optional[str] = Query(
     default=None,
     title="Search query.",
-    description="Free text used to filter the query. Currently this just filters by name but this shouldn't be considered part the API, the freetext search may search additional fields in different ways in the future.",
+    description="Free text used to filter the query. Filters on a name and tags, Github-style tags can be used to be more specific. Free-text search is case-insensitive.",
 )
 
 SkipStepCountsQueryParam: bool = Query(
@@ -1495,7 +1495,7 @@ class FastAPIWorkflows:
         sort_desc: Optional[bool] = SortDescQueryParam,
         limit: Optional[int] = LimitQueryParam,
         offset: Optional[int] = OffsetQueryParam,
-        search: Optional[str] = SearchQueryParameter,
+        search: Optional[str] = SearchQueryParam,
         skip_step_counts: bool = SkipStepCountsQueryParam,
     ) -> List[Dict[str, Any]]:
         """Return the sharing status of the item."""

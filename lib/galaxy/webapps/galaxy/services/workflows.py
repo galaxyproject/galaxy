@@ -120,8 +120,8 @@ class WorkflowsService(ServiceBase):
                     key, value = term_text.rsplit(":", 1)
                     if not quoted:
                         return and_(
-                            model.StoredWorkflowTagAssociation.user_tname == key,
-                            model.StoredWorkflowTagAssociation.user_value.like(f"%{value}%"),
+                            model.StoredWorkflowTagAssociation.user_tname.ilike(key),
+                            model.StoredWorkflowTagAssociation.user_value.ilike(f"%{value}%"),
                         )
                     else:
                         return and_(
@@ -130,13 +130,13 @@ class WorkflowsService(ServiceBase):
                         )
                 else:
                     if not quoted:
-                        return model.StoredWorkflowTagAssociation.user_tname.like(f"%{term_text}%")
+                        return model.StoredWorkflowTagAssociation.user_tname.ilike(f"%{term_text}%")
                     else:
                         return model.StoredWorkflowTagAssociation.user_tname == term_text
 
             def name_filter(text, quoted):
                 if not quoted:
-                    filter = model.StoredWorkflow.name.like(f"%{text}%")
+                    filter = model.StoredWorkflow.name.ilike(f"%{text}%")
                 else:
                     filter = model.StoredWorkflow.name == text
                 return filter

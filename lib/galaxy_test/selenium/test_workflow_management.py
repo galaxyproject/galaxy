@@ -102,6 +102,10 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkfl
         self._assert_showing_n_workflows(2)
         self.screenshot("workflow_manage_search_by_tag_exact")
 
+        self.workflow_index_search_for()
+        self._assert_showing_n_workflows(4)
+        self.workflow_index_search_for("MyTaG")
+
     @selenium_test
     def test_index_search(self):
         self.workflow_index_open()
