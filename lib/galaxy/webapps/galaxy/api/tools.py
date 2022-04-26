@@ -82,7 +82,7 @@ class FetchTools:
 
     @router.post("/api/tools/fetch", summary="Upload files to Galaxy", route_class_override=JsonApiRoute)
     async def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
-        return self.service._create_fetch(trans, payload)
+        return self.service.create_fetch(trans, payload)
 
     @router.post(
         "/api/tools/fetch",
@@ -104,7 +104,7 @@ class FetchTools:
             for value in data.values():
                 if isinstance(value, StarletteUploadFile):
                     files2.append(value)
-        return self.service._create_fetch(trans, payload, files2)
+        return self.service.create_fetch(trans, payload, files2)
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):

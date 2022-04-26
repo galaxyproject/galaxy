@@ -28,10 +28,10 @@ class FetchBaseModel(BaseModel):
 
 
 class ElementsFromType(str, Enum):
-    ARCHIVE = "archive"
-    BAGIT = "bagit"
-    BAGIT_ARCHIVE = "bagit_archive"
-    DIRECTORY = "directory"
+    archive = "archive"
+    bagit = "bagit"
+    bagit_archive = "bagit_archive"
+    directory = "directory"
 
 
 AutoDecompressField = Field(False, description="Decompress compressed data before sniffing?")
@@ -46,7 +46,7 @@ class ItemsFromSrc(str, Enum):
     files = "files"
     path = "path"
     ftp_import = "ftp_import"
-    server_dir = "server_id"
+    server_dir = "server_dir"
 
 
 class Src(str, Enum):
