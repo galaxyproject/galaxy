@@ -20,7 +20,7 @@
       <output name="out_file1" file="simple_line.txt"/>
     </test>
     <!-- functional test of the dbkey filter of input2: only the dbkey of input1 is accepted -->
-    <test>
+    <test expect_test_failure="true">
       <param name="input1" value="simple_line.txt" dbkey="hg17" ftype="txt"/>
       <param name="input2" value="simple_line_x2.txt" dbkey="hg19" ftype="txt"/>
       <output name="out_file1" file="simple_line.txt"/>
@@ -32,7 +32,7 @@
       <output name="out_file1" file="simple_line.txt"/>
     </test>
     <!-- functional test of the dbkey filter of input2: -->
-    <test>
+    <test expect_test_failure="true">
       <param name="input1" value="simple_line.txt" dbkey="hg17" ftype="txt"/>
       <param name="input2" value="simple_line_x2.txt" ftype="txt"/>
       <output name="out_file1" file="simple_line.txt"/>
