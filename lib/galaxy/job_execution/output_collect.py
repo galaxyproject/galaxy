@@ -547,6 +547,7 @@ def collect_primary_datasets(job_context: Union[JobContext, SessionlessJobContex
             outdata.init_meta()
             outdata.set_meta()
             outdata.set_peek()
+            outdata.discovered = True
             sa_session = job_context.sa_session
             if sa_session:
                 sa_session.add(outdata)

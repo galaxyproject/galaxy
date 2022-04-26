@@ -203,7 +203,7 @@ steps:
         # Initial number of ok jobs
         original_count = len(self.__uploads_with_state("ok", "new"))
 
-        # Run through dataset upload to ensure num uplaods at least greater
+        # Run through dataset upload to ensure num uploads at least greater
         # by 1.
         self.__history_with_ok_dataset(history_id)
 
@@ -280,9 +280,10 @@ steps:
             assert dataset["visible"]
 
     def _run_map_over_error(self, history_id):
-        hdca1 = self.dataset_collection_populator.create_list_in_history(
+        fetch_response = self.dataset_collection_populator.create_list_in_history(
             history_id, contents=[("sample1-1", "1 2 3")]
         ).json()
+        hdca1 = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
         inputs = {
             "error_bool": "true",
             "dataset": {
@@ -874,10 +875,10 @@ steps:
         self._assert_status_code_is(jobs_response, 200)
         jobs = jobs_response.json()
         assert not [j for j in jobs if not j["state"] in states]
-        return [j for j in jobs if j["tool_id"] == "upload1"]
+        return [j for j in jobs if j["tool_id"] == "__DATA_FETCH__"]
 
     def __history_with_new_dataset(self, history_id):
-        dataset_id = self.dataset_populator.new_dataset(history_id)["id"]
+        dataset_id = self.dataset_populator.new_dataset(history_id, wait=True)["id"]
         return dataset_id
 
     def __history_with_ok_dataset(self, history_id):

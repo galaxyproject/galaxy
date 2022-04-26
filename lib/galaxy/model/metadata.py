@@ -500,6 +500,10 @@ class DBKeyParameter(SelectParameter):
             pass
         return super().get_field(value, context, other_values, values, **kwd)
 
+    def make_copy(self, value, target_context: MetadataCollection, source_context):
+        value = listify(value)
+        return super().make_copy(value, target_context, source_context)
+
 
 class RangeParameter(SelectParameter):
     def __init__(self, spec):

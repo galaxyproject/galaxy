@@ -76,7 +76,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         history_id = self.current_history_id()
         input_collection = self.dataset_collection_populator.create_list_in_history(
             history_id, contents=["0", "1", "0", "1"]
-        ).json()
+        ).json()["outputs"][0]
 
         ok_inputs = {"input1": {"src": "hdca", "id": input_collection["id"]}}
         ok_response = self.dataset_populator.run_tool("collection_creates_list", ok_inputs, history_id)
@@ -285,15 +285,17 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
     def _generate_partially_failed_collection_with_input(self):
         history_id = self.current_history_id()
         input_collection = self.dataset_collection_populator.create_list_in_history(
-            history_id, contents=["0", "1", "0", "1"]
-        ).json()
+            history_id, contents=["0", "1", "0", "1"], wait=True
+        ).json()["outputs"][0]
         failed_response = self.dataset_populator.run_exit_code_from_file(history_id, input_collection["id"])
         failed_collection = failed_response["implicit_collections"][0]
         return input_collection, failed_collection
 
     def _populated_paired_and_wait_for_it(self):
         history_id = self.current_history_id()
-        input_collection = self.dataset_collection_populator.create_pair_in_history(history_id).json()
+        input_collection = self.dataset_collection_populator.create_pair_in_history(history_id, wait=True).json()[
+            "outputs"
+        ][0]
         collection_hid = input_collection["hid"]
         if not self.is_beta_history():
             self.home()

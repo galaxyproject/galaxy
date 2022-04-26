@@ -1,4 +1,3 @@
-import json
 import os
 import tempfile
 
@@ -130,7 +129,7 @@ class VaultFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
                     "destination": {"type": "hdas"},
                     "elements": [element],
                 }
-                targets = json.dumps([target])
+                targets = [target]
                 payload = {
                     "history_id": history_id,
                     "targets": targets,

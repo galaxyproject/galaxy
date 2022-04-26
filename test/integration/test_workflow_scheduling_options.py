@@ -80,9 +80,10 @@ steps:
 """
         )
         with self.dataset_populator.test_history() as history_id:
-            hdca1 = self.dataset_collection_populator.create_list_in_history(
+            fetch_response = self.dataset_collection_populator.create_list_in_history(
                 history_id, contents=["a\nb\nc\nd\n", "e\nf\ng\nh\n"]
             ).json()
+            hdca1 = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             inputs = {
                 "0": {"src": "hdca", "id": hdca1["id"]},

@@ -143,7 +143,7 @@ def job_config(jobs_directory):
         </destination>
     </destinations>
     <tools>
-        <tool id="upload1" destination="local_dest"/>
+        <tool id="__DATA_FETCH__" destination="local_dest"/>
         <tool id="create_2" destination="k8s_destination_walltime_short"/>
         <tool id="galaxy_slots_and_memory" destination="k8s_destination_no_cleanup"/>
     </tools>
