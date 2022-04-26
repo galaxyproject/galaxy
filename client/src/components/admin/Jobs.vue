@@ -31,7 +31,7 @@
                     <b-form-group
                         id="cutoff"
                         label="Cutoff time period"
-                        :disabled="showAllRunning"
+                        v-show="!showAllRunning"
                         description="in minutes">
                         <b-input-group>
                             <b-form-input id="cutoff" v-model="cutoffMin" type="number"> </b-form-input>
