@@ -552,6 +552,26 @@ class UsesWorkflowAssertions(NavigatesGalaxyMixin):
         self.workflow_import_submit_url(url)
 
 
+class TestsGalaxyPagers(GalaxyTestSeleniumContext):
+    @retry_assertion_during_transitions
+    def _assert_current_page_is(self, component, expected_page: int):
+        component.pager.wait_for_visible()
+        page_from_pager = component.pager_page_active.wait_for_present().text
+        assert int(page_from_pager) == expected_page
+
+    def _next_page(self, component):
+        component.pager_page_next.wait_for_and_click()
+
+    def _previous_page(self, component):
+        component.pager_page_previous.wait_for_and_click()
+
+    def _last_page(self, component):
+        component.pager_page_last.wait_for_and_click()
+
+    def _first_page(self, component):
+        component.pager_page_first.wait_for_and_click()
+
+
 class RunsWorkflows(GalaxyTestSeleniumContext):
     def workflow_upload_yaml_with_random_name(self, content: str, **kwds) -> str:
         name = self._get_random_name()
