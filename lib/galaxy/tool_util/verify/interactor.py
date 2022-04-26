@@ -1413,6 +1413,9 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
 
     if found_exceptions and not testdef.expect_test_failure:
         raise JobOutputsError(found_exceptions, job_stdio)
+    elif not found_exceptions and testdef.expect_test_failure:
+        register_exception(AssertionError("Expected job to miss at least one test assumption but all were met."))
+        raise JobOutputsError(found_exceptions, job_stdio)
     else:
         return job_stdio
 
