@@ -34,6 +34,7 @@ from .components import (
 )
 from .data import load_root_component
 from .has_driver import (
+    exception_indicates_click_intercepted,
     exception_indicates_not_clickable,
     exception_indicates_stale_element,
     HasDriver,
@@ -98,7 +99,11 @@ def exception_seems_to_indicate_transition(e):
     StaleElement exceptions (a DOM element grabbed at one step is no longer available)
     and "not clickable" exceptions (so perhaps a popup modal is blocking a click).
     """
-    return exception_indicates_stale_element(e) or exception_indicates_not_clickable(e)
+    return (
+        exception_indicates_stale_element(e)
+        or exception_indicates_not_clickable(e)
+        or exception_indicates_click_intercepted(e)
+    )
 
 
 def retry_call_during_transitions(
