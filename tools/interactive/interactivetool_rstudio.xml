@@ -1,11 +1,12 @@
-<tool id="interactive_tool_rstudio" tool_type="interactive" name="RStudio" version="0.1">
+<tool id="interactive_tool_rstudio" tool_type="interactive" name="RStudio" version="0.2">
     <requirements>
-        <container type="docker">quay.io/erasche/docker-rstudio-notebook:19.09</container>
+        <!--container type="docker">quay.io/erasche/docker-rstudio-notebook:19.09</container-->
+        <container type="docker">quay.io/erasche/docker-rstudio-notebook:ie2</container>
     </requirements>
     <entry_points>
         <entry_point name="RStudio" requires_domain="True">
-            <port>80</port>
-            <url>rstudio/</url>
+            <port>8787</port>
+            <url>/</url>
         </entry_point>
     </entry_points>
     <environment_variables>
@@ -28,7 +29,7 @@
 
         sed -i 's|/monitor.*||g' /etc/services.d/nginx/run &&
 
-        /etc/init.d/syslog-ng start &&
+        ##/etc/init.d/syslog-ng start &&
         /init &
         ##rstudio-server start &&
         sleep 5 &&
