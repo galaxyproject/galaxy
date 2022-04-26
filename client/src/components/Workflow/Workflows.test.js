@@ -125,5 +125,30 @@ describe("WorkflowList.vue", () => {
             expect(wrapper.vm.filter).toBe("tag:'tagmoo'");
         });
 
+        it("update filter when published icon is clicked", async () => {
+            axiosMock
+                .onGet("/api/workflows", {
+                    params: { limit: 50, offset: 0, skip_step_counts: true, search: "is:published" },
+                })
+                .reply(200, mockWorkflowsData, { total_matches: "1" });
+            const rows = wrapper.findAll("tbody > tr").wrappers;
+            const row = rows[0];
+            row.find(".fa-globe").trigger("click");
+            flushPromises();
+            expect(wrapper.vm.filter).toBe("is:published");
+        });
+
+        it("update filter when shared with me icon is clicked", async () => {
+            axiosMock
+                .onGet("/api/workflows", {
+                    params: { limit: 50, offset: 0, skip_step_counts: true, search: "is:shared_with_me" },
+                })
+                .reply(200, mockWorkflowsData, { total_matches: "1" });
+            const rows = wrapper.findAll("tbody > tr").wrappers;
+            const row = rows[0];
+            row.find(".fa-share-alt").trigger("click");
+            flushPromises();
+            expect(wrapper.vm.filter).toBe("is:shared_with_me");
+        });
     });
 });

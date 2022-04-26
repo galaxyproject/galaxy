@@ -62,8 +62,18 @@
                     <Tags :index="row.index" :tags="row.item.tags" @input="onTags" @tag-click="onTagClick" />
                 </template>
                 <template v-slot:cell(published)="row">
-                    <font-awesome-icon v-if="row.item.published" v-b-tooltip.hover title="Published" icon="globe" />
-                    <font-awesome-icon v-if="row.item.shared" v-b-tooltip.hover title="Shared" icon="share-alt" />
+                    <font-awesome-icon
+                        v-if="row.item.published"
+                        v-b-tooltip.hover
+                        title="Published"
+                        icon="globe"
+                        @click="appendFilter('is:published')" />
+                    <font-awesome-icon
+                        v-if="row.item.shared"
+                        v-b-tooltip.hover
+                        title="Shared"
+                        icon="share-alt"
+                        @click="appendFilter('is:shared_with_me')" />
                 </template>
                 <template v-slot:cell(show_in_tool_panel)="row">
                     <b-link @click="bookmarkWorkflow(row.item, false)" v-if="row.item.show_in_tool_panel">
@@ -246,13 +256,19 @@ export default {
                     this.onError(error);
                 });
         },
+        filterPublished() {
+            this.appendFilter("is:published");
+        },
         onTagClick: function (tag) {
             const tagFilter = `tag:'${tag.text}'`;
+            this.appendFilter(tagFilter);
+        },
+        appendFilter(text) {
             const initialFilter = this.filter;
             if (initialFilter.length === 0) {
-                this.filter = tagFilter;
-            } else if (initialFilter.indexOf(tagFilter) < 0) {
-                this.filter = `${tagFilter} ${initialFilter}`;
+                this.filter = text;
+            } else if (initialFilter.indexOf(text) < 0) {
+                this.filter = `${text} ${initialFilter}`;
             }
         },
         onAdd: function (workflow) {
