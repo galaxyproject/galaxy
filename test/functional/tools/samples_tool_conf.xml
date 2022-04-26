@@ -215,6 +215,7 @@
   <tool file="interactivetool_simple.xml" />
   <tool file="interactivetool_two_entry_points.xml" />
   <tool file="converter_target_datatype.xml" />
+  <tool file="dataset_options_filter.xml" />
 
   <!-- Tools interesting only for building up test workflows. -->
 
