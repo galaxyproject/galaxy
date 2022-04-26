@@ -28,10 +28,10 @@ class FetchBaseModel(BaseModel):
 
 
 class ElementsFromType(str, Enum):
-    ARCHIVE = "archive"
-    BAGIT = "bagit"
-    BAGIT_ARCHIVE = "bagit_archive"
-    DIRECTORY = "directory"
+    archive = "archive"
+    bagit = "bagit"
+    bagit_archive = "bagit_archive"
+    directory = "directory"
 
 
 AutoDecompressField = Field(False, description="Decompress compressed data before sniffing?")
