@@ -189,10 +189,10 @@ export default {
         },
     },
     methods: {
-        provider(ctx) {
+        async provider(ctx) {
             ctx.apiUrl = this.apiUrl;
             const extraParams = { search: this.filter, skip_step_counts: true };
-            this.workflowItems = storedWorkflowsProvider(ctx, this.setRows, extraParams);
+            this.workflowItems = await storedWorkflowsProvider(ctx, this.setRows, extraParams);
             return this.workflowItems;
         },
         createWorkflow: function (workflow) {
