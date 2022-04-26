@@ -6,7 +6,7 @@
         :writeable="writeable"
         @save="onSave">
         <template v-slot:name>
-            <h3 data-description="name display" class="my-2" v-short="history.name || 'History'" />
+            <h3 v-short="history.name || 'History'" data-description="name display" class="my-2" />
         </template>
     </Details>
 </template>
