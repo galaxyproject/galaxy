@@ -15,7 +15,7 @@
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
         <environment_variable name="API_KEY" inject="api_key" />
     </environment_variables>
-    <command detect_errors="aggressive"><![CDATA[
+    <command><![CDATA[
         #import re
         export GALAXY_WORKING_DIR=`pwd` &&
         mkdir -p ./jupyter/outputs/ &&
