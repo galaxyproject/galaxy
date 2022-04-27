@@ -1,3 +1,4 @@
+import asyncio
 import os
 from functools import (
     lru_cache,
@@ -6,13 +7,19 @@ from functools import (
 from threading import local
 from typing import (
     Any,
+    Callable,
     Dict,
 )
 
+from asgiref.sync import (
+    async_to_sync,
+    sync_to_async,
+)
 from celery import (
     Celery,
     shared_task,
 )
+from celery.contrib.abortable import AbortableTask
 from kombu import serialization
 
 from galaxy.config import Configuration
@@ -150,11 +157,26 @@ if beat_schedule:
 celery_app.conf.timezone = "UTC"
 
 
+async def cancellable_task(f: Callable, task, request_id, *args, **kwargs):
+    task.request.id = request_id
+    coro = sync_to_async(f)
+    done, pending = await asyncio.wait([coro(*args, **kwargs), is_aborted(task)], return_when=asyncio.FIRST_COMPLETED)
+    for pending_future in pending:
+        pending_future.cancel()
+    for done_future in done:
+        return done_future.result()
+
+
+async def is_aborted(task: AbortableTask):
+    while not task.is_aborted():
+        await asyncio.sleep(1)
+
+
 def galaxy_task(*args, action=None, **celery_task_kwd):
     if "serializer" not in celery_task_kwd:
         celery_task_kwd["serializer"] = PYDANTIC_AWARE_SERIALIZER_NAME
 
-    def decorate(func):
+    def decorate(func: Callable):
         @shared_task(**celery_task_kwd)
         @wraps(func)
         def wrapper(*args, **kwds):
@@ -170,7 +192,13 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
                 timer = ExecutionTimer()
 
             try:
-                rval = app.magic_partial(func)(*args, **kwds)
+                partial_task_function = app.magic_partial(func)
+                if args and isinstance(args[0], AbortableTask):
+                    task = args[0]
+                    request_id = task.request.id
+                    rval = async_to_sync(cancellable_task)(partial_task_function, args[0], request_id, *args, **kwds)
+                else:
+                    rval = partial_task_function(*args, **kwds)
                 message = f"Successfully executed Celery task {desc} {timer}"
                 log.info(message)
                 return rval

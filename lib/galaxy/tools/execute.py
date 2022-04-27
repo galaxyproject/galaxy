@@ -178,12 +178,13 @@ def execute(
             )
 
             raw_tool_source = tool.tool_source.to_string()
-            (
+            async_result = (
                 setup_fetch_data.s(job_id, raw_tool_source=raw_tool_source)
                 | fetch_data.s()
                 | set_job_metadata.s(extended_metadata_collection="extended" in tool.app.config.metadata_strategy)
                 | finish_job.si(job_id=job_id, raw_tool_source=raw_tool_source)
             )()
+            job2.set_runner_external_id(async_result.task_id)
             continue
         tool.app.job_manager.enqueue(job2, tool=tool, flush=False)
         trans.log_event(f"Added job to the job queue, id: {str(job2.id)}", tool_id=tool_id)

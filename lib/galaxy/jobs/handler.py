@@ -1260,6 +1260,10 @@ class DefaultJobDispatcher:
         # The runner name is not set until the job has started.
         # If we're stopping a task, then the runner_name may be
         # None, in which case it hasn't been scheduled.
+        if job.tool_id == "__DATA_FETCH__":
+            from galaxy.celery import celery_app
+
+            celery_app.control.revoke(job.job_runner_external_id)
         job_runner_name = job.get_job_runner_name()
         if job_runner_name is not None:
             runner_name = job_runner_name.split(":", 1)[0]
