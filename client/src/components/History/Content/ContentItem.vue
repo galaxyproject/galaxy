@@ -53,7 +53,7 @@
             </div>
         </div>
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
-        <div class="detail-animation-wrapper" :class="expandDataset ? '' : 'collapsed'">
+        <div>
             <DatasetDetails v-if="expandDataset" @edit="onEdit" :dataset="item" />
         </div>
     </div>
@@ -158,14 +158,5 @@ export default {
     .name {
         word-break: break-all;
     }
-}
-.detail-animation-wrapper {
-    overflow: hidden;
-    transition: max-height 0.2s ease-out;
-    height: auto;
-    max-height: 400px;
-}
-.detail-animation-wrapper.collapsed {
-    max-height: 0;
 }
 </style>
