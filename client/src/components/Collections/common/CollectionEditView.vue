@@ -50,15 +50,18 @@ library.add(faDatabase, faTable, faBars, faUser, faCog);
 
 Vue.use(BootstrapVue);
 export default {
-    created() {
-        this.getCollectionDataAndAttributes();
-    },
     components: {
         DatabaseEditTab,
         SuitableConvertersTab,
         FontAwesomeIcon,
         GenomeProvider,
         SuitableConvertersProvider,
+    },
+    props: {
+        collection_id: {
+            type: String,
+            required: true,
+        },
     },
     data: function () {
         return {
@@ -67,12 +70,6 @@ export default {
             jobError: null,
             noQuotaIncrease: true,
         };
-    },
-    props: {
-        collection_id: {
-            type: String,
-            required: true,
-        },
     },
     computed: {
         databaseKeyFromElements: function () {
@@ -85,6 +82,9 @@ export default {
             }
             return newCollectionMessage;
         },
+    },
+    created() {
+        this.getCollectionDataAndAttributes();
     },
     methods: {
         getCollectionDataAndAttributes: async function () {

@@ -6,9 +6,9 @@
                     ><b>View Report {{ indexStr }}</b></a
                 >
                 <a
+                    v-b-tooltip
                     class="fa fa-print ml-1 invocation-pdf-link"
                     :href="invocationPdfLink"
-                    v-b-tooltip
                     title="Download PDF" />
             </span>
         </div>
@@ -16,9 +16,9 @@
             <span class="fa fa-spinner fa-spin" />
             <span>Invocation {{ indexStr }}...</span>
             <span
-                class="fa fa-times cancel-workflow-scheduling"
                 v-if="!invocationSchedulingTerminal"
                 v-b-tooltip.hover
+                class="fa fa-times cancel-workflow-scheduling"
                 title="Cancel scheduling of workflow invocation"
                 @click="cancelWorkflowScheduling"></span>
         </div>
@@ -92,10 +92,6 @@ export default {
             stepStatesInterval: null,
             jobStatesInterval: null,
         };
-    },
-    created: function () {
-        this.pollStepStatesUntilTerminal();
-        this.pollJobStatesUntilTerminal();
     },
     computed: {
         ...mapGetters(["getInvocationById", "getInvocationJobsSummaryById"]),
@@ -173,6 +169,14 @@ export default {
             return !jobsSummary ? null : new JOB_STATES_MODEL.JobStatesSummary(jobsSummary);
         },
     },
+    created: function () {
+        this.pollStepStatesUntilTerminal();
+        this.pollJobStatesUntilTerminal();
+    },
+    beforeDestroy: function () {
+        clearTimeout(this.jobStatesInterval);
+        clearTimeout(this.stepStatesInterval);
+    },
     methods: {
         ...mapActions(["fetchInvocationForId", "fetchInvocationJobsSummaryForId"]),
         pollStepStatesUntilTerminal: function () {
@@ -198,10 +202,6 @@ export default {
         cancelWorkflowScheduling: function () {
             cancelWorkflowScheduling(this.invocationId).then(this.onCancel).catch(this.onError);
         },
-    },
-    beforeDestroy: function () {
-        clearTimeout(this.jobStatesInterval);
-        clearTimeout(this.stepStatesInterval);
     },
 };
 </script>

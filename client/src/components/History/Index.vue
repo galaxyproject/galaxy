@@ -1,6 +1,6 @@
 <template>
-    <CurrentUser class="d-flex flex-column" v-slot="{ user }">
-        <UserHistories v-if="user" :user="user" v-slot="{ currentHistory, histories, handlers, historiesLoading }">
+    <CurrentUser v-slot="{ user }" class="d-flex flex-column">
+        <UserHistories v-if="user" v-slot="{ currentHistory, histories, handlers, historiesLoading }" :user="user">
             <div v-if="currentHistory" id="current-history-panel" class="history-index">
                 <CurrentHistory
                     v-if="!breadcrumbs.length"
@@ -9,11 +9,11 @@
                     @view-collection="onViewCollection">
                     <template v-slot:navigation>
                         <HistoryNavigation
-                            v-on="handlers"
                             :history="currentHistory"
                             :histories="histories"
                             :histories-loading="historiesLoading"
-                            title="Histories" />
+                            title="Histories"
+                            v-on="handlers" />
                     </template>
                 </CurrentHistory>
                 <CurrentCollection
@@ -26,7 +26,7 @@
                 </div>
             </div>
             <div v-else class="flex-grow-1 loadingBackground h-100">
-                <span class="sr-only" v-localize>Loading History...</span>
+                <span v-localize class="sr-only">Loading History...</span>
             </div>
         </UserHistories>
     </CurrentUser>

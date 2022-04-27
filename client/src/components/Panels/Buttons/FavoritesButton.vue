@@ -1,10 +1,10 @@
 <template>
     <b-button
+        v-b-tooltip.hover
         class="panel-header-button-toolbox"
         size="sm"
         variant="link"
         aria-label="Show favorite tools"
-        v-b-tooltip.hover
         :title="tooltipText"
         @click="onFavorites">
         <icon v-if="toggle" :icon="['fas', 'star']" />
@@ -30,11 +30,6 @@ export default {
             toggle: false,
         };
     },
-    watch: {
-        query() {
-            this.toggle = this.query == this.searchKey;
-        },
-    },
     computed: {
         tooltipText() {
             if (this.toggle) {
@@ -42,6 +37,11 @@ export default {
             } else {
                 return this.tooltipToggle;
             }
+        },
+    },
+    watch: {
+        query() {
+            this.toggle = this.query == this.searchKey;
         },
     },
     methods: {

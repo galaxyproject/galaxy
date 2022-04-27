@@ -1,18 +1,15 @@
 <template>
     <HistoryItemsProvider
         :key="historyId"
+        v-slot="{ loading, result: payload, count: totalItemsInQuery }"
         :history-id="historyId"
         :offset="offset"
-        :filter-text="filterText"
-        v-slot="{ loading, result: payload, count: totalItemsInQuery }">
+        :filter-text="filterText">
         <ExpandedItems
+            v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }"
             :scope-key="historyId"
-            :get-item-key="(item) => item.type_id"
-            v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }">
+            :get-item-key="(item) => item.type_id">
             <SelectedItems
-                :scope-key="queryKey"
-                :get-item-key="(item) => item.type_id"
-                :filter-text="filterText"
                 v-slot="{
                     selectedItems,
                     showSelection,
@@ -24,7 +21,10 @@
                     isSelected,
                     setSelected,
                     resetSelection,
-                }">
+                }"
+                :scope-key="queryKey"
+                :get-item-key="(item) => item.type_id"
+                :filter-text="filterText">
                 <section class="history-layout d-flex flex-column">
                     <slot name="navigation" :history="history" />
                     <HistoryFilters
@@ -79,8 +79,8 @@
                                 <template v-slot:item="{ item }">
                                     <ContentItem
                                         v-if="!invisible[item.hid]"
-                                        :item="item"
                                         :id="item.hid"
+                                        :item="item"
                                         :name="item.name"
                                         :expand-dataset="isExpanded(item)"
                                         :is-dataset="isDataset(item)"
@@ -148,12 +148,6 @@ export default {
             showAdvanced: false,
         };
     },
-    watch: {
-        queryKey() {
-            this.invisible = {};
-            this.offset = 0;
-        },
-    },
     computed: {
         /** @returns {String} */
         historyId() {
@@ -170,6 +164,12 @@ export default {
         /** @returns {Boolean} */
         hasFilters() {
             return !this.queryDefault;
+        },
+    },
+    watch: {
+        queryKey() {
+            this.invisible = {};
+            this.offset = 0;
         },
     },
     methods: {

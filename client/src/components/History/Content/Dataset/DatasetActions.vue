@@ -67,7 +67,7 @@
             </div>
         </div>
         <div v-if="showTags" class="mb-2">
-            <StatelessTags class="tags" v-model="tags" @input="onTags" />
+            <StatelessTags v-model="tags" class="tags" @input="onTags" />
         </div>
     </div>
 </template>
@@ -81,10 +81,10 @@ import { absPath } from "utils/redirect";
 import { updateContentFields } from "components/History/model/queries";
 
 export default {
-    mixins: [legacyNavigationMixin],
     components: {
         StatelessTags,
     },
+    mixins: [legacyNavigationMixin],
     props: {
         item: { type: Object, required: true },
     },

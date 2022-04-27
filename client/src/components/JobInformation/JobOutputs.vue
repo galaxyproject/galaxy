@@ -1,7 +1,7 @@
 <template>
     <div>
         <h3 v-if="title">{{ title }}</h3>
-        <table class="tabletip info_data_table" id="job-outputs">
+        <table id="job-outputs" class="tabletip info_data_table">
             <thead>
                 <tr>
                     <th>Tool Outputs</th>

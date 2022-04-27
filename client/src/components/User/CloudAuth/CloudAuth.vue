@@ -11,30 +11,30 @@
                     <ul>
                         <li class="cloudKeyHelp">
                             <a
-                                :class="{ active: showHelp }"
-                                @click.prevent="showHelp = !showHelp"
                                 v-b-tooltip.hover
+                                :class="{ active: showHelp }"
                                 aria-label="Instructions"
-                                title="Instructions">
+                                title="Instructions"
+                                @click.prevent="showHelp = !showHelp">
                                 <span>Instructions</span>
                             </a>
                         </li>
                         <li class="cloudKeyFilter">
                             <a
-                                :class="{ active: showFilter }"
-                                @click.prevent="showFilter = !showFilter"
                                 v-b-tooltip.hover
+                                :class="{ active: showFilter }"
                                 aria-label="Filter Results"
-                                title="Filter Results">
+                                title="Filter Results"
+                                @click.prevent="showFilter = !showFilter">
                                 <span>Filter</span>
                             </a>
                         </li>
                         <li class="createCloudKey">
                             <a
-                                @click.prevent="onCreate"
                                 v-b-tooltip.hover
                                 aria-label="Create New Key"
-                                title="Create New Key">
+                                title="Create New Key"
+                                @click.prevent="onCreate">
                                 <span>Create New Key</span>
                             </a>
                         </li>
@@ -51,7 +51,7 @@
             <transition name="fade">
                 <hgroup v-if="showFilter">
                     <b-form-group :description="filterDescription">
-                        <b-form-input type="text" placeholder="Filter" v-model="filter" />
+                        <b-form-input v-model="filter" type="text" placeholder="Filter" />
                     </b-form-group>
                 </hgroup>
             </transition>
@@ -77,10 +77,10 @@
         </div>
 
         <b-modal
-            v-model="hasDoomed"
-            centered
             id="deleteCredentialModal"
             ref="deleteModal"
+            v-model="hasDoomed"
+            centered
             title="Delete Key?"
             size="sm"
             @ok="deleteKey"
@@ -136,6 +136,9 @@ export default {
         showDeleted(deleted) {
             this.loadCredentials({ deleted });
         },
+    },
+    created() {
+        this.loadCredentials();
     },
     methods: {
         loadCredentials(params = {}) {
@@ -198,9 +201,6 @@ export default {
                 console.warn(err);
             };
         },
-    },
-    created() {
-        this.loadCredentials();
     },
 };
 </script>

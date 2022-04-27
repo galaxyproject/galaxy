@@ -1,11 +1,11 @@
 <template>
     <b-input-group>
         <b-input
-            class="search-query"
             ref="toolInput"
+            v-model="queryInput"
+            class="search-query"
             size="sm"
             autocomplete="off"
-            v-model="queryInput"
             :placeholder="placeholder"
             @input="delayQuery"
             @change="setQuery"
@@ -15,8 +15,8 @@
                 class="search-clear"
                 size="sm"
                 :title="titleClear | l"
-                @click="clearBox"
-                data-description="reset query">
+                data-description="reset query"
+                @click="clearBox">
                 <icon v-if="loading" icon="spinner" spin />
                 <icon v-else icon="times" />
             </b-button>

@@ -17,7 +17,7 @@
                 </div>
             </div>
         </div>
-        <div class="row" v-if="resolution.status.length == 0">
+        <div v-if="resolution.status.length == 0" class="row">
             <i><b>No requirements to resolve, no explicit dependency resolution configured.</b></i>
         </div>
         <span v-else-if="!separateDetails">
@@ -41,7 +41,7 @@
             </div>
         </span>
         <div v-else>
-            <span :key="index" v-for="(requirements, index) in resolution.requirements">
+            <span v-for="(requirements, index) in resolution.requirements" :key="index">
                 <div class="row">
                     <div class="col">
                         <requirement :requirement="resolution.requirements[index]" />

@@ -19,22 +19,22 @@ import { mapCacheActions } from "vuex-cache";
 import CurrentUser from "components/providers/CurrentUser";
 
 export default {
+    components: {
+        CurrentUser,
+    },
     props: {
         jobId: {
             type: String,
             required: true,
         },
     },
-    components: {
-        CurrentUser,
-    },
-    created: function () {
-        this.fetchJobDestinationParams(this.jobId);
-    },
     computed: {
         jobDestinationParams: function () {
             return this.$store.getters.jobDestinationParams(this.jobId);
         },
+    },
+    created: function () {
+        this.fetchJobDestinationParams(this.jobId);
     },
     methods: {
         ...mapCacheActions(["fetchJobDestinationParams"]),

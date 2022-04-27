@@ -1,10 +1,10 @@
 <template>
     <div>
         <template v-if="showLogin">
-            <login :show_welcome_with_login="show_welcome_with_login" :welcome_url="welcome_url" />
+            <login-form :show_welcome_with_login="show_welcome_with_login" :welcome_url="welcome_url" />
         </template>
         <template v-else>
-            <register
+            <register-form
                 :registration_warning_message="registration_warning_message"
                 :mailing_join_addr="mailing_join_addr"
                 :server_mail_configured="server_mail_configured"
@@ -13,32 +13,17 @@
     </div>
 </template>
 <script>
-import Login from "components/login/Login.vue";
-import Register from "components/login/Register.vue";
+import LoginForm from "components/login/LoginForm.vue";
+import RegisterForm from "components/login/RegisterForm.vue";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 
 Vue.use(BootstrapVue);
 
 export default {
-    data() {
-        return {
-            login: true,
-        };
-    },
-    computed: {
-        showLogin: function () {
-            return this.login;
-        },
-    },
     components: {
-        login: Login,
-        register: Register,
-    },
-    methods: {
-        toggleLogin: function () {
-            this.login = !this.login;
-        },
+        loginForm: LoginForm,
+        registerForm: RegisterForm,
     },
     props: {
         show_welcome_with_login: {
@@ -64,6 +49,21 @@ export default {
         server_mail_configured: {
             type: Boolean,
             required: false,
+        },
+    },
+    data() {
+        return {
+            login: true,
+        };
+    },
+    computed: {
+        showLogin: function () {
+            return this.login;
+        },
+    },
+    methods: {
+        toggleLogin: function () {
+            this.login = !this.login;
         },
     },
 };

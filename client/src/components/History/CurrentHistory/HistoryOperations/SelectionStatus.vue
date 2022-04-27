@@ -1,9 +1,9 @@
 <template>
     <b-button-group size="sm">
-        <b-button v-if="hasSelection" variant="link" @click="resetSelection" data-test-id="clear-btn">
+        <b-button v-if="hasSelection" variant="link" data-test-id="clear-btn" @click="resetSelection">
             <span class="fa fa-fw fa-times" title="Clear selection" />
         </b-button>
-        <b-button v-else variant="link" @click="selectAll" data-test-id="select-all-btn">
+        <b-button v-else variant="link" data-test-id="select-all-btn" @click="selectAll">
             <span>Select All</span>
         </b-button>
     </b-button-group>
@@ -13,12 +13,12 @@
 import { BButton, BButtonGroup } from "bootstrap-vue";
 
 export default {
-    props: {
-        selectionSize: { type: Number, required: true },
-    },
     components: {
         "b-button": BButton,
         "b-button-group": BButtonGroup,
+    },
+    props: {
+        selectionSize: { type: Number, required: true },
     },
     computed: {
         /** @returns {Boolean} */

@@ -116,9 +116,6 @@ export default {
             nameCurrent: this.name,
         };
     },
-    created() {
-        this.services = new Services();
-    },
     computed: {
         creatorAsList() {
             let creator = this.creator;
@@ -173,6 +170,9 @@ export default {
         name() {
             this.nameCurrent = this.name;
         },
+    },
+    created() {
+        this.services = new Services();
     },
     methods: {
         onTags(tags) {

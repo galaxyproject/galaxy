@@ -1,7 +1,7 @@
 <template>
-    <b-modal v-bind="$attrs" v-on="$listeners" :title="title" title-tag="h2">
+    <b-modal v-bind="$attrs" :title="title" title-tag="h2" v-on="$listeners">
         <transition name="fade">
-            <b-alert :show="currentUser.isAnonymous" variant="warning" v-localize>
+            <b-alert v-localize :show="currentUser.isAnonymous" variant="warning">
                 As an anonymous user, unless you login or register, you will lose your current history after copying
                 this history. You can <a href="/user/login">login here</a> or <a href="/user/create">register here</a>.
             </b-alert>
@@ -35,8 +35,8 @@
 
         <div slot="modal-footer" slot-scope="{ ok, cancel }">
             <div>
-                <b-button @click="cancel()" class="mr-3"> Cancel </b-button>
-                <b-button @click="copy(ok)" :variant="saveVariant" :disabled="!formValid">
+                <b-button class="mr-3" @click="cancel()"> Cancel </b-button>
+                <b-button :variant="saveVariant" :disabled="!formValid" @click="copy(ok)">
                     {{ saveTitle | localize }}
                 </b-button>
             </div>
@@ -80,6 +80,14 @@ export default {
             return this.newNameValid;
         },
     },
+    watch: {
+        history: {
+            handler(newHistory) {
+                this.name = `Copy of '${newHistory.name}'`;
+            },
+            immediate: true,
+        },
+    },
     methods: {
         ...mapActions("history", ["copyHistory"]),
 
@@ -89,14 +97,6 @@ export default {
             await this.copyHistory({ history, name, copyAll });
             this.loading = false;
             close();
-        },
-    },
-    watch: {
-        history: {
-            handler(newHistory) {
-                this.name = `Copy of '${newHistory.name}'`;
-            },
-            immediate: true,
         },
     },
 };

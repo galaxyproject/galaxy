@@ -1,31 +1,31 @@
 <template>
     <span class="zoom-control float-right btn-group-horizontal">
         <b-button
+            v-b-tooltip.hover
             role="button"
             class="fa fa-minus"
             title="Zoom Out"
             size="sm"
             aria-label="Zoom Out"
-            v-b-tooltip.hover
             @click="onZoomOut" />
         <b-button
+            v-b-tooltip.hover
             role="button"
             class="zoom-reset"
             variant="light"
             title="Reset Zoom Level"
             size="sm"
             aria-label="Reset Zoom Level"
-            v-b-tooltip.hover
             @click="onZoomReset">
-            {{ this.zoomPercentage }}%
+            {{ zoomPercentage }}%
         </b-button>
         <b-button
+            v-b-tooltip.hover
             role="button"
             class="fa fa-plus"
             title="Zoom In"
             size="sm"
             aria-label="Zoom In"
-            v-b-tooltip.hover
             @click="onZoomIn" />
     </span>
 </template>

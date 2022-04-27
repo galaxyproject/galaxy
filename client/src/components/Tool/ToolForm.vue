@@ -1,12 +1,12 @@
 <template>
     <ConfigProvider v-slot="{ config }">
         <CurrentUser v-slot="{ user }">
-            <UserHistories v-if="user" :user="user" v-slot="{ currentHistoryId }">
+            <UserHistories v-if="user" v-slot="{ currentHistoryId }" :user="user">
                 <div v-if="currentHistoryId">
                     <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
                     <LoadingSpan v-if="showLoading" message="Loading Tool" />
                     <div v-if="showEntryPoints">
-                        <ToolEntryPoints v-for="job in entryPoints" :job-id="job.id" :key="job.id" />
+                        <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
                     </div>
                     <ToolSuccess
                         v-if="showSuccess"
@@ -39,10 +39,10 @@
                         :message-text="messageText"
                         :message-variant="messageVariant"
                         :disabled="disabled || showExecuting"
-                        @onChangeVersion="onChangeVersion"
-                        @onUpdateFavorites="onUpdateFavorites"
                         itemscope="itemscope"
-                        itemtype="https://schema.org/CreativeWork">
+                        itemtype="https://schema.org/CreativeWork"
+                        @onChangeVersion="onChangeVersion"
+                        @onUpdateFavorites="onUpdateFavorites">
                         <template v-slot:body>
                             <FormDisplay
                                 :id="formConfig.id"
@@ -53,32 +53,32 @@
                             <FormElement
                                 v-if="emailAllowed(config, user)"
                                 id="send_email_notification"
+                                v-model="useEmail"
                                 title="Email notification"
                                 help="Send an email notification when the job completes."
-                                type="boolean"
-                                v-model="useEmail" />
+                                type="boolean" />
                             <FormElement
                                 v-if="remapAllowed"
                                 id="rerun_remap_job_id"
+                                v-model="useJobRemapping"
                                 :title="remapTitle"
                                 :help="remapHelp"
-                                type="boolean"
-                                v-model="useJobRemapping" />
+                                type="boolean" />
                             <FormElement
                                 v-if="reuseAllowed(user)"
                                 id="use_cached_job"
+                                v-model="useCachedJobs"
                                 title="Attempt to re-use jobs with identical parameters?"
                                 help="This may skip executing jobs that you have already run."
-                                type="boolean"
-                                v-model="useCachedJobs" />
+                                type="boolean" />
                         </template>
                         <template v-slot:buttons>
                             <ButtonSpinner
                                 id="execute"
                                 title="Execute"
-                                @onClick="onExecute(config, currentHistoryId)"
                                 :wait="showExecuting"
-                                :tooltip="tooltip" />
+                                :tooltip="tooltip"
+                                @onClick="onExecute(config, currentHistoryId)" />
                         </template>
                     </ToolCard>
                 </div>
@@ -165,22 +165,6 @@ export default {
             currentVersion: this.version,
         };
     },
-    created() {
-        this.requestTool().then(() => {
-            const Galaxy = getGalaxyInstance();
-            if (Galaxy && Galaxy.currHistoryPanel) {
-                console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
-                Galaxy.currHistoryPanel.collection.on("change", this.onHistoryChange, this);
-            }
-        });
-    },
-    beforeDestroy() {
-        const Galaxy = getGalaxyInstance();
-        if (Galaxy && Galaxy.currHistoryPanel) {
-            Galaxy.currHistoryPanel.collection.off("change", this.onHistoryChange, this);
-            console.debug(`ToolForm::beforeDestroy - Stopped listening to history changes. [${this.id}]`);
-        }
-    },
     computed: {
         toolName() {
             return this.formConfig.name;
@@ -205,6 +189,22 @@ export default {
                 return "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
             }
         },
+    },
+    created() {
+        this.requestTool().then(() => {
+            const Galaxy = getGalaxyInstance();
+            if (Galaxy && Galaxy.currHistoryPanel) {
+                console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
+                Galaxy.currHistoryPanel.collection.on("change", this.onHistoryChange, this);
+            }
+        });
+    },
+    beforeDestroy() {
+        const Galaxy = getGalaxyInstance();
+        if (Galaxy && Galaxy.currHistoryPanel) {
+            Galaxy.currHistoryPanel.collection.off("change", this.onHistoryChange, this);
+            console.debug(`ToolForm::beforeDestroy - Stopped listening to history changes. [${this.id}]`);
+        }
     },
     methods: {
         emailAllowed(config, user) {

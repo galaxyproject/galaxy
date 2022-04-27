@@ -27,19 +27,19 @@
             <b-dropdown-item v-if="!showDeleted" v-b-modal:purge-selected-content>
                 <span v-localize>Delete (permanently)</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="showBuildOptions" @click="buildDatasetList" data-description="build list">
+            <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
                 <span v-localize>Build Dataset List</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="showBuildOptions" @click="buildDatasetPair" data-description="build pair">
+            <b-dropdown-item v-if="showBuildOptions" data-description="build pair" @click="buildDatasetPair">
                 <span v-localize>Build Dataset Pair</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="showBuildOptions" @click="buildListOfPairs" data-description="build list of pairs">
+            <b-dropdown-item v-if="showBuildOptions" data-description="build list of pairs" @click="buildListOfPairs">
                 <span v-localize>Build List of Dataset Pairs</span>
             </b-dropdown-item>
             <b-dropdown-item
                 v-if="showBuildOptions"
-                @click="buildCollectionFromRules"
-                data-description="build collection from rules">
+                data-description="build collection from rules"
+                @click="buildCollectionFromRules">
                 <span v-localize>Build Collection from Rules</span>
             </b-dropdown-item>
         </b-dropdown>
@@ -109,6 +109,13 @@ export default {
             return this.totalItemsInQuery === this.selectionSize;
         },
     },
+    watch: {
+        hasSelection(newVal) {
+            if (newVal) {
+                this.$emit("update:show-selection", true);
+            }
+        },
+    },
     methods: {
         // Selected content manipulation, hide/show/delete/purge
         hideSelected() {
@@ -163,13 +170,6 @@ export default {
             if (modalResult.hide_source_items) {
                 this.$emit("hide-selection", this.contentSelection);
                 this.$emit("reset-selection");
-            }
-        },
-    },
-    watch: {
-        hasSelection(newVal) {
-            if (newVal) {
-                this.$emit("update:show-selection", true);
             }
         },
     },

@@ -1,8 +1,8 @@
 <template>
     <div
+        ref="tour-element"
         class="tour-element"
-        :class="{ 'tour-element-sticky': !targetElement, 'tour-has-title': !!step.title }"
-        ref="tour-element">
+        :class="{ 'tour-element-sticky': !targetElement, 'tour-has-title': !!step.title }">
         <div v-if="step.title" class="tour-header">
             <div class="tour-title" v-html="step.title"></div>
         </div>
@@ -47,6 +47,9 @@ export default {
             return null;
         },
     },
+    mounted() {
+        this.createStep();
+    },
     methods: {
         createStep() {
             if (this.targetElement) {
@@ -67,9 +70,6 @@ export default {
                 });
             }
         },
-    },
-    mounted() {
-        this.createStep();
     },
 };
 </script>

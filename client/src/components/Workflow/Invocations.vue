@@ -3,14 +3,14 @@
         <h2 class="mb-3">
             <span id="invocations-title">Workflow Invocations</span>
         </h2>
-        <b-alert variant="info" show v-if="headerMessage">
+        <b-alert v-if="headerMessage" variant="info" show>
             {{ headerMessage }}
         </b-alert>
         <b-table
             id="invocation-list-table"
+            v-model="invocationItemsModel"
             :fields="invocationFields"
             :items="provider"
-            v-model="invocationItemsModel"
             :per-page="perPage"
             :current-page="currentPage"
             hover
@@ -34,16 +34,16 @@
             </template>
             <template v-slot:cell(expand)="data">
                 <b-link
+                    v-if="!data.detailsShowing"
                     v-b-tooltip.hover.top
                     title="Show Invocation Details"
                     class="btn-sm fa fa-chevron-down toggle-invocation-details"
-                    v-if="!data.detailsShowing"
                     @click.stop="swapRowDetails(data)" />
                 <b-link
+                    v-if="data.detailsShowing"
                     v-b-tooltip.hover.top
                     title="Hide Invocation Details"
                     class="btn-sm fa fa-chevron-up toggle-invocation-details"
-                    v-if="data.detailsShowing"
                     @click.stop="swapRowDetails(data)" />
             </template>
             <template v-slot:cell(workflow_id)="data">
@@ -71,8 +71,8 @@
             </template>
             <template v-slot:cell(execute)="data">
                 <b-button
-                    v-b-tooltip.hover.bottom
                     id="run-workflow"
+                    v-b-tooltip.hover.bottom
                     title="Run Workflow"
                     class="workflow-run btn-sm btn-primary fa fa-play"
                     @click.stop="executeWorkflow(getWorkflowByInstanceId(data.item.workflow_id).id)" />

@@ -41,9 +41,9 @@
                 <summary><b>Steps</b></summary>
                 <workflow-invocation-step
                     v-for="step in Object.values(workflow.steps)"
+                    :key="step.id"
                     :invocation="invocation"
                     :ordered-steps="orderedSteps"
-                    :key="step.id"
                     :workflow="workflow"
                     :workflow-step="step" />
             </details>
@@ -73,9 +73,6 @@ export default {
             type: Boolean,
         },
     },
-    created: function () {
-        this.fetchWorkflowForInstanceId(this.invocation.workflow_id);
-    },
     computed: {
         ...mapGetters(["getWorkflowByInstanceId"]),
         orderedSteps() {
@@ -84,6 +81,9 @@ export default {
         workflow() {
             return this.getWorkflowByInstanceId(this.invocation.workflow_id);
         },
+    },
+    created: function () {
+        this.fetchWorkflowForInstanceId(this.invocation.workflow_id);
     },
     methods: {
         ...mapCacheActions(["fetchWorkflowForInstanceId"]),

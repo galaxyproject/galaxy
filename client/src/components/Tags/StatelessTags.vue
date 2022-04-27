@@ -14,8 +14,8 @@ upstream component or environment that is accessed through props and events -->
         </a>
         <vue-tags-input
             v-if="tagsVisible"
-            class="tags-input tag-area"
             v-model="tagText"
+            class="tags-input tag-area"
             :tags="tagModels"
             :autocomplete-items="autocompleteTags"
             :disabled="disabled"

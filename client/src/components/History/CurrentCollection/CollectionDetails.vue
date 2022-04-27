@@ -6,7 +6,7 @@
         :show-annotation="false"
         @save="$emit('update:dsc', $event)">
         <template v-slot:name>
-            <h3 data-description="collection name display" v-short="dsc.name || 'Collection'" />
+            <h3 v-short="dsc.name || 'Collection'" data-description="collection name display" />
             <CollectionDescription
                 :collection-type="dsc.collection_type"
                 :element-count="dsc.element_count"

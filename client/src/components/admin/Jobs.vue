@@ -1,7 +1,7 @@
 <template>
     <div>
         <h2 id="jobs-title">Jobs</h2>
-        <b-alert v-if="this.message" :variant="status" show>
+        <b-alert v-if="message" :variant="status" show>
             {{ message }}
         </b-alert>
         <p>
@@ -34,7 +34,7 @@
                         :disabled="showAllRunning"
                         description="in minutes">
                         <b-input-group>
-                            <b-form-input id="cutoff" type="number" v-model="cutoffMin"> </b-form-input>
+                            <b-form-input id="cutoff" v-model="cutoffMin" type="number"> </b-form-input>
                             <b-input-group-append>
                                 <b-btn type="submit">Refresh</b-btn>
                             </b-input-group-append>
@@ -73,8 +73,8 @@
             :fields="unfinishedJobFields"
             :items="unfinishedJobs"
             :filter="filter"
-            :tableCaption="runningTableCaption"
-            :noItemsMessage="runningNoJobsMessage"
+            :table-caption="runningTableCaption"
+            :no-items-message="runningNoJobsMessage"
             :loading="loading"
             :busy="busy">
             <template v-slot:head(selected)>
@@ -85,9 +85,9 @@
             </template>
             <template v-slot:cell(selected)="data">
                 <b-form-checkbox
+                    :key="data.index"
                     v-model="selectedStopJobIds"
                     :checked="allSelected"
-                    :key="data.index"
                     :value="data.item['id']"></b-form-checkbox>
             </template>
         </jobs-table>
@@ -99,7 +99,7 @@
                 :fields="finishedJobFields"
                 :items="finishedJobs"
                 :filter="filter"
-                :noItemsMessage="finishedNoJobsMessage"
+                :no-items-message="finishedNoJobsMessage"
                 :loading="loading"
                 :busy="busy">
             </jobs-table>
@@ -149,6 +149,25 @@ export default {
             showAllRunning: false,
         };
     },
+    computed: {
+        finishedTableCaption() {
+            return `These jobs have completed in the previous ${this.cutoffMin} minutes.`;
+        },
+        runningTableCaption() {
+            return `These jobs are unfinished and have had their state updated in the previous ${this.cutoffMin} minutes. For currently running jobs, the "Last Update" column should indicate the runtime so far.`;
+        },
+        finishedNoJobsMessage() {
+            return `There are no recently finished jobs to show with current cutoff time of ${this.cutoffMin} minutes.`;
+        },
+        runningNoJobsMessage() {
+            let message = `There are no unfinished jobs`;
+            if (!this.showAllRunning) {
+                message += ` to show with current cutoff time of ${this.cutoffMin} minutes`;
+            }
+            message += ".";
+            return message;
+        },
+    },
     watch: {
         selectedStopJobIds(newVal) {
             if (newVal.length === 0) {
@@ -176,24 +195,8 @@ export default {
             this.finishedJobs = finishedJobs;
         },
     },
-    computed: {
-        finishedTableCaption() {
-            return `These jobs have completed in the previous ${this.cutoffMin} minutes.`;
-        },
-        runningTableCaption() {
-            return `These jobs are unfinished and have had their state updated in the previous ${this.cutoffMin} minutes. For currently running jobs, the "Last Update" column should indicate the runtime so far.`;
-        },
-        finishedNoJobsMessage() {
-            return `There are no recently finished jobs to show with current cutoff time of ${this.cutoffMin} minutes.`;
-        },
-        runningNoJobsMessage() {
-            let message = `There are no unfinished jobs`;
-            if (!this.showAllRunning) {
-                message += ` to show with current cutoff time of ${this.cutoffMin} minutes`;
-            }
-            message += ".";
-            return message;
-        },
+    created() {
+        this.update();
     },
     methods: {
         update() {
@@ -235,9 +238,6 @@ export default {
         toggleAll(checked) {
             this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];
         },
-    },
-    created() {
-        this.update();
     },
 };
 </script>

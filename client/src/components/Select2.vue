@@ -11,6 +11,19 @@ import $ from "jquery";
 
 export default {
     props: ["options", "value", "placeholder", "containerClass", "enabled"],
+    watch: {
+        value: function (value) {
+            // update value
+            $(this.$el).val(value);
+        },
+        options: function (options) {
+            // update options
+            $(this.$el).empty().select2({ data: options });
+        },
+        enabled: function (value) {
+            $(this.$el).select2("enable", value);
+        },
+    },
     mounted: function () {
         const vm = this;
         // TODO: refactor property list to objects that allow defaults and types
@@ -37,19 +50,6 @@ export default {
             .on("change", function (event) {
                 vm.$emit("input", event.val);
             });
-    },
-    watch: {
-        value: function (value) {
-            // update value
-            $(this.$el).val(value);
-        },
-        options: function (options) {
-            // update options
-            $(this.$el).empty().select2({ data: options });
-        },
-        enabled: function (value) {
-            $(this.$el).select2("enable", value);
-        },
     },
     destroyed: function () {
         $(this.$el).off().select2("destroy");

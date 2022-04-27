@@ -1,20 +1,20 @@
 <template>
     <div class="btn-group dropdown">
         <span
+            id="savedRulesButton"
+            v-b-tooltip.hover.bottom
             class="fas fa-history rule-builder-view-source"
             :class="{ disabled: numOfSavedRules == 0 }"
-            v-b-tooltip.hover.bottom
             :title="savedRulesMenu"
-            data-toggle="dropdown"
-            id="savedRulesButton"></span>
+            data-toggle="dropdown"></span>
         <div class="dropdown-menu" role="menu">
             <a
-                class="rule-link dropdown-item saved-rule-item"
                 v-for="(session, index) in sortSavedRules"
                 :key="session.dateTime"
-                @click="$emit('update-rules', session.rule)"
                 v-b-tooltip.hover.right
+                class="rule-link dropdown-item saved-rule-item"
                 :title="formatPreview(session.rule, index)"
+                @click="$emit('update-rules', session.rule)"
                 >Saved rule from
                 <UtcDate :date="session.dateTime" mode="elapsed" />
             </a>
@@ -31,11 +31,6 @@ import UtcDate from "components/UtcDate";
 
 Vue.use(BootstrapVue);
 export default {
-    data: function () {
-        return {
-            savedRulesMenu: _l("Recently used rules"),
-        };
-    },
     components: {
         UtcDate,
     },
@@ -48,6 +43,11 @@ export default {
             type: Array,
             required: true,
         },
+    },
+    data: function () {
+        return {
+            savedRulesMenu: _l("Recently used rules"),
+        };
     },
     computed: {
         numOfSavedRules: function () {

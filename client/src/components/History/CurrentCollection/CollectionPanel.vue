@@ -3,12 +3,12 @@
 <template>
     <CollectionElementsProvider
         v-if="dsc"
-        :key="dsc.id"
         :id="dsc.id"
+        :key="dsc.id"
+        v-slot="{ loading, result: payload }"
         :contents-url="contentsUrl"
-        :offset="offset"
-        v-slot="{ loading, result: payload }">
-        <ExpandedItems :scope-key="dsc.id" :get-item-key="(item) => item.id" v-slot="{ isExpanded, setExpanded }">
+        :offset="offset">
+        <ExpandedItems v-slot="{ isExpanded, setExpanded }" :scope-key="dsc.id" :get-item-key="(item) => item.id">
             <section class="dataset-collection-panel d-flex flex-column">
                 <section>
                     <CollectionNavigation
@@ -23,8 +23,8 @@
                         <Listing :items="payload" :loading="loading" @scroll="onScroll">
                             <template v-slot:item="{ item }">
                                 <ContentItem
-                                    :item="item.object"
                                     :id="item.element_index"
+                                    :item="item.object"
                                     :name="item.element_identifier"
                                     :expand-dataset="isExpanded(item)"
                                     :is-dataset="item.element_type == 'hda'"

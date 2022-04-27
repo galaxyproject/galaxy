@@ -18,8 +18,8 @@
                     :value="node.label"
                     title="Label"
                     help="Add a step label."
-                    @input="onLabel"
-                    :error="errorLabel" />
+                    :error="errorLabel"
+                    @input="onLabel" />
                 <FormElement
                     id="__annotation"
                     :value="node.annotation"

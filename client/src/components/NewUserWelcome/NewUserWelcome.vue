@@ -4,9 +4,9 @@
             <component
                 :is="viewElement"
                 v-bind="currentNode"
+                :image-loc="config.welcome_directory"
                 @select="down"
-                @back="up"
-                :image-loc="config.welcome_directory">
+                @back="up">
             </component>
         </ConfigProvider>
     </div>
@@ -35,13 +35,13 @@ export default {
         Slides,
         ConfigProvider,
     },
+    props: {
+        newUserDict: { type: Object, required: true },
+    },
     data() {
         return {
             position: [],
         };
-    },
-    props: {
-        newUserDict: { type: Object, required: true },
     },
     computed: {
         depth() {

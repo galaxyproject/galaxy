@@ -27,6 +27,11 @@ export default {
             required: true,
         },
     },
+    data() {
+        return {
+            markdownConfig: {},
+        };
+    },
     computed: {
         dataUrl() {
             return `${getAppRoot()}api/pages/${this.pageId}`;
@@ -37,11 +42,6 @@ export default {
         editUrl() {
             return `${getAppRoot()}page/edit_content?id=${this.pageId}`;
         },
-    },
-    data() {
-        return {
-            markdownConfig: {},
-        };
     },
     created() {
         this.getContent().then((data) => {

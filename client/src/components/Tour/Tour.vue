@@ -1,8 +1,8 @@
 <template>
     <TourStep
         v-if="currentStep"
-        :step="currentStep"
         :key="currentIndex"
+        :step="currentStep"
         :is-playing="isPlaying"
         :is-last="isLast"
         @next="next"
@@ -32,9 +32,6 @@ export default {
             isPlaying: false,
         };
     },
-    beforeDestroy() {
-        window.removeEventListener("keyup", this.handleKeyup);
-    },
     computed: {
         currentStep() {
             return this.steps[this.currentIndex];
@@ -45,6 +42,9 @@ export default {
         isLast() {
             return this.currentIndex === this.steps.length - 1;
         },
+    },
+    beforeDestroy() {
+        window.removeEventListener("keyup", this.handleKeyup);
     },
     mounted() {
         this.start();

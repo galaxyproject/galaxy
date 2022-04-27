@@ -12,10 +12,10 @@
 
         <!-- google-openidconnect -->
         <b-form-group
+            v-if="identityProviders.length > 1"
             label="Identity Provider"
             label-for="identityProvider"
-            label-cols-lg="3"
-            v-if="identityProviders.length > 1">
+            label-cols-lg="3">
             <b-form-select
                 id="identityProvider"
                 v-model="credential.authn_id"

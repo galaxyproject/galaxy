@@ -54,7 +54,7 @@
         </div>
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <div class="detail-animation-wrapper" :class="expandDataset ? '' : 'collapsed'">
-            <DatasetDetails v-if="expandDataset" @edit="onEdit" :dataset="item" />
+            <DatasetDetails v-if="expandDataset" :dataset="item" @edit="onEdit" />
         </div>
     </div>
 </template>

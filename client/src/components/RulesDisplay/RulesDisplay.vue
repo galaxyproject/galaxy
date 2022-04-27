@@ -3,15 +3,15 @@
         <ol class="rules">
             <rule-display-preview
                 v-for="(rule, index) in rules"
+                :key="index"
                 :rule="rule"
                 :index="index"
-                :key="index"
                 :col-headers="columnData.colHeadersPerRule[index]" />
             <identifier-display-preview
                 v-for="(map, index) in mapping"
                 v-bind="map"
-                :index="index"
                 :key="map.type"
+                :index="index"
                 :col-headers="colHeaders" />
         </ol>
     </div>
@@ -22,6 +22,16 @@ import RuleDisplayPreview from "./RuleDisplayPreview";
 import IdentifierDisplayPreview from "./IdentifierDisplayPreview";
 
 export default {
+    components: {
+        RuleDisplayPreview,
+        IdentifierDisplayPreview,
+    },
+    props: {
+        inputRules: {
+            required: false,
+            type: Object,
+        },
+    },
     data: function () {
         return {};
     },
@@ -41,16 +51,6 @@ export default {
             const columns = this.columnData.columns;
             return RuleDefs.colHeadersFor([], columns);
         },
-    },
-    props: {
-        inputRules: {
-            required: false,
-            type: Object,
-        },
-    },
-    components: {
-        RuleDisplayPreview,
-        IdentifierDisplayPreview,
     },
 };
 </script>

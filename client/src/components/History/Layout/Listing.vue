@@ -37,15 +37,15 @@ export default {
             deltaMax: 20,
         };
     },
-    created() {
-        this.onScrollThrottle = throttle((event) => {
-            this.onScroll(event);
-        }, this.throttlePeriod);
-    },
     watch: {
         queryKey() {
             this.$refs.listing.scrollToOffset(0);
         },
+    },
+    created() {
+        this.onScrollThrottle = throttle((event) => {
+            this.onScroll(event);
+        }, this.throttlePeriod);
     },
     methods: {
         onScrollHandler(event) {

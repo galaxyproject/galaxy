@@ -13,7 +13,7 @@
             <b-dropdown-text id="history-op-all-content">
                 <span v-localize>With entire history...</span>
             </b-dropdown-text>
-            <b-dropdown-item @click="onCopy" data-description="copy datasets">
+            <b-dropdown-item data-description="copy datasets" @click="onCopy">
                 <span v-localize>Copy Datasets</span>
             </b-dropdown-item>
             <b-dropdown-item v-b-modal:show-all-hidden-content>
@@ -35,7 +35,7 @@
         </b-modal>
         <b-modal id="purge-all-deleted-content" title="Purge Deleted Datasets" title-tag="h2" @ok="purgeAllDeleted">
             <p v-localize>Really permanently delete all deleted datasets?</p>
-            <p><strong class="text-danger" v-localize>Warning, this operation cannot be undone.</strong></p>
+            <p><strong v-localize class="text-danger">Warning, this operation cannot be undone.</strong></p>
         </b-modal>
     </section>
 </template>

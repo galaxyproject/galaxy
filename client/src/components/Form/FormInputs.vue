@@ -3,8 +3,8 @@
         <div v-for="(input, index) in inputs" :key="index">
             <div v-if="input.type == 'conditional'">
                 <FormElement
-                    v-model="input.test_param.value"
                     :id="conditionalPrefix(input, input.test_param.name)"
+                    v-model="input.test_param.value"
                     :title="input.test_param.label"
                     :type="input.test_param.type"
                     :help="input.test_param.help"
@@ -32,11 +32,11 @@
                     <template v-slot:operations>
                         <b-button
                             v-if="!sustainRepeats"
+                            v-b-tooltip.hover.bottom
                             role="button"
                             variant="link"
                             size="sm"
                             class="float-right"
-                            v-b-tooltip.hover.bottom
                             @click="repeatDelete(input, cacheId)">
                             <font-awesome-icon icon="trash-alt" />
                         </b-button>
@@ -59,8 +59,8 @@
             </div>
             <FormElement
                 v-else
-                v-model="input.value"
                 :id="getPrefix(input.name)"
+                v-model="input.value"
                 :title="input.label || input.name"
                 :type="input.type"
                 :error="input.error"
