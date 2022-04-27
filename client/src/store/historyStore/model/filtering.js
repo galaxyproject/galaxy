@@ -115,6 +115,31 @@ const validFilters = {
     update_time_lt: compare("update_time", "lt", toDate),
 };
 
+/** Valid filter fields and handlers to return filterSettings. */
+const settingsFilters = {
+    "create_time=": compare("create_time", "le", toDate),
+    "create_time>=": compare("create_time", "ge", toDate),
+    "create_time>": compare("create_time", "gt", toDate),
+    "create_time<=": compare("create_time", "le", toDate),
+    "create_time<": compare("create_time", "lt", toDate),
+    "deleted=": equals("deleted", "deleted", toBool),
+    "extension=": equals("extension"),
+    "hid=": equals("hid"),
+    "hid>=": compare("hid", "ge"),
+    "hid>": compare("hid", "gt"),
+    "hid<=": compare("hid", "le"),
+    "hid<": compare("hid", "lt"),
+    "visible=": equals("visible", "visible", toBool),
+    "name=": contains("name"),
+    "state=": equals("state"),
+    "tag=": contains("tags", "tag"),
+    "update_time=": compare("update_time", "le", toDate),
+    "update_time>=": compare("update_time", "ge", toDate),
+    "update_time>": compare("update_time", "gt", toDate),
+    "update_time<=": compare("update_time", "le", toDate),
+    "update_time<": compare("update_time", "lt", toDate),
+};
+
 /** Default filters are set, unless explicitly specified by the user. */
 const defaultFilters = {
     deleted: false,
@@ -189,6 +214,43 @@ export function getQueryDict(filterText) {
         queryDict[query] = converter ? converter(value) : value;
     }
     return queryDict;
+}
+
+/** Returns a dictionary resembling filterSettings (for HistoryFilters):
+ * e.g.: Unlike getFilters or getQueryDict, this maintains "hid>":"3" instead
+ *       of changing it to "hid-gt":"3"
+ * Only used to sync filterSettings (in HistoryFilters)
+ * @param {String} filterText The raw filter text
+ */
+ export function getFilterSettings(filterText) {
+    const pairSplitRE = /[^\s']+(?:'[^']*'[^\s']*)*|(?:'[^']*'[^\s']*)+/g;
+    const result = {};
+    const matches = filterText.match(pairSplitRE);
+    let hasMatches = false;
+    if (matches) {
+        matches.forEach((pair) => {
+            const elgRE = /(\S+)([=><])(.+)/g;
+            const elgMatch = elgRE.exec(pair);
+            if (elgMatch) {
+                let field = elgMatch[1];
+                const elg = elgMatch[2];
+                const value = elgMatch[3];
+                // no need to replace alias for less and greater symbol (for filterSettings)
+                field = `${field}${elg}`;
+                // replaces dashes with underscores in query field names
+                const normalizedField = field.replaceAll("-", "_");
+                if (settingsFilters[normalizedField]) {
+                    // removes quotation and applies lower-case to filter value
+                    result[normalizedField] = toLowerNoQuotes(value);
+                    hasMatches = true;
+                }
+            }
+        });
+    }
+    if (!hasMatches && filterText.length > 0) {
+        result["name="] = filterText;
+    }
+    return result;
 }
 
 /** Test if an item passes all filters. */
