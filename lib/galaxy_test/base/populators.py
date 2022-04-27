@@ -2754,10 +2754,7 @@ def load_data_dict(
         """
         test_data_resolver = TestDataResolver()
         filename = test_data_resolver.get_filename(test_dict["value"])
-        if filename is not None:
-            return open(filename, mode)
-        else:
-            return StringIO(test_dict["value"])
+        return open(filename, mode)
 
     def read_test_data(test_dict):
         return open_test_data(test_dict, mode="r").read()
