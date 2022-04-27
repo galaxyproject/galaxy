@@ -22,8 +22,10 @@ from celery import (
 from celery.contrib.abortable import AbortableTask
 from kombu import serialization
 
+from galaxy import model
 from galaxy.config import Configuration
 from galaxy.main_config import find_config
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import ExecutionTimer
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.properties import load_app_properties
@@ -157,19 +159,36 @@ if beat_schedule:
 celery_app.conf.timezone = "UTC"
 
 
-async def cancellable_task(f: Callable, task, request_id, *args, **kwargs):
-    task.request.id = request_id
+async def cancellable_task(f: Callable, *args, **kwargs):
     coro = sync_to_async(f)
-    done, pending = await asyncio.wait([coro(*args, **kwargs), is_aborted(task)], return_when=asyncio.FIRST_COMPLETED)
+    done, pending = await asyncio.wait(
+        [coro(*args, **kwargs), is_aborted(kwargs["job_id"])], return_when=asyncio.FIRST_COMPLETED
+    )
     for pending_future in pending:
         pending_future.cancel()
     for done_future in done:
         return done_future.result()
 
 
-async def is_aborted(task: AbortableTask):
-    while not task.is_aborted():
+async def is_aborted(job_id):
+    # This is not ideal
+    # 1. we're calling a method that does I/O (sqlalchemy query)
+    # 2. we're polling every second
+    # Maybe we should listen for broadcast messages ?
+    # Alternatively we could construct an AsyncSession and decrease the polling frequency over time
+    # Other notes: AbortableTask could be be revoked, but that only works with the database backend
+    # ... which shouldn't be used.
+    app = get_galaxy_app()
+    session = app[galaxy_scoped_session]
+
+    def get_state():
+        return session.query(model.Job.state).filter_by(id=job_id).one()[0]
+
+    state = get_state()
+    while state not in {model.Job.states.DELETED, model.Job.states.DELETING}:
         await asyncio.sleep(1)
+        state = get_state()
+    log.debug(f"Job {job_id} aborted")
 
 
 def galaxy_task(*args, action=None, **celery_task_kwd):
@@ -194,9 +213,7 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
             try:
                 partial_task_function = app.magic_partial(func)
                 if args and isinstance(args[0], AbortableTask):
-                    task = args[0]
-                    request_id = task.request.id
-                    rval = async_to_sync(cancellable_task)(partial_task_function, args[0], request_id, *args, **kwds)
+                    rval = async_to_sync(cancellable_task)(partial_task_function, *args, **kwds)
                 else:
                     rval = partial_task_function(*args, **kwds)
                 message = f"Successfully executed Celery task {desc} {timer}"

@@ -150,6 +150,7 @@ def _fetch_data(setup_return, datatypes_registry: DatatypesRegistry):
 def fetch_data(
     self,
     setup_return,
+    job_id,
     datatypes_registry: DatatypesRegistry,
 ):
     return _fetch_data(setup_return=setup_return, datatypes_registry=datatypes_registry)

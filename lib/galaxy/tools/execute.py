@@ -180,7 +180,7 @@ def execute(
             raw_tool_source = tool.tool_source.to_string()
             async_result = (
                 setup_fetch_data.s(job_id, raw_tool_source=raw_tool_source)
-                | fetch_data.s()
+                | fetch_data.s(job_id=job_id)
                 | set_job_metadata.s(extended_metadata_collection="extended" in tool.app.config.metadata_strategy)
                 | finish_job.si(job_id=job_id, raw_tool_source=raw_tool_source)
             )()

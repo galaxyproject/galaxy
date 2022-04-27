@@ -354,6 +354,8 @@ class ToolsUploadTestCase(ApiTestCase):
 
     @uses_test_history(require_new=False)
     def test_abort_fetch_job(self, history_id):
+        # This should probably be an integration test that also verifies
+        # that the celery chord is properly canceled.
         item = {
             "src": "url",
             "url": "https://httpstat.us/200?sleep=10000",
@@ -382,7 +384,7 @@ class ToolsUploadTestCase(ApiTestCase):
             history_id, dataset_id=response["outputs"][0]["id"], assert_ok=False
         )
         assert dataset["file_size"] == 0
-        assert dataset["state"] == "deleted"
+        assert dataset["state"] == "discarded"
 
     @skip_without_datatype("velvet")
     def test_composite_datatype(self):
