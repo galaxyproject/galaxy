@@ -13,7 +13,7 @@
   
 <!--  AMP MGMs START -->
 
-  <section id="audio_processing" name="Audio Extraction">
+  <section id="audio_extraction" name="Audio Extraction">
     <tool file="amp_mgms/extract_audio.xml"/>
     <tool file="amp_mgms/remove_trailing_silence.xml"/>
   </section>
@@ -46,8 +46,9 @@
 
   <section id="video_processing" name="Video Indexing">
     <tool file="amp_mgms/azure_video_indexer.xml"/>
-    <tool file="amp_mgms/contact_sheets.xml"/>
-    <tool file="amp_mgms/contact_sheets_collection.xml"/>
+    <tool file="amp_mgms/contact_sheet_frame.xml"/>
+    <tool file="amp_mgms/contact_sheet_face.xml"/>
+    <tool file="amp_mgms/contact_sheet_shot.xml"/>
   </section>
 
   <section id="shot_detection" name="Shot Detection">
@@ -77,12 +78,15 @@
     <!--<tool file="amp_mgms/hmgm_segmentation.xml"/>-->
   </section>
   
-  <!--
-  <section id="obsolete_mgms" name="Obsolete MGMs">
+  <section id="deprecated_mgms" name="Deprecated MGMs">
+  	<tool file="amp_mgms/deprecate_contact_sheets.xml"/>
+    <tool file="amp_mgms/deprecate_contact_sheets_collection.xml"/>
+  	<!-- 
     <tool file="amp_mgms/remove_silence_music.xml"/>
     <tool file="amp_mgms/vtt_generator.xml"/>
+     -->
   </section>
-  -->
+
 <!-- AMP MGMs END -->
 
 </toolbox>
