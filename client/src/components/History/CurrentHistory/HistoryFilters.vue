@@ -4,6 +4,7 @@
             <DebouncedInput v-slot="{ value, input }" v-model="localFilter">
                 <b-form-input
                     size="sm"
+                    :class="filterText && 'font-weight-bold'"
                     :value="value"
                     :placeholder="'search datasets' | localize"
                     data-description="filter text input"
