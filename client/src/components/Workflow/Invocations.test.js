@@ -4,7 +4,7 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { getLocalVue } from "jest/helpers";
 import mockInvocationData from "./test/json/invocation.json";
-import moment from "moment";
+import { parseISO, formatDistanceToNow } from "date-fns";
 
 const localVue = getLocalVue();
 
@@ -84,8 +84,12 @@ describe("Invocations.vue with invocation", () => {
         const columns = row.findAll("td");
         expect(columns.at(1).text()).toBe("workflow name");
         expect(columns.at(2).text()).toBe("history name");
-        expect(columns.at(3).text()).toBe(moment.utc(mockInvocationData.create_time).fromNow());
-        expect(columns.at(4).text()).toBe(moment.utc(mockInvocationData.update_time).fromNow());
+        expect(columns.at(3).text()).toBe(
+            formatDistanceToNow(parseISO(`${mockInvocationData.create_time}Z`), { addSuffix: true })
+        );
+        expect(columns.at(4).text()).toBe(
+            formatDistanceToNow(parseISO(`${mockInvocationData.update_time}Z`), { addSuffix: true })
+        );
         expect(columns.at(5).text()).toBe("scheduled");
         expect(columns.at(6).text()).toBe("");
     });

@@ -7,7 +7,7 @@ pbs_python
 drmaa
 statsd
 azure-storage==0.32.0
-python-irodsclient==1.0.0
+python-irodsclient==1.1.3
 python-ldap==3.4.0
 python-pam
 galaxycloudrunner

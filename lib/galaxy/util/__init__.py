@@ -786,20 +786,6 @@ def in_directory(file, directory, local_path_module=os.path):
 
     local_path_module is used by Pulsar to check Windows paths while running on
     a POSIX-like system.
-
-    >>> base_dir = tempfile.mkdtemp()
-    >>> safe_dir = os.path.join(base_dir, "user")
-    >>> os.mkdir(safe_dir)
-    >>> good_file = os.path.join(safe_dir, "1")
-    >>> with open(good_file, "w") as f: _ = f.write("hello")
-    >>> in_directory(good_file, safe_dir)
-    True
-    >>> in_directory("/other/file/is/here.txt", safe_dir)
-    False
-    >>> unsafe_link = os.path.join(safe_dir, "2")
-    >>> os.symlink("/other/file/bad.fasta", unsafe_link)
-    >>> in_directory(unsafe_link, safe_dir)
-    False
     """
     if local_path_module != os.path:
         _safe_contains = importlib.import_module(f"galaxy.util.path.{local_path_module.__name__}").safe_contains

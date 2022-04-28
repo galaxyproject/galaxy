@@ -55,7 +55,7 @@ class UsersApiTestCase(ApiTestCase):
             self.assertEqual(update_json["username"], new_name)
 
             # too short
-            update_response = self.__update(user, username="mu")
+            update_response = self.__update(user, username="")
             self._assert_status_code_is(update_response, 400)
 
             # not them

@@ -56,7 +56,7 @@ class Config:
         path = os.path.join(self.temp_directory, name)
         directory = os.path.dirname(path)
         if not os.path.exists(directory):
-            os.makedirs(directory)
+            os.makedirs(directory, exist_ok=True)
         contents_template = Template(contents)
         expanded_contents = contents_template.safe_substitute(temp_directory=self.temp_directory)
         open(path, "w").write(expanded_contents)

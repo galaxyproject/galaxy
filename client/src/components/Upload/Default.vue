@@ -1,7 +1,7 @@
 <template>
     <upload-wrapper ref="wrapper" :top-info="topInfo" :highlight-box="highlightBox">
-        <div class="upload-helper" v-show="showHelper"><i class="fa fa-files-o" />Drop files here</div>
-        <table class="upload-table ui-table-striped" v-show="!showHelper" ref="uploadTable">
+        <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
+        <table v-show="!showHelper" ref="uploadTable" class="upload-table ui-table-striped">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -18,15 +18,15 @@
         <template v-slot:footer>
             <span class="upload-footer-title">Type (set all):</span>
             <select2
-                container-class="upload-footer-extension"
                 ref="footerExtension"
                 v-model="extension"
+                container-class="upload-footer-extension"
                 :enabled="!running">
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" />
             <span class="upload-footer-title">Genome (set all):</span>
-            <select2 container-class="upload-footer-genome" ref="footerGenome" v-model="genome" :enabled="!running">
+            <select2 ref="footerGenome" v-model="genome" container-class="upload-footer-genome" :enabled="!running">
                 <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
                     {{ listGenome.text }}
                 </option>
@@ -34,77 +34,66 @@
         </template>
         <template v-slot:buttons>
             <b-button
+                id="btn-close"
                 ref="btnClose"
                 class="ui-button-default"
-                id="btn-close"
                 :title="btnCloseTitle"
                 @click="$emit('dismiss')">
                 {{ btnCloseTitle }}
             </b-button>
             <b-button
+                id="btn-reset"
                 ref="btnReset"
                 class="ui-button-default"
-                id="btn-reset"
-                @click="_eventReset"
                 :title="btnResetTitle"
-                :disabled="!enableReset">
+                :disabled="!enableReset"
+                @click="_eventReset">
                 {{ btnResetTitle }}
             </b-button>
             <b-button
+                id="btn-stop"
                 ref="btnStop"
                 class="ui-button-default"
-                id="btn-stop"
-                @click="_eventStop"
                 :title="btnStopTitle"
-                :disabled="counterRunning == 0">
+                :disabled="counterRunning == 0"
+                @click="_eventStop">
                 {{ btnStopTitle }}
             </b-button>
             <b-button
-                ref="btnBuild"
-                class="ui-button-default"
-                id="btn-build"
-                @click="_eventSelect"
-                v-if="selectable"
-                :disabled="!enableBuild"
-                :title="btnSelectTitle"
-                :variant="enableBuild ? 'primary' : ''">
-                {{ btnSelectTitle }}
-            </b-button>
-            <b-button
+                id="btn-start"
                 ref="btnStart"
                 class="ui-button-default"
-                id="btn-start"
-                @click="_eventStart"
                 :disabled="!enableStart"
                 :title="btnStartTitle"
-                :variant="enableStart ? 'primary' : ''">
+                :variant="enableStart ? 'primary' : ''"
+                @click="_eventStart">
                 {{ btnStartTitle }}
             </b-button>
             <b-button
+                id="btn-new"
                 ref="btnCreate"
                 class="ui-button-default"
-                id="btn-new"
-                @click="_eventCreate(true)"
                 :title="btnCreateTitle"
-                :disabled="!enableSources">
+                :disabled="!enableSources"
+                @click="_eventCreate()">
                 <span class="fa fa-edit"></span>{{ btnCreateTitle }}
             </b-button>
             <b-button
+                v-if="remoteFiles"
+                id="btn-ftp"
                 ref="btnFtp"
                 class="ui-button-default"
-                id="btn-ftp"
-                @click="_eventRemoteFiles"
                 :disabled="!enableSources"
-                v-if="remoteFiles">
+                @click="_eventRemoteFiles">
                 <span class="fa fa-folder-open-o"></span>{{ btnFilesTitle }}
             </b-button>
             <b-button
+                id="btn-local"
                 ref="btnLocal"
                 class="ui-button-default"
-                id="btn-local"
                 :title="btnLocalTitle"
-                @click="uploadSelect"
-                :disabled="!enableSources">
+                :disabled="!enableSources"
+                @click="uploadSelect">
                 <span class="fa fa-laptop"></span>{{ btnLocalTitle }}
             </b-button>
         </template>
@@ -120,8 +109,8 @@ import { uploadModelsToPayload } from "./helpers";
 import { BButton } from "bootstrap-vue";
 
 export default {
-    mixins: [UploadBoxMixin],
     components: { BButton },
+    mixins: [UploadBoxMixin],
     props: {
         multiple: {
             type: Boolean,
@@ -147,7 +136,6 @@ export default {
             uploadSize: 0,
             uploadCompleted: 0,
             enableReset: false,
-            enableBuild: false,
             enableStart: false,
             enableSources: false,
             btnLocalTitle: _l("Choose local files"),
@@ -155,8 +143,24 @@ export default {
             btnStartTitle: _l("Start"),
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),
-            btnSelectTitle: _l("Select"),
         };
+    },
+    computed: {
+        extensions() {
+            const result = _.filter(this.listExtensions, (ext) => !ext.composite_files);
+            return result;
+        },
+        appModel() {
+            return this.app.model;
+        },
+    },
+    watch: {
+        extension: function (value) {
+            this.updateExtension(value);
+        },
+        genome: function (value) {
+            this.updateGenome(value);
+        },
     },
     created() {
         this.initCollection();
@@ -208,36 +212,7 @@ export default {
         });
         this._updateStateForCounters();
     },
-    computed: {
-        extensions() {
-            const result = _.filter(this.listExtensions, (ext) => !ext.composite_files);
-            return result;
-        },
-        appModel() {
-            return this.app.model;
-        },
-    },
-    watch: {
-        extension: function (value) {
-            this.updateExtension(value);
-        },
-        genome: function (value) {
-            this.updateGenome(value);
-        },
-    },
     methods: {
-        _eventSelect: function () {
-            const models = this.getUploadedModels();
-            const asDict = models.map((model) => {
-                return {
-                    id: model.attributes.id, // model.id has datatype prefix
-                    src: model.src,
-                    hid: model.attributes.hid,
-                    name: model.attributes.name,
-                };
-            });
-            this.$emit("dismiss", asDict);
-        },
         _newUploadModelProps: function (index, file) {
             return {
                 id: index,
@@ -251,10 +226,9 @@ export default {
         },
 
         /** Success */
-        _eventSuccess: function (index, message) {
-            var hids = _.pluck(message["outputs"], "hid");
+        _eventSuccess: function (index) {
             var it = this.collection.get(index);
-            it.set({ percentage: 100, status: "success", hids: hids });
+            it.set({ percentage: 100, status: "success" });
             this._updateStateForSuccess(it);
         },
 

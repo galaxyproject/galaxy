@@ -1,6 +1,16 @@
 <script>
 import { getGalaxyInstance } from "app";
 export default {
+    props: {
+        prefix: {
+            type: String,
+            default: "galaxy_rules_",
+        },
+        user: {
+            type: String,
+            default: getGalaxyInstance() ? getGalaxyInstance().user.id : "",
+        },
+    },
     data: function () {
         return {
             savedRules: [],
@@ -28,16 +38,6 @@ export default {
                 }
             }
         }
-    },
-    props: {
-        prefix: {
-            type: String,
-            default: "galaxy_rules_",
-        },
-        user: {
-            type: String,
-            default: getGalaxyInstance() ? getGalaxyInstance().user.id : "",
-        },
     },
     methods: {
         saveSession(jsonRulesString) {

@@ -31,10 +31,7 @@ from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
-from galaxy.schema.fields import (
-    EncodedDatabaseIdField,
-    OrderParamField,
-)
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHistoryView,
     CreateHistoryPayload,
@@ -49,7 +46,10 @@ from galaxy.schema.schema import (
     SharingStatus,
 )
 from galaxy.schema.types import LatestLiteral
-from galaxy.webapps.galaxy.api.common import query_serialization_params
+from galaxy.webapps.galaxy.api.common import (
+    get_filter_query_params,
+    query_serialization_params,
+)
 from galaxy.webapps.galaxy.services.histories import HistoriesService
 from . import (
     as_form,
@@ -77,13 +77,14 @@ JehaIDPathParam: Union[EncodedDatabaseIdField, LatestLiteral] = Path(
     example="latest",
 )
 
-
-class HistoryFilterQueryParams(FilterQueryParams):
-    order: Optional[str] = OrderParamField(default_order="create_time-dsc")
-
-
-class HistoryIndexParams(HistoryFilterQueryParams):
-    all: Optional[bool] = False
+AllHistoriesQueryParam = Query(
+    default=False,
+    title="All Histories",
+    description=(
+        "Whether all histories from other users in this Galaxy should be included. "
+        "Only admins are allowed to query all histories."
+    ),
+)
 
 
 class DeleteHistoryPayload(BaseModel):
@@ -108,16 +109,19 @@ class FastAPIHistories:
     def index(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        params: HistoryIndexParams = Depends(HistoryIndexParams),
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-        deleted: bool = Query(  # This is for backward compatibility but looks redundant
+        all: Optional[bool] = AllHistoriesQueryParam,
+        deleted: Optional[bool] = Query(  # This is for backward compatibility but looks redundant
             default=False,
             title="Deleted Only",
             description="Whether to return only deleted items.",
             deprecated=True,  # Marked as deprecated as it seems just like '/api/histories/deleted'
         ),
     ) -> List[AnyHistoryView]:
-        return self.service.index(trans, serialization_params, params, deleted_only=deleted, all_histories=params.all)
+        return self.service.index(
+            trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
+        )
 
     @router.get(
         "/api/histories/deleted",
@@ -126,10 +130,13 @@ class FastAPIHistories:
     def index_deleted(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        params: HistoryIndexParams = Depends(HistoryIndexParams),
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
+        all: Optional[bool] = AllHistoriesQueryParam,
     ) -> List[AnyHistoryView]:
-        return self.service.index(trans, serialization_params, params, deleted_only=True, all_histories=params.all)
+        return self.service.index(
+            trans, serialization_params, filter_query_params, deleted_only=True, all_histories=all
+        )
 
     @router.get(
         "/api/histories/published",
@@ -138,10 +145,10 @@ class FastAPIHistories:
     def published(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-        filter_params: HistoryFilterQueryParams = Depends(HistoryFilterQueryParams),
     ) -> List[AnyHistoryView]:
-        return self.service.published(trans, serialization_params, filter_params)
+        return self.service.published(trans, serialization_params, filter_query_params)
 
     @router.get(
         "/api/histories/shared_with_me",
@@ -150,10 +157,10 @@ class FastAPIHistories:
     def shared_with_me(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-        filter_params: HistoryFilterQueryParams = Depends(HistoryFilterQueryParams),
     ) -> List[AnyHistoryView]:
-        return self.service.shared_with_me(trans, serialization_params, filter_params)
+        return self.service.shared_with_me(trans, serialization_params, filter_query_params)
 
     @router.get(
         "/api/histories/most_recently_used",

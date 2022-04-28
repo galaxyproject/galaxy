@@ -1,7 +1,6 @@
 // Bootstrap overwrites .tooltip() method, load it after jquery-ui
 // (which is loaded everywhere via libs/jquery.custom.js)
 import "bootstrap";
-import "@galaxyproject/bootstrap-tour";
 
 // Galaxy core styles
 import "scss/base.scss";

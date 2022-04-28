@@ -664,6 +664,48 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``short_term_storage_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Location of files available for a short time as downloads (short
+    term storage). This directory is exclusively used for serving
+    dynamically generated downloadable content. Galaxy may uses the
+    new_file_path parameter as a general temporary directory and that
+    directory should be monitored by a tool such as tmpwatch in
+    production environments. short_term_storage_dir on the other hand
+    is monitored by Galaxy's task framework and should not require
+    such external tooling.
+    The value of this option will be resolved with respect to
+    <cache_dir>.
+:Default: ``short_term_web_storage``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``short_term_storage_default_duration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default duration before short term web storage files will be
+    cleaned up by Galaxy tasks (in seconds). The default duration is 1
+    day.
+:Default: ``86400``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``short_term_storage_cleanup_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    How many seconds between instances of short term storage being
+    cleaned up in default Celery task configuration.
+:Default: ``3600``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``file_sources_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1286,6 +1328,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``mulled_resolution_cache_expire``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Seconds until the beaker cache is considered old and a new value
+    is created.
+:Default: ``3600``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``object_store_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1877,6 +1930,18 @@
     <config_dir>.
 :Default: ``trs_servers_conf.yml``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``use_legacy_history``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Server-wide default selection to use the legacy history during the
+    transition period, after which this option will disappear.  Users
+    will remain able to swap back and forth per their preference.
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3720,8 +3785,13 @@
 :Description:
     When the simplified workflow run form is rendered, should the
     invocation outputs be sent to the 'current' history or a 'new'
-    history.
-:Default: ``current``
+    history. If the user should be presented and option between these
+    - set this to 'prefer_current' or 'prefer_new' to display a
+    runtime setting with the corresponding default. The default is to
+    provide the user this option and default it to the current history
+    (the traditional behavior of Galaxy for years) - this corresponds
+    to the setting 'prefer_current'.
+:Default: ``prefer_current``
 :Type: str
 
 
@@ -4795,3 +4865,6 @@
     Display built-in converters in the tool panel.
 :Default: ``true``
 :Type: bool
+
+
+

@@ -1,21 +1,21 @@
 # Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
-#
+# 
 #  https://docs.galaxyproject.org/en/master/admin/production.html
-#
+# 
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
-#
+# 
 # Examples of many of these options are explained in more detail in the Galaxy
 # Community Hub.
-#
+# 
 #   https://galaxyproject.org/admin/config
-#
+# 
 # Config hackers are encouraged to check there before asking for help.
-#
+# 
 # Configuration for Gravity process manager.
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
@@ -456,6 +456,26 @@ galaxy:
   # option.
   #watch_tours: 'false'
 
+  # Location of files available for a short time as downloads (short
+  # term storage). This directory is exclusively used for serving
+  # dynamically generated downloadable content. Galaxy may uses the
+  # new_file_path parameter as a general temporary directory and that
+  # directory should be monitored by a tool such as tmpwatch in
+  # production environments. short_term_storage_dir on the other hand is
+  # monitored by Galaxy's task framework and should not require such
+  # external tooling.
+  # The value of this option will be resolved with respect to
+  # <cache_dir>.
+  #short_term_storage_dir: short_term_web_storage
+
+  # Default duration before short term web storage files will be cleaned
+  # up by Galaxy tasks (in seconds). The default duration is 1 day.
+  #short_term_storage_default_duration: 86400
+
+  # How many seconds between instances of short term storage being
+  # cleaned up in default Celery task configuration.
+  #short_term_storage_cleanup_interval: 3600
+
   # Configured FileSource plugins.
   # The value of this option will be resolved with respect to
   # <config_dir>.
@@ -749,6 +769,10 @@ galaxy:
   # <cache_dir>.
   #mulled_resolution_cache_lock_dir: mulled/locks
 
+  # Seconds until the beaker cache is considered old and a new value is
+  # created.
+  #mulled_resolution_cache_expire: 3600
+
   # Configuration file for the object store If this is set and exists,
   # it overrides any other objectstore settings.
   # The value of this option will be resolved with respect to
@@ -1013,6 +1037,11 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <config_dir>.
   #trs_servers_config_file: trs_servers_conf.yml
+
+  # Server-wide default selection to use the legacy history during the
+  # transition period, after which this option will disappear.  Users
+  # will remain able to swap back and forth per their preference.
+  #use_legacy_history: false
 
   # Location of the configuration file containing extra user
   # preferences.
@@ -1845,8 +1874,13 @@ galaxy:
 
   # When the simplified workflow run form is rendered, should the
   # invocation outputs be sent to the 'current' history or a 'new'
-  # history.
-  #simplified_workflow_run_ui_target_history: current
+  # history. If the user should be presented and option between these -
+  # set this to 'prefer_current' or 'prefer_new' to display a runtime
+  # setting with the corresponding default. The default is to provide
+  # the user this option and default it to the current history (the
+  # traditional behavior of Galaxy for years) - this corresponds to the
+  # setting 'prefer_current'.
+  #simplified_workflow_run_ui_target_history: prefer_current
 
   # When the simplified workflow run form is rendered, should the
   # invocation use job caching. This isn't a boolean so an option for
@@ -2359,3 +2393,4 @@ galaxy:
 
   # Display built-in converters in the tool panel.
   #display_builtin_converters: true
+

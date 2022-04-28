@@ -1,6 +1,6 @@
 flake8
 flake8-bugbear
-mypy==0.910
+mypy
 types-bleach
 types-boto
 types-contextvars

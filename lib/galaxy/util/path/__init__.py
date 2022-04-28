@@ -2,9 +2,10 @@
 """
 
 import errno
-import imp
+import importlib
 import logging
 import shlex
+import types
 from functools import partial
 from itertools import starmap
 from operator import getitem
@@ -424,7 +425,7 @@ def __splitext_ignore(path, ignore=None):
 # cross-platform support
 
 
-def _build_self(target, path_module):
+def _build_self(target: types.ModuleType, path_module: types.ModuleType) -> None:
     """Populate a module with the same exported functions as this module, but using the given os.path module.
 
     :type target: module
@@ -432,20 +433,8 @@ def _build_self(target, path_module):
     :type path_module: ``ntpath`` or ``posixpath`` module
     :param path_module: module implementing ``os.path`` API to use for path functions
     """
-    __copy_self().__set_fxns_on(target, path_module)
-
-
-def __copy_self(names=__name__, parent=None):
-    """Returns a copy of this module that can be modified without modifying `galaxy.util.path`` in ``sys.modules``."""
-    if isinstance(names, str):
-        names = iter(names.split("."))
-    try:
-        name = next(names)
-    except StopIteration:
-        return parent
-    path = parent and parent.__path__
-    parent = imp.load_module(name, *imp.find_module(name, path))
-    return __copy_self(names, parent)
+    self_copy = importlib.import_module(__name__)
+    self_copy.__set_fxns_on(target, path_module)
 
 
 def __set_fxns_on(target, path_module):

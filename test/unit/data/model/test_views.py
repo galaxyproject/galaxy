@@ -18,7 +18,7 @@ from galaxy.model.view.utils import (
     CreateView,
     View,
 )
-from .common import (
+from .testing_utils import (
     drop_database,
     replace_database_in_url,
     skip_if_not_mysql_uri,

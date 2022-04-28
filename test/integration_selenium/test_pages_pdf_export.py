@@ -1,10 +1,11 @@
+from galaxy_test.driver.integration_util import UsesCeleryTasks
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
 )
 
 
-class PagesPdfExportSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
+class PagesPdfExportSeleniumIntegrationTestCase(SeleniumIntegrationTestCase, UsesCeleryTasks):
     ensure_registered = True
 
     @classmethod

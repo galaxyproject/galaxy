@@ -12,12 +12,12 @@
                     <b-col cols="6">
                         <b-input
                             id="workflow-search"
+                            v-model="filter"
                             class="m-1"
                             name="query"
                             :placeholder="titleSearchWorkflows"
                             autocomplete="off"
-                            type="text"
-                            v-model="filter" />
+                            type="text" />
                     </b-col>
                     <b-col>
                         <span class="float-right">
@@ -56,10 +56,10 @@
                         <font-awesome-icon v-if="row.item.shared" v-b-tooltip.hover title="Shared" icon="share-alt" />
                     </template>
                     <template v-slot:cell(show_in_tool_panel)="row">
-                        <b-link @click="bookmarkWorkflow(row.item, false)" v-if="row.item.show_in_tool_panel">
+                        <b-link v-if="row.item.show_in_tool_panel" @click="bookmarkWorkflow(row.item, false)">
                             <font-awesome-icon :icon="['fas', 'star']" />
                         </b-link>
-                        <b-link @click="bookmarkWorkflow(row.item, true)" v-else>
+                        <b-link v-else @click="bookmarkWorkflow(row.item, true)">
                             <font-awesome-icon :icon="['far', 'star']" />
                         </b-link>
                     </template>
@@ -75,7 +75,7 @@
                     </template>
                 </b-table>
                 <div v-if="showNotFound">
-                    No matching entries found for: <span class="font-weight-bold">{{ this.filter }}</span
+                    No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
                     >.
                 </div>
                 <div v-if="showNotAvailable">No workflows found. You may create or import new workflows.</div>

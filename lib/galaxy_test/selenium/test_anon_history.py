@@ -10,16 +10,19 @@ class AnonymousHistoriesTestCase(SeleniumTestCase):
         self.home()
         self.assert_initial_history_panel_state_correct()
 
-        # Anonymous users can annotate or tag, these components should be absent.
-        self.components.history_panel.tag_icon.assert_absent_or_hidden()
-        self.components.history_panel.annotation_icon.assert_absent_or_hidden()
+        if self.is_beta_history():
+            self.beta_history_element("editor toggle").assert_absent_or_hidden()
+        else:
+            # Anonymous users cannot annotate or tag, these components should be absent.
+            self.components.history_panel.tag_icon.assert_absent_or_hidden()
+            self.components.history_panel.annotation_icon.assert_absent_or_hidden()
 
-        # History has a name but...
-        name_element = self.components.history_panel.name.wait_for_and_click()
+            # History has a name but...
+            name_element = self.components.history_panel.name.wait_for_and_click()
 
-        # ... name should NOT be editable when clicked by anon-user
-        editable_text_class = self.navigation._.selectors.editable_text
-        assert editable_text_class.as_css_class not in name_element.get_attribute("class")
+            # ... name should NOT be editable when clicked by anon-user
+            editable_text_class = self.navigation._.selectors.editable_text
+            assert editable_text_class.as_css_class not in name_element.get_attribute("class")
 
     @selenium_test
     def test_anon_history_upload(self):

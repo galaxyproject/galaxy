@@ -9,21 +9,16 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
     @selenium_test
     def test_build_add(self):
         self._login()
-
         self.navigate_to_custom_builds_page()
-
         self.add_custom_build(self.build_name1, self.build_key1)
         self.assert_custom_builds_in_grid([self.build_name1])
 
     @selenium_test
     def test_build_delete(self):
         self._login()
-
         self.navigate_to_custom_builds_page()
-
         self.add_custom_build(self.build_name2, self.build_key2)
         self.assert_custom_builds_in_grid([self.build_name2])
-
         self.delete_custom_build(self.build_name2)
         self.assert_custom_builds_in_grid([self.build_name2], False)
 

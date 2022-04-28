@@ -1,6 +1,6 @@
 <template>
     <div>
-        <job-details-provider v-on:update:result="updateJob" auto-refresh :jobid="job_id" />
+        <job-details-provider auto-refresh :jobid="job_id" @update:result="updateJob" />
         <h3>Job Information</h3>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
@@ -20,13 +20,13 @@
                 </tr>
                 <tr v-if="job && includeTimes">
                     <td>Created</td>
-                    <td id="created" v-if="job.create_time">
+                    <td v-if="job.create_time" id="created">
                         <UtcDate :date="job.create_time" mode="pretty" />
                     </td>
                 </tr>
                 <tr v-if="job && includeTimes">
                     <td>Updated</td>
-                    <td id="updated" v-if="job.update_time">
+                    <td v-if="job.update_time" id="updated">
                         <UtcDate :date="job.update_time" mode="pretty" />
                     </td>
                 </tr>
@@ -36,19 +36,19 @@
                         {{ runTime }}
                     </td>
                 </tr>
-                <code-row id="command-line" v-if="job" :code-label="'Command Line'" :code-item="job.command_line" />
-                <code-row id="stdout" v-if="job" :code-label="'Tool Standard Output'" :code-item="job.tool_stdout" />
-                <code-row id="stderr" v-if="job" :code-label="'Tool Standard Error'" :code-item="job.tool_stderr" />
+                <code-row v-if="job" id="command-line" :code-label="'Command Line'" :code-item="job.command_line" />
+                <code-row v-if="job" id="stdout" :code-label="'Tool Standard Output'" :code-item="job.tool_stdout" />
+                <code-row v-if="job" id="stderr" :code-label="'Tool Standard Error'" :code-item="job.tool_stderr" />
                 <code-row
-                    id="traceback"
                     v-if="job && job.traceback"
+                    id="traceback"
                     :code-label="'Unexpected Job Errors'"
                     :code-item="job.traceback" />
                 <tr v-if="job">
                     <td>Tool Exit Code:</td>
                     <td id="exist-code">{{ job.exit_code }}</td>
                 </tr>
-                <tr id="job-messages" v-if="job && job.job_messages && job.job_messages.length > 0">
+                <tr v-if="job && job.job_messages && job.job_messages.length > 0" id="job-messages">
                     <td>Job Messages</td>
                     <td>
                         <ul style="padding-left: 15px; margin-bottom: 0px">

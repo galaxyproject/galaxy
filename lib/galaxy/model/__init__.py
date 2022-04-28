@@ -942,6 +942,12 @@ class TaskMetricNumeric(BaseJobMetric, RepresentById):
     metric_value = Column(Numeric(JOB_METRIC_PRECISION, JOB_METRIC_SCALE))
 
 
+class IoDicts(NamedTuple):
+    inp_data: Dict[str, "DatasetInstance"]
+    out_data: Dict[str, "DatasetInstance"]
+    out_collections: Dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]]
+
+
 class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     """
     A job represents a request to run a tool given input datasets, tool
@@ -1082,12 +1088,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             states.DELETED_NEW,
         ]
 
-    def io_dicts(self, exclude_implicit_outputs=False):
-        inp_data = {da.name: da.dataset for da in self.input_datasets}
-        out_data = {da.name: da.dataset for da in self.output_datasets}
+    def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
+        inp_data: Dict[str, "DatasetInstance"] = {da.name: da.dataset for da in self.input_datasets}
+        out_data: Dict[str, "DatasetInstance"] = {da.name: da.dataset for da in self.output_datasets}
         inp_data.update([(da.name, da.dataset) for da in self.input_library_datasets])
         out_data.update([(da.name, da.dataset) for da in self.output_library_datasets])
 
+        out_collections: Dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]]
         if not exclude_implicit_outputs:
             out_collections = {
                 obj.name: obj.dataset_collection_instance for obj in self.output_dataset_collection_instances
@@ -1099,7 +1106,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                     out_collections[obj.name] = obj.dataset_collection_instance
                 # else this is a mapped over output
         out_collections.update([(obj.name, obj.dataset_collection) for obj in self.output_dataset_collections])
-        return inp_data, out_data, out_collections
+        return IoDicts(inp_data, out_data, out_collections)
 
     # TODO: Add accessors for members defined in SQL Alchemy for the Job table and
     # for the mapper defined to the Job table.
@@ -2451,7 +2458,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     published = Column(Boolean, index=True, default=False)
 
     datasets = relationship(
-        "HistoryDatasetAssociation", back_populates="history", order_by=lambda: asc(HistoryDatasetAssociation.hid)  # type: ignore[has-type]
+        "HistoryDatasetAssociation", back_populates="history", cascade_backrefs=False, order_by=lambda: asc(HistoryDatasetAssociation.hid)  # type: ignore[has-type]
     )
     exports = relationship(
         "JobExportHistoryArchive",
@@ -3403,12 +3410,20 @@ class Dataset(StorableObject, Serializable, _HasTable):
         return self.state in self.ready_states
 
     def get_file_name(self):
+        if self.purged:
+            log.warning(f"Attempt to get file name of purged dataset {self.id}")
+            return ""
         if not self.external_filename:
             assert self.object_store is not None, f"Object Store has not been initialized for dataset {self.id}"
             if self.object_store.exists(self):
-                return self.object_store.get_filename(self)
+                file_name = self.object_store.get_filename(self)
             else:
-                return ""
+                file_name = ""
+            if not file_name and self.state not in (self.states.NEW, self.states.QUEUED):
+                # Queued datasets can be assigned an object store and have a filename, but they aren't guaranteed to.
+                # Anything after queued should have a file name.
+                log.warning(f"Failed to determine file name for dataset {self.id}")
+            return file_name
         else:
             filename = self.external_filename
         # Make filename absolute
@@ -3746,7 +3761,7 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
         if (
             dbkey
         ):  # dbkey is stored in metadata, only set if non-zero, or else we could clobber one supplied by input 'metadata'
-            self._metadata["dbkey"] = dbkey
+            self._metadata["dbkey"] = listify(dbkey)
         self.deleted = deleted
         self.visible = visible
         self.validated_state = validated_state
@@ -4317,7 +4332,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         DatasetInstance.__init__(self, sa_session=sa_session, **kwd)
         self.hid = hid
         # Relationships
-        add_object_to_object_session(self, history)
         self.history = history
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
@@ -9559,7 +9573,7 @@ mapper_registry.map_imperatively(
         _metadata=deferred(HistoryDatasetAssociation.table.c._metadata),
         dependent_jobs=relationship(JobToInputDatasetAssociation, back_populates="dataset"),
         creating_job_associations=relationship(JobToOutputDatasetAssociation, back_populates="dataset"),
-        history=relationship(History, back_populates="datasets"),
+        history=relationship(History, back_populates="datasets", cascade_backrefs=False),
         implicitly_converted_datasets=relationship(
             ImplicitlyConvertedDatasetAssociation,
             primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.hda_parent_id == HistoryDatasetAssociation.id),

@@ -696,7 +696,7 @@ class InstallRepositoryManager:
             datatypes_config = hg_util.get_config_from_disk(suc.DATATYPES_CONFIG_FILENAME, files_dir)
             # Load data types required by tools.
             cdl = custom_datatype_manager.CustomDatatypeLoader(self.app)
-            converter_path, display_path = cdl.alter_config_and_load_prorietary_datatypes(
+            converter_path, display_path = cdl.alter_config_and_load_proprietary_datatypes(
                 datatypes_config, files_dir, override=False
             )
             if converter_path or display_path:

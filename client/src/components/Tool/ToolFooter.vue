@@ -1,5 +1,5 @@
 <template>
-    <b-card class="tool-footer" v-if="hasContent">
+    <b-card v-if="hasContent" class="tool-footer">
         <div v-if="hasCitations" class="mb-1">
             <span class="font-weight-bold">Citations:</span>
             <font-awesome-icon
@@ -9,9 +9,9 @@
                 style="cursor: pointer"
                 @click="copyBibtex" />
             <Citation
-                class="formatted-reference"
                 v-for="(citation, index) in citations"
                 :key="index"
+                class="formatted-reference"
                 :citation="citation"
                 output-format="bibliography"
                 prefix="-" />
@@ -28,7 +28,7 @@
                 <span v-if="requirement.version"> (Version {{ requirement.version }}) </span>
             </div>
         </div>
-        <div class="mb-1" v-if="hasLicense">
+        <div v-if="hasLicense" class="mb-1">
             <span class="font-weight-bold">License:</span>
             <License :license-id="license" />
         </div>
@@ -108,6 +108,11 @@ export default {
             type: Array,
         },
     },
+    data() {
+        return {
+            citations: [],
+        };
+    },
     computed: {
         hasRequirements() {
             return this.requirements && this.requirements.length > 0;
@@ -126,11 +131,6 @@ export default {
                 this.hasRequirements || this.hasReferences || this.hasCreators || this.hasCitations || this.hasLicense
             );
         },
-    },
-    data() {
-        return {
-            citations: [],
-        };
     },
     watch: {
         id() {

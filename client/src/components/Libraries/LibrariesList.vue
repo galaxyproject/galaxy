@@ -2,27 +2,27 @@
     <CurrentUser v-slot="{ user }">
         <div>
             <div class="form-inline d-flex align-items-center mb-2">
-                <b-button class="mr-1" @click="gotoFirstPage" title="go to first page">
+                <b-button class="mr-1" title="go to first page" @click="gotoFirstPage">
                     <font-awesome-icon icon="home" />
                 </b-button>
                 <b-button
+                    v-if="user.is_admin"
                     id="create-new-lib"
                     v-b-toggle.collapse-2
-                    v-if="user.is_admin"
                     title="Create new folder"
                     class="mr-1">
                     <font-awesome-icon icon="plus" />
                     {{ titleLibrary }}
                 </b-button>
                 <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
-                <b-form-checkbox v-if="user.is_admin" class="mr-1" @input="toggle_include_deleted($event)" v-localize
+                <b-form-checkbox v-if="user.is_admin" v-localize class="mr-1" @input="toggle_include_deleted($event)"
                     >include deleted</b-form-checkbox
                 >
-                <b-form-checkbox class="mr-1" @input="toggle_exclude_restricted($event)" v-localize
+                <b-form-checkbox v-localize class="mr-1" @input="toggle_exclude_restricted($event)"
                     >exclude restricted</b-form-checkbox
                 >
             </div>
-            <b-collapse v-model="isNewLibFormVisible" id="collapse-2">
+            <b-collapse id="collapse-2" v-model="isNewLibFormVisible">
                 <b-card>
                     <b-form @submit.prevent="newLibrary">
                         <b-input-group class="mb-2 new-row">
@@ -44,6 +44,7 @@
             </b-collapse>
             <b-table
                 id="libraries_list"
+                ref="libraries_list"
                 striped
                 hover
                 :fields="fields"
@@ -51,37 +52,36 @@
                 :per-page="perPage"
                 :current-page="currentPage"
                 show-empty
-                ref="libraries_list"
-                @filtered="onFiltered"
                 :filter="filter"
-                :filter-included-fields="filterOn">
+                :filter-included-fields="filterOn"
+                @filtered="onFiltered">
                 <template v-slot:cell(name)="row">
                     <textarea
                         v-if="row.item.editMode"
-                        class="form-control input_library_name"
                         v-model="row.item.name"
+                        class="form-control input_library_name"
                         rows="3" />
 
-                    <div class="deleted-item" v-else-if="row.item.deleted && include_deleted">{{ row.item.name }}</div>
+                    <div v-else-if="row.item.deleted && include_deleted" class="deleted-item">{{ row.item.name }}</div>
                     <b-link v-else :to="{ path: `folders/${row.item.root_folder_id}` }">{{ row.item.name }}</b-link>
                 </template>
                 <template v-slot:cell(description)="{ item }">
                     <LibraryEditField
-                        @toggleDescriptionExpand="toggleDescriptionExpand(item)"
                         :ref="`description-${item.id}`"
                         :is-expanded="item.isExpanded"
                         :is-edit-mode="item.editMode"
                         :text="item.description"
-                        :changed-value.sync="item[newDescriptionProperty]" />
+                        :changed-value.sync="item[newDescriptionProperty]"
+                        @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
                 </template>
                 <template v-slot:cell(synopsis)="{ item }">
                     <LibraryEditField
-                        @toggleDescriptionExpand="toggleDescriptionExpand(item)"
                         :ref="`synopsis-${item.id}`"
                         :is-expanded="item.isExpanded"
                         :is-edit-mode="item.editMode"
                         :text="item.synopsis"
-                        :changed-value.sync="item[newSynopsisProperty]" />
+                        :changed-value.sync="item[newSynopsisProperty]"
+                        @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
                 </template>
                 <template v-slot:cell(is_unrestricted)="row">
                     <font-awesome-icon
@@ -90,7 +90,7 @@
                         icon="globe" />
                 </template>
                 <template v-slot:cell(buttons)="row">
-                    <b-button @click="undelete(row.item)" v-if="row.item.deleted" :title="'Undelete ' + row.item.name">
+                    <b-button v-if="row.item.deleted" :title="'Undelete ' + row.item.name" @click="undelete(row.item)">
                         <font-awesome-icon icon="unlock" />
                         {{ titleUndelete }}
                     </b-button>
@@ -154,12 +154,12 @@
                             <tr>
                                 <td class="m-0 p-0">
                                     <b-form-input
-                                        class="pagination-input-field"
                                         id="paginationPerPage"
+                                        v-model="perPage"
+                                        class="pagination-input-field"
                                         autocomplete="off"
                                         type="number"
-                                        onkeyup="this.value|=0;if(this.value<1)this.value=1"
-                                        v-model="perPage" />
+                                        onkeyup="this.value|=0;if(this.value<1)this.value=1" />
                                 </td>
                                 <td class="text-muted ml-1 paginator-text">
                                     <span class="pagination-total-pages-text"
@@ -202,11 +202,6 @@ export default {
         SearchField,
         CurrentUser,
     },
-    computed: {
-        rows() {
-            return this.librariesList.length;
-        },
-    },
     data() {
         return {
             newDescriptionProperty: "newDescription",
@@ -239,6 +234,11 @@ export default {
             titlePerPage: _l("per page"),
             titleTotal: _l("total"),
         };
+    },
+    computed: {
+        rows() {
+            return this.librariesList.length;
+        },
     },
     created() {
         this.root = getAppRoot();

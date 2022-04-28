@@ -1845,7 +1845,16 @@ class JobWrapper(HasResourceParameters):
 
         if not extended_metadata:
             # importing metadata will discover outputs if extended metadata
+            try:
+                self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
+            except MaxDiscoveredFilesExceededError as e:
+                final_job_state = job.states.ERROR
+                job.job_messages = [str(e)]
+
             for dataset_assoc in output_dataset_associations:
+                if getattr(dataset_assoc.dataset, "discovered", False):
+                    # skip outputs that have been discovered
+                    continue
                 context = self.get_dataset_finish_context(job_context, dataset_assoc)
                 # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
                 # lets not allow this to occur
@@ -1858,13 +1867,12 @@ class JobWrapper(HasResourceParameters):
 
                     # Handles retry internally on error for instance...
                     self._finish_dataset(output_name, dataset, job, context, final_job_state, remote_metadata_directory)
-                if not final_job_state == job.states.ERROR:
+                if (
+                    not final_job_state == job.states.ERROR
+                    and not dataset_assoc.dataset.dataset.state == job.states.ERROR
+                ):
+                    # We don't set datsets in error state to OK because discover_outputs may have already set the state to error
                     dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
-            try:
-                self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
-            except MaxDiscoveredFilesExceededError as e:
-                final_job_state = job.states.ERROR
-                job.job_messages = [str(e)]
 
         if job.states.ERROR == final_job_state:
             for dataset_assoc in output_dataset_associations:

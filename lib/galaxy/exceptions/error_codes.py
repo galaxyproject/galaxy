@@ -16,7 +16,7 @@ UNKNOWN_ERROR_MESSAGE = "Unknown error occurred while processing request."
 class ErrorCode:
     """Small class allowing object representation for error descriptions loaded from JSON."""
 
-    def __init__(self, code, default_error_message):
+    def __init__(self, code: int, default_error_message: str):
         """Construct a :class:`ErrorCode` from supplied integer and error message."""
         self.code = code
         self.default_error_message = default_error_message or UNKNOWN_ERROR_MESSAGE
@@ -31,7 +31,7 @@ class ErrorCode:
 
     def __int__(self):
         """Return the error code integer."""
-        return int(self.code)
+        return self.code
 
 
 def _from_dict(entry):
@@ -44,8 +44,10 @@ def _from_dict(entry):
 
 error_codes_json = resource_string(__package__, "error_codes.json")
 error_codes_by_name: Dict[str, ErrorCode] = {}
+error_codes_by_int_code: Dict[int, ErrorCode] = {}
 
 for entry in loads(error_codes_json):
     name, error_code_obj = _from_dict(entry)
     globals()[name] = error_code_obj
     error_codes_by_name[name] = error_code_obj
+    error_codes_by_int_code[error_code_obj.code] = error_code_obj

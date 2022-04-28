@@ -1,12 +1,12 @@
 <template>
     <b-button
         id="tool-panel-upload-button"
-        @click="showUploadDialog"
         v-b-tooltip.hover.bottom
         :aria-label="title | localize"
         :title="title | localize"
         class="upload-button"
-        size="sm">
+        size="sm"
+        @click="showUploadDialog">
         <div class="progress">
             <div
                 class="progress-bar progress-bar-notransition"
@@ -44,6 +44,14 @@ export default {
             percentage: 0,
         };
     },
+    created() {
+        this.eventHub.$on("upload:status", this.setStatus);
+        this.eventHub.$on("upload:percentage", this.setPercentage);
+    },
+    beforeDestroy() {
+        this.eventHub.$off("upload:status", this.setStatus);
+        this.eventHub.$off("upload:percentage", this.setPercentage);
+    },
     methods: {
         showUploadDialog(e) {
             openGlobalUploadModal();
@@ -54,14 +62,6 @@ export default {
         setPercentage(val) {
             this.percentage = Math.round(val);
         },
-    },
-    created() {
-        this.eventHub.$on("upload:status", this.setStatus);
-        this.eventHub.$on("upload:percentage", this.setPercentage);
-    },
-    beforeDestroy() {
-        this.eventHub.$off("upload:status", this.setStatus);
-        this.eventHub.$off("upload:percentage", this.setPercentage);
     },
 };
 </script>

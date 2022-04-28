@@ -313,10 +313,10 @@ class UserDeserializerTestCase(BaseTestCase):
             base_manager.ModelDeserializingError,
             self.deserializer.deserialize,
             user,
-            {"username": "ed"},
+            {"username": ""},
             trans=self.trans,
         )
-        self.assertTrue("Public name must be at least" in str(exception))
+        self.assertTrue("Public name cannot be empty" in str(exception))
         self.assertRaises(
             base_manager.ModelDeserializingError,
             self.deserializer.deserialize,

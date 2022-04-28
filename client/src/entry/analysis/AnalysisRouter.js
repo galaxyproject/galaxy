@@ -22,7 +22,7 @@ import UserPreferences from "components/User/UserPreferences";
 import DatasetList from "components/Dataset/DatasetList";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import CustomBuilds from "components/User/CustomBuilds";
-import Tours from "mvc/tours";
+import { runTour } from "components/Tour/runTour";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
 import JobDetails from "components/JobInformation/JobDetails";
@@ -49,7 +49,7 @@ import Citations from "components/Citation/Citations";
 import DisplayStructure from "components/DisplayStructured";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
-import Confirmation from "components/login/Confirmation";
+import NewUserConfirmation from "components/login/NewUserConfirmation";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import Libraries from "components/Libraries";
 import { mountVueComponent } from "utils/mountVueComponent";
@@ -84,6 +84,7 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)workflows/trs_import": "show_workflows_trs_import",
             "(/)workflows/trs_search": "show_workflows_trs_search",
             "(/)workflows/run(/)": "show_workflows_run",
+            "(/)workflows(/)sharing(/)": "show_workflows_sharing",
             "(/)workflows(/)list": "show_workflows",
             "(/)workflows/invocations": "show_workflow_invocations",
             "(/)workflows/invocations/report": "show_workflow_invocation_report",
@@ -142,15 +143,14 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_tours: function (tour_id) {
+            this.home();
             if (tour_id) {
-                Tours.giveTourById(tour_id);
-            } else {
-                this.page.display(new Tours.ToursView());
+                runTour(tour_id);
             }
         },
 
         show_new_user_confirmation: function () {
-            this._display_vue_helper(Confirmation);
+            this._display_vue_helper(NewUserConfirmation);
         },
 
         show_user: function () {
@@ -348,6 +348,14 @@ export const getAnalysisRouter = (Galaxy) => {
             });
         },
 
+        show_workflows_sharing: function () {
+            this._display_vue_helper(Sharing, {
+                id: QueryStringParsing.get("id"),
+                pluralName: "Workflows",
+                modelClass: "Workflow",
+            });
+        },
+
         show_workflows: function () {
             this._display_vue_helper(WorkflowList);
         },
@@ -394,7 +402,8 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_custom_builds: function () {
-            const historyPanel = this.page.historyPanel.historyView;
+            const Galaxy = getGalaxyInstance();
+            const historyPanel = Galaxy.currHistoryPanel;
             if (!historyPanel || !historyPanel.model || !historyPanel.model.id) {
                 window.setTimeout(() => {
                     this.show_custom_builds();
@@ -428,7 +437,7 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         /**  */
-        home: function (params) {
+        home: function (params = {}) {
             // TODO: to router, remove Globals
             // load a tool by id (tool_id) or rerun a previous tool execution (job_id)
             if (params.tool_id || params.job_id) {

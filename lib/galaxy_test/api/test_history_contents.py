@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import (
     Any,
     List,
+    Tuple,
 )
 
 from galaxy.webapps.galaxy.services.history_contents import DirectionOptions
@@ -351,19 +352,24 @@ class HistoryContentsApiTestCase(ApiTestCase):
         data = {"purge": True}
         delete_response = self._delete(f"histories/{self.history_id}/contents/{hda1['id']}", data=data, json=True)
         assert delete_response.status_code < 300  # Something in the 200s :).
-        assert str(self.__show(hda1).json()["deleted"]).lower() == "true"
-        assert str(self.__show(hda1).json()["purged"]).lower() == "true"
+        # Purging and deleting the dataset may or may not happen asynchronously.
+        # On 202 the request was accepted and purging will happen later.
+        if delete_response.status_code == 202:
+            self.dataset_populator.wait_for_purge(self.history_id, hda1["id"])
+        else:
+            assert self.__show(hda1).json()["deleted"]
+            assert self.__show(hda1).json()["purged"]
 
     def test_dataset_collection_creation_on_contents(self):
-        payload = self.dataset_collection_populator.create_pair_payload(self.history_id, type="dataset_collection")
-        endpoint = f"histories/{self.history_id}/contents"
+        payload = self.dataset_collection_populator.create_pair_payload(
+            self.history_id, type="dataset_collection", wait=True
+        )
+        endpoint = "tools/fetch"
         self._check_pair_creation(endpoint, payload)
 
     def test_dataset_collection_creation_on_typed_contents(self):
-        payload = self.dataset_collection_populator.create_pair_payload(
-            self.history_id,
-        )
-        endpoint = f"histories/{self.history_id}/contents/dataset_collections"
+        payload = self.dataset_collection_populator.create_pair_payload(self.history_id, wait=True)
+        endpoint = "tools/fetch"
         self._check_pair_creation(endpoint, payload)
 
     def test_dataset_collection_create_from_exisiting_datasets_with_new_tags(self):
@@ -428,10 +434,10 @@ class HistoryContentsApiTestCase(ApiTestCase):
 
     @skip_without_tool("collection_creates_list")
     def test_jobs_summary_simple_hdca(self):
-        create_response = self.dataset_collection_populator.create_list_in_history(
+        fetch_response = self.dataset_collection_populator.create_list_in_history(
             self.history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"]
-        )
-        hdca_id = create_response.json()["id"]
+        ).json()
+        hdca_id = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)["id"]
         run = self.dataset_populator.run_collection_creates_list(self.history_id, hdca_id)
         collections = run["output_collections"]
         collection = collections[0]
@@ -444,9 +450,9 @@ class HistoryContentsApiTestCase(ApiTestCase):
     @skip_without_tool("cat1")
     def test_jobs_summary_implicit_hdca(self):
         create_response = self.dataset_collection_populator.create_pair_in_history(
-            self.history_id, contents=["123", "456"]
+            self.history_id, contents=["123", "456"], wait=True
         )
-        hdca_id = create_response.json()["id"]
+        hdca_id = create_response.json()["outputs"][0]["id"]
         inputs = {
             "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
         }
@@ -463,7 +469,9 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert states.get("ok") == 2, states
 
     def test_dataset_collection_hide_originals(self):
-        payload = self.dataset_collection_populator.create_pair_payload(self.history_id, type="dataset_collection")
+        payload = self.dataset_collection_populator.create_pair_payload(
+            self.history_id, type="dataset_collection", direct_upload=False
+        )
 
         payload["hide_source_items"] = True
         dataset_collection_response = self._post(f"histories/{self.history_id}/contents", payload, json=True)
@@ -498,14 +506,14 @@ class HistoryContentsApiTestCase(ApiTestCase):
 
     def _create_pair_collection(self):
         payload = self.dataset_collection_populator.create_pair_payload(self.history_id, type="dataset_collection")
-        dataset_collection_response = self._post(f"histories/{self.history_id}/contents", payload, json=True)
+        dataset_collection_response = self._post("tools/fetch", payload, json=True)
         self._assert_status_code_is(dataset_collection_response, 200)
-        hdca = dataset_collection_response.json()
+        hdca = dataset_collection_response.json()["output_collections"][0]
         return hdca
 
     def test_hdca_copy(self):
-        hdca = self.dataset_collection_populator.create_pair_in_history(self.history_id).json()
-        hdca_id = hdca["id"]
+        hdca = self.dataset_collection_populator.create_pair_in_history(self.history_id, wait=True).json()
+        hdca_id = hdca["outputs"][0]["id"]
         second_history_id = self.dataset_populator.new_history()
         create_data = dict(
             source="hdca",
@@ -523,7 +531,8 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert new_forward["history_id"] == self.history_id
 
     def test_hdca_copy_with_new_dbkey(self):
-        hdca = self.dataset_collection_populator.create_pair_in_history(self.history_id).json()
+        fetch_response = self.dataset_collection_populator.create_pair_in_history(self.history_id, wait=True).json()
+        hdca = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
         hdca_id = hdca["id"]
         assert hdca["elements"][0]["object"]["metadata_dbkey"] == "?"
         assert hdca["elements"][0]["object"]["genome_build"] == "?"
@@ -537,7 +546,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert new_forward["genome_build"] == "hg19"
 
     def test_hdca_copy_and_elements(self):
-        hdca = self.dataset_collection_populator.create_pair_in_history(self.history_id).json()
+        hdca = self.dataset_collection_populator.create_pair_in_history(self.history_id, wait=True).json()["outputs"][0]
         hdca_id = hdca["id"]
         second_history_id = self.dataset_populator.new_history()
         create_data = dict(
@@ -614,6 +623,8 @@ class HistoryContentsApiTestCase(ApiTestCase):
     def __check_create_collection_response(self, response):
         self._assert_status_code_is(response, 200)
         dataset_collection = response.json()
+        if "output_collections" in dataset_collection:
+            dataset_collection = dataset_collection["output_collections"][0]
         self._assert_has_keys(dataset_collection, "url", "name", "deleted", "visible", "elements")
         return dataset_collection
 
@@ -647,7 +658,8 @@ class HistoryContentsApiTestCase(ApiTestCase):
 
     def test_job_state_summary_field(self):
         create_response = self.dataset_collection_populator.create_pair_in_history(
-            self.history_id, contents=["123", "456"]
+            self.history_id,
+            contents=["123", "456"],
         )
         self._assert_status_code_is(create_response, 200)
         contents_response = self._get(f"histories/{self.history_id}/contents?v=dev&keys=job_state_summary&view=summary")
@@ -666,7 +678,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
         with self.dataset_populator.test_history() as history_id:
             first_time = datetime.utcnow().isoformat()
             assert len(self._get_content(history_id, update_time=first_time)) == 0
-            self.dataset_collection_populator.create_list_in_history(history_id=history_id)
+            self.dataset_collection_populator.create_list_in_history(history_id=history_id, wait=True)
             assert len(self._get_content(history_id, update_time=first_time)) == 4  # 3 datasets
             self.dataset_populator.wait_for_history(history_id)
             all_datasets_finished = first_time = datetime.utcnow().isoformat()
@@ -689,7 +701,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
             assert history_contents.status_code == 204
 
             # add some stuff
-            self.dataset_collection_populator.create_list_in_history(history_id=history_id)
+            self.dataset_collection_populator.create_list_in_history(history_id=history_id, wait=True)
             self.dataset_populator.wait_for_history(history_id)
 
             # check to make sure the added stuff is there
@@ -738,7 +750,8 @@ class HistoryContentsApiTestCase(ApiTestCase):
     @skip_without_tool("cat_data_and_sleep")
     def test_history_contents_near_with_update_time_implicit_collection(self):
         with self.dataset_populator.test_history() as history_id:
-            hdca_id = self.dataset_collection_populator.create_list_in_history(history_id=history_id).json()["id"]
+            fetch_response = self.dataset_collection_populator.create_list_in_history(history_id=history_id).json()
+            hdca_id = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)["id"]
             self.dataset_populator.wait_for_history(history_id)
             inputs = {
                 "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
@@ -791,7 +804,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
     def test_index_filter_by_type(self):
         history_id = self.dataset_populator.new_history()
         self.dataset_populator.new_dataset(history_id)
-        self.dataset_collection_populator.create_list_in_history(history_id=history_id)
+        self.dataset_collection_populator.create_list_in_history(history_id=history_id, wait=True)
 
         contents_response = self._get(f"histories/{history_id}/contents").json()
         num_items = len(contents_response)
@@ -802,6 +815,10 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert len(contents_response) == expected_num_datasets
         contents_response = self._get(f"histories/{history_id}/contents?types=dataset_collection").json()
         assert len(contents_response) == expected_num_collections
+        contents_response = self._get(f"histories/{history_id}/contents?types=dataset,dataset_collection").json()
+        assert len(contents_response) == expected_num_datasets + expected_num_collections
+        contents_response = self._get(f"histories/{history_id}/contents?types=dataset&types=dataset_collection").json()
+        assert len(contents_response) == expected_num_datasets + expected_num_collections
 
     def test_elements_datatypes_field(self):
         history_id = self.dataset_populator.new_history()
@@ -825,7 +842,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
 
     def _upload_collection_list_with_elements(self, history_id: str, collection_name: str, elements: List[Any]):
         create_homogeneous_response = self.dataset_collection_populator.upload_collection(
-            history_id, "list", elements=elements, name=collection_name
+            history_id, "list", elements=elements, name=collection_name, wait=True
         )
         self._assert_status_code_is_ok(create_homogeneous_response)
 
@@ -855,7 +872,7 @@ class HistoryContentsApiNearTestCase(ApiTestCase):
     def _create_list_in_history(self, history_id, n=2):
         # Creates list of size n*4 (n collections with 3 items each)
         for _ in range(n):
-            self.dataset_collection_populator.create_list_in_history(history_id=history_id)
+            self.dataset_collection_populator.create_list_in_history(history_id=history_id, wait=True)
 
     def _get_content(self, history_id, direction, *, hid, limit=1000):
         return self._get(f"/api/histories/{history_id}/contents/{direction}/{hid}/{limit}").json()
@@ -949,3 +966,257 @@ class HistoryContentsApiNearTestCase(ApiTestCase):
             result = self._get_content(history_id, self.AFTER, hid=7, limit=3)
             assert len(result) == 1
             assert result[0]["hid"] == 8  # hid + 1
+
+
+class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
+    """
+    Test the `/api/histories/{history_id}/contents/bulk` endpoint and the new
+    `count` special view for `/api/histories/{history_id}/contents?v=dev`
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+
+    def test_explicit_items_selection(self):
+        with self.dataset_populator.test_history() as history_id:
+            datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
+
+            # Hide 2 collections and 3 datasets, 5 in total
+            payload = {
+                "operation": "hide",
+                "items": [
+                    {
+                        "id": datasets_ids[0],
+                        "history_content_type": "dataset",
+                    },
+                    {
+                        "id": collection_ids[0],
+                        "history_content_type": "dataset_collection",
+                    },
+                    {
+                        "id": datasets_ids[1],
+                        "history_content_type": "dataset",
+                    },
+                    {
+                        "id": collection_ids[1],
+                        "history_content_type": "dataset_collection",
+                    },
+                    {
+                        "id": datasets_ids[2],
+                        "history_content_type": "dataset",
+                    },
+                ],
+            }
+            expected_hidden_item_ids = list(map(lambda item: item["id"], payload["items"]))
+            expected_hidden_item_count = len(expected_hidden_item_ids)
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            history_contents = self._get_history_contents(history_id)
+            hidden_items = self._get_hidden_items_from_history_contents(history_contents)
+
+            self._assert_bulk_success(bulk_operation_result, expected_hidden_item_count)
+            assert len(hidden_items) == expected_hidden_item_count
+            for item in hidden_items:
+                assert item["id"] in expected_hidden_item_ids
+
+    def test_dynamic_query_selection(self):
+        with self.dataset_populator.test_history() as history_id:
+            _, collection_ids, history_contents = self._create_test_history_contents(history_id)
+
+            # Hide all collections using query
+            payload = {"operation": "hide"}
+            query = "q=history_content_type-eq&qv=dataset_collection"
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload, query)
+            history_contents = self._get_history_contents(history_id)
+            hidden_items = self._get_hidden_items_from_history_contents(history_contents)
+
+            self._assert_bulk_success(bulk_operation_result, len(collection_ids))
+            assert len(hidden_items) == len(collection_ids)
+            for item in hidden_items:
+                assert item["id"] in collection_ids
+
+    def test_bulk_operations(self):
+        with self.dataset_populator.test_history() as history_id:
+            datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
+
+            # Hide all datasets using query
+            payload = {"operation": "hide"}
+            query = "q=history_content_type-eq&qv=dataset"
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload, query)
+            history_contents = self._get_history_contents(history_id)
+            hidden_items = self._get_hidden_items_from_history_contents(history_contents)
+            self._assert_bulk_success(bulk_operation_result, len(datasets_ids))
+            assert len(hidden_items) == len(datasets_ids)
+
+            # Unhide datasets_ids[0] and datasets_ids[3]
+            payload = {
+                "operation": "unhide",
+                "items": [
+                    {
+                        "id": datasets_ids[0],
+                        "history_content_type": "dataset",
+                    },
+                    {
+                        "id": datasets_ids[3],
+                        "history_content_type": "dataset",
+                    },
+                ],
+            }
+            expected_unhidden_count = len(payload["items"])
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            history_contents = self._get_history_contents(history_id)
+            self._assert_bulk_success(bulk_operation_result, expected_unhidden_count)
+            for item in history_contents:
+                if item["id"] in [datasets_ids[0], datasets_ids[3]]:
+                    assert item["visible"] is True
+
+            # Delete all hidden datasets (total dataset - 2 previously unhidden)
+            expected_hidden_item_count = len(datasets_ids) - expected_unhidden_count
+            payload = {"operation": "delete"}
+            query = "q=history_content_type-eq&qv=dataset&q=visible&qv=False"
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload, query)
+            history_contents = self._get_history_contents(history_id)
+            hidden_items = self._get_hidden_items_from_history_contents(history_contents)
+            self._assert_bulk_success(bulk_operation_result, expected_hidden_item_count)
+            for item in hidden_items:
+                assert item["deleted"] is True
+
+            # Undelete all items in history
+            payload = {
+                "operation": "undelete",
+            }
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            history_contents = self._get_history_contents(history_id)
+            self._assert_bulk_success(bulk_operation_result, len(history_contents))
+            for item in history_contents:
+                assert item["deleted"] is False
+
+            # Purge datasets_ids[0] and collection_ids[0]
+            payload = {
+                "operation": "purge",
+                "items": [
+                    {
+                        "id": datasets_ids[0],
+                        "history_content_type": "dataset",
+                    },
+                    {
+                        "id": collection_ids[0],
+                        "history_content_type": "dataset_collection",
+                    },
+                ],
+            }
+            expected_purged_count = len(payload["items"])
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            history_contents = self._get_history_contents(history_id)
+            self._assert_bulk_success(bulk_operation_result, expected_purged_count)
+
+    def test_index_returns_expected_total_matches(self):
+        with self.dataset_populator.test_history() as history_id:
+            datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
+
+            self._test_index_total_matches(history_id, expected_total_matches=len(history_contents))
+
+            self._test_index_total_matches(
+                history_id,
+                search_query="&q=history_content_type-eq&qv=dataset_collection",
+                expected_total_matches=len(collection_ids),
+            )
+
+            self._test_index_total_matches(
+                history_id,
+                search_query="&q=history_content_type-eq&qv=dataset",
+                expected_total_matches=len(datasets_ids),
+            )
+
+    def test_index_with_stats_fails_with_non_orm_filters(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._create_test_history_contents(history_id)
+
+            invalid_filter_keys_with_stats = ["genome_build", "data_type", "annotation"]
+
+            for filter_key in invalid_filter_keys_with_stats:
+                response = self._get_contents_with_stats(
+                    history_id,
+                    search_query=f"&q={filter_key}-contains&qv=anything",
+                )
+                self._assert_status_code_is(response, 400)
+
+    def test_index_with_stats_has_extra_serialization(self):
+        expected_extra_keys_in_collections = ["elements_datatypes"]
+        with self.dataset_populator.test_history() as history_id:
+            self._create_collection_in_history(history_id)
+            response = self._get_contents_with_stats(
+                history_id,
+                search_query="&q=history_content_type-eq&qv=dataset_collection",
+            )
+            self._assert_status_code_is(response, 200)
+            contents_with_stats = response.json()
+            assert contents_with_stats["contents"]
+            collection = contents_with_stats["contents"][0]
+            self._assert_has_keys(collection, *expected_extra_keys_in_collections)
+
+    def _get_contents_with_stats(self, history_id: str, search_query: str = ""):
+        headers = {"accept": "application/vnd.galaxy.history.contents.stats+json"}
+        search_response = self._get(f"histories/{history_id}/contents?v=dev{search_query}", headers=headers)
+        return search_response
+
+    def _test_index_total_matches(self, history_id: str, expected_total_matches: int, search_query: str = ""):
+        search_response = self._get_contents_with_stats(history_id, search_query)
+        self._assert_status_code_is(search_response, 200)
+        self._assert_total_matches_is(search_response.json(), expected_total_matches)
+
+    def _assert_total_matches_is(self, response, expected_total_matches: int):
+        assert response["stats"]
+        assert response["stats"]["total_matches"]
+        assert response["stats"]["total_matches"] == expected_total_matches
+
+    def _create_test_history_contents(self, history_id) -> Tuple[List[str], List[str], List[Any]]:
+        """Creates 3 collections (pairs) and their corresponding datasets (6 in total)
+
+        Returns a tuple with the list of ids for the datasets and the collections and the
+        complete history contents
+        """
+        num_expected_collections = 3
+        num_expected_datasets = num_expected_collections * 2
+        collection_ids = self._create_collection_in_history(history_id, num_expected_collections)
+        history_contents = self._get_history_contents(history_id)
+        datasets = filter(lambda item: item["history_content_type"] == "dataset", history_contents)
+        datasets_ids = list(map(lambda dataset: dataset["id"], datasets))
+        assert len(history_contents) == num_expected_datasets + num_expected_collections
+        assert len(datasets_ids) == num_expected_datasets
+        for dataset_id in datasets_ids:
+            self._put(f"histories/{history_id}/contents/{dataset_id}", {"visible": True}, json=True).json()
+        # All items are visible
+        history_contents = self._get_history_contents(history_id)
+        for item in history_contents:
+            assert item["visible"]
+        return datasets_ids, collection_ids, history_contents
+
+    def _create_collection_in_history(self, history_id, num_collections=1) -> List[str]:
+        collection_ids = []
+        for _ in range(num_collections):
+            collection_id = self.dataset_collection_populator.create_pair_in_history(
+                history_id=history_id, wait=True
+            ).json()["outputs"][0]["id"]
+            collection_ids.append(collection_id)
+        return collection_ids
+
+    def _get_history_contents(self, history_id: str):
+        return self._get(f"histories/{history_id}/contents").json()
+
+    def _get_hidden_items_from_history_contents(self, history_contents) -> List[Any]:
+        return [content for content in history_contents if not content["visible"]]
+
+    def _apply_bulk_operation(self, history_id: str, payload, query: str = ""):
+        if query:
+            query = f"?{query}"
+        return self._put(
+            f"histories/{history_id}/contents/bulk{query}",
+            data=payload,
+            json=True,
+        ).json()
+
+    def _assert_bulk_success(self, bulk_operation_result, expected_success_count: int):
+        assert bulk_operation_result["success_count"] == expected_success_count, bulk_operation_result
+        assert not bulk_operation_result["errors"]

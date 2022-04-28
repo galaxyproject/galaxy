@@ -1,5 +1,5 @@
 <template>
-    <DatasetProvider :id="dataset.id" auto-refresh v-slot="{ loading, result }">
+    <DatasetProvider :id="dataset.id" v-slot="{ loading, result }" auto-refresh>
         <div v-if="!loading" class="dataset">
             <div class="p-2 details">
                 <div class="summary">
@@ -8,12 +8,12 @@
                         <span class="value">{{ result.misc_blurb }}</span>
                     </div>
                     <span v-if="result.file_ext" class="datatype">
-                        <label class="prompt" v-localize>format</label>
+                        <label v-localize class="prompt">format</label>
                         <span class="value">{{ result.file_ext }}</span>
                     </span>
                     <span v-if="result.genome_build" class="dbkey">
-                        <label class="prompt" v-localize>database</label>
-                        <b-link class="value" @click.stop="$emit('edit', dataset)" data-label="Database/Build">{{
+                        <label v-localize class="prompt">database</label>
+                        <b-link class="value" data-label="Database/Build" @click.stop="$emit('edit')">{{
                             result.genome_build
                         }}</b-link>
                     </span>
@@ -29,7 +29,7 @@
 </template>
 
 <script>
-import STATES from "components/History/Content/contentStates";
+import { STATES } from "components/History/Content/model/states";
 import { DatasetProvider } from "components/providers/storeProviders";
 import DatasetActions from "./DatasetActions";
 

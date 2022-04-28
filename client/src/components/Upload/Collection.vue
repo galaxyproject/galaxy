@@ -1,7 +1,7 @@
 <template>
     <upload-wrapper ref="wrapper" :top-info="topInfo" :highlight-box="highlightBox">
-        <div class="upload-helper" v-show="showHelper"><i class="fa fa-files-o" />Drop files here</div>
-        <table class="upload-table ui-table-striped" v-show="!showHelper" ref="uploadTable">
+        <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
+        <table v-show="!showHelper" ref="uploadTable" class="upload-table ui-table-striped">
             <thead>
                 <tr>
                     <th>Size</th>
@@ -14,9 +14,9 @@
         <template v-slot:footer>
             <span class="upload-footer-title">Collection Type:</span>
             <select2
-                container-class="upload-footer-collection-type"
                 ref="footerCollectionType"
                 v-model="collectionType"
+                container-class="upload-footer-collection-type"
                 :enabled="!running">
                 <option value="list">List</option>
                 <option value="paired">Pair</option>
@@ -24,15 +24,15 @@
             </select2>
             <span class="upload-footer-title">File Type:</span>
             <select2
-                container-class="upload-footer-extension"
                 ref="footerExtension"
                 v-model="extension"
+                container-class="upload-footer-extension"
                 :enabled="!running">
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" />
             <span class="upload-footer-title">Genome (set all):</span>
-            <select2 container-class="upload-footer-genome" ref="footerGenome" v-model="genome" :enabled="!running">
+            <select2 ref="footerGenome" v-model="genome" container-class="upload-footer-genome" :enabled="!running">
                 <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
                     {{ listGenome.text }}
                 </option>
@@ -40,76 +40,76 @@
         </template>
         <template v-slot:buttons>
             <b-button
+                id="btn-close"
                 ref="btnClose"
                 class="ui-button-default"
-                id="btn-close"
                 :title="btnCloseTitle"
                 @click="$emit('dismiss')">
                 {{ btnCloseTitle | localize }}
             </b-button>
             <b-button
+                id="btn-reset"
                 ref="btnReset"
                 class="ui-button-default"
-                id="btn-reset"
-                @click="_eventReset"
                 :title="btnResetTitle"
-                :disabled="!enableReset">
+                :disabled="!enableReset"
+                @click="_eventReset">
                 {{ btnResetTitle }}
             </b-button>
             <b-button
+                id="btn-stop"
                 ref="btnStop"
                 class="ui-button-default"
-                id="btn-stop"
-                @click="_eventStop"
                 :title="btnStopTitle"
-                :disabled="counterRunning == 0">
+                :disabled="counterRunning == 0"
+                @click="_eventStop">
                 {{ btnStopTitle }}
             </b-button>
             <b-button
+                id="btn-build"
                 ref="btnBuild"
                 class="ui-button-default"
-                id="btn-build"
-                @click="_eventBuild"
                 :disabled="!enableBuild"
                 :title="btnBuildTitle"
-                :variant="enableBuild ? 'primary' : ''">
+                :variant="enableBuild ? 'primary' : ''"
+                @click="_eventBuild">
                 {{ btnBuildTitle }}
             </b-button>
             <b-button
+                id="btn-start"
                 ref="btnStart"
                 class="ui-button-default"
-                id="btn-start"
-                @click="_eventStart"
                 :title="btnStartTitle"
                 :disabled="!enableStart"
-                :variant="enableStart ? 'primary' : ''">
+                :variant="enableStart ? 'primary' : ''"
+                @click="_eventStart">
                 {{ btnStartTitle }}
             </b-button>
             <b-button
+                id="btn-new"
                 ref="btnCreate"
                 class="ui-button-default"
-                id="btn-new"
-                @click="_eventCreate(false)"
                 :title="btnCreateTitle"
-                :disabled="!enableSources">
+                :disabled="!enableSources"
+                @click="_eventCreate()">
                 <span class="fa fa-edit"></span>{{ btnCreateTitle }}
             </b-button>
             <b-button
+                v-if="remoteFiles"
+                id="btn-ftp"
                 ref="btnFtp"
                 class="ui-button-default"
-                id="btn-ftp"
-                @click="_eventRemoteFiles"
                 :disabled="!enableSources"
-                v-if="remoteFiles">
+                @click="_eventRemoteFiles">
                 <span class="fa fa-folder-open-o"></span>{{ btnFilesTitle }}
             </b-button>
             <b-button
+                id="btn-local"
                 ref="btnLocal"
                 class="ui-button-default"
-                id="btn-local"
                 :title="btnLocalTitle"
-                @click="uploadSelect"
-                :disabled="!enableSources">
+                :disabled="!enableSources"
+                @click="uploadSelect">
                 <span class="fa fa-laptop"></span>{{ btnLocalTitle }}
             </b-button>
         </template>
@@ -126,8 +126,8 @@ import { uploadModelsToPayload } from "./helpers";
 import { BButton } from "bootstrap-vue";
 
 export default {
-    mixins: [UploadBoxMixin],
     components: { BButton },
+    mixins: [UploadBoxMixin],
     data() {
         return {
             uploadUrl: null,
@@ -160,6 +160,23 @@ export default {
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),
         };
+    },
+    computed: {
+        extensions() {
+            const result = _.filter(this.listExtensions, (ext) => !ext.composite_files);
+            return result;
+        },
+        appModel() {
+            return this.app.model;
+        },
+    },
+    watch: {
+        extension: function (value) {
+            this.updateExtension(value);
+        },
+        genome: function (value) {
+            this.updateGenome(value);
+        },
     },
     created() {
         this.initCollection();
@@ -210,23 +227,6 @@ export default {
         });
         this._updateStateForCounters();
     },
-    computed: {
-        extensions() {
-            const result = _.filter(this.listExtensions, (ext) => !ext.composite_files);
-            return result;
-        },
-        appModel() {
-            return this.app.model;
-        },
-    },
-    watch: {
-        extension: function (value) {
-            this.updateExtension(value);
-        },
-        genome: function (value) {
-            this.updateGenome(value);
-        },
-    },
     methods: {
         _newUploadModelProps: function (index, file) {
             return {
@@ -243,10 +243,12 @@ export default {
         },
 
         /** Success */
-        _eventSuccess: function (index, message) {
-            var hids = _.pluck(message["outputs"], "hid");
+        _eventSuccess: function (index, incoming) {
             var it = this.collection.get(index);
-            it.set({ percentage: 100, status: "success", hids: hids });
+            console.debug("Incoming upload response.", incoming);
+            // accounts for differences in the response format between upload methods
+            const outputs = incoming.outputs || incoming.data.outputs || {};
+            it.set({ percentage: 100, status: "success", outputs });
             this._updateStateForSuccess(it);
             const Galaxy = getGalaxyInstance();
             Galaxy.currHistoryPanel.refreshContents();
@@ -254,10 +256,23 @@ export default {
 
         _eventBuild: function () {
             const Galaxy = getGalaxyInstance();
-            const models = this.getUploadedModels();
-            const selection = new Galaxy.currHistoryPanel.collection.constructor(models);
-            // I'm building the selection wrong because I need to set this historyId directly.
-            selection.historyId = Galaxy.currHistoryPanel.collection.historyId;
+            const models = {};
+            this.collection.models.forEach((model) => {
+                const outputs = model.get("outputs");
+                if (outputs) {
+                    Object.entries(outputs).forEach((output) => {
+                        const outputDetails = output[1];
+                        models[outputDetails.id] = outputDetails;
+                    });
+                } else {
+                    console.debug("Warning, upload response does not contain outputs.", model);
+                }
+            });
+            // Build selection object
+            const selection = {
+                models: Object.values(models),
+                historyId: Galaxy.currHistoryPanel.model.id,
+            };
             Galaxy.currHistoryPanel.buildCollection(this.collectionType, selection, true);
             this.counterRunning = 0;
             this._updateStateForCounters();

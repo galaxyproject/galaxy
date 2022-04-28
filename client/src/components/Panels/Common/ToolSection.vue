@@ -1,14 +1,14 @@
 <template>
     <div v-if="isSection && hasElements" class="tool-panel-section">
         <div
+            v-b-tooltip.topright.hover
             :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]"
             :title="title"
-            v-b-tooltip.topright.hover
             @mouseover="hover = true"
             @mouseleave="hover = false">
-            <a class="title-link" @click="toggleMenu()" href="javascript:void(0)">
+            <a class="title-link" href="javascript:void(0)" @click="toggleMenu()">
                 <span class="name">
-                    {{ this.name }}
+                    {{ name }}
                 </span>
                 <ToolPanelLinks :links="links" :show="hover" />
             </a>
@@ -16,12 +16,12 @@
         <transition name="slide">
             <div v-if="opened">
                 <template v-for="[key, el] in category.elems.entries()">
-                    <ToolPanelLabel v-if="category.text" :definition="el" :key="key" />
+                    <ToolPanelLabel v-if="category.text" :key="key" :definition="el" />
                     <tool
                         v-else
+                        :key="key"
                         class="ml-2"
                         :tool="el"
-                        :key="key"
                         :tool-key="toolKey"
                         :hide-name="hideName"
                         :operation-title="operationTitle"
@@ -100,17 +100,6 @@ export default {
             hover: false,
         };
     },
-    watch: {
-        queryFilter() {
-            this.opened = this.checkFilter();
-        },
-        opened(newVal, oldVal) {
-            if (newVal !== oldVal) {
-                const currentState = newVal ? "opened" : "closed";
-                ariaAlert(`${this.name} tools menu ${currentState}`);
-            }
-        },
-    },
     computed: {
         name() {
             return this.category.title || this.category.name;
@@ -128,6 +117,24 @@ export default {
             return this.category.links || {};
         },
     },
+    watch: {
+        queryFilter() {
+            this.opened = this.checkFilter();
+        },
+        opened(newVal, oldVal) {
+            if (newVal !== oldVal) {
+                const currentState = newVal ? "opened" : "closed";
+                ariaAlert(`${this.name} tools menu ${currentState}`);
+            }
+        },
+    },
+    created() {
+        this.eventHub.$on("openToolSection", (sectionId) => {
+            if (this.isSection && sectionId == this.category?.id) {
+                this.toggleMenu(true);
+            }
+        });
+    },
     methods: {
         checkFilter() {
             return !this.disableFilter && !!this.queryFilter;
@@ -141,13 +148,6 @@ export default {
         toggleMenu(nextState = !this.opened) {
             this.opened = nextState;
         },
-    },
-    created() {
-        this.eventHub.$on("openToolSection", (sectionId) => {
-            if (this.isSection && sectionId == this.category?.id) {
-                this.toggleMenu(true);
-            }
-        });
     },
 };
 </script>

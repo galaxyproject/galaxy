@@ -169,8 +169,11 @@ class HasDriver:
     def send_enter(self, element):
         element.send_keys(Keys.ENTER)
 
-    def send_escape(self, element):
-        element.send_keys(Keys.ESCAPE)
+    def send_escape(self, element=None):
+        if element is None:
+            self.action_chains().send_keys(Keys.ESCAPE)
+        else:
+            element.send_keys(Keys.ESCAPE)
 
     def send_backspace(self, element):
         element.send_keys(Keys.BACKSPACE)
@@ -216,6 +219,10 @@ class HasDriver:
         )
 
 
+def exception_indicates_click_intercepted(exception):
+    return "click intercepted" in str(exception)
+
+
 def exception_indicates_not_clickable(exception):
     return "not clickable" in str(exception)
 
@@ -225,6 +232,7 @@ def exception_indicates_stale_element(exception):
 
 
 __all__ = (
+    "exception_indicates_click_intercepted",
     "exception_indicates_not_clickable",
     "exception_indicates_stale_element",
     "HasDriver",

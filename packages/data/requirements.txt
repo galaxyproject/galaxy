@@ -2,7 +2,7 @@ galaxy-files
 galaxy-objectstore
 galaxy-sequence-utils
 galaxy-util[template]
-alembic==1.7.4; python_version >= "3.6"
+alembic
 bdbag
 bx-python
 contextvars; python_version >= "3.6" and python_version < "3.7"
@@ -13,6 +13,8 @@ numpy
 parsley
 pycryptodome
 pydantic
+pylibmagic
+python-magic
 pysam
 social-auth-core[openidconnect]==4.0.3
 SQLAlchemy>=1.4.25,<2

@@ -13,7 +13,7 @@
             </table>
         </div>
 
-        <div id="aws-estimate" v-if="aws_estimate && computedAwsEstimate">
+        <div v-if="aws_estimate && computedAwsEstimate" id="aws-estimate">
             <div class="aws">
                 <h3>AWS estimate</h3>
                 <b>{{ computedAwsEstimate.price }} USD</b><br />
@@ -55,13 +55,6 @@ export default {
             type: Boolean,
             default: true,
         },
-    },
-    created: function () {
-        if (this.jobId) {
-            this.fetchJobMetricsForJobId(this.jobId);
-        } else {
-            this.fetchJobMetricsForDatasetId({ datasetId: this.datasetId, datasetType: this.datasetType });
-        }
     },
     computed: {
         ...mapGetters(["getJobMetricsByDatasetId", "getJobMetricsByJobId"]),
@@ -126,6 +119,13 @@ export default {
         orderedPlugins: function () {
             return Object.keys(this.metricsByPlugins).sort();
         },
+    },
+    created: function () {
+        if (this.jobId) {
+            this.fetchJobMetricsForJobId(this.jobId);
+        } else {
+            this.fetchJobMetricsForDatasetId({ datasetId: this.datasetId, datasetType: this.datasetType });
+        }
     },
     methods: {
         ...mapCacheActions(["fetchJobMetricsForDatasetId", "fetchJobMetricsForJobId"]),

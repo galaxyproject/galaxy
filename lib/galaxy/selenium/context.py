@@ -39,6 +39,12 @@ class GalaxySeleniumContext(NavigatesGalaxy):
         self.driver.save_screenshot(target)
         return target
 
+    def screenshot_if(self, label: Optional[str]) -> Optional[str]:
+        target = None
+        if label:
+            target = self.screenshot(label)
+        return target
+
     @abstractmethod
     def _screenshot_path(self, label: str, extension=".png") -> str:
         """Path to store screenshots in."""

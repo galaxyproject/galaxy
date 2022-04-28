@@ -299,7 +299,7 @@ class ToolsUploadTestCase(ApiTestCase):
         ]
         payload = {
             "history_id": history_id,
-            "targets": json.dumps(targets),
+            "targets": targets,
         }
         fetch_response = self.dataset_populator.fetch(payload)
         self._assert_status_code_is(fetch_response, 200)
@@ -340,7 +340,7 @@ class ToolsUploadTestCase(ApiTestCase):
         ]
         payload = {
             "history_id": history_id,
-            "targets": json.dumps(targets),
+            "targets": targets,
         }
         fetch_response = self.dataset_populator.fetch(payload)
         self._assert_status_code_is(fetch_response, 200)
@@ -511,7 +511,7 @@ class ToolsUploadTestCase(ApiTestCase):
             ]
             payload = {
                 "history_id": history_id,
-                "targets": json.dumps(targets),
+                "targets": targets,
             }
             payload["__files"] = {"files_0|file_data": tar_f}
             fetch_response = self.dataset_populator.fetch(payload)
@@ -882,15 +882,17 @@ class ToolsUploadTestCase(ApiTestCase):
         return self.dataset_populator.get_history_dataset_content(history_id, dataset=new_dataset)
 
     def _upload_and_get_details(self, content, **upload_kwds):
+        assert_ok = upload_kwds.pop("assert_ok", True)
         history_id, new_dataset = self._upload(content, **upload_kwds)
-        assert_ok = upload_kwds.get("assert_ok", True)
         return self.dataset_populator.get_history_dataset_details(history_id, dataset=new_dataset, assert_ok=assert_ok)
 
     def _upload(self, content, api="upload1", history_id=None, **upload_kwds):
         assert_ok = upload_kwds.get("assert_ok", True)
         history_id = history_id or self.dataset_populator.new_history()
         if api == "upload1":
-            new_dataset = self.dataset_populator.new_dataset(history_id, content=content, **upload_kwds)
+            new_dataset = self.dataset_populator.new_dataset(
+                history_id, content=content, fetch_data=False, **upload_kwds
+            )
         else:
             assert api == "fetch"
             element = dict(src="files", **upload_kwds)
@@ -898,7 +900,7 @@ class ToolsUploadTestCase(ApiTestCase):
                 "destination": {"type": "hdas"},
                 "elements": [element],
             }
-            targets = json.dumps([target])
+            targets = [target]
             payload = {"history_id": history_id, "targets": targets, "__files": {"files_0|file_data": content}}
             new_dataset = self.dataset_populator.fetch(payload, assert_ok=assert_ok).json()["outputs"][0]
         self.dataset_populator.wait_for_history(history_id, assert_ok=assert_ok)

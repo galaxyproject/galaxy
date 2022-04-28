@@ -30,6 +30,7 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
 )
+from galaxy.schema.fetch_data import FilesPayload
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
     dbkeys,
@@ -615,6 +616,9 @@ class FileToolParameter(ToolParameter):
     def from_json(self, value, trans=None, other_values=None):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
+        if isinstance(value, FilesPayload):
+            # multi-part upload handled and persisted in service layer
+            return value.dict()
         if type(value) == dict:
             if "session_id" in value:
                 # handle api upload

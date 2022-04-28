@@ -18,6 +18,8 @@ try:
     from custos.clients.utils.exceptions.CustosExceptions import KeyDoesNotExist
     from custos.transport.settings import CustosServerClientSettings
 
+    logging.getLogger("custos.clients.resource_secret_management_client").setLevel(logging.CRITICAL)
+
     custos_sdk_available = True
 except ImportError:
     custos_sdk_available = False

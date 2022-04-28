@@ -2,15 +2,12 @@
     <div class="ui-thumbnails">
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
-            <div class="search-input">
-                <input
-                    class="search-query parent-width"
-                    name="query"
-                    :placeholder="titleSearchVisualizations"
-                    autocomplete="off"
-                    type="text"
-                    v-model="search" />
-            </div>
+            <DelayedInput
+                class="mb-3"
+                :query="search"
+                :placeholder="titleSearchVisualizations"
+                :delay="100"
+                @change="onSearch" />
             <div v-for="plugin in plugins" :key="plugin.name">
                 <table v-if="match(plugin)">
                     <tr class="ui-thumbnails-item" @click="select(plugin)">
@@ -33,7 +30,7 @@
                             <div v-if="hdas && hdas.length > 0">
                                 <div class="font-weight-bold">{{ titleSelectDataset }}</div>
                                 <div class="ui-select">
-                                    <select class="select" v-model="selected">
+                                    <select v-model="selected" class="select">
                                         <option v-for="file in hdas" :key="file.id" :value="file.id">
                                             {{ file.name }}
                                         </option>
@@ -48,7 +45,7 @@
                                     <span class="title">{{ titleCreateVisualization }}</span>
                                 </button>
                             </div>
-                            <div v-else class="alert alert-danger" v-localize>
+                            <div v-else v-localize class="alert alert-danger">
                                 There is no suitable dataset in your current history which can be visualized with this
                                 plugin.
                             </div>
@@ -65,8 +62,12 @@ import _l from "utils/localization";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
+import DelayedInput from "components/Common/DelayedInput";
 
 export default {
+    components: {
+        DelayedInput,
+    },
     props: {
         datasetId: {
             type: String,
@@ -104,7 +105,10 @@ export default {
             });
     },
     methods: {
-        select: function (plugin) {
+        onSearch(newValue) {
+            this.search = newValue;
+        },
+        select(plugin) {
             if (this.fixed) {
                 this.create(plugin);
             } else {
@@ -128,7 +132,7 @@ export default {
                 }
             }
         },
-        create: function (plugin) {
+        create(plugin) {
             const href = `${plugin.href}?dataset_id=${this.selected}`;
             if (plugin.target == "_top") {
                 window.location.href = href;
@@ -136,14 +140,15 @@ export default {
                 $("#galaxy_main").attr("src", href);
             }
         },
-        match: function (plugin) {
+        match(plugin) {
+            const query = this.search.toLowerCase();
             return (
-                !this.search ||
-                plugin.name.indexOf(this.search) != -1 ||
-                (plugin.description && plugin.description.indexOf(this.search) != -1)
+                !query ||
+                plugin.html.toLowerCase().includes(query) ||
+                (plugin.description && plugin.description.toLowerCase().includes(query))
             );
         },
-        _errorMessage: function (e) {
+        _errorMessage(e) {
             const message = e && e.response && e.response.data && e.response.data.err_msg;
             return message || "Request failed for an unknown reason.";
         },

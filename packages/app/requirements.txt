@@ -23,6 +23,7 @@ pydantic
 PyJWT
 refgenconf>=0.12.0
 sqlitedict
+starlette
 svgwrite
 typing-extensions
 Whoosh

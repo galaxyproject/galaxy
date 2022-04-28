@@ -13,9 +13,11 @@ from typing import (
     Optional,
     Tuple,
     TYPE_CHECKING,
+    Union,
 )
 
 from markupsafe import escape
+from typing_extensions import Literal
 
 from galaxy import util
 from galaxy.datatypes.metadata import (
@@ -170,7 +172,7 @@ class Data(metaclass=DataMeta):
     copy_safe_peek = True
     # The dataset contains binary data --> do not space_to_tab or convert newlines, etc.
     # Allow binary file uploads of this type when True.
-    is_binary = True
+    is_binary: Union[bool, Literal["maybe"]] = True
     # Composite datatypes
     composite_type: Optional[str] = None
     composite_files: Dict[str, Any] = {}

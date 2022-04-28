@@ -1,21 +1,21 @@
 <template>
     <div>
-        <b-alert class="mt-2" v-if="errorMessage" :show="dismissCountDown" variant="info" @dismissed="resetAlert">
+        <b-alert v-if="errorMessage" class="mt-2" :show="dismissCountDown" variant="info" @dismissed="resetAlert">
             {{ errorMessage }}
         </b-alert>
         <b-row align-v="center">
             <b-col :sm="isRangeValid ? defaultInputSizeWithSlider : false">
                 <!-- regular dot and dot on numpad have different codes -->
                 <b-form-input
-                    @change="onInputChange"
-                    @keydown.190.capture="onFloatInput"
-                    @keydown.110.capture="onFloatInput"
                     v-model="currentValue"
                     :step="step"
                     size="sm"
-                    type="number" />
+                    type="number"
+                    @change="onInputChange"
+                    @keydown.190.capture="onFloatInput"
+                    @keydown.110.capture="onFloatInput" />
             </b-col>
-            <b-col class="pl-0" v-if="isRangeValid">
+            <b-col v-if="isRangeValid" class="pl-0">
                 <b-form-input v-model="currentValue" :min="min" :max="max" :step="step" type="range" />
             </b-col>
         </b-row>

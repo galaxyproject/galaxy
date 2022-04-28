@@ -6,7 +6,6 @@ from fastapi import (
     FastAPI,
     Request,
 )
-from fastapi.openapi.utils import get_openapi
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import (
     FileResponse,
@@ -20,6 +19,7 @@ from galaxy.webapps.base.api import (
     include_all_package_routers,
 )
 from galaxy.webapps.base.webapp import config_allows_origin
+from galaxy.webapps.openapi.utils import get_openapi
 
 # https://fastapi.tiangolo.com/tutorial/metadata/#metadata-for-tags
 api_tags_metadata = [
@@ -44,6 +44,10 @@ api_tags_metadata = [
     {
         "name": "group_roles",
         "description": "Operations with group roles.",
+    },
+    {
+        "name": "group_users",
+        "description": "Operations with group users.",
     },
     {"name": "histories"},
     {"name": "libraries"},
@@ -170,6 +174,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     include_all_package_routers(app, "galaxy.webapps.galaxy.api")
     include_legacy_openapi(app, gx_app)
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
+    gx_app.haltables.append(("WSGI Middleware threadpool", wsgi_handler.executor.shutdown))
     app.mount("/", wsgi_handler)
     if gx_app.config.galaxy_url_prefix != "/":
         parent_app = FastAPI()

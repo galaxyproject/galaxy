@@ -1,5 +1,6 @@
 import logging
 import os
+import urllib.parse
 from typing import (
     cast,
     Dict,
@@ -223,6 +224,9 @@ class DatabaseStateCache:
     def is_database_empty(self) -> bool:
         return not bool(self.db_metadata.tables)
 
+    def contains_only_kombu_tables(self) -> bool:
+        return metadata_contains_only_kombu_tables(self.db_metadata)
+
     def has_alembic_version_table(self) -> bool:
         return ALEMBIC_TABLE in self.db_metadata.tables
 
@@ -246,6 +250,14 @@ class DatabaseStateCache:
         if self.has_sqlalchemymigrate_version_table():
             sql = text(f"select version from {SQLALCHEMYMIGRATE_TABLE}")
             return conn.execute(sql).scalar()
+
+
+def metadata_contains_only_kombu_tables(metadata: MetaData) -> bool:
+    """
+    Return True if metadata contains only kombu-related tables.
+    (ref: https://github.com/galaxyproject/galaxy/issues/13689)
+    """
+    return all(table.startswith("kombu_") or table.startswith("sqlite_") for table in metadata.tables.keys())
 
 
 def verify_databases_via_script(
@@ -352,7 +364,7 @@ class DatabaseStateVerifier:
         return False
 
     def _handle_empty_database(self) -> bool:
-        if self.is_new_database or self._is_database_empty():
+        if self.is_new_database or self._is_database_empty() or self._contains_only_kombu_tables():
             self._initialize_database()
             return True
         return False
@@ -450,6 +462,9 @@ class DatabaseStateVerifier:
     def _is_database_empty(self) -> bool:
         return self.db_state.is_database_empty()
 
+    def _contains_only_kombu_tables(self) -> bool:
+        return self.db_state.contains_only_kombu_tables()
+
     def _has_alembic_version_table(self) -> bool:
         return self.db_state.has_alembic_version_table()
 
@@ -483,7 +498,8 @@ def get_last_sqlalchemymigrate_version(model: ModelId) -> int:
 
 
 def get_url_string(engine: Engine) -> str:
-    return engine.url.render_as_string(hide_password=False)
+    db_url = engine.url.render_as_string(hide_password=False)
+    return urllib.parse.unquote(db_url)
 
 
 def get_alembic_manager(engine: Engine) -> AlembicManager:

@@ -1,7 +1,7 @@
 <!-- https://schema.org/Person -->
 <template>
     <b-form @submit="onSave" @reset="onReset">
-        <div role="group" class="form-group" v-for="attribute in displayedAttributes" :key="attribute.key">
+        <div v-for="attribute in displayedAttributes" :key="attribute.key" role="group" class="form-group">
             <label :for="attribute.key">{{ attribute.label }}</label>
             <font-awesome-icon
                 v-b-tooltip.hover
@@ -50,10 +50,10 @@ import { faEyeSlash, faLink } from "@fortawesome/free-solid-svg-icons";
 library.add(faEyeSlash, faLink);
 
 export default {
-    mixins: [ThingFormMixin],
     components: {
         FontAwesomeIcon,
     },
+    mixins: [ThingFormMixin],
     props: {
         person: {
             type: Object,

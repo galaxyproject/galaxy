@@ -1,5 +1,5 @@
 <template>
-    <b-form-input class="directory-form-input" v-model="localValue" :placeholder="placeholder" @click="selectFile">
+    <b-form-input v-model="localValue" class="directory-form-input" :placeholder="placeholder" @click="selectFile">
     </b-form-input>
 </template>
 
@@ -32,6 +32,14 @@ export default {
             return `Click to select ${this.mode}`;
         },
     },
+    watch: {
+        localValue(newValue) {
+            this.$emit("input", newValue);
+        },
+        value(newValue) {
+            this.localValue = newValue;
+        },
+    },
     methods: {
         selectFile() {
             const props = {
@@ -41,14 +49,6 @@ export default {
             filesDialog((selected) => {
                 this.localValue = selected?.url;
             }, props);
-        },
-    },
-    watch: {
-        localValue(newValue) {
-            this.$emit("input", newValue);
-        },
-        value(newValue) {
-            this.localValue = newValue;
         },
     },
 };

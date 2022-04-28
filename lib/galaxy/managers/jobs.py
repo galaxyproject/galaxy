@@ -22,6 +22,10 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
+from galaxy.job_metrics import (
+    RawMetric,
+    Safety,
+)
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
@@ -658,24 +662,21 @@ def summarize_job_metrics(trans, job):
     Precondition: the caller has verified the job is accessible to the user
     represented by the trans parameter.
     """
-    if not trans.user_is_admin and not trans.app.config.expose_potentially_sensitive_job_metrics:
-        return []
-
-    def metric_to_dict(metric):
-        metric_name = metric.metric_name
-        metric_value = metric.metric_value
-        metric_plugin = metric.plugin
-        title, value = trans.app.job_metrics.format(metric_plugin, metric_name, metric_value)
-        return dict(
-            title=title,
-            value=value,
-            plugin=metric_plugin,
-            name=metric_name,
-            raw_value=str(metric_value),
+    safety_level = Safety.SAFE
+    if trans.user_is_admin:
+        safety_level = Safety.UNSAFE
+    elif trans.app.config.expose_potentially_sensitive_job_metrics:
+        safety_level = Safety.POTENTIALLY_SENSITVE
+    raw_metrics = [
+        RawMetric(
+            m.metric_name,
+            m.metric_value,
+            m.plugin,
         )
-
-    metrics = [m for m in job.metrics if m.plugin != "env" or trans.user_is_admin]
-    return list(map(metric_to_dict, metrics))
+        for m in job.metrics
+    ]
+    dictifiable_metrics = trans.app.job_metrics.dictifiable_metrics(raw_metrics, safety_level)
+    return [d.dict() for d in dictifiable_metrics]
 
 
 def summarize_destination_params(trans, job):

@@ -21,6 +21,7 @@ from galaxy.model.migrations import (
     DatabaseStateCache,
     GXY,
     IncorrectVersionError,
+    NoVersionTableError,
     SQLALCHEMYMIGRATE_LAST_VERSION_GXY,
     TSI,
 )
@@ -238,7 +239,9 @@ class LegacyManageDb:
             version = self._get_gxy_alembic_db_version(engine)
             if not version:
                 version = self._get_gxy_sam_db_version(engine)
-                if version != SQLALCHEMYMIGRATE_LAST_VERSION_GXY:
+                if version is None:
+                    raise NoVersionTableError(GXY)
+                elif version != SQLALCHEMYMIGRATE_LAST_VERSION_GXY:
                     raise IncorrectVersionError(GXY, SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
             return version
         finally:
