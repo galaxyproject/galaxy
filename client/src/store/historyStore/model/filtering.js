@@ -222,7 +222,7 @@ export function getQueryDict(filterText) {
  * Only used to sync filterSettings (in HistoryFilters)
  * @param {String} filterText The raw filter text
  */
- export function getFilterSettings(filterText) {
+export function getFilterSettings(filterText) {
     const pairSplitRE = /[^\s']+(?:'[^']*'[^\s']*)*|(?:'[^']*'[^\s']*)+/g;
     const result = {};
     const matches = filterText.match(pairSplitRE);
