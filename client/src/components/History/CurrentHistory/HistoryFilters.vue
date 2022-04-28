@@ -97,18 +97,6 @@ export default {
             filterSettings: { ...filterDefaults },
         };
     },
-    watch: {
-        localFilter(newFilterText) {
-            // reset filterSettings when filterText changes
-            this.filterSettings = { ...filterDefaults };
-            var newfilterSettings = getFilterSettings(newFilterText);
-            Object.entries(newfilterSettings).forEach(([key, value]) => {
-                if (this.filterSettings[key] !== value) {
-                    this.filterSettings[key] = value;
-                }
-            });
-        },
-    },
     computed: {
         localFilter: {
             get() {
@@ -119,6 +107,18 @@ export default {
                     this.updateFilter(newVal);
                 }
             },
+        },
+    },
+    watch: {
+        localFilter(newFilterText) {
+            // reset filterSettings when filterText changes
+            this.filterSettings = { ...filterDefaults };
+            var newfilterSettings = getFilterSettings(newFilterText);
+            Object.entries(newfilterSettings).forEach(([key, value]) => {
+                if (this.filterSettings[key] !== value) {
+                    this.filterSettings[key] = value;
+                }
+            });
         },
     },
     methods: {
