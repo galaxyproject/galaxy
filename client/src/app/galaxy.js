@@ -80,6 +80,8 @@ GalaxyApp.prototype._init = function (options, bootstrapped) {
     this._initUserLocale();
     this.debug("currentLocale: ", sessionStorage.getItem("currentLocale"));
 
+    this._syncUserLocale(this.params.syncUserLocale);
+
     this._setUpListeners();
     this.trigger("ready", this);
 
@@ -245,6 +247,12 @@ GalaxyApp.prototype._setUpListeners = function _setUpListeners() {
         //TODO:?? we might somehow manage to *retry* ajax using either this hook or Backbone.sync
     });
     return this;
+};
+
+GalaxyApp.prototype._syncUserLocale = function _syncUserLocale(syncUserLocale) {
+    if (syncUserLocale === 'true') {
+        window.location = '/';
+    }
 };
 
 /** Turn debugging/console-output on/off by passing boolean. Pass nothing to get current setting. */
