@@ -229,6 +229,51 @@ steps:
         assert jobs_response.json() == {"err_msg": "Only admins can index the jobs of others", "err_code": 403006}
 
     @uses_test_history(require_new=True)
+    def test_index_handler_runner_filters(self, history_id):
+        self.__history_with_new_dataset(history_id)
+
+        jobs = self._get(f"jobs?view=admin_job_list&history_id={history_id}", admin=True).json()
+        job = jobs[0]
+        handler = job["handler"]
+        assert handler
+        runner = job["job_runner_name"]
+        assert runner
+
+        # Free text search includes handler and runner for admin list view.
+        jobs = self._get(f"jobs?view=admin_job_list&history_id={history_id}&search={handler}", admin=True).json()
+        assert jobs
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search={handler}suffixnotfound", admin=True
+        ).json()
+        assert not jobs
+        jobs = self._get(f"jobs?view=admin_job_list&history_id={history_id}&search={runner}", admin=True).json()
+        assert jobs
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search={runner}suffixnotfound", admin=True
+        ).json()
+        assert not jobs
+
+        # Test tags for runner and handler specifically.
+        assert runner != handler
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search=handler:%27{handler}%27", admin=True
+        ).json()
+        assert jobs
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search=runner:%27{handler}%27", admin=True
+        ).json()
+        assert not jobs
+
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search=runner:%27{runner}%27", admin=True
+        ).json()
+        assert jobs
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search=handler:%27{runner}%27", admin=True
+        ).json()
+        assert not jobs
+
+    @uses_test_history(require_new=True)
     def test_index_multiple_states_filter(self, history_id):
         # Initial number of ok jobs
         original_count = len(self.__uploads_with_state("ok", "new"))
