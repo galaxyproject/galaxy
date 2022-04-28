@@ -49,13 +49,21 @@ def main(argv=None):
     do_fetch(args.request, working_directory=args.working_directory or os.getcwd(), registry=registry)
 
 
-def do_fetch(request_path: str, working_directory: str, registry: Registry, file_sources_dict: Optional[Dict] = None):
+def do_fetch(
+    request_path: str,
+    working_directory: str,
+    registry: Registry,
+    file_sources_dict: Optional[Dict] = None,
+    cancelable_wrapper=None,
+):
     assert os.path.exists(request_path)
     with open(request_path) as f:
         request = json.load(f)
 
     allow_failed_collections = request.get("allow_failed_collections", False)
-    upload_config = UploadConfig(request, registry, working_directory, allow_failed_collections, file_sources_dict)
+    upload_config = UploadConfig(
+        request, registry, working_directory, allow_failed_collections, file_sources_dict, cancelable_wrapper
+    )
     galaxy_json = _request_to_galaxy_json(upload_config, request)
     galaxy_json_path = os.path.join(working_directory, "galaxy.json")
     with open(galaxy_json_path, "w") as f:
@@ -527,7 +535,15 @@ def get_file_sources(working_directory, file_sources_as_dict=None):
 
 
 class UploadConfig:
-    def __init__(self, request, registry, working_directory, allow_failed_collections, file_sources_dict=None):
+    def __init__(
+        self,
+        request,
+        registry,
+        working_directory,
+        allow_failed_collections,
+        file_sources_dict=None,
+        cancelable_wrapper=None,
+    ):
         self.registry = registry
         self.working_directory = working_directory
         self.allow_failed_collections = allow_failed_collections
@@ -538,6 +554,7 @@ class UploadConfig:
         self.validate_hashes = request.get("validate_hashes", False)
         self.deferred = request.get("deferred", False)
         self.link_data_only = _link_data_only(request)
+        self.cancelable_wrapper = cancelable_wrapper
         self.file_sources_dict = file_sources_dict
         self._file_sources = None
 

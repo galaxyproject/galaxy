@@ -74,6 +74,7 @@ numpy = "*"
 paramiko = "!=2.9.0, !=2.9.1"  # https://github.com/paramiko/paramiko/issues/1961
 Parsley = "*"
 Paste = "*"
+pebble = "*"
 psutil = "*"
 pulsar-galaxy-lib = ">=0.14.13"
 pycryptodome = "*"

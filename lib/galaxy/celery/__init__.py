@@ -1,5 +1,4 @@
 import os
-from concurrent.futures import TimeoutError
 from functools import (
     lru_cache,
     wraps,
@@ -15,19 +14,10 @@ from celery import (
     Celery,
     shared_task,
 )
-from celery.contrib.abortable import AbortableTask
 from kombu import serialization
-from pebble import ProcessPool
-from sqlalchemy import (
-    exists,
-    select,
-)
 
-from galaxy import model
 from galaxy.config import Configuration
-from galaxy.datatypes.registry import Registry
 from galaxy.main_config import find_config
-from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import ExecutionTimer
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.properties import load_app_properties
@@ -163,36 +153,6 @@ if beat_schedule:
 celery_app.conf.timezone = "UTC"
 
 
-def cancelable_task(f, *args, **kwargs):
-    session = get_galaxy_app()[galaxy_scoped_session]
-    from galaxy.celery.tasks import _fetch_data
-
-    job_id = kwargs.pop("job_id")
-    if not is_aborted(session, job_id):
-        with ProcessPool() as p:
-            future = p.schedule(_fetch_data, args=args, kwargs=kwargs)
-            while True:
-                try:
-                    return future.result(timeout=1)
-                except TimeoutError:
-                    if is_aborted(session, job_id):
-                        log.debug(f"Job {job_id} aborted")
-                        break
-
-
-def is_aborted(session, job_id):
-    return session.execute(
-        select(
-            exists(model.Job.state).where(
-                model.Job.id == job_id,
-                model.Job.state.in_(
-                    [model.Job.states.DELETED, model.Job.states.DELETED_NEW, model.Job.states.DELETING]
-                ),
-            )
-        )
-    ).scalar()
-
-
 def galaxy_task(*args, action=None, **celery_task_kwd):
     if "serializer" not in celery_task_kwd:
         celery_task_kwd["serializer"] = PYDANTIC_AWARE_SERIALIZER_NAME
@@ -213,14 +173,7 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
                 timer = ExecutionTimer()
 
             try:
-                if args and isinstance(args[0], AbortableTask):
-                    import cloudpickle
-
-                    kwds["datatypes_registry"] = cloudpickle.dumps(app[Registry])
-                    rval = cancelable_task(func, *args[1:], **kwds)
-                else:
-                    partial_task_function = app.magic_partial(func)
-                    rval = partial_task_function(*args, **kwds)
+                rval = app.magic_partial(func)(*args, **kwds)
                 message = f"Successfully executed Celery task {desc} {timer}"
                 log.info(message)
                 return rval
