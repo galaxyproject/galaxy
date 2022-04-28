@@ -25,6 +25,32 @@
                 <pre v-if="result.peek" class="dataset-peek p-1" v-html="result.peek" />
             </div>
         </div>
+        <div v-else class="dataset">
+            <!--
+                placeholder skeleton for loading smoothly without a spinner
+                (which you don't even see since this happens pretty fast)
+            -->
+            <div class="p-2 details">
+                <div class="summary">
+                    <div class="mb-1">
+                        <b-skeleton width="85%"></b-skeleton>
+                    </div>
+                    <span class="datatype">
+                        <b-skeleton width="55%"></b-skeleton>
+                    </span>
+                    <div class="info">
+                        <span class="value">Dataset Information Loading.</span>
+                    </div>
+                </div>
+                <pre class="dataset-peek p-1">
+                    <table cellspacing="0" cellpadding="3">
+                        <tbody>
+                            <tr><td>Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </pre>
+            </div>
+        </div>
     </DatasetProvider>
 </template>
 
