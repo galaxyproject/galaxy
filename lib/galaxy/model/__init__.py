@@ -4479,16 +4479,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         self.metadata_deferred = other_hda.metadata_deferred
         self._metadata = None
         if self.extension == "data":
-            self._metadata = None
             self.extension = other_hda.extension
             self.metadata = other_hda.metadata
-        else:
-            # keep current extension and regenerate metadata
-            print("#############################TODO: ^")
-            datatype = self.extension
-            print(datatype)
-
-            pass  # TODO
         self.info = other_hda.info
         self.blurb = other_hda.blurb
         self.peek = other_hda.peek

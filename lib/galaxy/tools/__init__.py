@@ -2758,7 +2758,6 @@ class ExpressionTool(Tool):
                 # Skip filtered outputs
                 continue
             if val.output_type == "data":
-
                 with open(out_data[key].file_name) as f:
                     src = json.load(f)
                 assert isinstance(src, dict), f"Expected dataset 'src' to be a dictionary - actual type is {type(src)}"
@@ -2766,27 +2765,13 @@ class ExpressionTool(Tool):
                 copy_object = None
                 for input_dataset in inp_data.values():
                     if input_dataset and input_dataset.id == dataset_id:
+
                         copy_object = input_dataset
                         break
                 if copy_object is None:
                     raise Exception("Failed to find dataset output.")
-                
-                # TODO if (coming from force_to_dataype tool): 
-                print ("before",  out_data[key]._metadata)
-
-                param_dict = {"input1": out_data[key]}
-                metaJob, *_ = self.app.toolbox.get_tool("__SET_METADATA__").tool_action.execute_via_app(
-                    self.app.toolbox.get_tool("__SET_METADATA__"), self.app, job.session_id, copy_object.history_id, job.user, incoming=param_dict, overwrite=False
-                )
-                
-                self.app.job_manager.enqueue(job=metaJob, tool=self.app.toolbox.get_tool("__SET_METADATA__"))
-                time.sleep(45)
-                self.app.toolbox.get_tool("__SET_METADATA__").exec_after_process(self.app, {"input1": out_data[key]}, None, param_dict, metaJob)
-
-
-                print ("after",  out_data[key]._metadata)
-
                 out_data[key].copy_from(copy_object)
+                out_data[key].datatype.set_meta(out_data[key])
 
     def parse_environment_variables(self, tool_source):
         """Setup environment variable for inputs file."""
