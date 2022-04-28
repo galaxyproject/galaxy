@@ -19,6 +19,10 @@ from galaxy.managers.jobs import (
     JobSearch,
     view_show_job,
 )
+from galaxy.model.index_filter_util import (
+    raw_text_column_filter,
+    text_column_filter,
+)
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import Model
 from galaxy.util.search import (
@@ -88,7 +92,7 @@ class JobsService:
     ):
         security = trans.security
         is_admin = trans.user_is_admin
-        user_details = payload.user_details
+        user_details = payload.user_details or payload.view == JobIndexViewEnum.admin_job_list
         if payload.view == JobIndexViewEnum.admin_job_list and not is_admin:
             raise exceptions.AdminRequiredException("Only admins can use the admin_job_list view")
         user_id = payload.user_id
@@ -167,34 +171,44 @@ class JobsService:
             search_filters = {
                 "tool": "tool",
                 "t": "tool",
-                "user": "user",
-                "u": "user",
             }
+            if user_details:
+                search_filters.update(
+                    {
+                        "user": "user",
+                        "u": "user",
+                    }
+                )
+
+            if is_admin:
+                search_filters.update(
+                    {
+                        "runner": "runner",
+                        "r": "runner",
+                        "handler": "handler",
+                        "h": "handler",
+                    }
+                )
             parsed_search = parse_filters_structured(search, search_filters)
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
                     key = term.filter
-                    q = term.text
                     if key == "user":
-                        if term.quoted:
-                            query = query.filter(model.User.email == q)
-                        else:
-                            query = query.filter(model.User.email.ilike(f"%{q}%"))
+                        query = query.filter(text_column_filter(model.User.email, term))
                     elif key == "tool":
-                        if term.quoted:
-                            query = query.filter(model.Job.tool_id == q)
-                        else:
-                            query = query.filter(model.Job.tool_id.ilike(f"%{q}%"))
+                        query = query.filter(text_column_filter(model.Job.tool_id, term))
+                    elif key == "handler":
+                        query = query.filter(text_column_filter(model.Job.handler, term))
+                    elif key == "runner":
+                        query = query.filter(text_column_filter(model.Job.job_runner_name, term))
                 elif isinstance(term, RawTextTerm):
-                    q = term.text
-                    filters = []
-                    filters.append(model.Job.tool_id.ilike(f"%{q}%"))
+                    columns = [model.Job.tool_id]
                     if user_details:
-                        filters.append(model.User.email.ilike(f"%{q}%"))
-                    if len(filters) > 1:
-                        query = query.filter(or_(*filters))
-                    else:
-                        query = query.filter(filters[0])
+                        columns.append(model.User.email)
+                    if is_admin:
+                        columns.append(model.Job.handler)
+                        columns.append(model.Job.job_runner_name)
+                    query = query.filter(raw_text_column_filter(columns, term))
 
         if payload.order_by == JobIndexSortByEnum.create_time:
             order_by = model.Job.create_time.desc()

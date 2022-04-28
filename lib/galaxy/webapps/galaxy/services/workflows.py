@@ -46,6 +46,10 @@ INDEX_SEARCH_FILTERS = {
     "n": "name",
     "t": "tag",
     "is": "is",
+    "r": "runner",
+    "runner": "runner",
+    "h": "handler",
+    "handler": "handler",
 }
 
 
@@ -116,7 +120,6 @@ class WorkflowsService(ServiceBase):
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
 
             def tag_filter(term_text: str, quoted: bool):
-                term_text = term.text
                 if ":" in term_text:
                     key, value = term_text.rsplit(":", 1)
                     if not quoted:
