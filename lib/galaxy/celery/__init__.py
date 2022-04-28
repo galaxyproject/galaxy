@@ -25,7 +25,6 @@ from kombu import serialization
 from galaxy import model
 from galaxy.config import Configuration
 from galaxy.main_config import find_config
-from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import ExecutionTimer
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.properties import load_app_properties
@@ -67,6 +66,8 @@ def build_app():
     kwargs = get_app_properties()
     if kwargs:
         kwargs["check_migrate_databases"] = False
+        kwargs["use_display_applications"] = False
+        kwargs["use_converters"] = False
         import galaxy.app
 
         galaxy_app = galaxy.app.GalaxyManagerApplication(configure_logging=False, **kwargs)
@@ -179,15 +180,38 @@ async def is_aborted(job_id):
     # Other notes: AbortableTask could be be revoked, but that only works with the database backend
     # ... which shouldn't be used.
     app = get_galaxy_app()
-    session = app[galaxy_scoped_session]
 
-    def get_state():
-        return session.query(model.Job.state).filter_by(id=job_id).one()[0]
+    # sessionmaker should obviously be created elsewhere, and persist in the worker's main loop
+    from sqlalchemy.ext.asyncio import (
+        AsyncSession,
+        create_async_engine,
+    )
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.future import select
 
-    state = get_state()
-    while state not in {model.Job.states.DELETED, model.Job.states.DELETING}:
-        await asyncio.sleep(1)
-        state = get_state()
+    db_url = app.config.database_connection
+    if db_url.startswith("postgresql://"):
+        db_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
+        if "?client_encoding=utf8" in db_url:
+            db_url = db_url.replace("?client_encoding=utf8", "")
+
+    try:
+        engine = create_async_engine(
+            db_url,
+        )
+        async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+        async with async_session() as session:
+
+            async def get_state():
+                result = await session.execute(select(model.Job.state).where(model.Job.id == job_id))
+                return next(result)
+
+            state = await get_state()
+            while state[0] not in {model.Job.states.DELETED, model.Job.states.DELETING}:
+                await asyncio.sleep(1)
+                state = await get_state()
+    finally:
+        await engine.dispose()
     log.debug(f"Job {job_id} aborted")
 
 
