@@ -1,5 +1,5 @@
-import asyncio
 import os
+from concurrent.futures import TimeoutError
 from functools import (
     lru_cache,
     wraps,
@@ -11,20 +11,23 @@ from typing import (
     Dict,
 )
 
-from asgiref.sync import (
-    async_to_sync,
-    sync_to_async,
-)
 from celery import (
     Celery,
     shared_task,
 )
 from celery.contrib.abortable import AbortableTask
 from kombu import serialization
+from pebble import ProcessPool
+from sqlalchemy import (
+    exists,
+    select,
+)
 
 from galaxy import model
 from galaxy.config import Configuration
+from galaxy.datatypes.registry import Registry
 from galaxy.main_config import find_config
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import ExecutionTimer
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.properties import load_app_properties
@@ -160,59 +163,34 @@ if beat_schedule:
 celery_app.conf.timezone = "UTC"
 
 
-async def cancellable_task(f: Callable, *args, **kwargs):
-    coro = sync_to_async(f)
-    done, pending = await asyncio.wait(
-        [coro(*args, **kwargs), is_aborted(kwargs["job_id"])], return_when=asyncio.FIRST_COMPLETED
-    )
-    for pending_future in pending:
-        pending_future.cancel()
-    for done_future in done:
-        return done_future.result()
+def cancelable_task(f, *args, **kwargs):
+    session = get_galaxy_app()[galaxy_scoped_session]
+    from galaxy.celery.tasks import _fetch_data
+
+    job_id = kwargs.pop("job_id")
+    if not is_aborted(session, job_id):
+        with ProcessPool() as p:
+            future = p.schedule(_fetch_data, args=args, kwargs=kwargs)
+            while True:
+                try:
+                    return future.result(timeout=1)
+                except TimeoutError:
+                    if is_aborted(session, job_id):
+                        log.debug(f"Job {job_id} aborted")
+                        break
 
 
-async def is_aborted(job_id):
-    # This is not ideal
-    # 1. we're calling a method that does I/O (sqlalchemy query)
-    # 2. we're polling every second
-    # Maybe we should listen for broadcast messages ?
-    # Alternatively we could construct an AsyncSession and decrease the polling frequency over time
-    # Other notes: AbortableTask could be be revoked, but that only works with the database backend
-    # ... which shouldn't be used.
-    app = get_galaxy_app()
-
-    # sessionmaker should obviously be created elsewhere, and persist in the worker's main loop
-    from sqlalchemy.ext.asyncio import (
-        AsyncSession,
-        create_async_engine,
-    )
-    from sqlalchemy.orm import sessionmaker
-    from sqlalchemy.future import select
-
-    db_url = app.config.database_connection
-    if db_url.startswith("postgresql://"):
-        db_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
-        if "?client_encoding=utf8" in db_url:
-            db_url = db_url.replace("?client_encoding=utf8", "")
-
-    try:
-        engine = create_async_engine(
-            db_url,
+def is_aborted(session, job_id):
+    return session.execute(
+        select(
+            exists(model.Job.state).where(
+                model.Job.id == job_id,
+                model.Job.state.in_(
+                    [model.Job.states.DELETED, model.Job.states.DELETED_NEW, model.Job.states.DELETING]
+                ),
+            )
         )
-        async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
-        async with async_session() as session:
-
-            async def get_state():
-                result = await session.execute(select(model.Job.state).where(model.Job.id == job_id))
-                return next(result)
-
-            state = await get_state()
-            while state[0] not in {model.Job.states.DELETED, model.Job.states.DELETING}:
-                await asyncio.sleep(1)
-                state = await get_state()
-    finally:
-        await engine.dispose()
-    log.debug(f"Job {job_id} aborted")
+    ).scalar()
 
 
 def galaxy_task(*args, action=None, **celery_task_kwd):
@@ -235,10 +213,13 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
                 timer = ExecutionTimer()
 
             try:
-                partial_task_function = app.magic_partial(func)
                 if args and isinstance(args[0], AbortableTask):
-                    rval = async_to_sync(cancellable_task)(partial_task_function, *args, **kwds)
+                    import cloudpickle
+
+                    kwds["datatypes_registry"] = cloudpickle.dumps(app[Registry])
+                    rval = cancelable_task(func, *args[1:], **kwds)
                 else:
+                    partial_task_function = app.magic_partial(func)
                     rval = partial_task_function(*args, **kwds)
                 message = f"Successfully executed Celery task {desc} {timer}"
                 log.info(message)

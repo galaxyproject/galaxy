@@ -135,6 +135,10 @@ def finish_job(job_id: int, raw_tool_source: str, app: MinimalManagerApp, sa_ses
 
 
 def _fetch_data(setup_return, datatypes_registry: DatatypesRegistry):
+    if not isinstance(datatypes_registry, DatatypesRegistry):
+        import cloudpickle
+
+        datatypes_registry = cloudpickle.loads(datatypes_registry)
     tool_job_working_directory, request_path, file_sources_dict = setup_return
     working_directory = Path(tool_job_working_directory) / "working"
     do_fetch(

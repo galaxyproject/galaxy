@@ -913,6 +913,11 @@ class Data(metaclass=DataMeta):
     def handle_dataset_as_image(self, hda) -> str:
         raise Exception("Unimplemented Method")
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state.pop("display_applications", None)
+        return state
+
 
 @p_dataproviders.decorators.has_dataproviders
 class Text(Data):

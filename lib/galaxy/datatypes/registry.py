@@ -1151,6 +1151,23 @@ class Registry:
             extension = extension.lower()
         return extension
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Don't pickle xml elements
+        unpickleable_attributes = [
+            "converter_tools",
+            "datatype_converters",
+            "datatype_elems",
+            "display_app_containers",
+            "display_applications",
+            "inherit_display_application_by_class",
+            "set_external_metadata_tool",
+            "sniffer_elems",
+        ]
+        for unpicklable in unpickleable_attributes:
+            state[unpicklable] = []
+        return state
+
 
 def example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=True):
     galaxy_dir = galaxy.util.galaxy_directory()
