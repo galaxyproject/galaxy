@@ -25,7 +25,6 @@
 
 <script>
 import Utils from "utils/utils";
-import Ui from "mvc/ui/ui-misc";
 
 export default {
     props: {
