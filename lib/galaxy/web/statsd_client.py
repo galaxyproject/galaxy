@@ -1,5 +1,9 @@
 import sys
-from typing import Dict, Optional, Type
+from typing import (
+    Dict,
+    Optional,
+    Type,
+)
 
 try:
     import statsd
@@ -11,21 +15,17 @@ from galaxy.util import asbool
 
 # TODO: optimize with two separate implementations around statsd_influxdb?
 class VanillaGalaxyStatsdClient:
-
-    def __init__(self,
-                 statsd_host,
-                 statsd_port,
-                 statsd_prefix,
-                 statsd_influxdb,
-                 statsd_mock_calls=False):
+    def __init__(self, statsd_host, statsd_port, statsd_prefix, statsd_influxdb, statsd_mock_calls=False):
         if not statsd:
-            raise ImportError("Statsd logging configured, but no statsd python module found. "
-                           "Please install the python statsd module to use this functionality.")
+            raise ImportError(
+                "Statsd logging configured, but no statsd python module found. "
+                "Please install the python statsd module to use this functionality."
+            )
 
-        self.metric_infix = ''
+        self.metric_infix = ""
         self.statsd_influxdb = asbool(statsd_influxdb)
         if self.statsd_influxdb:
-            statsd_prefix = statsd_prefix.strip(',')
+            statsd_prefix = statsd_prefix.strip(",")
         if statsd_mock_calls:
             self.statsd_client = MockStatsClient()
         else:
@@ -42,11 +42,11 @@ class VanillaGalaxyStatsdClient:
     def _effective_infix(self, path, tags):
         tags = tags or {}
         if self.statsd_influxdb and tags:
-            return f",{','.join(f'{k}={v}' for k, v in tags.items())}" + ',path='
+            return f",{','.join(f'{k}={v}' for k, v in tags.items())}" + ",path="
         if self.statsd_influxdb:
-            return ',path='
+            return ",path="
         else:
-            return ''
+            return ""
 
 
 CURRENT_TEST: Optional[str] = None
@@ -54,7 +54,6 @@ CURRENT_TEST_METRICS: Optional[Dict[str, Dict]] = None
 
 
 class PyTestGalaxyStatsdClient(VanillaGalaxyStatsdClient):
-
     def timing(self, path, time, tags=None):
         metrics = CURRENT_TEST_METRICS
         if metrics is not None:
@@ -82,7 +81,6 @@ class PyTestGalaxyStatsdClient(VanillaGalaxyStatsdClient):
 
 
 class MockStatsClient:
-
     def timing(self, path, time, tags=None):
         pass
 
@@ -92,10 +90,10 @@ class MockStatsClient:
 
 GalaxyStatsdClient: Type[VanillaGalaxyStatsdClient]
 # Replace stats collector if in pytest environment
-if 'pytest' in sys.modules:
+if "pytest" in sys.modules:
     GalaxyStatsdClient = PyTestGalaxyStatsdClient
 else:
     GalaxyStatsdClient = VanillaGalaxyStatsdClient
 
 
-__all__ = ('GalaxyStatsdClient',)
+__all__ = ("GalaxyStatsdClient",)

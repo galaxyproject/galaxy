@@ -19,7 +19,7 @@ def main():
     for line in infile:
         line = line.rstrip("\n")
         n += 1
-        if (n <= total_lines):
+        if n <= total_lines:
             kept.append(line)
         elif random.randint(1, n) <= total_lines:
             kept.pop(random.randint(0, total_lines - 1))
@@ -29,7 +29,7 @@ def main():
         sys.stderr.write("Error: asked to select more lines than there were in the file.")
         sys.exit()
 
-    open(sys.argv[3], 'w').write("\n".join(kept))
+    open(sys.argv[3], "w").write("\n".join(kept))
 
 
 if __name__ == "__main__":

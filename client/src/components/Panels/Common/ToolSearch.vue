@@ -1,5 +1,5 @@
 <template>
-    <delayed-input :query="query" :loading="loading" :placeholder="placeholder" @onChange="checkQuery" />
+    <DelayedInput class="mb-3" :query="query" :loading="loading" :placeholder="placeholder" @change="checkQuery" />
 </template>
 
 <script>
@@ -18,13 +18,13 @@ export default {
             type: String,
             required: true,
         },
-        query: {
-            type: String,
-            default: "",
-        },
         placeholder: {
             type: String,
             default: "search tools",
+        },
+        query: {
+            type: String,
+            default: null,
         },
     },
     data() {

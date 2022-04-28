@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-alert show variant="danger" v-if="errorMessage" dismissible @dismissed="errorMessage = null">
+        <b-alert v-if="errorMessage" show variant="danger" dismissible @dismissed="errorMessage = null">
             {{ errorMessage }}
             <JobError
                 v-if="jobError"
@@ -17,7 +17,11 @@
         <div v-else-if="latestExportReady">
             Link for download ready
             <export-link :history-export="latestExport" />
-            . Use this link to download the archive or import it on another Galaxy server.
+            <p>Use this link to download the archive or import it on another Galaxy server.</p>
+            <b-alert show variant="warning"
+                >History archives are removed at regular intervals. For permanent storage download the archive, export
+                to a remote file or import the archive on another Galaxy server.
+            </b-alert>
         </div>
         <div v-else-if="hasReadyExport">
             <p>An out of date export is ready <export-link :history-export="latestReadyExport" />.</p>
@@ -73,12 +77,6 @@ export default {
             jobError: null,
         };
     },
-    created() {
-        if (!this.exportsInitialized) {
-            this.exportsInitialized = true;
-            this.loadExports();
-        }
-    },
     computed: {
         hasExports() {
             return this.exports !== null && this.exports.length > 0;
@@ -108,6 +106,12 @@ export default {
                 return `previous history export archival likely failed`;
             }
         },
+    },
+    created() {
+        if (!this.exportsInitialized) {
+            this.exportsInitialized = true;
+            this.loadExports();
+        }
     },
     methods: {
         loadExports() {

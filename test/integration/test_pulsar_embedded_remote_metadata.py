@@ -16,8 +16,8 @@ class EmbeddedMetadataPulsarIntegrationInstance(integration_util.IntegrationInst
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["job_config_file"] = EMBEDDED_PULSAR_JOB_CONFIG_FILE
-        config['object_store_store_by'] = 'uuid'
-        config['retry_metadata_internally'] = False
+        config["object_store_store_by"] = "uuid"
+        config["retry_metadata_internally"] = False
 
 
 instance = integration_util.integration_module_instance(EmbeddedMetadataPulsarIntegrationInstance)

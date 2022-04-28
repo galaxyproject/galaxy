@@ -8,7 +8,14 @@ import datetime
 import logging
 import sys
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table,
+)
 from sqlalchemy.exc import NoSuchTableError
 
 log = logging.getLogger(__name__)
@@ -22,41 +29,44 @@ log.addHandler(handler)
 metadata = MetaData()
 
 NOW = datetime.datetime.utcnow
-ROLE_TYPE = 'system'
+ROLE_TYPE = "system"
 
-RepositoryRoleAssociation_table = Table("repository_role_association", metadata,
-                                        Column("id", Integer, primary_key=True),
-                                        Column("repository_id", Integer, ForeignKey("repository.id"), index=True),
-                                        Column("role_id", Integer, ForeignKey("role.id"), index=True),
-                                        Column("create_time", DateTime, default=NOW),
-                                        Column("update_time", DateTime, default=NOW, onupdate=NOW))
+RepositoryRoleAssociation_table = Table(
+    "repository_role_association",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("repository_id", Integer, ForeignKey("repository.id"), index=True),
+    Column("role_id", Integer, ForeignKey("role.id"), index=True),
+    Column("create_time", DateTime, default=NOW),
+    Column("update_time", DateTime, default=NOW, onupdate=NOW),
+)
 
 
-def nextval(migrate_engine, table, col='id'):
-    if migrate_engine.name in ['postgresql', 'postgres']:
+def nextval(migrate_engine, table, col="id"):
+    if migrate_engine.name in ["postgresql", "postgres"]:
         return f"nextval('{table}_{col}_seq')"
-    elif migrate_engine.name in ['mysql', 'sqlite']:
+    elif migrate_engine.name in ["mysql", "sqlite"]:
         return "null"
     else:
-        raise Exception(f'Unable to convert data for unknown database type: {migrate_engine.name}')
+        raise Exception(f"Unable to convert data for unknown database type: {migrate_engine.name}")
 
 
 def localtimestamp(migrate_engine):
-    if migrate_engine.name in ['postgresql', 'postgres', 'mysql']:
+    if migrate_engine.name in ["postgresql", "postgres", "mysql"]:
         return "LOCALTIMESTAMP"
-    elif migrate_engine.name == 'sqlite':
+    elif migrate_engine.name == "sqlite":
         return "current_date || ' ' || current_time"
     else:
-        raise Exception(f'Unable to convert data for unknown database type: {migrate_engine.name}')
+        raise Exception(f"Unable to convert data for unknown database type: {migrate_engine.name}")
 
 
 def boolean_false(migrate_engine):
-    if migrate_engine.name in ['postgresql', 'postgres', 'mysql']:
+    if migrate_engine.name in ["postgresql", "postgres", "mysql"]:
         return False
-    elif migrate_engine.name == 'sqlite':
+    elif migrate_engine.name == "sqlite":
         return 0
     else:
-        raise Exception(f'Unable to convert data for unknown database type: {migrate_engine.name}')
+        raise Exception(f"Unable to convert data for unknown database type: {migrate_engine.name}")
 
 
 def upgrade(migrate_engine):
@@ -72,14 +82,14 @@ def upgrade(migrate_engine):
     user_ids = []
     repository_ids = []
     role_names = []
-    cmd = 'SELECT repository.id, repository.name, repository.user_id, galaxy_user.username FROM repository, galaxy_user WHERE repository.user_id = galaxy_user.id;'
+    cmd = "SELECT repository.id, repository.name, repository.user_id, galaxy_user.username FROM repository, galaxy_user WHERE repository.user_id = galaxy_user.id;"
     for row in migrate_engine.execute(cmd):
         repository_id = row[0]
         name = row[1]
         user_id = row[2]
         username = row[3]
         repository_ids.append(int(repository_id))
-        role_names.append(f'{str(name)}_{str(username)}_admin')
+        role_names.append(f"{str(name)}_{str(username)}_admin")
         user_ids.append(int(user_id))
     # Insert a new record into the role table for each new role.
     for tup in zip(repository_ids, user_ids, role_names):
@@ -128,11 +138,11 @@ def downgrade(migrate_engine):
     # Determine the list of roles to delete by first selecting the list of repositories and associated
     # public user names for their owners.
     role_names = []
-    cmd = 'SELECT name, username FROM repository, galaxy_user WHERE repository.user_id = galaxy_user.id;'
+    cmd = "SELECT name, username FROM repository, galaxy_user WHERE repository.user_id = galaxy_user.id;"
     for row in migrate_engine.execute(cmd):
         name = row[0]
         username = row[1]
-        role_names.append(f'{str(name)}_{str(username)}_admin')
+        role_names.append(f"{str(name)}_{str(username)}_admin")
     # Delete each role as well as all users associated with each role.
     for role_name in role_names:
         # Select the id of the record associated with the current role_name from the role table.

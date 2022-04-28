@@ -7,11 +7,12 @@
                     <u class="step-title">{{ stepLabel }}</u>
                 </span>
             </div>
-            <div class="portlet-content" v-if="expanded">
+            <div v-if="expanded" class="portlet-content">
                 <InvocationStepProvider
                     v-if="isReady && invocationStepId !== undefined"
                     :id="invocationStepId"
-                    v-slot="{ item: stepDetails, loading }">
+                    v-slot="{ result: stepDetails, loading }"
+                    auto-refresh>
                     <div style="min-width: 1">
                         <loading-span v-if="loading" :message="`Loading invocation step details`"> </loading-span>
                         <div v-else>
@@ -21,7 +22,7 @@
                                 <summary><b>Output Datasets</b></summary>
                                 <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
                                     <b>{{ name }}</b>
-                                    <generic-history-content :data_item="value" />
+                                    <generic-history-item :item-id="value.id" :item-src="value.src" />
                                 </div>
                             </details>
                             <details
@@ -30,7 +31,7 @@
                                 <summary><b>Output Dataset Collections</b></summary>
                                 <div v-for="(value, name) in stepDetails.output_collections" :key="value.id">
                                     <b>{{ name }}</b>
-                                    <generic-history-content :data_item="value" />
+                                    <generic-history-item :item-id="value.id" :item-src="value.src" />
                                 </div>
                             </details>
                             <div class="portlet-body" style="width: 100%; overflow-x: auto">
@@ -40,16 +41,20 @@
                                 </details>
                                 <parameter-step
                                     v-else-if="workflowStepType == 'parameter_input'"
-                                    :parameters="[
-                                        invocation.input_step_parameters[stepDetails.workflow_step_label],
-                                    ]"></parameter-step>
-                                <generic-history-content
-                                    v-else-if="isDataStep && invocation.inputs[workflowStep.id]"
-                                    :data_item="invocation.inputs[workflowStep.id]" />
+                                    :parameters="[invocation.input_step_parameters[stepDetails.workflow_step_label]]" />
+                                <generic-history-item
+                                    v-else-if="
+                                        isDataStep &&
+                                        invocation &&
+                                        invocation.inputs &&
+                                        invocation.inputs[workflowStep.id]
+                                    "
+                                    :item-id="invocation.inputs[workflowStep.id].id"
+                                    :item-src="invocation.inputs[workflowStep.id].src" />
                                 <div v-else-if="workflowStepType == 'subworkflow'">
                                     <div v-if="!stepDetails.subworkflow_invocation_id">
                                         Workflow invocation for this step is not yet scheduled.
-                                        <p></p>
+                                        <br />
                                         This step consumes outputs from these steps:
                                         <ul v-if="workflowStep">
                                             <li
@@ -83,9 +88,9 @@ import { mapCacheActions } from "vuex-cache";
 import { mapGetters, mapActions } from "vuex";
 import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
-import GenericHistoryContent from "components/History/ContentItem/GenericContentItem/GenericHistoryContent";
+import GenericHistoryItem from "components/History/Content/GenericItem";
 import { InvocationStepProvider } from "components/providers";
-import LoadingSpan from "../LoadingSpan";
+import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
@@ -93,7 +98,7 @@ export default {
         JobStep,
         ParameterStep,
         InvocationStepProvider,
-        GenericHistoryContent,
+        GenericHistoryItem,
         WorkflowInvocationState: () => import("components/WorkflowInvocationState/WorkflowInvocationState"),
     },
     props: {
@@ -107,10 +112,6 @@ export default {
             expanded: false,
             polling: null,
         };
-    },
-    created() {
-        this.fetchTool();
-        this.fetchSubworkflow();
     },
     computed: {
         ...mapGetters(["getToolForId", "getToolNameById", "getWorkflowByInstanceId", "getInvocationStepById"]),
@@ -149,6 +150,10 @@ export default {
         stepLabel() {
             return this.labelForWorkflowStep(this.workflowStep.id);
         },
+    },
+    created() {
+        this.fetchTool();
+        this.fetchSubworkflow();
     },
     methods: {
         ...mapCacheActions(["fetchToolForId", "fetchWorkflowForInstanceId"]),

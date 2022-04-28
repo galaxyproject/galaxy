@@ -4,15 +4,18 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { getLocalVue } from "jest/helpers";
 import mockInvocationData from "./test/json/invocation.json";
-import moment from "moment";
+import { parseISO, formatDistanceToNow } from "date-fns";
 
 const localVue = getLocalVue();
 
 describe("Invocations.vue without invocation", () => {
+    let axiosMock;
     let wrapper;
     let propsData;
 
     beforeEach(async () => {
+        axiosMock = new MockAdapter(axios);
+        axiosMock.onAny().reply(200, [], { total_matches: "0" });
         propsData = {
             ownerGrid: false,
         };
@@ -20,6 +23,10 @@ describe("Invocations.vue without invocation", () => {
             propsData,
             localVue,
         });
+    });
+
+    afterEach(() => {
+        axiosMock.reset();
     });
 
     it("title should be shown", async () => {
@@ -38,7 +45,9 @@ describe("Invocations.vue with invocation", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        axiosMock.onGet("/api/invocations").reply(200, [mockInvocationData], { total_matches: "1" });
+        axiosMock
+            .onGet("/api/invocations", { params: { limit: 50, offset: 0, include_terminal: false } })
+            .reply(200, [mockInvocationData], { total_matches: "1" });
         propsData = {
             ownerGrid: false,
             loading: false,
@@ -49,6 +58,9 @@ describe("Invocations.vue with invocation", () => {
                 getWorkflowNameByInstanceId: (state) => (id) => "workflow name",
                 getWorkflowByInstanceId: (state) => (id) => {
                     return { id: "workflowId" };
+                },
+                getHistoryById: (state) => (id) => {
+                    return { id: "historyId" };
                 },
                 getHistoryNameById: () => () => "history name",
             },
@@ -61,6 +73,10 @@ describe("Invocations.vue with invocation", () => {
         });
     });
 
+    afterEach(() => {
+        axiosMock.reset();
+    });
+
     it("renders one row", async () => {
         const rows = wrapper.findAll("tbody > tr").wrappers;
         expect(rows.length).toBe(1);
@@ -68,8 +84,12 @@ describe("Invocations.vue with invocation", () => {
         const columns = row.findAll("td");
         expect(columns.at(1).text()).toBe("workflow name");
         expect(columns.at(2).text()).toBe("history name");
-        expect(columns.at(3).text()).toBe(moment.utc(mockInvocationData.create_time).fromNow());
-        expect(columns.at(4).text()).toBe(moment.utc(mockInvocationData.update_time).fromNow());
+        expect(columns.at(3).text()).toBe(
+            formatDistanceToNow(parseISO(`${mockInvocationData.create_time}Z`), { addSuffix: true })
+        );
+        expect(columns.at(4).text()).toBe(
+            formatDistanceToNow(parseISO(`${mockInvocationData.update_time}Z`), { addSuffix: true })
+        );
         expect(columns.at(5).text()).toBe("scheduled");
         expect(columns.at(6).text()).toBe("");
     });

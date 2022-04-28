@@ -13,26 +13,22 @@ steps:
       intro: |
             At first we upload some data into your Galaxy history.<br>
             Use this button to upload your data.
-      position: "right"
       postclick:
         - ".upload-button"
 
     - title: "Upload your data"
       element: "#btn-local"
       intro: "You can upload data from your computer."
-      position: "top"
       postclick:
         - "#btn-new"
 
     - title: "Upload your data"
       element: "#btn-new"
       intro: "Copy and paste data directly into Galaxy or include URLs that lead to your data."
-      position: "top"
 
     - title: "Insert URLs"
-      element: ".upload-text-content:first"
+      element: ".upload-text-content"
       intro: "URLs separated by a line break are automatically downloaded by Galaxy."
-      position: "bottom"
       textinsert: |
         https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta
         https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
@@ -40,7 +36,6 @@ steps:
     - title: "Start the upload"
       element: "#btn-start"
       intro: "Upload the data into your Galaxy <b>History</b>."
-      position: "top"
       postclick:
         - "#btn-start"
         - "#btn-close"
@@ -48,90 +43,68 @@ steps:
     - title: "History"
       element: "#right"
       intro: "This is your history! All analysis steps will be recorded and can be redone at any time."
-      position: "left"
 
     - title: "Dataset information"
-      element: "div.title-bar.clear:eq(0)"
+      element: "div.content-item .content-title"
       intro: "This is one of your uploaded datasets. You can get more informations and options like different visualizations by clicking on it."
-      position: "left"
       postclick:
-        - "div.title-bar.clear:eq(0)"
+        - "div.content-item .content-title"
 
     - title: "Metadata"
-      element: "#current-history-panel > ul.list-items > div:nth-child(1) > div.details > div.summary > div.datatype > label"
+      element: "#current-history-panel div.content-item span.datatype"
       intro: "Galaxy has assigned a datatype to your dataset during upload, which you can see here."
-      position: "left"
 
-    - element: "#current-history-panel > ul.list-items > div:nth-child(1) > div.details > div.actions.clear > div.left > a.download-btn.icon-btn"
+    - element: "#current-history-panel div.content-item button[title='Download']"
       title: "Download your dataset"
       intro: "You can download every dataset by using the floppy disc symbol."
-      position: "left"
 
-    - element: "#current-history-panel > ul.list-items > div:nth-child(1) > div.details > div.actions.clear > div.left > a.icon-btn.params-btn"
+    - element: "#current-history-panel div.content-item button[title='Dataset Details']"
       title: "Even more information"
       intro: "Get an overview of all metadata associated with your dataset by using the Information symbol."
-      position: "left"
       preclick:
-        - "#current-history-panel > ul.list-items > div:nth-child(1) > div.details > div.actions.clear > div.left > a.icon-btn.params-btn"
+        - "#current-history-panel div.content-item button[title='Dataset Details']"
 
-    - element: "#current-history-panel > ul.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.display-btn"
+    - element: "#current-history-panel div.content-item button[title='Display']"
       title: "Inspect your data"
       intro: "The eye symbol can be used to look at your data."
-      position: "left"
       preclick:
-        - "#current-history-panel > ul.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.display-btn"
+        - "#current-history-panel div.content-item button[title='Display']"
 
-    - element: "#current-history-panel > ul.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.edit-btn"
+    - element: "#current-history-panel div.content-item button[title='Edit attributes']"
       title: "Edit metadata"
       intro: "With the pencil button you can edit metadata attributes of your dataset, like the associated filetype or the dataset name."
-      position: "left"
       preclick:
-        - "#current-history-panel > ul.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.edit-btn"
+        - "#current-history-panel div.content-item button[title='Edit attributes']"
 
-    - element: "#current-history-panel > ul.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.delete-btn"
+    - element: "#current-history-panel div.content-item button[title='Delete']"
       title: "Remove datasets"
       intro: "You can remove a dataset from the history with the cross symbol."
-      position: "left"
       postclick:
-        - "#current-history-panel > ul.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.delete-btn"
+        - "#current-history-panel div.content-item button[title='Delete']"
 
-    - element: "#current-history-panel > .controls > .subtitle .toggle-deleted-link"
-      title: "Include all deleted datasets"
-      intro: "By default your history will hide all deleted datasets from you. You can visualize them by toggling this button."
-      position: "bottom"
-      postclick:
-        - "#current-history-panel > .controls > .subtitle .toggle-deleted-link"
+    - element: "#current-history-panel input[data-description='filter text input']"
+      title: "Filter your datasets"
+      intro: "By default your history will hide all deleted datasets from you. You can visualize them by filtering."
+      textinsert: "deleted=true"
 
-    - element: "#current-history-panel > ul.list-items > div:nth-child(1) > div.warnings > div > a.undelete-link"
+    - element: "#current-history-panel div.content-item button[title='Undelete']"
       title: "Undeleting a dataset"
       intro: |
             Galaxy datasets are only marked as deleted and can be recovered by clicking this link.
             Please note that datasets marked as deleted can be purged by your administrator at any time.
-      position: "bottom"
       postclick:
-        - "#current-history-panel > ul.list-items > div:nth-child(1) > div.warnings > div > a.undelete-link"
+        - "#current-history-panel div.content-item button[title='Undelete']"
 
-    - element: "#current-history-panel > div.controls > div.title > div"
-      title: "Change your History name"
-      intro: "You can change the history name clicking on the title."
-      position: "bottom"
-      preclick:
-        - "#current-history-panel > div.controls > div.title > div"
-
-    - element: "#current-history-panel > div.controls > div.search > div > input"
+    - element: "#current-history-panel [data-description='filter text input']"
       title: "Search your History"
       intro: "You can filter your history by typing your search term in here. Galaxy supports more advanced filters that can be seen here."
-      position: "left"
-      textinsert: "WWFSMD"
-      preclick:
-        - "#current-history-panel > div.controls > div.search > div > input"
+      textinsert: ""
 
-    - element: "#history-options-button"
+    - element: "#current-history-panel [title='Show history options']"
       title: "History Options"
       intro: "In the History menu you will find a lot more useful History options."
-      position: "left"
       postclick:
-        - "#history-options-button"
+        - "#current-history-panel [title='Show history options']"
 
     - title: "Enjoy your Galaxy Histories"
       intro: "Thanks for taking this tour! Happy research with Galaxy!"

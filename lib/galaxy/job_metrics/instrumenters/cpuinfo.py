@@ -1,29 +1,33 @@
 """The module describes the ``cpuinfo`` job metrics plugin."""
 import logging
 import re
+from typing import Any
 
 from galaxy import util
 from . import InstrumentPlugin
-from .. import formatting
+from ..formatting import (
+    FormattedMetric,
+    JobMetricFormatter,
+)
 
 log = logging.getLogger(__name__)
 
 PROCESSOR_LINE = re.compile(r"processor\s*\:\s*(\d+)")
 
 
-class CpuInfoFormatter(formatting.JobMetricFormatter):
-
-    def format(self, key, value):
+class CpuInfoFormatter(JobMetricFormatter):
+    def format(self, key: str, value: Any) -> FormattedMetric:
         if key == "processor_count":
-            return "Processor Count", f"{int(value)}"
+            return FormattedMetric("Processor Count", f"{int(value)}")
         else:
-            return key, value
+            return super().format(key, value)
 
 
 class CpuInfoPlugin(InstrumentPlugin):
-    """ Gather information about processor configuration from /proc/cpuinfo.
+    """Gather information about processor configuration from /proc/cpuinfo.
     Linux only.
     """
+
     plugin_type = "cpuinfo"
     formatter = CpuInfoFormatter()
 
@@ -60,4 +64,4 @@ class CpuInfoPlugin(InstrumentPlugin):
         return self._instrument_file_path(job_directory, "cpuinfo")
 
 
-__all__ = ('CpuInfoPlugin', )
+__all__ = ("CpuInfoPlugin",)

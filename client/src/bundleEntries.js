@@ -30,9 +30,8 @@ export { default as HDAModel } from "mvc/history/hda-model";
 export { default as LegacyGridView } from "legacy/grid/grid-view";
 export { create_chart, create_histogram } from "reports/run_stats";
 export { default as ToolshedGroups } from "toolshed/toolshed.groups";
-export { default as IES } from "galaxy.interactive_environments";
 export { openGlobalUploadModal } from "components/Upload";
-
+export { runTour } from "components/Tour/runTour";
 export { Toast } from "ui/toast"; // TODO: remove when external consumers are updated/gone (IES right now)
 
 export function trackster(options) {

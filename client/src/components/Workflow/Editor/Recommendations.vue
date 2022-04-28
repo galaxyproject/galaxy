@@ -7,7 +7,7 @@
         <div v-if="compatibleTools.length > 0 && !isDeprecated">
             <div v-for="tool in compatibleTools" :key="tool.id">
                 <i class="fa mr-1 fa-wrench"></i>
-                <a href="#" title="Open tool" :id="tool.id" @click="$emit('onCreate', tool.id, tool.name, $event)">{{
+                <a :id="tool.id" href="#" title="Open tool" @click="$emit('onCreate', tool.id, tool.name, $event)">{{
                     tool.name
                 }}</a>
             </div>

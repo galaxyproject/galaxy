@@ -1,5 +1,10 @@
 """Typed description of Galaxy's app object."""
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import (
+    Any,
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
 
 from kombu import Connection
 
@@ -8,11 +13,16 @@ from galaxy.datatypes.registry import Registry
 from galaxy.di import Container
 from galaxy.files import ConfiguredFileSources
 from galaxy.job_metrics import JobMetrics
-from galaxy.model.base import ModelMapping, SharedModelMapping
+from galaxy.model.base import (
+    ModelMapping,
+    SharedModelMapping,
+)
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.model.security import GalaxyRBACAgent
-from galaxy.model.security import HostAgent
+from galaxy.model.security import (
+    GalaxyRBACAgent,
+    HostAgent,
+)
 from galaxy.model.store import SessionlessContext
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.objectstore import ObjectStore
@@ -42,6 +52,7 @@ class BasicSharedApp(BasicApp):
     Code that is shared between Galaxy and the Tool Shed should be annotated as
     using BasicSharedApp instead of StructuredApp below.
     """
+
     application_stack: ApplicationStack
     model: SharedModelMapping
     security: IdEncodingHelper
@@ -55,13 +66,13 @@ class MinimalToolApp(BasicApp):
     sa_session: Union[galaxy_scoped_session, SessionlessContext]
     datatypes_registry: Registry
     object_store: ObjectStore
-    tool_data_table_manager: 'ToolDataTableManager'
+    tool_data_tables: "ToolDataTableManager"
     file_sources: ConfiguredFileSources
+    security: IdEncodingHelper
 
 
 class MinimalApp(BasicSharedApp):
     is_webapp: bool  # is_webapp will be set to true when building WSGI app
-    new_installation: bool
     tag_handler: GalaxyTagHandler
     model: GalaxyModelMapping
     install_model: ModelMapping
@@ -102,8 +113,8 @@ class StructuredApp(MinimalManagerApp):
     (cyclical imports), we're just setting the class attributes to
     Any.
     """
+
     is_webapp: bool  # is_webapp will be set to true when building WSGI app
-    new_installation: bool
     tag_handler: GalaxyTagHandler
     amqp_internal_connection_obj: Optional[Connection]
     dependency_resolvers_view: DependencyResolversView
@@ -129,7 +140,7 @@ class StructuredApp(MinimalManagerApp):
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
     dynamic_tool_manager: Any  # 'galaxy.managers.tools.DynamicToolManager'
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'
-    tool_data_tables: 'ToolDataTableManager'
+    tool_data_tables: "ToolDataTableManager"
     genomes: Any  # 'galaxy.visualization.genomes.Genomes'
     error_reports: Any  # 'galaxy.tools.error_reports.ErrorReports'
     tool_cache: Any  # 'galaxy.tools.cache.ToolCache'

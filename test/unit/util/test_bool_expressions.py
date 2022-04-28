@@ -41,7 +41,7 @@ INVALID_EXPRESSIONS_TESTS = [
 ]
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def contained_evaluator() -> BooleanExpressionEvaluator:
     """Boolean expression evaluator using the TokenContainedEvaluator.
 
@@ -52,25 +52,25 @@ def contained_evaluator() -> BooleanExpressionEvaluator:
     return evaluator
 
 
-@pytest.mark.parametrize('expr, expected', VALID_EXPRESSIONS_TESTS)
+@pytest.mark.parametrize("expr, expected", VALID_EXPRESSIONS_TESTS)
 def test_expression_evaluates_as_expected(expr: str, expected: bool, contained_evaluator: BooleanExpressionEvaluator):
     actual = contained_evaluator.evaluate_expression(expr)
     assert actual == expected
 
 
-@pytest.mark.parametrize('expr', INVALID_EXPRESSIONS_TESTS)
+@pytest.mark.parametrize("expr", INVALID_EXPRESSIONS_TESTS)
 def test_invalid_expression_raises_exception(expr: str, contained_evaluator: BooleanExpressionEvaluator):
     with pytest.raises(Exception):
         contained_evaluator.evaluate_expression(expr)
 
 
-@pytest.mark.parametrize('expr, _', VALID_EXPRESSIONS_TESTS)
+@pytest.mark.parametrize("expr, _", VALID_EXPRESSIONS_TESTS)
 def test_is_valid_expression_return_true_when_valid(expr: str, _: bool):
     result = BooleanExpressionEvaluator.is_valid_expression(expr)
     assert result is True
 
 
-@pytest.mark.parametrize('expr', INVALID_EXPRESSIONS_TESTS)
+@pytest.mark.parametrize("expr", INVALID_EXPRESSIONS_TESTS)
 def test_is_valid_expression_return_false_when_invalid(expr: str):
     result = BooleanExpressionEvaluator.is_valid_expression(expr)
     assert result is False

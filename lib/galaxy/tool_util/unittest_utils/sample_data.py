@@ -7,11 +7,13 @@ SIMPLE_TOOL_WITH_MACRO = """<tool id="tool_with_macro" name="macro_annotation" v
     </macros>
 </tool>"""
 
-SIMPLE_MACRO = Template("""
+SIMPLE_MACRO = Template(
+    """
 <macros>
     <token name="@WRAPPER_VERSION@">$tool_version</token>
     <macro name="inputs">
         <inputs/>
     </macro>
 </macros>
-""")
+"""
+)

@@ -104,14 +104,14 @@ jobs:
       - run: tox -e test_galaxy_packages
   js_lint:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:16.13.2
     <<: *set_workdir
     steps:
       - *restore_yarn_cache
       - run: cd client && yarn install --frozen-lockfile
       - *save_yarn_cache
       - run: cd client && yarn run eslint
-      - run: cd client && yarn run prettier-check
+      - run: cd client && yarn run format-check
 workflows:
   version: 2
   get_code_and_test:

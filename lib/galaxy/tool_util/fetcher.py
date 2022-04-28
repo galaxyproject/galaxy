@@ -2,13 +2,13 @@ from galaxy.util import plugin_config
 
 
 class ToolLocationFetcher:
-
     def __init__(self):
         self.resolver_classes = self.__resolvers_dict()
 
     def __resolvers_dict(self):
         import galaxy.tool_util.locations
-        return plugin_config.plugins_dict(galaxy.tool_util.locations, 'scheme')
+
+        return plugin_config.plugins_dict(galaxy.tool_util.locations, "scheme")
 
     def to_tool_path(self, path_or_uri_like, **kwds):
         if "://" not in path_or_uri_like:

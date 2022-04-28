@@ -1,11 +1,15 @@
-from typing import Any, Dict, List
+from typing import (
+    Any,
+    Dict,
+    List,
+)
 from unittest import SkipTest
 
 from galaxy_test.base.api import UsesApiTestCaseMixin
 
 
 class SharingApiTests(UsesApiTestCaseMixin):
-    """ Includes some tests for the sharing functionality of a particular resource type."""
+    """Includes some tests for the sharing functionality of a particular resource type."""
 
     # The api_name has to be set to the appropriate value in the class using these tests.
     api_name: str
@@ -21,7 +25,9 @@ class SharingApiTests(UsesApiTestCaseMixin):
     def test_sharing_get_status(self):
         resource_id = self.create("resource-to-share")
         sharing_response = self._get_resource_sharing_status(resource_id)
-        self._assert_has_keys(sharing_response, "title", "importable", "id", "username_and_slug", "published", "users_shared_with")
+        self._assert_has_keys(
+            sharing_response, "title", "importable", "id", "username_and_slug", "published", "users_shared_with"
+        )
 
     def test_sharing_access(self):
         resource_id = self.create("resource-to-enable-link-access")
@@ -151,7 +157,9 @@ class SharingApiTests(UsesApiTestCaseMixin):
         self._assert_status_code_is(sharing_response, 200)
         return sharing_response.json()
 
-    def _set_resource_sharing(self, resource_id: str, action: str, payload: Any = None, expect_response_status: int = 200):
+    def _set_resource_sharing(
+        self, resource_id: str, action: str, payload: Any = None, expect_response_status: int = 200
+    ):
         sharing_response = self._put(f"{self.api_name}/{resource_id}/{action}", data=payload, json=True)
         self._assert_status_code_is(sharing_response, expect_response_status)
         return sharing_response.json()

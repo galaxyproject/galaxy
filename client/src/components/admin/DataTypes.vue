@@ -3,13 +3,13 @@
         <Message :message="message" :status="status" />
         <BaseGrid
             v-if="status !== 'error'"
+            id="data-types-grid"
             :columns="columns"
             :rows="dataTypes"
-            :is-loaded="isDataLoaded"
-            id="data-types-grid">
+            :is-loaded="isDataLoaded">
             <template v-slot:title>
                 <p>Current data types registry contains {{ dataTypes.length }} data types.</p>
-                <input type="checkbox" id="showAllColumns" v-model="showAllColumns" />
+                <input id="showAllColumns" v-model="showAllColumns" type="checkbox" />
                 <label for="showAllColumns">Show all columns</label>
             </template>
         </BaseGrid>
@@ -37,18 +37,6 @@ export default {
             message: "",
             status: "",
         };
-    },
-
-    methods: {
-        // Predefined columns with pretty headers (entries are optional)
-        prettyColumns() {
-            return [
-                { text: "Extension", dataIndex: "extension" },
-                { text: "Type", dataIndex: "type" },
-                { text: "MIME Type", dataIndex: "mimetype" },
-                { text: "Display in Upload", dataIndex: "display_in_upload" },
-            ];
-        },
     },
 
     computed: {
@@ -97,6 +85,18 @@ export default {
             .catch((error) => {
                 console.error(error);
             });
+    },
+
+    methods: {
+        // Predefined columns with pretty headers (entries are optional)
+        prettyColumns() {
+            return [
+                { text: "Extension", dataIndex: "extension" },
+                { text: "Type", dataIndex: "type" },
+                { text: "MIME Type", dataIndex: "mimetype" },
+                { text: "Display in Upload", dataIndex: "display_in_upload" },
+            ];
+        },
     },
 };
 </script>

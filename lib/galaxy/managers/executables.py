@@ -34,6 +34,4 @@ def artifact_class(trans, as_dict):
     return artifact_class, as_dict, object_id
 
 
-__all__ = (
-    'artifact_class',
-)
+__all__ = ("artifact_class",)

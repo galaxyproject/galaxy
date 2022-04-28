@@ -4,6 +4,7 @@
             <div class="portlet-header">
                 <div class="portlet-operations">
                     <b-dropdown
+                        v-b-tooltip.hover
                         no-caret
                         right
                         role="button"
@@ -11,8 +12,7 @@
                         variant="link"
                         aria-label="View all Options"
                         class="tool-dropdown float-right"
-                        size="sm"
-                        v-b-tooltip.hover>
+                        size="sm">
                         <template v-slot:button-content>
                             <span class="fa fa-caret-down" />
                         </template>
@@ -37,6 +37,7 @@
                     </b-dropdown>
                     <b-dropdown
                         v-if="showVersions"
+                        v-b-tooltip.hover
                         no-caret
                         right
                         role="button"
@@ -44,8 +45,7 @@
                         variant="link"
                         aria-label="Select Versions"
                         class="float-right tool-versions"
-                        size="sm"
-                        v-b-tooltip.hover>
+                        size="sm">
                         <template v-slot:button-content>
                             <span class="fa fa-cubes" />
                         </template>
@@ -55,23 +55,23 @@
                     </b-dropdown>
                     <b-button
                         v-if="showAddFavorite"
+                        v-b-tooltip.hover
                         role="button"
                         title="Add to Favorites"
                         variant="link"
                         size="sm"
                         class="float-right"
-                        v-b-tooltip.hover
                         @click="onAddFavorite">
                         <span class="fa fa-star-o" />
                     </b-button>
                     <b-button
                         v-else
+                        v-b-tooltip.hover
                         role="button"
                         title="Remove from Favorites"
                         variant="link"
                         size="sm"
                         class="float-right"
-                        v-b-tooltip.hover
                         @click="onRemoveFavorite">
                         <span class="fa fa-star" />
                     </b-button>
@@ -107,7 +107,7 @@
 </template>
 <script>
 import ariaAlert from "utils/ariaAlert";
-import { copyLink, downloadTool, openLink } from "./utilities";
+import { copyLink, copyId, downloadTool, openLink } from "./utilities";
 import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
@@ -172,11 +172,6 @@ export default {
             errorText: null,
         };
     },
-    watch: {
-        id() {
-            this.errorText = null;
-        },
-    },
     computed: {
         versions() {
             return this.options.versions;
@@ -203,6 +198,11 @@ export default {
         },
         isFavorite() {
             return this.getFavorites().tools.includes(this.id);
+        },
+    },
+    watch: {
+        id() {
+            this.errorText = null;
         },
     },
     created() {
@@ -257,7 +257,7 @@ export default {
             copyLink(this.id, "Link was copied to your clipboard");
         },
         onCopyId() {
-            copyLink(this.options.id, "Tool ID was copied to your clipboard");
+            copyId(this.options.id, "Tool ID was copied to your clipboard");
         },
         onDownload() {
             downloadTool(this.id);

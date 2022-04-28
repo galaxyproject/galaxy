@@ -1,26 +1,26 @@
 import unittest
+from unittest import mock
 
 from galaxy.managers import (
     collections,
     hdas,
-    hdcas
+    hdcas,
 )
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.histories import HistoryManager
 from .base import (
     BaseTestCase,
-    CreatesCollectionsMixin
+    CreatesCollectionsMixin,
 )
 
 # =============================================================================
-default_password = '123456'
-user2_data = dict(email='user2@user2.user2', username='user2', password=default_password)
-user3_data = dict(email='user3@user3.user3', username='user3', password=default_password)
+default_password = "123456"
+user2_data = dict(email="user2@user2.user2", username="user2", password=default_password)
+user3_data = dict(email="user3@user3.user3", username="user3", password=default_password)
 
 
 # =============================================================================
 class HDCATestCase(BaseTestCase, CreatesCollectionsMixin):
-
     def set_up_managers(self):
         super().set_up_managers()
         self.hdca_manager = self.app[hdcas.HDCAManager]
@@ -40,77 +40,73 @@ class HDCATestCase(BaseTestCase, CreatesCollectionsMixin):
         hda = self.hda_manager.create(history=history, dataset=dataset, **kwargs)
         return hda
 
-    def _create_list_hdca(self, hdas, history=None, name='test collection', **kwargs):
+    def _create_list_hdca(self, hdas, history=None, name="test collection", **kwargs):
         if not history:
             history = history or self._create_history()
         for i, hda in enumerate(hdas):
             if not isinstance(hdas, self.hda_manager.model_class):
                 hdas[i] = self._create_hda(history, **hda)
-        hdca = self.collection_manager.create(self.trans, history, name, 'list',
-            element_identifiers=self.build_element_identifiers(hdas))
+        hdca = self.collection_manager.create(
+            self.trans, history, name, "list", element_identifiers=self.build_element_identifiers(hdas)
+        )
         return hdca
 
 
 # =============================================================================
 # web.url_for doesn't work well in the framework
 def testable_url_for(*a, **k):
-    return f'(fake url): {a}, {k}'
+    return f"(fake url): {a}, {k}"
 
 
-hdcas.HDCASerializer.url_for = staticmethod(testable_url_for)
-
-
+@mock.patch("galaxy.managers.hdcas.HDCASerializer.url_for", testable_url_for)
 class HDCASerializerTestCase(HDCATestCase):
-
     def set_up_managers(self):
         super().set_up_managers()
         self.hdca_serializer = hdcas.HDCASerializer(self.app)
 
     def test_views(self):
         serializer = self.hdca_serializer
-        item = self._create_list_hdca([
-            dict(name=(f"hda-{i}"), hid=i) for i in range(5)
-        ])
+        item = self._create_list_hdca([dict(name=(f"hda-{i}"), hid=i) for i in range(5)])
 
-        self.log('should have a summary view')
-        summary_view = serializer.serialize_to_view(item, view='summary')
-        self.assertKeys(summary_view, serializer.views['summary'])
+        self.log("should have a summary view")
+        summary_view = serializer.serialize_to_view(item, view="summary")
+        self.assertKeys(summary_view, serializer.views["summary"])
 
-        self.log('should have the summary view as default view')
-        default_view = serializer.serialize_to_view(item, default_view='summary')
-        self.assertKeys(default_view, serializer.views['summary'])
+        self.log("should have the summary view as default view")
+        default_view = serializer.serialize_to_view(item, default_view="summary")
+        self.assertKeys(default_view, serializer.views["summary"])
 
-        self.log('should have a detailed view')
-        detailed_view = serializer.serialize_to_view(item, view='detailed')
-        self.assertKeys(detailed_view, serializer.views['detailed'])
+        self.log("should have a detailed view")
+        detailed_view = serializer.serialize_to_view(item, view="detailed")
+        self.assertKeys(detailed_view, serializer.views["detailed"])
 
-        self.log('should have a serializer for all serializable keys')
+        self.log("should have a serializer for all serializable keys")
         for key in serializer.serializable_keyset:
             instantiated_attribute = getattr(item, key, None)
-            if not ((key in serializer.serializers)
-                   or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))):
-                self.fail(f'no serializer for: {key} ({instantiated_attribute})')
+            if not (
+                (key in serializer.serializers)
+                or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))
+            ):
+                self.fail(f"no serializer for: {key} ({instantiated_attribute})")
         else:
-            self.assertTrue(True, 'all serializable keys have a serializer')
+            self.assertTrue(True, "all serializable keys have a serializer")
 
     def test_views_and_keys(self):
         serializer = self.hdca_serializer
-        item = self._create_list_hdca([
-            dict(name=(f"hda-{i}"), hid=i) for i in range(5)
-        ])
-        summary_plus_key = ['elements']
-        only_keys = ['id', 'populated_state_message']
+        item = self._create_list_hdca([dict(name=(f"hda-{i}"), hid=i) for i in range(5)])
+        summary_plus_key = ["elements"]
+        only_keys = ["id", "populated_state_message"]
 
-        self.log('should be able to use keys with views')
-        serialized = serializer.serialize_to_view(item, view='summary', keys=summary_plus_key)
-        self.assertKeys(serialized, serializer.views['summary'] + summary_plus_key)
+        self.log("should be able to use keys with views")
+        serialized = serializer.serialize_to_view(item, view="summary", keys=summary_plus_key)
+        self.assertKeys(serialized, serializer.views["summary"] + summary_plus_key)
 
-        self.log('should be able to use keys on their own')
+        self.log("should be able to use keys on their own")
         serialized = serializer.serialize_to_view(item, keys=only_keys)
         self.assertKeys(serialized, only_keys)
 
 
 # =============================================================================
-if __name__ == '__main__':
+if __name__ == "__main__":
     # or more generally, nosetests test_resourcemanagers.py -s -v
     unittest.main()

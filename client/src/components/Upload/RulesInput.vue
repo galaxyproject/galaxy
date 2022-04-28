@@ -13,7 +13,7 @@
             <div class="upload-rule-option">
                 <div class="upload-rule-option-title">{{ "Load tabular data from" | l }}</div>
                 <div class="rule-select-type">
-                    <select2 container-class="upload-footer-selection" v-model="selectionType">
+                    <select2 v-model="selectionType" container-class="upload-footer-selection">
                         <option value="paste">{{ "Pasted Table" | l }}</option>
                         <option value="dataset">{{ "History Dataset" | l }}</option>
                         <option v-if="ftpUploadSite" value="ftp">{{ "FTP Directory" | l }}</option>
@@ -21,10 +21,10 @@
                     </select2>
                 </div>
             </div>
-            <div id="upload-rule-dataset-option" class="upload-rule-option" v-if="selectionType == 'dataset'">
+            <div v-if="selectionType == 'dataset'" id="upload-rule-dataset-option" class="upload-rule-option">
                 <div class="upload-rule-option-title">History dataset</div>
                 <div>
-                    <b-link @click="onSelectDataset" v-if="selectedDatasetName == null">
+                    <b-link v-if="selectedDatasetName == null" @click="onSelectDataset">
                         {{ "Select" | l }}
                     </b-link>
                     <span v-else>
@@ -35,30 +35,37 @@
         </span>
         <span style="display: inline; float: right; width: 75%; height: 300px">
             <textarea
+                v-model="sourceContent"
                 class="upload-rule-source-content form-control"
                 style="height: 100%"
-                v-model="sourceContent"
                 :disabled="selectionType != 'paste'"></textarea>
         </span>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
+            <b-button
+                id="btn-close"
+                ref="btnClose"
+                class="ui-button-default"
+                :title="btnCloseTitle"
+                @click="$emit('dismiss')">
                 {{ btnCloseTitle | l }}
             </b-button>
             <b-button
+                id="btn-build"
                 ref="btnBuild"
                 class="ui-button-default"
-                id="btn-build"
-                @click="_eventBuild"
                 :disabled="!sourceContent"
-                :variant="sourceContent ? 'primary' : ''">
+                :title="btnBuildTitle"
+                :variant="sourceContent ? 'primary' : ''"
+                @click="_eventBuild">
                 {{ btnBuildTitle | l }}
             </b-button>
             <b-button
+                id="btn-reset"
                 ref="btnReset"
                 class="ui-button-default"
-                id="btn-reset"
-                @click="_eventReset"
-                :disabled="!enableReset">
+                :title="btnResetTitle"
+                :disabled="!enableReset"
+                @click="_eventReset">
                 {{ btnResetTitle | l }}
             </b-button>
         </template>
@@ -80,15 +87,14 @@ import { BButton, BLink } from "bootstrap-vue";
 library.add(faEdit);
 
 export default {
-    mixins: [UploadBoxMixin],
     components: { BLink, BButton, FontAwesomeIcon },
+    mixins: [UploadBoxMixin],
     data() {
         return {
             datasets: [],
             ftpFiles: [],
             uris: [],
             topInfo: "Tabular source data to extract collection files and metadata from",
-            enableReset: false,
             enableBuild: false,
             dataType: "datasets",
             selectedDatasetId: null,
@@ -99,9 +105,10 @@ export default {
             btnResetTitle: "Reset",
         };
     },
-    created() {
-        this.initCollection();
-        this.initAppProperties();
+    computed: {
+        enableReset: function () {
+            return this.sourceContent.length > 0;
+        },
     },
     watch: {
         selectionType: function (selectionType) {
@@ -133,6 +140,10 @@ export default {
                 })
                 .catch((error) => console.log(error));
         },
+    },
+    created() {
+        this.initCollection();
+        this.initAppProperties();
     },
     methods: {
         _eventReset: function () {
@@ -185,7 +196,7 @@ export default {
                 selection.elements = this.uris;
             }
             selection.dataType = this.dataType;
-            Galaxy.currHistoryPanel.buildCollection("rules", selection, true);
+            Galaxy.currHistoryPanel.buildCollection("rules", selection, true, true);
             this.$emit("dismiss");
         },
     },

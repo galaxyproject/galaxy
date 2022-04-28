@@ -3,28 +3,28 @@
         <b-card-header>
             <span class="float-right">
                 <b-button
+                    v-b-tooltip.hover
                     :href="downloadUrl"
                     variant="link"
                     size="sm"
                     role="button"
                     title="Download Collection"
                     type="button"
-                    class="py-0 px-1"
-                    v-b-tooltip.hover>
+                    class="py-0 px-1">
                     <span class="fa fa-download" />
                 </b-button>
                 <CurrentUser v-slot="{ user }">
-                    <UserHistories v-if="user" :user="user" v-slot="{ currentHistoryId }">
+                    <UserHistories v-if="user" v-slot="{ currentHistoryId }" :user="user">
                         <b-button
                             v-if="currentHistoryId"
-                            @click="onCopyCollection(currentHistoryId)"
+                            v-b-tooltip.hover
                             href="#"
                             role="button"
                             variant="link"
                             title="Import Collection"
                             type="button"
                             class="py-0 px-1"
-                            v-b-tooltip.hover>
+                            @click="onCopyCollection(currentHistoryId)">
                             <span class="fa fa-file-import" />
                         </b-button>
                     </UserHistories>
@@ -53,7 +53,7 @@ import { getAppRoot } from "onload/loadConfig";
 import CollectionTree from "./CollectionTree";
 import LoadingSpan from "components/LoadingSpan";
 import CurrentUser from "components/providers/CurrentUser";
-import UserHistories from "components/providers/History/UserHistories";
+import UserHistories from "components/providers/UserHistories";
 import { copyCollection } from "components/Markdown/services";
 
 export default {
@@ -81,12 +81,6 @@ export default {
             messageVariant: null,
         };
     },
-    created() {
-        this.getContent().then((data) => {
-            this.itemContent = data;
-            this.loading = false;
-        });
-    },
     computed: {
         collectionName() {
             const collection = this.collections[this.args.history_dataset_collection_id];
@@ -100,6 +94,12 @@ export default {
         downloadUrl() {
             return `${getAppRoot()}api/dataset_collections/${this.args.history_dataset_collection_id}/download`;
         },
+    },
+    created() {
+        this.getContent().then((data) => {
+            this.itemContent = data;
+            this.loading = false;
+        });
     },
     methods: {
         onCopyCollection(currentHistoryId) {

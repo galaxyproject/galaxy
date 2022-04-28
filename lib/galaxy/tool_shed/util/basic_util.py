@@ -6,18 +6,21 @@ from string import Template
 
 import markupsafe
 
-from galaxy.util import nice_size, unicodify
+from galaxy.util import (
+    nice_size,
+    unicodify,
+)
 
 log = logging.getLogger(__name__)
 
-CHUNK_SIZE = 2 ** 20  # 1Mb
-INSTALLATION_LOG = 'INSTALLATION.log'
+CHUNK_SIZE = 2**20  # 1Mb
+INSTALLATION_LOG = "INSTALLATION.log"
 # Set no activity timeout to 20 minutes.
 NO_OUTPUT_TIMEOUT = 3600.0
 MAXDIFFSIZE = 8000
 MAX_DISPLAY_SIZE = 32768
 
-DOCKER_IMAGE_TEMPLATE = '''
+DOCKER_IMAGE_TEMPLATE = """
 # Galaxy Docker image
 
 FROM bgruening/galaxy-stable
@@ -39,11 +42,11 @@ EXPOSE :9001
 
 # Autostart script that is invoked during container start
 CMD ["/usr/bin/startup"]
-'''
+"""
 
-SELECTED_REPOSITORIES_TEMPLATE = '''
+SELECTED_REPOSITORIES_TEMPLATE = """
 RUN install-repository "--url ${tool_shed_url} -o ${repository_owner} --name ${repository_name}"
-'''
+"""
 
 
 def evaluate_template(text, install_environment):
@@ -66,24 +69,24 @@ def get_env_var_values(install_environment):
     temporary directory where the tool dependency compilation/installation is being processed.
     """
     env_var_dict = {}
-    env_var_dict['REPOSITORY_INSTALL_DIR'] = install_environment.tool_shed_repository_install_dir
-    env_var_dict['INSTALL_DIR'] = install_environment.install_dir
-    env_var_dict['TMP_WORK_DIR'] = install_environment.tmp_work_dir
-    env_var_dict['system_install'] = install_environment.install_dir
+    env_var_dict["REPOSITORY_INSTALL_DIR"] = install_environment.tool_shed_repository_install_dir
+    env_var_dict["INSTALL_DIR"] = install_environment.install_dir
+    env_var_dict["TMP_WORK_DIR"] = install_environment.tmp_work_dir
+    env_var_dict["system_install"] = install_environment.install_dir
     # If the Python interpreter is 64bit then we can safely assume that the underlying system is also 64bit.
-    env_var_dict['__is64bit__'] = sys.maxsize > 2 ** 32
+    env_var_dict["__is64bit__"] = sys.maxsize > 2**32
     return env_var_dict
 
 
 def get_file_type_str(changeset_revision, file_type):
-    if file_type == 'zip':
-        file_type_str = f'{changeset_revision}.zip'
-    elif file_type == 'bz2':
-        file_type_str = f'{changeset_revision}.tar.bz2'
-    elif file_type == 'gz':
-        file_type_str = f'{changeset_revision}.tar.gz'
+    if file_type == "zip":
+        file_type_str = f"{changeset_revision}.zip"
+    elif file_type == "bz2":
+        file_type_str = f"{changeset_revision}.tar.bz2"
+    elif file_type == "gz":
+        file_type_str = f"{changeset_revision}.tar.gz"
     else:
-        file_type_str = ''
+        file_type_str = ""
     return file_type_str
 
 
@@ -113,15 +116,17 @@ def remove_dir(dir):
 def size_string(raw_text, size=MAX_DISPLAY_SIZE):
     """Return a subset of a string (up to MAX_DISPLAY_SIZE) translated to a safe string for display in a browser."""
     if raw_text and len(raw_text) >= size:
-        large_str = f'\nFile contents truncated because file size is larger than maximum viewing size of {nice_size(size)}\n'
-        raw_text = f'{raw_text[0:size]}{large_str}'
-    return raw_text or ''
+        large_str = (
+            f"\nFile contents truncated because file size is larger than maximum viewing size of {nice_size(size)}\n"
+        )
+        raw_text = f"{raw_text[0:size]}{large_str}"
+    return raw_text or ""
 
 
 def stringify(list):
     if list:
-        return ','.join(list)
-    return ''
+        return ",".join(list)
+    return ""
 
 
 def strip_path(fpath):
@@ -143,7 +148,27 @@ def to_html_string(text):
         except UnicodeDecodeError as e:
             return f"Error decoding string: {str(e)}"
         text = str(markupsafe.escape(text))
-        text = text.replace('\n', '<br/>')
-        text = text.replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;')
-        text = text.replace(' ', '&nbsp;')
+        text = text.replace("\n", "<br/>")
+        text = text.replace("    ", "&nbsp;&nbsp;&nbsp;&nbsp;")
+        text = text.replace(" ", "&nbsp;")
     return text
+
+
+__all__ = (
+    "CHUNK_SIZE",
+    "DOCKER_IMAGE_TEMPLATE",
+    "evaluate_template",
+    "get_env_var_values",
+    "get_file_type_str",
+    "INSTALLATION_LOG",
+    "MAX_DISPLAY_SIZE",
+    "MAXDIFFSIZE",
+    "NO_OUTPUT_TIMEOUT",
+    "move_file",
+    "remove_dir",
+    "SELECTED_REPOSITORIES_TEMPLATE",
+    "size_string",
+    "stringify",
+    "strip_path",
+    "to_html_string",
+)

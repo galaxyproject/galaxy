@@ -37,18 +37,20 @@ jobs:
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
-      - name: Cache tox env
+      - name: Cache galaxy venv
         uses: actions/cache@v2
         with:
-          path: .tox
-          key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-unit
+          path: 'galaxy root/.venv'
+          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-unit
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get -y install ffmpeg
-      - name: Install tox
-        run: pip install tox
       - name: Run tests
-        run: tox -e unit
+        run: ./run_tests.sh --coverage -u
         working-directory: 'galaxy root'
+      - uses: codecov/codecov-action@v2
+        with:
+          flags: py-unit
+          working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v2
         if: failure()
         with:

@@ -1,12 +1,12 @@
 <template>
-    <b-modal modal-class="selection-dialog-modal" v-if="modalShow" visible :static="modalStatic" @hide="hideModal">
+    <b-modal v-if="modalShow" modal-class="selection-dialog-modal" visible :static="modalStatic" @hide="hideModal">
         <template v-slot:modal-header>
             <slot name="search"> </slot>
         </template>
         <slot name="helper"> </slot>
         <b-alert v-if="errorMessage" variant="danger" show v-html="errorMessage" />
         <div v-else>
-            <slot name="options" v-if="optionsShow"> </slot>
+            <slot v-if="optionsShow" name="options"> </slot>
             <div v-else><span class="fa fa-spinner fa-spin" /> <span>Please wait...</span></div>
         </div>
         <template v-slot:modal-footer>
@@ -18,11 +18,11 @@
                     </b-btn>
                 </div>
                 <div v-else>
-                    <b-btn id="back-btn" size="sm" class="float-left" v-if="undoShow" @click="backFunc">
+                    <b-btn v-if="undoShow" id="back-btn" size="sm" class="float-left" @click="backFunc">
                         <font-awesome-icon :icon="['fas', 'caret-left']" />
                         Back
                     </b-btn>
-                    <b-btn size="sm" class="float-right" variant="primary" id="close-btn" @click="hideModal">
+                    <b-btn id="close-btn" size="sm" class="float-right" variant="primary" @click="hideModal">
                         Close
                     </b-btn>
                 </div>
@@ -39,6 +39,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        FontAwesomeIcon,
+    },
     props: {
         multiple: {
             type: Boolean,
@@ -73,9 +76,6 @@ export default {
             type: Boolean,
             required: false,
         },
-    },
-    components: {
-        FontAwesomeIcon,
     },
 };
 </script>

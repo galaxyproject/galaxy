@@ -17,20 +17,13 @@ class View:
 
     @staticmethod
     def _make_table(name, selectable, pkeys):
-        """ Create a view.
+        """Create a view.
 
         :param name: The name of the view.
         :param selectable: SQLAlchemy selectable.
         :param pkeys: set of primary keys for the selectable.
         """
-        columns = [
-            Column(
-                c.name,
-                c.type,
-                primary_key=(c.name in pkeys)
-            )
-            for c in selectable.subquery().columns
-        ]
+        columns = [Column(c.name, c.type, primary_key=(c.name in pkeys)) for c in selectable.subquery().columns]
         # We do not use the metadata object from model.mapping.py that contains all the Table objects
         # because that would create a circular import (create_view is called from View objects
         # in model.view; but those View objects are imported into model.mapping.py where the
@@ -56,20 +49,21 @@ class DropView(DDLElement):
 @compiler.compiles(CreateView)
 def compile_create_view(element, compiler, **kw):
     compiled_selectable = compiler.sql_compiler.process(element.selectable, literal_binds=True)
-    return f'CREATE VIEW {element.name} AS {compiled_selectable}'
+    return f"CREATE VIEW {element.name} AS {compiled_selectable}"
 
 
 @compiler.compiles(DropView)
 def compile_drop_view(element, compiler, **kw):
-    return f'DROP VIEW IF EXISTS {element.name}'
+    return f"DROP VIEW IF EXISTS {element.name}"
 
 
 def is_view_model(o):
-    return hasattr(o, '__view__') and issubclass(o, View)
+    return hasattr(o, "__view__") and issubclass(o, View)
 
 
 def install_views(engine):
     import galaxy.model.view
+
     views = getmembers(galaxy.model.view, is_view_model)
     for _, view in views:
         # adding DropView here because our unit-testing calls this function when

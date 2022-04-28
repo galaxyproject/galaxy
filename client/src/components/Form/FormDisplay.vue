@@ -71,15 +71,17 @@ export default {
             default: null,
         },
     },
-    created() {
-        this.onCloneInputs();
-    },
     data() {
         return {
             formData: {},
             formIndex: {},
             formInputs: [],
         };
+    },
+    computed: {
+        validation() {
+            return validateInputs(this.formIndex, this.formData);
+        },
     },
     watch: {
         id() {
@@ -118,10 +120,8 @@ export default {
             this.onReplaceParams();
         },
     },
-    computed: {
-        validation() {
-            return validateInputs(this.formIndex, this.formData);
-        },
+    created() {
+        this.onCloneInputs();
     },
     methods: {
         onReplaceParams() {

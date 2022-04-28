@@ -13,22 +13,22 @@
                 <tool-section
                     v-if="isWorkflow"
                     :category="historyInEditorSection"
-                    @onClick="onClick"
-                    :expanded="true" />
-                <tool-section v-else :category="historySection" @onClick="onClick" :expanded="true" />
-                <tool-section :category="jobSection" @onClick="onClick" :expanded="true" />
+                    :expanded="true"
+                    @onClick="onClick" />
+                <tool-section v-else :category="historySection" :expanded="true" @onClick="onClick" />
+                <tool-section :category="jobSection" :expanded="true" @onClick="onClick" />
                 <tool-section
                     v-if="isWorkflow"
                     :category="workflowInEditorSection"
-                    @onClick="onClick"
-                    :expanded="true" />
-                <tool-section v-else :category="workflowSection" @onClick="onClick" :expanded="true" />
-                <tool-section :category="otherSection" @onClick="onClick" :expanded="true" />
+                    :expanded="true"
+                    @onClick="onClick" />
+                <tool-section v-else :category="workflowSection" :expanded="true" @onClick="onClick" />
+                <tool-section :category="otherSection" :expanded="true" @onClick="onClick" />
                 <tool-section
                     v-if="hasVisualizations"
                     :category="visualizationSection"
-                    @onClick="onClick"
-                    :expanded="true" />
+                    :expanded="true"
+                    @onClick="onClick" />
             </div>
         </div>
         <MarkdownDialog

@@ -2,7 +2,6 @@ from galaxy.tool_util.verify.interactor import GalaxyInteractorApi
 
 
 class TestCaseGalaxyInteractor(GalaxyInteractorApi):
-
     def __init__(self, functional_test_case, test_user=None, api_key=None):
         self.functional_test_case = functional_test_case
         super().__init__(

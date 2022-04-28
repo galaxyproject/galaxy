@@ -36,8 +36,7 @@ describe("SelectionDialog.vue", () => {
         expect(wrapper.get(".fa-spinner"));
         expect(wrapper.get(".fa-spinner").text()).toBe("");
         //expect(wrapper.get("#tree-options")).toThrow();
-        wrapper.setProps({ optionsShow: true });
-        await localVue.nextTick();
+        await wrapper.setProps({ optionsShow: true });
         expect(() => wrapper.get(".fa-spinner")).toThrow();
         expect(wrapper.get("#tree-options"));
     });
@@ -50,10 +49,8 @@ describe("SelectionDialog.vue", () => {
     it("hideModal called on click cancel", async () => {
         expect(calledHide).toBe(false);
         expect(wrapper.get(".selection-dialog-modal-cancel"));
-        wrapper.setProps({ optionsShow: true });
-        await localVue.nextTick();
-        wrapper.find(".selection-dialog-modal-cancel").trigger("click");
-        await localVue.nextTick();
+        await wrapper.setProps({ optionsShow: true });
+        await wrapper.find(".selection-dialog-modal-cancel").trigger("click");
         expect(calledHide).toBe(true);
     });
 });

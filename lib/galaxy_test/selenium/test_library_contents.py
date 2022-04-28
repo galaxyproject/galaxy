@@ -6,7 +6,7 @@ from .framework import (
     retry_during_transitions,
     selenium_test,
     SeleniumTestCase,
-    UsesLibraryAssertions
+    UsesLibraryAssertions,
 )
 
 

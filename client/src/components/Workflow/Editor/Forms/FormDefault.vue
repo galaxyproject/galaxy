@@ -3,23 +3,23 @@
         <template v-slot:operations>
             <b-button
                 v-if="isSubworkflow"
+                v-b-tooltip.hover
                 role="button"
                 title="Edit this Subworkflow. You will need to upgrade this Workflow Step afterwards."
                 variant="link"
                 size="sm"
                 class="float-right py-0 px-1"
-                v-b-tooltip.hover
                 @click="onEditSubworkflow">
                 <span class="fa fa-pencil-alt" />
             </b-button>
             <b-button
                 v-if="isSubworkflow"
+                v-b-tooltip.hover
                 role="button"
                 title="Upgrade this Workflow Step to latest Subworkflow version."
                 variant="link"
                 size="sm"
                 class="float-right py-0 px-1"
-                v-b-tooltip.hover
                 @click="onUpgradeSubworkflow">
                 <span class="fa fa-sync" />
             </b-button>
@@ -30,8 +30,8 @@
                 :value="node.label"
                 title="Label"
                 help="Add a step label."
-                @input="onLabel"
-                :error="errorLabel" />
+                :error="errorLabel"
+                @input="onLabel" />
             <FormElement
                 id="__annotation"
                 :value="node.annotation"

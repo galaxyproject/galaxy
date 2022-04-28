@@ -1,4 +1,3 @@
-import json
 import os
 import tempfile
 
@@ -6,7 +5,6 @@ from galaxy.security.vault import UserVaultWrapper
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
-
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_VAULT_CONF = os.path.join(SCRIPT_DIRECTORY, "file_sources_conf_vault.yml")
@@ -34,11 +32,14 @@ class VaultFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
         """
         with self._different_user(email=self.USER_1_APP_VAULT_ENTRY):
             app = self._app
-            user = app.model.context.query(app.model.User).filter(
-                app.model.User.email == self.USER_1_APP_VAULT_ENTRY).first()
+            user = (
+                app.model.context.query(app.model.User)
+                .filter(app.model.User.email == self.USER_1_APP_VAULT_ENTRY)
+                .first()
+            )
             user_vault = UserVaultWrapper(self._app.vault, user)
             # use a valid symlink path so the posix list succeeds
-            user_vault.write_secret('posix/root_path', app.config.user_library_import_symlink_allowlist[0])
+            user_vault.write_secret("posix/root_path", app.config.user_library_import_symlink_allowlist[0])
 
             data = {"target": "gxfiles://test_user_vault"}
             list_response = self.galaxy_interactor.get("remote_files", data)
@@ -48,11 +49,14 @@ class VaultFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
 
         with self._different_user(email=self.USER_2_APP_VAULT_ENTRY):
             app = self._app
-            user = app.model.context.query(app.model.User).filter(
-                app.model.User.email == self.USER_2_APP_VAULT_ENTRY).first()
+            user = (
+                app.model.context.query(app.model.User)
+                .filter(app.model.User.email == self.USER_2_APP_VAULT_ENTRY)
+                .first()
+            )
             user_vault = UserVaultWrapper(self._app.vault, user)
             # use an invalid symlink path so the posix list fails
-            user_vault.write_secret('posix/root_path', '/invalid/root')
+            user_vault.write_secret("posix/root_path", "/invalid/root")
 
             data = {"target": "gxfiles://test_user_vault"}
             list_response = self.galaxy_interactor.get("remote_files", data)
@@ -67,14 +71,17 @@ class VaultFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
         # write app level secret
         app = self._app
         # use a valid symlink path so the posix list succeeds
-        app.vault.write_secret('posix/root_path', app.config.user_library_import_symlink_allowlist[0])
+        app.vault.write_secret("posix/root_path", app.config.user_library_import_symlink_allowlist[0])
 
         with self._different_user(email=self.USER_1_APP_VAULT_ENTRY):
-            user = app.model.context.query(app.model.User).filter(
-                app.model.User.email == self.USER_1_APP_VAULT_ENTRY).first()
+            user = (
+                app.model.context.query(app.model.User)
+                .filter(app.model.User.email == self.USER_1_APP_VAULT_ENTRY)
+                .first()
+            )
             user_vault = UserVaultWrapper(self._app.vault, user)
             # use a valid symlink path so the posix list succeeds
-            user_vault.write_secret('posix/root_path', app.config.user_library_import_symlink_allowlist[0])
+            user_vault.write_secret("posix/root_path", app.config.user_library_import_symlink_allowlist[0])
 
             data = {"target": "gxfiles://test_app_vault"}
             list_response = self.galaxy_interactor.get("remote_files", data)
@@ -83,11 +90,14 @@ class VaultFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
             print(remote_files)
 
         with self._different_user(email=self.USER_2_APP_VAULT_ENTRY):
-            user = app.model.context.query(app.model.User).filter(
-                app.model.User.email == self.USER_2_APP_VAULT_ENTRY).first()
+            user = (
+                app.model.context.query(app.model.User)
+                .filter(app.model.User.email == self.USER_2_APP_VAULT_ENTRY)
+                .first()
+            )
             user_vault = UserVaultWrapper(self._app.vault, user)
             # use an invalid symlink path so the posix list would fail if used
-            user_vault.write_secret('posix/root_path', '/invalid/root')
+            user_vault.write_secret("posix/root_path", "/invalid/root")
 
             data = {"target": "gxfiles://test_app_vault"}
             list_response = self.galaxy_interactor.get("remote_files", data)
@@ -98,14 +108,17 @@ class VaultFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
     def test_upload_file_from_remote_source(self):
         with self._different_user(email=self.USER_1_APP_VAULT_ENTRY):
             app = self._app
-            user = app.model.context.query(app.model.User).filter(
-                app.model.User.email == self.USER_1_APP_VAULT_ENTRY).first()
+            user = (
+                app.model.context.query(app.model.User)
+                .filter(app.model.User.email == self.USER_1_APP_VAULT_ENTRY)
+                .first()
+            )
             user_vault = UserVaultWrapper(self._app.vault, user)
             # use a valid symlink path so the posix list succeeds
-            user_vault.write_secret('posix/root_path', app.config.user_library_import_symlink_allowlist[0])
+            user_vault.write_secret("posix/root_path", app.config.user_library_import_symlink_allowlist[0])
             data = {"target": "gxfiles://test_user_vault"}
-            with open(os.path.join(app.config.user_library_import_symlink_allowlist[0], 'a_file'), 'w') as fh:
-                fh.write('I require access to the vault')
+            with open(os.path.join(app.config.user_library_import_symlink_allowlist[0], "a_file"), "w") as fh:
+                fh.write("I require access to the vault")
             list_response = self.galaxy_interactor.get("remote_files", data)
             api_asserts.assert_status_code_is_ok(list_response)
             remote_files = list_response.json()
@@ -116,7 +129,7 @@ class VaultFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
                     "destination": {"type": "hdas"},
                     "elements": [element],
                 }
-                targets = json.dumps([target])
+                targets = [target]
                 payload = {
                     "history_id": history_id,
                     "targets": targets,

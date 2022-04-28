@@ -15,12 +15,14 @@ TRS_CONFIG = """
   label: workflowhub
   link_url: https://workflowhub.eu
 """
-TRS_ID_DOCKSTORE = "workflow/github.com/iwc-workflows/sars-cov-2-pe-illumina-artic-variant-calling/COVID-19-PE-ARTIC-ILLUMINA"
+TRS_ID_DOCKSTORE = (
+    "workflow/github.com/iwc-workflows/sars-cov-2-pe-illumina-artic-variant-calling/COVID-19-PE-ARTIC-ILLUMINA"
+)
 TRS_NAME = "sars-cov-2-pe-illumina-artic-variant-calling/COVID-19-PE-ARTIC-ILLUMINA"
-TRS_VERSION_DOCKSTORE = 'v0.4'
+TRS_VERSION_DOCKSTORE = "v0.4"
 TRS_ID_WORKFLOWHUB = "110"
 TRS_VERSION_WORKFLOWHUB = "4"
-WORKFLOW_NAME = 'COVID-19: variation analysis on ARTIC PE data'
+WORKFLOW_NAME = "COVID-19: variation analysis on ARTIC PE data"
 
 
 class TrsImportTestCase(SeleniumIntegrationTestCase):
@@ -31,7 +33,7 @@ class TrsImportTestCase(SeleniumIntegrationTestCase):
         trs_config_dir = cls.trs_config_dir()
         os.makedirs(trs_config_dir)
         trs_config_file = os.path.join(trs_config_dir, "trs_config.yml")
-        with open(trs_config_file, 'w') as trs_config:
+        with open(trs_config_file, "w") as trs_config:
             trs_config.write(TRS_CONFIG)
         config["trs_servers_config_file"] = trs_config_file
 
@@ -58,27 +60,31 @@ class TrsImportTestCase(SeleniumIntegrationTestCase):
         self.assert_workflow_imported(WORKFLOW_NAME)
 
     def test_import_by_search_dockstore(self):
-        self.trs_search()
-        self.components.trs_search.search.wait_for_and_send_keys('This is the documentation for the workflow.')
-        self.components.trs_search.search_result(workflow_name='galaxy-workflow-dockstore-example-1').wait_for_and_click()
+        self.go_to_trs_search()
+        self.components.trs_search.search.wait_for_and_send_keys("This is the documentation for the workflow.")
+        self.components.trs_search.search_result(
+            workflow_name="galaxy-workflow-dockstore-example-1"
+        ).wait_for_and_click()
         self.components.trs_search.import_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open()
         self.assert_workflow_imported("Test Workflow")
 
     def test_import_by_organization_search_dockstore(self):
-        self.trs_search()
-        self.components.trs_search.search.wait_for_and_send_keys('organization: iwc-workflows')
+        self.go_to_trs_search()
+        self.components.trs_search.search.wait_for_and_send_keys("organization: iwc-workflows")
         self.components.trs_search.search_result(workflow_name=TRS_NAME).wait_for_and_click()
         self.components.trs_search.import_version(version="v0.4").wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
+        self.components.workflows.trs_icon.wait_for_visible()
+        self.screenshot("workflow_imported_via_dockstore_search")
 
     def test_import_by_search_workflowhub(self):
-        self.trs_search()
+        self.go_to_trs_search()
         self.components.trs_search.select_server_button.wait_for_and_click()
-        self.components.trs_search.select_server(server='workflowhub').wait_for_and_click()
+        self.components.trs_search.select_server(server="workflowhub").wait_for_and_click()
         self.components.trs_search.search.wait_for_and_send_keys(WORKFLOW_NAME)
         self.components.trs_search.search_result(workflow_name=WORKFLOW_NAME).wait_for_and_click()
         self.components.trs_search.import_button.wait_for_and_click()
@@ -87,13 +93,13 @@ class TrsImportTestCase(SeleniumIntegrationTestCase):
         self.assert_workflow_imported(WORKFLOW_NAME)
 
     def test_import_by_id_dockstore(self):
-        self._import_by_id(f"#{TRS_ID_DOCKSTORE}", server='dockstore')
+        self._import_by_id(f"#{TRS_ID_DOCKSTORE}", server="dockstore")
 
     def test_import_by_id_workflowhub(self):
-        self._import_by_id(TRS_ID_WORKFLOWHUB, server='workflowhub')
+        self._import_by_id(TRS_ID_WORKFLOWHUB, server="workflowhub")
 
     def _import_by_id(self, trs_id, server):
-        self.trs_by_id()
+        self.go_to_trs_by_id()
         self.components.trs_import.select_server_button.wait_for_and_click()
         self.components.trs_import.select_server(server=server).wait_for_and_click()
         self.components.trs_import.input.wait_for_and_send_keys(trs_id)

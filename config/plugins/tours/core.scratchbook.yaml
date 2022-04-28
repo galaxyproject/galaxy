@@ -11,19 +11,16 @@ steps:
 
     - element: "#tool-panel-upload-button"
       intro: "Before using the Scratchbook, we will upload some tabular data."
-      position: "right"
       postclick:
         - "#tool-panel-upload-button"
 
     - element: "#btn-new"
       intro: "We will be using the paste feature to create a new dataset."
-      position: "top"
       postclick:
         - "#btn-new"
 
-    - element: ".upload-text-content:first"
+    - element: ".upload-text-content"
       intro: "...and paste content into the text area field."
-      position: "top"
       textinsert: |
         1 0.039 0.000
         2 0.455 0.000
@@ -34,49 +31,42 @@ steps:
         7 0.000 0.000
         8 0.000 0.000
 
-    - element: ".upload-settings:first"
+    - element: ".upload-settings"
       intro: "Now, we may further configure the upload content."
-      position: "right"
       postclick:
-        - ".upload-settings:first"
+        - ".upload-settings"
 
-    - element: ".upload-space_to_tab:first"
+    - element: ".upload-space_to_tab"
       intro: "...by specifying that all spaces in our table should be converted into tabs."
-      position: "left"
       postclick:
-        - ".upload-space_to_tab:first"
+        - ".upload-space_to_tab"
+        - ".popover-close"
 
     - element: "#btn-start"
       intro: "Upload the data into your Galaxy history."
-      position: "top"
       postclick:
         - "#btn-start"
 
     - element: "#btn-close"
       intro: "Hit the close button to close the upload dialog."
-      position: "top"
       postclick:
         - "#btn-close"
 
     - element: "#enable-scratchbook > .nav-link"
       intro: "Clicking this button will enable Galaxy's Scratchbook mode."
-      position: "right"
       postclick:
         - "#enable-scratchbook > .nav-link"
 
     - element: "#right"
       intro: "This is your history. It contains all datasets you are currently working with including our uploaded table."
-      position: "left"
 
-    - element: "#current-history-panel .fa-eye:first"
+    - element: "#current-history-panel div.content-item button[title='Display']"
       intro: "Clicking the eye-icon usually displays a dataset in the center panel."
-      position: "left"
       postclick:
-        - "#current-history-panel .fa-eye:first"
+        - "#current-history-panel div.content-item button[title='Display']"
 
     - element: "#frame-0"
       intro: "However while in Scratchbook mode, the dataset will be shown as resizable window."
-      position: "right"
 
     - title: "Done."
       intro: "You have created a Scratchbook view. Click on the background and select more datasets."

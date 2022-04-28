@@ -7,7 +7,7 @@
             <FilesDialog :key="modalKey" mode="directory" :callback="setUrl" :require-writable="true" />
         </div>
         <b-breadcrumb v-if="url">
-            <b-breadcrumb-item title="Select another folder" @click="reset" class="align-items-center">
+            <b-breadcrumb-item title="Select another folder" class="align-items-center" @click="reset">
                 <b-button class="pathname" variant="primary">
                     <font-awesome-icon icon="folder-open" /> {{ url.protocol }}</b-button
                 >
@@ -16,21 +16,21 @@
                 v-for="({ pathChunk, editable }, index) in pathChunks"
                 :key="index"
                 class="existent-url-path align-items-center">
-                <b-button class="regular-path-chunk" @click="removePath(index)" :disabled="!editable" variant="dark">
+                <b-button class="regular-path-chunk" :disabled="!editable" variant="dark" @click="removePath(index)">
                     {{ pathChunk }}</b-button
                 >
             </b-breadcrumb-item>
             <b-breadcrumb-item class="directory-input-field align-items-center">
                 <b-input
                     id="path-input-breadcrumb"
+                    v-model="currentDirectoryName"
                     aria-describedby="input-live-help input-live-feedback"
                     :state="isValidName"
+                    placeholder="enter directory name"
+                    trim
                     @keyup.enter="addPath"
                     @keydown.191.capture.prevent.stop="addPath"
-                    @keydown.8.capture="removeLastPath"
-                    v-model="currentDirectoryName"
-                    placeholder="enter directory name"
-                    trim />
+                    @keydown.8.capture="removeLastPath" />
             </b-breadcrumb-item>
         </b-breadcrumb>
     </div>

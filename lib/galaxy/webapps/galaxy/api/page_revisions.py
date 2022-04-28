@@ -6,7 +6,10 @@ import logging
 from galaxy.managers.base import get_object
 from galaxy.managers.pages import PageManager
 from galaxy.web import expose_api
-from . import BaseGalaxyAPIController, depends
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+)
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +29,7 @@ class PageRevisionsController(BaseGalaxyAPIController):
         :rtype:     list
         :returns:   dictionaries containing different revisions of the page
         """
-        page = get_object(trans, page_id, 'Page', check_ownership=False, check_accessible=True)
+        page = get_object(trans, page_id, "Page", check_ownership=False, check_accessible=True)
         r = trans.sa_session.query(trans.app.model.PageRevision).filter_by(page_id=page.id)
         out = []
         for page in r:
@@ -49,7 +52,7 @@ class PageRevisionsController(BaseGalaxyAPIController):
         :rtype:     dictionary
         :returns:   Dictionary with 'success' or 'error' element to indicate the result of the request
         """
-        page = get_object(trans, page_id, 'Page', check_ownership=True)
+        page = get_object(trans, page_id, "Page", check_ownership=True)
         page_revision = self.manager.save_new_revision(trans, page, payload)
         rval = self.encode_all_ids(trans, page_revision.to_dict(view="element"), True)
         self.manager.rewrite_content_for_export(trans, rval)

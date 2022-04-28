@@ -11,16 +11,16 @@ def __main__():
     skipped_lines = 0
     first_skipped_line = 0
     i = 0
-    with open(input_name) as fh, open(output_name, 'w') as out:
+    with open(input_name) as fh, open(output_name, "w") as out:
         for i, line in enumerate(fh):
-            line = line.rstrip('\r\n')
-            if line and not line.startswith('#'):
+            line = line.rstrip("\r\n")
+            if line and not line.startswith("#"):
                 try:
-                    elems = line.split('\t')
+                    elems = line.split("\t")
                     start = str(int(elems[3]) - 1)
                     strand = elems[6]
-                    if strand not in ['+', '-']:
-                        strand = '+'
+                    if strand not in ["+", "-"]:
+                        strand = "+"
                     # GFF format: chrom source, name, chromStart, chromEnd, score, strand
                     # Bed format: chrom, chromStart, chromEnd, name, score, strand
                     #
@@ -37,7 +37,10 @@ def __main__():
                     first_skipped_line = i + 1
     info_msg = "%i lines converted to BED.  " % (i + 1 - skipped_lines)
     if skipped_lines > 0:
-        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (skipped_lines, first_skipped_line)
+        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (
+            skipped_lines,
+            first_skipped_line,
+        )
     print(info_msg)
 
 

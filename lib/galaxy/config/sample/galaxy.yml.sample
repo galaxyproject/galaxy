@@ -16,98 +16,125 @@
 # 
 # Config hackers are encouraged to check there before asking for help.
 # 
-uwsgi:
+# Configuration for Gravity process manager.
+# ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
+gravity:
 
-  # The address and port on which to listen.  By default, only listen to
-  # localhost (galaxy will not be accessible over the network).  Use
-  # ':8080' to listen on all available network interfaces.
-  http: 127.0.0.1:8080
+  # Specify Galaxy's root directory.
+  # Gravity will attempt to find the root directory, but you can set the directory explicitly with this option.
+  # galaxy_root:
 
-  # By default uWSGI allocates a very small buffer (4096 bytes) for the
-  # headers of each request. If you start receiving "invalid request
-  # block size" in your logs, it could mean you need a bigger buffer. We
-  # recommend at least 16384.
-  buffer-size: 16384
+  # Set to a directory that should contain log files for the processes controlled by Gravity.
+  # If not specified defaults to ``<state_dir>/logs``.
+  # log_dir:
 
-  # Number of web server (worker) processes to fork after the
-  # application has loaded. If this is set to greater than 1,
-  # thunder-lock likely should be enabled below.
-  processes: 1
+  # Set to Galaxy's virtualenv directory.
+  # If not specified, Gravity assumes all processes are on PATH.
+  # virtualenv:
 
-  # Number of threads for each web server process.
-  threads: 4
+  # Select the application server.
+  # ``gunicorn`` is the default application server.
+  # ``unicornherder`` is a production-oriented manager for (G)unicorn servers that automates zero-downtime Galaxy server restarts,
+  # similar to uWSGI Zerg Mode used in the past.
+  # Valid options are: gunicorn, unicornherder
+  # app_server: gunicorn
 
-  # Number of threads for serving static content and handling internal
-  # routing requests.
-  offload-threads: 2
+  # Override the default instance name.
+  # this is hidden from you when running a single instance.
+  # instance_name: _default_
 
-  # Mapping to serve static content.
-  static-map: /static=static
+  # Configuration for Gunicorn.
+  gunicorn:
 
-  # Mapping to serve the favicon.
-  static-map: /favicon.ico=static/favicon.ico
+    # The socket to bind. A string of the form: ``HOST``, ``HOST:PORT``, ``unix:PATH``, ``fd://FD``. An IP is a valid HOST.
+    # bind: localhost:8080
 
-  # Allow serving certain assets out of `client`.  Most modern Galaxy
-  # interfaces bundle all of this, but some older pages still serve
-  # these via symlink, requiring this rule.
-  static-safe: client/src/assets
+    # Controls the number of Galaxy application processes Gunicorn will spawn.
+    # Increased web performance can be attained by increasing this value.
+    # If Gunicorn is the only application on the server, a good starting value is the number of CPUs * 2 + 1.
+    # 4-12 workers should be able to handle hundreds if not thousands of requests per second.
+    # workers: 1
 
-  # Enable the master process manager. Disabled by default for maximum
-  # compatibility with CTRL+C, but should be enabled for use with
-  # --daemon and/or production deployments.
-  master: false
+    # Gunicorn workers silent for more than this many seconds are killed and restarted.
+    # Value is a positive number or 0. Setting it to 0 has the effect of infinite timeouts by disabling timeouts for all workers entirely.
+    # If you disable the ``preload`` option workers need to have finished booting within the timeout.
+    # timeout: 300
 
-  # Path to the application's Python virtual environment. If using Conda
-  # for Galaxy's framework dependencies (not tools!), do not set this.
-  virtualenv: .venv
+    # Extra arguments to pass to Gunicorn command line.
+    # extra_args:
 
-  # Path to the application's Python library.
-  pythonpath: lib
+    # Use Gunicorn's --preload option to fork workers after loading the Galaxy Application.
+    # Consumes less memory when multiple processes are configured.
+    # preload: true
 
-  # The entry point which returns the web application (e.g. Galaxy,
-  # Reports, etc.) that you are loading.
-  module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
+  # Configuration for Celery Processes.
+  celery:
 
-  # Mount the web application (e.g. Galaxy, Reports, etc.) at the given
-  # URL prefix. Cannot be used together with 'module:' above.
-  #mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
+    # Number of Celery Workers to start.
+    # concurrency: 2
 
-  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to
-  # mount-points. Set this to true if a URL prefix is used.
-  manage-script-name: false
+    # Log Level to use for Celery Worker.
+    # Valid options are: DEBUG, INFO, WARNING, ERROR
+    # loglevel: DEBUG
 
-  # It is usually a good idea to set this to ``true`` if processes is
-  # greater than 1.
-  thunder-lock: false
+    # Extra arguments to pass to Celery command line.
+    # extra_args:
 
-  # Cause uWSGI to respect the traditional behavior of dying on SIGTERM
-  # (its default is to brutally reload workers)
-  die-on-term: true
+  # Configuration for gx-it-proxy.
+  gx_it_proxy:
 
-  # Cause uWSGI to gracefully reload workers and mules upon receipt of
-  # SIGINT (its default is to brutally kill workers)
-  hook-master-start: unix_signal:2 gracefully_kill_them_all
+    # Set to true to start gx-it-proxy
+    # enable: false
 
-  # Cause uWSGI to gracefully reload workers and mules upon receipt of
-  # SIGTERM (its default is to brutally kill workers)
-  hook-master-start: unix_signal:15 gracefully_kill_them_all
+    # Public-facing IP of the proxy
+    # ip: localhost
 
-  # Feature necessary for proper mule signal handling on Python versions
-  # below 3.7.2. The default is set to false to prevent a runtime error
-  # under Python 3.7.2 and newer (see
-  # https://github.com/unbit/uwsgi/issues/1978).
-  py-call-osafterfork: false
+    # Public-facing port of the proxy
+    # port: 4002
 
-  # Ensure application threads will run if `threads` is unset.
-  enable-threads: true
+    # Routes file to monitor.
+    # Should be set to the same path as ``interactivetools_map`` in the ``galaxy:`` section.
+    # sessions: database/interactivetools_map.sqlite
 
-  # uWSGI default umask. On some systems uWSGI has a default umask of
-  # 000, for Galaxy a somewhat safer default is chosen. If Galaxy
-  # submits jobs as real user then all users needs to be able to read
-  # the files, i.e. the umask needs to be '022' or the Galaxy users need
-  # to be in the same group as the Galaxy system user
-  umask: 027
+    # Include verbose messages in gx-it-proxy
+    # verbose: true
 
+    # Forward all requests to IP.
+    # This is an advanced option that is only needed when proxying to remote interactive tool container that cannot be reached through the local network.
+    # forward_ip:
+
+    # Forward all requests to port.
+    # This is an advanced option that is only needed when proxying to remote interactive tool container that cannot be reached through the local network.
+    # forward_port:
+
+    # Rewrite location blocks with proxy port.
+    # This is an advanced option that is only needed when proxying to remote interactive tool container that cannot be reached through the local network.
+    # reverse_proxy: false
+
+  # Configuration for tusd server (https://github.com/tus/tusd).
+  # The ``tusd`` binary must be installed manually and made available on PATH (e.g in galaxy's .venv/bin directory).
+  tusd:
+
+    # Enable tusd server.
+    # If enabled, you also need to set up your proxy as outlined in https://docs.galaxyproject.org/en/latest/admin/nginx.html#receiving-files-via-the-tus-protocol.
+    # enable: false
+
+    # Host to bind the tusd server to
+    # host: localhost
+
+    # Port to bind the tusd server to
+    # port: 1080
+
+    # Directory to store uploads in.
+    # Must match ``tus_upload_store`` setting in ``galaxy:`` section.
+    # upload_dir:
+
+    # Extra arguments to pass to tusd command line.
+    # extra_args:
+
+  # Configure dynamic handlers in this section.
+  # See https://docs.galaxyproject.org/en/latest/admin/scaling.html#dynamically-defined-handlers for details.
+  # handlers: {}
 galaxy:
 
   # The directory that will be prepended to relative paths in options
@@ -392,6 +419,15 @@ galaxy:
   # <config_dir>.
   #tool_sheds_config_file: tool_sheds_conf.xml
 
+  # This option controls whether legacy datatypes are loaded from
+  # installed tool shed repositories. We're are in the process of
+  # disabling Tool Shed datatypes. This option with a default of true
+  # will be added in 22.01, we will disable the datatypes on the big
+  # public servers during that release. This option will be switched to
+  # False by default in 22.05 and this broken functionality will be
+  # removed all together during some future release.
+  #load_tool_shed_datatypes: true
+
   # Monitor the tools and tool directories listed in any tool config
   # file specified in tool_config_file option.  If changes are found,
   # tools are automatically reloaded. Watchdog (
@@ -420,10 +456,33 @@ galaxy:
   # option.
   #watch_tours: 'false'
 
+  # Location of files available for a short time as downloads (short
+  # term storage). This directory is exclusively used for serving
+  # dynamically generated downloadable content. Galaxy may uses the
+  # new_file_path parameter as a general temporary directory and that
+  # directory should be monitored by a tool such as tmpwatch in
+  # production environments. short_term_storage_dir on the other hand is
+  # monitored by Galaxy's task framework and should not require such
+  # external tooling.
+  # The value of this option will be resolved with respect to
+  # <cache_dir>.
+  #short_term_storage_dir: short_term_web_storage
+
+  # Default duration before short term web storage files will be cleaned
+  # up by Galaxy tasks (in seconds). The default duration is 1 day.
+  #short_term_storage_default_duration: 86400
+
+  # How many seconds between instances of short term storage being
+  # cleaned up in default Celery task configuration.
+  #short_term_storage_cleanup_interval: 3600
+
   # Configured FileSource plugins.
   # The value of this option will be resolved with respect to
   # <config_dir>.
   #file_sources_config_file: file_sources_conf.yml
+
+  # FileSource plugins described embedded into Galaxy's config.
+  #file_sources: null
 
   # Enable Galaxy to fetch containers registered with quay.io generated
   # from tool requirements resolved through Conda. These containers
@@ -564,15 +623,6 @@ galaxy:
   # To use an absolute path begin the path with '/'.  This is a
   # comma-separated list.
   #visualization_plugins_directory: config/plugins/visualizations
-
-  # Interactive environment plugins root directory: where to look for
-  # interactive environment plugins.  By default none will be loaded.
-  # Set to config/plugins/interactive_environments to load Galaxy's
-  # stock plugins. These will require Docker to be configured and have
-  # security considerations, so proceed with caution. The path is
-  # relative to the Galaxy root dir.  To use an absolute path begin the
-  # path with '/'.  This is a comma-separated list.
-  #interactive_environment_plugins_directory: null
 
   # Interactive tour directory: where to store interactive tour
   # definition files. Galaxy ships with several basic interface tours
@@ -718,6 +768,10 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <cache_dir>.
   #mulled_resolution_cache_lock_dir: mulled/locks
+
+  # Seconds until the beaker cache is considered old and a new value is
+  # created.
+  #mulled_resolution_cache_expire: 3600
 
   # Configuration file for the object store If this is set and exists,
   # it overrides any other objectstore settings.
@@ -912,8 +966,13 @@ galaxy:
   # Enable InteractiveTools.
   #interactivetools_enable: false
 
-  # Proxy host - assumed to just be hosted on the same hostname and port
-  # as Galaxy by default.
+  # Set this to false to redirect users of Interactive tools directly to
+  # the Interactive tools proxy. `interactivetools_upstream_proxy`
+  # should only be set to false in development.
+  #interactivetools_upstream_proxy: true
+
+  # Hostname and port of Interactive tools proxy. It is assumed to be
+  # hosted on the same hostname and port as Galaxy by default.
   #interactivetools_proxy_host: null
 
   # Base path for interactive tools running at a subpath without a
@@ -979,6 +1038,11 @@ galaxy:
   # <config_dir>.
   #trs_servers_config_file: trs_servers_conf.yml
 
+  # Server-wide default selection to use the legacy history during the
+  # transition period, after which this option will disappear.  Users
+  # will remain able to swap back and forth per their preference.
+  #use_legacy_history: false
+
   # Location of the configuration file containing extra user
   # preferences.
   # The value of this option will be resolved with respect to
@@ -998,13 +1062,12 @@ galaxy:
   #galaxy_url_prefix: /
 
   # URL (with schema http/https) of the Galaxy instance as accessible
-  # within your local network - if specified used as a default by pulsar
-  # file staging and Jupyter Docker container for communicating back
+  # within your local network. This URL is used as a default by pulsar
+  # file staging and Interactive Tool containers for communicating back
   # with Galaxy via the API.
-  # If you are attempting to set up GIEs on Mac OS X with Docker Desktop
-  # for Mac and your Galaxy instance runs on port 8080 this should be
-  # 'http://host.docker.internal:8080'.  For more details see
-  # https://docs.docker.com/docker-for-mac/networking/
+  # If you plan to run Interactive Tools make sure the docker container
+  # can reach this URL. For more details see
+  # `job_conf.xml.interactivetools`.
   #galaxy_infrastructure_url: http://localhost:8080
 
   # If the above URL cannot be determined ahead of time in dynamic
@@ -1030,9 +1093,9 @@ galaxy:
   #logo_src_secondary: null
 
   # The URL linked by the "Galaxy Help" link in the "Help" menu.
-  #helpsite_url: null
+  #helpsite_url: https://help.galaxyproject.org/
 
-  # The URL linked by the "Wiki" link in the "Help" menu.
+  # The URL linked by the "Community Hub" link in the "Help" menu.
   #wiki_url: https://galaxyproject.org/
 
   # The URL linked for quota information in the UI.
@@ -1047,24 +1110,13 @@ galaxy:
   # The URL linked by the "Galaxy Version" link in the "Help" menu.
   #release_doc_base_url: https://docs.galaxyproject.org/en/release_
 
-  # The URL linked by the "Search" link in the "Help" menu.
-  #search_url: https://galaxyproject.org/search/
-
-  # The URL linked by the "Mailing Lists" link in the "Help" menu.
-  #mailing_lists_url: https://galaxyproject.org/mailing-lists/
-
   # The URL linked by the "Videos" link in the "Help" menu.
-  #screencasts_url: https://vimeo.com/galaxyproject
+  #screencasts_url: https://www.youtube.com/c/galaxyproject
 
   # The URL linked by the "Terms and Conditions" link in the "Help"
   # menu, as well as on the user registration and login forms and in the
   # activation emails.
   #terms_url: null
-
-  # The URL linked by the "Galaxy Q&A" link in the "Help" menu The
-  # Galaxy Q&A site is under development; when the site is done, this
-  # URL will be set and uncommented.
-  #qa_url: null
 
   # Serve static content, which must be enabled if you're not serving it
   # via a proxy server.  These options should be self explanatory and so
@@ -1179,6 +1231,11 @@ galaxy:
   # initiate staging operations on the remote end.  See the Galaxy nginx
   # documentation for the corresponding nginx configuration.
   #nginx_upload_job_files_path: null
+
+  # The upload store is a temporary directory in which files uploaded by
+  # the tus middleware or server will be placed. Defaults to
+  # new_file_path if not set.
+  #tus_upload_store: null
 
   # Galaxy can upload user files in chunks without using nginx. Enable
   # the chunk uploader by specifying a chunk size larger than 0. The
@@ -1338,11 +1395,6 @@ galaxy:
   # use_printdebug.  It also causes the files used by PBS/SGE
   # (submission script, output, and error) to remain on disk after the
   # job is complete.
-  # In addition, this will set uWSGI's `honour-stdin` option to `true`;
-  # thus, preventing uWSGI from remapping stdin to `/dev/null` and
-  # enabling debugging with tools like pdb. To keep uWSGI's default
-  # setting, set `honor-stdin` to `false` in the `uwsgi` section of this
-  # configuration file.
   #debug: false
 
   # Check for WSGI compliance.
@@ -1361,9 +1413,7 @@ galaxy:
   # responsible for preparing/submitting and collecting/finishing jobs,
   # and which can cause job errors if not shut down cleanly. If using
   # supervisord, consider also increasing the value of `stopwaitsecs`.
-  # If using job handler mules, consider also setting the
-  # `mule-reload-mercy` uWSGI option. See the Galaxy Admin Documentation
-  # for more.
+  # See the Galaxy Admin Documentation for more.
   #monitor_thread_join_timeout: 30
 
   # Write thread status periodically to 'heartbeat.log',  (careful, uses
@@ -1373,8 +1423,7 @@ galaxy:
 
   # Control the period (in seconds) between dumps. Use -1 to disable.
   # Regardless of this setting, if use_heartbeat is enabled, you can
-  # send a Galaxy process (unless running with uWSGI) SIGUSR1 (`kill
-  # -USR1`) to force a dump.
+  # send a Galaxy process SIGUSR1 (`kill -USR1`) to force a dump.
   #heartbeat_interval: 20
 
   # Heartbeat log filename. Can accept the template variables
@@ -1690,9 +1739,6 @@ galaxy:
   # admin documentation.
   #enable_beta_gdpr: false
 
-  # Enable the new container interface for Interactive Environments
-  #enable_beta_containers_interface: false
-
   # Enable beta workflow modules that should not yet be considered part
   # of Galaxy's stable API. (The module state definitions may change and
   # workflows built using these modules may not function in the future.)
@@ -1802,14 +1848,6 @@ galaxy:
   # production server.
   #master_api_key: null
 
-  # Enable access to post-authentication options via OpenID.
-  #enable_openid: false
-
-  # If OpenID is enabled, consumer cache directory to use.
-  # The value of this option will be resolved with respect to
-  # <cache_dir>.
-  #openid_consumer_cache_path: openid_consumer_cache
-
   # Enable tool tags (associating tools with tags).  This has its own
   # option since its implementation has a few performance implications
   # on startup for large servers.
@@ -1836,8 +1874,13 @@ galaxy:
 
   # When the simplified workflow run form is rendered, should the
   # invocation outputs be sent to the 'current' history or a 'new'
-  # history.
-  #simplified_workflow_run_ui_target_history: current
+  # history. If the user should be presented and option between these -
+  # set this to 'prefer_current' or 'prefer_new' to display a runtime
+  # setting with the corresponding default. The default is to provide
+  # the user this option and default it to the current history (the
+  # traditional behavior of Galaxy for years) - this corresponds to the
+  # setting 'prefer_current'.
+  #simplified_workflow_run_ui_target_history: prefer_current
 
   # When the simplified workflow run form is rendered, should the
   # invocation use job caching. This isn't a boolean so an option for
@@ -2272,6 +2315,12 @@ galaxy:
   # https://docs.galaxyproject.org/en/master/admin/production.html
   #enable_celery_tasks: false
 
+  # Celery broker (if unset falls back to amqp_internal_connection).
+  #celery_broker: null
+
+  # If set, it will be the results backend for Celery.
+  #celery_backend: null
+
   # Allow disabling pbkdf2 hashing of passwords for legacy situations.
   # This should normally be left enabled unless there is a specific
   # reason to disable it.
@@ -2327,13 +2376,6 @@ galaxy:
   # <config_dir>.
   #error_report_file: error_report.yml
 
-  # Path to container interface configuration file. The containers
-  # interface is only used if `enable_beta_containers_interface` config
-  # option is set.
-  # The value of this option will be resolved with respect to
-  # <config_dir>.
-  #containers_config_file: containers_conf.yml
-
   # Path to dynamic tool destinations configuration file.
   # The value of this option will be resolved with respect to
   # <config_dir>.
@@ -2344,7 +2386,11 @@ galaxy:
   # is relative to galaxy/static
   #welcome_directory: plugins/welcome_page/new_user/static/topics/
 
-  # Vault config file
+  # Vault config file.
   # The value of this option will be resolved with respect to
   # <config_dir>.
-  vault_config_file: vault_conf.yml
+  #vault_config_file: vault_conf.yml
+
+  # Display built-in converters in the tool panel.
+  #display_builtin_converters: true
+

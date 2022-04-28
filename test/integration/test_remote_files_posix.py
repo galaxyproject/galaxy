@@ -13,7 +13,6 @@ REQUIRED_GROUP = "fs_test_group"
 
 
 class PosixFileSourceIntegrationTestCase(PosixFileSourceSetup, integration_util.IntegrationTestCase):
-
     def setUp(self):
         super().setUp()
         self._write_file_fixtures()
