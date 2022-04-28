@@ -315,7 +315,9 @@ class ConfiguresGalaxyMixin:
             if exc.errno != errno.ENOENT or self.config.is_set("shed_tool_data_table_config"):
                 raise
 
-    def _configure_datatypes_registry(self, installed_repository_manager=None):
+    def _configure_datatypes_registry(
+        self, installed_repository_manager=None, use_display_applications=True, use_converters=True
+    ):
         # Create an empty datatypes registry.
         self.datatypes_registry = Registry(self.config)
         if installed_repository_manager and self.config.load_tool_shed_datatypes:
@@ -332,7 +334,13 @@ class ConfiguresGalaxyMixin:
             # Setting override=False would make earlier files would take
             # precedence - but then they wouldn't override tool shed
             # datatypes.
-            self.datatypes_registry.load_datatypes(self.config.root, datatypes_config, override=True)
+            self.datatypes_registry.load_datatypes(
+                self.config.root,
+                datatypes_config,
+                override=True,
+                use_display_applications=use_display_applications,
+                use_converters=use_converters,
+            )
 
     def _configure_object_store(self, **kwds):
         self.object_store = build_object_store_from_config(self.config, **kwds)
@@ -486,7 +494,7 @@ class MinimalGalaxyApplication(BasicSharedApp, ConfiguresGalaxyMixin, HaltableCo
 class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     """Extends the MinimalGalaxyApplication with most managers that are not tied to a web or job handling context."""
 
-    def __init__(self, configure_logging=True, **kwargs):
+    def __init__(self, configure_logging=True, use_converters=True, use_display_applications=True, **kwargs):
         super().__init__(**kwargs)
         self._register_singleton(MinimalManagerApp, self)
         self.execution_timer_factory = self._register_singleton(
@@ -555,7 +563,11 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.installed_repository_manager = self._register_singleton(
             InstalledRepositoryManager, InstalledRepositoryManager(self)
         )
-        self._configure_datatypes_registry(self.installed_repository_manager)
+        self._configure_datatypes_registry(
+            self.installed_repository_manager,
+            use_converters=use_converters,
+            use_display_applications=use_display_applications,
+        )
         self._register_singleton(Registry, self.datatypes_registry)
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
         self.configure_sentry_client()
