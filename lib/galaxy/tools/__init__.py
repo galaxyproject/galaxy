@@ -139,8 +139,6 @@ if TYPE_CHECKING:
     from galaxy.managers.jobs import JobSearch
     from galaxy.tools.actions.metadata import SetMetadataToolAction
 
-import time
-
 log = logging.getLogger(__name__)
 
 REQUIRES_JS_RUNTIME_MESSAGE = (
@@ -2765,7 +2763,6 @@ class ExpressionTool(Tool):
                 copy_object = None
                 for input_dataset in inp_data.values():
                     if input_dataset and input_dataset.id == dataset_id:
-
                         copy_object = input_dataset
                         break
                 if copy_object is None:
