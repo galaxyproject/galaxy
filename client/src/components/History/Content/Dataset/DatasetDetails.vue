@@ -80,3 +80,9 @@ export default {
     },
 };
 </script>
+<style scoped>
+.details .summary div.info {
+    max-height: 4rem;
+    overflow-y: auto;
+}
+</style>
