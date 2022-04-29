@@ -35,9 +35,6 @@
                         description="in minutes">
                         <b-input-group>
                             <b-form-input id="cutoff" v-model="cutoffMin" type="number"> </b-form-input>
-                            <b-input-group-append>
-                                <b-btn type="submit">Refresh</b-btn>
-                            </b-input-group-append>
                         </b-input-group>
                     </b-form-group>
                 </b-form>
@@ -47,9 +44,6 @@
                     description="by strings or regular expressions">
                     <b-input-group id="filter-regex">
                         <b-form-input v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
-                        <b-input-group-append>
-                            <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
-                        </b-input-group-append>
                     </b-input-group>
                 </b-form-group>
             </b-col>
@@ -169,6 +163,12 @@ export default {
         },
     },
     watch: {
+        filter(newVal) {
+            this.update();
+        },
+        cutoffMin(newVal) {
+            this.update();
+        },
         selectedStopJobIds(newVal) {
             if (newVal.length === 0) {
                 this.indeterminate = false;
