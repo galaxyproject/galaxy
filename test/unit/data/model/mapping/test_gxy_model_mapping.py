@@ -457,8 +457,7 @@ class TestDataManagerJobAssociation(BaseTest):
 
 class TestDataset(BaseTest):
     def test_table(self, cls_):
-        # mapped imperatively, so do not test cls_.__tablename__
-        assert cls_.table.name == "dataset"
+        assert cls_.__tablename__ == "dataset"
 
     def test_columns(self, session, cls_, job):
         create_time = now()
