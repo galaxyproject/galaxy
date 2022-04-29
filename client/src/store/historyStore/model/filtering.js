@@ -115,31 +115,6 @@ const validFilters = {
     update_time_lt: compare("update_time", "lt", toDate),
 };
 
-/** Valid filter fields and handlers to return filterSettings. */
-const settingsFilters = {
-    "create_time=": compare("create_time", "le", toDate),
-    "create_time>=": compare("create_time", "ge", toDate),
-    "create_time>": compare("create_time", "gt", toDate),
-    "create_time<=": compare("create_time", "le", toDate),
-    "create_time<": compare("create_time", "lt", toDate),
-    "deleted=": equals("deleted", "deleted", toBool),
-    "extension=": equals("extension"),
-    "hid=": equals("hid"),
-    "hid>=": compare("hid", "ge"),
-    "hid>": compare("hid", "gt"),
-    "hid<=": compare("hid", "le"),
-    "hid<": compare("hid", "lt"),
-    "visible=": equals("visible", "visible", toBool),
-    "name=": contains("name"),
-    "state=": equals("state"),
-    "tag=": contains("tags", "tag"),
-    "update_time=": compare("update_time", "le", toDate),
-    "update_time>=": compare("update_time", "ge", toDate),
-    "update_time>": compare("update_time", "gt", toDate),
-    "update_time<=": compare("update_time", "le", toDate),
-    "update_time<": compare("update_time", "lt", toDate),
-};
-
 /** Default filters are set, unless explicitly specified by the user. */
 const defaultFilters = {
     deleted: false,
@@ -232,16 +207,25 @@ export function getFilterSettings(filterText) {
             const elgRE = /(\S+)([=><])(.+)/g;
             const elgMatch = elgRE.exec(pair);
             if (elgMatch) {
+                // this field will be used to check if the field is valid, not used for parsing here
                 let field = elgMatch[1];
                 const elg = elgMatch[2];
                 const value = elgMatch[3];
-                // no need to replace alias for less and greater symbol (for filterSettings)
-                field = `${field}${elg}`;
+                // this field will be used to parse for filterSettings
+                const settingsField = `${field}${elg}`;
+                // replace alias for less and greater symbol for parsing field
+                for (const [alias, substitute] of validAlias) {
+                    if (elg == alias) {
+                        field = `${field}${substitute}`;
+                        break;
+                    }
+                }
                 // replaces dashes with underscores in query field names
                 const normalizedField = field.replaceAll("-", "_");
-                if (settingsFilters[normalizedField]) {
+                const normalizedSettingsField = settingsField.replaceAll("-", "_");
+                if (validFilters[normalizedField]) {
                     // removes quotation and applies lower-case to filter value
-                    result[normalizedField] = toLowerNoQuotes(value);
+                    result[normalizedSettingsField] = toLowerNoQuotes(value);
                     hasMatches = true;
                 }
             }
