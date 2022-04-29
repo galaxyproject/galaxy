@@ -8,25 +8,25 @@
                 <b-form id="registration" @submit.prevent="submit()">
                     <b-card no-body>
                         <!-- OIDC/External Login enabled: encourage users to use it instead of local registration -->
-                        <span v-if="enable_oidc">
+                        <span v-if="custosEnabled">
                             <b-card-header v-b-toggle.accordion-oidc role="button">
                                 Register using institutional account
                             </b-card-header>
                             <b-collapse visible id="accordion-oidc" role="tabpanel" accordion="registration_acc">
                                 <b-card-body>
                                     Create a Galaxy account using an institutional account (e.g.:Google/JHU). This will
-                                    redirect you to your institutional login.
+                                    redirect you to your institutional login through Custos.
                                     <external-login :login_page="false" />
                                 </b-card-body>
                             </b-collapse>
                         </span>
                         <!-- Local Galaxy Registration -->
                         <b-card-header v-b-toggle.accordion-register role="button">
-                            <span v-if="!enable_oidc">Create a Galaxy account</span>
+                            <span v-if="!custosEnabled">Create a Galaxy account</span>
                             <span v-else>Or, register with email</span>
                         </b-card-header>
                         <b-collapse
-                            :visible="!enable_oidc"
+                            :visible="!custosEnabled"
                             id="accordion-register"
                             role="tabpanel"
                             accordion="registration_acc">
@@ -122,6 +122,7 @@ export default {
             session_csrf_token: galaxy.session_csrf_token,
             isAdmin: galaxy.user.isAdmin(),
             enable_oidc: galaxy.config.enable_oidc,
+            prefer_custos_login: galaxy.config.prefer_custos_login,
         };
     },
     computed: {
@@ -130,6 +131,9 @@ export default {
         },
         showRegistrationWarning() {
             return this.registration_warning_message != null;
+        },
+        custosEnabled() {
+            return this.enable_oidc && this.prefer_custos_login;
         },
     },
     methods: {
