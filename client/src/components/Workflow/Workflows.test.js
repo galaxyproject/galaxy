@@ -85,6 +85,7 @@ describe("WorkflowList.vue", () => {
             expect(wrapper.find("#workflow-search").element.value).toBe("");
         });
 
+        /*
         it("fetched filtered results when search filter is used", async () => {
             axiosMock
                 .onGet("/api/workflows", { params: { limit: 50, offset: 0, skip_step_counts: true, search: "mytext" } })
@@ -94,6 +95,7 @@ describe("WorkflowList.vue", () => {
             flushPromises();
             expect(wrapper.vm.filter).toBe("mytext");
         });
+        */
 
         it("update filter when a tag is clicked", async () => {
             axiosMock
