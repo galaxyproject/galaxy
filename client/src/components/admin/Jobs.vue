@@ -115,6 +115,7 @@ import JobLock from "./JobLock";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import { commonJobFields } from "./JobFields";
 import { errorMessageAsString } from "utils/simple-error";
+import { jobsProvider } from "components/providers/JobProvider";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;
@@ -199,31 +200,31 @@ export default {
         this.update();
     },
     methods: {
-        update() {
+        async update() {
             this.busy = true;
-            let params = [];
-            params.push("view=admin_job_list");
+            const params = { view: "admin_job_list" };
             if (this.showAllRunning) {
-                params.push("state=running");
+                params.state = "running";
             } else {
                 const cutoff = Math.floor(this.cutoffMin);
                 const dateRangeMin = new Date(Date.now() - cutoff * 60 * 1000).toISOString();
-                params.push(`date_range_min=${dateRangeMin}`);
+                params.date_range_min = `${dateRangeMin}`;
             }
-            params = params.join("&");
-            axios
-                .get(`${getAppRoot()}api/jobs?${params}`)
-                .then((response) => {
-                    this.jobs = response.data;
-                    this.loading = false;
-                    this.busy = false;
-                    this.status = "info";
-                })
-                .catch((error) => {
-                    this.message = errorMessageAsString(error);
-                    this.status = "danger";
-                    console.log(error.response);
-                });
+            const ctx = {
+                apiUrl: `${getAppRoot()}api/jobs`,
+                ...params,
+            };
+            try {
+                const jobs = await jobsProvider(ctx);
+                this.jobs = jobs;
+                this.loading = false;
+                this.busy = false;
+                this.status = "info";
+            } catch (error) {
+                console.log(error);
+                this.message = errorMessageAsString(error);
+                this.status = "danger";
+            }
         },
         onRefresh() {
             this.update();
