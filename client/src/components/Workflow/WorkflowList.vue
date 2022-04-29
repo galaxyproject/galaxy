@@ -5,14 +5,13 @@
             <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
             <b-row class="mb-3">
                 <b-col cols="6">
-                    <b-input
+                    <index-filter
+                        :debounce-delay="inputDebounceDelay"
                         id="workflow-search"
-                        class="m-1"
-                        name="query"
                         :placeholder="titleSearchWorkflows"
-                        autocomplete="off"
-                        type="text"
-                        v-model="filter" />
+                        :help-html="helpHtml"
+                        v-model="filter">
+                    </index-filter>
                 </b-col>
                 <b-col>
                     <span class="float-right">
@@ -116,8 +115,35 @@ import WorkflowDropdown from "./WorkflowDropdown";
 import UtcDate from "components/UtcDate";
 import { getGalaxyInstance } from "app";
 import paginationMixin from "./paginationMixin";
+import IndexFilter from "components/Indices/IndexFilter";
 
 library.add(faPlus, faUpload, faSpinner, faGlobe, faShareAlt, farStar, faStar);
+
+const helpHtml = `<div>
+<p>This textbox box can be used to filter the workflows displayed.
+
+<p>Text entered here will be searched against workflow names and tags. Additionally, advanced
+filtering tags can be used to refine the search more precisely. Tags are of the form
+<code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>.
+For instance to search just for RNAseq in the workflow name, <code>name:rnsseq</code> can be used.
+Notice by default the search is not case-sensitive.
+
+If the quoted version of tag is used, the search is not case sensitive and only full matches will be
+returned. So <code>name:'RNAseq'</code> would show only workflows named exactly <code>RNAseq</code>.
+
+<p>The available tags are:
+<dl>
+    <dt><code>name</code></dt>
+    <dd>This filters only against the workflow name.</dd>
+    <dt><code>tag</code></dt>
+    <dd>This filters only against the workflow tag. You may also just click on a tag in your list of workflows to filter on that tag using this directly.</dd>
+    <dt><code>is:published</code></dt>
+    <dd>This filters the workflows such that only published workflows are shown. You may also just click on the "published" icon of a worklfow in your list to filter on this directly.</dd>
+    <dt><code>is:shared</code></dt>
+    <dd>This filters the workflows such that only workflows shared from another user directly with you are are shown. You may also just click on the "shared with me" icon of a worklfow in your list to filter on this directly.</dd>
+</dl>
+</div>
+`;
 
 export default {
     components: {
@@ -125,6 +151,13 @@ export default {
         UtcDate,
         Tags,
         WorkflowDropdown,
+        IndexFilter,
+    },
+    props: {
+        inputDebounceDelay: {
+            type: Number,
+            default: 500,
+        },
     },
     mixins: [paginationMixin],
     data() {
@@ -172,6 +205,7 @@ export default {
             titleRunWorkflow: _l("Run workflow"),
             workflowItemsModel: [],
             workflowItems: [],
+            helpHtml: helpHtml,
             perPage: this.rowsPerPage(50),
         };
     },
