@@ -3,7 +3,6 @@ from concurrent.futures import TimeoutError
 from functools import lru_cache
 from pathlib import Path
 
-import cloudpickle
 from sqlalchemy import (
     exists,
     select,
@@ -41,6 +40,7 @@ from galaxy.schema.tasks import (
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools import create_tool_from_representation
 from galaxy.tools.data_fetch import do_fetch
+from galaxy.util import galaxy_directory
 from galaxy.util.custom_logging import get_logger
 from galaxy.web.short_term_storage import ShortTermStorageMonitor
 
@@ -155,11 +155,17 @@ def is_aborted(session, job_id):
     ).scalar()
 
 
-def _fetch_data(setup_return, datatypes_registry: DatatypesRegistry):
-    if not isinstance(datatypes_registry, DatatypesRegistry):
-        datatypes_registry = cloudpickle.loads(datatypes_registry)
+def _fetch_data(setup_return):
     tool_job_working_directory, request_path, file_sources_dict = setup_return
     working_directory = Path(tool_job_working_directory) / "working"
+    datatypes_registry = DatatypesRegistry()
+    datatypes_registry.load_datatypes(
+        galaxy_directory,
+        config=Path(tool_job_working_directory) / "metadata" / "registry.xml",
+        use_build_sites=False,
+        use_converters=False,
+        use_display_applications=False,
+    )
     do_fetch(
         request_path=request_path,
         working_directory=str(working_directory),
@@ -174,12 +180,11 @@ def fetch_data(
     setup_return,
     job_id,
     session: galaxy_scoped_session,
-    datatypes_registry: DatatypesRegistry,
 ):
     if not is_aborted(session, job_id):
         future = celery_app.fork_pool.schedule(
             _fetch_data,
-            kwargs=dict(setup_return=setup_return, datatypes_registry=cloudpickle.dumps(datatypes_registry)),
+            kwargs=dict(setup_return=setup_return),
         )
         while True:
             try:

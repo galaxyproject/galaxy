@@ -44,7 +44,6 @@ celery = "*"
 Cheetah3 = "!=3.2.6.post2"  # yanked release, https://github.com/python-poetry/poetry/issues/2453
 cloudauthz = "==0.6.0"
 cloudbridge = "*"
-cloudpickle = "*"
 circus = "*"
 cwltool = "==3.1.20211107152837"
 dictobj = "*"
