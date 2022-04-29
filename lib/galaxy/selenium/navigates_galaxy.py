@@ -566,10 +566,15 @@ class NavigatesGalaxy(HasDriver):
         return "email" in self.get_logged_in_user()
 
     @retry_during_transitions
-    def _inline_search_for(self, selector, search_term=None):
+    def _inline_search_for(self, selector, search_term=None, escape_to_clear=False):
         # Clear tooltip resulting from clicking on the masthead to get here.
         self.clear_tooltips()
         search_box = self.wait_for_and_click(selector)
+        if escape_to_clear:
+            # The combination of DebouncedInput+b-input doesn't seem to uniformly respect
+            # .clear() below. We use escape handling a lot - and that does cauase to the input
+            # to reset correctly and fire the required re-active events/handlers.
+            self.send_escape(search_box)
         search_box.clear()
         if search_term is not None:
             search_box.send_keys(search_term)
@@ -1217,6 +1222,7 @@ class NavigatesGalaxy(HasDriver):
         return self._inline_search_for(
             self.navigation.workflows.search_box,
             search_term,
+            escape_to_clear=True,
         )
 
     def workflow_index_click_import(self):

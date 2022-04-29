@@ -52,7 +52,9 @@ describe("WorkflowList.vue", () => {
             axiosMock
                 .onGet("/api/workflows", { params: { limit: 50, offset: 0, skip_step_counts: true, search: "" } })
                 .reply(200, mockWorkflowsData, { total_matches: "1" });
-            const propsData = {};
+            const propsData = {
+                inputDebounceDelay: 0,
+            };
             wrapper = mount(Workflows, {
                 propsData,
                 localVue,
@@ -90,8 +92,9 @@ describe("WorkflowList.vue", () => {
                 .onGet("/api/workflows", { params: { limit: 50, offset: 0, skip_step_counts: true, search: "mytext" } })
                 .reply(200, [], { total_matches: "0" });
 
-            wrapper.find("#workflow-search").setValue("mytext");
+            await wrapper.find("#workflow-search").setValue("mytext");
             flushPromises();
+            expect(wrapper.find("#workflow-search").element.value).toBe("mytext");
             expect(wrapper.vm.filter).toBe("mytext");
         });
 
