@@ -117,7 +117,7 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkfl
         self.workflow_index_search_for("doesnotmatch")
         self._assert_showing_n_workflows(0)
 
-        self.workflow_index_search_for()
+        self.workflow_index_search_for(" ")
         self._assert_showing_n_workflows(1)
 
         self.workflow_index_search_for("searchforthis")
