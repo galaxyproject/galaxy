@@ -2,13 +2,18 @@ import json
 from concurrent.futures import TimeoutError
 from functools import lru_cache
 from pathlib import Path
-from typing import Callable
 
-from sqlalchemy import exists, select
-from pebble import ProcessPool
+import cloudpickle
+from sqlalchemy import (
+    exists,
+    select,
+)
 
 from galaxy import model
-from galaxy.celery import galaxy_task
+from galaxy.celery import (
+    celery_app,
+    galaxy_task,
+)
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.jobs import MinimalJobWrapper
@@ -137,35 +142,22 @@ def finish_job(job_id: int, raw_tool_source: str, app: MinimalManagerApp, sa_ses
     mini_job_wrapper.finish("", "")
 
 
-def cancelable_task(session, job_id):
-    def is_aborted():
-        return session.execute(
-            select(
-                exists(model.Job.state).where(
-                    model.Job.id == job_id,
-                    model.Job.state.in_(
-                        [model.Job.states.DELETED, model.Job.states.DELETED_NEW, model.Job.states.DELETING]
-                    ),
-                )
+def is_aborted(session, job_id):
+    return session.execute(
+        select(
+            exists(model.Job.state).where(
+                model.Job.id == job_id,
+                model.Job.state.in_(
+                    [model.Job.states.DELETED, model.Job.states.DELETED_NEW, model.Job.states.DELETING]
+                ),
             )
-        ).scalar()
-
-    def wrapper(func, *args, **kwargs):
-        if not is_aborted():
-            with ProcessPool() as pool:
-                future = pool.schedule(func, args=args, kwargs=kwargs)
-                while True:
-                    try:
-                        return future.result(timeout=1)
-                    except TimeoutError:
-                        if is_aborted():
-                            future.cancel()
-                            break
-
-    return wrapper
+        )
+    ).scalar()
 
 
-def _fetch_data(setup_return, datatypes_registry: DatatypesRegistry, cancelable_wrapper: Callable):
+def _fetch_data(setup_return, datatypes_registry: DatatypesRegistry):
+    if not isinstance(datatypes_registry, DatatypesRegistry):
+        datatypes_registry = cloudpickle.loads(datatypes_registry)
     tool_job_working_directory, request_path, file_sources_dict = setup_return
     working_directory = Path(tool_job_working_directory) / "working"
     do_fetch(
@@ -173,7 +165,6 @@ def _fetch_data(setup_return, datatypes_registry: DatatypesRegistry, cancelable_
         working_directory=str(working_directory),
         registry=datatypes_registry,
         file_sources_dict=file_sources_dict,
-        cancelable_wrapper=cancelable_wrapper,
     )
     return tool_job_working_directory
 
@@ -185,10 +176,17 @@ def fetch_data(
     session: galaxy_scoped_session,
     datatypes_registry: DatatypesRegistry,
 ):
-    cancelable_wrapper = cancelable_task(session, job_id)
-    return _fetch_data(
-        setup_return=setup_return, datatypes_registry=datatypes_registry, cancelable_wrapper=cancelable_wrapper
-    )
+    if not is_aborted(session, job_id):
+        future = celery_app.fork_pool.schedule(
+            _fetch_data,
+            kwargs=dict(setup_return=setup_return, datatypes_registry=cloudpickle.dumps(datatypes_registry)),
+        )
+        while True:
+            try:
+                return future.result(timeout=1)
+            except TimeoutError:
+                if is_aborted(session, job_id):
+                    return
 
 
 @galaxy_task(ignore_result=True, action="setting up export history job")

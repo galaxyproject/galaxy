@@ -54,7 +54,6 @@ def do_fetch(
     working_directory: str,
     registry: Registry,
     file_sources_dict: Optional[Dict] = None,
-    cancelable_wrapper=None,
 ):
     assert os.path.exists(request_path)
     with open(request_path) as f:
@@ -62,7 +61,11 @@ def do_fetch(
 
     allow_failed_collections = request.get("allow_failed_collections", False)
     upload_config = UploadConfig(
-        request, registry, working_directory, allow_failed_collections, file_sources_dict, cancelable_wrapper
+        request,
+        registry,
+        working_directory,
+        allow_failed_collections,
+        file_sources_dict,
     )
     galaxy_json = _request_to_galaxy_json(upload_config, request)
     galaxy_json_path = os.path.join(working_directory, "galaxy.json")
@@ -542,7 +545,6 @@ class UploadConfig:
         working_directory,
         allow_failed_collections,
         file_sources_dict=None,
-        cancelable_wrapper=None,
     ):
         self.registry = registry
         self.working_directory = working_directory
@@ -554,7 +556,6 @@ class UploadConfig:
         self.validate_hashes = request.get("validate_hashes", False)
         self.deferred = request.get("deferred", False)
         self.link_data_only = _link_data_only(request)
-        self.cancelable_wrapper = cancelable_wrapper
         self.file_sources_dict = file_sources_dict
         self._file_sources = None
 

@@ -3,6 +3,7 @@ from functools import (
     lru_cache,
     wraps,
 )
+from multiprocessing import get_context
 from threading import local
 from typing import (
     Any,
@@ -10,9 +11,14 @@ from typing import (
     Dict,
 )
 
+import pebble
 from celery import (
     Celery,
     shared_task,
+)
+from celery.signals import (
+    worker_init,
+    worker_shutting_down,
 )
 from kombu import serialization
 
@@ -133,6 +139,28 @@ celery_app.set_default()
 
 # setup cron like tasks...
 beat_schedule: Dict[str, Dict[str, Any]] = {}
+
+
+def init_fork_pool():
+    # Do slow imports when workers boot.
+    from galaxy.datatypes import registry  # noqa: F401
+    from galaxy.metadata import set_metadata  # noqa: F401
+
+
+@worker_init.connect
+def setup_worker_pool(sender=None, conf=None, instance=None, **kwargs):
+    context = get_context("forkserver")
+    celery_app.fork_pool = pebble.ProcessPool(
+        max_workers=sender.concurrency, max_tasks=100, initializer=init_fork_pool, context=context
+    )
+
+
+@worker_shutting_down.connect
+def tear_down_pool(sig, how, exitcode, **kwargs):
+    log.debug("shutting down forkserver pool")
+    celery_app.fork_pool.stop()
+    celery_app.fork_pool.join(timeout=5)
+
 
 prune_interval = get_history_audit_table_prune_interval()
 if prune_interval > 0:

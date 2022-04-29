@@ -12,7 +12,15 @@ from galaxy.web import statsd_client as statsd
 
 @pytest.fixture(scope="session", autouse=True)
 def celery_includes():
-    return ["galaxy.celery.tasks"]
+    try:
+        yield ["galaxy.celery.tasks"]
+    finally:
+        from galaxy.celery import celery_app
+
+        fork_pool = getattr(celery_app, "fork_pool", None)
+        if fork_pool:
+            fork_pool.stop()
+            fork_pool.join(timeout=5)
 
 
 def get_timings(test_uuid):
