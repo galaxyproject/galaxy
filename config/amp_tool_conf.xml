@@ -49,6 +49,7 @@
     <tool file="amp_mgms/contact_sheet_frame.xml"/>
     <tool file="amp_mgms/contact_sheet_face.xml"/>
     <tool file="amp_mgms/contact_sheet_shot.xml"/>
+    <tool file="amp_mgms/contact_sheet_vocr.xml"/>
   </section>
 
   <section id="shot_detection" name="Shot Detection">
