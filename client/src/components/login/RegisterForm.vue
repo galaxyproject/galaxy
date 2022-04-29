@@ -6,33 +6,57 @@
                 </b-alert>
                 <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
                 <b-form id="registration" @submit.prevent="submit()">
-                    <b-card no-body header="Create a Galaxy account">
-                        <b-card-body>
-                            <b-form-group label="Email Address">
-                                <b-form-input v-model="email" name="email" type="text" />
-                            </b-form-group>
-                            <b-form-group label="Password">
-                                <b-form-input v-model="password" name="password" type="password" />
-                            </b-form-group>
-                            <b-form-group label="Confirm password">
-                                <b-form-input v-model="confirm" name="confirm" type="password" />
-                            </b-form-group>
-                            <b-form-group label="Public name">
-                                <b-form-input v-model="username" name="username" type="text" />
-                                <b-form-text
-                                    >Your public name is an identifier that will be used to generate addresses for
-                                    information you share publicly. Public names must be at least three characters in
-                                    length and contain only lower-case letters, numbers, dots, underscores, and dashes
-                                    ('.', '_', '-').</b-form-text
-                                >
-                            </b-form-group>
-                            <b-form-group
-                                v-if="mailing_join_addr && server_mail_configured"
-                                label="Subscribe to mailing list">
-                                <input v-model="subscribe" name="subscribe" type="checkbox" />
-                            </b-form-group>
-                            <b-button name="create" type="submit" :disabled="disableCreate">Create</b-button>
-                        </b-card-body>
+                    <b-card no-body>
+                        <!-- OIDC/External Login enabled: encourage users to use it instead of local registration -->
+                        <span v-if="enable_oidc">
+                            <b-card-header v-b-toggle.accordion-oidc role="button">
+                                Register using institutional account
+                            </b-card-header>
+                            <b-collapse visible id="accordion-oidc" role="tabpanel" accordion="registration_acc">
+                                <b-card-body>
+                                    Create a Galaxy account using an institutional account (e.g.:Google/JHU). This will
+                                    redirect you to your institutional login.
+                                    <external-login :login_page="false" />
+                                </b-card-body>
+                            </b-collapse>
+                        </span>
+                        <!-- Local Galaxy Registration -->
+                        <b-card-header v-b-toggle.accordion-register role="button">
+                            <span v-if="!enable_oidc">Create a Galaxy account</span>
+                            <span v-else>Or, register with email</span>
+                        </b-card-header>
+                        <b-collapse
+                            :visible="!enable_oidc"
+                            id="accordion-register"
+                            role="tabpanel"
+                            accordion="registration_acc">
+                            <b-card-body>
+                                <b-form-group label="Email Address">
+                                    <b-form-input v-model="email" name="email" type="text" />
+                                </b-form-group>
+                                <b-form-group label="Password">
+                                    <b-form-input v-model="password" name="password" type="password" />
+                                </b-form-group>
+                                <b-form-group label="Confirm password">
+                                    <b-form-input v-model="confirm" name="confirm" type="password" />
+                                </b-form-group>
+                                <b-form-group label="Public name">
+                                    <b-form-input v-model="username" name="username" type="text" />
+                                    <b-form-text
+                                        >Your public name is an identifier that will be used to generate addresses for
+                                        information you share publicly. Public names must be at least three characters
+                                        in length and contain only lower-case letters, numbers, dots, underscores, and
+                                        dashes ('.', '_', '-').</b-form-text
+                                    >
+                                </b-form-group>
+                                <b-form-group
+                                    v-if="mailing_join_addr && server_mail_configured"
+                                    label="Subscribe to mailing list">
+                                    <input v-model="subscribe" name="subscribe" type="checkbox" />
+                                </b-form-group>
+                                <b-button name="create" type="submit" :disabled="disableCreate">Create</b-button>
+                            </b-card-body>
+                        </b-collapse>
                         <b-card-footer v-if="!isAdmin">
                             Already have an account?
                             <a id="login-toggle" href="javascript:void(0)" role="button" @click.prevent="toggleLogin"
@@ -54,10 +78,14 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
+import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        ExternalLogin,
+    },
     props: {
         registration_warning_message: {
             type: String,
@@ -93,6 +121,7 @@ export default {
             messageVariant: null,
             session_csrf_token: galaxy.session_csrf_token,
             isAdmin: galaxy.user.isAdmin(),
+            enable_oidc: galaxy.config.enable_oidc,
         };
     },
     computed: {
