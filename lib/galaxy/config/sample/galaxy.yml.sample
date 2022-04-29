@@ -472,6 +472,11 @@ galaxy:
   # up by Galaxy tasks (in seconds). The default duration is 1 day.
   #short_term_storage_default_duration: 86400
 
+  # The maximum duration short term storage files can hosted before they
+  # will be marked for clean up.  The default setting of 0 indicates no
+  # limit here.
+  #short_term_storage_maximum_duration: 0
+
   # How many seconds between instances of short term storage being
   # cleaned up in default Celery task configuration.
   #short_term_storage_cleanup_interval: 3600

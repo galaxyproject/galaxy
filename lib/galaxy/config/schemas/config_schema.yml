@@ -517,9 +517,10 @@ mapping:
       short_term_storage_maximum_duration:
         type: int
         required: false
+        default: 0
         desc: |
           The maximum duration short term storage files can hosted before they will be marked for
-          clean up. By default there is no default.
+          clean up.  The default setting of 0 indicates no limit here.
 
       short_term_storage_cleanup_interval:
         type: int
