@@ -36,9 +36,8 @@
                     </b-form-group>
                 </b-form>
                 <b-form-group description="Use strings or regular expressions to search jobs.">
-                    <b-input-group id="filter-regex">
-                        <b-form-input v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
-                    </b-input-group>
+                    <index-filter id="job-search" :placeholder="titleSearchJobs" :help-html="helpHtml" v-model="filter">
+                    </index-filter>
                 </b-form-group>
             </b-col>
         </b-row>
@@ -60,7 +59,6 @@
             v-model="jobsItemsModel"
             :fields="unfinishedJobFields"
             :items="unfinishedJobs"
-            :filter="filter"
             :table-caption="runningTableCaption"
             :no-items-message="runningNoJobsMessage"
             :loading="loading"
@@ -86,9 +84,12 @@
                 :table-caption="finishedTableCaption"
                 :fields="finishedJobFields"
                 :items="finishedJobs"
-                :filter="filter"
                 :no-items-message="finishedNoJobsMessage"
                 :loading="loading"
+                @tool-clicked="(toolId) => appendTagFilter('tool', toolId)"
+                @runner-clicked="(runner) => appendTagFilter('runner', runner)"
+                @handler-clicked="(handler) => appendTagFilter('handler', handler)"
+                @user-clicked="(user) => appendTagFilter('user', user)"
                 :busy="busy">
             </jobs-table>
         </template>
@@ -105,14 +106,41 @@ import { commonJobFields } from "./JobFields";
 import { errorMessageAsString } from "utils/simple-error";
 import { jobsProvider } from "components/providers/JobProvider";
 import Heading from "components/Common/Heading";
+import IndexFilter from "components/Indices/IndexFilter";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;
     return axios.delete(url, { data: { message: message } });
 }
 
+const helpHtml = `<div>
+<p>This textbox box can be used to filter the jobs displayed.
+
+<p>Text entered here will be searched against job user, tool ID, job runner, and handler. Additionally,
+advanced filtering tags can be used to refine the search more precisely. Tags are of the form
+<code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>.
+For instance to search just for jobs with <code>cat1</code> in the tool name, <code>tool_id:cat1</code> can be used.
+Notice by default the search is not case-sensitive.
+
+If the quoted version of tag is used, the search is not case sensitive and only full matches will be
+returned. So <code>tool_id:'cat1'</code> would show only jobs from the <code>cat1</code> tool exactly.
+
+<p>The available tags are:
+<dl>
+    <dt><code>user</code></dt>
+    <dd>This filters the job index to contain only jobs executed by matching user(s). You may also just click on a user in the list of jobs to filter on that exact user using this directly.</dd>
+    <dt><code>handler</code></dt>
+    <dd>This filters the job index to contain only jobs executed on matching handler(s).  You may also just click on a handler in the list of jobs to filter on that exact user using this directly.</dd>
+    <dt><code>runner</code></dt>
+    <dd>This filters the job index to contain only jobs executed on matching job runner(s).  You may also just click on a runner in the list of jobs to filter on that exact user using this directly.</dd>
+    <dt><code>tool</code></dt>
+    <dd>This filters the job index to contain only jobs from the matching tool(s).  You may also just click on a tool in the list of jobs to filter on that exact user using this directly.</dd>
+</dl>
+</div>
+`;
+
 export default {
-    components: { JobLock, JobsTable, Heading },
+    components: { JobLock, JobsTable, Heading, IndexFilter},
     data() {
         return {
             jobs: [],
@@ -137,6 +165,8 @@ export default {
             busy: true,
             cutoffMin: 5,
             showAllRunning: false,
+            titleSearchJobs: `Search Jobs`,
+            helpHtml: helpHtml,
         };
     },
     computed: {
@@ -205,6 +235,9 @@ export default {
                 const dateRangeMin = new Date(Date.now() - cutoff * 60 * 1000).toISOString();
                 params.date_range_min = `${dateRangeMin}`;
             }
+            if (this.filter) {
+                params.search = this.filter;
+            }
             const ctx = {
                 root: getAppRoot(),
                 ...params,
@@ -233,6 +266,17 @@ export default {
         },
         toggleAll(checked) {
             this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];
+        },
+        appendTagFilter(tag, text) {
+            this.appendFilter(`${tag}:'${text}'`);
+        },
+        appendFilter(text) {
+            const initialFilter = this.filter;
+            if (initialFilter.length === 0) {
+                this.filter = text;
+            } else if (initialFilter.indexOf(text) < 0) {
+                this.filter = `${text} ${initialFilter}`;
+            }
         },
     },
 };
