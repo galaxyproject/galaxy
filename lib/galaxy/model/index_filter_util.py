@@ -4,7 +4,10 @@ from sqlalchemy import (
     or_,
 )
 
-from galaxy.util.search import FilteredTerm, RawTextTerm
+from galaxy.util.search import (
+    FilteredTerm,
+    RawTextTerm,
+)
 
 
 def text_column_filter(column, term: FilteredTerm):

@@ -4,7 +4,6 @@
             v-model="innerValue"
             :fields="fields"
             :items="items"
-            :filter="filter"
             hover
             responsive
             striped
@@ -26,6 +25,18 @@
             </template>
             <template v-slot:row-details="row">
                 <job-details :job="row.item" />
+            </template>
+            <template v-slot:cell(user_email)="data">
+                <a class="job-filter-link-user" @click="$emit('user-clicked', data.value)">{{ data.value }}</a>
+            </template>
+            <template v-slot:cell(tool_id)="data">
+                <a class="job-filter-link-tool-id" @click="$emit('tool-clicked', data.value)">{{ data.value }}</a>
+            </template>
+            <template v-slot:cell(job_runner_name)="data">
+                <a class="job-filter-link-runner" @click="$emit('runner-clicked', data.value)">{{ data.value }}</a>
+            </template>
+            <template v-slot:cell(handler)="data">
+                <a class="job-filter-link-handler" @click="$emit('handler-clicked', data.value)">{{ data.value }}</a>
             </template>
             <template v-for="(index, name) in $slots" v-slot:[name]>
                 <slot :name="name" />
@@ -53,10 +64,6 @@ export default {
             required: true,
         },
         items: {
-            required: true,
-        },
-        filter: {
-            type: String,
             required: true,
         },
         busy: {

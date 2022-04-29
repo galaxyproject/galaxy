@@ -72,7 +72,6 @@
             v-model="jobsItemsModel"
             :fields="unfinishedJobFields"
             :items="unfinishedJobs"
-            :filter="filter"
             :table-caption="runningTableCaption"
             :no-items-message="runningNoJobsMessage"
             :loading="loading"
@@ -98,9 +97,12 @@
                 :table-caption="finishedTableCaption"
                 :fields="finishedJobFields"
                 :items="finishedJobs"
-                :filter="filter"
                 :no-items-message="finishedNoJobsMessage"
                 :loading="loading"
+                @tool-clicked="(toolId) => appendTagFilter('tool', toolId)"
+                @runner-clicked="(runner) => appendTagFilter('runner', runner)"
+                @handler-clicked="(handler) => appendTagFilter('handler', handler)"
+                @user-clicked="(user) => appendTagFilter('user', user)"
                 :busy="busy">
             </jobs-table>
         </template>
@@ -210,6 +212,9 @@ export default {
                 const dateRangeMin = new Date(Date.now() - cutoff * 60 * 1000).toISOString();
                 params.date_range_min = `${dateRangeMin}`;
             }
+            if (this.filter) {
+                params.search = this.filter;
+            }
             const ctx = {
                 apiUrl: `${getAppRoot()}api/jobs`,
                 ...params,
@@ -238,6 +243,17 @@ export default {
         },
         toggleAll(checked) {
             this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];
+        },
+        appendTagFilter(tag, text) {
+            this.appendFilter(`${tag}:'${text}'`);
+        },
+        appendFilter(text) {
+            const initialFilter = this.filter;
+            if (initialFilter.length === 0) {
+                this.filter = text;
+            } else if (initialFilter.indexOf(text) < 0) {
+                this.filter = `${text} ${initialFilter}`;
+            }
         },
     },
 };
