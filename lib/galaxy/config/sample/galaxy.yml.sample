@@ -1659,6 +1659,10 @@ galaxy:
   # page (even if require_login is true).
   #show_welcome_with_login: false
 
+  # Controls the order of the login page to prefer Custos-based login
+  # and registration.
+  #prefer_custos_login: false
+
   # Allow unregistered users to create new accounts (otherwise, they
   # will have to be created by an admin).
   #allow_user_creation: true

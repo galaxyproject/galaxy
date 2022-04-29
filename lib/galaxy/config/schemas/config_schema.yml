@@ -2433,6 +2433,13 @@ mapping:
           Show the site's welcome page (see welcome_url) alongside the login page
           (even if require_login is true).
 
+      prefer_custos_login:
+        type: bool
+        default: false
+        required: False
+        desc: |
+          Controls the order of the login page to prefer Custos-based login and registration.
+
       allow_user_creation:
         type: bool
         default: true

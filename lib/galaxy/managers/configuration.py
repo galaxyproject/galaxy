@@ -156,6 +156,7 @@ class ConfigSerializer(base.ModelSerializer):
             "single_user": _config_is_truthy,
             "enable_oidc": _use_config,
             "oidc": _use_config,
+            "prefer_custos_login": _use_config,
             "enable_quotas": _use_config,
             "remote_user_logout_href": _use_config,
             "datatypes_disable_auto": _use_config,
