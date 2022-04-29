@@ -4,6 +4,7 @@
         v-slot="{ loading, result: payload, count: totalItemsInQuery }"
         :history-id="historyId"
         :offset="offset"
+        :update-time="history.update_time"
         :filter-text="filterText">
         <ExpandedItems
             v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }"
