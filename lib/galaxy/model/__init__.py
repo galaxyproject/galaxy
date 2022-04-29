@@ -3358,9 +3358,9 @@ class Dataset(Base, StorableObject, Serializable, _HasTable):
         "HistoryDatasetAssociation",
         primaryjoin=(
             lambda: and_(
-                Dataset.id == HistoryDatasetAssociation.dataset_id,
-                HistoryDatasetAssociation.deleted == false(),
-                HistoryDatasetAssociation.purged == false(),
+                Dataset.id == HistoryDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
+                HistoryDatasetAssociation.deleted == false(),  # type: ignore[has-type]
+                HistoryDatasetAssociation.purged == false(),  # type: ignore[attr-defined]
             )
         ),
         viewonly=True,
@@ -3369,8 +3369,8 @@ class Dataset(Base, StorableObject, Serializable, _HasTable):
         "HistoryDatasetAssociation",
         primaryjoin=(
             lambda: and_(
-                Dataset.id == HistoryDatasetAssociation.dataset_id,
-                HistoryDatasetAssociation.purged == true(),
+                Dataset.id == HistoryDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
+                HistoryDatasetAssociation.purged == true(),  # type: ignore[attr-defined]
             )
         ),
         viewonly=True,
@@ -3379,8 +3379,8 @@ class Dataset(Base, StorableObject, Serializable, _HasTable):
         "LibraryDatasetDatasetAssociation",
         primaryjoin=(
             lambda: and_(
-                Dataset.id == LibraryDatasetDatasetAssociation.dataset_id,
-                LibraryDatasetDatasetAssociation.deleted == false(),
+                Dataset.id == LibraryDatasetDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
+                LibraryDatasetDatasetAssociation.deleted == false(),  # type: ignore[has-type]
             )
         ),
         viewonly=True,
