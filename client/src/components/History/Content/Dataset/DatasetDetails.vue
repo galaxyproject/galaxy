@@ -58,11 +58,14 @@
 import { STATES } from "components/History/Content/model/states";
 import { DatasetProvider } from "components/providers/storeProviders";
 import DatasetActions from "./DatasetActions";
+import { BLink, BSkeleton } from "bootstrap-vue";
 
 export default {
     components: {
         DatasetActions,
         DatasetProvider,
+        BLink,
+        BSkeleton,
     },
     props: {
         dataset: { type: Object, required: true },
