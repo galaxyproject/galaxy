@@ -1,4 +1,4 @@
-import { checkFilter, getFilters, getQueryDict, testFilters } from "./filtering";
+import { checkFilter, getFilters, getFilterSettings, getQueryDict, testFilters } from "./filtering";
 
 const filterTexts = [
     "name='name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state=success extension=ext tag=first deleted=False visible='TRUE'",
@@ -60,19 +60,19 @@ describe("filtering", () => {
         });
     });
     test("validate filtering of a history item", () => {
+        const item = {
+            create_time: "2021-06-01",
+            extension: "ext",
+            deleted: false,
+            hid: 11,
+            name: "contains the name of item.",
+            state: "success",
+            tags: ["first", "second"],
+            update_time: "2021-06-01",
+            visible: true,
+        };
         filterTexts.forEach((filterText) => {
             const filters = getFilters(filterText);
-            const item = {
-                create_time: "2021-06-01",
-                extension: "ext",
-                deleted: false,
-                hid: 11,
-                name: "contains the name of item.",
-                state: "success",
-                tags: ["first", "second"],
-                update_time: "2021-06-01",
-                visible: true,
-            };
             expect(testFilters(filters, { ...item })).toBe(true);
             expect(testFilters(filters, { ...item, hid: 10 })).toBe(false);
             expect(testFilters(filters, { ...item, hid: 100 })).toBe(false);
@@ -85,6 +85,39 @@ describe("filtering", () => {
             expect(testFilters(filters, { ...item, tags: ["second"] })).toBe(false);
             expect(testFilters(filters, { ...item, visible: false })).toBe(false);
             expect(testFilters(filters, { ...item, deleted: true })).toBe(false);
+        });
+    });
+    test("Parsing & sync of filter settings", () => {
+        // Expected parsed settings
+        const parsedFilterSettings = [
+            {
+                "name=": "name of item",
+                "hid>": "10",
+                "hid<": "100",
+                "create_time>": "2021-01-01",
+                "update_time<": "2022-01-01",
+                "state=": "success",
+                "extension=": "ext",
+                "tag=": "first",
+                "deleted=": "false",
+                "visible=": "true",
+            },
+            {
+                "name=": "name of item",
+                "hid_gt=": "10",
+                "hid_lt=": "100",
+                "create_time_gt=": "2021-01-01",
+                "update_time_lt=": "2022-01-01",
+                "state=": "success",
+                "extension=": "ext",
+                "tag=": "first",
+                "deleted=": "false",
+                "visible=": "true",
+            },
+        ];
+        // iterate through filterTexts and compare with parsedFilterSettings
+        filterTexts.forEach((filterText, index) => {
+            expect(getFilterSettings(filterTexts[index])).toEqual(parsedFilterSettings[index]);
         });
     });
 });
