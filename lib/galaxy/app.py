@@ -507,7 +507,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         short_term_storage_maximum_duration = self.config.short_term_storage_maximum_duration
         if short_term_storage_default_duration is not None:
             short_term_storage_config_kwds["default_storage_duration"] = short_term_storage_default_duration
-        if short_term_storage_maximum_duration is not None and short_term_storage_maximum_duration != 0:
+        if short_term_storage_maximum_duration != 0:
             short_term_storage_config_kwds["maximum_storage_duration"] = short_term_storage_maximum_duration
 
         short_term_storage_config = ShortTermStorageConfiguration(**short_term_storage_config_kwds)
