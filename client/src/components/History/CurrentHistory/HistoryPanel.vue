@@ -4,7 +4,7 @@
         v-slot="{ loading, result: payload, count: totalItemsInQuery }"
         :history-id="historyId"
         :offset="offset"
-        :refresh="refresh"
+        :update-time="history.update_time"
         :filter-text="filterText">
         <ExpandedItems
             v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }"
@@ -146,7 +146,6 @@ export default {
             filterText: "",
             invisible: {},
             offset: 0,
-            refresh: 0,
             showAdvanced: false,
         };
     },
@@ -169,9 +168,6 @@ export default {
         },
     },
     watch: {
-        history() {
-            this.refresh++;
-        },
         queryKey() {
             this.invisible = {};
             this.offset = 0;
