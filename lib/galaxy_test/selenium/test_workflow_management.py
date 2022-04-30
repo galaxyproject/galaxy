@@ -3,11 +3,12 @@ from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
     SeleniumTestCase,
+    TestsGalaxyPagers,
     UsesWorkflowAssertions,
 )
 
 
-class WorkflowManagementTestCase(SeleniumTestCase, UsesWorkflowAssertions):
+class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAssertions):
 
     ensure_registered = True
 
@@ -94,3 +95,37 @@ class WorkflowManagementTestCase(SeleniumTestCase, UsesWorkflowAssertions):
 
         self.workflow_index_search_for("searchforthis")
         self._assert_showing_n_workflows(1)
+
+    @selenium_test
+    def test_pagination(self):
+        self.workflow_index_open()
+        self._workflow_import_from_url()
+        self.workflow_index_open()
+        self._workflow_import_from_url()
+        self.workflow_index_open()
+        self._workflow_import_from_url()
+        self.workflow_index_open()
+        self._workflow_import_from_url()
+        self.workflow_index_open()
+
+        self._assert_showing_n_workflows(4)
+
+        # by default the pager only appears when there are too many workflows
+        # for one page - so verify it is absent and then swap to showing just
+        # one workflow per page.
+        workflows = self.components.workflows
+        workflows.pager.wait_for_absent_or_hidden()
+        self.re_get_with_query_params("rows_per_page=1")
+        self._assert_showing_n_workflows(1)
+        self.screenshot("workflows_paginated_first_page")
+        self._assert_current_page_is(workflows, 1)
+        self._next_page(workflows)
+        self._assert_current_page_is(workflows, 2)
+        self.screenshot("workflows_paginated_next_page")
+        self._previous_page(workflows)
+        self._assert_current_page_is(workflows, 1)
+        self._last_page(workflows)
+        self._assert_current_page_is(workflows, 4)
+        self.screenshot("workflows_paginated_last_page")
+        self._first_page(workflows)
+        self._assert_current_page_is(workflows, 1)

@@ -41,6 +41,10 @@
                 <span class="fa fa-copy fa-fw mr-1" />
                 <span>Copy</span>
             </a>
+            <a class="dropdown-item" :href="urlInvocations">
+                <span class="fa fa-list fa-fw mr-1" />
+                <span>Invocations</span>
+            </a>
             <a class="dropdown-item" :href="urlDownload">
                 <span class="fa fa-download fa-fw mr-1" />
                 <span>Download</span>
@@ -102,6 +106,9 @@ export default {
         },
         urlView() {
             return `${getAppRoot()}workflow/display_by_id?id=${this.workflow.id}`;
+        },
+        urlInvocations() {
+            return `${getAppRoot()}workflows/${this.workflow.id}/invocations`;
         },
         urlViewShared() {
             return `${getAppRoot()}workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${

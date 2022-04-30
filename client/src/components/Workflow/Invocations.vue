@@ -1,13 +1,13 @@
 <template>
     <div class="invocations-list">
         <h2 class="mb-3">
-            <span id="invocations-title">Workflow Invocations</span>
+            <span id="invocations-title">{{ title }}</span>
         </h2>
         <b-alert v-if="headerMessage" variant="info" show>
             {{ headerMessage }}
         </b-alert>
         <b-table
-            id="invocation-list-table"
+            :id="tableId"
             v-model="invocationItemsModel"
             :fields="invocationFields"
             :items="provider"
@@ -20,8 +20,9 @@
             show-empty
             class="invocations-table">
             <template v-slot:empty>
-                <b-alert id="no-invocations" variant="info" show>
-                    {{ noInvocationsMessage }}
+                <loading-span v-if="loading" message="Loading workflow invocations" />
+                <b-alert v-else id="no-invocations" variant="info" show>
+                    {{ effectiveNoInvocationsMessage }}
                 </b-alert>
             </template>
             <template v-slot:row-details="row">
@@ -80,9 +81,9 @@
         </b-table>
         <b-pagination
             v-model="currentPage"
-            :per-page="perPage"
-            :total-rows="rows"
-            aria-controls="invocation-list-table"></b-pagination>
+            v-show="rows >= perPage"
+            class="gx-invocations-grid-pager"
+            v-bind="paginationAttrs"></b-pagination>
     </div>
 </template>
 
@@ -94,17 +95,21 @@ import { WorkflowInvocationState } from "components/WorkflowInvocationState";
 import UtcDate from "components/UtcDate";
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
+import paginationMixin from "./paginationMixin";
 
 export default {
     components: {
         UtcDate,
         WorkflowInvocationState,
     },
+    mixins: [paginationMixin],
     props: {
         noInvocationsMessage: { type: String, default: "No Workflow Invocations to display" },
         headerMessage: { type: String, default: "" },
         ownerGrid: { type: Boolean, default: true },
         userId: { type: String, default: null },
+        storedWorkflowId: { type: String, default: null },
+        storedWorkflowName: { type: String, default: null },
     },
     data() {
         const fields = [
@@ -117,13 +122,11 @@ export default {
             { key: "execute", label: "", class: "col-button" },
         ];
         return {
+            tableId: "invocation-list-table",
             invocationItems: [],
             invocationItemsModel: [],
             invocationFields: fields,
-            status: "",
-            currentPage: 1,
-            perPage: 50,
-            rows: 0,
+            perPage: this.rowsPerPage(50),
         };
     },
     computed: {
@@ -131,6 +134,20 @@ export default {
         ...mapGetters("history", ["getHistoryById", "getHistoryNameById"]),
         apiUrl() {
             return `${getAppRoot()}api/invocations`;
+        },
+        title() {
+            let title = `Workflow Invocations`;
+            if (this.storedWorkflowName) {
+                title += ` for ${this.storedWorkflowName}`;
+            }
+            return title;
+        },
+        effectiveNoInvocationsMessage() {
+            let message = this.noInvocationsMessage;
+            if (this.storedWorkflowName) {
+                message += ` for ${this.storedWorkflowName}`;
+            }
+            return message;
         },
     },
     watch: {
@@ -156,17 +173,14 @@ export default {
         provider(ctx) {
             ctx.apiUrl = this.apiUrl;
             const extraParams = this.ownerGrid ? {} : { include_terminal: false };
+            if (this.storedWorkflowId) {
+                extraParams["workflow_id"] = this.storedWorkflowId;
+            }
             if (this.userId) {
                 extraParams["user_id"] = this.userId;
             }
             this.invocationItems = invocationsProvider(ctx, this.setRows, extraParams);
             return this.invocationItems;
-        },
-        refresh() {
-            this.$root.$emit("bv::refresh::table", "invocation-list-table");
-        },
-        setRows(data) {
-            this.rows = data.headers.total_matches;
         },
         swapRowDetails(row) {
             row.toggleDetails();

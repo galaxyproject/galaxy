@@ -390,7 +390,32 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         # after an update to workflow 1, it now comes before workflow 2
         assert index_ids.index(my_workflow_id_1) < index_ids.index(my_workflow_id_2)
 
-    def test_show_shared(self):
+    def test_index_sort_by(self):
+        my_workflow_id_y = self.workflow_populator.simple_workflow("y_1")
+        my_workflow_id_z = self.workflow_populator.simple_workflow("z_2")
+        index_ids = self.workflow_populator.index_ids()
+        assert index_ids.index(my_workflow_id_z) < index_ids.index(my_workflow_id_y)
+        index_ids = self.workflow_populator.index_ids(sort_by="create_time", sort_desc=True)
+        assert index_ids.index(my_workflow_id_z) < index_ids.index(my_workflow_id_y)
+        index_ids = self.workflow_populator.index_ids(sort_by="create_time", sort_desc=False)
+        assert index_ids.index(my_workflow_id_y) < index_ids.index(my_workflow_id_z)
+        index_ids = self.workflow_populator.index_ids(sort_by="name")
+        assert index_ids.index(my_workflow_id_y) < index_ids.index(my_workflow_id_z)
+        index_ids = self.workflow_populator.index_ids(sort_by="name", sort_desc=False)
+        assert index_ids.index(my_workflow_id_y) < index_ids.index(my_workflow_id_z)
+        index_ids = self.workflow_populator.index_ids(sort_by="name", sort_desc=True)
+        assert index_ids.index(my_workflow_id_z) < index_ids.index(my_workflow_id_y)
+
+    def test_index_limit_and_offset(self):
+        self.workflow_populator.simple_workflow("y_1")
+        self.workflow_populator.simple_workflow("z_2")
+        index_ids = self.workflow_populator.index_ids(limit=1)
+        assert len(index_ids) == 1
+        index_ids_offset = self.workflow_populator.index_ids(limit=1, offset=1)
+        assert len(index_ids_offset) == 1
+        assert index_ids[0] != index_ids_offset[0]
+
+    def test_index_show_shared(self):
         my_workflow_id_1 = self.workflow_populator.simple_workflow("mine_1")
         my_email = self.dataset_populator.user_email()
         with self._different_user():
@@ -407,6 +432,24 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         index_ids = self.workflow_populator.index_ids(show_shared=True)
         assert my_workflow_id_1 in index_ids
         assert their_workflow_id_1 in index_ids
+
+    def test_index_skip_step_counts(self):
+        self.workflow_populator.simple_workflow("mine_1")
+        index = self.workflow_populator.index()
+        index_0 = index[0]
+        assert "number_of_steps" in index_0
+        assert index_0["number_of_steps"]
+        index = self.workflow_populator.index(skip_step_counts=True)
+        index_0 = index[0]
+        assert "number_of_steps" not in index_0
+
+    def test_index_search(self):
+        name1, name2 = self.dataset_populator.get_random_name(), self.dataset_populator.get_random_name()
+        workflow_id_1 = self.workflow_populator.simple_workflow(name1)
+        self.workflow_populator.simple_workflow(name2)
+        index_ids = self.workflow_populator.index_ids(search=name1)
+        assert len(index_ids) == 1
+        assert workflow_id_1 in index_ids
 
     def test_index_published(self):
         # published workflows are also the default of what is displayed for anonymous API requests

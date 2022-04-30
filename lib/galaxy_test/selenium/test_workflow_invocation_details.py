@@ -28,8 +28,8 @@ class WorkflowInvocationDetailsTestCase(SeleniumTestCase):
             assert len(invocation_rows) > 0
             return invocation_rows[0]
 
-        first_row = assert_has_row()
-        print(first_row)
+        assert_has_row()
+
         invocations.state_details.assert_absent()
         invocations.toggle_invocation_details.wait_for_visible()
         details = invocations.toggle_invocation_details.all()[0]

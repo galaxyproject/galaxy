@@ -2,84 +2,93 @@
     <div>
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
-            <span v-if="loading">
-                <font-awesome-icon icon="spinner" spin />
-                Loading workflows...
-            </span>
-            <div v-else>
-                <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-                <b-row class="mb-3">
-                    <b-col cols="6">
-                        <b-input
-                            id="workflow-search"
-                            v-model="filter"
-                            class="m-1"
-                            name="query"
-                            :placeholder="titleSearchWorkflows"
-                            autocomplete="off"
-                            type="text" />
-                    </b-col>
-                    <b-col>
-                        <span class="float-right">
-                            <b-button id="workflow-create" class="m-1" @click="createWorkflow">
-                                <font-awesome-icon icon="plus" />
-                                {{ titleCreate }}
-                            </b-button>
-                            <b-button id="workflow-import" class="m-1" @click="importWorkflow">
-                                <font-awesome-icon icon="upload" />
-                                {{ titleImport }}
-                            </b-button>
-                        </span>
-                    </b-col>
-                </b-row>
-                <b-table
-                    id="workflow-table"
-                    striped
-                    :fields="fields"
-                    :items="workflows"
-                    :filter="filter"
-                    @filtered="filtered">
-                    <template v-slot:cell(name)="row">
-                        <WorkflowDropdown
-                            :workflow="row.item"
-                            @onAdd="onAdd"
-                            @onRemove="onRemove"
-                            @onUpdate="onUpdate"
-                            @onSuccess="onSuccess"
-                            @onError="onError" />
-                    </template>
-                    <template v-slot:cell(tags)="row">
-                        <Tags :index="row.index" :tags="row.item.tags" @input="onTags" />
-                    </template>
-                    <template v-slot:cell(published)="row">
-                        <font-awesome-icon v-if="row.item.published" v-b-tooltip.hover title="Published" icon="globe" />
-                        <font-awesome-icon v-if="row.item.shared" v-b-tooltip.hover title="Shared" icon="share-alt" />
-                    </template>
-                    <template v-slot:cell(show_in_tool_panel)="row">
-                        <b-link v-if="row.item.show_in_tool_panel" @click="bookmarkWorkflow(row.item, false)">
-                            <font-awesome-icon :icon="['fas', 'star']" />
-                        </b-link>
-                        <b-link v-else @click="bookmarkWorkflow(row.item, true)">
-                            <font-awesome-icon :icon="['far', 'star']" />
-                        </b-link>
-                    </template>
-                    <template v-slot:cell(update_time)="data">
-                        <UtcDate :date="data.value" mode="elapsed" />
-                    </template>
-                    <template v-slot:cell(execute)="row">
-                        <b-button
-                            v-b-tooltip.hover.bottom
-                            :title="titleRunWorkflow"
-                            class="workflow-run btn-sm btn-primary fa fa-play"
-                            @click.stop="executeWorkflow(row.item)" />
-                    </template>
-                </b-table>
-                <div v-if="showNotFound">
-                    No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
-                    >.
-                </div>
-                <div v-if="showNotAvailable">No workflows found. You may create or import new workflows.</div>
-            </div>
+            <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
+            <b-row class="mb-3">
+                <b-col cols="6">
+                    <b-input
+                        id="workflow-search"
+                        class="m-1"
+                        name="query"
+                        :placeholder="titleSearchWorkflows"
+                        autocomplete="off"
+                        type="text"
+                        v-model="filter" />
+                </b-col>
+                <b-col>
+                    <span class="float-right">
+                        <b-button id="workflow-create" class="m-1" @click="createWorkflow">
+                            <font-awesome-icon icon="plus" />
+                            {{ titleCreate }}
+                        </b-button>
+                        <b-button id="workflow-import" class="m-1" @click="importWorkflow">
+                            <font-awesome-icon icon="upload" />
+                            {{ titleImport }}
+                        </b-button>
+                    </span>
+                </b-col>
+            </b-row>
+            <b-table
+                :id="tableId"
+                :fields="fields"
+                :items="provider"
+                v-model="workflowItemsModel"
+                :per-page="perPage"
+                :current-page="currentPage"
+                hover
+                striped
+                caption-top
+                fixed
+                show-empty>
+                <template v-slot:empty>
+                    <loading-span v-if="loading" message="Loading workflows" />
+                    <b-alert v-else id="no-workflows" variant="info" show>
+                        <div v-if="showNotFound">
+                            No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
+                            >.
+                        </div>
+                        <div v-if="showNotAvailable">No workflows found. You may create or import new workflows.</div>
+                    </b-alert>
+                </template>
+                <template v-slot:cell(name)="row">
+                    <WorkflowDropdown
+                        :workflow="row.item"
+                        @onAdd="onAdd"
+                        @onRemove="onRemove"
+                        @onUpdate="onUpdate"
+                        @onSuccess="onSuccess"
+                        @onError="onError" />
+                </template>
+                <template v-slot:cell(tags)="row">
+                    <Tags :index="row.index" :tags="row.item.tags" @input="onTags" />
+                </template>
+                <template v-slot:cell(published)="row">
+                    <font-awesome-icon v-if="row.item.published" v-b-tooltip.hover title="Published" icon="globe" />
+                    <font-awesome-icon v-if="row.item.shared" v-b-tooltip.hover title="Shared" icon="share-alt" />
+                </template>
+                <template v-slot:cell(show_in_tool_panel)="row">
+                    <b-link @click="bookmarkWorkflow(row.item, false)" v-if="row.item.show_in_tool_panel">
+                        <font-awesome-icon :icon="['fas', 'star']" />
+                    </b-link>
+                    <b-link @click="bookmarkWorkflow(row.item, true)" v-else>
+                        <font-awesome-icon :icon="['far', 'star']" />
+                    </b-link>
+                </template>
+                <template v-slot:cell(update_time)="data">
+                    <UtcDate :date="data.value" mode="elapsed" />
+                </template>
+                <template v-slot:cell(execute)="row">
+                    <b-button
+                        v-b-tooltip.hover.bottom
+                        :title="titleRunWorkflow"
+                        class="workflow-run btn-sm btn-primary fa fa-play"
+                        @click.stop="executeWorkflow(row.item)" />
+                </template>
+            </b-table>
+            <b-pagination
+                v-model="currentPage"
+                v-show="rows >= perPage"
+                class="gx-workflows-grid-pager"
+                v-bind="paginationAttrs"></b-pagination>
         </div>
     </div>
 </template>
@@ -91,10 +100,12 @@ import { faPlus, faShareAlt, faGlobe, faUpload, faSpinner, faStar } from "@forta
 import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services";
+import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
 import Tags from "components/Common/Tags";
 import WorkflowDropdown from "./WorkflowDropdown";
 import UtcDate from "components/UtcDate";
 import { getGalaxyInstance } from "app";
+import paginationMixin from "./paginationMixin";
 
 library.add(faPlus, faUpload, faSpinner, faGlobe, faShareAlt, farStar, faStar);
 
@@ -105,8 +116,10 @@ export default {
         Tags,
         WorkflowDropdown,
     },
+    mixins: [paginationMixin],
     data() {
         return {
+            tableId: "workflow-table",
             error: null,
             fields: [
                 {
@@ -117,7 +130,7 @@ export default {
                 {
                     key: "tags",
                     label: _l("Tags"),
-                    sortable: true,
+                    sortable: false,
                 },
                 {
                     label: _l("Updated"),
@@ -127,12 +140,12 @@ export default {
                 {
                     label: _l("Sharing"),
                     key: "published",
-                    sortable: true,
+                    sortable: false,
                 },
                 {
                     label: _l("Bookmarked"),
                     key: "show_in_tool_panel",
-                    sortable: true,
+                    sortable: false,
                 },
                 {
                     key: "execute",
@@ -143,47 +156,44 @@ export default {
             loading: true,
             message: null,
             messageVariant: null,
-            nWorkflows: 0,
-            workflows: [],
             titleSearchWorkflows: _l("Search Workflows"),
             titleCreate: _l("Create"),
             titleImport: _l("Import"),
             titleRunWorkflow: _l("Run workflow"),
+            workflowItemsModel: [],
+            workflowItems: [],
+            perPage: this.rowsPerPage(50),
         };
     },
     computed: {
         showNotFound() {
-            return this.nWorkflows === 0 && this.filter;
+            return this.filter;
         },
         showNotAvailable() {
-            return this.nWorkflows === 0 && !this.filter;
+            return !this.filter;
         },
         showMessage() {
             return !!this.message;
+        },
+        apiUrl() {
+            return `${getAppRoot()}api/workflows`;
         },
     },
     created() {
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
-        this.load();
+    },
+    watch: {
+        filter(val) {
+            this.refresh();
+        },
     },
     methods: {
-        load() {
-            this.loading = true;
-            this.filter = "";
-            this.services
-                .getWorkflows()
-                .then((workflows) => {
-                    this.workflows = workflows;
-                    this.nWorkflows = workflows.length;
-                    this.loading = false;
-                })
-                .catch((error) => {
-                    this.error = error;
-                });
-        },
-        filtered: function (items) {
-            this.nWorkflows = items.length;
+        async provider(ctx) {
+            ctx.apiUrl = this.apiUrl;
+            const extraParams = { search: this.filter, skip_step_counts: true };
+            this.workflowItems = await storedWorkflowsProvider(ctx, this.setRows, extraParams);
+            return this.workflowItems;
         },
         createWorkflow: function (workflow) {
             window.location = `${this.root}workflows/create`;
@@ -213,7 +223,7 @@ export default {
                         getGalaxyInstance().config.stored_workflow_menu_entries.splice(indexToRemove, 1);
                     }
 
-                    this.workflows.find((workflow) => {
+                    this.workflowItems.find((workflow) => {
                         if (workflow.id === id) {
                             workflow.show_in_tool_panel = checked;
                             return true;
@@ -225,7 +235,7 @@ export default {
                 });
         },
         onTags: function (tags, index) {
-            const workflow = this.workflows[index];
+            const workflow = this.workflowItemsModel[index];
             workflow.tags = tags;
             this.services
                 .updateWorkflow(workflow.id, {
@@ -237,17 +247,17 @@ export default {
                 });
         },
         onAdd: function (workflow) {
-            this.workflows.unshift(workflow);
-            this.nWorkflows = this.workflows.length;
+            if (this.currentPage == 1) {
+                this.refresh();
+            } else {
+                this.currentPage = 1;
+            }
         },
         onRemove: function (id) {
-            this.workflows = this.workflows.filter((item) => item.id !== id);
-            this.nWorkflows = this.workflows.length;
+            this.refresh();
         },
         onUpdate: function (id, data) {
-            const workflow = this.workflows.find((item) => item.id === id);
-            Object.assign(workflow, data);
-            this.workflows = [...this.workflows];
+            this.refresh();
         },
         onSuccess: function (message) {
             this.message = message;

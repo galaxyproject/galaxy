@@ -9,24 +9,20 @@ import os
 from typing import (
     Any,
     Dict,
+    List,
+    Optional,
 )
 
 import requests
 from fastapi import (
     Body,
     Path,
+    Query,
     Response,
     status,
 )
 from gxformat2._yaml import ordered_dump
 from markupsafe import escape
-from sqlalchemy import (
-    desc,
-    false,
-    or_,
-    true,
-)
-from sqlalchemy.orm import joinedload
 
 from galaxy import (
     exceptions,
@@ -53,6 +49,8 @@ from galaxy.schema.schema import (
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
+    WorkflowIndexPayload,
+    WorkflowSortByEnum,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -92,25 +90,14 @@ router = Router(tags=["workflows"])
 
 
 class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, UsesAnnotations, SharableMixin):
+    service: WorkflowsService = depends(WorkflowsService)
+
     def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.history_manager = app.history_manager
         self.workflow_manager = app.workflow_manager
         self.workflow_contents_manager = app.workflow_contents_manager
         self.tool_recommendations = recommendations.ToolRecommendations()
-
-    def __get_full_shed_url(self, url):
-        for shed_url in self.app.tool_shed_registry.tool_sheds.values():
-            if url in shed_url:
-                return shed_url
-        return None
-
-    @expose_api_anonymous_and_sessionless
-    def index(self, trans: ProvidesUserContext, **kwd):
-        """
-        GET /api/workflows
-        """
-        return self.get_workflows_list(trans, **kwd)
 
     @expose_api
     def get_workflow_menu(self, trans: ProvidesUserContext, **kwd):
@@ -120,7 +107,8 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         """
         user = trans.user
         ids_in_menu = [x.stored_workflow_id for x in user.stored_workflow_menu_entries]
-        return {"ids_in_menu": ids_in_menu, "workflows": self.get_workflows_list(trans, **kwd)}
+        workflows = self.get_workflows_list(trans, **kwd)
+        return {"ids_in_menu": ids_in_menu, "workflows": workflows}
 
     @expose_api
     def set_workflow_menu(self, trans: GalaxyWebTransaction, payload=None, **kwd):
@@ -194,103 +182,16 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         show_hidden = util.string_as_bool(show_hidden)
         show_deleted = util.string_as_bool(show_deleted)
         missing_tools = util.string_as_bool(missing_tools)
-        if show_shared is None:
-            show_shared = not show_hidden and not show_deleted
-        else:
-            show_shared = util.string_as_bool(show_shared)
-        if show_shared and show_deleted:
-            message = "show_shared and show_deleted cannot both be specified as true"
-            raise exceptions.RequestParameterInvalidException(message)
-        if show_shared and show_hidden:
-            message = "show_shared and show_hidden cannot both be specified as true"
-            raise exceptions.RequestParameterInvalidException(message)
-        rval = []
-        filter1 = model.StoredWorkflow.user == trans.user
-        user = trans.user
-        if show_published or user is None and show_published is None:
-            filter1 = or_(filter1, (model.StoredWorkflow.published == true()))
-        query = (
-            trans.sa_session.query(model.StoredWorkflow)
-            .options(joinedload("annotations"))
-            .options(joinedload("latest_workflow").undefer("step_count").lazyload("steps"))
-            .options(joinedload("tags"))
-            .filter(filter1)
+        show_shared = util.string_as_bool_or_none(show_shared)
+        payload = WorkflowIndexPayload(
+            show_published=show_published,
+            show_hidden=show_hidden,
+            show_deleted=show_deleted,
+            show_shared=show_shared,
+            missing_tools=missing_tools,
         )
-        query = query.filter_by(hidden=true() if show_hidden else false(), deleted=true() if show_deleted else false())
-        for wf in query.order_by(desc(model.StoredWorkflow.table.c.update_time)).all():
-            item = wf.to_dict(value_mapper={"id": trans.security.encode_id})
-            encoded_id = trans.security.encode_id(wf.id)
-            item["annotations"] = [x.annotation for x in wf.annotations]
-            item["url"] = url_for("workflow", id=encoded_id)
-            item["owner"] = wf.user.username
-            item["source_metadata"] = wf.latest_workflow.source_metadata
-            item["number_of_steps"] = wf.latest_workflow.step_count
-            item["show_in_tool_panel"] = False
-            if user is not None:
-                item["show_in_tool_panel"] = wf.show_in_tool_panel(user_id=user.id)
-            rval.append(item)
-        if show_shared:
-            for wf_sa in (
-                trans.sa_session.query(model.StoredWorkflowUserShareAssociation)
-                .join(model.StoredWorkflowUserShareAssociation.stored_workflow)
-                .options(joinedload("stored_workflow").joinedload("annotations"))
-                .options(
-                    joinedload("stored_workflow").joinedload("latest_workflow").undefer("step_count").lazyload("steps")
-                )
-                .options(joinedload("stored_workflow").joinedload("user"))
-                .options(joinedload("stored_workflow").joinedload("tags"))
-                .filter(model.StoredWorkflowUserShareAssociation.user == trans.user)
-                .filter(model.StoredWorkflow.table.c.deleted == false())
-                .order_by(desc(model.StoredWorkflow.update_time))
-                .all()
-            ):
-                item = wf_sa.stored_workflow.to_dict(value_mapper={"id": trans.security.encode_id})
-                encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
-                item["annotations"] = [x.annotation for x in wf_sa.stored_workflow.annotations]
-                item["url"] = url_for("workflow", id=encoded_id)
-                item["slug"] = wf_sa.stored_workflow.slug
-                item["owner"] = wf_sa.stored_workflow.user.username
-                item["number_of_steps"] = wf_sa.stored_workflow.latest_workflow.step_count
-                item["show_in_tool_panel"] = False
-                if user is not None:
-                    item["show_in_tool_panel"] = wf_sa.stored_workflow.show_in_tool_panel(user_id=user.id)
-                rval.append(item)
-        if missing_tools:
-            workflows_missing_tools = []
-            workflows = []
-            workflows_by_toolshed = dict()
-            for value in rval:
-                tools = self.workflow_contents_manager.get_all_tools(
-                    self.__get_stored_workflow(trans, value["id"]).latest_workflow
-                )
-                missing_tool_ids = [
-                    tool["tool_id"] for tool in tools if self.app.toolbox.is_missing_shed_tool(tool["tool_id"])
-                ]
-                if len(missing_tool_ids) > 0:
-                    value["missing_tools"] = missing_tool_ids
-                    workflows_missing_tools.append(value)
-            for workflow in workflows_missing_tools:
-                for tool_id in workflow["missing_tools"]:
-                    toolshed, _, owner, name, tool, version = tool_id.split("/")
-                    shed_url = self.__get_full_shed_url(toolshed)
-                    repo_identifier = "/".join((toolshed, owner, name))
-                    if repo_identifier not in workflows_by_toolshed:
-                        workflows_by_toolshed[repo_identifier] = dict(
-                            shed=shed_url.rstrip("/"),
-                            repository=name,
-                            owner=owner,
-                            tools=[tool_id],
-                            workflows=[workflow["name"]],
-                        )
-                    else:
-                        if tool_id not in workflows_by_toolshed[repo_identifier]["tools"]:
-                            workflows_by_toolshed[repo_identifier]["tools"].append(tool_id)
-                        if workflow["name"] not in workflows_by_toolshed[repo_identifier]["workflows"]:
-                            workflows_by_toolshed[repo_identifier]["workflows"].append(workflow["name"])
-            for repo_tag in workflows_by_toolshed:
-                workflows.append(workflows_by_toolshed[repo_tag])
-            return workflows
-        return rval
+        workflows, _ = self.service.index(trans, payload)
+        return workflows
 
     @expose_api_anonymous_and_sessionless
     def show(self, trans: GalaxyWebTransaction, id, **kwd):
@@ -1522,10 +1423,98 @@ StoredWorkflowIDPathParam: EncodedDatabaseIdField = Path(
     ..., title="Stored Workflow ID", description="The encoded database identifier of the Stored Workflow."
 )
 
+DeletedQueryParam: bool = Query(
+    default=False, title="Display deleted", description="Whether to restrict result to deleted workflows."
+)
+
+HiddenQueryParam: bool = Query(
+    default=False, title="Display hidden", description="Whether to restrict result to hidden workflows."
+)
+
+MissingToolsQueryParam: bool = Query(
+    default=False,
+    title="Display missing tools",
+    description="Whether to include a list of missing tools per workflow entry",
+)
+
+ShowPublishedQueryParam: Optional[bool] = Query(default=None, title="Include published workflows.", description="")
+
+ShowSharedQueryParam: Optional[bool] = Query(default=None, title="Include shared workflows.", description="")
+
+SortByQueryParam: Optional[WorkflowSortByEnum] = Query(
+    default=None,
+    title="Sort workflow index by this attribute",
+    description="In unspecified, default ordering depends on other parameters but generally the user's own workflows appear first based on update time",
+)
+
+SortDescQueryParam: Optional[bool] = Query(
+    default=None,
+    title="Sort Descending",
+    description="Sort in descending order?",
+)
+
+LimitQueryParam: Optional[int] = Query(default=None, title="Limit number of queries.")
+
+OffsetQueryParam: Optional[int] = Query(
+    default=0,
+    title="Number of workflows to skip in sorted query (to enable pagination).",
+)
+
+SearchQueryParameter: Optional[str] = Query(
+    default=None,
+    title="Search query.",
+    description="Free text used to filter the query. Currently this just filters by name but this shouldn't be considered part the API, the freetext search may search additional fields in different ways in the future.",
+)
+
+SkipStepCountsQueryParam: bool = Query(
+    default=False,
+    title="Skip step counts.",
+    description="Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts.",
+)
+
 
 @router.cbv
 class FastAPIWorkflows:
     service: WorkflowsService = depends(WorkflowsService)
+
+    @router.get(
+        "/api/workflows",
+        summary="Lists stored workflows viewable by the user.",
+        response_description="A list with summary stored workflow information per viewable entry.",
+    )
+    def index(
+        self,
+        response: Response,
+        trans: ProvidesUserContext = DependsOnTrans,
+        show_deleted: bool = DeletedQueryParam,
+        show_hidden: bool = HiddenQueryParam,
+        missing_tools: bool = MissingToolsQueryParam,
+        show_published: Optional[bool] = ShowPublishedQueryParam,
+        show_shared: Optional[bool] = ShowSharedQueryParam,
+        sort_by: Optional[WorkflowSortByEnum] = SortByQueryParam,
+        sort_desc: Optional[bool] = SortDescQueryParam,
+        limit: Optional[int] = LimitQueryParam,
+        offset: Optional[int] = OffsetQueryParam,
+        search: Optional[str] = SearchQueryParameter,
+        skip_step_counts: bool = SkipStepCountsQueryParam,
+    ) -> List[Dict[str, Any]]:
+        """Return the sharing status of the item."""
+        payload = WorkflowIndexPayload(
+            show_published=show_published,
+            show_hidden=show_hidden,
+            show_deleted=show_deleted,
+            show_shared=show_shared,
+            missing_tools=missing_tools,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            limit=limit,
+            offset=offset,
+            search=search,
+            skip_step_counts=skip_step_counts,
+        )
+        workflows, total_matches = self.service.index(trans, payload, include_total_count=True)
+        response.headers["total_matches"] = str(total_matches)
+        return workflows
 
     @router.get(
         "/api/workflows/{id}/sharing",
