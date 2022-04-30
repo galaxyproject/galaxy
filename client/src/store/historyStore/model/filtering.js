@@ -208,21 +208,22 @@ export function testFilters(filters, item) {
  * e.g.: Unlike getFilters or getQueryDict, this maintains "hid>":"3" instead
  *       of changing it to "hid-gt":"3"
  * Only used to sync filterSettings (in HistoryFilters)
- * @param {String} filterText The raw filter text
+ * @param {Object} filters Parsed filterText from getFilters()
  */
 export function toAlias(filters) {
     const result = {};
     for (const [key, value] of filters) {
+        let hasAlias = false;
         for (const [alias, substitute] of validAlias) {
-            let hasAlias = false;
-            if (key.includes(substitute)) {
-                result[key.replace(substitute, alias)] = value;
+            if (key.endsWith(substitute)) {
+                const keyPrefix = key.substr(0, key.length - substitute.length);
+                result[`${keyPrefix}${alias}`] = value;
                 hasAlias = true;
                 break;
             }
-            if (!hasAlias) {
-                result[`${key}=`] = value;
-            }
+        }
+        if (!hasAlias) {
+            result[`${key}=`] = value;
         }
     }
     return result;
