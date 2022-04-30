@@ -49,11 +49,19 @@ class UsesCeleryTasks:
         config["celery_broker"] = CELERY_BROKER
         config["celery_backend"] = CELERY_BACKEND
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture(autouse=True, scope="session")
     def _request_celery_app(self, celery_session_app, celery_config):
-        self._celery_app = celery_session_app
+        try:
+            self._celery_app = celery_session_app
+            yield
+        finally:
+            if os.environ.get("GALAXY_TEST_EXTERNAL") is None:
+                from galaxy.celery import celery_app
 
-    @pytest.fixture(autouse=True)
+                celery_app.fork_pool.stop()
+                celery_app.fork_pool.join(timeout=5)
+
+    @pytest.fixture(autouse=True, scope="session")
     def _request_celery_worker(self, celery_session_worker, celery_config):
         self._celery_worker = celery_session_worker
 
