@@ -89,35 +89,21 @@ describe("filtering", () => {
     });
     test("Parsing & sync of filter settings", () => {
         // Expected parsed settings
-        const parsedFilterSettings = [
-            {
-                "name=": "name of item",
-                "hid>": "10",
-                "hid<": "100",
-                "create_time>": "2021-01-01",
-                "update_time<": "2022-01-01",
-                "state=": "success",
-                "extension=": "ext",
-                "tag=": "first",
-                "deleted=": "false",
-                "visible=": "true",
-            },
-            {
-                "name=": "name of item",
-                "hid_gt=": "10",
-                "hid_lt=": "100",
-                "create_time_gt=": "2021-01-01",
-                "update_time_lt=": "2022-01-01",
-                "state=": "success",
-                "extension=": "ext",
-                "tag=": "first",
-                "deleted=": "false",
-                "visible=": "true",
-            },
-        ];
+        const parsedFilterSettings = {
+            "name=": "name of item",
+            "hid>": "10",
+            "hid<": "100",
+            "create_time>": "2021-01-01",
+            "update_time<": "2022-01-01",
+            "state=": "success",
+            "extension=": "ext",
+            "tag=": "first",
+            "deleted=": "false",
+            "visible=": "true",
+        };
         // iterate through filterTexts and compare with parsedFilterSettings
         filterTexts.forEach((filterText, index) => {
-            expect(toAlias(getFilters(filterTexts[index]))).toEqual(parsedFilterSettings[index]);
+            expect(toAlias(getFilters(filterTexts[index]))).toEqual(parsedFilterSettings);
         });
     });
 });
