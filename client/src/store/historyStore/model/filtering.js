@@ -191,52 +191,6 @@ export function getQueryDict(filterText) {
     return queryDict;
 }
 
-/** Returns a dictionary resembling filterSettings (for HistoryFilters):
- * e.g.: Unlike getFilters or getQueryDict, this maintains "hid>":"3" instead
- *       of changing it to "hid-gt":"3"
- * Only used to sync filterSettings (in HistoryFilters)
- * @param {String} filterText The raw filter text
- */
-export function getFilterSettings(filterText) {
-    const pairSplitRE = /[^\s']+(?:'[^']*'[^\s']*)*|(?:'[^']*'[^\s']*)+/g;
-    const result = {};
-    const matches = filterText.match(pairSplitRE);
-    let hasMatches = false;
-    if (matches) {
-        matches.forEach((pair) => {
-            const elgRE = /(\S+)([=><])(.+)/g;
-            const elgMatch = elgRE.exec(pair);
-            if (elgMatch) {
-                // this field will be used to check if the field is valid, not used for parsing here
-                let field = elgMatch[1];
-                const elg = elgMatch[2];
-                const value = elgMatch[3];
-                // this field will be used to parse for filterSettings
-                const settingsField = `${field}${elg}`;
-                // replace alias for less and greater symbol for parsing field
-                for (const [alias, substitute] of validAlias) {
-                    if (elg == alias) {
-                        field = `${field}${substitute}`;
-                        break;
-                    }
-                }
-                // replaces dashes with underscores in query field names
-                const normalizedField = field.replaceAll("-", "_");
-                const normalizedSettingsField = settingsField.replaceAll("-", "_");
-                if (validFilters[normalizedField]) {
-                    // removes quotation and applies lower-case to filter value
-                    result[normalizedSettingsField] = toLowerNoQuotes(value);
-                    hasMatches = true;
-                }
-            }
-        });
-    }
-    if (!hasMatches && filterText.length > 0) {
-        result["name="] = filterText;
-    }
-    return result;
-}
-
 /** Test if an item passes all filters. */
 export function testFilters(filters, item) {
     for (const [key, filterValue] of filters) {
@@ -248,4 +202,28 @@ export function testFilters(filters, item) {
         }
     }
     return true;
+}
+
+/** Returns a dictionary resembling filterSettings (for HistoryFilters):
+ * e.g.: Unlike getFilters or getQueryDict, this maintains "hid>":"3" instead
+ *       of changing it to "hid-gt":"3"
+ * Only used to sync filterSettings (in HistoryFilters)
+ * @param {String} filterText The raw filter text
+ */
+export function toAlias(filters) {
+    const result = {};
+    for (const [key, value] of filters) {
+        for (const [alias, substitute] of validAlias) {
+            let hasAlias = false;
+            if (key.includes(substitute)) {
+                result[key.replace(substitute, alias)] = value;
+                hasAlias = true;
+                break;
+            }
+            if (!hasAlias) {
+                result[`${key}=`] = value;
+            }
+        }
+    }
+    return result;
 }

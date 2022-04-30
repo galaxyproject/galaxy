@@ -1,4 +1,4 @@
-import { checkFilter, getFilters, getFilterSettings, getQueryDict, testFilters } from "./filtering";
+import { checkFilter, getFilters, toAlias, getQueryDict, testFilters } from "./filtering";
 
 const filterTexts = [
     "name='name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state=success extension=ext tag=first deleted=False visible='TRUE'",
@@ -117,7 +117,7 @@ describe("filtering", () => {
         ];
         // iterate through filterTexts and compare with parsedFilterSettings
         filterTexts.forEach((filterText, index) => {
-            expect(getFilterSettings(filterTexts[index])).toEqual(parsedFilterSettings[index]);
+            expect(toAlias(getFilters(filterTexts[index]))).toEqual(parsedFilterSettings[index]);
         });
     });
 });
