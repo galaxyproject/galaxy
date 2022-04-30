@@ -20,13 +20,13 @@
 <script>
 import ConfigProvider from "components/providers/ConfigProvider";
 import CurrentUser from "components/providers/CurrentUser";
-import ToolSource from "components/Tool/ToolSource";
 
 export default {
     components: {
         ConfigProvider,
         CurrentUser,
-        ToolSource,
+        // dynamically import toolsource component
+        ToolSource: () => import(/* webpackChunkName: "ToolSource" */ "./ToolSource")
     },
     props: {
         toolId: {
