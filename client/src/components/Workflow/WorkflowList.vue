@@ -1,103 +1,100 @@
 <template>
     <div>
-        <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
-        <div v-else>
-            <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-            <b-row class="mb-3">
-                <b-col cols="6">
-                    <index-filter
-                        id="workflow-search"
-                        :placeholder="titleSearchWorkflows"
-                        :help-html="helpHtml"
-                        v-model="filter">
-                    </index-filter>
-                </b-col>
-                <b-col>
-                    <span class="float-right">
-                        <b-button id="workflow-create" class="m-1" @click="createWorkflow">
-                            <font-awesome-icon icon="plus" />
-                            {{ titleCreate }}
-                        </b-button>
-                        <b-button id="workflow-import" class="m-1" @click="importWorkflow">
-                            <font-awesome-icon icon="upload" />
-                            {{ titleImport }}
-                        </b-button>
-                    </span>
-                </b-col>
-            </b-row>
-            <b-table
-                :id="tableId"
-                :fields="fields"
-                :items="provider"
-                v-model="workflowItemsModel"
-                :per-page="perPage"
-                :current-page="currentPage"
-                hover
-                striped
-                caption-top
-                fixed
-                show-empty>
-                <template v-slot:empty>
-                    <loading-span v-if="loading" message="Loading workflows" />
-                    <b-alert v-else id="no-workflows" variant="info" show>
-                        <div v-if="showNotFound">
-                            No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
-                            >.
-                        </div>
-                        <div v-if="showNotAvailable">No workflows found. You may create or import new workflows.</div>
-                    </b-alert>
-                </template>
-                <template v-slot:cell(name)="row">
-                    <WorkflowDropdown
-                        :workflow="row.item"
-                        @onAdd="onAdd"
-                        @onRemove="onRemove"
-                        @onUpdate="onUpdate"
-                        @onSuccess="onSuccess"
-                        @onError="onError" />
-                </template>
-                <template v-slot:cell(tags)="row">
-                    <Tags :index="row.index" :tags="row.item.tags" @input="onTags" @tag-click="onTagClick" />
-                </template>
-                <template v-slot:cell(published)="row">
-                    <font-awesome-icon
-                        v-if="row.item.published"
-                        v-b-tooltip.hover
-                        title="Published"
-                        icon="globe"
-                        @click="appendFilter('is:published')" />
-                    <font-awesome-icon
-                        v-if="row.item.shared"
-                        v-b-tooltip.hover
-                        title="Shared"
-                        icon="share-alt"
-                        @click="appendFilter('is:shared_with_me')" />
-                </template>
-                <template v-slot:cell(show_in_tool_panel)="row">
-                    <b-link @click="bookmarkWorkflow(row.item, false)" v-if="row.item.show_in_tool_panel">
-                        <font-awesome-icon :icon="['fas', 'star']" />
-                    </b-link>
-                    <b-link @click="bookmarkWorkflow(row.item, true)" v-else>
-                        <font-awesome-icon :icon="['far', 'star']" />
-                    </b-link>
-                </template>
-                <template v-slot:cell(update_time)="data">
-                    <UtcDate :date="data.value" mode="elapsed" />
-                </template>
-                <template v-slot:cell(execute)="row">
-                    <b-button
-                        v-b-tooltip.hover.bottom
-                        :title="titleRunWorkflow"
-                        class="workflow-run btn-sm btn-primary fa fa-play"
-                        @click.stop="executeWorkflow(row.item)" />
-                </template>
-            </b-table>
-            <b-pagination
-                v-model="currentPage"
-                v-show="rows >= perPage"
-                class="gx-workflows-grid-pager"
-                v-bind="paginationAttrs"></b-pagination>
-        </div>
+        <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
+        <b-row class="mb-3">
+            <b-col cols="6">
+                <index-filter
+                    id="workflow-search"
+                    :placeholder="titleSearchWorkflows"
+                    :help-html="helpHtml"
+                    v-model="filter">
+                </index-filter>
+            </b-col>
+            <b-col>
+                <span class="float-right">
+                    <b-button id="workflow-create" class="m-1" @click="createWorkflow">
+                        <font-awesome-icon icon="plus" />
+                        {{ titleCreate }}
+                    </b-button>
+                    <b-button id="workflow-import" class="m-1" @click="importWorkflow">
+                        <font-awesome-icon icon="upload" />
+                        {{ titleImport }}
+                    </b-button>
+                </span>
+            </b-col>
+        </b-row>
+        <b-table
+            :id="tableId"
+            :fields="fields"
+            :items="provider"
+            v-model="workflowItemsModel"
+            :per-page="perPage"
+            :current-page="currentPage"
+            hover
+            striped
+            caption-top
+            fixed
+            show-empty>
+            <template v-slot:empty>
+                <loading-span v-if="loading" message="Loading workflows" />
+                <b-alert v-else id="no-workflows" variant="info" show>
+                    <div v-if="showNotFound">
+                        No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
+                        >.
+                    </div>
+                    <div v-if="showNotAvailable">No workflows found. You may create or import new workflows.</div>
+                </b-alert>
+            </template>
+            <template v-slot:cell(name)="row">
+                <WorkflowDropdown
+                    :workflow="row.item"
+                    @onAdd="onAdd"
+                    @onRemove="onRemove"
+                    @onUpdate="onUpdate"
+                    @onSuccess="onSuccess"
+                    @onError="onError" />
+            </template>
+            <template v-slot:cell(tags)="row">
+                <Tags :index="row.index" :tags="row.item.tags" @input="onTags" @tag-click="onTagClick" />
+            </template>
+            <template v-slot:cell(published)="row">
+                <font-awesome-icon
+                    v-if="row.item.published"
+                    v-b-tooltip.hover
+                    title="Published"
+                    icon="globe"
+                    @click="appendFilter('is:published')" />
+                <font-awesome-icon
+                    v-if="row.item.shared"
+                    v-b-tooltip.hover
+                    title="Shared"
+                    icon="share-alt"
+                    @click="appendFilter('is:shared_with_me')" />
+            </template>
+            <template v-slot:cell(show_in_tool_panel)="row">
+                <b-link @click="bookmarkWorkflow(row.item, false)" v-if="row.item.show_in_tool_panel">
+                    <font-awesome-icon :icon="['fas', 'star']" />
+                </b-link>
+                <b-link @click="bookmarkWorkflow(row.item, true)" v-else>
+                    <font-awesome-icon :icon="['far', 'star']" />
+                </b-link>
+            </template>
+            <template v-slot:cell(update_time)="data">
+                <UtcDate :date="data.value" mode="elapsed" />
+            </template>
+            <template v-slot:cell(execute)="row">
+                <b-button
+                    v-b-tooltip.hover.bottom
+                    :title="titleRunWorkflow"
+                    class="workflow-run btn-sm btn-primary fa fa-play"
+                    @click.stop="executeWorkflow(row.item)" />
+            </template>
+        </b-table>
+        <b-pagination
+            v-model="currentPage"
+            v-show="rows >= perPage"
+            class="gx-workflows-grid-pager"
+            v-bind="paginationAttrs"></b-pagination>
     </div>
 </template>
 <script>
