@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
+        <b-alert class="index-grid-message" :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
         <b-row class="mb-3">
             <b-col cols="6">
                 <index-filter
@@ -110,6 +110,7 @@ import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsPro
 import Tags from "components/Common/Tags";
 import WorkflowDropdown from "./WorkflowDropdown";
 import UtcDate from "components/UtcDate";
+import { errorMessageAsString } from "utils/simple-error";
 import { getGalaxyInstance } from "app";
 import paginationMixin from "./paginationMixin";
 import IndexFilter from "./IndexFilter";
@@ -233,7 +234,8 @@ export default {
         async provider(ctx) {
             ctx.apiUrl = this.apiUrl;
             const extraParams = { search: this.filter, skip_step_counts: true };
-            this.workflowItems = await storedWorkflowsProvider(ctx, this.setRows, extraParams);
+            const promise = storedWorkflowsProvider(ctx, this.setRows, extraParams).catch(this.onError);
+            this.workflowItems = await promise;
             return this.workflowItems;
         },
         createWorkflow: function (workflow) {
@@ -317,7 +319,7 @@ export default {
             this.messageVariant = "success";
         },
         onError: function (message) {
-            this.message = message;
+            this.message = errorMessageAsString(message);
             this.messageVariant = "danger";
         },
     },

@@ -47,6 +47,24 @@ describe("WorkflowList.vue", () => {
         });
     });
 
+    describe(" with server error", () => {
+        beforeEach(async () => {
+            axiosMock
+                .onGet("/api/workflows", { params: { limit: 50, offset: 0, skip_step_counts: true, search: "" } })
+                .reply(403, { err_msg: "this is a problem" });
+            const propsData = {};
+            wrapper = mount(Workflows, {
+                propsData,
+                localVue,
+            });
+            flushPromises();
+        });
+
+        it("renders error message", async () => {
+            expect(wrapper.find(".index-grid-message").text()).toContain("this is a problem");
+        });
+    });
+
     describe(" with single workflow", () => {
         beforeEach(async () => {
             axiosMock
