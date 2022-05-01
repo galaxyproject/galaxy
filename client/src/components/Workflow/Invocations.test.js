@@ -41,6 +41,23 @@ describe("Invocations.vue", () => {
         });
     });
 
+    describe("with server error", () => {
+        beforeEach(async () => {
+            axiosMock.onAny().reply(403, { err_msg: "this is a problem" });
+            const propsData = {
+                ownerGrid: false,
+            };
+            wrapper = mount(Invocations, {
+                propsData,
+                localVue,
+            });
+        });
+
+        it("renders error message", async () => {
+            expect(wrapper.find(".index-grid-message").text()).toContain("this is a problem");
+        });
+    });
+
     describe("for a workflow with an empty invocation list", () => {
         beforeEach(async () => {
             axiosMock.onAny().reply(200, [], { total_matches: "0" });
