@@ -69,7 +69,7 @@
 
 <script>
 import DebouncedInput from "components/DebouncedInput";
-import { getFilterSettings } from "store/historyStore/model/filtering";
+import { getFilters, toAlias } from "store/historyStore/model/filtering";
 
 // available filter keys with operator and default setting
 const filterDefaults = {
@@ -112,14 +112,12 @@ export default {
     },
     watch: {
         localFilter(newFilterText) {
+            // get dict in form of converted aliases
+            const newFilterSettings = toAlias(getFilters(newFilterText));
             // reset filterSettings when filterText changes
             this.filterSettings = { ...filterDefaults };
-            var newfilterSettings = getFilterSettings(newFilterText);
-            Object.entries(newfilterSettings).forEach(([key, value]) => {
-                if (this.filterSettings[key] !== value) {
-                    this.filterSettings[key] = value;
-                }
-            });
+            // update filterSettings
+            Object.assign(this.filterSettings, newFilterSettings);
         },
     },
     methods: {
