@@ -62,8 +62,21 @@ class UsesCeleryTasks:
                 celery_app.fork_pool.join(timeout=5)
 
     @pytest.fixture(autouse=True, scope="session")
-    def _request_celery_worker(self, celery_session_worker, celery_config):
+    def _request_celery_worker(self, celery_session_worker, celery_config, celery_worker_parameters):
         self._celery_worker = celery_session_worker
+
+    @pytest.fixture(scope="session", autouse=True)
+    def celery_worker_parameters(self):
+        return {
+            "queues": ("galaxy.internal", "galaxy.external"),
+        }
+
+    @pytest.fixture(scope="session")
+    def celery_parameters(self):
+        return {
+            "task_create_missing_queues": True,
+            "task_default_queue": "galaxy.internal",
+        }
 
 
 class UsesApiTestCaseMixin:

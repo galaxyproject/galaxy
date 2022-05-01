@@ -35,6 +35,7 @@ from ._serialization import (
 log = get_logger(__name__)
 
 MAIN_TASK_MODULE = "galaxy.celery.tasks"
+DEFAULT_TASK_QUEUE = "galaxy.internal"
 TASKS_MODULES = [MAIN_TASK_MODULE]
 PYDANTIC_AWARE_SERIALIZER_NAME = "pydantic-aware-json"
 
@@ -130,6 +131,8 @@ backend = get_backend()
 celery_app_kwd: Dict[str, Any] = {
     "broker": broker,
     "include": TASKS_MODULES,
+    "task_default_queue": DEFAULT_TASK_QUEUE,
+    "task_create_missing_queues": True,
 }
 if backend:
     celery_app_kwd["backend"] = backend
