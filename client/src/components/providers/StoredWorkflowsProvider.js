@@ -5,7 +5,8 @@ import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
 import { rethrowSimple } from "utils/simple-error";
 
 export function storedWorkflowsProvider(ctx, callback, extraParams = {}) {
-    const { apiUrl, ...requestParams } = ctx;
+    const { root, ...requestParams } = ctx;
+    const apiUrl = `${root}api/workflows`;
     const cleanParams = cleanPaginationParameters(requestParams);
     const promise = axios.get(apiUrl, { params: { ...cleanParams, ...extraParams } });
 
