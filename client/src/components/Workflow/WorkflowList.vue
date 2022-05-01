@@ -211,9 +211,6 @@ export default {
         showNotAvailable() {
             return !this.filter;
         },
-        apiUrl() {
-            return `${getAppRoot()}api/workflows`;
-        },
     },
     created() {
         this.root = getAppRoot();
@@ -226,7 +223,7 @@ export default {
     },
     methods: {
         async provider(ctx) {
-            ctx.apiUrl = this.apiUrl;
+            ctx.root = this.root;
             const extraParams = { search: this.filter, skip_step_counts: true };
             const promise = storedWorkflowsProvider(ctx, this.setRows, extraParams).catch(this.onError);
             this.workflowItems = await promise;
