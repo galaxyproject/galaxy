@@ -110,7 +110,6 @@ import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsPro
 import Tags from "components/Common/Tags";
 import WorkflowDropdown from "./WorkflowDropdown";
 import UtcDate from "components/UtcDate";
-import { errorMessageAsString } from "utils/simple-error";
 import { getGalaxyInstance } from "app";
 import paginationMixin from "./paginationMixin";
 import IndexFilter from "./IndexFilter";
@@ -195,8 +194,6 @@ export default {
             ],
             filter: "",
             loading: true,
-            message: null,
-            messageVariant: null,
             titleSearchWorkflows: _l("Search Workflows"),
             titleCreate: _l("Create"),
             titleImport: _l("Import"),
@@ -213,9 +210,6 @@ export default {
         },
         showNotAvailable() {
             return !this.filter;
-        },
-        showMessage() {
-            return !!this.message;
         },
         apiUrl() {
             return `${getAppRoot()}api/workflows`;
@@ -313,14 +307,6 @@ export default {
         },
         onUpdate: function (id, data) {
             this.refresh();
-        },
-        onSuccess: function (message) {
-            this.message = message;
-            this.messageVariant = "success";
-        },
-        onError: function (message) {
-            this.message = errorMessageAsString(message);
-            this.messageVariant = "danger";
         },
     },
 };
