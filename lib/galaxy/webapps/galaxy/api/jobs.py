@@ -50,7 +50,9 @@ from . import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    IndexQueryTag,
     Router,
+    search_query_param,
 )
 
 log = logging.getLogger(__name__)
@@ -140,10 +142,17 @@ OffsetQueryParam: int = Query(
     description="Return jobs starting from this specified position. For example, if ``limit`` is set to 100 and ``offset`` to 200, jobs 200-299 will be returned.",
 )
 
-SearchQueryParameter: Optional[str] = Query(
-    default=None,
-    title="Search query.",
-    description="Free text used to filter the query. Currently this just filters by the tool ID corresponding to the job.",
+query_tags = [
+    IndexQueryTag("user", "The user email of the user that executed the Job.", "u"),
+    IndexQueryTag("tool_id", "The tool ID corresponding to the job.", "t"),
+    IndexQueryTag("runner", "The job runner name used to execte the job.", "r"),
+    IndexQueryTag("handler", "The job handler name used to execute the job.", "h"),
+]
+
+SearchQueryParam: Optional[str] = search_query_param(
+    model_name="Job",
+    tags=query_tags,
+    free_text_fields=["user", "tool", "handler", "runner"],
 )
 
 
@@ -183,7 +192,7 @@ class FastAPIJobs:
         workflow_id: Optional[str] = WorkflowIdQueryParam,
         invocation_id: Optional[str] = InvocationIdQueryParam,
         order_by: JobIndexSortByEnum = SortByQueryParam,
-        search: Optional[str] = SearchQueryParameter,
+        search: Optional[str] = SearchQueryParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
     ) -> List[Dict[str, Any]]:
