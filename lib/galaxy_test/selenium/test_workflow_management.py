@@ -69,8 +69,7 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkfl
         self.workflow_index_open()
         self._workflow_import_from_url()
 
-        self.workflow_index_click_tag_display()
-        self.tagging_add(["cooltag"])
+        self.workflow_index_add_tag("cooltag")
 
         @retry_assertion_during_transitions
         def check_tags():
@@ -78,6 +77,34 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkfl
 
         check_tags()
         self.screenshot("workflow_manage_tags")
+
+    @selenium_test
+    def test_tag_filtering(self):
+        self.workflow_index_open()
+        self._workflow_import_from_url()
+        self.workflow_index_add_tag("mytag")
+        self._workflow_import_from_url()
+        self.workflow_index_add_tag("mytag")
+        self._workflow_import_from_url()
+        self.workflow_index_add_tag("mytaglonger")
+        self._workflow_import_from_url()
+
+        self.workflow_index_search_for("mytag")
+        self._assert_showing_n_workflows(3)
+        self.screenshot("workflow_manage_search_by_tag_freetext")
+        self.workflow_index_search_for("thisisnotatag")
+        self._assert_showing_n_workflows(0)
+
+        self.workflow_index_search_for()
+        self._assert_showing_n_workflows(4)
+
+        self.workflow_index_click_tag("mytag", workflow_index=3)
+        self._assert_showing_n_workflows(2)
+        self.screenshot("workflow_manage_search_by_tag_exact")
+
+        self.workflow_index_search_for()
+        self._assert_showing_n_workflows(4)
+        self.workflow_index_search_for("MyTaG")
 
     @selenium_test
     def test_index_search(self):
@@ -95,6 +122,32 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkfl
 
         self.workflow_index_search_for("searchforthis")
         self._assert_showing_n_workflows(1)
+
+    @selenium_test
+    def test_index_search_filters(self):
+        self.workflow_index_open()
+        self._workflow_import_from_url()
+        self.workflow_index_rename("searchforthis")
+        self._assert_showing_n_workflows(1)
+
+        self.workflow_index_search_for("name:doesnotmatch")
+        self._assert_showing_n_workflows(0)
+        self.screenshot("workflow_manage_search_no_matches")
+
+        self.workflow_index_search_for()
+        self._assert_showing_n_workflows(1)
+
+        self.workflow_index_search_for("name:searchforthis")
+        self._assert_showing_n_workflows(1)
+        self.screenshot("workflow_manage_search_name_filter")
+
+        self.workflow_index_search_for("n:searchforthis")
+        self._assert_showing_n_workflows(1)
+        self.screenshot("workflow_manage_search_name_alias")
+
+        self.workflow_index_search_for("n:doesnotmatch")
+        self._assert_showing_n_workflows(0)
+        self.screenshot("workflow_manage_search_name_alias")
 
     @selenium_test
     def test_pagination(self):

@@ -8,6 +8,7 @@ from typing import (
 )
 
 from sqlalchemy import (
+    and_,
     desc,
     false,
     or_,
@@ -28,10 +29,23 @@ from galaxy.managers.workflows import (
 )
 from galaxy.schema.schema import WorkflowIndexPayload
 from galaxy.tool_shed.tool_shed_registry import Registry
+from galaxy.util.search import (
+    FilteredTerm,
+    parse_filters_structured,
+    RawTextTerm,
+)
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 
 log = logging.getLogger(__name__)
+
+
+INDEX_SEARCH_FILTERS = {
+    "name": "name",
+    "tag": "tag",
+    "n": "name",
+    "t": "tag",
+}
 
 
 class WorkflowsService(ServiceBase):
@@ -84,20 +98,64 @@ class WorkflowsService(ServiceBase):
         query = trans.sa_session.query(model.StoredWorkflow)
         if show_shared:
             query = query.outerjoin(model.StoredWorkflow.users_shared_with)
+        query = query.outerjoin(model.StoredWorkflow.tags)
 
         latest_workflow_load = joinedload("latest_workflow")
         if not payload.skip_step_counts:
             latest_workflow_load = latest_workflow_load.undefer("step_count")
         latest_workflow_load = latest_workflow_load.lazyload("steps")
 
-        query = query.options(joinedload("annotations")).options(latest_workflow_load).options(joinedload("tags"))
+        query = query.options(joinedload(model.StoredWorkflow.annotations))
+        query = query.options(latest_workflow_load)
         query = query.filter(or_(*filters))
         query = query.filter(model.StoredWorkflow.table.c.hidden == (true() if show_hidden else false()))
         query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
         if payload.search:
             search_query = payload.search
-            for q in search_query.split():
-                query = query.filter(model.StoredWorkflow.name.like(f"%{q}%"))
+            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+
+            def tag_filter(term_text: str, quoted: bool):
+                term_text = term.text
+                if ":" in term_text:
+                    key, value = term_text.rsplit(":", 1)
+                    if not quoted:
+                        return and_(
+                            model.StoredWorkflowTagAssociation.user_tname.ilike(key),
+                            model.StoredWorkflowTagAssociation.user_value.ilike(f"%{value}%"),
+                        )
+                    else:
+                        return and_(
+                            model.StoredWorkflowTagAssociation.user_tname == key,
+                            model.StoredWorkflowTagAssociation.user_value == value,
+                        )
+                else:
+                    if not quoted:
+                        return model.StoredWorkflowTagAssociation.user_tname.ilike(f"%{term_text}%")
+                    else:
+                        return model.StoredWorkflowTagAssociation.user_tname == term_text
+
+            def name_filter(text, quoted):
+                if not quoted:
+                    filter = model.StoredWorkflow.name.ilike(f"%{text}%")
+                else:
+                    filter = model.StoredWorkflow.name == text
+                return filter
+
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
+                    if key == "tag":
+                        query = query.filter(tag_filter(term.text, term.quoted))
+                    elif key == "name":
+                        query = query.filter(name_filter(q, term.quoted))
+                elif isinstance(term, RawTextTerm):
+                    query = query.filter(
+                        or_(
+                            name_filter(term.text, False),
+                            tag_filter(term.text, False),
+                        )
+                    )
         if include_total_count:
             total_matches = query.count()
         else:
