@@ -6,6 +6,7 @@
         <b-alert v-if="headerMessage" variant="info" show>
             {{ headerMessage }}
         </b-alert>
+        <b-alert class="index-grid-message" :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
         <b-table
             :id="tableId"
             v-model="invocationItemsModel"
@@ -148,8 +149,8 @@ export default {
         },
     },
     watch: {
-        invocationItems: function (promise) {
-            promise.then((invocations) => {
+        invocationItems: function (invocations) {
+            if (invocations) {
                 const historyIds = new Set();
                 const workflowIds = new Set();
                 invocations.map((invocation) => {
@@ -161,13 +162,13 @@ export default {
                     (workflow_id) =>
                         this.getWorkflowByInstanceId(workflow_id) || this.fetchWorkflowForInstanceId(workflow_id)
                 );
-            });
+            }
         },
     },
     methods: {
         ...mapCacheActions(["fetchWorkflowForInstanceId"]),
         ...mapCacheActions("history", ["loadHistoryById"]),
-        provider(ctx) {
+        async provider(ctx) {
             ctx.root = getAppRoot();
             const extraParams = this.ownerGrid ? {} : { include_terminal: false };
             if (this.storedWorkflowId) {
@@ -176,8 +177,10 @@ export default {
             if (this.userId) {
                 extraParams["user_id"] = this.userId;
             }
-            this.invocationItems = invocationsProvider(ctx, this.setRows, extraParams);
-            return this.invocationItems;
+            const promise = invocationsProvider(ctx, this.setRows, extraParams).catch(this.onError);
+            const invocationItems = await promise;
+            this.invocationItems = invocationItems;
+            return invocationItems;
         },
         swapRowDetails(row) {
             row.toggleDetails();
