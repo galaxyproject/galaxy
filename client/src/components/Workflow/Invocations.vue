@@ -132,9 +132,6 @@ export default {
     computed: {
         ...mapGetters(["getWorkflowNameByInstanceId", "getWorkflowByInstanceId"]),
         ...mapGetters("history", ["getHistoryById", "getHistoryNameById"]),
-        apiUrl() {
-            return `${getAppRoot()}api/invocations`;
-        },
         title() {
             let title = `Workflow Invocations`;
             if (this.storedWorkflowName) {
@@ -171,7 +168,7 @@ export default {
         ...mapCacheActions(["fetchWorkflowForInstanceId"]),
         ...mapCacheActions("history", ["loadHistoryById"]),
         provider(ctx) {
-            ctx.apiUrl = this.apiUrl;
+            ctx.root = getAppRoot();
             const extraParams = this.ownerGrid ? {} : { include_terminal: false };
             if (this.storedWorkflowId) {
                 extraParams["workflow_id"] = this.storedWorkflowId;
