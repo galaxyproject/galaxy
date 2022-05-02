@@ -132,8 +132,6 @@ def setup_fetch_data(job_id: int, raw_tool_source: str, app: MinimalManagerApp, 
         kwds={"overwrite": False},
     )
     mini_job_wrapper.prepare()
-    # Technically this should be changed in fetch_data
-    mini_job_wrapper.change_state(model.Job.states.RUNNING, flush=True, job=job)
     return mini_job_wrapper.working_directory, str(request_json), mini_job_wrapper.job_io.file_sources_dict
 
 
@@ -198,9 +196,13 @@ def _fetch_data(setup_return):
 def fetch_data(
     setup_return,
     job_id: int,
-    session: galaxy_scoped_session,
+    app: MinimalManagerApp,
+    sa_session: galaxy_scoped_session,
 ):
-    return abort_when_job_stops(_fetch_data, session=session, job_id=job_id, setup_return=setup_return)
+    job = sa_session.query(model.Job).get(job_id)
+    mini_job_wrapper = MinimalJobWrapper(job=job, app=app)
+    mini_job_wrapper.change_state(model.Job.states.RUNNING, flush=True, job=job)
+    return abort_when_job_stops(_fetch_data, session=sa_session, job_id=job_id, setup_return=setup_return)
 
 
 @galaxy_task(ignore_result=True, action="setting up export history job")
