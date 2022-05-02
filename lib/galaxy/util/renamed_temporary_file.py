@@ -40,9 +40,8 @@ class RenamedTemporaryFile:
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is None:
             self.tmpfile.flush()
-            result = self.tmpfile.__exit__(exc_type, exc_val, exc_tb)
+            self.tmpfile.__exit__(exc_type, exc_val, exc_tb)
             os.rename(self.tmpfile.name, self.final_path)
         else:
-            result = self.tmpfile.__exit__(exc_type, exc_val, exc_tb)
-
-        return result
+            self.tmpfile.__exit__(exc_type, exc_val, exc_tb)
+        return False
