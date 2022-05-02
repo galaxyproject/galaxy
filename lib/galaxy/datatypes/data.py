@@ -360,7 +360,7 @@ class Data(metaclass=DataMeta):
                     continue
         if not error:
             headers.update(archive.get_headers())
-            return archive.response(), headers
+            return archive.response() if archive.upstream_mod_zip else archive.get_iterator(), headers
         return trans.show_error_message(msg), headers
 
     def __archive_extra_files_path(self, extra_files_path):
