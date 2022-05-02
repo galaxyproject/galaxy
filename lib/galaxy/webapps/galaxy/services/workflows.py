@@ -7,46 +7,23 @@ from typing import (
     Tuple,
 )
 
-from sqlalchemy import (
-    and_,
-    desc,
-    false,
-    or_,
-    true,
-)
-from sqlalchemy.orm import joinedload
-
-from galaxy import (
-    exceptions,
-    model,
-    web,
-)
+from galaxy import web
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.workflows import (
     WorkflowContentsManager,
     WorkflowSerializer,
     WorkflowsManager,
 )
-from galaxy.schema.schema import WorkflowIndexPayload
+from galaxy.schema.schema import WorkflowIndexQueryPayload
 from galaxy.tool_shed.tool_shed_registry import Registry
-from galaxy.util.search import (
-    FilteredTerm,
-    parse_filters_structured,
-    RawTextTerm,
-)
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 
 log = logging.getLogger(__name__)
 
 
-INDEX_SEARCH_FILTERS = {
-    "name": "name",
-    "tag": "tag",
-    "n": "name",
-    "t": "tag",
-    "is": "is",
-}
+class WorkflowIndexPayload(WorkflowIndexQueryPayload):
+    missing_tools: bool = False
 
 
 class WorkflowsService(ServiceBase):
@@ -69,118 +46,10 @@ class WorkflowsService(ServiceBase):
         payload: WorkflowIndexPayload,
         include_total_count: bool = False,
     ) -> Tuple[List[Dict[str, Any]], Optional[int]]:
-        show_published = payload.show_published
-        show_hidden = payload.show_hidden
-        show_deleted = payload.show_deleted
-        missing_tools = payload.missing_tools
-        show_shared = payload.show_shared
-
-        if show_shared is None:
-            show_shared = not show_hidden and not show_deleted
-
-        if show_shared and show_deleted:
-            message = "show_shared and show_deleted cannot both be specified as true"
-            raise exceptions.RequestParameterInvalidException(message)
-        if show_shared and show_hidden:
-            message = "show_shared and show_hidden cannot both be specified as true"
-            raise exceptions.RequestParameterInvalidException(message)
-
-        rval = []
-        filters = [
-            model.StoredWorkflow.user == trans.user,
-        ]
         user = trans.user
-        if user and show_shared:
-            filters.append(model.StoredWorkflowUserShareAssociation.user == user)
-
-        if show_published or user is None and show_published is None:
-            filters.append((model.StoredWorkflow.published == true()))
-
-        query = trans.sa_session.query(model.StoredWorkflow)
-        if show_shared:
-            query = query.outerjoin(model.StoredWorkflow.users_shared_with)
-        query = query.outerjoin(model.StoredWorkflow.tags)
-
-        latest_workflow_load = joinedload("latest_workflow")
-        if not payload.skip_step_counts:
-            latest_workflow_load = latest_workflow_load.undefer("step_count")
-        latest_workflow_load = latest_workflow_load.lazyload("steps")
-
-        query = query.options(joinedload(model.StoredWorkflow.annotations))
-        query = query.options(latest_workflow_load)
-        query = query.filter(or_(*filters))
-        query = query.filter(model.StoredWorkflow.table.c.hidden == (true() if show_hidden else false()))
-        query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
-        if payload.search:
-            search_query = payload.search
-            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
-
-            def tag_filter(term_text: str, quoted: bool):
-                if ":" in term_text:
-                    key, value = term_text.rsplit(":", 1)
-                    if not quoted:
-                        return and_(
-                            model.StoredWorkflowTagAssociation.user_tname.ilike(key),
-                            model.StoredWorkflowTagAssociation.user_value.ilike(f"%{value}%"),
-                        )
-                    else:
-                        return and_(
-                            model.StoredWorkflowTagAssociation.user_tname == key,
-                            model.StoredWorkflowTagAssociation.user_value == value,
-                        )
-                else:
-                    if not quoted:
-                        return model.StoredWorkflowTagAssociation.user_tname.ilike(f"%{term_text}%")
-                    else:
-                        return model.StoredWorkflowTagAssociation.user_tname == term_text
-
-            def name_filter(text, quoted):
-                if not quoted:
-                    filter = model.StoredWorkflow.name.ilike(f"%{text}%")
-                else:
-                    filter = model.StoredWorkflow.name == text
-                return filter
-
-            for term in parsed_search.terms:
-                if isinstance(term, FilteredTerm):
-                    key = term.filter
-                    q = term.text
-                    if key == "tag":
-                        query = query.filter(tag_filter(term.text, term.quoted))
-                    elif key == "name":
-                        query = query.filter(name_filter(q, term.quoted))
-                    elif key == "is":
-                        if q == "published":
-                            query = query.filter(model.StoredWorkflow.published == true())
-                        elif q == "shared_with_me":
-                            if not show_shared:
-                                message = "Can only use tag is:shared_with_me if show_shared parameter also true."
-                                raise exceptions.RequestParameterInvalidException(message)
-                            query = query.filter(model.StoredWorkflowUserShareAssociation.user == user)
-                elif isinstance(term, RawTextTerm):
-                    query = query.filter(
-                        or_(
-                            name_filter(term.text, False),
-                            tag_filter(term.text, False),
-                        )
-                    )
-        if include_total_count:
-            total_matches = query.count()
-        else:
-            total_matches = None
-        if payload.sort_by is None:
-            if user:
-                query = query.order_by(desc(model.StoredWorkflow.user == user))
-            query = query.order_by(desc(model.StoredWorkflow.table.c.update_time))
-        else:
-            sort_column = getattr(model.StoredWorkflow, payload.sort_by)
-            if payload.sort_desc:
-                sort_column = sort_column.desc()
-            query = query.order_by(sort_column)
-        if payload.limit is not None:
-            query = query.limit(payload.limit)
-        if payload.offset is not None:
-            query = query.offset(payload.offset)
+        missing_tools = payload.missing_tools
+        query, total_matches = self._workflows_manager.index_query(trans, payload, include_total_count)
+        rval = []
         for wf in query.all():
             item = wf.to_dict(value_mapper={"id": trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf.id)

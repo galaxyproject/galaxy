@@ -48,7 +48,6 @@ from galaxy.schema.schema import (
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
-    WorkflowIndexPayload,
     WorkflowSortByEnum,
 )
 from galaxy.structured_app import StructuredApp
@@ -76,7 +75,10 @@ from galaxy.webapps.galaxy.services.invocations import (
     InvocationSerializationParams,
     InvocationsService,
 )
-from galaxy.webapps.galaxy.services.workflows import WorkflowsService
+from galaxy.webapps.galaxy.services.workflows import (
+    WorkflowIndexPayload,
+    WorkflowsService,
+)
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import queue_invoke
