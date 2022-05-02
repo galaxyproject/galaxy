@@ -1,3 +1,8 @@
+from typing import (
+    Any,
+    Dict,
+    Union,
+)
 from unittest import SkipTest
 
 from requests import delete
@@ -100,11 +105,11 @@ steps:
 
     def test_index(self):
         create_response_json = self._create_valid_page_with_slug("indexpage")
-        assert self._users_index_has_page_with_id(create_response_json["id"])
+        assert self._users_index_has_page_with_id(create_response_json)
 
     def test_index_does_not_show_unavailable_pages(self):
         create_response_json = self._create_valid_page_as("others_page_index@bx.psu.edu", "otherspageindex")
-        assert not self._users_index_has_page_with_id(create_response_json["id"])
+        assert not self._users_index_has_page_with_id(create_response_json)
 
     def test_cannot_create_pages_with_same_slug(self):
         page_request = self._test_page_payload(slug="mypage1")
@@ -239,8 +244,12 @@ steps:
         pdf_response = self._get(f"pages/{page_id}.pdf")
         self._assert_status_code_is(pdf_response, 400)
 
-    def _users_index_has_page_with_id(self, id):
+    def _users_index_has_page_with_id(self, has_id: Union[Dict[str, Any], str]):
         index_response = self._get("pages")
         self._assert_status_code_is(index_response, 200)
         pages = index_response.json()
-        return id in (_["id"] for _ in pages)
+        if isinstance(has_id, dict):
+            target_id = has_id["id"]
+        else:
+            target_id = has_id
+        return target_id in (_["id"] for _ in pages)
