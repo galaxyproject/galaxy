@@ -139,12 +139,13 @@ def get_metadata_params(tool_job_working_directory):
         raise Exception(f"Failed to find metadata/params.json from cwd [{tool_job_working_directory}]")
 
 
-def get_object_store(tool_job_working_directory):
-    object_store_conf_path = os.path.join(tool_job_working_directory, "metadata", "object_store_conf.json")
-    with open(object_store_conf_path) as f:
-        config_dict = json.load(f)
-    assert config_dict is not None
-    object_store = build_object_store_from_config(None, config_dict=config_dict)
+def get_object_store(tool_job_working_directory, object_store=None):
+    if not object_store:
+        object_store_conf_path = os.path.join(tool_job_working_directory, "metadata", "object_store_conf.json")
+        with open(object_store_conf_path) as f:
+            config_dict = json.load(f)
+        assert config_dict is not None
+        object_store = build_object_store_from_config(None, config_dict=config_dict)
     Dataset.object_store = object_store
     return object_store
 
@@ -185,7 +186,9 @@ def set_metadata_portable(
         )
 
     try:
-        object_store = object_store or get_object_store(tool_job_working_directory=tool_job_working_directory)
+        object_store = get_object_store(
+            tool_job_working_directory=tool_job_working_directory, object_store=object_store
+        )
     except (FileNotFoundError, AssertionError):
         object_store = None
     if extended_metadata_collection is None:
