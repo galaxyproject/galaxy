@@ -1,6 +1,7 @@
 from typing import (
     Any,
     Dict,
+    Optional,
     Union,
 )
 from unittest import SkipTest
@@ -106,6 +107,17 @@ steps:
     def test_index(self):
         create_response_json = self._create_valid_page_with_slug("indexpage")
         assert self._users_index_has_page_with_id(create_response_json)
+
+    def test_index_deleted(self):
+        response1 = self._create_valid_page_with_slug("indexdeletedpageundeleted")
+        response2 = self._create_valid_page_with_slug("indexdeletedpagedeleted")
+        assert self._users_index_has_page_with_id(response1)
+        assert self._users_index_has_page_with_id(response2)
+        delete_response = self._delete(f"pages/{response2['id']}")
+        delete_response.raise_for_status()
+        assert self._users_index_has_page_with_id(response1)
+        assert not self._users_index_has_page_with_id(response2)
+        assert self._users_index_has_page_with_id(response2, dict(deleted="true"))
 
     def test_index_does_not_show_unavailable_pages(self):
         create_response_json = self._create_valid_page_as("others_page_index@bx.psu.edu", "otherspageindex")
@@ -244,8 +256,10 @@ steps:
         pdf_response = self._get(f"pages/{page_id}.pdf")
         self._assert_status_code_is(pdf_response, 400)
 
-    def _users_index_has_page_with_id(self, has_id: Union[Dict[str, Any], str]):
-        index_response = self._get("pages")
+    def _users_index_has_page_with_id(
+        self, has_id: Union[Dict[str, Any], str], params: Optional[Dict[str, Any]] = None
+    ):
+        index_response = self._get("pages", data=params or {})
         self._assert_status_code_is(index_response, 200)
         pages = index_response.json()
         if isinstance(has_id, dict):

@@ -1099,6 +1099,16 @@ class InvocationIndexPayload(Model):
     instance: bool = Field(default=False, description="Is provided workflow id for Workflow instead of StoredWorkflow?")
 
 
+class PageSortByEnum(str, Enum):
+    create_time = "create_time"
+    update_time = "update_time"
+    none = None
+
+
+class PageIndexQueryPayload(Model):
+    deleted: bool = False
+
+
 class CreateHistoryPayload(Model):
     name: Optional[str] = Field(
         default=None,

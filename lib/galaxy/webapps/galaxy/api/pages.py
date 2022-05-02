@@ -3,6 +3,7 @@ API for updating Galaxy Pages
 """
 import io
 import logging
+from typing import Optional
 
 from fastapi import (
     Body,
@@ -19,6 +20,7 @@ from galaxy.schema.schema import (
     AsyncFile,
     CreatePagePayload,
     PageDetails,
+    PageIndexQueryPayload,
     PageSummary,
     PageSummaryList,
     SetSlugPayload,
@@ -61,7 +63,10 @@ class FastAPIPages:
         deleted: bool = DeletedQueryParam,
     ) -> PageSummaryList:
         """Get a list with summary information of all Pages available to the user."""
-        return self.service.index(trans, deleted)
+        payload = PageIndexQueryPayload(
+            deleted=deleted,
+        )
+        return self.service.index(trans, payload)
 
     @router.post(
         "/api/pages",

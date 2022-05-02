@@ -9,7 +9,13 @@ import logging
 import re
 from html.entities import name2codepoint
 from html.parser import HTMLParser
-from typing import Callable
+from typing import (
+    Callable,
+    List,
+    Tuple,
+)
+
+from sqlalchemy.orm import Query
 
 from galaxy import (
     exceptions,
@@ -19,13 +25,19 @@ from galaxy.managers import (
     base,
     sharable,
 )
-from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     ready_galaxy_markdown_for_import,
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.schema.schema import PageContentFormat
+from galaxy.schema.schema import (
+    PageContentFormat,
+    PageIndexQueryPayload,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
@@ -79,6 +91,33 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         """ """
         super().__init__(app)
         self.workflow_manager = app.workflow_manager
+
+    def index_query(self, trans: ProvidesUserContext, payload: PageIndexQueryPayload) -> Tuple[List[model.Page], int]:
+        out: List[model.Page] = []
+        deleted: bool = payload.deleted
+
+        if trans.user_is_admin:
+            r = trans.sa_session.query(model.Page)
+            if not deleted:
+                r = r.filter_by(deleted=False)
+            for row in r:
+                out.append(row)
+        else:
+            # Transaction user's pages (if any)
+            user = trans.user
+            r = trans.sa_session.query(model.Page).filter_by(user=user)
+            if not deleted:
+                r = r.filter_by(deleted=False)
+            for row in r:
+                out.append(row)
+            # Published pages from other users
+            r = trans.sa_session.query(model.Page).filter(model.Page.user != user).filter_by(published=True)
+            if not deleted:
+                r = r.filter_by(deleted=False)
+            for row in r:
+                out.append(row)
+        count = len(out)
+        return out, count
 
     def create(self, trans, payload):
         user = trans.get_user()
