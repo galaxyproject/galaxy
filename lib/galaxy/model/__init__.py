@@ -943,7 +943,7 @@ class TaskMetricNumeric(BaseJobMetric, RepresentById):
 
 
 class IoDicts(NamedTuple):
-    inp_data: Dict[str, "DatasetInstance"]
+    inp_data: Dict[str, Optional["DatasetInstance"]]
     out_data: Dict[str, "DatasetInstance"]
     out_collections: Dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]]
 
@@ -1089,7 +1089,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         ]
 
     def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
-        inp_data: Dict[str, "DatasetInstance"] = {da.name: da.dataset for da in self.input_datasets}
+        inp_data: Dict[str, Optional["DatasetInstance"]] = {da.name: da.dataset for da in self.input_datasets}
         out_data: Dict[str, "DatasetInstance"] = {da.name: da.dataset for da in self.output_datasets}
         inp_data.update([(da.name, da.dataset) for da in self.input_library_datasets])
         out_data.update([(da.name, da.dataset) for da in self.output_library_datasets])

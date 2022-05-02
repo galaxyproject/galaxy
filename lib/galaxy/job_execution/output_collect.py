@@ -51,6 +51,7 @@ from galaxy.tool_util.parser.output_objects import (
     ToolOutput,
     ToolOutputCollection,
 )
+from galaxy.tool_util.provided_metadata import BaseToolProvidedMetadata
 from galaxy.util import (
     shrink_and_unicodify,
     unicodify,
@@ -189,9 +190,11 @@ def collect_dynamic_outputs(
         job_context.add_dataset_collection(has_collection)
 
 
-class BaseJobContext:
+class BaseJobContext(ModelPersistenceContext):
 
     max_discovered_files: Union[int, float]
+    tool_provided_metadata: BaseToolProvidedMetadata
+    job_working_directory: str
 
     def add_dataset_collection(self, collection):
         pass
@@ -209,11 +212,11 @@ class BaseJobContext:
         return None  # overwritten in subclasses
 
 
-class JobContext(ModelPersistenceContext, BaseJobContext):
+class JobContext(BaseJobContext):
     def __init__(
         self,
         tool,
-        tool_provided_metadata,
+        tool_provided_metadata: BaseToolProvidedMetadata,
         job,
         job_working_directory,
         permission_provider,
@@ -393,7 +396,7 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
     def __init__(
         self,
         metadata_params,
-        tool_provided_metadata,
+        tool_provided_metadata: BaseToolProvidedMetadata,
         object_store,
         export_store,
         import_store,
