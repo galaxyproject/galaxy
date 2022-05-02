@@ -27,6 +27,7 @@ from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
 
 if TYPE_CHECKING:
+    from galaxy.jobs import JobConfiguration
     from galaxy.tools.data import ToolDataTableManager
 
 
@@ -83,7 +84,7 @@ class MinimalManagerApp(MinimalApp):
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
     installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
     user_manager: Any
-    job_config: Any  # 'galaxy.jobs.JobConfiguration'
+    job_config: "JobConfiguration"
     job_manager: Any  # galaxy.jobs.manager.JobManager
 
     @property
@@ -138,7 +139,7 @@ class StructuredApp(MinimalManagerApp):
     installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
     interactivetool_manager: Any
-    job_config: Any  # 'galaxy.jobs.JobConfiguration'
+    job_config: "JobConfiguration"
     job_manager: Any  # galaxy.jobs.manager.JobManager
     user_manager: Any
     api_keys_manager: Any  # 'galaxy.managers.api_keys.ApiKeyManager'

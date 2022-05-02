@@ -13,7 +13,13 @@ import sys
 import time
 import traceback
 from json import loads
-from typing import Any, Dict, List, TYPE_CHECKING
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    TYPE_CHECKING,
+)
 
 import packaging.version
 import yaml
@@ -773,7 +779,7 @@ class JobConfiguration(ConfiguresHandlers):
             id_or_tag = self.default_destination_id
         return copy.deepcopy(self._get_single_item(self.destinations[id_or_tag]))
 
-    def get_destinations(self, id_or_tag):
+    def get_destinations(self, id_or_tag) -> Iterable[JobDestination]:
         """Given a destination ID or tag, return all JobDestinations matching the provided ID or tag
 
         :param id_or_tag: A destination ID or tag.
