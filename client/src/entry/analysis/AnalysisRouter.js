@@ -39,6 +39,7 @@ import WorkflowInvocationReport from "components/Workflow/InvocationReport";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun";
 import UserInvocations from "components/Workflow/UserInvocations";
 import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
+import HistoryInvocations from "components/Workflow/HistoryInvocations";
 import ToolsView from "components/ToolsView/ToolsView";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
 import HistoryList from "mvc/history/history-list";
@@ -98,6 +99,7 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)histories(/)sharing(/)": "show_histories_sharing",
             "(/)histories(/)import(/)": "show_histories_import",
             "(/)histories(/)(:history_id)(/)export(/)": "show_history_export",
+            "(/)histories(/)(:history_id)(/)invocations": "show_invocations_for_history",
             "(/)histories(/)permissions(/)": "show_histories_permissions",
             "(/)histories/view": "show_history_view",
             "(/)histories/show_structure": "show_history_structure",
@@ -252,6 +254,10 @@ export const getAnalysisRouter = (Galaxy) => {
 
         show_invocations_for_stored_workflow: function (stored_workflow_id) {
             this._display_vue_helper(StoredWorkflowInvocations, { storedWorkflowId: stored_workflow_id });
+        },
+
+        show_invocations_for_history: function (history_id) {
+            this._display_vue_helper(HistoryInvocations, { historyId: history_id });
         },
 
         show_history_structure: function () {

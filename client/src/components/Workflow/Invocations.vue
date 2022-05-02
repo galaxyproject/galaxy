@@ -109,19 +109,25 @@ export default {
         headerMessage: { type: String, default: "" },
         ownerGrid: { type: Boolean, default: true },
         userId: { type: String, default: null },
+        historyId: { type: String, default: null },
+        historyName: { type: String, default: null },
         storedWorkflowId: { type: String, default: null },
         storedWorkflowName: { type: String, default: null },
     },
     data() {
-        const fields = [
-            { key: "expand", label: "", class: "col-button" },
-            { key: "workflow_id", label: "Workflow", class: "col-name" },
-            { key: "history_id", label: "History", class: "col-history" },
+        const fields = [{ key: "expand", label: "", class: "col-button" }];
+        if (!this.storedWorkflowId) {
+            fields.push({ key: "workflow_id", label: "Workflow", class: "col-name" });
+        }
+        if (!this.historyId) {
+            fields.push({ key: "history_id", label: "History", class: "col-history" });
+        }
+        fields.push(
             { key: "create_time", label: "Invoked", class: "col-small", sortable: true },
             { key: "update_time", label: "Updated", class: "col-small", sortable: true },
             { key: "state", class: "col-small" },
-            { key: "execute", label: "", class: "col-button" },
-        ];
+            { key: "execute", label: "", class: "col-button" }
+        );
         return {
             tableId: "invocation-list-table",
             invocationItems: [],
@@ -138,12 +144,18 @@ export default {
             if (this.storedWorkflowName) {
                 title += ` for ${this.storedWorkflowName}`;
             }
+            if (this.historyName) {
+                title += ` for ${this.historyName}`;
+            }
             return title;
         },
         effectiveNoInvocationsMessage() {
             let message = this.noInvocationsMessage;
             if (this.storedWorkflowName) {
                 message += ` for ${this.storedWorkflowName}`;
+            }
+            if (this.historyName) {
+                message += ` for ${this.historyName}`;
             }
             return message;
         },
@@ -173,6 +185,9 @@ export default {
             const extraParams = this.ownerGrid ? {} : { include_terminal: false };
             if (this.storedWorkflowId) {
                 extraParams["workflow_id"] = this.storedWorkflowId;
+            }
+            if (this.historyId) {
+                extraParams["history_id"] = this.historyId;
             }
             if (this.userId) {
                 extraParams["user_id"] = this.userId;

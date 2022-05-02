@@ -73,6 +73,11 @@
                         <span v-localize>Extract Workflow</span>
                     </b-dropdown-item>
 
+                    <b-dropdown-item v-if="!currentUser.isAnonymous" @click="redirect(invocationsLink)">
+                        <Icon fixed-width icon="sitemap" class="fa-rotate-270 mr-1" />
+                        <span v-localize>Show Invocations</span>
+                    </b-dropdown-item>
+
                     <b-dropdown-item
                         data-description="show structure"
                         @click="backboneRoute('/histories/show_structure')">
@@ -189,6 +194,9 @@ export default {
         ...mapGetters("user", ["currentUser"]),
         exportLink() {
             return `histories/${this.history.id}/export`;
+        },
+        invocationsLink() {
+            return `histories/${this.history.id}/invocations`;
         },
     },
     methods: {
