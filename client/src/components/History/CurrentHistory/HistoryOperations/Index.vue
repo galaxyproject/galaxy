@@ -22,10 +22,13 @@
                     <Icon icon="compress" />
                 </b-button>
             </b-button-group>
-            <b-button-group v-if="showSelection">
+            <b-button-group v-show="showSelection">
                 <slot name="selection-operations" />
             </b-button-group>
-            <DefaultOperations v-else :history="history" @update:long-operation-running="onUpdateOperationStatus" />
+            <DefaultOperations
+                v-show="!showSelection"
+                :history="history"
+                @update:long-operation-running="onUpdateOperationStatus" />
         </nav>
     </section>
 </template>

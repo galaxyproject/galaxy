@@ -46,7 +46,6 @@
                             @collapse-all="collapseAll">
                             <template v-slot:selection-operations>
                                 <HistorySelectionOperations
-                                    v-if="showSelection"
                                     :history="history"
                                     :filter-text="filterText"
                                     :content-selection="selectedItems"

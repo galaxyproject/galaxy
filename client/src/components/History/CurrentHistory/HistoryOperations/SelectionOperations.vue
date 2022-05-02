@@ -81,7 +81,7 @@ export default {
         contentSelection: { type: Map, required: true },
         selectionSize: { type: Number, required: true },
         isQuerySelection: { type: Boolean, required: true },
-        totalItemsInQuery: { type: Number, required: true },
+        totalItemsInQuery: { type: Number, required: false, default: 0 },
     },
     computed: {
         /** @returns {Boolean} */
