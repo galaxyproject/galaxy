@@ -73,7 +73,7 @@ module.exports = (env = {}, argv = {}) => {
                     libs: {
                         name: "libs",
                         test: new RegExp(
-                            `node_modules[\\/](?!(${modulesExcludedFromLibs})[\\/])|galaxy\/scripts\/libs`
+                            `node_modules[\\/](?!(${modulesExcludedFromLibs})[\\/])|galaxy/scripts/libs`
                         ),
                         chunks: "all",
                         priority: -10,
