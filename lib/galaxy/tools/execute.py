@@ -189,9 +189,10 @@ def execute(
                 # We could implement that for ourselves though.
                 # For now we just hardcode galaxy.internal (default, with access to db etc) and galaxy.external (cancelable).
                 | fetch_data.s(job_id=job_id).set(queue="galaxy.external")
-                | set_job_metadata.s(extended_metadata_collection="extended" in tool.app.config.metadata_strategy).set(
-                    queue="galaxy.external"
-                )
+                | set_job_metadata.s(
+                    extended_metadata_collection="extended" in tool.app.config.metadata_strategy,
+                    job_id=job_id,
+                ).set(queue="galaxy.external")
                 | finish_job.si(job_id=job_id, raw_tool_source=raw_tool_source)
             )()
             job2.set_runner_external_id(async_result.task_id)

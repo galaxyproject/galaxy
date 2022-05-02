@@ -2,6 +2,7 @@ import json
 from concurrent.futures import TimeoutError
 from functools import lru_cache
 from pathlib import Path
+from typing import Callable
 
 from sqlalchemy import (
     exists,
@@ -86,12 +87,15 @@ def materialize(
 def set_job_metadata(
     tool_job_working_directory,
     extended_metadata_collection: bool,
-    datatypes_registry: DatatypesRegistry,
+    job_id: int,
     object_store: BaseObjectStore,
+    session: galaxy_scoped_session,
 ):
-    set_metadata_portable(
-        tool_job_working_directory,
-        datatypes_registry=datatypes_registry,
+    return abort_when_job_stops(
+        set_metadata_portable,
+        session=session,
+        job_id=job_id,
+        tool_job_working_directory=tool_job_working_directory,
         object_store=object_store,
         extended_metadata_collection=extended_metadata_collection,
     )
@@ -142,7 +146,7 @@ def finish_job(job_id: int, raw_tool_source: str, app: MinimalManagerApp, sa_ses
     mini_job_wrapper.finish("", "")
 
 
-def is_aborted(session, job_id):
+def is_aborted(session: galaxy_scoped_session, job_id: int):
     return session.execute(
         select(
             exists(model.Job.state).where(
@@ -153,6 +157,21 @@ def is_aborted(session, job_id):
             )
         )
     ).scalar()
+
+
+def abort_when_job_stops(function: Callable, session: galaxy_scoped_session, job_id: int, *args, **kwargs):
+    if not is_aborted(session, job_id):
+        future = celery_app.fork_pool.schedule(
+            function,
+            *args,
+            kwargs=kwargs,
+        )
+        while True:
+            try:
+                return future.result(timeout=1)
+            except TimeoutError:
+                if is_aborted(session, job_id):
+                    return
 
 
 def _fetch_data(setup_return):
@@ -178,20 +197,10 @@ def _fetch_data(setup_return):
 @galaxy_task(action="Run fetch_data")
 def fetch_data(
     setup_return,
-    job_id,
+    job_id: int,
     session: galaxy_scoped_session,
 ):
-    if not is_aborted(session, job_id):
-        future = celery_app.fork_pool.schedule(
-            _fetch_data,
-            kwargs=dict(setup_return=setup_return),
-        )
-        while True:
-            try:
-                return future.result(timeout=1)
-            except TimeoutError:
-                if is_aborted(session, job_id):
-                    return
+    return abort_when_job_stops(_fetch_data, session=session, job_id=job_id, setup_return=setup_return)
 
 
 @galaxy_task(ignore_result=True, action="setting up export history job")

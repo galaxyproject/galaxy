@@ -392,7 +392,8 @@ class BaseJobRunner:
                 # That is bad practice and also means this can never become part of another task.
                 try:
                     set_job_metadata.delay(
-                        job_wrapper.working_directory,
+                        tool_job_working_directory=job_wrapper.working_directory,
+                        job_id=job_wrapper.job_id,
                         extended_metadata_collection="extended" in metadata_strategy,
                     ).get()
                 except Exception:
