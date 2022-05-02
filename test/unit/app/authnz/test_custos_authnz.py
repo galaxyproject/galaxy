@@ -14,13 +14,11 @@ from urllib.parse import (
 )
 
 import jwt
+import pkce
 import requests
 
 from galaxy.app_unittest_utils.galaxy_mock import MockTrans
-from galaxy.authnz import (
-    custos_authnz,
-    pkce_utils,
-)
+from galaxy.authnz import custos_authnz
 from galaxy.model import (
     CustosAuthnzToken,
     User,
@@ -272,7 +270,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         parsed = urlparse(authorization_url)
         code_challenge_in_url = parse_qs(parsed.query)["code_challenge"][0]
         verifier_in_cookie = self.trans.cookies[custos_authnz.VERIFIER_COOKIE_NAME]
-        code_challenge_from_verifier = pkce_utils.get_code_challenge(verifier_in_cookie)
+        code_challenge_from_verifier = pkce.get_code_challenge(verifier_in_cookie)
         self.assertEqual(code_challenge_in_url, code_challenge_from_verifier)
 
     def test_authenticate_adds_extra_params(self):
