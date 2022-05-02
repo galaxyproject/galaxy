@@ -137,8 +137,14 @@ function create_plot(pca_result, colours, annotations) {
 
     var gd3 = d3.select("div[id='visualisation']");
     var res_graph = gd3.node();
-    Plotly.newPlot(res_graph, data, layout);
-    window.onresize = function() { Plotly.Plots.resize( res_graph ); };
+    try {
+        Plotly.newPlot(res_graph, data, layout);
+    } catch (error) {
+        // FF fails to render datapoints here because of this bug:
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=941146
+        // So we silently fail since FF also triggers the "onresize" which works.
+    }
+    window.onresize = function() { Plotly.Plots.resize(res_graph); };
 }
 
 function load_visualisation() {
