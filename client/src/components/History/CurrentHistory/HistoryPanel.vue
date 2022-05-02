@@ -65,20 +65,20 @@
                     </section>
                     <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
                         <div>
-                            <div v-if="itemsLoaded && itemsLoaded.length == 0">
-                                <b-alert v-if="loading" class="m-2" variant="info" show>
+                            <div v-if="itemsLoaded && itemsLoaded.length == 0 && loading">
+                                <b-alert class="m-2" variant="info" show>
                                     <LoadingSpan message="Loading History" />
                                 </b-alert>
-                                <div v-else>
-                                    <HistoryEmpty v-if="queryDefault" class="m-2" />
-                                    <b-alert v-else class="m-2" variant="info" show>
-                                        No data found for selected filter.
-                                    </b-alert>
-                                </div>
                             </div>
                             <b-alert v-else-if="isProcessing" class="m-2" variant="info" show>
                                 <LoadingSpan message="Processing operation" />
                             </b-alert>
+                            <div v-else-if="totalItemsInQuery == 0">
+                                <HistoryEmpty v-if="queryDefault" class="m-2" />
+                                <b-alert v-else class="m-2" variant="info" show>
+                                    No data found for selected filter.
+                                </b-alert>
+                            </div>
                             <Listing v-else :items="itemsLoaded" :query-key="queryKey" @scroll="onScroll">
                                 <template v-slot:item="{ item }">
                                     <ContentItem
