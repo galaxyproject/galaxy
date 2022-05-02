@@ -1066,6 +1066,28 @@ class WorkflowIndexQueryPayload(Model):
     skip_step_counts: bool = False
 
 
+class JobIndexSortByEnum(str, Enum):
+    create_time = "create_time"
+    update_time = "update_time"
+
+
+class JobIndexQueryPayload(Model):
+    states: Optional[List[str]] = None
+    user_details: bool = False
+    user_id: Optional[str] = None
+    tool_ids: Optional[List[str]] = None
+    tool_ids_like: Optional[List[str]] = None
+    date_range_min: Optional[str] = None
+    date_range_max: Optional[str] = None
+    history_id: Optional[str] = None
+    workflow_id: Optional[str] = None
+    invocation_id: Optional[str] = None
+    order_by: JobIndexSortByEnum = JobIndexSortByEnum.update_time
+    search: Optional[str] = None
+    limit: int = 500
+    offset: int = 0
+
+
 class InvocationSortByEnum(str, Enum):
     create_time = "create_time"
     update_time = "update_time"

@@ -32,6 +32,7 @@ from galaxy.managers.jobs import (
     summarize_job_parameters,
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import JobIndexSortByEnum
 from galaxy.util import listify
 from galaxy.web import (
     expose_api,
@@ -41,7 +42,6 @@ from galaxy.web import (
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.galaxy.services.jobs import (
     JobIndexPayload,
-    JobIndexSortByEnum,
     JobIndexViewEnum,
     JobsService,
 )
