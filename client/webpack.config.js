@@ -11,6 +11,19 @@ const testsBase = path.join(__dirname, "tests");
 const libsBase = path.join(scriptsBase, "libs");
 const styleBase = path.join(scriptsBase, "style");
 
+const modulesExcludedFromLibs = [
+    "jspdf",
+    "canvg",
+    "prismjs",
+    "html2canvas",
+    "handsontable",
+    "pikaday",
+    "moment",
+    "elkjs",
+    "@citation-js",
+    "citeproc",
+].join("|");
+
 module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
     const targetEnv = process.env.NODE_ENV == "production" || argv.mode == "production" ? "production" : "development";
@@ -59,7 +72,9 @@ module.exports = (env = {}, argv = {}) => {
                     },
                     libs: {
                         name: "libs",
-                        test: /node_modules[\\/](?!(jspdf|canvg|prismjs|html2canvas|handsontable|pikaday|moment|elkjs)[\\/])|galaxy\/scripts\/libs/,
+                        test: new RegExp(
+                            `node_modules[\\/](?!(${modulesExcludedFromLibs})[\\/])|galaxy\/scripts\/libs`
+                        ),
                         chunks: "all",
                         priority: -10,
                     },
