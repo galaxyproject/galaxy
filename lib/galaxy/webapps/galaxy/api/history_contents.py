@@ -479,7 +479,9 @@ class FastAPIHistoryContents:
         while maintaining approximate collection structure.
         """
         archive = self.service.get_dataset_collection_archive_for_download(trans, id)
-        return StreamingResponse(archive.get_iterator(), headers=archive.get_headers())
+        if archive.upstream_mod_zip:
+            return StreamingResponse(archive.response(), headers=archive.get_headers())
+        return StreamingResponse(archive.get_iterator(), headers=archive.get_headers(), media_type="application/zip")
 
     @router.post(
         "/api/histories/{history_id}/contents/dataset_collections/{id}/prepare_download",

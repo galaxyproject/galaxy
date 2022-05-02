@@ -2,6 +2,7 @@
 API operations on the contents of a history dataset.
 """
 import logging
+from io import IOBase
 from typing import (
     Any,
     cast,
@@ -247,6 +248,10 @@ class FastAPIDatasets:
         display_data, headers = self.service.display(
             trans, history_content_id, preview, filename, to_ext, raw, **extra_params
         )
+        if isinstance(display_data, IOBase):
+            file_name = getattr(display_data, "name", None)
+            if file_name:
+                return FileResponse(file_name, headers=headers)
         return StreamingResponse(display_data, headers=headers)
 
     @router.get(
