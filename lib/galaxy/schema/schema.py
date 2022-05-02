@@ -1073,7 +1073,7 @@ class InvocationSortByEnum(str, Enum):
     none = None
 
 
-class InvocationIndexPayload(Model):
+class InvocationIndexQueryPayload(Model):
     workflow_id: Optional[DecodedDatabaseIdField] = Field(
         title="Workflow ID", description="Return only invocations for this Workflow ID"
     )
@@ -1096,7 +1096,6 @@ class InvocationIndexPayload(Model):
         lt=1000,
     )
     offset: Optional[int] = Field(default=0, description="Number of invocations to skip")
-    instance: bool = Field(default=False, description="Is provided workflow id for Workflow instead of StoredWorkflow?")
 
 
 class CreateHistoryPayload(Model):
