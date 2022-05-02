@@ -25,11 +25,7 @@
             <b-button-group v-if="showSelection">
                 <slot name="selection-operations" />
             </b-button-group>
-            <DefaultOperations
-                v-else
-                :history="history"
-                :show-selection="showSelection"
-                :expanded-count="expandedCount" />
+            <DefaultOperations v-else :history="history" />
         </nav>
     </section>
 </template>

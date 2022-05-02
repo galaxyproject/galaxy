@@ -18,7 +18,6 @@
                     selectionSize,
                     setShowSelection,
                     selectAllInCurrentQuery,
-                    selectItems,
                     isSelected,
                     setSelected,
                     resetSelection,

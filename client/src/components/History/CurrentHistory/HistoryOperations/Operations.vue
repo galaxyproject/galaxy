@@ -47,8 +47,6 @@ import { iframeRedirect } from "components/plugins/legacyNavigation";
 export default {
     props: {
         history: { type: Object, required: true },
-        showSelection: { type: Boolean, required: true },
-        expandedCount: { type: Number, required: false, default: 0 },
     },
     methods: {
         onCopy() {
