@@ -24,7 +24,6 @@ from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.objectstore import BaseObjectStore
 from galaxy.schema.tasks import (
     GenerateHistoryContentDownload,
     GenerateHistoryDownload,
@@ -88,15 +87,13 @@ def set_job_metadata(
     tool_job_working_directory,
     extended_metadata_collection: bool,
     job_id: int,
-    object_store: BaseObjectStore,
-    session: galaxy_scoped_session,
+    sa_session: galaxy_scoped_session,
 ):
     return abort_when_job_stops(
         set_metadata_portable,
-        session=session,
+        session=sa_session,
         job_id=job_id,
         tool_job_working_directory=tool_job_working_directory,
-        object_store=object_store,
         extended_metadata_collection=extended_metadata_collection,
     )
 

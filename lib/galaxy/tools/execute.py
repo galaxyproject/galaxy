@@ -192,7 +192,7 @@ def execute(
                 | set_job_metadata.s(
                     extended_metadata_collection="extended" in tool.app.config.metadata_strategy,
                     job_id=job_id,
-                ).set(queue="galaxy.external")
+                ).set(queue="galaxy.external", link_error=finish_job.si(job_id=job_id, raw_tool_source=raw_tool_source))
                 | finish_job.si(job_id=job_id, raw_tool_source=raw_tool_source)
             )()
             job2.set_runner_external_id(async_result.task_id)
