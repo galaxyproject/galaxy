@@ -35,6 +35,7 @@ import HistoryImport from "components/HistoryImport";
 import HistoryView from "components/History/HistoryView";
 import HistoryPublished from "components/History/HistoryPublished";
 import HistoryPublishedList from "components/History/HistoryPublishedList";
+import HistoryInvocations from "components/Workflow/HistoryInvocations";
 import HistoryMultipleView from "components/History/Multiple/MultipleView";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
@@ -254,6 +255,16 @@ export function getRouter(Galaxy) {
                         get component() {
                             return Galaxy.config.enable_celery_tasks ? HistoryExportTasks : HistoryExport;
                         },
+                        props: true,
+                    },
+                    {
+                        path: "histories/:historyId/invocations",
+                        component: HistoryInvocations,
+                        props: true,
+                    },
+                    {
+                        path: "histories/:actionId",
+                        component: GridHistory,
                         props: true,
                     },
                     {
