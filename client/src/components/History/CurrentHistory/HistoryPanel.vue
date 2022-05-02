@@ -76,7 +76,7 @@
                                     </b-alert>
                                 </div>
                             </div>
-                            <b-alert v-else-if="isLongOperationRunning" class="m-2" variant="info" show>
+                            <b-alert v-else-if="isProcessing" class="m-2" variant="info" show>
                                 <LoadingSpan message="Processing operation" />
                             </b-alert>
                             <Listing v-else :items="itemsLoaded" :query-key="queryKey" @scroll="onScroll">
@@ -151,6 +151,7 @@ export default {
             offset: 0,
             showAdvanced: false,
             isLongOperationRunning: false,
+            updateExpectedAfterDate: null,
         };
     },
     computed: {
@@ -169,6 +170,14 @@ export default {
         /** @returns {Boolean} */
         hasFilters() {
             return !this.queryDefault;
+        },
+        /** @returns {Boolean} */
+        isHistoryUpdated() {
+            return !this.updateExpectedAfterDate || this.history.update_time > this.updateExpectedAfterDate;
+        },
+        /** @returns {Boolean} */
+        isProcessing() {
+            return this.isLongOperationRunning || !this.isHistoryUpdated;
         },
     },
     watch: {
@@ -208,7 +217,13 @@ export default {
             Vue.set(this.invisible, item.hid, true);
         },
         onUpdateOperationStatus(running) {
+            if (running) {
+                this.expectHistoryUpdate();
+            }
             this.isLongOperationRunning = running;
+        },
+        expectHistoryUpdate() {
+            this.updateExpectedAfterDate = this.history.update_time;
         },
     },
 };
