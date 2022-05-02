@@ -23,14 +23,22 @@ from galaxy.model import (
     User,
 )
 from galaxy.model.orm.util import add_object_to_object_session
-from . import pkce_utils
 from ..authnz import IdentityProvider
+
+try:
+    import pkce
+except ImportError:
+    pkce = None
 
 log = logging.getLogger(__name__)
 STATE_COOKIE_NAME = "galaxy-oidc-state"
 NONCE_COOKIE_NAME = "galaxy-oidc-nonce"
 VERIFIER_COOKIE_NAME = "galaxy-oidc-verifier"
 KEYCLOAK_BACKENDS = {"custos", "cilogon", "keycloak"}
+
+
+class InvalidAuthnzConfigException(Exception):
+    pass
 
 
 class CustosAuthnz(IdentityProvider):
@@ -71,7 +79,12 @@ class CustosAuthnz(IdentityProvider):
         if idphint is not None:
             extra_params["idphint"] = idphint
         if self.config["pkce_support"]:
-            code_verifier, code_challenge = pkce_utils.generate_pkce_pair(96)
+            if not pkce:
+                raise InvalidAuthnzConfigException(
+                    "The python 'pkce' library is not installed but Galaxy is configured to use it "
+                    "(see oidc_backends_config).  Make sure pkce is installed correctly to proceed."
+                )
+            code_verifier, code_challenge = pkce.generate_pkce_pair(96)
             extra_params["code_challenge"] = code_challenge
             extra_params["code_challenge_method"] = "S256"
             trans.set_cookie(value=code_verifier, name=VERIFIER_COOKIE_NAME)
