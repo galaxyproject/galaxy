@@ -108,6 +108,10 @@ export default {
         selectionMatchesQuery() {
             return this.totalItemsInQuery === this.selectionSize;
         },
+        /** @returns {Boolean} */
+        isLongRunningOperation() {
+            return this.selectionSize > 10; // Totally arbitrary number...
+        },
     },
     watch: {
         hasSelection(newVal) {
@@ -118,26 +122,28 @@ export default {
     },
     methods: {
         // Selected content manipulation, hide/show/delete/purge
-        hideSelected() {
-            this.runOnSelection(hideSelectedContent);
+        async hideSelected() {
+            await this.runOnSelection(hideSelectedContent);
         },
-        unhideSelected() {
-            this.runOnSelection(unhideSelectedContent);
+        async unhideSelected() {
+            await this.runOnSelection(unhideSelectedContent);
         },
-        deleteSelected() {
-            this.runOnSelection(deleteSelectedContent);
+        async deleteSelected() {
+            await this.runOnSelection(deleteSelectedContent);
         },
-        undeleteSelected() {
-            this.runOnSelection(undeleteSelectedContent);
+        async undeleteSelected() {
+            await this.runOnSelection(undeleteSelectedContent);
         },
-        purgeSelected() {
-            this.runOnSelection(purgeSelectedContent);
+        async purgeSelected() {
+            await this.runOnSelection(purgeSelectedContent);
         },
-        async runOnSelection(fn) {
+        async runOnSelection(operation) {
+            this.$emit("update:long-operation-running", this.isLongRunningOperation);
             const items = this.getExplicitlySelectedItems();
             const filters = getQueryDict(this.filterText);
-            await fn(this.history, filters, items);
             this.$emit("reset-selection");
+            await operation(this.history, filters, items);
+            this.$emit("update:long-operation-running", false);
         },
         getExplicitlySelectedItems() {
             if (this.isQuerySelection) {

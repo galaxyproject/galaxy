@@ -42,6 +42,7 @@
                             :expanded-count="expandedCount"
                             :has-matches="hasMatches(itemsLoaded)"
                             @update:show-selection="setShowSelection"
+                            @update:long-operation-running="onUpdateOperationStatus"
                             @collapse-all="collapseAll">
                             <template v-slot:selection-operations>
                                 <HistorySelectionOperations
@@ -52,7 +53,7 @@
                                     :selection-size="selectionSize"
                                     :is-query-selection="isQuerySelection"
                                     :total-items-in-query="totalItemsInQuery"
-                                    @update:content-selection="selectItems"
+                                    @update:long-operation-running="onUpdateOperationStatus"
                                     @hide-selection="onHideSelection"
                                     @reset-selection="resetSelection" />
                                 <HistorySelectionStatus
@@ -76,6 +77,9 @@
                                     </b-alert>
                                 </div>
                             </div>
+                            <b-alert v-else-if="isLongOperationRunning" class="m-2" variant="info" show>
+                                <LoadingSpan message="Processing operation" />
+                            </b-alert>
                             <Listing v-else :items="itemsLoaded" :query-key="queryKey" @scroll="onScroll">
                                 <template v-slot:item="{ item }">
                                     <ContentItem
@@ -147,6 +151,7 @@ export default {
             invisible: {},
             offset: 0,
             showAdvanced: false,
+            isLongOperationRunning: false,
         };
     },
     computed: {
@@ -202,6 +207,9 @@ export default {
         },
         setInvisible(item) {
             Vue.set(this.invisible, item.hid, true);
+        },
+        onUpdateOperationStatus(running) {
+            this.isLongOperationRunning = running;
         },
     },
 };
