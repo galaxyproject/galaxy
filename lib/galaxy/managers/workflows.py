@@ -27,6 +27,7 @@ from sqlalchemy import (
     true,
 )
 from sqlalchemy.orm import (
+    aliased,
     joinedload,
     Query,
     subqueryload,
@@ -160,7 +161,10 @@ class WorkflowsManager(sharable.SharableModelManager):
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
 
             def w_tag_filter(term_text: str, quoted: bool):
-                return tag_filter(model.StoredWorkflowTagAssociation, term_text, quoted)
+                nonlocal query
+                alias = aliased(model.StoredWorkflowTagAssociation)
+                query = query.outerjoin(model.StoredWorkflow.tags.of_type(alias))
+                return tag_filter(alias, term_text, quoted)
 
             def name_filter(term):
                 return text_column_filter(model.StoredWorkflow.name, term)
@@ -170,7 +174,8 @@ class WorkflowsManager(sharable.SharableModelManager):
                     key = term.filter
                     q = term.text
                     if key == "tag":
-                        query = query.filter(w_tag_filter(term.text, term.quoted))
+                        tf = w_tag_filter(term.text, term.quoted)
+                        query = query.filter(tf)
                     elif key == "name":
                         query = query.filter(name_filter(term))
                     elif key == "is":
@@ -182,11 +187,12 @@ class WorkflowsManager(sharable.SharableModelManager):
                                 raise exceptions.RequestParameterInvalidException(message)
                             query = query.filter(model.StoredWorkflowUserShareAssociation.user == user)
                 elif isinstance(term, RawTextTerm):
+                    tf = w_tag_filter(term.text, False)
                     query = query.filter(
                         raw_text_column_filter(
                             [
                                 model.StoredWorkflow.name,
-                                w_tag_filter(term.text, False),
+                                tf,
                             ],
                             term,
                         )

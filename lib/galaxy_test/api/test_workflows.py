@@ -493,6 +493,39 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         index_ids = self.workflow_populator.index_ids(search="tag:moocowatag")
         assert workflow_id_1 in index_ids
 
+    def test_index_search_tags_multiple(self):
+        name1 = self.dataset_populator.get_random_name()
+        name2 = self.dataset_populator.get_random_name()
+        name3 = self.dataset_populator.get_random_name()
+        workflow_id_1 = self.workflow_populator.simple_workflow(name1)
+        workflow_id_2 = self.workflow_populator.simple_workflow(name2)
+        workflow_id_3 = self.workflow_populator.simple_workflow(name3)
+        self.workflow_populator.set_tags(workflow_id_1, ["multipletagfilter1", "multipletagfilter2", "decoy1"])
+        self.workflow_populator.set_tags(workflow_id_2, ["multipletagfilter1", "decoy2"])
+        self.workflow_populator.set_tags(workflow_id_3, ["multipletagfilter2", "decoy3"])
+
+        for search in ["multipletagfilter1", "tag:ipletagfilter1", "tag:'multipletagfilter1'"]:
+            index_ids = self.workflow_populator.index_ids(search=search)
+            assert workflow_id_1 in index_ids
+            assert workflow_id_2 in index_ids
+            assert workflow_id_3 not in index_ids
+
+        for search in ["multipletagfilter2", "tag:ipletagfilter2", "tag:'multipletagfilter2'"]:
+            index_ids = self.workflow_populator.index_ids(search=search)
+            assert workflow_id_1 in index_ids
+            assert workflow_id_2 not in index_ids
+            assert workflow_id_3 in index_ids
+
+        for search in [
+            "multipletagfilter2 multipletagfilter1",
+            "tag:filter2 tag:tagfilter1",
+            "tag:'multipletagfilter2' tag:'multipletagfilter1'",
+        ]:
+            index_ids = self.workflow_populator.index_ids(search=search)
+            assert workflow_id_1 in index_ids
+            assert workflow_id_2 not in index_ids
+            assert workflow_id_3 not in index_ids
+
     def test_search_casing(self):
         name1, name2 = (
             self.dataset_populator.get_random_name().upper(),
