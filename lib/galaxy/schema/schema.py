@@ -1107,6 +1107,11 @@ class PageSortByEnum(str, Enum):
 
 class PageIndexQueryPayload(Model):
     deleted: bool = False
+    user_id: Optional[DecodedDatabaseIdField] = None
+    order_by: PageSortByEnum = PageSortByEnum.update_time
+    search: Optional[str] = None
+    limit: int = 500
+    offset: int = 0
 
 
 class CreateHistoryPayload(Model):

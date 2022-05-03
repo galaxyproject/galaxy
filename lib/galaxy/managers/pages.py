@@ -15,7 +15,11 @@ from typing import (
     Tuple,
 )
 
-from sqlalchemy.orm import Query
+from sqlalchemy import (
+    false,
+    or_,
+    true,
+)
 
 from galaxy import (
     exceptions,
@@ -93,29 +97,21 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         self.workflow_manager = app.workflow_manager
 
     def index_query(self, trans: ProvidesUserContext, payload: PageIndexQueryPayload) -> Tuple[List[model.Page], int]:
-        out: List[model.Page] = []
         deleted: bool = payload.deleted
 
-        if trans.user_is_admin:
-            r = trans.sa_session.query(model.Page)
-            if not deleted:
-                r = r.filter_by(deleted=False)
-            for row in r:
-                out.append(row)
-        else:
-            # Transaction user's pages (if any)
-            user = trans.user
-            r = trans.sa_session.query(model.Page).filter_by(user=user)
-            if not deleted:
-                r = r.filter_by(deleted=False)
-            for row in r:
-                out.append(row)
-            # Published pages from other users
-            r = trans.sa_session.query(model.Page).filter(model.Page.user != user).filter_by(published=True)
-            if not deleted:
-                r = r.filter_by(deleted=False)
-            for row in r:
-                out.append(row)
+        query = trans.sa_session.query(model.Page)
+        if not trans.user_is_admin:
+            filters = [model.Page.user == trans.user, model.Page.published == true()]
+            query = query.filter(or_(*filters))
+
+        if not deleted:
+            query = query.filter(model.Page.deleted == false())
+        if payload.user_id:
+            query = query.filter(model.Page.user_id == payload.user_id)
+
+        out: List[model.Page] = []
+        for row in query.all():
+            out.append(row)
         count = len(out)
         return out, count
 

@@ -63,6 +63,11 @@ class PagesService(ServiceBase):
         :rtype:     list
         :returns:   dictionaries containing summary or detailed Page information
         """
+        if not trans.user_is_admin:
+            user_id = trans.user.id
+            if payload.user_id and payload.user_id != user_id:
+                raise exceptions.AdminRequiredException("Only admins can index the pages of others")
+
         pages, _ = self.manager.index_query(trans, payload)
         return PageSummaryList.parse_obj([trans.security.encode_all_ids(p.to_dict(), recursive=True) for p in pages])
 

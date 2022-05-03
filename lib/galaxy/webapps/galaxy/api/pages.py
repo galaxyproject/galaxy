@@ -43,6 +43,11 @@ DeletedQueryParam: bool = Query(
     default=False, title="Display deleted", description="Whether to include deleted pages in the result."
 )
 
+UserIdQueryParam: Optional[EncodedDatabaseIdField] = Query(
+    default=None,
+    title="Encoded user ID to restrict query to, must be own id if not an admin user",
+)
+
 PageIdPathParam: EncodedDatabaseIdField = Path(
     ..., title="Page ID", description="The encoded database identifier of the Page."  # Required
 )
@@ -61,10 +66,12 @@ class FastAPIPages:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: bool = DeletedQueryParam,
+        user_id: Optional[EncodedDatabaseIdField] = UserIdQueryParam,
     ) -> PageSummaryList:
         """Get a list with summary information of all Pages available to the user."""
         payload = PageIndexQueryPayload(
             deleted=deleted,
+            user_id=user_id,
         )
         return self.service.index(trans, payload)
 

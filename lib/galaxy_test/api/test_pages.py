@@ -7,6 +7,7 @@ from typing import (
 from unittest import SkipTest
 
 from requests import delete
+from requests.models import Response
 
 from galaxy.exceptions import error_codes
 from galaxy_test.api.sharable import SharingApiTests
@@ -118,6 +119,28 @@ steps:
         assert self._users_index_has_page_with_id(response1)
         assert not self._users_index_has_page_with_id(response2)
         assert self._users_index_has_page_with_id(response2, dict(deleted="true"))
+
+    def test_index_user_id_security(self):
+        user_id = self.dataset_populator.user_id()
+        response1 = self._create_valid_page_with_slug("indexuseridsecurity")
+        assert self._users_index_has_page_with_id(response1, dict(user_id=user_id))
+        with self._different_user():
+            response = self._index_raw()
+            assert response.status_code == 200
+            response = self._index_raw(dict(user_id=user_id))
+            assert response.status_code == 403
+
+    def test_index_user_published(self):
+        user_id = self.dataset_populator.user_id()
+        response1 = self._create_valid_page_with_slug("indexuseridpublish1")
+        with self._different_user():
+            response2 = self._create_valid_page_with_slug("indexuseridpublish2")
+            self._make_public(response2["id"])
+
+        assert self._users_index_has_page_with_id(response1)
+        assert self._users_index_has_page_with_id(response2)
+        assert self._users_index_has_page_with_id(response1, dict(user_id=user_id))
+        assert not self._users_index_has_page_with_id(response2, dict(user_id=user_id))
 
     def test_index_does_not_show_unavailable_pages(self):
         create_response_json = self._create_valid_page_as("others_page_index@bx.psu.edu", "otherspageindex")
@@ -256,10 +279,19 @@ steps:
         pdf_response = self._get(f"pages/{page_id}.pdf")
         self._assert_status_code_is(pdf_response, 400)
 
+    def _make_public(self, page_id: str) -> dict:
+        sharing_response = self._put(f"pages/{page_id}/publish")
+        assert sharing_response.status_code == 200
+        return sharing_response.json()
+
+    def _index_raw(self, params: Optional[Dict[str, Any]] = None) -> Response:
+        index_response = self._get("pages", data=params or {})
+        return index_response
+
     def _users_index_has_page_with_id(
         self, has_id: Union[Dict[str, Any], str], params: Optional[Dict[str, Any]] = None
     ):
-        index_response = self._get("pages", data=params or {})
+        index_response = self._index_raw(params)
         self._assert_status_code_is(index_response, 200)
         pages = index_response.json()
         if isinstance(has_id, dict):
