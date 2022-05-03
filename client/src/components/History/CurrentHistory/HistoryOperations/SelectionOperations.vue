@@ -108,10 +108,6 @@ export default {
         selectionMatchesQuery() {
             return this.totalItemsInQuery === this.selectionSize;
         },
-        /** @returns {Boolean} */
-        isLongRunningOperation() {
-            return this.selectionSize > 10; // Totally arbitrary number...
-        },
     },
     watch: {
         hasSelection(newVal) {
@@ -138,7 +134,7 @@ export default {
             await this.runOnSelection(purgeSelectedContent);
         },
         async runOnSelection(operation) {
-            this.$emit("update:long-operation-running", this.isLongRunningOperation);
+            this.$emit("update:long-operation-running", true);
             const items = this.getExplicitlySelectedItems();
             const filters = getQueryDict(this.filterText);
             this.$emit("reset-selection");
