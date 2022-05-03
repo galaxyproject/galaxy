@@ -123,11 +123,16 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         if payload.user_id:
             query = query.filter(model.Page.user_id == payload.user_id)
 
-        out: List[model.Page] = []
-        for row in query.all():
-            out.append(row)
-        count = len(out)
-        return out, count
+        total_matches = query.count()
+        sort_column = getattr(model.Page, payload.sort_by)
+        if payload.sort_desc:
+            sort_column = sort_column.desc()
+        query = query.order_by(sort_column)
+        if payload.limit is not None:
+            query = query.limit(payload.limit)
+        if payload.offset is not None:
+            query = query.offset(payload.offset)
+        return query, total_matches
 
     def create(self, trans, payload):
         user = trans.get_user()

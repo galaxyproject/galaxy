@@ -1102,16 +1102,15 @@ class InvocationIndexPayload(Model):
 class PageSortByEnum(str, Enum):
     create_time = "create_time"
     update_time = "update_time"
-    none = None
 
 
 class PageIndexQueryPayload(Model):
     deleted: bool = False
     user_id: Optional[DecodedDatabaseIdField] = None
-    order_by: PageSortByEnum = PageSortByEnum.update_time
+    sort_by: PageSortByEnum = PageSortByEnum.update_time
+    sort_desc: bool = Field(default=True, descritpion="Sort in descending order?")
     show_published: bool = True
     show_shared: bool = False
-    search: Optional[str] = None
     limit: int = 500
     offset: int = 0
 
