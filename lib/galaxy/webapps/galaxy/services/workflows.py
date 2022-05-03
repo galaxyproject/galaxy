@@ -45,6 +45,7 @@ INDEX_SEARCH_FILTERS = {
     "tag": "tag",
     "n": "name",
     "t": "tag",
+    "is": "is",
 }
 
 
@@ -149,6 +150,14 @@ class WorkflowsService(ServiceBase):
                         query = query.filter(tag_filter(term.text, term.quoted))
                     elif key == "name":
                         query = query.filter(name_filter(q, term.quoted))
+                    elif key == "is":
+                        if q == "published":
+                            query = query.filter(model.StoredWorkflow.published == true())
+                        elif q == "shared_with_me":
+                            if not show_shared:
+                                message = "Can only use tag is:shared_with_me if show_shared parameter also true."
+                                raise exceptions.RequestParameterInvalidException(message)
+                            query = query.filter(model.StoredWorkflowUserShareAssociation.user == user)
                 elif isinstance(term, RawTextTerm):
                     query = query.filter(
                         or_(
