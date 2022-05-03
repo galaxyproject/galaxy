@@ -185,6 +185,16 @@ export default {
             this.invisible = {};
             this.offset = 0;
         },
+        historyId(newVal, oldVal) {
+            if (newVal !== oldVal) {
+                this.stopExpectingHistoryUpdate();
+            }
+        },
+        isHistoryUpdated(updated) {
+            if (updated) {
+                this.stopExpectingHistoryUpdate();
+            }
+        },
     },
     methods: {
         hasMatches(items) {
@@ -224,6 +234,9 @@ export default {
         },
         expectHistoryUpdate() {
             this.updateExpectedAfterDate = this.history.update_time;
+        },
+        stopExpectingHistoryUpdate() {
+            this.updateExpectedAfterDate = null;
         },
     },
 };
