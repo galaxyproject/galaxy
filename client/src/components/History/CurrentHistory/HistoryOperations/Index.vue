@@ -22,14 +22,13 @@
                     <Icon icon="compress" />
                 </b-button>
             </b-button-group>
-            <b-button-group v-if="showSelection">
+            <b-button-group v-show="showSelection">
                 <slot name="selection-operations" />
             </b-button-group>
             <DefaultOperations
-                v-else
+                v-show="!showSelection"
                 :history="history"
-                :show-selection="showSelection"
-                :expanded-count="expandedCount" />
+                @update:long-operation-running="onUpdateOperationStatus" />
         </nav>
     </section>
 </template>
@@ -50,6 +49,9 @@ export default {
     methods: {
         toggleSelection() {
             this.$emit("update:show-selection", !this.showSelection);
+        },
+        onUpdateOperationStatus(running) {
+            this.$emit("update:long-operation-running", running);
         },
     },
 };

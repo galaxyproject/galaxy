@@ -81,7 +81,7 @@ export default {
         contentSelection: { type: Map, required: true },
         selectionSize: { type: Number, required: true },
         isQuerySelection: { type: Boolean, required: true },
-        totalItemsInQuery: { type: Number, required: true },
+        totalItemsInQuery: { type: Number, required: false, default: 0 },
     },
     computed: {
         /** @returns {Boolean} */
@@ -118,26 +118,28 @@ export default {
     },
     methods: {
         // Selected content manipulation, hide/show/delete/purge
-        hideSelected() {
-            this.runOnSelection(hideSelectedContent);
+        async hideSelected() {
+            await this.runOnSelection(hideSelectedContent);
         },
-        unhideSelected() {
-            this.runOnSelection(unhideSelectedContent);
+        async unhideSelected() {
+            await this.runOnSelection(unhideSelectedContent);
         },
-        deleteSelected() {
-            this.runOnSelection(deleteSelectedContent);
+        async deleteSelected() {
+            await this.runOnSelection(deleteSelectedContent);
         },
-        undeleteSelected() {
-            this.runOnSelection(undeleteSelectedContent);
+        async undeleteSelected() {
+            await this.runOnSelection(undeleteSelectedContent);
         },
-        purgeSelected() {
-            this.runOnSelection(purgeSelectedContent);
+        async purgeSelected() {
+            await this.runOnSelection(purgeSelectedContent);
         },
-        async runOnSelection(fn) {
+        async runOnSelection(operation) {
+            this.$emit("update:long-operation-running", true);
             const items = this.getExplicitlySelectedItems();
             const filters = getQueryDict(this.filterText);
-            await fn(this.history, filters, items);
             this.$emit("reset-selection");
+            await operation(this.history, filters, items);
+            this.$emit("update:long-operation-running", false);
         },
         getExplicitlySelectedItems() {
             if (this.isQuerySelection) {

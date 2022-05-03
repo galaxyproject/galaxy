@@ -47,26 +47,24 @@ import { iframeRedirect } from "components/plugins/legacyNavigation";
 export default {
     props: {
         history: { type: Object, required: true },
-        showSelection: { type: Boolean, required: true },
-        expandedCount: { type: Number, required: false, default: 0 },
     },
     methods: {
         onCopy() {
             iframeRedirect("/dataset/copy_datasets");
         },
-        toggleSelection() {
-            this.$emit("update:show-selection", !this.showSelection);
+        async unhideAll() {
+            await this.runOperation(() => unhideAllHiddenContent(this.history));
         },
-
-        // History-wide bulk updates, does server query first to determine "selection"
-        async unhideAll(evt) {
-            await unhideAllHiddenContent(this.history);
+        async deleteAllHidden() {
+            await this.runOperation(() => deleteAllHiddenContent(this.history));
         },
-        async deleteAllHidden(evt) {
-            await deleteAllHiddenContent(this.history);
+        async purgeAllDeleted() {
+            await this.runOperation(() => purgeAllDeletedContent(this.history));
         },
-        async purgeAllDeleted(evt) {
-            await purgeAllDeletedContent(this.history);
+        async runOperation(operation) {
+            this.$emit("update:long-operation-running", true);
+            await operation();
+            this.$emit("update:long-operation-running", false);
         },
     },
 };

@@ -10,12 +10,13 @@ export default {
         scopeKey: { type: String, required: true },
         getItemKey: { type: Function, required: true },
         filterText: { type: String, required: true },
+        totalItemsInQuery: { type: Number, required: false },
     },
     data() {
         return {
             items: new Map(),
             showSelection: false,
-            totalItemsInQuery: 0,
+            allSelected: false,
         };
     },
     computed: {
@@ -23,7 +24,7 @@ export default {
             return this.isQuerySelection ? this.totalItemsInQuery : this.items.size;
         },
         isQuerySelection() {
-            return this.totalItemsInQuery !== this.items.size;
+            return this.allSelected && this.totalItemsInQuery !== this.items.size;
         },
         currentFilters() {
             return getFilters(this.filterText);
@@ -33,9 +34,9 @@ export default {
         setShowSelection(val) {
             this.showSelection = val;
         },
-        selectAllInCurrentQuery(loadedItems = [], totalItemsInQuery) {
+        selectAllInCurrentQuery(loadedItems = []) {
             this.selectItems(loadedItems);
-            this.totalItemsInQuery = totalItemsInQuery;
+            this.allSelected = true;
         },
         isSelected(item) {
             if (this.isQuerySelection) {
@@ -61,11 +62,12 @@ export default {
             this.resetQuerySelection();
         },
         resetQuerySelection() {
-            this.totalItemsInQuery = this.items.size;
+            this.allSelected = false;
         },
         reset() {
             this.items = new Map();
             this.resetQuerySelection();
+            this.showSelection = false;
         },
     },
     watch: {
