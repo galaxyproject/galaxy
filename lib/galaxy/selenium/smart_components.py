@@ -55,6 +55,9 @@ class SmartTarget:
     def all(self):
         return self._has_driver.driver.find_elements(*self._target.element_locator)
 
+    def wait_for_element_count_of_at_least(self, n: int, **kwds):
+        self._has_driver.wait_for_element_count_of_at_least(self._target, n, **kwds)
+
     def wait_for_and_click(self, **kwds):
         return self._has_driver.wait_for_and_click(self._target, **kwds)
 

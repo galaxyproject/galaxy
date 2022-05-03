@@ -139,6 +139,14 @@ class HasDriver:
         )
         return element
 
+    def wait_for_element_count_of_at_least(self, selector_template, n, **kwds):
+        element = self._wait_on(
+            lambda driver: len(driver.find_elements(*selector_template.element_locator)) >= n,
+            f"{selector_template.description} to become absent",
+            **kwds,
+        )
+        return element
+
     def wait_for_absent(self, selector_template, **kwds):
         element = self._wait_on(
             lambda driver: len(driver.find_elements(*selector_template.element_locator)) == 0,
