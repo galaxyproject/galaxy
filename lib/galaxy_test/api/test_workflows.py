@@ -538,6 +538,24 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         assert workflow_id in self.workflow_populator.index_ids(show_published=True)
         assert workflow_id not in self.workflow_populator.index_ids(show_published=False)
 
+    def test_index_search_is_tags(self):
+        my_workflow_id_1 = self.workflow_populator.simple_workflow("sitags_m_1")
+        my_email = self.dataset_populator.user_email()
+        with self._different_user():
+            their_workflow_id_1 = self.workflow_populator.simple_workflow("sitags_shwm_1")
+            self.workflow_populator.share_with_user(their_workflow_id_1, my_email)
+            published_workflow_id_1 = self.workflow_populator.simple_workflow("sitags_p_1", publish=True)
+
+        index_ids = self.workflow_populator.index_ids(search="is:published", show_published=True)
+        assert published_workflow_id_1 in index_ids
+        assert their_workflow_id_1 not in index_ids
+        assert my_workflow_id_1 not in index_ids
+
+        index_ids = self.workflow_populator.index_ids(search="is:shared_with_me")
+        assert published_workflow_id_1 not in index_ids
+        assert their_workflow_id_1 in index_ids
+        assert my_workflow_id_1 not in index_ids
+
     def test_index_parameter_invalid_combinations(self):
         # these can all be called by themselves and return 200...
         response = self._get("workflows?show_hidden=true")
