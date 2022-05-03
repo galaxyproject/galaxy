@@ -36,17 +36,17 @@ class Phylip(Text):
         """
         Set the number of sequences and the number of data lines in dataset.
         """
-        dataset.metadata.data_lines = self.count_data_lines(dataset)
+        dataset.metadata_.data_lines = self.count_data_lines(dataset)
         try:
-            dataset.metadata.sequences = int(open(dataset.file_name).readline().split()[0])
+            dataset.metadata_.sequences = int(open(dataset.file_name).readline().split()[0])
         except Exception:
             raise Exception("Header does not correspond to PHYLIP header.")
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
-            if dataset.metadata.sequences:
-                dataset.blurb = f"{util.commaify(str(dataset.metadata.sequences))} sequences"
+            if dataset.metadata_.sequences:
+                dataset.blurb = f"{util.commaify(str(dataset.metadata_.sequences))} sequences"
             else:
                 dataset.blurb = nice_size(dataset.get_size())
         else:

@@ -36,16 +36,16 @@ class Otu(Text):
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> from galaxy.util.bunch import Bunch
         >>> dataset = Bunch()
-        >>> dataset.metadata = Bunch
+        >>> dataset.metadata_ = Bunch
         >>> otu = Otu()
         >>> dataset.file_name = get_test_fname( 'mothur_datatypetest_true.mothur.otu' )
         >>> dataset.has_data = lambda: True
         >>> otu.set_meta(dataset)
-        >>> dataset.metadata.columns
+        >>> dataset.metadata_.columns
         100
-        >>> len(dataset.metadata.labels) == 37
+        >>> len(dataset.metadata_.labels) == 37
         True
-        >>> len(dataset.metadata.otulabels) == 98
+        >>> len(dataset.metadata_.otulabels) == 98
         True
         """
         super().set_meta(dataset, overwrite=overwrite, **kwd)
@@ -73,10 +73,10 @@ class Otu(Text):
                 else:
                     comment_lines += 1
             # Set the discovered metadata values for the dataset
-            dataset.metadata.data_lines = data_lines
-            dataset.metadata.columns = ncols
-            dataset.metadata.labels = sorted(label_names)
-            dataset.metadata.otulabels = sorted(otulabel_names)
+            dataset.metadata_.data_lines = data_lines
+            dataset.metadata_.columns = ncols
+            dataset.metadata_.labels = sorted(label_names)
+            dataset.metadata_.otulabels = sorted(otulabel_names)
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
@@ -190,11 +190,11 @@ class GroupAbund(Otu):
                     group_names.add(line[1])
 
             # Set the discovered metadata values for the dataset
-            dataset.metadata.data_lines = data_lines
-            dataset.metadata.columns = ncols
-            dataset.metadata.labels = sorted(label_names)
-            dataset.metadata.groups = sorted(group_names)
-            dataset.metadata.skip = skip
+            dataset.metadata_.data_lines = data_lines
+            dataset.metadata_.columns = ncols
+            dataset.metadata_.labels = sorted(label_names)
+            dataset.metadata_.groups = sorted(group_names)
+            dataset.metadata_.skip = skip
 
     def sniff_prefix(self, file_prefix: FilePrefix, vals_are_int=False):
         """
@@ -293,11 +293,11 @@ class AlignCheck(Tabular):
     def set_meta(self, dataset, overwrite=True, **kwd):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
-        dataset.metadata.column_names = self.column_names
-        dataset.metadata.column_types = self.column_types
-        dataset.metadata.comment_lines = self.comment_lines
-        if isinstance(dataset.metadata.data_lines, int):
-            dataset.metadata.data_lines -= self.comment_lines
+        dataset.metadata_.column_names = self.column_names
+        dataset.metadata_.column_types = self.column_types
+        dataset.metadata_.comment_lines = self.comment_lines
+        if isinstance(dataset.metadata_.data_lines, int):
+            dataset.metadata_.data_lines -= self.comment_lines
 
 
 class AlignReport(Tabular):
@@ -354,7 +354,7 @@ class DistanceMatrix(Text):
         for line in headers:
             if not line[0].startswith("@"):
                 try:
-                    dataset.metadata.sequence_count = int("".join(line))  # seq count sometimes preceded by tab
+                    dataset.metadata_.sequence_count = int("".join(line))  # seq count sometimes preceded by tab
                     break
                 except Exception as e:
                     if not isinstance(self, PairwiseDistanceMatrix):
@@ -596,7 +596,7 @@ class Group(Tabular):
         for line in headers:
             if len(line) > 1:
                 group_names.add(line[1])
-        dataset.metadata.groups = list(group_names)
+        dataset.metadata_.groups = list(group_names)
 
 
 class AccNos(Tabular):
@@ -834,15 +834,15 @@ class CountTable(Tabular):
 
         headers = get_headers(dataset.file_name, sep="\t", count=1)
         colnames = headers[0]
-        dataset.metadata.column_types = ["str"] + (["int"] * (len(headers[0]) - 1))
+        dataset.metadata_.column_types = ["str"] + (["int"] * (len(headers[0]) - 1))
         if len(colnames) > 1:
-            dataset.metadata.columns = len(colnames)
+            dataset.metadata_.columns = len(colnames)
         if len(colnames) > 2:
-            dataset.metadata.groups = colnames[2:]
+            dataset.metadata_.groups = colnames[2:]
 
-        dataset.metadata.comment_lines = 1
-        if isinstance(dataset.metadata.data_lines, int):
-            dataset.metadata.data_lines -= 1
+        dataset.metadata_.comment_lines = 1
+        if isinstance(dataset.metadata_.data_lines, int):
+            dataset.metadata_.data_lines -= 1
 
 
 @build_sniff_from_prefix
@@ -1040,7 +1040,7 @@ class SffFlow(Tabular):
         headers = get_headers(dataset.file_name, sep="\t", count=1)
         try:
             flow_values = int(headers[0][0])
-            dataset.metadata.flow_values = flow_values
+            dataset.metadata_.flow_values = flow_values
         except Exception as e:
             log.warning(f"SffFlow set_meta {e}")
 
@@ -1055,8 +1055,8 @@ class SffFlow(Tabular):
             out += "<tr>"
             out += "<th>1. Name</th>"
             out += "<th>2. Flows</th>"
-            for i in range(3, dataset.metadata.columns + 1):
-                base = dataset.metadata.flow_order[(i + 1) % 4]
+            for i in range(3, dataset.metadata_.columns + 1):
+                base = dataset.metadata_.flow_order[(i + 1) % 4]
                 out += "<th>%d. %s</th>" % (i - 2, base)
             out += "</tr>"
             out += self.make_html_peek_rows(dataset, skipchars=skipchars)

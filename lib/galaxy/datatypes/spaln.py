@@ -160,7 +160,7 @@ class _SpalnDb(Data):
         efp = dataset.extra_files_path
         for filename in os.listdir(efp):
             if filename.endswith(".ent"):
-                dataset.metadata.spalndb_name = os.path.splitext(filename)[0]
+                dataset.metadata_.spalndb_name = os.path.splitext(filename)[0]
         self.regenerate_primary_file(dataset)
 
 

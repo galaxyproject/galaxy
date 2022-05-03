@@ -78,10 +78,10 @@ class GenericMicroarrayFile(data.Text):
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
-            if dataset.metadata.block_count == 1:
-                dataset.blurb = f"{dataset.metadata.file_type} {dataset.metadata.version_number}: Format {dataset.metadata.file_format}, 1 block, {dataset.metadata.number_of_optional_header_records} headers and {dataset.metadata.number_of_data_columns} columns"
+            if dataset.metadata_.block_count == 1:
+                dataset.blurb = f"{dataset.metadata_.file_type} {dataset.metadata_.version_number}: Format {dataset.metadata_.file_format}, 1 block, {dataset.metadata_.number_of_optional_header_records} headers and {dataset.metadata_.number_of_data_columns} columns"
             else:
-                dataset.blurb = f"{dataset.metadata.file_type} {dataset.metadata.version_number}: Format {dataset.metadata.file_format}, {dataset.metadata.block_count} blocks, {dataset.metadata.number_of_optional_header_records} headers and {dataset.metadata.number_of_data_columns} columns"
+                dataset.blurb = f"{dataset.metadata_.file_type} {dataset.metadata_.version_number}: Format {dataset.metadata_.file_format}, {dataset.metadata_.block_count} blocks, {dataset.metadata_.number_of_optional_header_records} headers and {dataset.metadata_.number_of_data_columns} columns"
             dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = "file does not exist"
@@ -121,15 +121,15 @@ class Gal(GenericMicroarrayFile):
         """
         super().set_meta(dataset, **kwd)
         headers = get_headers(dataset.file_name, sep="\t", count=5)
-        dataset.metadata.file_format = headers[0][0]
-        dataset.metadata.version_number = headers[0][1]
-        dataset.metadata.number_of_optional_header_records = int(headers[1][0])
-        dataset.metadata.number_of_data_columns = int(headers[1][1])
-        dataset.metadata.file_type = headers[2][0].strip().strip('"').split("=")[1]
+        dataset.metadata_.file_format = headers[0][0]
+        dataset.metadata_.version_number = headers[0][1]
+        dataset.metadata_.number_of_optional_header_records = int(headers[1][0])
+        dataset.metadata_.number_of_data_columns = int(headers[1][1])
+        dataset.metadata_.file_type = headers[2][0].strip().strip('"').split("=")[1]
         if "BlockCount" in headers[3][0]:
-            dataset.metadata.block_count = int(headers[3][0].strip().strip('"').split("=")[1])
+            dataset.metadata_.block_count = int(headers[3][0].strip().strip('"').split("=")[1])
         if "BlockType" in headers[4][0]:
-            dataset.metadata.block_type = int(headers[4][0].strip().strip('"').split("=")[1])
+            dataset.metadata_.block_type = int(headers[4][0].strip().strip('"').split("=")[1])
 
 
 @build_sniff_from_prefix
@@ -162,8 +162,8 @@ class Gpr(GenericMicroarrayFile):
         """
         super().set_meta(dataset, **kwd)
         headers = get_headers(dataset.file_name, sep="\t", count=5)
-        dataset.metadata.file_format = headers[0][0]
-        dataset.metadata.version_number = headers[0][1]
-        dataset.metadata.number_of_optional_header_records = int(headers[1][0])
-        dataset.metadata.number_of_data_columns = int(headers[1][1])
-        dataset.metadata.file_type = headers[2][0].strip().strip('"').split("=")[1]
+        dataset.metadata_.file_format = headers[0][0]
+        dataset.metadata_.version_number = headers[0][1]
+        dataset.metadata_.number_of_optional_header_records = int(headers[1][0])
+        dataset.metadata_.number_of_data_columns = int(headers[1][1])
+        dataset.metadata_.file_type = headers[2][0].strip().strip('"').split("=")[1]

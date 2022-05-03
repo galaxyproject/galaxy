@@ -202,11 +202,11 @@ class Velvet(Html):
             log_msg = re.sub(r"/\S*/", "", log_content)
             log.debug(f"Velveth log info  {log_msg}")
             paired_end_reads = re.search(r"-(short|long)Paired", log_msg) is not None
-            dataset.metadata.paired_end_reads = paired_end_reads
+            dataset.metadata_.paired_end_reads = paired_end_reads
             long_reads = re.search(r"-long", log_msg) is not None
-            dataset.metadata.long_reads = long_reads
+            dataset.metadata_.long_reads = long_reads
             short2_reads = re.search(r"-short(Paired)?2", log_msg) is not None
-            dataset.metadata.short2_reads = short2_reads
+            dataset.metadata_.short2_reads = short2_reads
             dataset.info = re.sub(r".*velveth \S+", "hash_length", re.sub(r"\n", " ", log_msg))
             if paired_end_reads:
                 gen_msg = f"{gen_msg} Paired-End Reads"

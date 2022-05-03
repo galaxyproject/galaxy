@@ -112,7 +112,7 @@ class BPF(Text):
                 else:
                     return False
 
-        dataset.metadata.annotations = list(types)
+        dataset.metadata_.annotations = list(types)
 
     def sniff(self, filename):
         # We loop over 30 as there are 9 mandatory headers (the last should be

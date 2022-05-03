@@ -183,15 +183,15 @@ class Cel(Binary):
         with open(dataset.file_name, "rb") as handle:
             header_bytes = handle.read(8)
         if struct.unpack("<ii", header_bytes[:9]) == (64, 4):
-            dataset.metadata.version = "4"
+            dataset.metadata_.version = "4"
         elif struct.unpack(">bb", header_bytes[:2]) == (59, 1):
-            dataset.metadata.version = "agcc"
+            dataset.metadata_.version = "agcc"
         elif header_bytes.decode("utf8", errors="ignore").startswith("[CEL]"):
-            dataset.metadata.version = "3"
+            dataset.metadata_.version = "3"
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
-            dataset.blurb = f"Cel version: {dataset.metadata.version}"
+            dataset.blurb = f"Cel version: {dataset.metadata_.version}"
             dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = "file does not exist"
@@ -380,14 +380,14 @@ class _BamOrSam:
         try:
             bam_file = pysam.AlignmentFile(dataset.file_name, mode="rb")
             # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
-            dataset.metadata.reference_names = list(bam_file.references)
-            dataset.metadata.reference_lengths = list(bam_file.lengths)
-            dataset.metadata.bam_header = dict(bam_file.header.items())
-            dataset.metadata.read_groups = [
-                read_group["ID"] for read_group in dataset.metadata.bam_header.get("RG", []) if "ID" in read_group
+            dataset.metadata_.reference_names = list(bam_file.references)
+            dataset.metadata_.reference_lengths = list(bam_file.lengths)
+            dataset.metadata_.bam_header = dict(bam_file.header.items())
+            dataset.metadata_.read_groups = [
+                read_group["ID"] for read_group in dataset.metadata_.bam_header.get("RG", []) if "ID" in read_group
             ]
-            dataset.metadata.sort_order = dataset.metadata.bam_header.get("HD", {}).get("SO", None)
-            dataset.metadata.bam_version = dataset.metadata.bam_header.get("HD", {}).get("VN", None)
+            dataset.metadata_.sort_order = dataset.metadata_.bam_header.get("HD", {}).get("SO", None)
+            dataset.metadata_.bam_version = dataset.metadata_.bam_header.get("HD", {}).get("VN", None)
         except Exception:
             # Per Dan, don't log here because doing so will cause datasets that
             # fail metadata to end in the error state
@@ -532,7 +532,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         rel_paths.append(f"{name or dataset.file_name}.{dataset.extension}")
         file_paths.append(dataset.file_name)
         rel_paths.append(f"{name or dataset.file_name}.{dataset.extension}.bai")
-        file_paths.append(dataset.metadata.bam_index.file_name)
+        file_paths.append(dataset.metadata_.bam_index.file_name)
         return zip(file_paths, rel_paths)
 
     def groom_dataset_content(self, file_name):
@@ -612,13 +612,13 @@ class BamNative(CompressedArchive, _BamOrSam):
         elif to_ext or not preview:
             return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
         else:
-            column_names = dataset.metadata.column_names
+            column_names = dataset.metadata_.column_names
             if not column_names:
                 column_names = []
-            column_types = dataset.metadata.column_types
+            column_types = dataset.metadata_.column_types
             if not column_types:
                 column_types = []
-            column_number = dataset.metadata.columns
+            column_number = dataset.metadata_.columns
             if column_number is None:
                 column_number = 1
             return (
@@ -728,18 +728,18 @@ class Bam(BamNative):
         index_flag = self.get_index_flag(dataset.file_name)
         if index_flag == "-b":
             spec_key = "bam_index"
-            index_file = dataset.metadata.bam_index
+            index_file = dataset.metadata_.bam_index
         else:
             spec_key = "bam_csi_index"
-            index_file = dataset.metadata.bam_csi_index
+            index_file = dataset.metadata_.bam_csi_index
         if not index_file:
-            index_file = dataset.metadata.spec[spec_key].param.new_file(dataset=dataset)
+            index_file = dataset.metadata_.spec[spec_key].param.new_file(dataset=dataset)
         if index_flag == "-b":
             # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
             pysam.index(dataset.file_name, index_file.file_name)
         else:
             pysam.index(index_flag, dataset.file_name, index_file.file_name)
-        dataset.metadata.bam_index = index_file
+        dataset.metadata_.bam_index = index_file
 
     def sniff(self, file_name):
         return super().sniff(file_name) and not self.dataset_content_needs_grooming(file_name)
@@ -909,12 +909,12 @@ class CRAM(Binary):
     def set_meta(self, dataset, overwrite=True, **kwd):
         major_version, minor_version = self.get_cram_version(dataset.file_name)
         if major_version != -1:
-            dataset.metadata.cram_version = f"{str(major_version)}.{str(minor_version)}"
+            dataset.metadata_.cram_version = f"{str(major_version)}.{str(minor_version)}"
 
-        if not dataset.metadata.cram_index:
-            index_file = dataset.metadata.spec["cram_index"].param.new_file(dataset=dataset)
+        if not dataset.metadata_.cram_index:
+            index_file = dataset.metadata_.spec["cram_index"].param.new_file(dataset=dataset)
             if self.set_index_file(dataset, index_file):
-                dataset.metadata.cram_index = index_file
+                dataset.metadata_.cram_index = index_file
 
     def get_cram_version(self, filename):
         try:
@@ -988,9 +988,9 @@ class Bcf(BaseBcf):
     def set_meta(self, dataset, overwrite=True, **kwd):
         """Creates the index for the BCF file."""
         # These metadata values are not accessible by users, always overwrite
-        index_file = dataset.metadata.bcf_index
+        index_file = dataset.metadata_.bcf_index
         if not index_file:
-            index_file = dataset.metadata.spec["bcf_index"].param.new_file(dataset=dataset)
+            index_file = dataset.metadata_.spec["bcf_index"].param.new_file(dataset=dataset)
         # Create the bcf index
         dataset_symlink = os.path.join(
             os.path.dirname(index_file.file_name),
@@ -1006,7 +1006,7 @@ class Bcf(BaseBcf):
         finally:
             # Remove temp file and symlink
             os.remove(dataset_symlink)
-        dataset.metadata.bcf_index = index_file
+        dataset.metadata_.bcf_index = index_file
 
 
 class BcfUncompressed(BaseBcf):
@@ -1190,42 +1190,42 @@ class Loom(H5):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name, "r") as loom_file:
-                dataset.metadata.title = loom_file.attrs.get("title")
-                dataset.metadata.description = loom_file.attrs.get("description")
-                dataset.metadata.url = loom_file.attrs.get("url")
-                dataset.metadata.doi = loom_file.attrs.get("doi")
+                dataset.metadata_.title = loom_file.attrs.get("title")
+                dataset.metadata_.description = loom_file.attrs.get("description")
+                dataset.metadata_.url = loom_file.attrs.get("url")
+                dataset.metadata_.doi = loom_file.attrs.get("doi")
                 loom_spec_version = loom_file.attrs.get("LOOM_SPEC_VERSION")
                 if isinstance(loom_spec_version, np.ndarray):
                     loom_spec_version = loom_spec_version[0]
                     if isinstance(loom_spec_version, bytes):
                         loom_spec_version = loom_spec_version.decode()
-                dataset.metadata.loom_spec_version = loom_spec_version
+                dataset.metadata_.loom_spec_version = loom_spec_version
                 dataset.creation_date = loom_file.attrs.get("creation_date")
-                dataset.metadata.shape = tuple(loom_file["matrix"].shape)
+                dataset.metadata_.shape = tuple(loom_file["matrix"].shape)
 
                 tmp = list(loom_file.get("layers", {}).keys())
-                dataset.metadata.layers_count = len(tmp)
-                dataset.metadata.layers_names = tmp
+                dataset.metadata_.layers_count = len(tmp)
+                dataset.metadata_.layers_names = tmp
 
                 tmp = list(loom_file["row_attrs"].keys())
-                dataset.metadata.row_attrs_count = len(tmp)
-                dataset.metadata.row_attrs_names = tmp
+                dataset.metadata_.row_attrs_count = len(tmp)
+                dataset.metadata_.row_attrs_names = tmp
 
                 tmp = list(loom_file["col_attrs"].keys())
-                dataset.metadata.col_attrs_count = len(tmp)
-                dataset.metadata.col_attrs_names = tmp
+                dataset.metadata_.col_attrs_count = len(tmp)
+                dataset.metadata_.col_attrs_names = tmp
 
                 # According to the Loom file format specification, col_graphs
                 # and row_graphs are mandatory groups, but files created by
                 # Bioconductor LoomExperiment do not always have them:
                 # https://github.com/Bioconductor/LoomExperiment/issues/7
                 tmp = list(loom_file.get("col_graphs", {}).keys())
-                dataset.metadata.col_graphs_count = len(tmp)
-                dataset.metadata.col_graphs_names = tmp
+                dataset.metadata_.col_graphs_count = len(tmp)
+                dataset.metadata_.col_graphs_names = tmp
 
                 tmp = list(loom_file.get("row_graphs", {}).keys())
-                dataset.metadata.row_graphs_count = len(tmp)
-                dataset.metadata.row_graphs_names = tmp
+                dataset.metadata_.row_graphs_count = len(tmp)
+                dataset.metadata_.row_graphs_names = tmp
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
@@ -1333,16 +1333,16 @@ class Anndata(H5):
     def set_meta(self, dataset, overwrite=True, **kwd):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         with h5py.File(dataset.file_name, "r") as anndata_file:
-            dataset.metadata.title = anndata_file.attrs.get("title")
-            dataset.metadata.description = anndata_file.attrs.get("description")
-            dataset.metadata.url = anndata_file.attrs.get("url")
-            dataset.metadata.doi = anndata_file.attrs.get("doi")
+            dataset.metadata_.title = anndata_file.attrs.get("title")
+            dataset.metadata_.description = anndata_file.attrs.get("description")
+            dataset.metadata_.url = anndata_file.attrs.get("url")
+            dataset.metadata_.doi = anndata_file.attrs.get("doi")
             dataset.creation_date = anndata_file.attrs.get("creation_date")
-            dataset.metadata.shape = anndata_file.attrs.get("shape", dataset.metadata.shape)
+            dataset.metadata_.shape = anndata_file.attrs.get("shape", dataset.metadata_.shape)
             # none of the above appear to work in any dataset tested, but could be useful for
             # future AnnData datasets
-            dataset.metadata.layers_count = len(anndata_file)
-            dataset.metadata.layers_names = list(anndata_file.keys())
+            dataset.metadata_.layers_count = len(anndata_file)
+            dataset.metadata_.layers_names = list(anndata_file.keys())
 
             def _layercountsize(tmp, lennames=0):
                 "From TMP and LENNAMES, return layers, their number, and the length of one of the layers (all equal)."
@@ -1356,7 +1356,7 @@ class Anndata(H5):
                     size = lennames
                 return (layers, count, size)
 
-            if "obs" in dataset.metadata.layers_names:
+            if "obs" in dataset.metadata_.layers_names:
                 tmp = anndata_file["obs"]
                 obs_index = None
                 if "index" in tmp:
@@ -1365,38 +1365,38 @@ class Anndata(H5):
                     obs_index = "_index"
                 # Determine cell labels
                 if obs_index:
-                    dataset.metadata.obs_names = list(tmp[obs_index])
+                    dataset.metadata_.obs_names = list(tmp[obs_index])
                 elif hasattr(tmp, "dtype"):
                     if "index" in tmp.dtype.names:
                         # Yes, we call tmp["index"], and not tmp.dtype["index"]
                         # here, despite the above tests.
-                        dataset.metadata.obs_names = list(tmp["index"])
+                        dataset.metadata_.obs_names = list(tmp["index"])
                     elif "_index" in tmp.dtype.names:
-                        dataset.metadata.obs_names = list(tmp["_index"])
+                        dataset.metadata_.obs_names = list(tmp["_index"])
                     else:
                         log.warning("Could not determine cell labels for %s", self)
                 else:
                     log.warning("Could not determine observation index for %s", self)
 
-                x, y, z = _layercountsize(tmp, len(dataset.metadata.obs_names))
-                dataset.metadata.obs_layers = x
-                dataset.metadata.obs_count = y
-                dataset.metadata.obs_size = z
+                x, y, z = _layercountsize(tmp, len(dataset.metadata_.obs_names))
+                dataset.metadata_.obs_layers = x
+                dataset.metadata_.obs_count = y
+                dataset.metadata_.obs_size = z
 
-            if "obsm" in dataset.metadata.layers_names:
+            if "obsm" in dataset.metadata_.layers_names:
                 tmp = anndata_file["obsm"]
-                dataset.metadata.obsm_layers, dataset.metadata.obsm_count, _ = _layercountsize(tmp)
+                dataset.metadata_.obsm_layers, dataset.metadata_.obsm_count, _ = _layercountsize(tmp)
 
-            if "raw.var" in dataset.metadata.layers_names:
+            if "raw.var" in dataset.metadata_.layers_names:
                 tmp = anndata_file["raw.var"]
                 # full set of genes would never need to be previewed
-                # dataset.metadata.raw_var_names = tmp["index"]
+                # dataset.metadata_.raw_var_names = tmp["index"]
                 x, y, z = _layercountsize(tmp, len(tmp["index"]))
-                dataset.metadata.raw_var_layers = x
-                dataset.metadata.raw_var_count = y
-                dataset.metadata.raw_var_size = z
+                dataset.metadata_.raw_var_layers = x
+                dataset.metadata_.raw_var_count = y
+                dataset.metadata_.raw_var_size = z
 
-            if "var" in dataset.metadata.layers_names:
+            if "var" in dataset.metadata_.layers_names:
                 tmp = anndata_file["var"]
                 var_index = None
                 if "index" in tmp:
@@ -1404,7 +1404,7 @@ class Anndata(H5):
                 elif "_index" in tmp:
                     var_index = "_index"
                 # We never use var_names
-                # dataset.metadata.var_names = tmp[var_index]
+                # dataset.metadata_.var_names = tmp[var_index]
                 if var_index:
                     x, y, z = _layercountsize(tmp, len(tmp[var_index]))
                 else:
@@ -1412,33 +1412,33 @@ class Anndata(H5):
                     # that the dataset is empty
                     x, y, z = _layercountsize(tmp)
 
-                dataset.metadata.var_layers = x
-                dataset.metadata.var_count = y
-                dataset.metadata.var_size = z
+                dataset.metadata_.var_layers = x
+                dataset.metadata_.var_count = y
+                dataset.metadata_.var_size = z
 
-            if "varm" in dataset.metadata.layers_names:
+            if "varm" in dataset.metadata_.layers_names:
                 tmp = anndata_file["varm"]
-                dataset.metadata.varm_layers, dataset.metadata.varm_count, _ = _layercountsize(tmp)
+                dataset.metadata_.varm_layers, dataset.metadata_.varm_count, _ = _layercountsize(tmp)
 
-            if "uns" in dataset.metadata.layers_names:
+            if "uns" in dataset.metadata_.layers_names:
                 tmp = anndata_file["uns"]
-                dataset.metadata.uns_layers, dataset.metadata.uns_count, _ = _layercountsize(tmp)
+                dataset.metadata_.uns_layers, dataset.metadata_.uns_count, _ = _layercountsize(tmp)
 
             # Resolving the problematic shape parameter
-            if "X" in dataset.metadata.layers_names:
+            if "X" in dataset.metadata_.layers_names:
                 # Shape we determine here due to the non-standard representation of 'X' dimensions
                 shape = anndata_file["X"].attrs.get("shape")
                 if shape is not None:
-                    dataset.metadata.shape = tuple(shape)
+                    dataset.metadata_.shape = tuple(shape)
                 elif hasattr(anndata_file["X"], "shape"):
-                    dataset.metadata.shape = tuple(anndata_file["X"].shape)
+                    dataset.metadata_.shape = tuple(anndata_file["X"].shape)
 
-            if dataset.metadata.shape is None:
-                dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
+            if dataset.metadata_.shape is None:
+                dataset.metadata_.shape = (int(dataset.metadata_.obs_size), int(dataset.metadata_.var_size))
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
-            tmp = dataset.metadata
+            tmp = dataset.metadata_
 
             def _makelayerstrings(layer, count, names):
                 "Format the layers."
@@ -1527,7 +1527,7 @@ class Grib(Binary):
         """
         Set the GRIB edition.
         """
-        dataset.metadata.grib_edition = self._get_grib_edition(dataset.file_name)
+        dataset.metadata_.grib_edition = self._get_grib_edition(dataset.file_name)
 
     def _get_grib_edition(self, filename):
         _uint8struct = struct.Struct(b">B")
@@ -1696,19 +1696,19 @@ class Biom2(H5):
             with h5py.File(dataset.file_name, "r") as f:
                 attributes = f.attrs
 
-                dataset.metadata.id = util.unicodify(attributes["id"])
-                dataset.metadata.format_url = util.unicodify(attributes["format-url"])
+                dataset.metadata_.id = util.unicodify(attributes["id"])
+                dataset.metadata_.format_url = util.unicodify(attributes["format-url"])
                 if "format-version" in attributes:  # biom 2.1
-                    dataset.metadata.format_version = ".".join(str(_) for _ in attributes["format-version"])
-                    dataset.metadata.format = dataset.metadata.format_version
+                    dataset.metadata_.format_version = ".".join(str(_) for _ in attributes["format-version"])
+                    dataset.metadata_.format = dataset.metadata_.format_version
                 elif "format" in attributes:  # biom 2.0
-                    dataset.metadata.format = util.unicodify(attributes["format"])
-                    dataset.metadata.format_version = dataset.metadata.format
-                dataset.metadata.type = util.unicodify(attributes["type"])
-                dataset.metadata.shape = tuple(int(_) for _ in attributes["shape"])
-                dataset.metadata.generated_by = util.unicodify(attributes["generated-by"])
-                dataset.metadata.creation_date = util.unicodify(attributes["creation-date"])
-                dataset.metadata.nnz = int(attributes["nnz"])
+                    dataset.metadata_.format = util.unicodify(attributes["format"])
+                    dataset.metadata_.format_version = dataset.metadata_.format
+                dataset.metadata_.type = util.unicodify(attributes["type"])
+                dataset.metadata_.shape = tuple(int(_) for _ in attributes["shape"])
+                dataset.metadata_.generated_by = util.unicodify(attributes["generated-by"])
+                dataset.metadata_.creation_date = util.unicodify(attributes["creation-date"])
+                dataset.metadata_.nnz = int(attributes["nnz"])
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, util.unicodify(e))
 
@@ -1871,9 +1871,9 @@ class H5MLM(H5):
     def set_meta(self, dataset, overwrite=True, **kwd):
         try:
             spec_key = "hyper_params"
-            params_file = dataset.metadata.hyper_params
+            params_file = dataset.metadata_.hyper_params
             if not params_file:
-                params_file = dataset.metadata.spec[spec_key].param.new_file(dataset=dataset)
+                params_file = dataset.metadata_.spec[spec_key].param.new_file(dataset=dataset)
             with h5py.File(dataset.file_name, "r") as handle:
                 hyper_params = handle["-model_hyperparameters-"][()]
             hyper_params = json.loads(util.unicodify(hyper_params))
@@ -1881,7 +1881,7 @@ class H5MLM(H5):
                 f.write("\tParameter\tValue\n")
                 for p in hyper_params:
                     f.write("\t".join(p) + "\n")
-            dataset.metadata.hyper_params = params_file
+            dataset.metadata_.hyper_params = params_file
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
@@ -2038,7 +2038,7 @@ class HexrdMaterials(H5):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name, "r") as mat_file:
-                dataset.metadata.materials = list(mat_file.keys())
+                dataset.metadata_.materials = list(mat_file.keys())
                 sgn = dict()
                 lp = dict()
                 for m in mat_file.keys():
@@ -2046,24 +2046,24 @@ class HexrdMaterials(H5):
                         sgn[m] = mat_file[m]["SpaceGroupNumber"][0].item()
                     if "LatticeParameters" in mat_file[m]:
                         lp[m] = mat_file[m]["LatticeParameters"][0:].tolist()
-                dataset.metadata.SpaceGroupNumber = sgn
-                dataset.metadata.LatticeParameters = lp
+                dataset.metadata_.SpaceGroupNumber = sgn
+                dataset.metadata_.LatticeParameters = lp
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
             lines = ["Material SpaceGroup Lattice"]
-            if dataset.metadata.materials:
-                for m in dataset.metadata.materials:
+            if dataset.metadata_.materials:
+                for m in dataset.metadata_.materials:
                     try:
                         lines.append(
-                            f"{m} {dataset.metadata.SpaceGroupNumber[m]} {dataset.metadata.LatticeParameters[m]}"
+                            f"{m} {dataset.metadata_.SpaceGroupNumber[m]} {dataset.metadata_.LatticeParameters[m]}"
                         )
                     except Exception:
                         continue
             dataset.peek = "\n".join(lines)
-            dataset.blurb = f"Materials: {' '.join(dataset.metadata.materials)}"
+            dataset.blurb = f"Materials: {' '.join(dataset.metadata_.materials)}"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -2251,9 +2251,9 @@ class SQlite(Binary):
                     rowcounts[table] = c.execute(row_query).fetchone()[0]
                 except Exception as exc:
                     log.warning("%s, set_meta Exception: %s", self, exc)
-            dataset.metadata.tables = tables
-            dataset.metadata.table_columns = columns
-            dataset.metadata.table_row_count = rowcounts
+            dataset.metadata_.tables = tables
+            dataset.metadata_.table_columns = columns
+            dataset.metadata_.table_row_count = rowcounts
         except Exception as exc:
             log.warning("%s, set_meta Exception: %s", self, exc)
 
@@ -2288,10 +2288,10 @@ class SQlite(Binary):
         if not dataset.dataset.purged:
             dataset.peek = "SQLite Database"
             lines = ["SQLite Database"]
-            if dataset.metadata.tables:
-                for table in dataset.metadata.tables:
+            if dataset.metadata_.tables:
+                for table in dataset.metadata_.tables:
                     try:
-                        lines.append(f"{table} [{dataset.metadata.table_row_count[table]}]")
+                        lines.append(f"{table} [{dataset.metadata_.table_row_count[table]}]")
                     except Exception:
                         continue
             dataset.peek = "\n".join(lines)
@@ -2348,7 +2348,7 @@ class GeminiSQLite(SQlite):
             tables_query = "SELECT version FROM version"
             result = c.execute(tables_query).fetchall()
             for (version,) in result:
-                dataset.metadata.gemini_version = version
+                dataset.metadata_.gemini_version = version
             # TODO: Can/should we detect even more attributes, such as use of PED file, what was input annotation type, etc.
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
@@ -2371,7 +2371,7 @@ class GeminiSQLite(SQlite):
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
-            dataset.peek = "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or "unknown")
+            dataset.peek = "Gemini SQLite Database, version %s" % (dataset.metadata_.gemini_version or "unknown")
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
@@ -2381,7 +2381,7 @@ class GeminiSQLite(SQlite):
         try:
             return dataset.peek
         except Exception:
-            return "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or "unknown")
+            return "Gemini SQLite Database, version %s" % (dataset.metadata_.gemini_version or "unknown")
 
 
 class ChiraSQLite(SQlite):
@@ -2430,7 +2430,7 @@ class CuffDiffSQlite(SQlite):
             tables_query = "SELECT value FROM runInfo where param = 'version'"
             result = c.execute(tables_query).fetchall()
             for (version,) in result:
-                dataset.metadata.cuffdiff_version = version
+                dataset.metadata_.cuffdiff_version = version
             genes_query = "SELECT gene_id, gene_short_name FROM genes ORDER BY gene_short_name"
             result = c.execute(genes_query).fetchall()
             for gene_id, gene_name in result:
@@ -2444,8 +2444,8 @@ class CuffDiffSQlite(SQlite):
             for (sample_name,) in result:
                 if sample_name not in samples:
                     samples.append(sample_name)
-            dataset.metadata.genes = genes
-            dataset.metadata.samples = samples
+            dataset.metadata_.genes = genes
+            dataset.metadata_.samples = samples
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
@@ -2458,7 +2458,7 @@ class CuffDiffSQlite(SQlite):
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
-            dataset.peek = "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or "unknown")
+            dataset.peek = "CuffDiff SQLite Database, version %s" % (dataset.metadata_.cuffdiff_version or "unknown")
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
@@ -2468,7 +2468,7 @@ class CuffDiffSQlite(SQlite):
         try:
             return dataset.peek
         except Exception:
-            return "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or "unknown")
+            return "CuffDiff SQLite Database, version %s" % (dataset.metadata_.cuffdiff_version or "unknown")
 
 
 class MzSQlite(SQlite):
@@ -2629,7 +2629,7 @@ class BlibSQlite(SQlite):
             c = conn.cursor()
             tables_query = "SELECT majorVersion,minorVersion FROM LibInfo"
             (majorVersion, minorVersion) = c.execute(tables_query).fetchall()[0]
-            dataset.metadata.blib_version = f"{majorVersion}.{minorVersion}"
+            dataset.metadata_.blib_version = f"{majorVersion}.{minorVersion}"
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
@@ -2682,7 +2682,7 @@ class DlibSQlite(SQlite):
             c = conn.cursor()
             tables_query = "SELECT Value FROM metadata WHERE Key = 'version'"
             version = c.execute(tables_query).fetchall()[0]
-            dataset.metadata.dlib_version = f"{version}"
+            dataset.metadata_.dlib_version = f"{version}"
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
@@ -2726,7 +2726,7 @@ class ElibSQlite(SQlite):
             c = conn.cursor()
             tables_query = "SELECT Value FROM metadata WHERE Key = 'version'"
             version = c.execute(tables_query).fetchall()[0]
-            dataset.metadata.dlib_version = f"{version}"
+            dataset.metadata_.dlib_version = f"{version}"
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
@@ -2826,7 +2826,7 @@ class GAFASQLite(SQlite):
                 raise Exception("version not found in meta table")
             elif len(results) > 1:
                 raise Exception("Multiple versions found in meta table")
-            dataset.metadata.gafa_schema_version = results[0][0]
+            dataset.metadata_.gafa_schema_version = results[0][0]
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
@@ -2870,12 +2870,12 @@ class NcbiTaxonomySQlite(SQlite):
             results = c.execute(version_query).fetchall()
             if len(results) == 0:
                 raise Exception("version not found in __diesel_schema_migrations table")
-            dataset.metadata.ncbitaxonomy_schema_version = results[0][0]
+            dataset.metadata_.ncbitaxonomy_schema_version = results[0][0]
             taxons_query = "SELECT count(name) FROM taxonomy"
             results = c.execute(taxons_query).fetchall()
             if len(results) == 0:
                 raise Exception("could not count size of taxonomy table")
-            dataset.metadata.taxon_count = results[0][0]
+            dataset.metadata_.taxon_count = results[0][0]
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
@@ -2888,8 +2888,8 @@ class NcbiTaxonomySQlite(SQlite):
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = "NCBI Taxonomy SQLite Database, version {} ({} taxons)".format(
-                getattr(dataset.metadata, "ncbitaxonomy_schema_version", "unknown"),
-                getattr(dataset.metadata, "taxon_count", "unknown"),
+                getattr(dataset.metadata_, "ncbitaxonomy_schema_version", "unknown"),
+                getattr(dataset.metadata_, "taxon_count", "unknown"),
             )
             dataset.blurb = nice_size(dataset.get_size())
         else:
@@ -2901,8 +2901,8 @@ class NcbiTaxonomySQlite(SQlite):
             return dataset.peek
         except Exception:
             return "NCBI Taxonomy SQLite Database, version {} ({} taxons)".format(
-                getattr(dataset.metadata, "ncbitaxonomy_schema_version", "unknown"),
-                getattr(dataset.metadata, "taxon_count", "unknown"),
+                getattr(dataset.metadata_, "ncbitaxonomy_schema_version", "unknown"),
+                getattr(dataset.metadata_, "taxon_count", "unknown"),
             )
 
 
@@ -2986,11 +2986,11 @@ class RData(CompressedArchive):
     True
     >>> from galaxy.util.bunch import Bunch
     >>> dataset = Bunch()
-    >>> dataset.metadata = Bunch
+    >>> dataset.metadata_ = Bunch
     >>> dataset.file_name = fname
     >>> dataset.has_data = lambda: True
     >>> RData().set_meta(dataset)
-    >>> dataset.metadata.version
+    >>> dataset.metadata_.version
     '3'
     """
 
@@ -3012,7 +3012,7 @@ class RData(CompressedArchive):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         _, fh = compression_utils.get_fileobj_raw(dataset.file_name, "rb")
         try:
-            dataset.metadata.version = self._parse_rdata_header(fh)
+            dataset.metadata_.version = self._parse_rdata_header(fh)
         except Exception:
             pass
         finally:
@@ -3049,15 +3049,15 @@ class RDS(CompressedArchive):
     True
     >>> from galaxy.util.bunch import Bunch
     >>> dataset = Bunch()
-    >>> dataset.metadata = Bunch
+    >>> dataset.metadata_ = Bunch
     >>> dataset.file_name = get_test_fname('int-r4.rds')
     >>> dataset.has_data = lambda: True
     >>> RDS().set_meta(dataset)
-    >>> dataset.metadata.version
+    >>> dataset.metadata_.version
     '3'
-    >>> dataset.metadata.rversion
+    >>> dataset.metadata_.rversion
     '4.1.1'
-    >>> dataset.metadata.minrversion
+    >>> dataset.metadata_.minrversion
     '3.5.0'
     """
 
@@ -3097,9 +3097,9 @@ class RDS(CompressedArchive):
         try:
             (
                 _,
-                dataset.metadata.version,
-                dataset.metadata.rversion,
-                dataset.metadata.minrversion,
+                dataset.metadata_.version,
+                dataset.metadata_.rversion,
+                dataset.metadata_.minrversion,
             ) = self._parse_rds_header(fh.read(14))
         except Exception:
             pass
@@ -3344,7 +3344,7 @@ class PostgresqlArchive(CompressedArchive):
             if dataset and tarfile.is_tarfile(dataset.file_name):
                 with tarfile.open(dataset.file_name, "r") as temptar:
                     pg_version_file = temptar.extractfile("postgresql/db/PG_VERSION")
-                    dataset.metadata.version = util.unicodify(pg_version_file.read()).strip()
+                    dataset.metadata_.version = util.unicodify(pg_version_file.read()).strip()
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, util.unicodify(e))
 
@@ -3357,7 +3357,7 @@ class PostgresqlArchive(CompressedArchive):
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = f"PostgreSQL Archive ({nice_size(dataset.get_size())})"
-            dataset.blurb = "PostgreSQL version %s" % (dataset.metadata.version or "unknown")
+            dataset.blurb = "PostgreSQL version %s" % (dataset.metadata_.version or "unknown")
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -3389,7 +3389,7 @@ class Fast5Archive(CompressedArchive):
         try:
             if dataset and tarfile.is_tarfile(dataset.file_name):
                 with tarfile.open(dataset.file_name, "r") as temptar:
-                    dataset.metadata.fast5_count = sum(1 for f in temptar if f.name.endswith(".fast5"))
+                    dataset.metadata_.fast5_count = sum(1 for f in temptar if f.name.endswith(".fast5"))
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
@@ -3411,7 +3411,7 @@ class Fast5Archive(CompressedArchive):
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = f"FAST5 Archive ({nice_size(dataset.get_size())})"
-            dataset.blurb = "%s sequences" % (dataset.metadata.fast5_count or "unknown")
+            dataset.blurb = "%s sequences" % (dataset.metadata_.fast5_count or "unknown")
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -3502,8 +3502,8 @@ class SearchGuiArchive(CompressedArchive):
                             for line in io.TextIOWrapper(fh):
                                 if line.startswith("searchgui.version"):
                                     version = line.split("=")[1].strip()
-                                    dataset.metadata.searchgui_version = version
-                                    dataset.metadata.searchgui_major_version = version.split(".")[0]
+                                    dataset.metadata_.searchgui_version = version
+                                    dataset.metadata_.searchgui_major_version = version.split(".")[0]
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
@@ -3519,7 +3519,7 @@ class SearchGuiArchive(CompressedArchive):
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
-            dataset.peek = "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or "unknown")
+            dataset.peek = "SearchGUI Archive, version %s" % (dataset.metadata_.searchgui_version or "unknown")
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
@@ -3529,7 +3529,7 @@ class SearchGuiArchive(CompressedArchive):
         try:
             return dataset.peek
         except Exception:
-            return "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or "unknown")
+            return "SearchGUI Archive, version %s" % (dataset.metadata_.searchgui_version or "unknown")
 
 
 @build_sniff_from_prefix
@@ -4017,14 +4017,14 @@ class Npz(CompressedArchive):
     def set_meta(self, dataset, **kwd):
         try:
             with np.load(dataset.file_name) as npz:
-                dataset.metadata.nfiles = len(npz.files)
-                dataset.metadata.files = npz.files
+                dataset.metadata_.nfiles = len(npz.files)
+                dataset.metadata_.files = npz.files
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
-            dataset.peek = f"Binary Numpy npz {dataset.metadata.nfiles} files ({nice_size(dataset.get_size())})"
+            dataset.peek = f"Binary Numpy npz {dataset.metadata_.nfiles} files ({nice_size(dataset.get_size())})"
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
@@ -4087,19 +4087,19 @@ class HexrdImagesNpz(Npz):
         try:
             with np.load(dataset.file_name) as npz:
                 if "panel_id" in npz.files:
-                    dataset.metadata.panel_id = str(npz["panel_id"])
+                    dataset.metadata_.panel_id = str(npz["panel_id"])
                 if "omega" in npz.files:
-                    dataset.metadata.omegas = "True"
-                dataset.metadata.shape = npz["shape"].tolist()
-                dataset.metadata.nframes = npz["nframes"].tolist()
+                    dataset.metadata_.omegas = "True"
+                dataset.metadata_.shape = npz["shape"].tolist()
+                dataset.metadata_.nframes = npz["nframes"].tolist()
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
             lines = [
-                f"Binary Hexrd Image npz {dataset.metadata.nfiles} files ({nice_size(dataset.get_size())})",
-                f"Panel: {dataset.metadata.panel_id} Frames: {dataset.metadata.nframes} Shape: {dataset.metadata.shape}",
+                f"Binary Hexrd Image npz {dataset.metadata_.nfiles} files ({nice_size(dataset.get_size())})",
+                f"Panel: {dataset.metadata_.panel_id} Frames: {dataset.metadata_.nframes} Shape: {dataset.metadata_.shape}",
             ]
             dataset.peek = "\n".join(lines)
             dataset.blurb = nice_size(dataset.get_size())
@@ -4152,16 +4152,16 @@ class HexrdEtaOmeNpz(Npz):
         super().set_meta(dataset, **kwd)
         try:
             with np.load(dataset.file_name) as npz:
-                dataset.metadata.HKLs = npz["iHKLList"].tolist()
-                dataset.metadata.nframes = len(npz["omegas"])
+                dataset.metadata_.HKLs = npz["iHKLList"].tolist()
+                dataset.metadata_.nframes = len(npz["omegas"])
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
             lines = [
-                f"Binary Hexrd Eta-Ome npz {dataset.metadata.nfiles} files ({nice_size(dataset.get_size())})",
-                f"Eta-Ome HKLs: {dataset.metadata.HKLs} Frames: {dataset.metadata.nframes}",
+                f"Binary Hexrd Eta-Ome npz {dataset.metadata_.nfiles} files ({nice_size(dataset.get_size())})",
+                f"Eta-Ome HKLs: {dataset.metadata_.HKLs} Frames: {dataset.metadata_.nframes}",
             ]
             dataset.peek = "\n".join(lines)
             dataset.blurb = nice_size(dataset.get_size())
