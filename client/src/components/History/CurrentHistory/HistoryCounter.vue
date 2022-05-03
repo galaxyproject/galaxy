@@ -40,7 +40,7 @@
                 size="sm"
                 class="rounded-0 text-decoration-none"
                 @click="setFilter('visible:false')">
-                <icon icon="lock" />
+                <icon icon="eye-slash" />
                 <span>{{ history.contents_active.hidden }}</span>
             </b-button>
             <b-button
