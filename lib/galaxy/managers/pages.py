@@ -20,6 +20,7 @@ from sqlalchemy import (
     or_,
     true,
 )
+from sqlalchemy.orm import aliased
 
 from galaxy import (
     exceptions,
@@ -37,6 +38,12 @@ from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     ready_galaxy_markdown_for_import,
 )
+from galaxy.model.index_filter_util import (
+    append_user_filter,
+    raw_text_column_filter,
+    tag_filter,
+    text_column_filter,
+)
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.schema import (
     CreatePagePayload,
@@ -46,6 +53,11 @@ from galaxy.schema.schema import (
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.search import (
+    FilteredTerm,
+    parse_filters_structured,
+    RawTextTerm,
+)
 
 log = logging.getLogger(__name__)
 
@@ -80,6 +92,17 @@ _cp1252 = {
     159: "\u0178",  # latin capital letter y with diaeresis
 }
 
+INDEX_SEARCH_FILTERS = {
+    "title": "title",
+    "slug": "slug",
+    "tag": "tag",
+    "user": "user",
+    "u": "user",
+    "s": "slug",
+    "t": "tag",
+    "is": "is",
+}
+
 
 class PageManager(sharable.SharableModelManager, UsesAnnotations):
     """Provides operations for managing a Page."""
@@ -103,12 +126,13 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         query = trans.sa_session.query(model.Page)
         is_admin = trans.user_is_admin
         user = trans.user
+        show_shared = payload.show_shared
         if not is_admin:
             filters = [model.Page.user == trans.user]
             if payload.show_published:
                 filters.append(model.Page.published == true())
 
-            if user and payload.show_shared:
+            if user and show_shared:
                 filters.append(model.PageUserShareAssociation.user == user)
                 query = query.outerjoin(model.Page.users_shared_with)
 
@@ -124,6 +148,52 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         if payload.user_id:
             query = query.filter(model.Page.user_id == payload.user_id)
 
+        if payload.search:
+            search_query = payload.search
+            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+
+            def p_tag_filter(term_text: str, quoted: bool):
+                nonlocal query
+                alias = aliased(model.PageTagAssociation)
+                query = query.outerjoin(model.Page.tags.of_type(alias))
+                return tag_filter(alias, term_text, quoted)
+
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
+                    if key == "tag":
+                        pg = p_tag_filter(term.text, term.quoted)
+                        query = query.filter(pg)
+                    elif key == "title":
+                        query = query.filter(text_column_filter(model.Page.title, term))
+                    elif key == "slug":
+                        query = query.filter(text_column_filter(model.Page.slug, term))
+                    elif key == "user":
+                        query = append_user_filter(query, model.Page, term)
+                    elif key == "is":
+                        if q == "published":
+                            query = query.filter(model.Page.published == true())
+                        elif q == "shared_with_me":
+                            if not show_shared:
+                                message = "Can only use tag is:shared_with_me if show_shared parameter also true."
+                                raise exceptions.RequestParameterInvalidException(message)
+                            query = query.filter(model.PageUserShareAssociation.user == user)
+                elif isinstance(term, RawTextTerm):
+                    tf = p_tag_filter(term.text, False)
+                    alias = aliased(model.User)
+                    query = query.outerjoin(model.Page.user.of_type(alias))
+                    query = query.filter(
+                        raw_text_column_filter(
+                            [
+                                model.Page.title,
+                                model.Page.slug,
+                                tf,
+                                alias.username,
+                            ],
+                            term,
+                        )
+                    )
         total_matches = query.count()
         sort_column = getattr(model.Page, payload.sort_by)
         if payload.sort_desc:

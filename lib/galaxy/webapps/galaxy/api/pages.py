@@ -32,7 +32,9 @@ from galaxy.schema.schema import (
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
+    IndexQueryTag,
     Router,
+    search_query_param,
 )
 from galaxy.webapps.galaxy.services.pages import PagesService
 
@@ -78,6 +80,19 @@ OffsetQueryParam: int = Query(
     title="Number of pages to skip in sorted query (to enable pagination).",
 )
 
+query_tags = [
+    IndexQueryTag("title", "The pages's title."),
+    IndexQueryTag("slug", "The pages's slug.", "s"),
+    IndexQueryTag("tag", "The pages's tags.", "t"),
+    IndexQueryTag("user", "The pages's owner's username.", "u"),
+]
+
+SearchQueryParam: Optional[str] = search_query_param(
+    model_name="Page",
+    tags=query_tags,
+    free_text_fields=["title", "slug", "tag", "user"],
+)
+
 
 @router.cbv
 class FastAPIPages:
@@ -99,6 +114,7 @@ class FastAPIPages:
         sort_desc: bool = SortDescQueryParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
+        search: Optional[str] = SearchQueryParam,
     ) -> PageSummaryList:
         """Get a list with summary information of all Pages available to the user."""
         payload = PageIndexQueryPayload.construct(
@@ -110,6 +126,7 @@ class FastAPIPages:
             sort_desc=sort_desc,
             limit=limit,
             offset=offset,
+            search=search,
         )
         return self.service.index(trans, payload)
 

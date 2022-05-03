@@ -1180,6 +1180,7 @@ class PageIndexQueryPayload(Model):
     sort_desc: bool = Field(default=True, descritpion="Sort in descending order?")
     show_published: bool = True
     show_shared: bool = False
+    search: Optional[str] = None
     limit: int = 500
     offset: int = 0
 
