@@ -23,6 +23,7 @@ from pydantic import (
     Json,
     UUID4,
 )
+from typing_extensions import Literal
 
 from galaxy.model import (
     Dataset,
@@ -826,11 +827,42 @@ class HistoryContentItemOperation(str, Enum):
     delete = "delete"
     undelete = "undelete"
     purge = "purge"
+    change_datatype = "change_datatype"
+    change_dbkey = "change_dbkey"
+    add_tag = "add_tag"
+    remove_tag = "remove_tag"
+
+
+class BulkOperationParams(Model):
+    type: str
+
+
+class ChangeDatatypeOperationParams(BulkOperationParams):
+    type: Literal["change_datatype"]
+    datatype: str
+
+
+class ChangeDbkeyOperationParams(BulkOperationParams):
+    type: Literal["change_dbkey"]
+    dbkey: str
+
+
+class TagOperationParams(BulkOperationParams):
+    type: Union[Literal["add_tag"], Literal["remove_tag"]]
+    tag_name: str
+
+
+AnyBulkOperationParams = Union[
+    ChangeDatatypeOperationParams,
+    ChangeDbkeyOperationParams,
+    TagOperationParams,
+]
 
 
 class HistoryContentBulkOperationPayload(Model):
     operation: HistoryContentItemOperation
     items: Optional[List[HistoryContentItem]]
+    params: Optional[AnyBulkOperationParams]
 
 
 class BulkOperationItemError(Model):
@@ -2930,7 +2962,7 @@ class AsyncTaskResultSummary(BaseModel):
     ignored: bool = Field(
         ...,
         title="Ignored",
-        description="Indicated whether the Celery AsyncResult will be available for retrivial",
+        description="Indicated whether the Celery AsyncResult will be available for retrieval",
     )
     name: Optional[str] = Field(
         None,

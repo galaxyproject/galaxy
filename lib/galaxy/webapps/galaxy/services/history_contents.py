@@ -56,6 +56,7 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     LibraryDataset,
+    User,
 )
 from galaxy.model.security import GalaxyRBACAgent
 from galaxy.schema import (
@@ -65,11 +66,14 @@ from galaxy.schema import (
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
+    AnyBulkOperationParams,
     AnyHistoryContentItem,
     AnyJobStateSummary,
     AsyncFile,
     AsyncTaskResultSummary,
     BulkOperationItemError,
+    ChangeDatatypeOperationParams,
+    ChangeDbkeyOperationParams,
     ColletionSourceType,
     ContentsNearResult,
     ContentsNearStats,
@@ -91,6 +95,7 @@ from galaxy.schema.schema import (
     Model,
     StoreContentSource,
     StoreExportPayload,
+    TagOperationParams,
     UpdateDatasetPermissionsPayload,
     UpdateHistoryContentsBatchPayload,
     WriteStoreToPayload,
@@ -694,7 +699,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                 history,
                 filters,
             )
-        errors = self._apply_bulk_operation(contents, payload.operation, trans)
+        errors = self._apply_bulk_operation(contents, payload.operation, payload.params, trans)
         trans.sa_session.flush()
         success_count = len(contents) - len(errors)
         return HistoryContentBulkOperationResult.construct(success_count=success_count, errors=errors)
@@ -1463,11 +1468,12 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         self,
         contents: Iterable[HistoryItemModel],
         operation: HistoryContentItemOperation,
+        params: Optional[AnyBulkOperationParams],
         trans: ProvidesHistoryContext,
     ) -> List[BulkOperationItemError]:
         errors: List[BulkOperationItemError] = []
         for item in contents:
-            error = self._apply_operation_to_item(operation, item, trans)
+            error = self._apply_operation_to_item(operation, item, params, trans)
             if error:
                 errors.append(error)
         return errors
@@ -1476,10 +1482,11 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         self,
         operation: HistoryContentItemOperation,
         item: HistoryItemModel,
+        params: Optional[AnyBulkOperationParams],
         trans: ProvidesHistoryContext,
     ) -> Optional[BulkOperationItemError]:
         try:
-            self.item_operator.apply(operation, item, trans)
+            self.item_operator.apply(operation, item, params, trans)
             return None
         except BaseException as exc:
             return BulkOperationItemError.construct(
@@ -1512,7 +1519,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
 
 class ItemOperation(Protocol):
-    def __call__(self, item: HistoryItemModel, trans: ProvidesHistoryContext) -> None:
+    def __call__(
+        self, item: HistoryItemModel, params: Optional[AnyBulkOperationParams], trans: ProvidesHistoryContext
+    ) -> None:
         ...
 
 
@@ -1530,15 +1539,29 @@ class HistoryItemOperator:
         self.dataset_collection_manager = dataset_collection_manager
         self.flush = False
         self._operation_map: Dict[HistoryContentItemOperation, ItemOperation] = {
-            HistoryContentItemOperation.hide: lambda item, trans: self._hide(item),
-            HistoryContentItemOperation.unhide: lambda item, trans: self._unhide(item),
-            HistoryContentItemOperation.delete: lambda item, trans: self._delete(item),
-            HistoryContentItemOperation.undelete: lambda item, trans: self._undelete(item),
-            HistoryContentItemOperation.purge: lambda item, trans: self._purge(item, trans),
+            HistoryContentItemOperation.hide: lambda item, params, trans: self._hide(item),
+            HistoryContentItemOperation.unhide: lambda item, params, trans: self._unhide(item),
+            HistoryContentItemOperation.delete: lambda item, params, trans: self._delete(item),
+            HistoryContentItemOperation.undelete: lambda item, params, trans: self._undelete(item),
+            HistoryContentItemOperation.purge: lambda item, params, trans: self._purge(item, trans),
+            HistoryContentItemOperation.change_datatype: lambda item, params, trans: self._change_datatype(
+                item, params
+            ),
+            HistoryContentItemOperation.change_dbkey: lambda item, params, trans: self._change_dbkey(item, params),
+            HistoryContentItemOperation.add_tag: lambda item, params, trans: self._add_tag(item, trans.user, params),
+            HistoryContentItemOperation.remove_tag: lambda item, params, trans: self._remove_tag(
+                item, trans.user, params
+            ),
         }
 
-    def apply(self, operation: HistoryContentItemOperation, item: HistoryItemModel, trans: ProvidesHistoryContext):
-        self._operation_map[operation](item, trans)
+    def apply(
+        self,
+        operation: HistoryContentItemOperation,
+        item: HistoryItemModel,
+        params: Optional[AnyBulkOperationParams],
+        trans: ProvidesHistoryContext,
+    ):
+        self._operation_map[operation](item, params, trans)
 
     def _get_item_manager(self, item: HistoryItemModel):
         if isinstance(item, HistoryDatasetAssociation):
@@ -1565,3 +1588,19 @@ class HistoryItemOperator:
         if isinstance(item, HistoryDatasetCollectionAssociation):
             return self.dataset_collection_manager.delete(trans, "history", item.id, recursive=True, purge=True)
         self.hda_manager.purge(item, flush=self.flush)
+
+    def _change_datatype(self, item: HistoryItemModel, params: ChangeDatatypeOperationParams):
+        if isinstance(item, HistoryDatasetAssociation):
+            item.change_datatype(params.datatype)
+
+    def _change_dbkey(self, item: HistoryItemModel, params: ChangeDbkeyOperationParams):
+        if isinstance(item, HistoryDatasetAssociation):
+            item.set_dbkey(params.dbkey)
+
+    def _add_tag(self, item: HistoryItemModel, user: User, params: TagOperationParams):
+        manager = self._get_item_manager(item)
+        manager.tag_handler.apply_item_tag(user, item, name=params.tag_name, flush=self.flush)
+
+    def _remove_tag(self, item: HistoryItemModel, user: User, params: TagOperationParams):
+        manager = self._get_item_manager(item)
+        manager.tag_handler.remove_item_tag(user, item, params.tag_name)
