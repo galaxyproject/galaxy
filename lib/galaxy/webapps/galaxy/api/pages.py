@@ -52,6 +52,10 @@ PageIdPathParam: EncodedDatabaseIdField = Path(
     ..., title="Page ID", description="The encoded database identifier of the Page."  # Required
 )
 
+ShowPublishedQueryParam: bool = Query(default=True, title="Include published pages.", description="")
+
+ShowSharedQueryParam: bool = Query(default=False, title="Include pages shared with authenticated user.", description="")
+
 
 @router.cbv
 class FastAPIPages:
@@ -67,11 +71,15 @@ class FastAPIPages:
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: bool = DeletedQueryParam,
         user_id: Optional[EncodedDatabaseIdField] = UserIdQueryParam,
+        show_published: bool = ShowPublishedQueryParam,
+        show_shared: bool = ShowSharedQueryParam,
     ) -> PageSummaryList:
         """Get a list with summary information of all Pages available to the user."""
         payload = PageIndexQueryPayload(
             deleted=deleted,
             user_id=user_id,
+            show_published=show_published,
+            show_shared=show_shared,
         )
         return self.service.index(trans, payload)
 

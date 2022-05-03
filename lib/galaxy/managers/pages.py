@@ -100,12 +100,26 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         deleted: bool = payload.deleted
 
         query = trans.sa_session.query(model.Page)
-        if not trans.user_is_admin:
-            filters = [model.Page.user == trans.user, model.Page.published == true()]
+        is_admin = trans.user_is_admin
+        user = trans.user
+        if not is_admin:
+            filters = [model.Page.user == trans.user]
+            if payload.show_published:
+                filters.append(model.Page.published == true())
+
+            if user and payload.show_shared:
+                filters.append(model.PageUserShareAssociation.user == user)
+                query = query.outerjoin(model.Page.users_shared_with)
+
             query = query.filter(or_(*filters))
 
         if not deleted:
             query = query.filter(model.Page.deleted == false())
+        elif not is_admin:
+            # non-admin query that should include deleted pages...
+            # don't let non-admins see other user's deleted pages...
+            query = query.filter(or_(model.Page.deleted == false(), model.Page.user == user))
+
         if payload.user_id:
             query = query.filter(model.Page.user_id == payload.user_id)
 

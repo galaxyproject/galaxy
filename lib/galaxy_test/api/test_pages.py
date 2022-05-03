@@ -118,7 +118,7 @@ steps:
         delete_response.raise_for_status()
         assert self._users_index_has_page_with_id(response1)
         assert not self._users_index_has_page_with_id(response2)
-        assert self._users_index_has_page_with_id(response2, dict(deleted="true"))
+        assert self._users_index_has_page_with_id(response2, dict(deleted=True))
 
     def test_index_user_id_security(self):
         user_id = self.dataset_populator.user_id()
@@ -141,6 +141,48 @@ steps:
         assert self._users_index_has_page_with_id(response2)
         assert self._users_index_has_page_with_id(response1, dict(user_id=user_id))
         assert not self._users_index_has_page_with_id(response2, dict(user_id=user_id))
+
+    def test_index_show_published(self):
+        with self._different_user():
+            response = self._create_valid_page_with_slug("indexshowpublish2")
+            self._make_public(response["id"])
+
+        assert self._users_index_has_page_with_id(response)
+        assert self._users_index_has_page_with_id(response, dict(show_published=True))
+        assert not self._users_index_has_page_with_id(response, dict(show_published=False))
+
+    def test_index_show_shared_with_me(self):
+        user_id = self.dataset_populator.user_id()
+        with self._different_user():
+            response_published = self._create_valid_page_with_slug("indexshowsharedpublished")
+            self._make_public(response_published["id"])
+            response_shared = self._create_valid_page_with_slug("indexshowsharedshared")
+            self._share_with_user(response_shared["id"], user_id)
+
+        assert not self._users_index_has_page_with_id(response_shared)
+        assert self._users_index_has_page_with_id(response_shared, dict(show_shared=True))
+        assert not self._users_index_has_page_with_id(response_shared, dict(show_shared=False))
+        # make sure published workflows still enabled by default...
+        assert self._users_index_has_page_with_id(response_published, dict(show_shared=False))
+
+    def test_index_show_shared_with_me_deleted(self):
+        user_id = self.dataset_populator.user_id()
+        with self._different_user():
+            response_published = self._create_valid_page_with_slug("indexshowsharedpublished")
+            self._make_public(response_published["id"])
+            response_shared = self._create_valid_page_with_slug("indexshowsharedshared")
+            self._share_with_user(response_shared["id"], user_id)
+            self._delete(f"pages/{response_published['id']}").raise_for_status()
+            self._delete(f"pages/{response_shared['id']}").raise_for_status()
+
+        assert not self._users_index_has_page_with_id(response_shared, dict(show_shared=True, show_published=True))
+        assert not self._users_index_has_page_with_id(response_published, dict(show_shared=True, show_published=True))
+        assert not self._users_index_has_page_with_id(
+            response_shared, dict(show_shared=True, show_published=True, deleted=True)
+        )
+        assert not self._users_index_has_page_with_id(
+            response_published, dict(show_shared=True, show_published=True, deleted=True)
+        )
 
     def test_index_does_not_show_unavailable_pages(self):
         create_response_json = self._create_valid_page_as("others_page_index@bx.psu.edu", "otherspageindex")
@@ -283,6 +325,11 @@ steps:
         sharing_response = self._put(f"pages/{page_id}/publish")
         assert sharing_response.status_code == 200
         return sharing_response.json()
+
+    def _share_with_user(self, page_id: str, user_id_or_email: str):
+        data = {"user_ids": [user_id_or_email]}
+        response = self._put(f"pages/{page_id}/share_with_users", data, json=True)
+        api_asserts.assert_status_code_is_ok(response)
 
     def _index_raw(self, params: Optional[Dict[str, Any]] = None) -> Response:
         index_response = self._get("pages", data=params or {})

@@ -1109,6 +1109,8 @@ class PageIndexQueryPayload(Model):
     deleted: bool = False
     user_id: Optional[DecodedDatabaseIdField] = None
     order_by: PageSortByEnum = PageSortByEnum.update_time
+    show_published: bool = True
+    show_shared: bool = False
     search: Optional[str] = None
     limit: int = 500
     offset: int = 0
