@@ -25,7 +25,8 @@
                 :scope-key="queryKey"
                 :get-item-key="(item) => item.type_id"
                 :filter-text="filterText"
-                :total-items-in-query="totalItemsInQuery">
+                :total-items-in-query="totalItemsInQuery"
+                @query-selection-break="querySelectionBreak = true">
                 <section class="history-layout d-flex flex-column">
                     <slot name="navigation" :history="history" />
                     <HistoryFilters
@@ -63,6 +64,7 @@
                                     @reset-selection="resetSelection" />
                             </template>
                         </HistoryOperations>
+                        <SelectionChangeWarning :query-selection-break="querySelectionBreak" />
                     </section>
                     <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
                         <div>
@@ -124,6 +126,7 @@ import HistoryFilters from "./HistoryFilters";
 import HistoryMessages from "./HistoryMessages";
 import HistorySelectionOperations from "./HistoryOperations/SelectionOperations";
 import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
+import SelectionChangeWarning from "./HistoryOperations/SelectionChangeWarning";
 
 export default {
     components: {
@@ -141,6 +144,7 @@ export default {
         LoadingSpan,
         Listing,
         SelectedItems,
+        SelectionChangeWarning,
     },
     props: {
         history: { type: Object, required: true },
@@ -153,6 +157,7 @@ export default {
             showAdvanced: false,
             isOperationRunning: false,
             updateExpectedAfterDate: null,
+            querySelectionBreak: false,
         };
     },
     computed: {
