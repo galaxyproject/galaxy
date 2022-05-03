@@ -7,6 +7,7 @@ from datetime import (
     datetime,
     timedelta,
 )
+from unittest import SkipTest
 from urllib.parse import (
     parse_qs,
     quote,
@@ -14,7 +15,6 @@ from urllib.parse import (
 )
 
 import jwt
-import pkce
 import requests
 
 from galaxy.app_unittest_utils.galaxy_mock import MockTrans
@@ -264,6 +264,10 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.assertEqual(hashed_nonce, hashed_nonce_in_url)
 
     def test_authenticate_set_pkce_verifier_cookie(self):
+        try:
+            import pkce  # noqa: F401
+        except ImportError:
+            raise SkipTest("pkce library is not available")
         """Verify that authenticate() sets a code verifier cookie."""
         self.custos_authnz.config["pkce_support"] = True
         authorization_url = self.custos_authnz.authenticate(self.trans)
