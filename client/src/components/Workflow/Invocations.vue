@@ -65,12 +65,7 @@
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
             <template v-slot:cell(execute)="data">
-                <b-button
-                    id="run-workflow"
-                    v-b-tooltip.hover.bottom
-                    title="Run Workflow"
-                    class="workflow-run btn-sm btn-primary fa fa-play"
-                    @click.stop="executeWorkflow(getWorkflowByInstanceId(data.item.workflow_id).id)" />
+                <WorkflowRunButton :id="getWorkflowByInstanceId(data.item.workflow_id).id" :root="root" />
             </template>
         </b-table>
         <b-pagination
@@ -86,6 +81,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import { invocationsProvider } from "components/providers/InvocationsProvider";
 import { WorkflowInvocationState } from "components/WorkflowInvocationState";
+import WorkflowRunButton from "./WorkflowRunButton.vue";
 import UtcDate from "components/UtcDate";
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
@@ -95,6 +91,7 @@ export default {
     components: {
         UtcDate,
         WorkflowInvocationState,
+        WorkflowRunButton,
     },
     mixins: [paginationMixin],
     props: {
@@ -121,6 +118,7 @@ export default {
             invocationItemsModel: [],
             invocationFields: fields,
             perPage: this.rowsPerPage(50),
+            root: getAppRoot(),
         };
     },
     computed: {
@@ -162,7 +160,7 @@ export default {
         ...mapCacheActions(["fetchWorkflowForInstanceId"]),
         ...mapCacheActions("history", ["loadHistoryById"]),
         async provider(ctx) {
-            ctx.root = getAppRoot();
+            ctx.root = this.root;
             const extraParams = this.ownerGrid ? {} : { include_terminal: false };
             if (this.storedWorkflowId) {
                 extraParams["workflow_id"] = this.storedWorkflowId;
@@ -177,9 +175,6 @@ export default {
         },
         swapRowDetails(row) {
             row.toggleDetails();
-        },
-        executeWorkflow: function (workflowId) {
-            window.location = `${getAppRoot()}workflows/run?id=${workflowId}`;
         },
         switchHistory(historyId) {
             const Galaxy = getGalaxyInstance();

@@ -50,11 +50,7 @@
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
             <template v-slot:cell(execute)="row">
-                <b-button
-                    v-b-tooltip.hover.bottom
-                    :title="titleRunWorkflow"
-                    class="workflow-run btn-sm btn-primary fa fa-play"
-                    @click.stop="executeWorkflow(row.item)" />
+                <WorkflowRunButton :root="root" :id="row.item.id" />
             </template>
         </b-table>
         <b-pagination
@@ -77,6 +73,8 @@ import paginationMixin from "./paginationMixin";
 import filtersMixin from "components/Indices/filtersMixin";
 import WorkflowIndexActions from "./WorkflowIndexActions";
 import WorkflowBookmark from "./WorkflowBookmark";
+import WorkflowRunButton from "./WorkflowRunButton.vue";
+
 import SharingIndicators from "components/Indices/SharingIndicators";
 
 const helpHtml = `<div>
@@ -113,6 +111,7 @@ export default {
         WorkflowBookmark,
         WorkflowIndexActions,
         SharingIndicators,
+        WorkflowRunButton,
     },
     props: {
         inputDebounceDelay: {
@@ -158,7 +157,6 @@ export default {
             ],
             loading: true,
             titleSearchWorkflows: _l("Search Workflows"),
-            titleRunWorkflow: _l("Run workflow"),
             workflowItemsModel: [],
             workflowItems: [],
             helpHtml: helpHtml,
@@ -181,9 +179,6 @@ export default {
             const promise = storedWorkflowsProvider(ctx, this.setRows, extraParams).catch(this.onError);
             this.workflowItems = await promise;
             return this.workflowItems;
-        },
-        executeWorkflow: function (workflow) {
-            window.location = `${this.root}workflows/run?id=${workflow.id}`;
         },
         bookmarkWorkflow: function (id, checked) {
             const data = {

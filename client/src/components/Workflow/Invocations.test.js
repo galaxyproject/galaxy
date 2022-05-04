@@ -6,6 +6,8 @@ import { getLocalVue } from "jest/helpers";
 import mockInvocationData from "./test/json/invocation.json";
 import { parseISO, formatDistanceToNow } from "date-fns";
 
+import "jest-location-mock";
+
 const localVue = getLocalVue();
 
 describe("Invocations.vue", () => {
@@ -147,10 +149,8 @@ describe("Invocations.vue", () => {
         });
 
         it("calls executeWorkflow", async () => {
-            const mockMethod = jest.fn();
-            wrapper.vm.executeWorkflow = mockMethod;
-            await wrapper.find("#run-workflow").trigger("click");
-            expect(mockMethod).toHaveBeenCalledWith("workflowId");
+            await wrapper.find(".workflow-run").trigger("click");
+            expect(window.location).toBeAt("workflows/run?id=workflowId");
         });
     });
 });
