@@ -443,7 +443,7 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
             for collection_dataset in hdca.dataset_instances:
                 include_files = True
                 self.export_store.add_dataset(collection_dataset, include_files=include_files)
-                self.export_store.collection_datasets[collection_dataset.id] = True
+                self.export_store.collection_datasets.add(collection_dataset.id)
 
         return hdca
 
@@ -452,7 +452,7 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         for collection_dataset in collection.dataset_instances:
             include_files = True
             self.export_store.add_dataset(collection_dataset, include_files=include_files)
-            self.export_store.collection_datasets[collection_dataset.id] = True
+            self.export_store.collection_datasets.add(collection_dataset.id)
 
     def add_output_dataset_association(self, name, dataset_instance):
         self.export_store.add_job_output_dataset_associations(self.get_job_id(), name, dataset_instance)
