@@ -50,18 +50,7 @@
                 <Tags :index="row.index" :tags="row.item.tags" @input="onTags" @tag-click="onTagClick" />
             </template>
             <template v-slot:cell(published)="row">
-                <font-awesome-icon
-                    v-if="row.item.published"
-                    v-b-tooltip.hover
-                    title="Published"
-                    icon="globe"
-                    @click="appendFilter('is:published')" />
-                <font-awesome-icon
-                    v-if="row.item.shared"
-                    v-b-tooltip.hover
-                    title="Shared"
-                    icon="share-alt"
-                    @click="appendFilter('is:shared_with_me')" />
+                <SharingIndicators :object="row.item" @filter="(filter) => appendFilter(filter)" />
             </template>
             <template v-slot:cell(show_in_tool_panel)="row">
                 <WorkflowBookmark
@@ -88,9 +77,6 @@
 </template>
 <script>
 import _l from "utils/localization";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faShareAlt, faGlobe } from "@fortawesome/free-solid-svg-icons";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services";
 import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
@@ -102,8 +88,7 @@ import paginationMixin from "./paginationMixin";
 import IndexFilter from "components/Indices/IndexFilter";
 import WorkflowIndexActions from "./WorkflowIndexActions";
 import WorkflowBookmark from "./WorkflowBookmark";
-
-library.add(faGlobe, faShareAlt);
+import SharingIndicators from "components/Indices/SharingIndicators";
 
 const helpHtml = `<div>
 <p>This textbox box can be used to filter the workflows displayed.
@@ -133,13 +118,13 @@ returned. So <code>name:'RNAseq'</code> would show only workflows named exactly 
 
 export default {
     components: {
-        FontAwesomeIcon,
         UtcDate,
         Tags,
         WorkflowDropdown,
         IndexFilter,
         WorkflowBookmark,
         WorkflowIndexActions,
+        SharingIndicators,
     },
     props: {
         inputDebounceDelay: {
