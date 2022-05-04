@@ -7,12 +7,12 @@
                 <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
                 <b-form id="registration" @submit.prevent="submit()">
                     <b-card no-body>
-                        <!-- OIDC/External Login enabled: encourage users to use it instead of local registration -->
-                        <span v-if="custosEnabled">
+                        <!-- OIDC and Custos enabled and prioritized: encourage users to use it instead of local registration -->
+                        <span v-if="custosPreferred">
                             <b-card-header v-b-toggle.accordion-oidc role="button">
                                 Register using institutional account
                             </b-card-header>
-                            <b-collapse visible id="accordion-oidc" role="tabpanel" accordion="registration_acc">
+                            <b-collapse id="accordion-oidc" visible role="tabpanel" accordion="registration_acc">
                                 <b-card-body>
                                     Create a Galaxy account using an institutional account (e.g.:Google/JHU). This will
                                     redirect you to your institutional login through Custos.
@@ -21,13 +21,13 @@
                             </b-collapse>
                         </span>
                         <!-- Local Galaxy Registration -->
-                        <b-card-header v-b-toggle.accordion-register role="button">
-                            <span v-if="!custosEnabled">Create a Galaxy account</span>
-                            <span v-else>Or, register with email</span>
+                        <b-card-header v-if="!custosPreferred">Create a Galaxy account</b-card-header>
+                        <b-card-header v-else v-b-toggle.accordion-register role="button">
+                            Or, register with email
                         </b-card-header>
                         <b-collapse
-                            :visible="!custosEnabled"
                             id="accordion-register"
+                            :visible="!custosPreferred"
                             role="tabpanel"
                             accordion="registration_acc">
                             <b-card-body>
@@ -132,7 +132,7 @@ export default {
         showRegistrationWarning() {
             return this.registration_warning_message != null;
         },
-        custosEnabled() {
+        custosPreferred() {
             return this.enable_oidc && this.prefer_custos_login;
         },
     },
