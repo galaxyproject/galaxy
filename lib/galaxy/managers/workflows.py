@@ -40,6 +40,11 @@ from galaxy import (
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.managers import sharable
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.model.index_filter_util import (
+    raw_text_column_filter,
+    tag_filter,
+    text_column_filter,
+)
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.schema import WorkflowIndexQueryPayload
 from galaxy.structured_app import MinimalManagerApp
@@ -154,40 +159,20 @@ class WorkflowsManager(sharable.SharableModelManager):
             search_query = payload.search
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
 
-            def tag_filter(term_text: str, quoted: bool):
-                if ":" in term_text:
-                    key, value = term_text.rsplit(":", 1)
-                    if not quoted:
-                        return and_(
-                            model.StoredWorkflowTagAssociation.user_tname.ilike(key),
-                            model.StoredWorkflowTagAssociation.user_value.ilike(f"%{value}%"),
-                        )
-                    else:
-                        return and_(
-                            model.StoredWorkflowTagAssociation.user_tname == key,
-                            model.StoredWorkflowTagAssociation.user_value == value,
-                        )
-                else:
-                    if not quoted:
-                        return model.StoredWorkflowTagAssociation.user_tname.ilike(f"%{term_text}%")
-                    else:
-                        return model.StoredWorkflowTagAssociation.user_tname == term_text
+            def w_tag_filter(term_text: str, quoted: bool):
+                return tag_filter(model.StoredWorkflowTagAssociation, term_text, quoted)
 
-            def name_filter(text, quoted):
-                if not quoted:
-                    filter = model.StoredWorkflow.name.ilike(f"%{text}%")
-                else:
-                    filter = model.StoredWorkflow.name == text
-                return filter
+            def name_filter(term):
+                return text_column_filter(model.StoredWorkflow.name, term)
 
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
                     key = term.filter
                     q = term.text
                     if key == "tag":
-                        query = query.filter(tag_filter(term.text, term.quoted))
+                        query = query.filter(w_tag_filter(term.text, term.quoted))
                     elif key == "name":
-                        query = query.filter(name_filter(q, term.quoted))
+                        query = query.filter(name_filter(term))
                     elif key == "is":
                         if q == "published":
                             query = query.filter(model.StoredWorkflow.published == true())
@@ -198,9 +183,12 @@ class WorkflowsManager(sharable.SharableModelManager):
                             query = query.filter(model.StoredWorkflowUserShareAssociation.user == user)
                 elif isinstance(term, RawTextTerm):
                     query = query.filter(
-                        or_(
-                            name_filter(term.text, False),
-                            tag_filter(term.text, False),
+                        raw_text_column_filter(
+                            [
+                                model.StoredWorkflow.name,
+                                w_tag_filter(term.text, False),
+                            ],
+                            term,
                         )
                     )
         if include_total_count:
