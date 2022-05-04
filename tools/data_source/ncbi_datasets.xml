@@ -1,10 +1,13 @@
-<tool name="NCBI Datasets Genomes" id="ncbi_datasets_source" tool_type="data_source" version="1.0" profile="21.09">
+<tool name="NCBI Datasets Genomes" id="ncbi_datasets_source" tool_type="data_source" version="@TOOL_VERSION@" profile="21.09">
     <description>import data from the NCBI Datasets Genomes page</description>
     <edam_operations>
         <edam_operation>operation_0224</edam_operation>
     </edam_operations>
+    <macros>
+        <token name="@TOOL_VERSION@">13.14.0</token>
+    </macros>
     <requirements>
-        <requirement type="package" version="12.11.0">ncbi-datasets-cli</requirement>
+        <requirement type="package" version="@TOOL_VERSION@">ncbi-datasets-cli</requirement>
     </requirements>
     <version_command>datasets version</version_command>
     <command><![CDATA[
