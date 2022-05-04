@@ -28,7 +28,7 @@
             <DefaultOperations
                 v-show="!showSelection"
                 :history="history"
-                @update:long-operation-running="onUpdateOperationStatus" />
+                @update:operation-running="onUpdateOperationStatus" />
         </nav>
     </section>
 </template>
@@ -51,7 +51,7 @@ export default {
             this.$emit("update:show-selection", !this.showSelection);
         },
         onUpdateOperationStatus(running) {
-            this.$emit("update:long-operation-running", running);
+            this.$emit("update:operation-running", running);
         },
     },
 };

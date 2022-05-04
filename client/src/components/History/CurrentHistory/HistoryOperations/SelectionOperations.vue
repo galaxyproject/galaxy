@@ -134,12 +134,12 @@ export default {
             await this.runOnSelection(purgeSelectedContent);
         },
         async runOnSelection(operation) {
-            this.$emit("update:long-operation-running", true);
+            this.$emit("update:operation-running", true);
             const items = this.getExplicitlySelectedItems();
             const filters = getQueryDict(this.filterText);
             this.$emit("reset-selection");
             await operation(this.history, filters, items);
-            this.$emit("update:long-operation-running", false);
+            this.$emit("update:operation-running", false);
         },
         getExplicitlySelectedItems() {
             if (this.isQuerySelection) {

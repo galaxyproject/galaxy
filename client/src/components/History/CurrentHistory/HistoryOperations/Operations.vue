@@ -62,9 +62,9 @@ export default {
             await this.runOperation(() => purgeAllDeletedContent(this.history));
         },
         async runOperation(operation) {
-            this.$emit("update:long-operation-running", true);
+            this.$emit("update:operation-running", true);
             await operation();
-            this.$emit("update:long-operation-running", false);
+            this.$emit("update:operation-running", false);
         },
     },
 };

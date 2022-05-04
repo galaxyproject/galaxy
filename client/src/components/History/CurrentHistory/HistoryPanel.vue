@@ -42,7 +42,7 @@
                             :expanded-count="expandedCount"
                             :has-matches="hasMatches(itemsLoaded)"
                             @update:show-selection="setShowSelection"
-                            @update:long-operation-running="onUpdateOperationStatus"
+                            @update:operation-running="onUpdateOperationStatus"
                             @collapse-all="collapseAll">
                             <template v-slot:selection-operations>
                                 <HistorySelectionOperations
@@ -52,7 +52,7 @@
                                     :selection-size="selectionSize"
                                     :is-query-selection="isQuerySelection"
                                     :total-items-in-query="totalItemsInQuery"
-                                    @update:long-operation-running="onUpdateOperationStatus"
+                                    @update:operation-running="onUpdateOperationStatus"
                                     @hide-selection="onHideSelection"
                                     @reset-selection="resetSelection" />
                                 <HistorySelectionStatus
@@ -150,7 +150,7 @@ export default {
             invisible: {},
             offset: 0,
             showAdvanced: false,
-            isLongOperationRunning: false,
+            isOperationRunning: false,
             updateExpectedAfterDate: null,
         };
     },
@@ -177,7 +177,7 @@ export default {
         },
         /** @returns {Boolean} */
         isProcessing() {
-            return this.isLongOperationRunning || !this.isHistoryUpdated;
+            return this.isOperationRunning || !this.isHistoryUpdated;
         },
     },
     watch: {
@@ -230,7 +230,7 @@ export default {
             if (running) {
                 this.expectHistoryUpdate();
             }
-            this.isLongOperationRunning = running;
+            this.isOperationRunning = running;
         },
         expectHistoryUpdate() {
             this.updateExpectedAfterDate = this.history.update_time;
