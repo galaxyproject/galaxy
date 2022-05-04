@@ -1,10 +1,10 @@
 <template>
     <span>
-        <b-button id="workflow-create" class="m-1" @click="createWorkflow">
+        <b-button id="workflow-create" class="m-1" @click="navigateToCreate">
             <font-awesome-icon icon="plus" />
             {{ "Create" | localize }}
         </b-button>
-        <b-button id="workflow-import" class="m-1" @click="importWorkflow">
+        <b-button id="workflow-import" class="m-1" @click="navigateToImport">
             <font-awesome-icon icon="upload" />
             {{ "Import" | localize }}
         </b-button>
@@ -31,10 +31,10 @@ export default {
         },
     },
     methods: {
-        createWorkflow: function () {
+        navigateToCreate: function () {
             window.location.assign(`${this.root}workflows/create`);
         },
-        importWorkflow: function () {
+        navigateToImport: function () {
             window.location.assign(`${this.root}workflows/import`);
         },
     },

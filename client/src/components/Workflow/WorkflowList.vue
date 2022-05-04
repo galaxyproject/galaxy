@@ -30,11 +30,11 @@
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflows" />
                 <b-alert v-else id="no-workflows" variant="info" show>
-                    <div v-if="showNotFound">
+                    <div v-if="isFiltered">
                         No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
                         >.
                     </div>
-                    <div v-if="showNotAvailable">No workflows found. You may create or import new workflows.</div>
+                    <div v-else>No workflows found. You may create or import new workflows.</div>
                 </b-alert>
             </template>
             <template v-slot:cell(name)="row">
@@ -85,7 +85,7 @@ import WorkflowDropdown from "./WorkflowDropdown";
 import UtcDate from "components/UtcDate";
 import { getGalaxyInstance } from "app";
 import paginationMixin from "./paginationMixin";
-import IndexFilter from "components/Indices/IndexFilter";
+import filtersMixin from "components/Indices/filtersMixin";
 import WorkflowIndexActions from "./WorkflowIndexActions";
 import WorkflowBookmark from "./WorkflowBookmark";
 import SharingIndicators from "components/Indices/SharingIndicators";
@@ -121,7 +121,6 @@ export default {
         UtcDate,
         Tags,
         WorkflowDropdown,
-        IndexFilter,
         WorkflowBookmark,
         WorkflowIndexActions,
         SharingIndicators,
@@ -132,7 +131,7 @@ export default {
             default: 500,
         },
     },
-    mixins: [paginationMixin],
+    mixins: [paginationMixin, filtersMixin],
     data() {
         return {
             tableId: "workflow-table",
@@ -168,7 +167,6 @@ export default {
                     label: "",
                 },
             ],
-            filter: "",
             loading: true,
             titleSearchWorkflows: _l("Search Workflows"),
             titleRunWorkflow: _l("Run workflow"),
@@ -177,14 +175,6 @@ export default {
             helpHtml: helpHtml,
             perPage: this.rowsPerPage(50),
         };
-    },
-    computed: {
-        showNotFound() {
-            return this.filter;
-        },
-        showNotAvailable() {
-            return !this.filter;
-        },
     },
     created() {
         this.root = getAppRoot();
@@ -246,16 +236,7 @@ export default {
                 });
         },
         onTagClick: function (tag) {
-            const tagFilter = `tag:'${tag.text}'`;
-            this.appendFilter(tagFilter);
-        },
-        appendFilter(text) {
-            const initialFilter = this.filter;
-            if (initialFilter.length === 0) {
-                this.filter = text;
-            } else if (initialFilter.indexOf(text) < 0) {
-                this.filter = `${text} ${initialFilter}`;
-            }
+            this.appendTagFilter("tag", tag.text);
         },
         onAdd: function (workflow) {
             if (this.currentPage == 1) {
