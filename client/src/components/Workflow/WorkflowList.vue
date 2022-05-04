@@ -6,7 +6,7 @@
                 <index-filter
                     :debounce-delay="inputDebounceDelay"
                     id="workflow-search"
-                    :placeholder="titleSearchWorkflows"
+                    :placeholder="titleSearch"
                     :help-html="helpHtml"
                     v-model="filter">
                 </index-filter>
@@ -123,7 +123,6 @@ export default {
     data() {
         return {
             tableId: "workflow-table",
-            error: null,
             fields: [
                 {
                     key: "name",
@@ -155,8 +154,7 @@ export default {
                     label: "",
                 },
             ],
-            loading: true,
-            titleSearchWorkflows: _l("Search Workflows"),
+            titleSearch: _l("Search Workflows"),
             workflowItemsModel: [],
             workflowItems: [],
             helpHtml: helpHtml,
@@ -212,7 +210,6 @@ export default {
             workflow.tags = tags;
             this.services
                 .updateWorkflow(workflow.id, {
-                    show_in_tool_panel: workflow.show_in_tool_panel,
                     tags: workflow.tags,
                 })
                 .catch((error) => {
