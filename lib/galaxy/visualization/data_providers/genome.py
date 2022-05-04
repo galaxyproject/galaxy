@@ -257,20 +257,20 @@ class GenomeDataProvider(BaseDataProvider):
             column_names = self.original_dataset.datatype.column_names  # type: ignore[attr-defined]
         except AttributeError:
             try:
-                column_names = list(range(self.original_dataset.metadata.columns))
+                column_names = list(range(self.original_dataset.metadata_.columns))
             except Exception:  # Give up
                 return []
 
         # Dataset must have column types; if not, cannot create filters.
         try:
-            column_types = self.original_dataset.metadata.column_types
+            column_types = self.original_dataset.metadata_.column_types
         except AttributeError:
             return []
 
         # Create and return filters.
         filters = []
-        if self.original_dataset.metadata.viz_filter_cols:
-            for viz_col_index in self.original_dataset.metadata.viz_filter_cols:
+        if self.original_dataset.metadata_.viz_filter_cols:
+            for viz_col_index in self.original_dataset.metadata_.viz_filter_cols:
                 # Some columns are optional, so can't assume that a filter
                 # column is in dataset.
                 if viz_col_index >= len(column_names):
@@ -314,7 +314,7 @@ class FilterableMixin:
             filter_col += 1
             if isinstance(self.original_dataset.datatype, Gtf):
                 # Create filters based on dataset metadata.
-                for name, a_type in self.original_dataset.metadata.attribute_types.items():
+                for name, a_type in self.original_dataset.metadata_.attribute_types.items():
                     if a_type in ["int", "float"]:
                         filters.append(
                             {
@@ -416,10 +416,10 @@ class IntervalDataProvider(GenomeDataProvider):
         def col_fn(col):
             return None if col is None else col - 1
 
-        start_col = self.original_dataset.metadata.startCol - 1
-        end_col = self.original_dataset.metadata.endCol - 1
-        strand_col = col_fn(self.original_dataset.metadata.strandCol)
-        name_col = col_fn(self.original_dataset.metadata.nameCol)
+        start_col = self.original_dataset.metadata_.startCol - 1
+        end_col = self.original_dataset.metadata_.endCol - 1
+        strand_col = col_fn(self.original_dataset.metadata_.strandCol)
+        name_col = col_fn(self.original_dataset.metadata_.nameCol)
         for count, line in enumerate(iterator):
             if count < start_val:
                 continue
@@ -1153,7 +1153,7 @@ class SamDataProvider(BamDataProvider):
         # converted dataset must be BAI. Use BAI from BAM metadata.
         if converted_dataset:
             self.original_dataset = converted_dataset
-            self.converted_dataset = converted_dataset.metadata.bam_index
+            self.converted_dataset = converted_dataset.metadata_.bam_index
 
 
 class BBIDataProvider(GenomeDataProvider):
