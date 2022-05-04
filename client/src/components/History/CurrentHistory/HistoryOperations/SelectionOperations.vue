@@ -57,7 +57,8 @@
             <p v-localize>Really restore {{ numSelected }} content items?</p>
         </b-modal>
         <b-modal id="purge-selected-content" title="Purge Selected Content?" title-tag="h2" @ok="purgeSelected">
-            <p v-localize>Permanently delete {{ numSelected }} content items? This cannot be undone.</p>
+            <p v-localize>Permanently delete {{ numSelected }} content items?</p>
+            <p><strong v-localize class="text-danger">Warning, this operation cannot be undone.</strong></p>
         </b-modal>
     </section>
 </template>
