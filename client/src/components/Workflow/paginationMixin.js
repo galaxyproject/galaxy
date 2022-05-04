@@ -29,6 +29,18 @@ export default {
                 "total-rows": this.rows,
             };
         },
+        indexTableAttrs() {
+            return {
+                hover: true,
+                striped: true,
+                "caption-top": true,
+                fixed: true,
+                "show-empty": true,
+                id: this.tableId,
+                "per-page": this.perPage,
+                "current-page": this.currentPage,
+            };
+        },
         showMessage() {
             return !!this.message;
         },

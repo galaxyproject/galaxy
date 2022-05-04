@@ -8,17 +8,10 @@
         </b-alert>
         <b-alert class="index-grid-message" :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
         <b-table
-            :id="tableId"
+            v-bind="indexTableAttrs"
             v-model="invocationItemsModel"
             :fields="invocationFields"
             :items="provider"
-            :per-page="perPage"
-            :current-page="currentPage"
-            hover
-            striped
-            caption-top
-            fixed
-            show-empty
             class="invocations-table">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflow invocations" />

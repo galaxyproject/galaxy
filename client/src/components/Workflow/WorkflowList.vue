@@ -15,18 +15,7 @@
                 <WorkflowIndexActions :root="root" class="float-right"> </WorkflowIndexActions>
             </b-col>
         </b-row>
-        <b-table
-            :id="tableId"
-            :fields="fields"
-            :items="provider"
-            v-model="workflowItemsModel"
-            :per-page="perPage"
-            :current-page="currentPage"
-            hover
-            striped
-            caption-top
-            fixed
-            show-empty>
+        <b-table :fields="fields" :items="provider" v-model="workflowItemsModel" v-bind="indexTableAttrs">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflows" />
                 <b-alert v-else id="no-workflows" variant="info" show>
