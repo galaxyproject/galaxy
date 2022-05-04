@@ -17,6 +17,7 @@ const mockWorkflowsData = [
         tags: ["tagmoo", "tagcow"],
         published: true,
         shared: true,
+        show_in_tool_panel: true,
     },
 ];
 

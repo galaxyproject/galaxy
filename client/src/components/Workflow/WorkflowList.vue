@@ -64,12 +64,9 @@
                     @click="appendFilter('is:shared_with_me')" />
             </template>
             <template v-slot:cell(show_in_tool_panel)="row">
-                <b-link @click="bookmarkWorkflow(row.item, false)" v-if="row.item.show_in_tool_panel">
-                    <font-awesome-icon :icon="['fas', 'star']" />
-                </b-link>
-                <b-link @click="bookmarkWorkflow(row.item, true)" v-else>
-                    <font-awesome-icon :icon="['far', 'star']" />
-                </b-link>
+                <WorkflowBookmark
+                    :checked="row.item.show_in_tool_panel"
+                    @bookmark="(checked) => bookmarkWorkflow(row.item.id, checked)" />
             </template>
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
@@ -93,8 +90,7 @@
 import _l from "utils/localization";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faShareAlt, faGlobe, faStar } from "@fortawesome/free-solid-svg-icons";
-import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
+import { faShareAlt, faGlobe } from "@fortawesome/free-solid-svg-icons";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services";
 import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
@@ -105,8 +101,9 @@ import { getGalaxyInstance } from "app";
 import paginationMixin from "./paginationMixin";
 import IndexFilter from "components/Indices/IndexFilter";
 import WorkflowIndexActions from "./WorkflowIndexActions";
+import WorkflowBookmark from "./WorkflowBookmark";
 
-library.add(faGlobe, faShareAlt, farStar, faStar);
+library.add(faGlobe, faShareAlt);
 
 const helpHtml = `<div>
 <p>This textbox box can be used to filter the workflows displayed.
@@ -141,6 +138,7 @@ export default {
         Tags,
         WorkflowDropdown,
         IndexFilter,
+        WorkflowBookmark,
         WorkflowIndexActions,
     },
     props: {
@@ -223,8 +221,7 @@ export default {
         executeWorkflow: function (workflow) {
             window.location = `${this.root}workflows/run?id=${workflow.id}`;
         },
-        bookmarkWorkflow: function (workflow, checked) {
-            const id = workflow.id;
+        bookmarkWorkflow: function (id, checked) {
             const data = {
                 show_in_tool_panel: checked,
             };
