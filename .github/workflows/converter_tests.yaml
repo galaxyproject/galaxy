@@ -28,19 +28,19 @@ jobs:
       run: |
         echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
         echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         path: 'galaxy root'
     - name: Clone galaxyproject/galaxy-test-data
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: galaxyproject/galaxy-test-data
         path: galaxy-test-data
-    - uses: actions/setup-python@v1
+    - uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
     - name: Cache venv dir
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       id: pip-cache
       with:
         path: ~/.cache/pip
@@ -78,7 +78,7 @@ jobs:
           echo "Unsuccessful tests found, inspect the 'Converter test results' artifact for details."
           exit 1
         fi
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       if: failure()
       with:
         name: Converter test results (${{ matrix.python-version }})

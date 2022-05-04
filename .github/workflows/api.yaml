@@ -42,10 +42,10 @@ jobs:
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
           echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: 'galaxy root'
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
       - name: Get full Python version
@@ -53,12 +53,12 @@ jobs:
         shell: bash
         run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
       - name: Cache pip dir
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
       - name: Cache galaxy venv
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-api
@@ -69,7 +69,7 @@ jobs:
         with:
           flags: api
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: API test results (${{ matrix.python-version }})
