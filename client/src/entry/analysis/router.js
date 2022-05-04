@@ -390,10 +390,9 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "workflows/list_published",
-                        component: Grid,
+                        component: WorkflowList,
                         props: (route) => ({
-                            urlBase: "workflow/list_published",
-                            userFilter: route.query["f-username"],
+                            published: true,
                         }),
                     },
                     {

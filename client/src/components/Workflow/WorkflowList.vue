@@ -30,7 +30,12 @@
                     @onError="onError" />
             </template>
             <template v-slot:cell(tags)="row">
-                <Tags :index="row.index" :tags="row.item.tags" @input="onTags" @tag-click="onTagClick" />
+                <Tags
+                    :index="row.index"
+                    :tags="row.item.tags"
+                    @input="onTags"
+                    @tag-click="onTagClick"
+                    :disabled="published" />
             </template>
             <template v-slot:cell(published)="row">
                 <SharingIndicators :object="row.item" @filter="(filter) => appendFilter(filter)" />
@@ -42,6 +47,9 @@
             </template>
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
+            </template>
+            <template v-slot:cell(owner)="data">
+                <a class="workflow-filter-link-owner" @click="appendTagFilter('user', data.value)">{{ data.value }}</a>
             </template>
             <template v-slot:cell(execute)="row">
                 <WorkflowRunButton :id="row.item.id" :root="root" />
@@ -97,6 +105,17 @@ returned. So <code>name:'RNAseq'</code> would show only workflows named exactly 
 </div>
 `;
 
+const NAME_FIELD = { key: "name", label: _l("Name"), sortable: true };
+const TAGS_FIELD = { key: "tags", label: _l("Tags"), sortable: false };
+const UPDATED_FIELD = { label: _l("Updated"), key: "update_time", sortable: true };
+const SHARING_FIELD = { label: _l("Sharing"), key: "published", sortable: false };
+const BOOKMARKED_FIELD = { label: _l("Bookmarked"), key: "show_in_tool_panel", sortable: false };
+const EXECUTE_FIELD = { key: "execute", label: "" };
+const OWNER_FIELD = { key: "owner", label: _l("Owner"), sortable: true };
+
+const PERSONAL_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, SHARING_FIELD, BOOKMARKED_FIELD, EXECUTE_FIELD];
+const PUBLISHED_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, OWNER_FIELD];
+
 export default {
     components: {
         UtcDate,
@@ -109,46 +128,24 @@ export default {
     },
     mixins: [paginationMixin, filtersMixin],
     props: {
+        published: {
+            // Render the published workflows version of this grid.
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
+        const fields = this.published ? PUBLISHED_FIELDS : PERSONAL_FIELDS;
+        const implicitFilter = this.published ? "is:published" : null;
         return {
             tableId: "workflow-table",
-            fields: [
-                {
-                    key: "name",
-                    label: _l("Name"),
-                    sortable: true,
-                },
-                {
-                    key: "tags",
-                    label: _l("Tags"),
-                    sortable: false,
-                },
-                {
-                    label: _l("Updated"),
-                    key: "update_time",
-                    sortable: true,
-                },
-                {
-                    label: _l("Sharing"),
-                    key: "published",
-                    sortable: false,
-                },
-                {
-                    label: _l("Bookmarked"),
-                    key: "show_in_tool_panel",
-                    sortable: false,
-                },
-                {
-                    key: "execute",
-                    label: "",
-                },
-            ],
+            fields: fields,
             titleSearch: _l("Search Workflows"),
             workflowItemsModel: [],
             helpHtml: helpHtml,
             perPage: this.rowsPerPage(this.defaultPerPage || 50),
             dataProvider: storedWorkflowsProvider,
+            implicitFilter: implicitFilter,
         };
     },
     watch: {
@@ -158,8 +155,7 @@ export default {
     },
     computed: {
         dataProviderParameters() {
-            let filter = this.filter;
-            const extraParams = { search: filter, skip_step_counts: true };
+            const extraParams = { search: this.effectiveFilter, skip_step_counts: true };
             if (this.published) {
                 extraParams.show_published = true;
                 extraParams.show_shared = false;

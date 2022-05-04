@@ -175,4 +175,51 @@ describe("WorkflowList.vue", () => {
             expect(wrapper.vm.filter).toBe("is:shared_with_me");
         });
     });
+
+    describe("published grid", () => {
+        beforeEach(async () => {
+            axiosMock
+                .onGet("/api/workflows", {
+                    params: {
+                        limit: 50,
+                        offset: 0,
+                        search: "is:published",
+                        skip_step_counts: true,
+                        show_published: true,
+                        show_shared: false,
+                    },
+                })
+                .reply(200, mockWorkflowsData, { total_matches: "1" });
+            const propsData = {
+                inputDebounceDelay: 0,
+                published: true,
+            };
+            wrapper = mount(Workflows, {
+                propsData,
+                localVue,
+            });
+            flushPromises();
+        });
+
+        it("should be error free", async () => {
+            const errorDiv = wrapper.find(".index-grid-message");
+            expect(errorDiv.text()).toBeFalsy();
+        });
+
+        it("renders one row", async () => {
+            const rows = wrapper.findAll("tbody > tr").wrappers;
+            expect(rows.length).toBe(1);
+            const row = rows[0];
+            const columns = row.findAll("td");
+            expect(columns.at(0).text()).toContain("workflow name");
+            expect(columns.at(1).text()).toContain("tagmoo");
+            expect(columns.at(1).text()).toContain("tagcow");
+            expect(columns.at(2).text()).toBe(
+                formatDistanceToNow(parseISO(`${mockWorkflowsData[0].update_time}Z`), { addSuffix: true })
+            );
+            expect(columns.at(2).text()).toBe(
+                formatDistanceToNow(parseISO(`${mockWorkflowsData[0].update_time}Z`), { addSuffix: true })
+            );
+        });
+    });
 });
