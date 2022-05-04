@@ -108,7 +108,7 @@ import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import { commonJobFields } from "./JobFields";
 import { errorMessageAsString } from "utils/simple-error";
 import { jobsProvider } from "components/providers/JobProvider";
-import IndexFilter from "components/Indices/IndexFilter";
+import filtersMixin from "components/Indices/filtersMixin";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;
@@ -142,7 +142,8 @@ returned. So <code>tool_id:'cat1'</code> would show only jobs from the <code>cat
 `;
 
 export default {
-    components: { JobLock, JobsTable, IndexFilter },
+    components: { JobLock, JobsTable },
+    mixins: [filtersMixin],
     data() {
         return {
             jobs: [],
@@ -160,7 +161,6 @@ export default {
             allSelected: false,
             indeterminate: false,
             stopMessage: "",
-            filter: "",
             message: "",
             status: "info",
             loading: true,
@@ -268,17 +268,6 @@ export default {
         },
         toggleAll(checked) {
             this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];
-        },
-        appendTagFilter(tag, text) {
-            this.appendFilter(`${tag}:'${text}'`);
-        },
-        appendFilter(text) {
-            const initialFilter = this.filter;
-            if (initialFilter.length === 0) {
-                this.filter = text;
-            } else if (initialFilter.indexOf(text) < 0) {
-                this.filter = `${text} ${initialFilter}`;
-            }
         },
     },
 };
