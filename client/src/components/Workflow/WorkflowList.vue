@@ -12,16 +12,7 @@
                 </index-filter>
             </b-col>
             <b-col>
-                <span class="float-right">
-                    <b-button id="workflow-create" class="m-1" @click="createWorkflow">
-                        <font-awesome-icon icon="plus" />
-                        {{ titleCreate }}
-                    </b-button>
-                    <b-button id="workflow-import" class="m-1" @click="importWorkflow">
-                        <font-awesome-icon icon="upload" />
-                        {{ titleImport }}
-                    </b-button>
-                </span>
+                <WorkflowIndexActions :root="root" class="float-right"> </WorkflowIndexActions>
             </b-col>
         </b-row>
         <b-table
@@ -102,7 +93,7 @@
 import _l from "utils/localization";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPlus, faShareAlt, faGlobe, faUpload, faSpinner, faStar } from "@fortawesome/free-solid-svg-icons";
+import { faShareAlt, faGlobe, faStar } from "@fortawesome/free-solid-svg-icons";
 import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services";
@@ -113,8 +104,9 @@ import UtcDate from "components/UtcDate";
 import { getGalaxyInstance } from "app";
 import paginationMixin from "./paginationMixin";
 import IndexFilter from "components/Indices/IndexFilter";
+import WorkflowIndexActions from "./WorkflowIndexActions";
 
-library.add(faPlus, faUpload, faSpinner, faGlobe, faShareAlt, farStar, faStar);
+library.add(faGlobe, faShareAlt, farStar, faStar);
 
 const helpHtml = `<div>
 <p>This textbox box can be used to filter the workflows displayed.
@@ -149,6 +141,7 @@ export default {
         Tags,
         WorkflowDropdown,
         IndexFilter,
+        WorkflowIndexActions,
     },
     props: {
         inputDebounceDelay: {
@@ -195,8 +188,6 @@ export default {
             filter: "",
             loading: true,
             titleSearchWorkflows: _l("Search Workflows"),
-            titleCreate: _l("Create"),
-            titleImport: _l("Import"),
             titleRunWorkflow: _l("Run workflow"),
             workflowItemsModel: [],
             workflowItems: [],
@@ -228,12 +219,6 @@ export default {
             const promise = storedWorkflowsProvider(ctx, this.setRows, extraParams).catch(this.onError);
             this.workflowItems = await promise;
             return this.workflowItems;
-        },
-        createWorkflow: function (workflow) {
-            window.location = `${this.root}workflows/create`;
-        },
-        importWorkflow: function (workflow) {
-            window.location = `${this.root}workflows/import`;
         },
         executeWorkflow: function (workflow) {
             window.location = `${this.root}workflows/run?id=${workflow.id}`;
