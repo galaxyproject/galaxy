@@ -52,6 +52,7 @@
                                     :selection-size="selectionSize"
                                     :is-query-selection="isQuerySelection"
                                     :total-items-in-query="totalItemsInQuery"
+                                    @update:show-selection="setShowSelection"
                                     @update:operation-running="onUpdateOperationStatus"
                                     @hide-selection="onHideSelection"
                                     @reset-selection="resetSelection" />

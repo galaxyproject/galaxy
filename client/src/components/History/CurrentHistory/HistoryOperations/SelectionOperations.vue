@@ -137,7 +137,7 @@ export default {
             this.$emit("update:operation-running", true);
             const items = this.getExplicitlySelectedItems();
             const filters = getQueryDict(this.filterText);
-            this.$emit("reset-selection");
+            this.$emit("update:show-selection", false);
             await operation(this.history, filters, items);
             this.$emit("update:operation-running", false);
         },
