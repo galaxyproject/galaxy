@@ -395,11 +395,11 @@ class DatasetAssociationManager(
             )
         else:
             if overwrite:
-                for name, spec in data.metadata.spec.items():
+                for name, spec in data.metadata_.spec.items():
                     # We need to be careful about the attributes we are resetting
                     if name not in ["name", "info", "dbkey", "base_name"]:
                         if spec.get("default"):
-                            setattr(data.metadata, name, spec.unwrap(spec.get("default")))
+                            setattr(data.metadata_, name, spec.unwrap(spec.get("default")))
 
             job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
                 self.app.datatypes_registry.set_external_metadata_tool,
@@ -544,7 +544,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
         dataset_assoc = item
         meta_files = []
         for meta_type in dataset_assoc.metadata_file_types:
-            if getattr(dataset_assoc.metadata, meta_type, None):
+            if getattr(dataset_assoc.metadata_, meta_type, None):
                 meta_files.append(
                     dict(
                         file_type=meta_type,
@@ -569,10 +569,10 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
         excluded = [] if excluded is None else excluded
 
         metadata = {}
-        for name, spec in dataset_assoc.metadata.spec.items():
+        for name, spec in dataset_assoc.metadata_.spec.items():
             if name in excluded:
                 continue
-            val = dataset_assoc.metadata.get(name)
+            val = dataset_assoc.metadata_.get(name)
             # NOTE: no files
             if isinstance(val, model.MetadataFile):
                 # only when explicitly set: fetching filepaths can be expensive
@@ -712,7 +712,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         if metadata_specification.get("readonly"):
             return
         unwrapped_val = metadata_specification.unwrap(val)
-        setattr(dataset_assoc.metadata, key, unwrapped_val)
+        setattr(dataset_assoc.metadata_, key, unwrapped_val)
         # ...?
         return unwrapped_val
 
