@@ -15,6 +15,7 @@
 </template>
 
 <script>
+import { mapGetters, mapActions } from "vuex";
 import { BAlert, BLink, BProgress } from "bootstrap-vue";
 export default {
     components: {
@@ -31,18 +32,22 @@ export default {
             dismissCountDown: 0,
         };
     },
+    computed: {
+        ...mapGetters("userFlags", ["getShowSelectionQueryBreakWarning"]),
+    },
     watch: {
         querySelectionBreak() {
-            this.dismissCountDown = this.dismissSecs;
+            this.dismissCountDown = this.getShowSelectionQueryBreakWarning() ? this.dismissSecs : 0;
         },
     },
     methods: {
+        ...mapActions("userFlags", ["ignoreSelectionQueryBreakWarning"]),
         onDismissed() {
             this.dismissCountDown = 0;
         },
         onDoNotShowAgain() {
             this.onDismissed();
-            //TODO: set some flag in local storage
+            this.ignoreSelectionQueryBreakWarning();
         },
     },
 };

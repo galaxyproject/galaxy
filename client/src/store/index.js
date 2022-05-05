@@ -16,7 +16,7 @@ import { jobMetricsStore } from "./jobMetricsStore";
 import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { invocationStore } from "./invocationStore";
 import { collectionElementsStore, datasetStore, historyItemsStore, historyStore } from "./historyStore";
-import { userStore } from "./userStore";
+import { userStore, userFlagsStore } from "./userStore";
 import { configStore } from "./configStore";
 import { workflowStore } from "./workflowStore";
 import { toolStore } from "./toolStore";
@@ -44,7 +44,7 @@ galaxyStorage.config({
 const panelsPersistence = new VuexPersistence({
     storage: galaxyStorage,
     asyncStorage: true,
-    modules: ["panels"],
+    modules: ["panels", "userFlags"],
 });
 
 export function createStore() {
@@ -70,6 +70,7 @@ export function createStore() {
             tags: tagStore,
             tools: toolStore,
             user: userStore,
+            userFlags: userFlagsStore,
             workflows: workflowStore,
         },
     };
