@@ -5,12 +5,14 @@
             v-b-tooltip.hover
             :title="'Published' | localize"
             icon="globe"
+            class="sharing-indicator-published"
             @click="$emit('filter', 'is:published')" />
         <font-awesome-icon
             v-if="object.shared"
             v-b-tooltip.hover
             :title="'Shared' | localize"
             icon="share-alt"
+            class="sharing-indicator-shared"
             @click="$emit('filter', 'is:shared_with_me')" />
     </span>
 </template>
