@@ -287,7 +287,7 @@ class ConditionalDependencies:
         return "hashicorp" == self.vault_type
 
     def check_pkce(self):
-        return True
+        return self.pkce_support
 
 
 def optional(config_file=None):
