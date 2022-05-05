@@ -1377,10 +1377,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         from galaxy.web.framework.middleware.translogger import TransLogger
 
         app = wrap_if_allowed(app, stack, TransLogger)
-    # X-Forwarded-Host handling
-    app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
-    # Request ID middleware
-    app = wrap_if_allowed(app, stack, RequestIDMiddleware)
     # TUS upload middleware
     app = wrap_if_allowed(
         app,
@@ -1392,6 +1388,10 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
             "max_size": application_stack.config.maximum_upload_file_size,
         },
     )
+    # X-Forwarded-Host handling
+    app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
+    # Request ID middleware
+    app = wrap_if_allowed(app, stack, RequestIDMiddleware)
     if asbool(conf.get("enable_per_request_sql_debugging", False)):
         from galaxy.web.framework.middleware.sqldebug import SQLDebugMiddleware
 
