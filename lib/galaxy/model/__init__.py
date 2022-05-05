@@ -102,6 +102,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.sql import exists
+from typing_extensions import Protocol
 
 import galaxy.exceptions
 import galaxy.model.metadata
@@ -279,9 +280,18 @@ class HasTags:
         return [t for t in self.tags if t.user_tname in AUTO_PROPAGATED_TAGS]
 
 
+class SerializeFilesHandler(Protocol):
+    def serialize_files(self, dataset: "DatasetInstance", as_dict: Dict[str, Any]) -> None:
+        pass
+
+
 class SerializationOptions:
     def __init__(
-        self, for_edit, serialize_dataset_objects=None, serialize_files_handler=None, strip_metadata_files=None
+        self,
+        for_edit,
+        serialize_dataset_objects=None,
+        serialize_files_handler: Optional[SerializeFilesHandler] = None,
+        strip_metadata_files=None,
     ):
         self.for_edit = for_edit
         if serialize_dataset_objects is None:
