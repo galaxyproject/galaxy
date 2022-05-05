@@ -30,7 +30,7 @@ class NoneDataset(RecursiveNone):
         assert datatypes_registry is not None
         self.datatype = datatypes_registry.get_datatype_by_extension(ext)
         self._metadata = None
-        self.metadata = MetadataCollection(self)
+        self.metadata_ = MetadataCollection(self)
 
     def __getattr__(self, name):
         return "None"

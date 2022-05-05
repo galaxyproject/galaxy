@@ -2198,7 +2198,7 @@ class FakeDatasetAssociation:
     def __init__(self, dataset=None):
         self.dataset = dataset
         self.file_name = dataset.file_name
-        self.metadata = dict()
+        self.metadata_ = dict()
 
     def __eq__(self, other):
         return isinstance(other, FakeDatasetAssociation) and self.dataset == other.dataset
@@ -4468,7 +4468,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     new_values[k] = v[0]
             new_values["update_time"] = self.update_time
             new_values["version"] = self.version or 1
-            new_values["metadata"] = self._metadata
+            new_values["metadata_"] = self._metadata
             past_hda = HistoryDatasetAssociationHistory(history_dataset_association_id=self.id, **new_values)
             self.version = self.version + 1 if self.version else 1
             session.add(past_hda)

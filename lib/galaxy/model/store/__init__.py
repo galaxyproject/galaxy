@@ -1721,7 +1721,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
     def push_metadata_files(self):
         for dataset in self.included_datasets:
-            for metadata_element in dataset.metadata.values():
+            for metadata_element in dataset.metadata_.values():
                 if isinstance(metadata_element, model.MetadataFile):
                     metadata_element.update_from_file(metadata_element.file_name)
 
