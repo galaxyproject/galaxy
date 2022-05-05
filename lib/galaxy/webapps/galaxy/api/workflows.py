@@ -508,6 +508,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         workflow_dict = payload.get("workflow", {})
         workflow_dict.update({k: v for k, v in payload.items() if k not in workflow_dict})
         if workflow_dict:
+            require_flush = False
             raw_workflow_description = self.__normalize_workflow(trans, workflow_dict)
             workflow_dict = raw_workflow_description.as_dict
             new_workflow_name = workflow_dict.get("name")
@@ -522,42 +523,51 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                 stored_workflow.name = sanitized_name
                 stored_workflow.latest_workflow = workflow
                 trans.sa_session.add(workflow, stored_workflow)
-                trans.sa_session.flush()
+                require_flush = True
 
             if "hidden" in workflow_dict and stored_workflow.hidden != workflow_dict["hidden"]:
                 stored_workflow.hidden = workflow_dict["hidden"]
-                trans.sa_session.flush()
+                require_flush = True
 
             if "published" in workflow_dict and stored_workflow.published != workflow_dict["published"]:
                 stored_workflow.published = workflow_dict["published"]
-                trans.sa_session.flush()
+                require_flush = True
 
             if "importable" in workflow_dict and stored_workflow.importable != workflow_dict["importable"]:
                 stored_workflow.importable = workflow_dict["importable"]
-                trans.sa_session.flush()
+                require_flush = True
 
             if "annotation" in workflow_dict and not steps_updated:
                 newAnnotation = sanitize_html(workflow_dict["annotation"])
                 self.add_item_annotation(trans.sa_session, trans.user, stored_workflow, newAnnotation)
-                trans.sa_session.flush()
+                require_flush = True
 
             if "menu_entry" in workflow_dict or "show_in_tool_panel" in workflow_dict:
-                if workflow_dict.get("menu_entry") or workflow_dict.get("show_in_tool_panel"):
-                    workflow_ids = [wf.stored_workflow_id for wf in trans.user.stored_workflow_menu_entries]
-                    if trans.security.decode_id(id) not in workflow_ids:
-                        menuEntry = model.StoredWorkflowMenuEntry()
-                        menuEntry.stored_workflow = stored_workflow
-                        trans.user.stored_workflow_menu_entries.append(menuEntry)
+                show_in_panel = workflow_dict.get("menu_entry") or workflow_dict.get("show_in_tool_panel")
+                stored_workflow_menu_entries = trans.user.stored_workflow_menu_entries
+                decoded_id = trans.security.decode_id(id)
+                if show_in_panel:
+                    workflow_ids = [wf.stored_workflow_id for wf in stored_workflow_menu_entries]
+                    if decoded_id not in workflow_ids:
+                        menu_entry = model.StoredWorkflowMenuEntry()
+                        menu_entry.stored_workflow = stored_workflow
+                        stored_workflow_menu_entries.append(menu_entry)
+                        trans.sa_session.add(menu_entry)
+                        require_flush = True
                 else:
                     # remove if in list
-                    entries = {x.stored_workflow_id: x for x in trans.user.stored_workflow_menu_entries}
-                    if trans.security.decode_id(id) in entries:
-                        trans.user.stored_workflow_menu_entries.remove(entries[trans.security.decode_id(id)])
+                    entries = {x.stored_workflow_id: x for x in stored_workflow_menu_entries}
+                    if decoded_id in entries:
+                        stored_workflow_menu_entries.remove(entries[decoded_id])
+                        require_flush = True
             # set tags
             if "tags" in workflow_dict:
                 trans.app.tag_handler.set_tags_from_list(
                     user=trans.user, item=stored_workflow, new_tags_list=workflow_dict["tags"]
                 )
+
+            if require_flush:
+                trans.sa_session.flush()
 
             if "steps" in workflow_dict:
                 try:
