@@ -545,9 +545,9 @@ def test_edit_metadata_files():
     index = NamedTemporaryFile("w")
     index.write("cool bam index")
     metadata_dict = {"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": index.name})}
-    d1.metadata.from_JSON_dict(json_dict=metadata_dict)
-    assert d1.metadata.bam_index
-    assert isinstance(d1.metadata.bam_index, model.MetadataFile)
+    d1.metadata_.from_JSON_dict(json_dict=metadata_dict)
+    assert d1.metadata_.bam_index
+    assert isinstance(d1.metadata_.bam_index, model.MetadataFile)
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(

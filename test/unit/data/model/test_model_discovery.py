@@ -37,7 +37,7 @@ def test_model_create_context_persist_hdas():
     imported_hda = import_history.datasets[0]
     assert imported_hda.ext == "txt"
     assert imported_hda.name == "my file"
-    assert imported_hda.metadata.data_lines == 2
+    assert imported_hda.metadata_.data_lines == 2
     assert len(imported_hda.dataset.hashes) == 1
     assert imported_hda.dataset.hashes[0].hash_value == "e5d21b1ea57fc9a31f8ea0110531bf3d"
     tags = imported_hda.tags
@@ -108,7 +108,7 @@ def test_persist_target_library_dataset():
 
     assert len(new_root.datasets) == 1
     ldda = new_root.datasets[0].library_dataset_dataset_association
-    assert ldda.metadata.data_lines == 2
+    assert ldda.metadata_.data_lines == 2
     with open(ldda.file_name) as f:
         assert f.read().startswith("hello world\n")
 
@@ -152,7 +152,7 @@ def test_persist_target_library_folder():
     assert len(child_folder.folders) == 0
     assert len(child_folder.datasets) == 1
     ldda = child_folder.datasets[0].library_dataset_dataset_association
-    assert ldda.metadata.data_lines == 2
+    assert ldda.metadata_.data_lines == 2
     with open(ldda.file_name) as f:
         assert f.read().startswith("hello world\n")
 

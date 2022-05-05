@@ -205,7 +205,7 @@ class MockHistoryDatasetAssociation:
         self.id = id
         self.children = []
         self.tags = []
-        self.metadata = None
+        self.metadata_ = None
 
     @property
     def state(self):

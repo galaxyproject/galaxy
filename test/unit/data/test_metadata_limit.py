@@ -28,17 +28,17 @@ def create_bed_data(sa_session, string_size):
     hda = HistoryDatasetAssociation(extension="bed")
     big_string = "0" * string_size
     sa_session.add(hda)
-    hda.metadata.column_names = [big_string]
-    assert hda.metadata.column_names
+    hda.metadata_.column_names = [big_string]
+    assert hda.metadata_.column_names
     sa_session.flush()
     return hda
 
 
 def test_hda_below_limit(sa_session):
     hda = create_bed_data(sa_session=sa_session, string_size=1)
-    assert len(hda.metadata.column_names[0]) == 1
+    assert len(hda.metadata_.column_names[0]) == 1
 
 
 def test_hda_above_limit(sa_session):
     hda = create_bed_data(sa_session=sa_session, string_size=1000)
-    assert not hda.metadata.column_names
+    assert not hda.metadata_.column_names

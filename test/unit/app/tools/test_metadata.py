@@ -66,8 +66,8 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
         self.metadata_compute_strategy.load_metadata(
             output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory
         )
-        assert output_dataset.metadata.data_lines == 2
-        assert output_dataset.metadata.sequences == 1
+        assert output_dataset.metadata_.data_lines == 2
+        assert output_dataset.metadata_.sequences == 1
 
     def test_primary_dataset_output_extension_directory(self):
         self.app.config.metadata_strategy = "directory"
@@ -103,8 +103,8 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
         self.metadata_compute_strategy.load_metadata(
             output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory
         )
-        assert output_dataset.metadata.data_lines == 2
-        assert output_dataset.metadata.sequences == 1
+        assert output_dataset.metadata_.data_lines == 2
+        assert output_dataset.metadata_.sequences == 1
 
     def test_primary_dataset_output_metadata_override_directory(self):
         self.app.config.metadata_strategy = "directory"
@@ -142,8 +142,8 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
         self.metadata_compute_strategy.load_metadata(
             output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory
         )
-        assert output_dataset.metadata.data_lines == 2
-        assert output_dataset.metadata.sequences == 42
+        assert output_dataset.metadata_.data_lines == 2
+        assert output_dataset.metadata_.sequences == 42
 
     def test_list_discovery_extended(self):
         self.app.config.metadata_strategy = "extended"

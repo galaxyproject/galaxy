@@ -152,7 +152,7 @@ def _create_hda(
     sa_session.flush([hda])
     object_store.update_from_file(hda, file_name=path, create=True)
     if include_metadata_file:
-        hda.metadata.from_JSON_dict(json_dict={"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": path})})
+        hda.metadata_.from_JSON_dict(json_dict={"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": path})})
         _check_metadata_file(hda)
     hda.set_size()
     history.add_dataset(hda)
@@ -161,8 +161,8 @@ def _create_hda(
 
 
 def _check_metadata_file(hda):
-    assert hda.metadata.bam_index.id
-    copied_index = hda.metadata.bam_index.file_name
+    assert hda.metadata_.bam_index.id
+    copied_index = hda.metadata_.bam_index.file_name
     assert os.path.exists(copied_index)
     with open(copied_index) as f:
         assert f.read() == "moo"

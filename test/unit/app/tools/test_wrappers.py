@@ -304,7 +304,7 @@ MOCK_DATASET_EXT = "bam"
 
 class MockDataset:
     def __init__(self):
-        self.metadata = MetadataSpecCollection({})
+        self.metadata_ = MetadataSpecCollection({})
         self.file_name = MOCK_DATASET_PATH
         self.extra_files_path = MOCK_DATASET_EXTRA_FILES_PATH
         self.ext = MOCK_DATASET_EXT

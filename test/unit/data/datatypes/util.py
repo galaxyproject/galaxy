@@ -17,7 +17,7 @@ class MockDataset:
 
     def __init__(self, id):
         self.id = id
-        self.metadata = MockMetadata()
+        self.metadata_ = MockMetadata()
         self.dataset = None
 
     def has_data(self):
@@ -34,7 +34,7 @@ def get_dataset(filename, index_attr="bam_index", dataset_id=1, has_data=True):
         dataset.file_name = input_files[0]
         index = MockMetadata()
         index.file_name = index_path
-        setattr(dataset.metadata, index_attr, index)
+        setattr(dataset.metadata_, index_attr, index)
         yield dataset
 
 
