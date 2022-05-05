@@ -3343,7 +3343,67 @@ class StorableObject:
             sa_session.flush()
 
 
-class Dataset(StorableObject, Serializable, _HasTable):
+class Dataset(Base, StorableObject, Serializable, _HasTable):
+    __tablename__ = "dataset"
+
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey("job.id"), index=True, nullable=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, index=True, default=now, onupdate=now)
+    state = Column(TrimmedString(64), index=True)
+    deleted = Column(Boolean, index=True, default=False)
+    purged = Column(Boolean, index=True, default=False)
+    purgable = Column(Boolean, default=True)
+    object_store_id = Column(TrimmedString(255), index=True)
+    external_filename = Column(TEXT)
+    _extra_files_path = Column(TEXT)
+    created_from_basename = Column(TEXT)
+    file_size = Column(Numeric(15, 0))
+    total_size = Column(Numeric(15, 0))
+    uuid = Column(UUIDType())
+
+    actions = relationship("DatasetPermissions", back_populates="dataset")
+    job = relationship(Job, primaryjoin=(lambda: Dataset.job_id == Job.id))
+    active_history_associations = relationship(
+        "HistoryDatasetAssociation",
+        primaryjoin=(
+            lambda: and_(
+                Dataset.id == HistoryDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
+                HistoryDatasetAssociation.deleted == false(),  # type: ignore[has-type]
+                HistoryDatasetAssociation.purged == false(),  # type: ignore[attr-defined]
+            )
+        ),
+        viewonly=True,
+    )
+    purged_history_associations = relationship(
+        "HistoryDatasetAssociation",
+        primaryjoin=(
+            lambda: and_(
+                Dataset.id == HistoryDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
+                HistoryDatasetAssociation.purged == true(),  # type: ignore[attr-defined]
+            )
+        ),
+        viewonly=True,
+    )
+    active_library_associations = relationship(
+        "LibraryDatasetDatasetAssociation",
+        primaryjoin=(
+            lambda: and_(
+                Dataset.id == LibraryDatasetDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
+                LibraryDatasetDatasetAssociation.deleted == false(),  # type: ignore[has-type]
+            )
+        ),
+        viewonly=True,
+    )
+    hashes = relationship("DatasetHash", back_populates="dataset")
+    sources = relationship("DatasetSource", back_populates="dataset")
+    history_associations = relationship("HistoryDatasetAssociation", back_populates="dataset")
+    library_associations = relationship(
+        "LibraryDatasetDatasetAssociation",
+        primaryjoin=(lambda: LibraryDatasetDatasetAssociation.table.c.dataset_id == Dataset.id),
+        back_populates="dataset",
+    )
+
     class states(str, Enum):
         NEW = "new"
         UPLOAD = "upload"
@@ -9355,31 +9415,11 @@ class CleanupEventImplicitlyConvertedDatasetAssociationAssociation(Base):
     icda_id = Column(Integer, ForeignKey("implicitly_converted_dataset_association.id"), index=True)
 
 
-# The following models (Dataset, HDA, LDDA) are mapped imperatively (for details see discussion in PR #12064)
+# The following models (HDA, LDDA) are mapped imperatively (for details see discussion in PR #12064)
 # TLDR: there are issues ('metadata' property, Galaxy object wrapping) that need to be addressed separately
 # before these models can be mapped declaratively. Keeping them in the mapping module breaks the auth package
 # tests (which import model directly bypassing the mapping module); fixing that is possible by importing
 # mapping into the test; however, having all models mapped in the same module is cleaner.
-
-Dataset.table = Table(
-    "dataset",
-    mapper_registry.metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, index=True, default=now, onupdate=now),
-    Column("state", TrimmedString(64), index=True),
-    Column("deleted", Boolean, index=True, default=False),
-    Column("purged", Boolean, index=True, default=False),
-    Column("purgable", Boolean, default=True),
-    Column("object_store_id", TrimmedString(255), index=True),
-    Column("external_filename", TEXT),
-    Column("_extra_files_path", TEXT),
-    Column("created_from_basename", TEXT),
-    Column("file_size", Numeric(15, 0)),
-    Column("total_size", Numeric(15, 0)),
-    Column("uuid", UUIDType()),
-)
 
 HistoryDatasetAssociation.table = Table(
     "history_dataset_association",
@@ -9468,54 +9508,12 @@ LibraryDatasetDatasetAssociation.table = Table(
 )
 
 mapper_registry.map_imperatively(
-    Dataset,
-    Dataset.table,
-    properties=dict(
-        actions=relationship(DatasetPermissions, back_populates="dataset"),
-        job=relationship(Job, primaryjoin=(Dataset.table.c.job_id == Job.id)),
-        active_history_associations=relationship(
-            HistoryDatasetAssociation,
-            primaryjoin=(
-                (Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id)
-                & (HistoryDatasetAssociation.table.c.deleted == false())
-                & (HistoryDatasetAssociation.table.c.purged == false())
-            ),
-            viewonly=True,
-        ),
-        purged_history_associations=relationship(
-            HistoryDatasetAssociation,
-            primaryjoin=(
-                (Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id)
-                & (HistoryDatasetAssociation.table.c.purged == true())
-            ),
-            viewonly=True,
-        ),
-        active_library_associations=relationship(
-            LibraryDatasetDatasetAssociation,
-            primaryjoin=(
-                (Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id)
-                & (LibraryDatasetDatasetAssociation.table.c.deleted == false())
-            ),
-            viewonly=True,
-        ),
-        hashes=relationship(DatasetHash, back_populates="dataset"),
-        sources=relationship(DatasetSource, back_populates="dataset"),
-        history_associations=relationship(HistoryDatasetAssociation, back_populates="dataset"),
-        library_associations=relationship(
-            LibraryDatasetDatasetAssociation,
-            primaryjoin=(LibraryDatasetDatasetAssociation.table.c.dataset_id == Dataset.table.c.id),
-            back_populates="dataset",
-        ),
-    ),
-)
-
-mapper_registry.map_imperatively(
     HistoryDatasetAssociation,
     HistoryDatasetAssociation.table,
     properties=dict(
         dataset=relationship(
             Dataset,
-            primaryjoin=(Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id),
+            primaryjoin=(lambda: Dataset.id == HistoryDatasetAssociation.table.c.dataset_id),
             lazy="joined",
             back_populates="history_associations",
         ),
@@ -9603,7 +9601,7 @@ mapper_registry.map_imperatively(
     properties=dict(
         dataset=relationship(
             Dataset,
-            primaryjoin=(LibraryDatasetDatasetAssociation.table.c.dataset_id == Dataset.table.c.id),
+            primaryjoin=(lambda: LibraryDatasetDatasetAssociation.table.c.dataset_id == Dataset.id),
             back_populates="library_associations",
         ),
         library_dataset=relationship(
