@@ -7,11 +7,22 @@ export default {
     data() {
         return {
             filter: "",
+            implicitFilter: null,
         };
     },
     computed: {
         isFiltered() {
             return !!this.filter;
+        },
+        effectiveFilter() {
+            let filter = this.filter;
+            const implicitFilter = this.implicitFilter;
+            if (implicitFilter && filter) {
+                filter = `${implicitFilter} ${filter}`;
+            } else if (implicitFilter) {
+                filter = implicitFilter;
+            }
+            return filter;
         },
     },
     methods: {
