@@ -1,0 +1,55 @@
+<tool id="interactive_tool_metashark" tool_type="interactive" name="metashark" version="1.7" profile="22.01">
+    <description>Metadata Shiny Automated Resource and Knowledge</description>
+    <requirements>
+        <container type="docker">eliearnaud/metashark:1.7.0</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="metashark visualisation" requires_domain="True">
+            <port>3838</port>
+            <url>/</url>
+        </entry_point>
+    </entry_points>
+    <command><![CDATA[
+
+        mkdir -p /srv/shiny-server/data/ &&
+        cp '$infile' /srv/shiny-server/data/inputdata.txt &&
+        R -e "options('shiny.port'=3838,shiny.host='0.0.0.0');MetaShARK::runMetashark()"
+
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" multiple="true" format="tabular,csv" label="Input biodiversity data file(s)"/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+<![CDATA[
+
+`MetaShARK <https://github.com/earnaud/MetaShARK-v2>`_ is a R Shiny App to automate metadata creation in Ecological Metadata Language (E>
+
+Example input file (csv ot tabular)::
+
+"ID"    "x"     "y"     "test"
+01      -60.291838      46.328137       2
+02      -114.58927      35.022485       3
+03      -93.37406       30.00586        4
+04      -79.336288      43.682218       5
+05      -109.156024     31.904185       2
+06      -71.098031      42.297408       9
+07      -110.927215     32.18203        12
+
+]]>
+    </help>
+    <citations>
+           <citation type="bibtex">@misc{githubsurvey2018,
+           author       = {Elie Arnaud},
+           title        = {{Metadata Shiny Automated Resource and Knowledge}},
+           publisher    = {Github},
+           url          = {https://github.com/earnaud/MetaShARK-v2}
+           }
+          }</citation>
+    </citations>
+</tool>

@@ -1,6 +1,6 @@
-<tool id="interactive_tool_climate_notebook" tool_type="interactive" name="Interactive Climate Notebook" version="0.2">
+<tool id="interactive_tool_climate_notebook" tool_type="interactive" name="Interactive Climate Notebook" version="0.4" profile="22.01">
     <requirements>
-        <container type="docker">nordicesmhub/docker-climate-notebook:1.2</container>
+        <container type="docker">quay.io/nordicesmhub/docker-climate-notebook:2021-03-18</container>
     </requirements>
     <entry_points>
         <entry_point name="Climate Interactive Tool" requires_domain="True">
@@ -15,7 +15,7 @@
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
         <environment_variable name="API_KEY" inject="api_key" />
     </environment_variables>
-    <command detect_errors="aggressive"><![CDATA[
+    <command><![CDATA[
         #import re
         export GALAXY_WORKING_DIR=`pwd` &&
         mkdir -p ./jupyter/outputs/ &&
