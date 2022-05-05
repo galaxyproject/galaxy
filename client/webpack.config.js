@@ -72,9 +72,7 @@ module.exports = (env = {}, argv = {}) => {
                     },
                     libs: {
                         name: "libs",
-                        test: new RegExp(
-                            `node_modules[\\/](?!(${modulesExcludedFromLibs})[\\/])|galaxy/scripts/libs`
-                        ),
+                        test: new RegExp(`node_modules[\\/](?!(${modulesExcludedFromLibs})[\\/])|galaxy/scripts/libs`),
                         chunks: "all",
                         priority: -10,
                     },
@@ -192,6 +190,10 @@ module.exports = (env = {}, argv = {}) => {
                 Galaxy: ["app", "monitor"],
                 Buffer: ["buffer", "Buffer"],
                 process: "process/browser",
+            }),
+            new webpack.DefinePlugin({
+                __targetEnv__: JSON.stringify(targetEnv),
+                __buildTimestamp__: JSON.stringify(new Date().toISOString()),
             }),
             new VueLoaderPlugin(),
             new MiniCssExtractPlugin({
