@@ -293,13 +293,6 @@ GalaxyApp.prototype.debuggingNamespaces = function _debuggingNamespaces(namespac
     }
 };
 
-GalaxyApp.prototype.clientBuildInfo = {
-    /* global __targetEnv__, __buildTimestamp__ */
-    // These are plugged in from webpack/DefinePlugin at client build time.
-    env: __targetEnv__,
-    buildTimestamp: __buildTimestamp__,
-};
-
 /** string rep */
 GalaxyApp.prototype.toString = function toString() {
     const userEmail = this.user ? this.user.get("email") || "(anonymous)" : "uninitialized";
