@@ -307,7 +307,7 @@ class MetadataToolOutputAction(ToolOutputAction):
         if value is None and self.default is not None:
             value = self.default
         if value is not None:
-            setattr(output_dataset.metadata, self.name, value)
+            setattr(output_dataset.metadata_, self.name, value)
 
 
 class FormatToolOutputAction(ToolOutputAction):
