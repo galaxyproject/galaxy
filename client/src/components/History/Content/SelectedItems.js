@@ -89,6 +89,11 @@ export default {
                 this.reset();
             }
         },
+        totalItemsInQuery(newVal, oldVal) {
+            if (this.allSelected && newVal !== oldVal) {
+                this.resetQuerySelection();
+            }
+        },
     },
     render() {
         return this.$scopedSlots.default({
