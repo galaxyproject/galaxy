@@ -44,7 +44,6 @@ from galaxy.managers.workflows import (
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
-    InvocationIndexPayload,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
@@ -72,6 +71,11 @@ from galaxy.webapps.base.controller import (
     UsesStoredWorkflowMixin,
 )
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from galaxy.webapps.galaxy.services.invocations import (
+    InvocationIndexPayload,
+    InvocationSerializationParams,
+    InvocationsService,
+)
 from galaxy.webapps.galaxy.services.workflows import WorkflowsService
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
@@ -91,6 +95,7 @@ router = Router(tags=["workflows"])
 
 class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, UsesAnnotations, SharableMixin):
     service: WorkflowsService = depends(WorkflowsService)
+    invocations_service: InvocationsService = depends(InvocationsService)
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
@@ -852,40 +857,10 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
         invocation_payload = InvocationIndexPayload(**kwd)
-        workflow_id = invocation_payload.workflow_id
-        if invocation_payload.instance:
-            invocation_payload.workflow_id = self.__get_stored_workflow(
-                trans, trans.security.encode_id(workflow_id), instance=True
-            ).id
-        if invocation_payload.history_id:
-            # access check
-            self.history_manager.get_accessible(
-                invocation_payload.history_id, trans.user, current_history=trans.history
-            )
-        if not trans.user_is_admin:
-            # We restrict the query to the current users' invocations
-            # Endpoint requires user login, so trans.user.id is never None
-            # TODO: user_id should be optional!
-            user_id = trans.user.id
-            if invocation_payload.user_id and invocation_payload.user_id != user_id:
-                raise exceptions.AdminRequiredException("Only admins can index the invocations of others")
-        else:
-            # Get all invocation if user is admin (and user_id is None)
-            user_id = invocation_payload.user_id
-        invocations, total_matches = self.workflow_manager.build_invocations_query(
-            trans,
-            stored_workflow_id=invocation_payload.workflow_id,
-            history_id=invocation_payload.history_id,
-            job_id=invocation_payload.job_id,
-            user_id=user_id,
-            include_terminal=invocation_payload.include_terminal,
-            limit=invocation_payload.limit,
-            offset=invocation_payload.offset,
-            sort_by=invocation_payload.sort_by,
-            sort_desc=invocation_payload.sort_desc,
-        )
+        serialization_params = InvocationSerializationParams(**kwd)
+        invocations, total_matches = self.invocations_service.index(trans, invocation_payload, serialization_params)
         trans.response.headers["total_matches"] = total_matches
-        return self.workflow_manager.serialize_workflow_invocations(invocations, **kwd)
+        return invocations
 
     @expose_api
     def show_invocation(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
@@ -919,11 +894,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id, eager=True)
         if workflow_invocation:
-            step_details = util.string_as_bool(kwd.pop("step_details", "False"))
-            legacy_job_state = util.string_as_bool(kwd.pop("legacy_job_state", "False"))
-            return self.__encode_invocation(
-                workflow_invocation, step_details=step_details, legacy_job_state=legacy_job_state, **kwd
-            )
+            return self.__encode_invocation(workflow_invocation, **kwd)
         return None
 
     @expose_api
@@ -1426,7 +1397,8 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         return self.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
 
     def __encode_invocation(self, invocation, **kwd):
-        return self.workflow_manager.serialize_workflow_invocation(invocation, **kwd)
+        params = InvocationSerializationParams(**kwd)
+        return self.invocations_service.serialize_workflow_invocation(invocation, params)
 
 
 StoredWorkflowIDPathParam: EncodedDatabaseIdField = Path(

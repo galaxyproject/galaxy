@@ -338,19 +338,6 @@ class WorkflowsManager(sharable.SharableModelManager):
         ]
         return invocations, total_matches
 
-    def serialize_workflow_invocation(self, invocation, **kwd):
-        app = self.app
-        view = kwd.get("view", "element")
-        step_details = util.string_as_bool(kwd.get("step_details", False))
-        legacy_job_state = util.string_as_bool(kwd.get("legacy_job_state", False))
-        as_dict = invocation.to_dict(view, step_details=step_details, legacy_job_state=legacy_job_state)
-        return app.security.encode_all_ids(as_dict, recursive=True)
-
-    def serialize_workflow_invocations(self, invocations, **kwd):
-        if "view" not in kwd:
-            kwd["view"] = "collection"
-        return list(map(lambda i: self.serialize_workflow_invocation(i, **kwd), invocations))
-
 
 CreatedWorkflow = namedtuple("CreatedWorkflow", ["stored_workflow", "workflow", "missing_tools"])
 
