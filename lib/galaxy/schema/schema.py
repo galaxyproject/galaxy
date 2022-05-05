@@ -1048,12 +1048,11 @@ class WorkflowSortByEnum(str, Enum):
     none = None
 
 
-class WorkflowIndexPayload(Model):
+class WorkflowIndexQueryPayload(Model):
     show_deleted: bool = False
     show_hidden: bool = False
     show_published: Optional[bool] = None
     show_shared: Optional[bool] = None
-    missing_tools: bool = False
     sort_by: Optional[WorkflowSortByEnum] = Field(title="Sort By", description="Sort workflows by this attribute")
     sort_desc: Optional[bool] = Field(
         title="Sort descending", description="Explicitly sort by descending if sort_by is specified."

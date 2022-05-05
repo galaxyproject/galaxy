@@ -48,7 +48,6 @@ from galaxy.schema.schema import (
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
-    WorkflowIndexPayload,
     WorkflowSortByEnum,
 )
 from galaxy.structured_app import StructuredApp
@@ -76,7 +75,10 @@ from galaxy.webapps.galaxy.services.invocations import (
     InvocationSerializationParams,
     InvocationsService,
 )
-from galaxy.webapps.galaxy.services.workflows import WorkflowsService
+from galaxy.webapps.galaxy.services.workflows import (
+    WorkflowIndexPayload,
+    WorkflowsService,
+)
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import queue_invoke
@@ -85,7 +87,9 @@ from . import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    IndexQueryTag,
     Router,
+    search_query_param,
 )
 
 log = logging.getLogger(__name__)
@@ -1444,10 +1448,27 @@ OffsetQueryParam: Optional[int] = Query(
     title="Number of workflows to skip in sorted query (to enable pagination).",
 )
 
-SearchQueryParam: Optional[str] = Query(
-    default=None,
-    title="Search query.",
-    description="Free text used to filter the query. Filters on a name and tags, Github-style tags can be used to be more specific. Free-text search is case-insensitive.",
+query_tags = [
+    IndexQueryTag("name", "The stored workflow's name.", "n"),
+    IndexQueryTag(
+        "tag",
+        "The workflow's tag, if the tag contains a colon an approach will be made to match the key and value of the tag separately.",
+        "t",
+    ),
+    IndexQueryTag(
+        "is:published",
+        "Include only published workflows in the final result. Be sure the the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.",
+    ),
+    IndexQueryTag(
+        "is:share_with_me",
+        "Include only workflows shared with the requesting user.  Be sure the the query parameter `show_shared` is set to `true` if to include shared workflows.",
+    ),
+]
+
+SearchQueryParam: Optional[str] = search_query_param(
+    model_name="Stored Workflow",
+    tags=query_tags,
+    free_text_fields=["name", "tag"],
 )
 
 SkipStepCountsQueryParam: bool = Query(
@@ -1482,7 +1503,7 @@ class FastAPIWorkflows:
         search: Optional[str] = SearchQueryParam,
         skip_step_counts: bool = SkipStepCountsQueryParam,
     ) -> List[Dict[str, Any]]:
-        """Return the sharing status of the item."""
+        """Lists stored workflows viewable by the user."""
         payload = WorkflowIndexPayload(
             show_published=show_published,
             show_hidden=show_hidden,

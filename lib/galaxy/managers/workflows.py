@@ -9,6 +9,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
 )
 
 from gxformat2 import (
@@ -18,9 +19,17 @@ from gxformat2 import (
     python_to_workflow,
 )
 from pydantic import BaseModel
-from sqlalchemy import and_
+from sqlalchemy import (
+    and_,
+    desc,
+    false,
+    or_,
+    true,
+)
 from sqlalchemy.orm import (
+    aliased,
     joinedload,
+    Query,
     subqueryload,
 )
 
@@ -31,7 +40,14 @@ from galaxy import (
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.managers import sharable
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.model.index_filter_util import (
+    raw_text_column_filter,
+    tag_filter,
+    text_column_filter,
+)
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.schema.schema import WorkflowIndexQueryPayload
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.parameters import (
     params_to_incoming,
@@ -48,6 +64,11 @@ from galaxy.util.json import (
     safe_loads,
 )
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.search import (
+    FilteredTerm,
+    parse_filters_structured,
+    RawTextTerm,
+)
 from galaxy.web import url_for
 from galaxy.workflow.modules import (
     is_tool_module_type,
@@ -69,6 +90,15 @@ from .executables import artifact_class
 log = logging.getLogger(__name__)
 
 
+INDEX_SEARCH_FILTERS = {
+    "name": "name",
+    "tag": "tag",
+    "n": "name",
+    "t": "tag",
+    "is": "is",
+}
+
+
 class WorkflowsManager(sharable.SharableModelManager):
     """Handle CRUD type operations related to workflows. More interesting
     stuff regarding workflow execution, step sorting, etc... can be found in
@@ -82,6 +112,109 @@ class WorkflowsManager(sharable.SharableModelManager):
     def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.app = app
+
+    def index_query(
+        self, trans: ProvidesUserContext, payload: WorkflowIndexQueryPayload, include_total_count: bool = False
+    ) -> Tuple[Query, Optional[int]]:
+        show_published = payload.show_published
+        show_hidden = payload.show_hidden
+        show_deleted = payload.show_deleted
+        show_shared = payload.show_shared
+
+        if show_shared is None:
+            show_shared = not show_hidden and not show_deleted
+
+        if show_shared and show_deleted:
+            message = "show_shared and show_deleted cannot both be specified as true"
+            raise exceptions.RequestParameterInvalidException(message)
+        if show_shared and show_hidden:
+            message = "show_shared and show_hidden cannot both be specified as true"
+            raise exceptions.RequestParameterInvalidException(message)
+
+        filters = [
+            model.StoredWorkflow.user == trans.user,
+        ]
+        user = trans.user
+        if user and show_shared:
+            filters.append(model.StoredWorkflowUserShareAssociation.user == user)
+
+        if show_published or user is None and show_published is None:
+            filters.append((model.StoredWorkflow.published == true()))
+
+        query = trans.sa_session.query(model.StoredWorkflow)
+        if show_shared:
+            query = query.outerjoin(model.StoredWorkflow.users_shared_with)
+        query = query.outerjoin(model.StoredWorkflow.tags)
+
+        latest_workflow_load = joinedload("latest_workflow")
+        if not payload.skip_step_counts:
+            latest_workflow_load = latest_workflow_load.undefer("step_count")
+        latest_workflow_load = latest_workflow_load.lazyload("steps")
+
+        query = query.options(joinedload(model.StoredWorkflow.annotations))
+        query = query.options(latest_workflow_load)
+        query = query.filter(or_(*filters))
+        query = query.filter(model.StoredWorkflow.table.c.hidden == (true() if show_hidden else false()))
+        query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
+        if payload.search:
+            search_query = payload.search
+            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+
+            def w_tag_filter(term_text: str, quoted: bool):
+                nonlocal query
+                alias = aliased(model.StoredWorkflowTagAssociation)
+                query = query.outerjoin(model.StoredWorkflow.tags.of_type(alias))
+                return tag_filter(alias, term_text, quoted)
+
+            def name_filter(term):
+                return text_column_filter(model.StoredWorkflow.name, term)
+
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
+                    if key == "tag":
+                        tf = w_tag_filter(term.text, term.quoted)
+                        query = query.filter(tf)
+                    elif key == "name":
+                        query = query.filter(name_filter(term))
+                    elif key == "is":
+                        if q == "published":
+                            query = query.filter(model.StoredWorkflow.published == true())
+                        elif q == "shared_with_me":
+                            if not show_shared:
+                                message = "Can only use tag is:shared_with_me if show_shared parameter also true."
+                                raise exceptions.RequestParameterInvalidException(message)
+                            query = query.filter(model.StoredWorkflowUserShareAssociation.user == user)
+                elif isinstance(term, RawTextTerm):
+                    tf = w_tag_filter(term.text, False)
+                    query = query.filter(
+                        raw_text_column_filter(
+                            [
+                                model.StoredWorkflow.name,
+                                tf,
+                            ],
+                            term,
+                        )
+                    )
+        if include_total_count:
+            total_matches = query.count()
+        else:
+            total_matches = None
+        if payload.sort_by is None:
+            if user:
+                query = query.order_by(desc(model.StoredWorkflow.user == user))
+            query = query.order_by(desc(model.StoredWorkflow.table.c.update_time))
+        else:
+            sort_column = getattr(model.StoredWorkflow, payload.sort_by)
+            if payload.sort_desc:
+                sort_column = sort_column.desc()
+            query = query.order_by(sort_column)
+        if payload.limit is not None:
+            query = query.limit(payload.limit)
+        if payload.offset is not None:
+            query = query.offset(payload.offset)
+        return query, total_matches
 
     def get_stored_workflow(self, trans, workflow_id, by_stored_id=True):
         """Use a supplied ID (UUID or encoded stored workflow ID) to find
@@ -286,7 +419,7 @@ class WorkflowsManager(sharable.SharableModelManager):
 
     def build_invocations_query(
         self,
-        trans,
+        trans: ProvidesUserContext,
         stored_workflow_id=None,
         history_id=None,
         job_id=None,
@@ -296,7 +429,7 @@ class WorkflowsManager(sharable.SharableModelManager):
         offset=None,
         sort_by=None,
         sort_desc=None,
-    ):
+    ) -> Tuple[Query, int]:
         """Get invocations owned by the current user."""
         sa_session = trans.sa_session
         invocations_query = sa_session.query(model.WorkflowInvocation)

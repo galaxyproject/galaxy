@@ -3,10 +3,12 @@ This module *does not* contain API routes. It exclusively contains dependencies 
 """
 import inspect
 from enum import Enum
+from string import Template
 from typing import (
     Any,
     AsyncGenerator,
     cast,
+    NamedTuple,
     Optional,
     Tuple,
     Type,
@@ -410,3 +412,58 @@ async def try_get_request_body_as_json(request: Request) -> Optional[Any]:
         body = await request.json()
         return body
     return None
+
+
+search_description_template = Template(
+    """A mix of free text and GitHub-style tags used to filter the index operation.
+
+## Query Structure
+
+GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+`<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+*generally* (but not exclusively) corresponds to the name of an attribute on the model
+being indexed (i.e. a column in the database).
+
+If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+generally a partial match will be used to filter the query (i.e. in terms of the implementation
+this means the database operation `ILIKE` will typically be used).
+
+Once the tagged filters are extracted from the search query, the remaing text is just
+used to search various documented attributes of the object.
+
+## GitHub-style Tags Available
+
+${tags}
+
+## Free Text
+
+Free text search terms will be searched against the following attributes of the
+${model_name}s: ${freetext}.
+
+"""
+)
+
+
+class IndexQueryTag(NamedTuple):
+    tag: str
+    description: str
+    alias: Optional[str] = None
+
+    def as_markdown(self):
+        desc = self.description
+        alias = self.alias
+        if alias:
+            desc += f" (The tag `{alias}` can be used a short hand alias for this tag to filter on this attribute.)"
+        return f"`{self.tag}`\n: {desc}"
+
+
+def search_query_param(model_name: str, tags: list, free_text_fields: list) -> Optional[str]:
+    tags_markdown_str = "\n\n".join([t.as_markdown() for t in tags])
+    description = search_description_template.safe_substitute(
+        model_name=model_name, tags=tags_markdown_str, freetext=", ".join([f"`{t}`" for t in free_text_fields])
+    )
+    return Query(
+        default=None,
+        title="Search query.",
+        description=description,
+    )
