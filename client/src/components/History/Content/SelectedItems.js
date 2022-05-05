@@ -1,30 +1,47 @@
 /**
- * This is simple list management for the moment, but if I remember right we have plans for a more
- * abstracted selection scheme in the future for purposes of handling large bulk operations on the
- * server, this is a good place to implement that logic.
+ * This component deals with item selection inside a history.
+ * It allows to select individual items or perform a query selection.
  */
+
+import { getFilters, testFilters } from "store/historyStore/model/filtering";
 
 export default {
     props: {
         scopeKey: { type: String, required: true },
         getItemKey: { type: Function, required: true },
+        filterText: { type: String, required: true },
+        totalItemsInQuery: { type: Number, required: false },
     },
     data() {
         return {
             items: new Map(),
             showSelection: false,
+            allSelected: false,
         };
     },
     computed: {
         selectionSize() {
-            return this.items.size;
+            return this.isQuerySelection ? this.totalItemsInQuery : this.items.size;
+        },
+        isQuerySelection() {
+            return this.allSelected && this.totalItemsInQuery !== this.items.size;
+        },
+        currentFilters() {
+            return getFilters(this.filterText);
         },
     },
     methods: {
         setShowSelection(val) {
             this.showSelection = val;
         },
+        selectAllInCurrentQuery(loadedItems = []) {
+            this.selectItems(loadedItems);
+            this.allSelected = true;
+        },
         isSelected(item) {
+            if (this.isQuerySelection) {
+                return testFilters(this.currentFilters, item);
+            }
             const key = this.getItemKey(item);
             return this.items.has(key);
         },
@@ -33,6 +50,7 @@ export default {
             const newSelected = new Map(this.items);
             selected ? newSelected.set(key, item) : newSelected.delete(key);
             this.items = newSelected;
+            this.resetQuerySelection();
         },
         selectItems(items = []) {
             const newItems = [...this.items.values(), ...items];
@@ -41,9 +59,15 @@ export default {
                 return [key, item];
             });
             this.items = new Map(newEntries);
+            this.resetQuerySelection();
+        },
+        resetQuerySelection() {
+            this.allSelected = false;
         },
         reset() {
             this.items = new Map();
+            this.resetQuerySelection();
+            this.showSelection = false;
         },
     },
     watch: {
@@ -67,7 +91,10 @@ export default {
         return this.$scopedSlots.default({
             selectedItems: this.items,
             showSelection: this.showSelection,
+            isQuerySelection: this.isQuerySelection,
+            selectionSize: this.selectionSize,
             setShowSelection: this.setShowSelection,
+            selectAllInCurrentQuery: this.selectAllInCurrentQuery,
             selectItems: this.selectItems,
             isSelected: this.isSelected,
             setSelected: this.setSelected,

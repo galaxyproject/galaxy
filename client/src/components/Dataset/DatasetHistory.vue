@@ -11,7 +11,7 @@ export default {
         item: Object,
     },
     computed: {
-        ...mapGetters(["getHistoryNameById"]),
+        ...mapGetters("history", ["getHistoryNameById"]),
         historyName() {
             return this.getHistoryNameById(this.item.history_id);
         },

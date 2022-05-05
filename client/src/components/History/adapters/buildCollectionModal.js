@@ -15,7 +15,13 @@ import LIST_OF_PAIRS_COLLECTION_CREATOR from "../../Collections/PairedListCollec
 import RULE_BASED_COLLECTION_CREATOR from "../../Collections/RuleBasedCollectionCreatorModal";
 
 // stand-in for buildCollection from history-view-edit.js
-export async function buildCollectionModal(collectionType, history_id, selectedContent, hideSourceItems = true) {
+export async function buildCollectionModal(
+    collectionType,
+    history_id,
+    selectedContent,
+    hideSourceItems = true,
+    fromRulesInput = false
+) {
     // select legacy function
     let createFunc;
     if (collectionType == "list") {
@@ -29,10 +35,13 @@ export async function buildCollectionModal(collectionType, history_id, selectedC
     } else {
         throw new Error(`Unknown collectionType encountered ${collectionType}`);
     }
-
     // pull up cached content by type_ids;
-    const fakeBackboneContent = createBackboneContent(history_id, selectedContent);
-    return await createFunc(fakeBackboneContent, hideSourceItems);
+    if (fromRulesInput) {
+        return await createFunc(selectedContent, hideSourceItems);
+    } else {
+        const fakeBackboneContent = createBackboneContent(history_id, selectedContent);
+        return await createFunc(fakeBackboneContent, hideSourceItems);
+    }
 }
 
 const createBackboneContent = (historyId, selection) => {

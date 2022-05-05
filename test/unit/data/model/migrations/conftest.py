@@ -1,16 +1,5 @@
-import tempfile
-
 import pytest
 import sqlalchemy as sa
-
-# Helper fixtures
-
-
-@pytest.fixture(scope="module")
-def tmp_directory():
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        yield tmp_dir
-
 
 # Fixtures: metadata containing one or more tables and representing database state.
 # Used to load a database with a given state.
@@ -37,6 +26,15 @@ def tmp_directory():
 # Additional edge case: gxy at state3, tsi has no SQLAlchemy Migrate table.
 #
 # (State 0 assumes an empty database, so it needs no state fixtures.)
+
+
+# state 0-kombu
+@pytest.fixture
+def metadata_state0kombu(kombu_message_table, kombu_queue_table):
+    metadata = sa.MetaData()
+    kombu_message_table(metadata)
+    kombu_queue_table(metadata)
+    return metadata
 
 
 # state 1
@@ -303,5 +301,21 @@ def sqlalchemymigrate_table():
             sa.Column("version", sa.Integer),
         )
         return table
+
+    return make_table
+
+
+@pytest.fixture
+def kombu_message_table():
+    def make_table(metadata):
+        return sa.Table("kombu_message", metadata, sa.Column("id", sa.Integer, primary_key=True))
+
+    return make_table
+
+
+@pytest.fixture
+def kombu_queue_table():
+    def make_table(metadata):
+        return sa.Table("kombu_queue", metadata, sa.Column("id", sa.Integer, primary_key=True))
 
     return make_table

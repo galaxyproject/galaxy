@@ -12,10 +12,13 @@ from functools import (
 from typing import (
     Any,
     Dict,
+    Optional,
+    Tuple,
     TYPE_CHECKING,
 )
 
 import requests
+import yaml
 from gxformat2 import (
     convert_and_import_workflow,
     ImporterGalaxyInterface,
@@ -28,6 +31,7 @@ from galaxy.selenium.navigates_galaxy import (
     NavigatesGalaxy,
     retry_during_transitions,
 )
+from galaxy.tool_util.verify.interactor import prepare_request_params
 from galaxy.util import (
     asbool,
     classproperty,
@@ -39,6 +43,10 @@ from galaxy_test.base.api_util import get_admin_api_key
 from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     get_ip_address,
+)
+from galaxy_test.base.populators import (
+    load_data_dict,
+    skip_if_github_down,
 )
 from galaxy_test.base.testcase import FunctionalTestCase
 
@@ -384,16 +392,10 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
     def assert_initial_history_panel_state_correct(self):
         # Move into a TestsHistoryPanel mixin
         unnamed_name = self.components.history_panel.new_name.text
-
         name_element = self.history_panel_name_element()
+
         assert name_element.is_displayed()
         assert unnamed_name in name_element.text
-
-        initial_size_str = self.components.history_panel.new_size.text
-        size_selector = self.components.history_panel.size
-        size_text = size_selector.wait_for_text()
-
-        assert initial_size_str in size_text, f"{initial_size_str} not in {size_text}"
 
         self.components.history_panel.empty_message.wait_for_visible()
 
@@ -417,12 +419,6 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
         modal_element = self.components.workflow_editor.state_modal_body.wait_for_visible()
         text = modal_element.text
         assert expected_text in text, f"Failed to find expected text [{expected_text}] in modal text [{text}]"
-
-    def workflow_upload_yaml_with_random_name(self, content, **kwds):
-        workflow_populator = self.workflow_populator
-        name = self._get_random_name()
-        workflow_populator.upload_yaml_workflow(content, name=name, **kwds)
-        return name
 
     def ensure_visualization_available(self, hid, visualization_name):
         """Skip or fail a test if visualization for file doesn't appear.
@@ -540,6 +536,101 @@ class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
         assert hid_text == str(hid), hid_text
 
 
+EXAMPLE_WORKFLOW_URL_1 = (
+    "https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga"
+)
+
+
+class UsesWorkflowAssertions(NavigatesGalaxyMixin):
+    @retry_assertion_during_transitions
+    def _assert_showing_n_workflows(self, n):
+        assert len(self.workflow_index_table_elements()) == n
+
+    @skip_if_github_down
+    def _workflow_import_from_url(self, url=EXAMPLE_WORKFLOW_URL_1):
+        self.workflow_index_click_import()
+        self.workflow_import_submit_url(url)
+
+
+class TestsGalaxyPagers(GalaxyTestSeleniumContext):
+    @retry_assertion_during_transitions
+    def _assert_current_page_is(self, component, expected_page: int):
+        component.pager.wait_for_visible()
+        page_from_pager = component.pager_page_active.wait_for_present().text
+        assert int(page_from_pager) == expected_page
+
+    def _next_page(self, component):
+        component.pager_page_next.wait_for_and_click()
+
+    def _previous_page(self, component):
+        component.pager_page_previous.wait_for_and_click()
+
+    def _last_page(self, component):
+        component.pager_page_last.wait_for_and_click()
+
+    def _first_page(self, component):
+        component.pager_page_first.wait_for_and_click()
+
+
+class RunsWorkflows(GalaxyTestSeleniumContext):
+    def workflow_upload_yaml_with_random_name(self, content: str, **kwds) -> str:
+        name = self._get_random_name()
+        workflow_populator = self.workflow_populator
+        workflow_populator.upload_yaml_workflow(content, name=name, **kwds)
+        return name
+
+    def workflow_run_setup_inputs(self, content: Optional[str]) -> Tuple[str, Dict[str, Any]]:
+        history_id = self.current_history_id()
+        if content:
+            yaml_content = yaml.safe_load(content)
+            if "test_data" in yaml_content:
+                test_data = yaml_content["test_data"]
+            else:
+                test_data = yaml_content
+            inputs, _, _ = load_data_dict(
+                history_id, test_data, self.dataset_populator, self.dataset_collection_populator
+            )
+            self.dataset_populator.wait_for_history(history_id)
+        else:
+            inputs = {}
+        return history_id, inputs
+
+    def workflow_run_open_workflow(self, yaml_content: str):
+        name = self.workflow_upload_yaml_with_random_name(yaml_content)
+        self.workflow_run_with_name(name)
+
+    def workflow_run_and_submit(
+        self,
+        workflow_content: str,
+        test_data_content: Optional[str] = None,
+        landing_screenshot_name=None,
+        inputs_specified_screenshot_name: Optional[str] = None,
+        ensure_expanded: bool = False,
+    ):
+        history_id, inputs = self.workflow_run_setup_inputs(test_data_content)
+        self.workflow_run_open_workflow(workflow_content)
+        if ensure_expanded:
+            self.workflow_run_ensure_expanded()
+        self.screenshot_if(landing_screenshot_name)
+        self.workflow_run_specify_inputs(inputs)
+        self.screenshot_if(inputs_specified_screenshot_name)
+        self.workflow_run_submit()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        return history_id
+
+    def workflow_run_wait_for_ok(self, hid: int, expand=False):
+        if self.is_beta_history():
+            timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
+            item = self.content_item_by_attributes(hid=hid, state="ok")
+            item.wait_for_present(timeout=timeout)
+            if expand:
+                item.title.wait_for_and_click()
+        else:
+            self.history_panel_wait_for_hid_ok(hid, allowed_force_refreshes=1)
+            if expand:
+                self.history_panel_click_item_title(hid=hid, wait=True)
+
+
 def default_web_host_for_selenium_tests():
     if asbool(GALAXY_TEST_SELENIUM_REMOTE):
         try:
@@ -615,59 +706,36 @@ class SeleniumSessionGetPostMixin:
 
     def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
-        if data is None:
-            data = {}
-
-        if files is None:
-            files = data.get("__files", None)
-            if files is not None:
-                del data["__files"]
-
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        request_kwd = self._prepare_request_data(
-            dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT, files=files), data, as_json=json
-        )
-        response = requests.post(full_url, **request_kwd)
+        request_kwd = prepare_request_params(data=data, files=files, as_json=json, headers=headers, cookies=cookies)
+        response = requests.post(full_url, timeout=DEFAULT_SOCKET_TIMEOUT, **request_kwd)
         return response
 
     def _delete(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
-        data = data or {}
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        request_kwd = self._prepare_request_data(
-            dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT), data, as_json=json
-        )
-        response = requests.delete(full_url, **request_kwd)
+        request_kwd = prepare_request_params(data=data, as_json=json, headers=headers, cookies=cookies)
+        response = requests.delete(full_url, timeout=DEFAULT_SOCKET_TIMEOUT, **request_kwd)
         return response
 
     def _put(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
-        data = data or {}
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        request_kwd = self._prepare_request_data(
-            dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT), data, as_json=json
-        )
+        request_kwd = prepare_request_params(data=data, as_json=json, headers=headers, cookies=cookies)
         response = requests.put(full_url, **request_kwd)
         return response
-
-    def _prepare_request_data(self, request_kwd: Dict[str, Any], data: Dict[str, Any], as_json: bool = False):
-        if as_json:
-            request_kwd["json"] = data
-        else:
-            request_kwd["data"] = data
-        return request_kwd
 
 
 class SeleniumSessionDatasetPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetPopulator):

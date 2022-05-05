@@ -133,7 +133,7 @@ class RegexValidator(Validator):
 
     def __init__(self, message, expression, negate):
         if message is None:
-            message = f"Value '%s' does {'not ' if negate == 'false' else ''}match regular expression '{expression}'"
+            message = f"Value '%s' does {'not ' if negate == 'false' else ''}match regular expression '{expression.replace('%', '%%')}'"
         super().__init__(message, negate)
         # Compile later. RE objects used to not be thread safe. Not sure about
         # the sre module.

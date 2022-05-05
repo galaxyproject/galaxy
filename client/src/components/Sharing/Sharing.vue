@@ -1,28 +1,30 @@
 <template>
-    <div v-if="ready">
-        <h3>Share or Publish {{ modelClass }} `{{ item.title }}`</h3>
+    <div>
+        <h3>
+            Share or Publish {{ modelClass }} <span v-if="ready">`{{ item.title }}`</span>
+        </h3>
         <div v-for="error in errors" :key="error">
             <b-alert show variant="danger" dismissible @dismissed="errors = errors.filter((e) => e !== error)">
-                {{ error }}
+                <ErrorMessage :message="error" :root="root()"> </ErrorMessage>
             </b-alert>
         </div>
         <br />
         <div v-if="!hasUsername">
             <div>To make a {{ modelClass }} accessible via link or publish it, you must create a public username:</div>
             <form class="form-group" @submit.prevent="setUsername()">
-                <input class="form-control" type="text" v-model="newUsername" />
+                <input v-model="newUsername" class="form-control" type="text" />
             </form>
             <b-button type="submit" variant="primary" @click="setUsername()">Set Username</b-button>
         </div>
-        <div v-else>
-            <b-form-checkbox switch class="make-accessible" v-model="item.importable" @change="onImportable">
+        <div v-else-if="ready">
+            <b-form-checkbox v-model="item.importable" switch class="make-accessible" @change="onImportable">
                 Make {{ modelClass }} accessible
             </b-form-checkbox>
             <b-form-checkbox
                 v-if="item.importable"
+                v-model="item.published"
                 class="make-publishable"
                 switch
-                v-model="item.published"
                 @change="onPublish">
                 Make {{ modelClass }} publicly available in
                 <a :href="published_url" target="_top">Published {{ pluralName }}</a>
@@ -35,10 +37,10 @@
                 </div>
                 <p>Anyone can view and import this {{ modelClass }} by visiting the following URL:</p>
                 <blockquote>
-                    <b-button title="Edit URL" @click="onEdit" v-b-tooltip.hover variant="link" size="sm">
+                    <b-button v-b-tooltip.hover title="Edit URL" variant="link" size="sm" @click="onEdit">
                         <font-awesome-icon icon="edit" />
                     </b-button>
-                    <b-button id="tooltip-clipboard" @click="onCopy" @mouseout="onCopyOut" variant="link" size="sm">
+                    <b-button id="tooltip-clipboard" variant="link" size="sm" @click="onCopy" @mouseout="onCopyOut">
                         <font-awesome-icon :icon="['far', 'copy']" />
                     </b-button>
                     <b-tooltip target="tooltip-clipboard" triggers="hover">
@@ -61,10 +63,10 @@
             <br />
             <b-card no-body>
                 <b-button
-                    class="share-with-collapse"
-                    @click="isCollapseVisible = !isCollapseVisible"
                     v-b-toggle.accordion-1
-                    variant="light">
+                    class="share-with-collapse"
+                    variant="light"
+                    @click="isCollapseVisible = !isCollapseVisible">
                     Share {{ modelClass }} with Individual Users
                     <font-awesome-icon :icon="isCollapseVisible ? `caret-up` : `caret-down`" />
                 </b-button>
@@ -72,7 +74,7 @@
                     <ConfigProvider v-slot="{ config }">
                         <CurrentUser v-slot="{ user }">
                             <div v-if="user && config && !permissionsChangeRequired(item)">
-                                <p class="share_with_title" v-if="item.users_shared_with.length === 0">
+                                <p v-if="item.users_shared_with.length === 0" class="share_with_title">
                                     You have not shared this {{ modelClass }} with any users.
                                 </p>
                                 <p v-else class="share_with_title">
@@ -99,29 +101,31 @@
                                         :internal-search="false"
                                         :max-height="config.expose_user_email || user.is_admin ? 300 : 0"
                                         label="email"
-                                        @close="onMultiselectBlur(config.expose_user_email || user.is_admin)"
                                         track-by="email"
+                                        placeholder="Please specify user email"
+                                        @close="onMultiselectBlur(config.expose_user_email || user.is_admin)"
                                         @search-change="
                                             searchChanged($event, config.expose_user_email || user.is_admin)
-                                        "
-                                        placeholder="Please specify user email">
-                                        <template slot="caret" v-if="!(config.expose_user_email || user.is_admin)">
+                                        ">
+                                        <template v-if="!(config.expose_user_email || user.is_admin)" slot="caret">
                                             <div></div>
                                         </template>
-                                        <template slot="noResult" v-if="config.expose_user_email || user.is_admin">
+                                        <template v-if="config.expose_user_email || user.is_admin" slot="noResult">
                                             <div v-if="threeCharactersEntered">
                                                 {{ elementsNotFoundWarning }}
                                             </div>
                                             <div v-else>{{ charactersThresholdWarning }}</div>
                                         </template>
                                         <template slot="tag" slot-scope="{ option, remove }">
-                                            <span class="multiselect__tag">
+                                            <span
+                                                class="multiselect__tag remove_sharing_with"
+                                                :data-email="option.email">
                                                 <span>{{ option.email }}</span>
                                                 <i
                                                     aria-hidden="true"
-                                                    @click="remove(option)"
                                                     tabindex="1"
-                                                    class="multiselect__tag-icon"></i>
+                                                    class="multiselect__tag-icon"
+                                                    @click="remove(option)"></i>
                                             </span>
                                         </template>
                                         <template slot="noOptions">
@@ -136,25 +140,25 @@
                                     <div class="share-with-card-buttons">
                                         <!--submit/cancel buttons-->
                                         <b-button
-                                            @click="getSharing()"
                                             variant="outline-danger"
-                                            class="sharing_icon cancel-sharing-with">
+                                            class="sharing_icon cancel-sharing-with"
+                                            @click="getSharing()">
                                             Cancel
                                         </b-button>
                                         <b-button
+                                            v-b-tooltip.hover.bottom
                                             variant="outline-primary"
                                             :disabled="
                                                 !(sharedWithUsersChanged || !!multiselectValues.currentUserSearch)
                                             "
+                                            :title="submitBtnTitle"
+                                            class="sharing_icon submit-sharing-with"
                                             @click.stop="
                                                 setSharing(
                                                     actions.share_with,
                                                     multiselectValues.sharingCandidates.map(({ email }) => email)
                                                 )
-                                            "
-                                            v-b-tooltip.hover.bottom
-                                            :title="submitBtnTitle"
-                                            class="sharing_icon submit-sharing-with">
+                                            ">
                                             {{ multiselectValues.currentUserSearch ? `Add` : `Save` }}
                                         </b-button>
                                     </div>
@@ -175,13 +179,13 @@
                         <b-col v-if="item.extra.can_change.length > 0">
                             <b-card>
                                 <b-card-header header-tag="header" class="p-1" role="tab">
-                                    <b-button block v-b-toggle.can-share variant="warning">
+                                    <b-button v-b-toggle.can-share block variant="warning">
                                         Datasets can be shared by updating their permissions
                                     </b-button>
                                 </b-card-header>
                                 <b-collapse id="can-share" visible accordion="can-share-accordion" role="tabpanel">
                                     <b-list-group>
-                                        <b-list-group-item :key="dataset.id" v-for="dataset in item.extra.can_change">{{
+                                        <b-list-group-item v-for="dataset in item.extra.can_change" :key="dataset.id">{{
                                             dataset.name
                                         }}</b-list-group-item>
                                     </b-list-group>
@@ -191,7 +195,7 @@
                         <b-col v-if="item.extra.cannot_change.length > 0">
                             <b-card>
                                 <b-card-header header-tag="header" class="p-1" role="tab">
-                                    <b-button block v-b-toggle.cannot-share variant="danger"
+                                    <b-button v-b-toggle.cannot-share block variant="danger"
                                         >Datasets cannot be shared, you are not authorized to change
                                         permissions</b-button
                                     >
@@ -199,8 +203,8 @@
                                 <b-collapse id="cannot-share" visible accordion="cannot-accordion2" role="tabpanel">
                                     <b-list-group>
                                         <b-list-group-item
-                                            :key="dataset.id"
                                             v-for="dataset in item.extra.cannot_change"
+                                            :key="dataset.id"
                                             >{{ dataset.name }}</b-list-group-item
                                         >
                                     </b-list-group>
@@ -215,6 +219,9 @@
                                 header-text-variant="white"
                                 align="center">
                                 <b-button
+                                    v-if="item.extra.can_change.length > 0"
+                                    block
+                                    variant="outline-primary"
                                     @click="
                                         setSharing(
                                             actions.share_with,
@@ -222,12 +229,12 @@
                                             share_option.make_public
                                         )
                                     "
-                                    v-if="item.extra.can_change.length > 0"
-                                    block
-                                    variant="outline-primary"
                                     >Make datasets public</b-button
                                 >
                                 <b-button
+                                    v-if="item.extra.can_change.length > 0"
+                                    block
+                                    variant="outline-primary"
                                     @click="
                                         setSharing(
                                             actions.share_with,
@@ -235,25 +242,22 @@
                                             share_option.make_accessible_to_shared
                                         )
                                     "
-                                    v-if="item.extra.can_change.length > 0"
-                                    block
-                                    variant="outline-primary"
                                     >Make datasets private to me and
                                     {{ multiselectValues.sharingCandidates.map(({ email }) => email).join() }}</b-button
                                 >
                                 <b-button
+                                    block
+                                    variant="outline-primary"
                                     @click="
                                         setSharing(
                                             actions.share_with,
                                             multiselectValues.sharingCandidates.map(({ email }) => email),
                                             share_option.no_changes
                                         )
-                                    "
-                                    block
-                                    variant="outline-primary">
+                                    ">
                                     Share Anyway
                                 </b-button>
-                                <b-button @click="getSharing()" block variant="outline-danger">Cancel </b-button>
+                                <b-button block variant="outline-danger" @click="getSharing()">Cancel </b-button>
                             </b-card>
                         </b-col>
                     </b-row>
@@ -277,6 +281,8 @@ import Multiselect from "vue-multiselect";
 import { copy } from "utils/clipboard";
 import ConfigProvider from "components/providers/ConfigProvider";
 import CurrentUser from "components/providers/CurrentUser";
+import { errorMessageAsString } from "utils/simple-error";
+import ErrorMessage from "./ErrorMessage";
 
 Vue.use(BootstrapVue);
 library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);
@@ -290,6 +296,7 @@ const defaultExtra = () => {
 export default {
     components: {
         ConfigProvider,
+        ErrorMessage,
         FontAwesomeIcon,
         SlugInput,
         Multiselect,
@@ -406,6 +413,9 @@ export default {
         this.getSharing();
     },
     methods: {
+        root() {
+            return getAppRoot();
+        },
         permissionsChangeRequired(item) {
             if (!item.extra) {
                 return false;
@@ -419,6 +429,9 @@ export default {
             if (this.multiselectValues.currentUserSearch && !isValueChosen && !isAdmin) {
                 this.multiselectValues.sharingCandidates.push({ email: this.multiselectValues.currentUserSearch });
             }
+        },
+        onError(axiosError) {
+            this.addError(errorMessageAsString(axiosError));
         },
         addError(newError) {
             // temporary turning Set into Array, until we update till Vue 3.0, that supports Set reactivity
@@ -456,7 +469,7 @@ export default {
                     new_slug: newSlug,
                 })
                 .then(() => (this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`))
-                .catch((error) => this.addError(error.response.data.err_msg));
+                .catch(this.onError);
         },
         onImportable(importable) {
             if (importable) {
@@ -480,7 +493,7 @@ export default {
             axios
                 .get(`${getAppRoot()}api/${this.pluralNameLower}/${this.id}/sharing`)
                 .then((response) => this.assignItem(response.data, true))
-                .catch((error) => this.addError(error.response.data.err_msg));
+                .catch(this.onError);
         },
         setUsername() {
             const Galaxy = getGalaxyInstance();
@@ -492,7 +505,7 @@ export default {
                     this.hasUsername = true;
                     this.getSharing();
                 })
-                .catch((error) => this.addError(error.response.data.err_msg));
+                .catch(this.onError);
         },
         setSharing(action, user_id, share_option) {
             let user_ids = undefined;
@@ -517,7 +530,7 @@ export default {
                         this.dismissCountDown = 3;
                     }
                 })
-                .catch((error) => this.addError(error.response.data.err_msg));
+                .catch(this.onError);
         },
         searchChanged(searchValue, exposedUsers) {
             this.multiselectValues.currentUserSearch = searchValue;
@@ -536,7 +549,7 @@ export default {
                                 !this.multiselectValues.sharingCandidates.map(({ email }) => email).includes(email)
                         );
                     })
-                    .catch((error) => this.addError(error.response.data.err_msg));
+                    .catch(this.onError);
             }
         },
     },

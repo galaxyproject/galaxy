@@ -138,6 +138,7 @@ steps:
         assert jobs1 == jobs2
 
     @uses_test_history(require_new=True)
+    @skip_without_tool("multi_data_optional")
     def test_index_workflow_filter_implicit_jobs(self, history_id):
         workflow_id = self.workflow_populator.upload_yaml_workflow(
             """
@@ -157,14 +158,14 @@ steps:
             "0": self.dataset_populator.ds_entry(hdca_id),
         }
         invocation_id = self.workflow_populator.invoke_workflow_and_wait(
-            workflow_id, history_id=history_id, inputs=inputs, assert_ok=True
-        )
+            workflow_id, history_id=history_id, inputs=inputs
+        ).json()["id"]
         jobs1 = self.__jobs_index(data={"workflow_id": workflow_id})
         jobs2 = self.__jobs_index(data={"invocation_id": invocation_id})
         assert len(jobs1) == len(jobs2) == 1
         second_invocation_id = self.workflow_populator.invoke_workflow_and_wait(
-            workflow_id, history_id=history_id, inputs=inputs, assert_ok=True
-        )
+            workflow_id, history_id=history_id, inputs=inputs
+        ).json()["id"]
         workflow_jobs = self.__jobs_index(data={"workflow_id": workflow_id})
         second_invocation_jobs = self.__jobs_index(data={"invocation_id": second_invocation_id})
         assert len(workflow_jobs) == 2
@@ -202,7 +203,7 @@ steps:
         # Initial number of ok jobs
         original_count = len(self.__uploads_with_state("ok", "new"))
 
-        # Run through dataset upload to ensure num uplaods at least greater
+        # Run through dataset upload to ensure num uploads at least greater
         # by 1.
         self.__history_with_ok_dataset(history_id)
 
@@ -279,9 +280,10 @@ steps:
             assert dataset["visible"]
 
     def _run_map_over_error(self, history_id):
-        hdca1 = self.dataset_collection_populator.create_list_in_history(
+        fetch_response = self.dataset_collection_populator.create_list_in_history(
             history_id, contents=[("sample1-1", "1 2 3")]
         ).json()
+        hdca1 = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
         inputs = {
             "error_bool": "true",
             "dataset": {
@@ -873,10 +875,10 @@ steps:
         self._assert_status_code_is(jobs_response, 200)
         jobs = jobs_response.json()
         assert not [j for j in jobs if not j["state"] in states]
-        return [j for j in jobs if j["tool_id"] == "upload1"]
+        return [j for j in jobs if j["tool_id"] == "__DATA_FETCH__"]
 
     def __history_with_new_dataset(self, history_id):
-        dataset_id = self.dataset_populator.new_dataset(history_id)["id"]
+        dataset_id = self.dataset_populator.new_dataset(history_id, wait=True)["id"]
         return dataset_id
 
     def __history_with_ok_dataset(self, history_id):

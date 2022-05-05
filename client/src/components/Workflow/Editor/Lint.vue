@@ -1,5 +1,5 @@
 <template>
-    <b-card header-tag="header" body-class="p-0" id="lint-panel" class="right-content">
+    <b-card id="lint-panel" header-tag="header" body-class="p-0" class="right-content">
         <template v-slot:header>
             <div class="mb-1 font-weight-bold">
                 <font-awesome-icon icon="magic" class="mr-1" />
@@ -128,6 +128,62 @@ export default {
             forceRefresh: 0,
         };
     },
+    computed: {
+        nodes() {
+            return this.getManager().nodes;
+        },
+        hasActiveOutputs() {
+            this.forceRefresh;
+            for (const node of Object.values(this.nodes)) {
+                if (node.activeOutputs.getAll().length > 0) {
+                    return true;
+                }
+            }
+            return false;
+        },
+        showRefactor() {
+            // we could be even more precise here and check the inputs and such, because
+            // some of these extractions may not be possible.
+            return !this.checkUntypedParameters || !this.checkDisconnectedInputs || !this.checkUnlabeledOutputs;
+        },
+        checkAnnotation() {
+            return !!this.annotation;
+        },
+        checkLicense() {
+            return !!this.license;
+        },
+        checkCreator() {
+            if (this.creator instanceof Array) {
+                return this.creator.length > 0;
+            } else {
+                return !!this.creator;
+            }
+        },
+        checkUntypedParameters() {
+            return this.warningUntypedParameters.length == 0;
+        },
+        checkDisconnectedInputs() {
+            return this.warningDisconnectedInputs.length == 0;
+        },
+        checkUnlabeledOutputs() {
+            return this.warningUnlabeledOutputs.length == 0;
+        },
+        warningUntypedParameters() {
+            return getUntypedParameters(this.untypedParameters);
+        },
+        warningDisconnectedInputs() {
+            this.forceRefresh;
+            return getDisconnectedInputs(this.nodes);
+        },
+        warningMissingMetadata() {
+            this.forceRefresh;
+            return getMissingMetadata(this.nodes);
+        },
+        warningUnlabeledOutputs() {
+            this.forceRefresh;
+            return getUnlabeledOutputs(this.nodes);
+        },
+    },
     methods: {
         refresh() {
             // I tried to make these purely reactive but I guess it is not surprising that the
@@ -183,62 +239,6 @@ export default {
         onRefactor() {
             const actions = fixAllIssues(this.nodes, this.untypedParameters);
             this.$emit("onRefactor", actions);
-        },
-    },
-    computed: {
-        nodes() {
-            return this.getManager().nodes;
-        },
-        hasActiveOutputs() {
-            this.forceRefresh;
-            for (const node of Object.values(this.nodes)) {
-                if (node.activeOutputs.getAll().length > 0) {
-                    return true;
-                }
-            }
-            return false;
-        },
-        showRefactor() {
-            // we could be even more precise here and check the inputs and such, because
-            // some of these extractions may not be possible.
-            return !this.checkUntypedParameters || !this.checkDisconnectedInputs || !this.checkUnlabeledOutputs;
-        },
-        checkAnnotation() {
-            return !!this.annotation;
-        },
-        checkLicense() {
-            return !!this.license;
-        },
-        checkCreator() {
-            if (this.creator instanceof Array) {
-                return this.creator.length > 0;
-            } else {
-                return !!this.creator;
-            }
-        },
-        checkUntypedParameters() {
-            return this.warningUntypedParameters.length == 0;
-        },
-        checkDisconnectedInputs() {
-            return this.warningDisconnectedInputs.length == 0;
-        },
-        checkUnlabeledOutputs() {
-            return this.warningUnlabeledOutputs.length == 0;
-        },
-        warningUntypedParameters() {
-            return getUntypedParameters(this.untypedParameters);
-        },
-        warningDisconnectedInputs() {
-            this.forceRefresh;
-            return getDisconnectedInputs(this.nodes);
-        },
-        warningMissingMetadata() {
-            this.forceRefresh;
-            return getMissingMetadata(this.nodes);
-        },
-        warningUnlabeledOutputs() {
-            this.forceRefresh;
-            return getUnlabeledOutputs(this.nodes);
         },
     },
 };

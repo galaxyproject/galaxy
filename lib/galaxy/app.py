@@ -9,6 +9,7 @@ import time
 from typing import (
     Any,
     Callable,
+    Dict,
     List,
     Tuple,
 )
@@ -117,6 +118,12 @@ from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.web import url_for
 from galaxy.web.proxy import ProxyManager
+from galaxy.web.short_term_storage import (
+    ShortTermStorageAllocator,
+    ShortTermStorageConfiguration,
+    ShortTermStorageManager,
+    ShortTermStorageMonitor,
+)
 from galaxy.web_stack import (
     application_stack_instance,
     ApplicationStack,
@@ -254,6 +261,7 @@ class ConfiguresGalaxyMixin:
                 "cache.type": self.config.mulled_resolution_cache_type,
                 "cache.data_dir": self.config.mulled_resolution_cache_data_dir,
                 "cache.lock_dir": self.config.mulled_resolution_cache_lock_dir,
+                "cache.expire": self.config.mulled_resolution_cache_expire,
             }
             mulled_resolution_cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache(
                 "mulled_resolution"
@@ -261,13 +269,14 @@ class ConfiguresGalaxyMixin:
         self.container_finder = containers.ContainerFinder(app_info, mulled_resolution_cache=mulled_resolution_cache)
         self._set_enabled_container_types()
         index_help = getattr(self.config, "index_tool_help", True)
-        self.toolbox_search = ToolBoxSearch(
-            self.toolbox, index_dir=self.config.tool_search_index_dir, index_help=index_help
+        self.toolbox_search = self._register_singleton(
+            ToolBoxSearch,
+            ToolBoxSearch(self.toolbox, index_dir=self.config.tool_search_index_dir, index_help=index_help),
         )
 
     def reindex_tool_search(self):
         # Call this when tools are added or removed.
-        self.toolbox_search.build_index(tool_cache=self.tool_cache)
+        self.toolbox_search.build_index(tool_cache=self.tool_cache, toolbox=self.toolbox)
         self.tool_cache.reset_status()
 
     def _set_enabled_container_types(self):
@@ -491,6 +500,21 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         # Initialize the job management configuration
         self.job_config = self._register_singleton(jobs.JobConfiguration)
 
+        # Setup infrastructure for short term storage manager.
+        short_term_storage_config_kwds: Dict[str, Any] = {}
+        short_term_storage_config_kwds["short_term_storage_directory"] = self.config.short_term_storage_dir
+        short_term_storage_default_duration = self.config.short_term_storage_default_duration
+        short_term_storage_maximum_duration = self.config.short_term_storage_maximum_duration
+        if short_term_storage_default_duration is not None:
+            short_term_storage_config_kwds["default_storage_duration"] = short_term_storage_default_duration
+        if short_term_storage_maximum_duration:
+            short_term_storage_config_kwds["maximum_storage_duration"] = short_term_storage_maximum_duration
+
+        short_term_storage_config = ShortTermStorageConfiguration(**short_term_storage_config_kwds)
+        short_term_storage_manager = ShortTermStorageManager(config=short_term_storage_config)
+        self._register_singleton(ShortTermStorageAllocator, short_term_storage_manager)
+        self._register_singleton(ShortTermStorageMonitor, short_term_storage_manager)
+
         # Tag handler
         self.tag_handler = self._register_singleton(GalaxyTagHandler)
         self.user_manager = self._register_singleton(UserManager)
@@ -554,6 +578,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.queue_worker = self._register_singleton(GalaxyQueueWorker, GalaxyQueueWorker(self))
 
         self._configure_tool_shed_registry()
+        self._register_singleton(tool_shed_registry.Registry, self.tool_shed_registry)
 
         self.dependency_resolvers_view = self._register_singleton(
             DependencyResolversView, DependencyResolversView(self)

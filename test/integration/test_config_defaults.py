@@ -85,6 +85,7 @@ PATH_CONFIG_PROPERTIES = [
     "shed_tool_config_file",
     "shed_tool_data_path",
     "shed_tool_data_table_config",
+    "short_term_storage_dir",
     "template_cache_path",
     "tool_data_path",
     "tool_dependency_cache_dir",

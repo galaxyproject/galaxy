@@ -1,7 +1,7 @@
 """
 API Controller providing Galaxy Webhooks
 """
-import imp
+import importlib.util
 import logging
 from typing import Any
 
@@ -37,7 +37,12 @@ class WebhooksController(BaseGalaxyAPIController):
         webhook = next(webhook for webhook in self.app.webhooks_registry.webhooks if webhook.id == webhook_id)
 
         if webhook and webhook.helper != "":
-            return imp.load_source(webhook.path, webhook.helper).main(  # type: ignore[attr-defined]
+            spec = importlib.util.spec_from_file_location(webhook.path, webhook.helper)
+            assert spec
+            module = importlib.util.module_from_spec(spec)
+            assert spec.loader
+            spec.loader.exec_module(module)
+            return module.main(
                 trans,
                 webhook,
                 params,

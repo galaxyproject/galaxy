@@ -30,7 +30,6 @@ import packaging.version
 import webob.exc
 from lxml import etree
 from mako.template import Template
-from webob.compat import cgi_FieldStorage
 
 from galaxy import (
     exceptions,
@@ -1890,14 +1889,6 @@ class Tool(Dictifiable):
             else:
                 message = f"Failure executing tool with id '{self.id}' (invalid data returned from tool execution)"
             return False, message
-
-    def find_fieldstorage(self, x):
-        if isinstance(x, cgi_FieldStorage):
-            raise InterruptedUpload(None)
-        elif isinstance(x, dict):
-            [self.find_fieldstorage(y) for y in x.values()]
-        elif isinstance(x, list):
-            [self.find_fieldstorage(y) for y in x]
 
     @property
     def params_with_missing_data_table_entry(self):

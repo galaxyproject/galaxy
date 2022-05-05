@@ -1,95 +1,106 @@
 <template>
     <HistoryItemsProvider
-        :key="history.id"
+        :key="historyId"
+        v-slot="{ loading, result: itemsLoaded, count: totalItemsInQuery }"
         :history-id="historyId"
         :offset="offset"
-        :filter-text="params.filterText"
-        :show-deleted="params.showDeleted"
-        :show-hidden="params.showHidden"
-        v-slot="{ loading, result: payload }">
+        :update-time="history.update_time"
+        :filter-text="filterText">
         <ExpandedItems
-            :scope-key="history.id"
-            :get-item-key="(item) => item.type_id"
-            v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }">
+            v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }"
+            :scope-key="historyId"
+            :get-item-key="(item) => item.type_id">
             <SelectedItems
-                :scope-key="history.id"
-                :get-item-key="(item) => item.type_id"
                 v-slot="{
                     selectedItems,
                     showSelection,
+                    isQuerySelection,
+                    selectionSize,
                     setShowSelection,
-                    selectItems,
+                    selectAllInCurrentQuery,
                     isSelected,
                     setSelected,
                     resetSelection,
-                }">
-                <Layout>
-                    <template v-slot:navigation>
-                        <slot name="navigation" :history="history" />
-                        <HistoryMenu :history="history" v-on="$listeners" />
-                    </template>
-
-                    <template v-slot:details>
-                        <HistoryDetails :history="history" v-on="$listeners" />
-                    </template>
-
-                    <template v-slot:messages>
-                        <HistoryMessages class="m-2" :history="history" />
-                    </template>
-
-                    <template v-slot:listcontrols>
+                }"
+                :scope-key="queryKey"
+                :get-item-key="(item) => item.type_id"
+                :filter-text="filterText"
+                :total-items-in-query="totalItemsInQuery">
+                <section class="history-layout d-flex flex-column">
+                    <slot name="navigation" :history="history" />
+                    <HistoryFilters
+                        class="content-operations-filters mx-3"
+                        :filter-text.sync="filterText"
+                        :show-advanced.sync="showAdvanced" />
+                    <section v-if="!showAdvanced">
+                        <HistoryDetails :history="history" @update:history="$emit('updateHistory', $event)" />
+                        <HistoryMessages :history="history" />
+                        <HistoryCounter :history="history" :filter-text.sync="filterText" />
                         <HistoryOperations
                             :history="history"
-                            :params.sync="params"
-                            :content-selection="selectedItems"
                             :show-selection="showSelection"
                             :expanded-count="expandedCount"
-                            :has-matches="hasMatches(payload)"
-                            @update:content-selection="selectItems"
+                            :has-matches="hasMatches(itemsLoaded)"
                             @update:show-selection="setShowSelection"
-                            @reset-selection="resetSelection"
-                            @hide-selection="onHideSelection"
-                            @select-all="selectItems(payload)"
-                            @collapse-all="collapseAll" />
-                    </template>
-
-                    <template v-slot:listing>
-                        <div v-if="payload && payload.length == 0">
-                            <b-alert v-if="loading" class="m-2" variant="info" show>
-                                <LoadingSpan message="Loading History" />
+                            @update:long-operation-running="onUpdateOperationStatus"
+                            @collapse-all="collapseAll">
+                            <template v-slot:selection-operations>
+                                <HistorySelectionOperations
+                                    :history="history"
+                                    :filter-text="filterText"
+                                    :content-selection="selectedItems"
+                                    :selection-size="selectionSize"
+                                    :is-query-selection="isQuerySelection"
+                                    :total-items-in-query="totalItemsInQuery"
+                                    @update:long-operation-running="onUpdateOperationStatus"
+                                    @hide-selection="onHideSelection"
+                                    @reset-selection="resetSelection" />
+                                <HistorySelectionStatus
+                                    v-if="showSelection"
+                                    :selection-size="selectionSize"
+                                    @select-all="selectAllInCurrentQuery(itemsLoaded)"
+                                    @reset-selection="resetSelection" />
+                            </template>
+                        </HistoryOperations>
+                    </section>
+                    <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
+                        <div>
+                            <div v-if="itemsLoaded && itemsLoaded.length == 0 && loading">
+                                <b-alert class="m-2" variant="info" show>
+                                    <LoadingSpan message="Loading History" />
+                                </b-alert>
+                            </div>
+                            <b-alert v-else-if="isProcessing" class="m-2" variant="info" show>
+                                <LoadingSpan message="Processing operation" />
                             </b-alert>
-                            <div v-else>
+                            <div v-else-if="totalItemsInQuery == 0">
                                 <HistoryEmpty v-if="queryDefault" class="m-2" />
                                 <b-alert v-else class="m-2" variant="info" show>
                                     No data found for selected filter.
                                 </b-alert>
                             </div>
+                            <Listing v-else :items="itemsLoaded" :query-key="queryKey" @scroll="onScroll">
+                                <template v-slot:item="{ item }">
+                                    <ContentItem
+                                        v-if="!invisible[item.hid]"
+                                        :id="item.hid"
+                                        :item="item"
+                                        :name="item.name"
+                                        :expand-dataset="isExpanded(item)"
+                                        :is-dataset="isDataset(item)"
+                                        :selected="isSelected(item)"
+                                        :selectable="showSelection"
+                                        @update:expand-dataset="setExpanded(item, $event)"
+                                        @update:selected="setSelected(item, $event)"
+                                        @view-collection="$emit('view-collection', item)"
+                                        @delete="onDelete(item)"
+                                        @undelete="onUndelete(item)"
+                                        @unhide="onUnhide(item)" />
+                                </template>
+                            </Listing>
                         </div>
-                        <Listing v-else :items="payload" @scroll="onScroll">
-                            <template v-slot:history-item="{ item }">
-                                <ContentItem
-                                    v-if="!invisible[item.hid]"
-                                    :item="item"
-                                    :id="item.hid"
-                                    :name="item.name"
-                                    :expand-dataset="isExpanded(item)"
-                                    :is-dataset="item.history_content_type == 'dataset'"
-                                    :selected="isSelected(item)"
-                                    :selectable="showSelection"
-                                    @update:expand-dataset="setExpanded(item, $event)"
-                                    @update:selected="setSelected(item, $event)"
-                                    @view-collection="$emit('view-collection', item)"
-                                    @delete="onDelete"
-                                    @undelete="onUndelete"
-                                    @unhide="onUnhide" />
-                            </template>
-                        </Listing>
-                    </template>
-
-                    <template v-slot:modals>
-                        <ToolHelpModal />
-                    </template>
-                </Layout>
+                    </section>
+                </section>
             </SelectedItems>
         </ExpandedItems>
     </HistoryItemsProvider>
@@ -100,81 +111,109 @@ import Vue from "vue";
 import { HistoryItemsProvider } from "components/providers/storeProviders";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
-import { History } from "components/History/model";
 import { deleteContent, updateContentFields } from "components/History/model/queries";
 import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
-import Layout from "components/History/Layout/Layout";
 import Listing from "components/History/Layout/Listing";
-import ToolHelpModal from "components/History/Modals/ToolHelpModal";
-import HistoryOperations from "./HistoryOperations";
+import HistoryCounter from "./HistoryCounter";
+import HistoryOperations from "./HistoryOperations/Index";
 import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
-import HistoryMenu from "./HistoryMenu";
+import HistoryFilters from "./HistoryFilters";
 import HistoryMessages from "./HistoryMessages";
+import HistorySelectionOperations from "./HistoryOperations/SelectionOperations";
+import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
 
 export default {
     components: {
-        LoadingSpan,
-        Layout,
-        Listing,
         ContentItem,
+        ExpandedItems,
+        HistoryCounter,
         HistoryMessages,
         HistoryDetails,
         HistoryEmpty,
+        HistoryFilters,
         HistoryItemsProvider,
-        HistoryMenu,
         HistoryOperations,
-        ToolHelpModal,
-        ExpandedItems,
+        HistorySelectionOperations,
+        HistorySelectionStatus,
+        LoadingSpan,
+        Listing,
         SelectedItems,
     },
     props: {
-        history: { type: History, required: true },
+        history: { type: Object, required: true },
     },
     data() {
         return {
+            filterText: "",
             invisible: {},
             offset: 0,
-            params: {
-                filterText: "",
-                showDeleted: false,
-                showHidden: false,
-            },
+            showAdvanced: false,
+            isLongOperationRunning: false,
+            updateExpectedAfterDate: null,
         };
+    },
+    computed: {
+        /** @returns {String} */
+        historyId() {
+            return this.history.id;
+        },
+        /** @returns {String} */
+        queryKey() {
+            return `${this.historyId}-${this.filterText}`;
+        },
+        /** @returns {Boolean} */
+        queryDefault() {
+            return !this.filterText;
+        },
+        /** @returns {Boolean} */
+        hasFilters() {
+            return !this.queryDefault;
+        },
+        /** @returns {Boolean} */
+        isHistoryUpdated() {
+            return !this.updateExpectedAfterDate || this.history.update_time > this.updateExpectedAfterDate;
+        },
+        /** @returns {Boolean} */
+        isProcessing() {
+            return this.isLongOperationRunning || !this.isHistoryUpdated;
+        },
     },
     watch: {
         queryKey() {
             this.invisible = {};
             this.offset = 0;
         },
-    },
-    computed: {
-        historyId() {
-            return this.history.id;
+        historyId(newVal, oldVal) {
+            if (newVal !== oldVal) {
+                this.stopExpectingHistoryUpdate();
+            }
         },
-        queryKey() {
-            return `${this.historyId}-${this.params.showDeleted}-${this.params.showHidden}-${this.params.filterText}`;
-        },
-        queryDefault() {
-            return !this.params.showDeleted && !this.params.showHidden && !this.params.filterText;
+        isHistoryUpdated(updated) {
+            if (updated) {
+                this.stopExpectingHistoryUpdate();
+            }
         },
     },
     methods: {
-        hasMatches(payload) {
-            return !!payload && payload.length > 0;
+        hasMatches(items) {
+            return !!items && items.length > 0;
         },
-        onScroll(offset) {
-            this.offset = offset;
+        isDataset(item) {
+            return item.history_content_type == "dataset";
+        },
+        onDelete(item) {
+            this.setInvisible(item);
+            deleteContent(item);
         },
         onHideSelection(selectedItems) {
             selectedItems.forEach((item) => {
                 this.setInvisible(item);
             });
         },
-        onDelete(item) {
-            this.setInvisible(item);
-            deleteContent(item);
+        onScroll(offset) {
+            this.offset = offset;
         },
         onUndelete(item) {
             this.setInvisible(item);
@@ -186,6 +225,18 @@ export default {
         },
         setInvisible(item) {
             Vue.set(this.invisible, item.hid, true);
+        },
+        onUpdateOperationStatus(running) {
+            if (running) {
+                this.expectHistoryUpdate();
+            }
+            this.isLongOperationRunning = running;
+        },
+        expectHistoryUpdate() {
+            this.updateExpectedAfterDate = this.history.update_time;
+        },
+        stopExpectingHistoryUpdate() {
+            this.updateExpectedAfterDate = null;
         },
     },
 };

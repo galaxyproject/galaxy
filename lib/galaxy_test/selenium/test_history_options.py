@@ -9,13 +9,19 @@ class HistoryOptionsTestCase(SeleniumTestCase):
     def test_options(self):
         self.register()
         self.perform_upload(self.get_filename("1.txt"))
-        self.click_history_options()
-
         menu_selector = self.navigation.history_panel.selectors.options_menu
-        self.wait_for_visible(menu_selector)
+        self.wait_for_absent_or_hidden(menu_selector)
 
-        # Click away closes history options
-        self.click_center()
+        self.click_history_options()
+        component = self.wait_for_visible(menu_selector)
+        self.screenshot("history_options")
+        # TODO: clicking in center iframe dimisses old menu but not new one,
+        # sending escape dismisses the new menu and not old one. Sync this behavior.
+        if self.is_beta_history():
+            self.send_escape(component)
+        else:
+            # Click away closes history options
+            self.click_center()
 
         self.wait_for_absent_or_hidden(menu_selector)
 

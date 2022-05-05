@@ -18,12 +18,13 @@ from galaxy_test.base.workflow_fixtures import (
 from .framework import (
     retry_assertion_during_transitions,
     retry_during_transitions,
+    RunsWorkflows,
     selenium_test,
     SeleniumTestCase,
 )
 
 
-class WorkflowEditorTestCase(SeleniumTestCase):
+class WorkflowEditorTestCase(SeleniumTestCase, RunsWorkflows):
 
     ensure_registered = True
 

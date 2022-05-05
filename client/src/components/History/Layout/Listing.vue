@@ -1,5 +1,5 @@
 <template>
-    <div class="history-listing">
+    <div class="listing-layout">
         <virtual-list
             ref="listing"
             class="listing"
@@ -8,7 +8,7 @@
             :data-component="{}"
             @scroll="onScroll">
             <template v-slot:item="{ item }">
-                <slot name="history-item" :item="item" />
+                <slot name="item" :item="item" />
             </template>
             <template v-slot:footer>
                 <LoadingSpan v-if="loading" class="m-2" message="Loading" />
@@ -29,12 +29,18 @@ export default {
     props: {
         loading: { type: Boolean, default: false },
         items: { type: Array, default: null },
+        queryKey: { type: String, default: null },
     },
     data() {
         return {
             throttlePeriod: 20,
             deltaMax: 20,
         };
+    },
+    watch: {
+        queryKey() {
+            this.$refs.listing.scrollToOffset(0);
+        },
     },
     created() {
         this.onScrollThrottle = throttle((event) => {
@@ -74,7 +80,7 @@ export default {
 
 <style scoped lang="scss">
 @import "scss/mixins.scss";
-.history-listing {
+.listing-layout {
     .listing {
         @include absfill();
         scroll-behavior: smooth;

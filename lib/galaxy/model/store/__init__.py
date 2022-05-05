@@ -13,10 +13,13 @@ from json import (
 )
 from typing import (
     Any,
+    Callable,
     cast,
     Dict,
     List,
     Optional,
+    Set,
+    Tuple,
     Union,
 )
 
@@ -24,17 +27,21 @@ from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import expression
+from typing_extensions import Protocol
 
+from galaxy.datatypes.registry import Registry
 from galaxy.exceptions import (
     MalformedContents,
     ObjectNotFound,
 )
+from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.metadata import MetadataCollection
 from galaxy.model.orm.util import (
     add_object_to_object_session,
     add_object_to_session,
     get_object_session,
 )
+from galaxy.objectstore import ObjectStore
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     FILENAME_VALID_CHARS,
@@ -58,8 +65,21 @@ ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS = "implicit_collection_jobs_attrs.txt"
 ATTRS_FILENAME_COLLECTIONS = "collections_attrs.txt"
 ATTRS_FILENAME_EXPORT = "export_attrs.txt"
 ATTRS_FILENAME_LIBRARIES = "libraries_attrs.txt"
+ATTRS_FILENAME_LIBRARY_FOLDERS = "library_folders_attrs.txt"
 TRACEBACK = "traceback.txt"
 GALAXY_EXPORT_VERSION = "2"
+
+
+JsonDictT = Dict[str, Any]
+
+
+class StoreAppProtocol(Protocol):
+    """Define the parts of a Galaxy-like app consumed by model store."""
+
+    datatypes_registry: Registry
+    object_store: ObjectStore
+    security: IdEncodingHelper
+    model: GalaxyModelMapping
 
 
 class ImportOptions:
@@ -104,7 +124,14 @@ def replace_metadata_file(metadata: Dict[str, Any], dataset_instance: model.Data
 
 
 class ModelImportStore(metaclass=abc.ABCMeta):
-    def __init__(self, import_options=None, app=None, user=None, object_store=None, tag_handler=None):
+    def __init__(
+        self,
+        import_options=None,
+        app: Optional[StoreAppProtocol] = None,
+        user=None,
+        object_store=None,
+        tag_handler=None,
+    ):
         if object_store is None:
             if app is not None:
                 object_store = app.object_store
@@ -949,6 +976,11 @@ class BaseDirectoryImportModelStore(ModelImportStore):
             libraries_attrs = load(open(libraries_attrs_file_name))
         else:
             libraries_attrs = []
+
+        library_folder_attrs_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_LIBRARY_FOLDERS)
+        if os.path.exists(library_folder_attrs_file_name):
+            libraries_attrs += load(open(library_folder_attrs_file_name))
+
         return libraries_attrs
 
     def jobs_properties(self):
@@ -1179,15 +1211,17 @@ class ModelExportStore(metaclass=abc.ABCMeta):
 
 
 class DirectoryModelExportStore(ModelExportStore):
+    app: Optional[StoreAppProtocol]
+
     def __init__(
         self,
-        export_directory,
-        app=None,
-        for_edit=False,
+        export_directory: str,
+        app: Optional[StoreAppProtocol] = None,
+        for_edit: bool = False,
         serialize_dataset_objects=None,
-        export_files=None,
-        strip_metadata_files=True,
-        serialize_jobs=True,
+        export_files: Optional[str] = None,
+        strip_metadata_files: bool = True,
+        serialize_jobs: bool = True,
     ):
         """
         :param export_directory: path to export directory. Will be created if it does not exist.
@@ -1222,20 +1256,22 @@ class DirectoryModelExportStore(ModelExportStore):
             serialize_files_handler=self,
         )
         self.export_files = export_files
-        self.included_datasets = {}
-        self.included_collections = []
-        self.included_libraries = []
-        self.included_library_folders = []
-        self.collection_datasets = {}
-        self.collections_attrs = []
-        self.dataset_id_to_path = {}
+        self.included_datasets: Dict[model.DatasetInstance, Tuple[model.DatasetInstance, bool]] = {}
+        self.included_collections: List[Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation]] = []
+        self.included_libraries: List[model.Library] = []
+        self.included_library_folders: List[model.LibraryFolder] = []
+        self.collection_datasets: Set[int] = set()
+        self.collections_attrs: List[Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation]] = []
+        self.dataset_id_to_path: Dict[int, Tuple[Optional[str], Optional[str]]] = {}
 
-        self.job_output_dataset_associations = {}
+        self.job_output_dataset_associations: Dict[int, Dict[str, model.DatasetInstance]] = {}
 
-    def serialize_files(self, dataset, as_dict):
+    def serialize_files(self, dataset: model.DatasetInstance, as_dict: JsonDictT) -> None:
         if self.export_files is None:
             return None
-        elif self.export_files == "symlink":
+
+        add: Callable[[str, str], None]
+        if self.export_files == "symlink":
             add = os.symlink
         elif self.export_files == "copy":
 
@@ -1435,8 +1471,9 @@ class DirectoryModelExportStore(ModelExportStore):
             jobs_attrs_out.write(json_encoder.encode(jobs_attrs))
         return jobs_attrs
 
-    def export_history(self, history, include_hidden=False, include_deleted=False):
+    def export_history(self, history: model.History, include_hidden: bool = False, include_deleted: bool = False):
         app = self.app
+        assert app, "exporting histories requires being bound to a session and Galaxy app object"
         export_directory = self.export_directory
 
         history_attrs = history.serialize(app.security, self.serialization_options)
@@ -1471,14 +1508,14 @@ class DirectoryModelExportStore(ModelExportStore):
                     include_files = True
 
                 self.add_dataset(collection_dataset, include_files=include_files)
-                self.collection_datasets[collection_dataset.id] = True
+                self.collection_datasets.add(collection_dataset.id)
 
         # Write datasets' attributes to file.
         query = (
             sa_session.query(model.HistoryDatasetAssociation)
             .filter(model.HistoryDatasetAssociation.history == history)
             .join(model.Dataset)
-            .options(joinedload(model.HistoryDatasetAssociation.dataset).joinedload(model.Dataset.actions))
+            .options(joinedload(model.HistoryDatasetAssociation.dataset).joinedload(model.Dataset.actions))  # type: ignore[attr-defined]
             .order_by(model.HistoryDatasetAssociation.hid)
             .filter(model.Dataset.purged == expression.false())
         )
@@ -1492,21 +1529,30 @@ class DirectoryModelExportStore(ModelExportStore):
             if dataset not in self.included_datasets:
                 self.add_dataset(dataset, include_files=add_dataset)
 
-    def export_library(self, library, include_hidden=False, include_deleted=False):
+    def export_library(self, library: model.Library, include_hidden=False, include_deleted=False):
         self.included_libraries.append(library)
-        root_folder = getattr(library, "root_folder", library)
-        self.included_library_folders.append(root_folder)
-        self.export_library_folder(root_folder, include_hidden=include_hidden, include_deleted=include_deleted)
+        root_folder = library.root_folder
+        self.export_library_folder_contents(root_folder, include_hidden=include_hidden, include_deleted=include_deleted)
 
-    def export_library_folder(self, library_folder, include_hidden=False, include_deleted=False):
+    def export_library_folder(self, library_folder: model.LibraryFolder, include_hidden=False, include_deleted=False):
+        self.included_library_folders.append(library_folder)
+        self.export_library_folder_contents(
+            library_folder, include_hidden=include_hidden, include_deleted=include_deleted
+        )
+
+    def export_library_folder_contents(
+        self, library_folder: model.LibraryFolder, include_hidden=False, include_deleted=False
+    ):
         for library_dataset in library_folder.datasets:
             ldda = library_dataset.library_dataset_dataset_association
             add_dataset = (not ldda.visible or not include_hidden) and (not ldda.deleted or include_deleted)
             self.add_dataset(ldda, add_dataset)
         for folder in library_folder.folders:
-            self.export_library_folder(folder, include_hidden=include_hidden, include_deleted=include_deleted)
+            self.export_library_folder_contents(folder, include_hidden=include_hidden, include_deleted=include_deleted)
 
-    def add_job_output_dataset_associations(self, job_id, name, dataset_instance):
+    def add_job_output_dataset_associations(
+        self, job_id: int, name: str, dataset_instance: model.DatasetInstance
+    ) -> None:
         job_output_dataset_associations = self.job_output_dataset_associations
         if job_id not in job_output_dataset_associations:
             job_output_dataset_associations[job_id] = {}
@@ -1516,7 +1562,7 @@ class DirectoryModelExportStore(ModelExportStore):
         self,
         collection: Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation],
         include_deleted: bool = False,
-    ):
+    ) -> None:
         self.add_dataset_collection(collection)
 
         # export datasets for this collection
@@ -1530,15 +1576,15 @@ class DirectoryModelExportStore(ModelExportStore):
                 include_files = True
 
             self.add_dataset(collection_dataset, include_files=include_files)
-            self.collection_datasets[collection_dataset.id] = True
+            self.collection_datasets.add(collection_dataset.id)
 
     def add_dataset_collection(
         self, collection: Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation]
-    ):
+    ) -> None:
         self.collections_attrs.append(collection)
         self.included_collections.append(collection)
 
-    def add_dataset(self, dataset: model.DatasetInstance, include_files: bool = True):
+    def add_dataset(self, dataset: model.DatasetInstance, include_files: bool = True) -> None:
         self.included_datasets[dataset] = (dataset, include_files)
 
     def _finalize(self):
@@ -1565,6 +1611,10 @@ class DirectoryModelExportStore(ModelExportStore):
         libraries_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_LIBRARIES)
         with open(libraries_attrs_filename, "w") as libraries_attrs_out:
             libraries_attrs_out.write(to_json(self.included_libraries))
+
+        library_folders_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_LIBRARY_FOLDERS)
+        with open(library_folders_attrs_filename, "w") as library_folder_attrs_out:
+            library_folder_attrs_out.write(to_json(self.included_library_folders))
 
         collections_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_COLLECTIONS)
         with open(collections_attrs_filename, "w") as collections_attrs_out:

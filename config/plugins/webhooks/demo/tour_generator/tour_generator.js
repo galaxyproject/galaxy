@@ -6,59 +6,23 @@ import * as _ from "underscore";
 
 window.TourGenerator = Backbone.View.extend({
     initialize: function (options) {
-        var me = this;
-        me.toolId = options.toolId;
-        me.toolVersion = options.toolVersion;
-
         const Galaxy = window.bundleEntries.getGalaxyInstance();
-
+        const toolId = options.toolId;
+        const toolVersion = options.toolVersion;
         // Add attribute 'tour_id' to the execution button
         $("#execute").attr("tour_id", "execute");
-
         Toastr.info("Tour generation might take some time.");
         $.getJSON(
-            `${Galaxy.root}api/webhooks/tour_generator/data/`,
-            {
-                tool_id: me.toolId,
-                tool_version: me.toolVersion,
+            `${Galaxy.root}api/webhooks/tour_generator/data/`, {
+                tool_id: toolId,
+                tool_version: toolVersion,
             },
-            function (obj) {
+            (obj) => {
                 if (obj.success) {
                     if (obj.data.useDatasets) {
-                        Galaxy.currHistoryPanel.refreshContents(); // Refresh history panel
-
-                        // Add a delay because of the history panel refreshing
-                        setTimeout(function () {
-                            var datasets = [],
-                                numUploadedDatasets = 0;
-
-                            _.each(obj.data.hids, function (hid) {
-                                var dataset = Galaxy.currHistoryPanel.collection.where({
-                                    hid: hid,
-                                })[0];
-                                if (dataset) datasets.push(dataset);
-                            });
-
-                            if (datasets.length === obj.data.hids.length) {
-                                _.each(datasets, function (dataset) {
-                                    if (dataset.get("state") === "ok") {
-                                        numUploadedDatasets++;
-                                    } else {
-                                        dataset.on("change:state", function (model) {
-                                            if (model.get("state") === "ok") numUploadedDatasets++;
-                                            // Make sure that all test datasets have been successfully uploaded
-                                            if (numUploadedDatasets === datasets.length)
-                                                me._generateTour(obj.data.tour);
-                                        });
-                                    }
-                                });
-                            } else {
-                                Toastr.warning("Cannot generate a tour.");
-                                console.error("Some of the test datasets cannot be found in the history.");
-                            }
-                        }, 1500);
+                        this._getData(obj);
                     } else {
-                        me._generateTour(obj.data.tour);
+                        this._generateTour(obj.data.tour);
                     }
                 } else {
                     Toastr.warning("Cannot generate a tour.");
@@ -67,12 +31,28 @@ window.TourGenerator = Backbone.View.extend({
             }
         );
     },
-
+    _getData: function(obj, attempts = 20, delay = 1000) {
+        let datasets = [];
+        _.each(obj.data.hids, (hid) => {
+            Galaxy.currHistoryPanel.collection.each((dataset) => {
+                datasets.push(dataset);
+            }, `hid=${hid} state=ok`);
+        });
+        if (datasets.length === obj.data.hids.length) {
+            this._generateTour(obj.data.tour);
+        } else if (attempts > 0) {
+            setTimeout(() => {
+                this._getData(obj, attempts - 1);
+            }, delay);
+        } else {
+            Toastr.warning("Cannot generate a tour.");
+            console.error("Some of the test datasets cannot be found in the history.");
+        }
+    },
     _generateTour: function (data) {
-        var Galaxy = window.bundleEntries.getGalaxyInstance();
-        var tour = Galaxy.giveTourWithData(data);
+        const tour = window.bundleEntries.runTour("auto.generated", data);
         // Force ending the tour when pressing the Execute button
-        $("#execute").on("mousedown", function () {
+        $("#execute").on("mousedown", () => {
             if (tour) {
                 tour.end();
             }

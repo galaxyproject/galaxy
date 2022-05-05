@@ -411,7 +411,6 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self,
         trans: ProvidesHistoryContext,
         history_content_id: EncodedDatabaseIdField,
-        history_id: EncodedDatabaseIdField,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -443,9 +442,6 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         except galaxy_exceptions.MessageException:
             raise
         except Exception as e:
-            log.exception(
-                "Server error getting display data for dataset (%s) from history (%s)", history_content_id, history_id
-            )
             raise galaxy_exceptions.InternalServerError(f"Could not get display data for dataset: {util.unicodify(e)}")
         return rval, headers
 

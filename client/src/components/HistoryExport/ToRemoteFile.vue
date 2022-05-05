@@ -30,7 +30,7 @@
             </b-form-group>
             <b-row align-h="end">
                 <b-col
-                    ><b-button class="export-button" variant="primary" @click="doExport" :disabled="!canExport"
+                    ><b-button class="export-button" variant="primary" :disabled="!canExport" @click="doExport"
                         >Export</b-button
                     ></b-col
                 >
@@ -63,11 +63,6 @@ export default {
             required: true,
         },
     },
-    computed: {
-        canExport() {
-            return !!this.name && !!this.directory;
-        },
-    },
     data() {
         return {
             errorMessage: null,
@@ -77,6 +72,11 @@ export default {
             jobComplete: false,
             jobError: null,
         };
+    },
+    computed: {
+        canExport() {
+            return !!this.name && !!this.directory;
+        },
     },
     methods: {
         doExport() {

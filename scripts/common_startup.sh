@@ -198,6 +198,23 @@ if [ $FETCH_WHEELS -eq 1 ]; then
     fi
 fi
 
+# Install node if not installed
+if [ -n "$VIRTUAL_ENV" ]; then
+    if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v${NODE_VERSION}" ]; then
+        echo "Installing node into $VIRTUAL_ENV with nodeenv."
+        if [ -d "${VIRTUAL_ENV}/lib/node_modules" ]; then
+            echo "Removing old ${VIRTUAL_ENV}/lib/node_modules directory."
+            rm -rf "${VIRTUAL_ENV}/lib/node_modules"
+        fi
+        nodeenv -n "$NODE_VERSION" -p
+    fi
+elif [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
+    if ! in_conda_env "$(command -v node)"; then
+        echo "Installing node into '$CONDA_DEFAULT_ENV' Conda environment with conda."
+        $CONDA_EXE install --yes --override-channels --channel conda-forge --channel defaults --name "$CONDA_DEFAULT_ENV" nodejs="$NODE_VERSION"
+    fi
+fi
+
 # Check client build state.
 if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     if [ -f static/client_build_hash.txt ]; then
@@ -222,23 +239,6 @@ else
     echo "The Galaxy client build is being skipped due to the SKIP_CLIENT_BUILD environment variable."
 fi
 
-# Install node if not installed
-if [ -n "$VIRTUAL_ENV" ]; then
-    if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v${NODE_VERSION}" ]; then
-        echo "Installing node into $VIRTUAL_ENV with nodeenv."
-        if [ -d "${VIRTUAL_ENV}/lib/node_modules" ]; then
-            echo "Removing old ${VIRTUAL_ENV}/lib/node_modules directory."
-            rm -rf "${VIRTUAL_ENV}/lib/node_modules"
-        fi
-        nodeenv -n "$NODE_VERSION" -p
-    fi
-elif [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
-    if ! in_conda_env "$(command -v node)"; then
-        echo "Installing node into '$CONDA_DEFAULT_ENV' Conda environment with conda."
-        $CONDA_EXE install --yes --override-channels --channel conda-forge --channel defaults --name "$CONDA_DEFAULT_ENV" nodejs="$NODE_VERSION"
-    fi
-fi
-
 # Build client if necessary.
 if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     # Ensure dependencies are installed
@@ -255,10 +255,14 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     else
         echo "WARNING: Galaxy client build needed but there is no virtualenv enabled. Build may fail."
     fi
+    # We need galaxy config here, ensure it's set.
+    set_galaxy_config_file_var
+    # Set plugin path
+    GALAXY_PLUGIN_PATH=$(python scripts/config_parse.py --setting=plugin_path --config-file="$GALAXY_CONFIG_FILE")
     # Build client
     cd client
     if yarn install $YARN_INSTALL_OPTS; then
-        if ! yarn run build-production-maps; then
+        if ! (export GALAXY_PLUGIN_PATH="$GALAXY_PLUGIN_PATH"; yarn run build-production-maps;) then
             echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
             exit 1
         fi

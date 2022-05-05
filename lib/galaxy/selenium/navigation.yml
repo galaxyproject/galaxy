@@ -26,6 +26,7 @@ _:  # global stuff
       info: '.alert-info'
       donelarge: '.donemessagelarge'
       infolarge: '.infomessagelarge'
+      require_login: 'a.require-login-link'
 
 masthead:
 
@@ -171,6 +172,7 @@ history_panel:
       display_button: '${_} .display-btn'
       edit_button: '${_} .edit-btn'
       delete_button: '${_} .delete-btn'
+      rerun_button: '${_} .rerun-btn'
 
       # Action buttons...
       download_button: '${_} .download-btn'
@@ -183,6 +185,7 @@ history_panel:
   editor:
     selectors:
       _: '${scope} [data-description="edit details"]'
+      name: '${_} [data-description="name display"]'
       toggle: '${_} [data-description="editor toggle"]'
       form: '${_} [data-description="edit form"]'
       name_input: '${_} [data-description="name input"]'
@@ -228,6 +231,7 @@ history_panel:
 
   selectors:
     beta: '.history-index'
+    legacy: '.list-panel'
     _: '#current-history-panel'
     search: '#current-history-panel input.search-query'
     refresh_button: '.history-refresh-button'
@@ -237,7 +241,7 @@ history_panel:
       selector: 'name input'
       type: data-description
     contents: '#current-history-panel .history-content'
-
+    contents_beta: '.history-index .content-item'
     empty_message: '.empty-message'
     size: '.history-size'
     tag_icon: '.actions .history-tag-btn'
@@ -257,25 +261,23 @@ history_panel:
 
     annotation_done: '.details .history-annotation .annotation button'
 
-    options_button: '#history-options-button'
+    options_button: '[data-description="history options"]'
     options_button_icon: '.details .menu-expand-button'
-    options_button_icon_beta: '.details .menu-expand-button'
+    options_button_icon_beta: '[data-description="history options"] button'
     options_button_copy_datasets_beta: '.copy-datasets-menu-item'
-    options_menu: '#history-options-button-menu'
+    options_menu: '.history-options-button-menu'
     options_menu_item:
       type: sizzle
-      selector: '#history-options-button-menu > a:contains("${option_label}")'
+      selector: '.history-options-button-menu > a:contains("${option_label}")'
 
     options_show_history_structure:
       type: xpath
       selector: '//a[contains(text(), "Show Structure")]'
-    options_show_export_history_to_file: 'a[title="Export History to File"]'
+    options_show_export_history_to_file: 'a[data-description="export to file"]'
     options_use_beta_history:
       type: xpath
       selector: '//a[text()="Use Beta History Panel"]'
-    options_use_legacy_history:
-      type: xpath
-      selector: '//button[contains(span, "Return to legacy history panel")]'
+    options_use_legacy_history: 'a[data-description="switch to legacy history view"]'
     
     collection_menu_button: '.collection-menu'
     collection_menu_edit_attributes: 
@@ -283,7 +285,7 @@ history_panel:
       selector: '//button[@title="Edit attributes"]'
     new_history_button: '.history-new-button'
     multi_view_button: '.history-view-multi-button'
-    histories_operation_menu: '.histories-operation-menu'
+    histories_operation_menu: '[data-description="history options"]'
     multi_view_button_beta: '[data-description="switch to multi history view"]'
 
     pagination_pages: '.list-pagination .pages'
@@ -296,7 +298,6 @@ history_panel:
   text:
     tooltip_name: 'Rename history...'
     new_name: 'Unnamed history'
-    new_size: '(empty)'
 
 
 history_structure:
@@ -399,6 +400,7 @@ histories:
   sharing:
     selectors:
       unshare_user_button: '.share_with_view .multiselect__tag-icon'
+      unshare_with_user_button: '.share_with_view [data-email="${email}"] .multiselect__tag-icon'
       user_email_input: '.user-email-input-form'
       submit_sharing_with: '.submit-sharing-with'
       share_with_collapse: '.share-with-collapse'
@@ -492,6 +494,16 @@ workflows:
     save_button: '#workflow-save-button'
     search_box: "#workflow-search"
     workflow_table: "#workflow-table"
+    workflow_rows: "#workflow-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
+    external_link: '.workflow-external-link'
+    trs_icon: '.workflow-trs-icon'
+    pager: '.gx-workflows-grid-pager'
+    pager_page: '.gx-workflows-grid-pager .gx-grid-pager-page [aria-posinset=${page}]'
+    pager_page_next: '.gx-workflows-grid-pager .gx-grid-pager-next button'
+    pager_page_first: '.gx-workflows-grid-pager .gx-grid-pager-first button'
+    pager_page_last: '.gx-workflows-grid-pager .gx-grid-pager-last button'
+    pager_page_previous: '.gx-workflows-grid-pager .gx-grid-pager-prev button'
+    pager_page_active: '.gx-workflows-grid-pager .gx-grid-pager-page.active button'
 
 trs_search:
   selectors:
@@ -528,6 +540,11 @@ workflow_run:
     subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
     run_workflow: "#run-workflow"
     validation_error: ".validation-error"
+    expand_form_link: '.workflow-expand-form-link'
+    expanded_form: '.workflow-expanded-form'
+    new_history_target_link: '.workflow-new-history-target-link'
+    runtime_setting_button: '.workflow-run-settings'
+    runtime_setting_target: '.workflow-run-settings-target'
     input_select_field:
       type: xpath
       selector: '//div[@data-label="${label}"]//span[@class="select2-chosen"]'
@@ -614,10 +631,23 @@ workflow_editor:
     state_modal_body: '.state-upgrade-modal'
     modal_button_continue: '.modal-footer .btn'
 
+workflow_show:
+  selectors:
+    title: 'h3.item_name'
+    annotation: '.page-item-header .annotation'
+
 invocations:
   selectors:
     invocations_table: '.invocations-list table'
-    invocations_table_rows: '.invocations-list table tbody tr'
+    invocations_table_rows: '.invocations-list table tbody tr:not(.b-table-empty-row, [style*="display: none"])'
+    pager: '.gx-invocations-grid-pager'
+    pager_page: '.gx-invocations-grid-pager .gx-grid-pager-page [aria-posinset=${page}]'
+    pager_page_next: '.gx-invocations-grid-pager .gx-grid-pager-next button'
+    pager_page_last: '.gx-invocations-grid-pager .gx-grid-pager-last button'
+    pager_page_first: '.gx-invocations-grid-pager .gx-grid-pager-first button'
+    pager_page_previous: '.gx-invocations-grid-pager .gx-grid-pager-prev button'
+    pager_page_active: '.gx-invocations-grid-pager .gx-grid-pager-page.active button'
+
     state_details: '.workflow-invocation-state-component'
     toggle_invocation_details: '.toggle-invocation-details'
     progress_steps_note: '.workflow-invocation-state-component .steps-progress .progressNote'
@@ -644,13 +674,11 @@ invocations:
 tour:
   popover:
     selectors:
-      _: '.popover'
-
-      title: '${_} .popover-header'
-      content: '${_} .popover-body'
-      next: '${_} button[data-role="next"]'
-      previous: '${_} button[data-role="prev"]'
-      end: '${_} button[data-role="end"]'
+      _: '.tour-element'
+      title: '${_} .tour-title'
+      content: '${_} .tour-content'
+      next: '${_} .tour-next'
+      end: '${_} .tour-end'
 
 admin:
 

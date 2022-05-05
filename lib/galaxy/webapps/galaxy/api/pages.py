@@ -16,6 +16,7 @@ from starlette.responses import StreamingResponse
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
+    AsyncFile,
     CreatePagePayload,
     PageDetails,
     PageSummary,
@@ -112,6 +113,27 @@ class FastAPIPages:
         """
         pdf_bytes = self.service.show_pdf(trans, id)
         return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf")
+
+    @router.post(
+        "/api/pages/{id}/prepare_download",
+        summary="Return a PDF document of the last revision of the Page.",
+        responses={
+            200: {
+                "description": "Short term storage reference for async monitoring of this download.",
+            },
+            501: {"description": "PDF conversion service not available."},
+        },
+    )
+    async def prepare_pdf(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = PageIdPathParam,
+    ) -> AsyncFile:
+        """Return a STS download link for this page to be downloaded as a PDF.
+
+        This feature may not be available in this Galaxy.
+        """
+        return self.service.prepare_pdf(trans, id)
 
     @router.get(
         "/api/pages/{id}",

@@ -15,7 +15,6 @@ from typing import (
     List,
     NamedTuple,
     Optional,
-    TYPE_CHECKING,
     Union,
 )
 
@@ -32,13 +31,6 @@ from galaxy.util import (
     ExecutionTimer,
 )
 from galaxy.util.hash_util import HASH_NAME_MAP
-
-if TYPE_CHECKING:
-    from galaxy.job_execution.output_collect import (
-        JobContext,
-        SessionlessJobContext,
-    )
-
 
 log = logging.getLogger(__name__)
 
@@ -60,6 +52,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     required for datasets and other potential model objects.
     """
 
+    job_working_directory: str  # TODO: rename
     max_discovered_files = float("inf")
     discovered_file_count: int
 
@@ -602,7 +595,7 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         return nested_folder
 
     def persist_library_folder(self, library_folder):
-        self.export_store.export_library(library_folder)
+        self.export_store.export_library_folder(library_folder)
 
     def add_datasets_to_history(self, datasets, for_output_dataset=None):
         # Consider copying these datasets to for_output_dataset copied histories
@@ -690,7 +683,7 @@ def persist_target_to_export_store(target_dict, export_store, object_store, work
 
 
 def persist_elements_to_hdca(
-    model_persistence_context: Union["JobContext", "SessionlessJobContext", SessionlessModelPersistenceContext],
+    model_persistence_context: ModelPersistenceContext,
     elements,
     hdca,
     collector=None,
@@ -815,6 +808,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state="ok"):
                     final_job_state=state,
                     storage_callbacks=storage_callbacks,
                 )
+                dataset.discovered = True
                 if not hda_id:
                     datasets.append(dataset)
 
@@ -899,7 +893,7 @@ DiscoveredResult = Union[DiscoveredFile, "DiscoveredFileError"]
 
 def discovered_file_for_element(
     dataset,
-    model_persistence_context: Union["JobContext", "SessionlessJobContext", SessionlessModelPersistenceContext],
+    model_persistence_context: ModelPersistenceContext,
     parent_identifiers=None,
     collector=None,
 ) -> DiscoveredResult:

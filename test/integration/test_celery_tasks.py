@@ -1,9 +1,15 @@
 from celery import shared_task
 
 from galaxy.celery import galaxy_task
-from galaxy.celery.tasks import purge_hda
+from galaxy.celery.tasks import (
+    prepare_pdf_download,
+    purge_hda,
+)
 from galaxy.model import HistoryDatasetAssociation
+from galaxy.schema import PdfDocumentType
 from galaxy.schema.schema import CreatePagePayload
+from galaxy.schema.tasks import GeneratePdfDownload
+from galaxy.web.short_term_storage import ShortTermStorageAllocator
 from galaxy_test.base.populators import (
     DatasetPopulator,
     wait_on,
@@ -63,6 +69,21 @@ class CeleryTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
 
         wait_on(hda_purged, "dataset to become purged")
         assert hda_purged()
+
+    def test_pdf_download(self):
+        short_term_storage_allocator = self._app[ShortTermStorageAllocator]
+        short_term_storage_target = short_term_storage_allocator.new_target("moo.pdf", "application/pdf")
+        request_id = short_term_storage_target.request_id
+        pdf_download_request = GeneratePdfDownload(
+            basic_markdown="*Hello World!*",
+            document_type=PdfDocumentType.page,
+            short_term_storage_request_id=request_id,
+        )
+        prepare_pdf_download.delay(request=pdf_download_request)
+        contents = self.dataset_populator.wait_on_download_request(request_id)
+        contents.raise_for_status()
+        assert "application/pdf" in contents.headers["content-type"]
+        assert contents.content[0:4] == b"%PDF"
 
     @property
     def _latest_hda(self):

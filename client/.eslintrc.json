@@ -1,8 +1,10 @@
 {
+    "root": true,
     "extends": [
         "eslint:recommended",
-        "plugin:vue/strongly-recommended"
-        //"airbnb-base", eventually
+        "plugin:vue/recommended",
+        "plugin:compat/recommended"
+        //"airbnb-base", eventually (?)
     ],
     "env": {
         "browser": true,
@@ -10,10 +12,6 @@
         "es6": true,
         "node": true,
         "jest": true
-    },
-    "parserOptions": {
-        "parser": "@babel/eslint-parser",
-        "sourceType": "module"
     },
     "rules": {
         // Standard rules
@@ -26,11 +24,15 @@
         "vue/valid-v-slot": "error",
         "vue/v-slot-style": ["error", { "atComponent": "v-slot", "default": "v-slot", "named": "longform" }],
 
-        // Vue TODO (enable these)
-        "vue/require-default-prop": "warn",
-        "vue/require-prop-types": "warn",
-        "vue/prop-name-casing": "warn",
+        // vue/multi-word-component names is considered an error, that we
+        // downgrade to a warning here.  It should be prioritized to get fixed
+        // and compliant.
+        // TODO: We want to fix or add inline exceptions documenting these.
         "vue/multi-word-component-names": "warn",
+        "vue/prop-name-casing": "warn",
+        "vue/require-prop-types": "warn",
+        "vue/require-default-prop": "warn",
+        "vue/no-v-html": "warn",
 
         // Prettier compromises/workarounds -- mostly #wontfix?
         "vue/html-indent": "off",

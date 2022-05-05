@@ -748,7 +748,7 @@ class HistoryFiltersTestCase(BaseTestCase):
             exceptions.RequestParameterInvalidException,
             self.filter_parser.parse_filters,
             [
-                ("deleted", "eq", "true"),
+                ("deleted", "eq", "wot"),
             ],
         )
 

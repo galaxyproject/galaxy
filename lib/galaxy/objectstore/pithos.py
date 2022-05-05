@@ -225,7 +225,7 @@ class PithosObjectStore(ConcreteObjectStore):
         rel_path_dir = os.path.dirname(rel_path)
         rel_cache_path_dir = self._get_cache_path(rel_path_dir)
         if not os.path.exists(rel_cache_path_dir):
-            os.makedirs(self._get_cache_path(rel_path_dir))
+            os.makedirs(self._get_cache_path(rel_path_dir), exist_ok=True)
         # Now pull in the file
         cache_path = self._get_cache_path(rel_path_dir)
         self.pithos.download_object(rel_path, cache_path)
@@ -254,7 +254,7 @@ class PithosObjectStore(ConcreteObjectStore):
                 return True
             elif base_dir:  # for JOB_WORK directory
                 if not os.path.exists(path):
-                    os.makedirs(path)
+                    os.makedirs(path, exist_ok=True)
                 return True
             return False
 
@@ -288,7 +288,7 @@ class PithosObjectStore(ConcreteObjectStore):
             # Create given directory in cache
             cache_dir = os.path.join(self.staging_path, rel_path)
             if not os.path.exists(cache_dir):
-                os.makedirs(cache_dir)
+                os.makedirs(cache_dir, exist_ok=True)
 
             if dir_only:
                 self.pithos.upload_from_string(rel_path, "", content_type="application/directory")
@@ -389,7 +389,7 @@ class PithosObjectStore(ConcreteObjectStore):
         cache_path = self._get_cache_path(path)
         if dir_only:
             if not os.path.exists(cache_path):
-                os.makedirs(cache_path)
+                os.makedirs(cache_path, exist_ok=True)
             return cache_path
         if self._in_cache(path):
             return cache_path

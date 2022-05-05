@@ -9,9 +9,9 @@
                 <CurrentUser v-else v-slot="{ user }">
                     <JobDetailsProvider
                         v-if="!isDatasetLoading && dataset.creating_job !== null"
+                        v-slot="{ result: job, loading: isJobLoading }"
                         :jobid="dataset.creating_job"
-                        auto-refresh
-                        v-slot="{ result: job, loading: isJobLoading }">
+                        auto-refresh>
                         <div v-if="!isJobLoading">
                             <dataset-information class="detail" :hda_id="datasetId" />
                             <job-parameters class="detail" dataset_type="hda" :dataset-id="datasetId" />
@@ -19,16 +19,16 @@
                             <dataset-storage class="detail" :dataset-id="datasetId" />
                             <inheritance-chain class="detail" :dataset-id="datasetId" :dataset-name="dataset.name" />
                             <job-metrics
-                                class="detail"
                                 v-if="config"
+                                class="detail"
                                 :aws_estimate="config.aws_estimate"
                                 :dataset-id="datasetId" />
                             <job-destination-params
-                                class="detail"
                                 v-if="user.is_admin"
+                                class="detail"
                                 :job-id="dataset.creating_job" />
                             <job-dependencies class="detail" :dependencies="job.dependencies"></job-dependencies>
-                            <div class="detail" v-if="dataset.peek">
+                            <div v-if="dataset.peek" class="detail">
                                 <h3>Dataset Peek:</h3>
                                 <div v-html="dataset.peek" />
                             </div>

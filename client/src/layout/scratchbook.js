@@ -68,13 +68,13 @@ export default Backbone.View.extend({
         let current_dataset = null;
         const Galaxy = getGalaxyInstance();
         if (Galaxy && Galaxy.currHistoryPanel) {
-            const history_id = Galaxy.currHistoryPanel.collection.historyId;
+            const history_id = Galaxy.currHistoryPanel.model.id;
             this.history_cache[history_id] = {
                 name: Galaxy.currHistoryPanel.model.get("name"),
                 dataset_ids: [],
             };
             Galaxy.currHistoryPanel.collection.each((model) => {
-                if (!model.get("deleted") && model.get("visible")) {
+                if (!model.get("deleted") && model.get("visible") && model.get("history_content_type") == "dataset") {
                     self.history_cache[history_id].dataset_ids.push(model.get("id"));
                 }
             });
@@ -91,15 +91,13 @@ export default Backbone.View.extend({
                 }
             }
         };
-        const _loadDatasetOffset = (dataset, offset, frame) => {
+        const _loadOffset = (dataset, offset, frame) => {
             const new_dataset_id = _findDataset(dataset, offset);
             if (new_dataset_id) {
                 self._loadDataset(new_dataset_id, (new_dataset, config) => {
                     current_dataset = new_dataset;
                     frame.model.set(config);
                 });
-            } else {
-                frame.model.trigger("change");
             }
         };
         this._loadDataset(dataset_id, (dataset, config) => {
@@ -112,7 +110,7 @@ export default Backbone.View.extend({
                                 icon: "fa fa-chevron-circle-left",
                                 tooltip: _l("Previous in History"),
                                 onclick: function (frame) {
-                                    _loadDatasetOffset(current_dataset, -1, frame);
+                                    _loadOffset(current_dataset, -1, frame);
                                 },
                                 disabled: function () {
                                     return !_findDataset(current_dataset, -1);
@@ -122,7 +120,7 @@ export default Backbone.View.extend({
                                 icon: "fa fa-chevron-circle-right",
                                 tooltip: _l("Next in History"),
                                 onclick: function (frame) {
-                                    _loadDatasetOffset(current_dataset, 1, frame);
+                                    _loadOffset(current_dataset, 1, frame);
                                 },
                                 disabled: function () {
                                     return !_findDataset(current_dataset, 1);

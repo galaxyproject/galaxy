@@ -1,10 +1,10 @@
 <template>
-    <component :is="providerComponent" :id="itemId" auto-refresh v-slot="{ result: item, loading }">
+    <component :is="providerComponent" :id="itemId" v-slot="{ result: item, loading }" auto-refresh>
         <loading-span v-if="loading" message="Loading dataset" />
         <div v-else>
             <ContentItem
-                :item="item"
                 :id="item.hid"
+                :item="item"
                 :name="item.name"
                 :expand-dataset="expandDataset"
                 :is-dataset="item.history_content_type == 'dataset'"

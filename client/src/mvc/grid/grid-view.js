@@ -10,7 +10,6 @@ import LoadingIndicator from "ui/loading-indicator";
 import { init_refresh_on_change } from "onload/globalInits/init_refresh_on_change";
 import store from "../../store";
 import slugify from "slugify";
-import { isBetaHistoryOpen } from "components/History/adapters/betaToggle";
 
 // This is necessary so that, when nested arrays are used in ajax/post/get methods, square brackets ('[]') are
 // not appended to the identifier of a nested array.
@@ -85,13 +84,9 @@ export default Backbone.View.extend({
     handle_refresh: function (refresh_frames) {
         if (refresh_frames) {
             if ($.inArray("history", refresh_frames) > -1) {
-                if (isBetaHistoryOpen()) {
-                    store.dispatch("betaHistory/loadCurrentHistory");
-                } else {
-                    const Galaxy = getGalaxyInstance();
-                    if (Galaxy && Galaxy.currHistoryPanel) {
-                        Galaxy.currHistoryPanel.loadCurrentHistory();
-                    }
+                const Galaxy = getGalaxyInstance();
+                if (Galaxy && Galaxy.currHistoryPanel) {
+                    Galaxy.currHistoryPanel.loadCurrentHistory();
                 }
             }
         }

@@ -16,6 +16,7 @@ from typing import Optional
 import requests
 from packaging.version import parse as parse_version
 from packaging.version import Version
+from requests.cookies import RequestsCookieJar
 
 try:
     from nose.tools import nottest
@@ -829,42 +830,55 @@ class GalaxyInteractorApi:
         allow files to be specified with the json parameter - so rewrite the parameters
         to handle that if as_json is True with specified files.
         """
-        params = params or {}
-        data = data or {}
+        return prepare_request_params(
+            data=data, files=files, as_json=as_json, params=params, headers=headers, cookies=self.cookies
+        )
 
-        # handle encoded files
-        if files is None:
-            # if not explicitly passed, check __files... convention used in tool testing
-            # and API testing code
-            files = data.get("__files", None)
-            if files is not None:
-                del data["__files"]
 
-        # files doesn't really work with json, so dump the parameters
-        # and do a normal POST with request's data parameter.
-        if bool(files) and as_json:
-            as_json = False
-            new_items = {}
-            for key, val in data.items():
-                if isinstance(val, dict) or isinstance(val, list):
-                    new_items[key] = dumps(val)
-            data.update(new_items)
+def prepare_request_params(
+    data=None,
+    files=None,
+    as_json: bool = False,
+    params: Optional[dict] = None,
+    headers: Optional[dict] = None,
+    cookies: Optional[RequestsCookieJar] = None,
+):
+    params = params or {}
+    data = data or {}
 
-        kwd = {
-            "files": files,
-        }
-        if headers:
-            kwd["headers"] = headers
-        if as_json:
-            kwd["json"] = data or None
-            kwd["params"] = params
-        else:
-            data.update(params)
-            kwd["data"] = data
-        if self.cookies:
-            kwd["cookies"] = self.cookies
+    # handle encoded files
+    if files is None:
+        # if not explicitly passed, check __files... convention used in tool testing
+        # and API testing code
+        files = data.get("__files", None)
+        if files is not None:
+            del data["__files"]
 
-        return kwd
+    # files doesn't really work with json, so dump the parameters
+    # and do a normal POST with request's data parameter.
+    if bool(files) and as_json:
+        as_json = False
+        new_items = {}
+        for key, val in data.items():
+            if isinstance(val, dict) or isinstance(val, list):
+                new_items[key] = dumps(val)
+        data.update(new_items)
+
+    kwd = {
+        "files": files,
+    }
+    if headers:
+        kwd["headers"] = headers
+    if as_json:
+        kwd["json"] = data or None
+        kwd["params"] = params
+    else:
+        data.update(params)
+        kwd["data"] = data
+    if cookies:
+        kwd["cookies"] = cookies
+
+    return kwd
 
 
 def ensure_tool_run_response_okay(submit_response_object, request_desc, inputs=None):
@@ -994,7 +1008,7 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
                 try:
                     i = generated_sort_order[i:].index(identifier) + 1
                 except ValueError:
-                    message = f"Output collection '{name}': identifier '{element_identifier}' found out of order, expected order of {expected_sort_order} for the tool generated collection elements {eo_ids}"
+                    message = f"Output collection '{name}': identifier '{identifier}' found out of order, expected order of {expected_sort_order} for the tool generated collection elements {eo_ids}"
                     raise AssertionError(message)
 
     verify_elements(data_collection["elements"], output_collection_def.element_tests)

@@ -1898,7 +1898,7 @@ class ToolModule(WorkflowModule):
                         replacement = dataset_instance
                         temp = iteration_elements[prefixed_name]
                         if hasattr(temp, "element_identifier") and temp.element_identifier:
-                            replacement.element_identifier = temp.element_identifier  # type: ignore[attr-defined]
+                            replacement.element_identifier = temp.element_identifier  # type: ignore[union-attr]
                     else:
                         # If collection - just use element model object.
                         replacement = iteration_elements[prefixed_name]

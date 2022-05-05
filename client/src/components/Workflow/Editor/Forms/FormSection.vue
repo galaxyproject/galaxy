@@ -55,9 +55,6 @@ export default {
             formData: {},
         };
     },
-    created() {
-        this.setFormData();
-    },
     computed: {
         node() {
             return this.getNode();
@@ -86,6 +83,9 @@ export default {
         deleteActionValue() {
             return Boolean(this.formData[this.deleteActionKey]);
         },
+    },
+    created() {
+        this.setFormData();
     },
     methods: {
         setFormData() {

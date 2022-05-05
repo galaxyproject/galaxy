@@ -34,7 +34,7 @@
                 </b-button>
                 <b-button
                     v-if="showRerun"
-                    class="px-1"
+                    class="rerun-btn px-1"
                     title="Run Job Again"
                     size="sm"
                     variant="link"
@@ -67,7 +67,7 @@
             </div>
         </div>
         <div v-if="showTags" class="mb-2">
-            <StatelessTags class="tags" v-model="tags" @input="onTags" />
+            <StatelessTags v-model="tags" class="tags" @input="onTags" />
         </div>
     </div>
 </template>
@@ -81,10 +81,10 @@ import { absPath } from "utils/redirect";
 import { updateContentFields } from "components/History/model/queries";
 
 export default {
-    mixins: [legacyNavigationMixin],
     components: {
         StatelessTags,
     },
+    mixins: [legacyNavigationMixin],
     props: {
         item: { type: Object, required: true },
     },
@@ -96,7 +96,7 @@ export default {
     },
     computed: {
         downloadUrl() {
-            return prependPath(`datasets/${this.item.id}/display?to_ext=${this.item.extension}`);
+            return prependPath(`api/datasets/${this.item.id}/display?to_ext=${this.item.extension}`);
         },
         showDownloads() {
             return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);

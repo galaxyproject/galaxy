@@ -59,6 +59,10 @@ export default {
         };
     },
 
+    mounted() {
+        this.initializeTags({ key: this.storeKey, tags: this.tags });
+    },
+
     methods: {
         onClick(tag) {
             this.$emit("tag-click", tag);
@@ -89,10 +93,6 @@ export default {
         },
 
         ...mapActions(["updateTags", "initializeTags"]),
-    },
-
-    mounted() {
-        this.initializeTags({ key: this.storeKey, tags: this.tags });
     },
 };
 </script>

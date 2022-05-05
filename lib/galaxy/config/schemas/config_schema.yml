@@ -493,6 +493,43 @@ mapping:
           changes are found, modified tours are automatically reloaded. Takes the same values as the
           'watch_tools' option.
 
+      short_term_storage_dir:
+        type: str
+        default: short_term_web_storage
+        path_resolves_to: cache_dir
+        required: false
+        desc: |
+          Location of files available for a short time as downloads (short term storage).
+          This directory is exclusively used for serving dynamically generated downloadable
+          content. Galaxy may uses the new_file_path parameter as a general temporary directory
+          and that directory should be monitored by a tool such as tmpwatch in production
+          environments. short_term_storage_dir on the other hand is monitored by Galaxy's task
+          framework and should not require such external tooling.
+
+      short_term_storage_default_duration:
+        type: int
+        required: false
+        default: 86400
+        desc: |
+          Default duration before short term web storage files will be cleaned up by Galaxy
+          tasks (in seconds). The default duration is 1 day.
+
+      short_term_storage_maximum_duration:
+        type: int
+        required: false
+        default: 0
+        desc: |
+          The maximum duration short term storage files can hosted before they will be marked for
+          clean up.  The default setting of 0 indicates no limit here.
+
+      short_term_storage_cleanup_interval:
+        type: int
+        required: false
+        default: 3600
+        desc: |
+          How many seconds between instances of short term storage being cleaned up in default
+          Celery task configuration.
+
       file_sources_config_file:
         type: str
         default: file_sources_conf.yml
@@ -925,6 +962,13 @@ mapping:
         desc: |
           Lock directory used by beaker for caching mulled resolution requests.
 
+      mulled_resolution_cache_expire:
+        type: int
+        default: 3600
+        required: false
+        desc: |
+          Seconds until the beaker cache is considered old and a new value is created.
+
       object_store_config_file:
         type: str
         default: object_store_conf.xml
@@ -1354,6 +1398,15 @@ mapping:
 
           If this is null (the default), a simple configuration containing
           just Dockstore will be used.
+
+      use_legacy_history:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Server-wide default selection to use the legacy history during the
+          transition period, after which this option will disappear.  Users will
+          remain able to swap back and forth per their preference.
 
       user_preferences_extra_conf_path:
         type: str
@@ -2711,13 +2764,17 @@ mapping:
 
       simplified_workflow_run_ui_target_history:
         type: str
-        default: 'current'
-        enum: ['current', 'new']
+        default: 'prefer_current'
+        enum: ['current', 'new', 'prefer_current', 'prefer_new']
         required: false
         per_host: true
         desc: |
           When the simplified workflow run form is rendered, should the invocation outputs
-          be sent to the 'current' history or a 'new' history.
+          be sent to the 'current' history or a 'new' history. If the user should be presented
+          and option between these - set this to 'prefer_current' or 'prefer_new' to display
+          a runtime setting with the corresponding default. The default is to provide the
+          user this option and default it to the current history (the traditional behavior
+          of Galaxy for years) - this corresponds to the setting 'prefer_current'.
 
       simplified_workflow_run_ui_job_cache:
         type: str

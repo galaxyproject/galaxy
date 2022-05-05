@@ -1,21 +1,22 @@
 <template>
     <div class="btn-group dropdown">
         <span
+            id="savedRulesButton"
+            v-b-tooltip.hover.bottom
             class="fas fa-history rule-builder-view-source"
             :class="{ disabled: numOfSavedRules == 0 }"
-            v-b-tooltip.hover.bottom
             :title="savedRulesMenu"
-            data-toggle="dropdown"
-            id="savedRulesButton"></span>
+            data-toggle="dropdown"></span>
         <div class="dropdown-menu" role="menu">
             <a
-                class="rule-link dropdown-item saved-rule-item"
                 v-for="(session, index) in sortSavedRules"
                 :key="session.dateTime"
-                @click="$emit('update-rules', session.rule)"
                 v-b-tooltip.hover.right
+                class="rule-link dropdown-item saved-rule-item"
                 :title="formatPreview(session.rule, index)"
-                >Saved rule from {{ formatDate(session.dateTime) }}
+                @click="$emit('update-rules', session.rule)"
+                >Saved rule from
+                <UtcDate :date="session.dateTime" mode="elapsed" />
             </a>
         </div>
     </div>
@@ -25,15 +26,13 @@
 import Vue from "vue";
 import _l from "utils/localization";
 import BootstrapVue from "bootstrap-vue";
-import moment from "moment";
 import { RULES, MAPPING_TARGETS } from "mvc/rules/rule-definitions";
+import UtcDate from "components/UtcDate";
 
 Vue.use(BootstrapVue);
 export default {
-    data: function () {
-        return {
-            savedRulesMenu: _l("Recently used rules"),
-        };
+    components: {
+        UtcDate,
     },
     props: {
         savedRules: {
@@ -45,6 +44,11 @@ export default {
             required: true,
         },
     },
+    data: function () {
+        return {
+            savedRulesMenu: _l("Recently used rules"),
+        };
+    },
     computed: {
         numOfSavedRules: function () {
             return this.savedRules.length;
@@ -54,9 +58,6 @@ export default {
         },
     },
     methods: {
-        formatDate(dateTime) {
-            return moment.utc(dateTime).from(moment().utc());
-        },
         formatPreview(savedRuleJson, index) {
             let prettyString = "";
             let delim = "";

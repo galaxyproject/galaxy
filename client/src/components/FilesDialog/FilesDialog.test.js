@@ -34,8 +34,7 @@ const api_paths_map = new Map([
     ["/api/remote_files?target=gxfiles://pdb-gzip/directory2&recursive=true", directory2RecursiveResponse],
     ["/api/remote_files?target=gxfiles://pdb-gzip/directory1/subdirectory1", subsubdirectoryResponse],
 ]);
-const initComponent = async (props) => {
-    const axiosMock = new MockAdapter(axios);
+const initComponent = async (props, axiosMock) => {
     const localVue = createLocalVue();
 
     localVue.use(BootstrapVue);
@@ -80,10 +79,16 @@ const initComponent = async (props) => {
 describe("FilesDialog, file mode", () => {
     let wrapper;
     let utils;
+    let axiosMock;
 
     beforeEach(async () => {
-        wrapper = await initComponent({ multiple: true });
+        axiosMock = new MockAdapter(axios);
+        wrapper = await initComponent({ multiple: true }, axiosMock);
         utils = new Utils(wrapper);
+    });
+
+    afterEach(() => {
+        axiosMock.restore();
     });
 
     it("should show the same number of items", async () => {
@@ -242,11 +247,18 @@ describe("FilesDialog, file mode", () => {
 describe("FilesDialog, directory mode", () => {
     let wrapper;
     let utils;
+    let axiosMock;
+
     const spyFinalize = jest.spyOn(FilesDialog.methods, "finalize");
 
     beforeEach(async () => {
-        wrapper = await initComponent({ multiple: false, mode: "directory" });
+        axiosMock = new MockAdapter(axios);
+        wrapper = await initComponent({ multiple: false, mode: "directory" }, axiosMock);
         utils = new Utils(wrapper);
+    });
+
+    afterEach(() => {
+        axiosMock.restore();
     });
 
     it("should render directories", async () => {

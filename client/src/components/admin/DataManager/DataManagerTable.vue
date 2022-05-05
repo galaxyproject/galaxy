@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-breadcrumb v-if="dataTable && !loading" :items="breadcrumbItems" id="breadcrumb" />
+        <b-breadcrumb v-if="dataTable && !loading" id="breadcrumb" :items="breadcrumbItems" />
         <Alert :message="message" :variant="status" />
         <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
         <Alert v-else-if="loading" message="Waiting for data" status="info" />
@@ -16,7 +16,7 @@
                             <b-container>
                                 <b-row align-v="center">
                                     <b-col cols="auto">
-                                        <b-button @click="reload()" v-b-tooltip.hover :title="buttonLabel">
+                                        <b-button v-b-tooltip.hover :title="buttonLabel" @click="reload()">
                                             <span class="fa fa-sync" />
                                         </b-button>
                                     </b-col>
@@ -27,7 +27,7 @@
                             </b-container>
                         </template>
                         <b-table
-                            :fields="fields(this.dataTable['columns'])"
+                            :fields="fields(dataTable['columns'])"
                             :items="dataTable['data']"
                             small
                             hover
@@ -82,6 +82,20 @@ export default {
             ];
         },
     },
+    created() {
+        axios
+            .get(`${getAppRoot()}data_manager/tool_data_table_info?table_name=${this.name}`)
+            .then((response) => {
+                this.dataTable = response.data.dataTable;
+                this.viewOnly = response.data.viewOnly;
+                this.message = response.data.message;
+                this.status = response.data.status;
+                this.loading = false;
+            })
+            .catch((error) => {
+                console.error(error);
+            });
+    },
     methods: {
         fields(columns) {
             // Columns and data are given as arrays. Use each column index as field
@@ -102,20 +116,6 @@ export default {
                     console.error(error);
                 });
         },
-    },
-    created() {
-        axios
-            .get(`${getAppRoot()}data_manager/tool_data_table_info?table_name=${this.name}`)
-            .then((response) => {
-                this.dataTable = response.data.dataTable;
-                this.viewOnly = response.data.viewOnly;
-                this.message = response.data.message;
-                this.status = response.data.status;
-                this.loading = false;
-            })
-            .catch((error) => {
-                console.error(error);
-            });
     },
 };
 </script>

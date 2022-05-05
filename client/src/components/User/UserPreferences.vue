@@ -8,13 +8,13 @@
             {{ titleLoggedInAs }} <strong id="user-preferences-current-email">{{ email }}</strong
             >.
         </p>
-        <b-row class="ml-3 mb-1" v-for="(link, index) in activeLinks" :key="index">
+        <b-row v-for="(link, index) in activeLinks" :key="index" class="ml-3 mb-1">
             <i :class="['pref-icon pt-1 fa fa-lg', link.icon]" />
             <div class="pref-content pr-1">
-                <a :id="link.id" v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"
+                <a v-if="link.onclick" :id="link.id" href="javascript:void(0)" @click="link.onclick"
                     ><b>{{ link.title }}</b></a
                 >
-                <a :id="link.id" v-else :href="`${baseUrl}/${link.action}`"
+                <a v-else :id="link.id" :href="`${baseUrl}/${link.action}`"
                     ><b>{{ link.title }}</b></a
                 >
                 <div class="form-text text-muted">
@@ -25,8 +25,8 @@
         <b-row class="ml-3 mb-1">
             <i class="pref-icon pt-1 fa fa-lg fa-plus-square-o" />
             <div class="pref-content pr-1">
-                <a @click="toggleNotifications" href="javascript:void(0)"><b v-localize>Enable notifications</b></a>
-                <div class="form-text text-muted" v-localize>
+                <a href="javascript:void(0)" @click="toggleNotifications"><b v-localize>Enable notifications</b></a>
+                <div v-localize class="form-text text-muted">
                     Allow push and tab notifcations on job completion. To disable, revoke the site notification
                     privilege in your browser.
                 </div>
@@ -39,11 +39,11 @@
                     <a id="delete-account" href="javascript:void(0)"
                         ><b v-b-modal.modal-prevent-closing v-localize>Delete Account</b></a
                     >
-                    <div class="form-text text-muted" v-localize>Delete your account on this Galaxy server.</div>
+                    <div v-localize class="form-text text-muted">Delete your account on this Galaxy server.</div>
                     <b-modal
                         id="modal-prevent-closing"
-                        centered
                         ref="modal"
+                        centered
                         title="Account Deletion"
                         title-tag="h2"
                         @show="resetModal"
@@ -97,6 +97,9 @@ import "@fortawesome/fontawesome-svg-core";
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        ConfigProvider,
+    },
     props: {
         userId: {
             type: String,
@@ -106,9 +109,6 @@ export default {
             type: Boolean,
             required: true,
         },
-    },
-    components: {
-        ConfigProvider,
     },
     data() {
         return {
@@ -128,21 +128,6 @@ export default {
             titleForTipsOnHow: _l("for tips on how to find all of the data in your account."),
             titleLoggedInAs: _l("You are logged in as"),
         };
-    },
-    created() {
-        const message = QueryStringParsing.get("message");
-        const status = QueryStringParsing.get("status");
-        if (message && status) {
-            this.message = message;
-            this.messageVariant = status;
-        }
-        axios.get(`${getAppRoot()}api/users/${this.userId}`).then((response) => {
-            this.email = response.data.email;
-            this.diskUsage = response.data.nice_total_disk_usage;
-            this.quotaUsageString = this.enableQuotas
-                ? `Your disk quota is: <strong>${response.data.quota}</strong>.`
-                : "";
-        });
     },
     computed: {
         activeLinks() {
@@ -174,6 +159,21 @@ export default {
         showDeleteError() {
             return this.deleteError !== "";
         },
+    },
+    created() {
+        const message = QueryStringParsing.get("message");
+        const status = QueryStringParsing.get("status");
+        if (message && status) {
+            this.message = message;
+            this.messageVariant = status;
+        }
+        axios.get(`${getAppRoot()}api/users/${this.userId}`).then((response) => {
+            this.email = response.data.email;
+            this.diskUsage = response.data.nice_total_disk_usage;
+            this.quotaUsageString = this.enableQuotas
+                ? `Your disk quota is: <strong>${response.data.quota}</strong>.`
+                : "";
+        });
     },
     methods: {
         toggleNotifications() {

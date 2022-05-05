@@ -5,8 +5,8 @@
             <ul>
                 <li v-for="(actionExecution, executionIndex) in confirmActionExecutions" :key="executionIndex">
                     <ul>
-                        <li v-for="(message, messageIndex) in actionExecution.messages" :key="messageIndex">
-                            - {{ message.message }}
+                        <li v-for="(actionMessage, messageIndex) in actionExecution.messages" :key="messageIndex">
+                            - {{ actionMessage.message }}
                         </li>
                     </ul>
                 </li>

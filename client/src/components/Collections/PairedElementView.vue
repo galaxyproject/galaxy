@@ -19,16 +19,6 @@ import ClickToEdit from "./common/ClickToEdit.vue";
 import _l from "utils/localization";
 export default {
     components: { ClickToEdit },
-    created: function () {
-        this.name = this.pair.name;
-    },
-    data: function () {
-        return {
-            unpairButtonTitle: _l("Unpair"),
-            titlePairName: _l("Click to rename"),
-            name: "",
-        };
-    },
     props: {
         pair: {
             required: true,
@@ -38,11 +28,12 @@ export default {
             type: Function,
         },
     },
-    methods: {
-        l(str) {
-            // _l conflicts private methods of Vue internals, expose as l instead
-            return _l(str);
-        },
+    data: function () {
+        return {
+            unpairButtonTitle: _l("Unpair"),
+            titlePairName: _l("Click to rename"),
+            name: "",
+        };
     },
     watch: {
         pair() {
@@ -50,6 +41,15 @@ export default {
         },
         name() {
             this.$emit("onPairRename", this.name);
+        },
+    },
+    created: function () {
+        this.name = this.pair.name;
+    },
+    methods: {
+        l(str) {
+            // _l conflicts private methods of Vue internals, expose as l instead
+            return _l(str);
         },
     },
 };

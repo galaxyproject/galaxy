@@ -250,6 +250,8 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/workflows/trs_import")
     webapp.add_client_route("/workflows/trs_search")
     webapp.add_client_route("/workflows/invocations")
+    webapp.add_client_route("/workflows/sharing")
+    webapp.add_client_route("/workflows/{stored_workflow_id}/invocations")
     webapp.add_client_route("/workflows/invocations/report")
     # webapp.add_client_route('/workflows/invocations/view_bco')
     webapp.add_client_route("/custom_builds")
@@ -285,14 +287,6 @@ def postfork_setup():
 def populate_api_routes(webapp, app):
     webapp.add_api_controllers("galaxy.webapps.galaxy.api", app)
 
-    webapp.mapper.resource(
-        "user",
-        "users",
-        controller="group_users",
-        name_prefix="group_",
-        path_prefix="/api/groups/{group_id}",
-        parent_resources=dict(member_name="group", collection_name="groups"),
-    )
     _add_item_tags_controller(
         webapp, name_prefix="history_content_", path_prefix="/api/histories/{history_id}/contents/{history_content_id}"
     )
@@ -369,7 +363,6 @@ def populate_api_routes(webapp, app):
     # ====== TOOLS API ======
     # =======================
 
-    webapp.mapper.connect("/api/tools/fetch", action="fetch", controller="tools", conditions=dict(method=["POST"]))
     webapp.mapper.connect("/api/tools/all_requirements", action="all_requirements", controller="tools")
     webapp.mapper.connect("/api/tools/error_stack", action="error_stack", controller="tools")
     webapp.mapper.connect("/api/tools/{id:.+?}/build", action="build", controller="tools")
@@ -590,6 +583,7 @@ def populate_api_routes(webapp, app):
     )
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
     webapp.mapper.resource("search", "search", path_prefix="/api")
+
     # ---- visualizations registry ---- generic template renderer
     # @deprecated: this route should be considered deprecated
     webapp.add_route(
@@ -1383,10 +1377,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         from galaxy.web.framework.middleware.translogger import TransLogger
 
         app = wrap_if_allowed(app, stack, TransLogger)
-    # X-Forwarded-Host handling
-    app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
-    # Request ID middleware
-    app = wrap_if_allowed(app, stack, RequestIDMiddleware)
     # TUS upload middleware
     app = wrap_if_allowed(
         app,
@@ -1398,6 +1388,10 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
             "max_size": application_stack.config.maximum_upload_file_size,
         },
     )
+    # X-Forwarded-Host handling
+    app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
+    # Request ID middleware
+    app = wrap_if_allowed(app, stack, RequestIDMiddleware)
     if asbool(conf.get("enable_per_request_sql_debugging", False)):
         from galaxy.web.framework.middleware.sqldebug import SQLDebugMiddleware
 

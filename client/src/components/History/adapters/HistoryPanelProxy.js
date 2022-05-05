@@ -1,97 +1,101 @@
 /**
- * This is a backbone view adapter for a Vue component. It's just
- * a Vue mount function with the interface of a backbone view so
- * that it can fit into the existing backbone layout scheme.
+ * This is an adapter for the History component. It's required since the previous
+ * history provided the same interface for other components.
  */
-
+import Backbone from "backbone";
+import store from "store";
+import { getGalaxyInstance } from "app";
 import { mountVueComponent } from "utils/mountVueComponent";
 import HistoryIndex from "components/History/Index";
-
-// mvc nonsense
-import $ from "jquery";
-import { getGalaxyInstance } from "app";
-import Backbone from "backbone";
-import CurrentHistoryView from "mvc/history/history-view-edit-current";
-import { History } from "mvc/history/history-model";
-import "./HistoryPanelProxy.scss";
-import store from "store";
-
-// bypass polling while using the beta panel, skips contents loading
-const FakeHistoryViewModel = CurrentHistoryView.CurrentHistoryView.extend({
-    loadHistory: function (historyId, options) {
-        this.setModel(new History({ id: historyId }));
-        this.trigger("loading");
-        options.view = "dev-detailed";
-        return this.model.fetch(options);
-    },
-});
+import { buildCollectionModal } from "./buildCollectionModal";
+import { createDatasetCollection } from "components/History/model/queries";
+import { watchHistory } from "store/historyStore/model/watchHistory";
 
 // extend existing current history panel
-export const HistoryPanelProxy = Backbone.View.extend({
-    initialize(page, options) {
+export class HistoryPanelProxy {
+    constructor() {
         const Galaxy = getGalaxyInstance();
-
-        this.userIsAnonymous = Galaxy.user.isAnonymous();
-        this.allow_user_dataset_purge = options.config.allow_user_dataset_purge;
-        this.root = options.root;
-
-        // fake view of the current history
-        this.historyView = new FakeHistoryViewModel({
-            fakeHistoryViewModel: true,
-            className: `fake ${CurrentHistoryView.CurrentHistoryView.prototype.className} middle`,
-            purgeAllowed: this.allow_user_dataset_purge,
-            linkTarget: "galaxy_main",
-        });
-
-        // add history panel to Galaxy object
-        // Galaxy.currHistoryPanel = genericProxy("Galaxy.currHistoryPanel", this.historyView);
-        Galaxy.currHistoryPanel = this.historyView;
-        Galaxy.currHistoryPanel.listenToGalaxy(Galaxy);
-
-        this.model = new Backbone.Model({});
-        this.setElement("<div/>");
-        this.historyView.setElement(this.$el);
-        this.historyView.connectToQuotaMeter(Galaxy.quotaMeter);
-        // this.historyView.loadCurrentHistory();
-
-        // fetch to update the quota meter adding 'current' for any anon-user's id
-        Galaxy.listenTo(this.historyView, "history-size-change", () => {
-            Galaxy.user.fetch({
-                url: `${Galaxy.user.urlRoot()}/${Galaxy.user.id || "current"}`,
-            });
-        });
-
-        // Watch the store, change the fake history model when it changs
-        store.watch(
-            (st, gets) => gets["betaHistory/currentHistory"],
-            (history) => {
-                const panel = Galaxy.currHistoryPanel;
-                const existingId = panel?.model?.id || undefined;
-                if (existingId != history.id) {
-                    panel.setModel(new History({ id: history.id }));
+        Galaxy.currHistoryPanel = this;
+        const model = (this.model = new Backbone.Model({}));
+        this.collection = {
+            each(callback, filterText = "") {
+                const historyItems = store.getters.getHistoryItems({ historyId: model.id, filterText: filterText });
+                historyItems.forEach((model) => {
+                    callback(new Backbone.Model(model));
+                });
+            },
+            on(name, callback) {
+                this.off();
+                this.unwatch = store.watch(
+                    (state, getters) => getters.getLatestCreateTime(),
+                    () => {
+                        callback();
+                        console.debug("History change watcher detected a change.", name);
+                    }
+                );
+                console.debug("History change watcher enabled.", name);
+            },
+            off(name) {
+                if (this.unwatch) {
+                    this.unwatch();
+                    console.debug("History change watcher disabled.", name);
                 }
+            },
+        };
+
+        // watch the store, update history id
+        store.watch(
+            (state, getters) => getters["history/currentHistory"],
+            (history) => {
+                this.model.id = history.id;
+                this.model.set("name", history.name);
             }
         );
-    },
+
+        // start watching the history with continuous queries
+        watchHistory();
+    }
+    refreshContents() {
+        // to be removed after disabling legacy history
+    }
+    loadCurrentHistory() {
+        store.dispatch("history/loadCurrentHistory");
+    }
+    switchToHistory(historyId) {
+        this.model.id = historyId;
+        store.dispatch("history/setCurrentHistoryId", historyId);
+    }
+    async buildCollection(collectionType, selection, hideSourceItems, fromRulesInput = false) {
+        let selectionContent = null;
+        if (fromRulesInput) {
+            selectionContent = selection;
+        } else {
+            selectionContent = new Map();
+            selection.models.forEach((obj) => {
+                selectionContent.set(obj.id, obj);
+            });
+        }
+        const modalResult = await buildCollectionModal(
+            collectionType,
+            this.model.id,
+            selectionContent,
+            hideSourceItems,
+            fromRulesInput
+        );
+        if (modalResult) {
+            console.debug("Submitting collection build request.", modalResult);
+            await createDatasetCollection({ id: this.model.id }, modalResult);
+        }
+    }
     render() {
-        // Hack: For now, remove unused "unified-panel" elements until we can
-        // completely re-work the layout container. Unfortunately the
-        // layout/page and sidepanel views are super-rigid and expect an
-        // explicit header and controls element that I'd rather be managed by by
-        // the component, so I'm just chopping those elements out manually.
-
-        // TODO: Rework layout/page and sidepanel to avoid this arrangement
-        $("#right > .unified-panel-header").remove();
-        $("#right > .unified-panel-controls").remove();
-        $("#right > .unified-panel-body").remove();
-        $("#right").addClass("beta").prepend(this.$el);
-
-        const container = this.$el[0];
-        const mountHistory = mountVueComponent(HistoryIndex);
-        mountHistory({}, container);
-
-        return this;
-    },
-});
-
-export default HistoryPanelProxy;
+        const container = document.createElement("div");
+        document.querySelector("#right > .unified-panel-header").remove();
+        document.querySelector("#right > .unified-panel-controls").remove();
+        document.querySelector("#right > .unified-panel-body").remove();
+        const parent = document.querySelector("#right");
+        parent.classList.add("beta");
+        parent.prepend(container);
+        const mountFn = mountVueComponent(HistoryIndex);
+        mountFn({}, container);
+    }
+}

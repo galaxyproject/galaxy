@@ -254,7 +254,6 @@ def setup_galaxy_config(
         logging=LOGGING_CONFIG_DEFAULT,
         monitor_thread_join_timeout=5,
         object_store_store_by="uuid",
-        simplified_workflow_run_ui="off",
     )
     if default_shed_tool_data_table_config:
         config["shed_tool_data_table_config"] = default_shed_tool_data_table_config
@@ -515,8 +514,7 @@ def wait_for_http_server(host, port, prefix=None, sleep_amount=0.1, sleep_tries=
                 raise
         time.sleep(sleep_amount)
     else:
-        template = "Test HTTP server on host %s and port %s did not return '200 OK' after 10 tries"
-        message = template % (host, port)
+        message = f"Test HTTP server on host {host} and port {port} did not return '200 OK' after {sleep_tries} tries"
         raise Exception(message)
 
 
@@ -745,7 +743,8 @@ class EmbeddedServerWrapper(ServerWrapper):
             self._app.shutdown()
             log.info(f"Application {self.name} stopped.")
 
-        log.info(f"{threading.active_count()} active after stopping embedded server")
+        thread_count = threading.active_count()
+        log.info(f"{thread_count} active after stopping embedded server")
 
 
 class GravityServerWrapper(ServerWrapper):
@@ -847,7 +846,7 @@ def launch_server(app_factory, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, gal
     if name == "galaxy":
         asgi_app = init_galaxy_fast_app(wsgi_webapp, app)
     elif name == "tool_shed":
-        asgi_app = init_tool_shed_fast_app(wsgi_webapp)
+        asgi_app = init_tool_shed_fast_app(wsgi_webapp, app)
     else:
         raise NotImplementedError(f"Launching {name} not implemented")
 
@@ -887,6 +886,15 @@ class TestDriver:
     def stop_servers(self):
         for server_wrapper in self.server_wrappers:
             server_wrapper.stop()
+        for th in threading.enumerate():
+            log.debug(f"After stopping all servers thread {th} is alive.")
+        active_count = threading.active_count()
+        if active_count > 100:
+            # For an unknown reason running iRODS tests results in application threads not shutting down immediately,
+            # but if we've accumulated over 100 active threads something else is wrong that needs to be fixed.
+            raise Exception(
+                f"{active_count} active threads after stopping embedded server. Have all threads been shut down?"
+            )
         self.server_wrappers = []
 
     def mkdtemp(self):
@@ -933,6 +941,8 @@ class GalaxyTestDriver(TestDriver):
 
         self.testing_shed_tools = getattr(config_object, "testing_shed_tools", False)
 
+        default_tool_conf: Optional[str]
+        datatypes_conf_override: Optional[str]
         if getattr(config_object, "framework_tool_and_types", False):
             default_tool_conf = FRAMEWORK_SAMPLE_TOOLS_CONF
             datatypes_conf_override = FRAMEWORK_DATATYPES_CONF
@@ -976,8 +986,8 @@ class GalaxyTestDriver(TestDriver):
                 if callable(galaxy_config):
                     galaxy_config = galaxy_config()
                 if galaxy_config is None:
-                    setup_galaxy_config_kwds = dict(
-                        allow_path_paste=getattr(config_object, "allow_path_paste", False),
+                    galaxy_config = setup_galaxy_config(
+                        galaxy_db_path,
                         use_test_file_dir=not self.testing_shed_tools,
                         default_install_db_merged=True,
                         default_tool_conf=self.default_tool_conf,
@@ -988,8 +998,8 @@ class GalaxyTestDriver(TestDriver):
                         conda_auto_install=getattr(config_object, "conda_auto_install", False),
                         use_shared_connection_for_amqp=getattr(config_object, "use_shared_connection_for_amqp", False),
                         allow_tool_conf_override=self.allow_tool_conf_override,
+                        allow_path_paste=getattr(config_object, "allow_path_paste", False),
                     )
-                    galaxy_config = setup_galaxy_config(galaxy_db_path, **setup_galaxy_config_kwds)
 
                     isolate_galaxy_config = getattr(config_object, "isolate_galaxy_config", False)
                     if isolate_galaxy_config:

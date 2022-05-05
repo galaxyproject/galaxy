@@ -92,6 +92,28 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         assert index_response[0]["id"] == newer_history_id
         assert index_response[1]["id"] == slightly_older_history_id
 
+    def test_index_query(self):
+        expected_history_name = f"TestHistoryThatMatchQuery_{uuid4()}"
+        expected_history_id = self._create_history(expected_history_name)["id"]
+        self._create_history("TestHistoryThatDoesNotMatchQuery")
+        # Filter by name
+        query = f"?q=name&qv={expected_history_name}"
+        index_response = self._get(f"histories{query}").json()
+        assert len(index_response) == 1
+        assert index_response[0]["name"] == expected_history_name
+
+        # Filter by name and deleted
+        query = f"?q=name&qv={expected_history_name}&q=deleted&qv=True"
+        index_response = self._get(f"histories{query}").json()
+        assert len(index_response) == 0  # Not deleted yet
+
+        # Delete the history
+        self._delete(f"histories/{expected_history_id}")
+        # Now it should match the query
+        index_response = self._get(f"histories{query}").json()
+        assert len(index_response) == 1
+        assert index_response[0]["name"] == expected_history_name
+
     def test_delete(self):
         # Setup a history and ensure it is in the index
         history_id = self._create_history("TestHistoryForDelete")["id"]
@@ -257,7 +279,7 @@ class ImportExportTests(BaseHistories):
         imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=2)
 
         def upload_job_check(job):
-            assert job["tool_id"] == "upload1"
+            assert job["tool_id"] == "__DATA_FETCH__"
 
         def check_discarded(hda):
             assert hda["deleted"]
@@ -297,7 +319,7 @@ class ImportExportTests(BaseHistories):
         self._assert_history_length(imported_history_id, 2)
 
         def upload_job_check(job):
-            assert job["tool_id"] == "upload1"
+            assert job["tool_id"] == "__DATA_FETCH__"
 
         def check_deleted_not_purged(hda):
             assert hda["state"] == "ok", hda
@@ -370,7 +392,7 @@ class ImportExportTests(BaseHistories):
         history_name = f"for_export_with_collections_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_collection_populator.create_list_in_history(
-            history_id, contents=["Hello", "World"], direct_upload=True
+            history_id, contents=["Hello", "World"], direct_upload=True, wait=True
         )
 
         imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=3)
@@ -395,7 +417,8 @@ class ImportExportTests(BaseHistories):
     def test_import_export_nested_collection(self):
         history_name = f"for_export_with_nested_collections_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
-        self.dataset_collection_populator.create_list_of_pairs_in_history(history_id)
+        fetch_response = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id, wait=True).json()
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
 
         imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=3)
         self._assert_history_length(imported_history_id, 3)
@@ -411,7 +434,10 @@ class ImportExportTests(BaseHistories):
             assert element0["collection_type"] == "paired"
 
         self._check_imported_collection(
-            imported_history_id, hid=1, collection_type="list:paired", elements_checker=check_elements
+            imported_history_id,
+            hid=dataset_collection["hid"],
+            collection_type="list:paired",
+            elements_checker=check_elements,
         )
 
     def _reimport_history(

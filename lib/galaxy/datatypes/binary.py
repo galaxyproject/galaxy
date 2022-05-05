@@ -19,7 +19,6 @@ from typing import Optional
 import h5py
 import numpy as np
 import pysam
-import pysam.bcftools
 from bx.seq.twobit import (
     TWOBIT_MAGIC_NUMBER,
     TWOBIT_MAGIC_NUMBER_SWAP,
@@ -138,6 +137,8 @@ class Cel(Binary):
     http://media.affymetrix.com/support/developer/powertools/changelog/gcos-agcc/cel.html
     """
 
+    # cel 3 is a text format
+    is_binary = "maybe"  # type: ignore[assignment]  # https://github.com/python/mypy/issues/8796
     file_ext = "cel"
     edam_format = "format_1638"
     edam_data = "data_3110"
@@ -208,6 +209,8 @@ class MashSketch(Binary):
     """
 
     file_ext = "msh"
+    # example data is actually text, maybe text would be a better base
+    is_binary = "maybe"  # type: ignore[assignment]  # https://github.com/python/mypy/issues/8796
 
 
 class CompressedArchive(Binary):
@@ -1020,6 +1023,7 @@ class BcfUncompressed(BaseBcf):
     """
 
     file_ext = "bcf_uncompressed"
+    compressed = False
 
     def sniff(self, filename):
         try:
@@ -2902,39 +2906,27 @@ class NcbiTaxonomySQlite(SQlite):
             )
 
 
+@build_sniff_from_prefix
 class Xlsx(Binary):
     """Class for Excel 2007 (xlsx) files"""
 
     file_ext = "xlsx"
     compressed = True
 
-    def sniff(self, filename):
+    def sniff_prefix(self, sniff_prefix):
         # Xlsx is compressed in zip format and must not be uncompressed in Galaxy.
-        try:
-            if zipfile.is_zipfile(filename):
-                tempzip = zipfile.ZipFile(filename)
-                if (
-                    "[Content_Types].xml" in tempzip.namelist()
-                    and tempzip.read("[Content_Types].xml").find(
-                        b"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"
-                    )
-                    != -1
-                ):
-                    return True
-            return False
-        except Exception:
-            return False
+        return sniff_prefix.compressed_mime_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
+@build_sniff_from_prefix
 class ExcelXls(Binary):
     """Class describing an Excel (xls) file"""
 
     file_ext = "excel.xls"
     edam_format = "format_3468"
 
-    def sniff(self, filename):
-        mime_type = subprocess.check_output(["file", "--mime-type", filename])
-        return b"application/vnd.ms-excel" in mime_type
+    def sniff_prefix(self, sniff_prefix):
+        return sniff_prefix.mime_type == self.get_mime()
 
     def get_mime(self):
         """Returns the mime type of the datatype"""

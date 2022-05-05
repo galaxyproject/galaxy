@@ -6,10 +6,10 @@
             <ul>
                 <li v-for="(transformAction, index) in transform" :key="index">
                     <span
+                        v-b-tooltip.hover.noninteractive.nofade.bottom
                         :title="actionLongDescription(transformAction)"
                         class="dataset-source-transform-element"
-                        :data-transform-action="transformAction.action"
-                        v-b-tooltip.hover.noninteractive.nofade.bottom>
+                        :data-transform-action="transformAction.action">
                         {{ actionShortDescription(transformAction) }}
                     </span>
                 </li>

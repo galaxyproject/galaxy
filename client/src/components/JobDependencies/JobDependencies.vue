@@ -32,14 +32,14 @@
 import CurrentUser from "components/providers/CurrentUser";
 
 export default {
+    components: {
+        CurrentUser,
+    },
     props: {
         dependencies: {
             type: Array,
             required: true,
         },
-    },
-    components: {
-        CurrentUser,
     },
 };
 </script>

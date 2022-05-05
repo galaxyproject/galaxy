@@ -196,7 +196,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.history_panel_create_new_with_name(name)
 
     def publish_current_history(self):
-        self.click_history_option("Share or Publish")
+        self.click_history_option_sharing()
         self.make_accessible_and_publishable()
 
     def navigate_to_published_histories_page(self):
