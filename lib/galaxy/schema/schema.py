@@ -1098,6 +1098,22 @@ class InvocationIndexQueryPayload(Model):
     offset: Optional[int] = Field(default=0, description="Number of invocations to skip")
 
 
+class PageSortByEnum(str, Enum):
+    create_time = "create_time"
+    update_time = "update_time"
+
+
+class PageIndexQueryPayload(Model):
+    deleted: bool = False
+    user_id: Optional[DecodedDatabaseIdField] = None
+    sort_by: PageSortByEnum = PageSortByEnum.update_time
+    sort_desc: bool = Field(default=True, descritpion="Sort in descending order?")
+    show_published: bool = True
+    show_shared: bool = False
+    limit: int = 500
+    offset: int = 0
+
+
 class CreateHistoryPayload(Model):
     name: Optional[str] = Field(
         default=None,

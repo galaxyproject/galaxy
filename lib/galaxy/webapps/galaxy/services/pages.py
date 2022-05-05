@@ -1,9 +1,6 @@
 import logging
 
-from galaxy import (
-    exceptions,
-    model,
-)
+from galaxy import exceptions
 from galaxy.celery.tasks import prepare_pdf_download
 from galaxy.managers import base
 from galaxy.managers.markdown_util import (
@@ -21,6 +18,7 @@ from galaxy.schema.schema import (
     CreatePagePayload,
     PageContentFormat,
     PageDetails,
+    PageIndexQueryPayload,
     PageSummary,
     PageSummaryList,
 )
@@ -57,7 +55,7 @@ class PagesService(ServiceBase):
         self.shareable_service = ShareableService(self.manager, self.serializer)
         self.short_term_storage_allocator = short_term_storage_allocator
 
-    def index(self, trans, deleted: bool = False) -> PageSummaryList:
+    def index(self, trans, payload: PageIndexQueryPayload) -> PageSummaryList:
         """Return a list of Pages viewable by the user
 
         :param deleted: Display deleted pages
@@ -65,30 +63,13 @@ class PagesService(ServiceBase):
         :rtype:     list
         :returns:   dictionaries containing summary or detailed Page information
         """
-        out = []
+        if not trans.user_is_admin:
+            user_id = trans.user.id
+            if payload.user_id and payload.user_id != user_id:
+                raise exceptions.AdminRequiredException("Only admins can index the pages of others")
 
-        if trans.user_is_admin:
-            r = trans.sa_session.query(model.Page)
-            if not deleted:
-                r = r.filter_by(deleted=False)
-            for row in r:
-                out.append(trans.security.encode_all_ids(row.to_dict(), recursive=True))
-        else:
-            # Transaction user's pages (if any)
-            user = trans.user
-            r = trans.sa_session.query(model.Page).filter_by(user=user)
-            if not deleted:
-                r = r.filter_by(deleted=False)
-            for row in r:
-                out.append(trans.security.encode_all_ids(row.to_dict(), recursive=True))
-            # Published pages from other users
-            r = trans.sa_session.query(model.Page).filter(model.Page.user != user).filter_by(published=True)
-            if not deleted:
-                r = r.filter_by(deleted=False)
-            for row in r:
-                out.append(trans.security.encode_all_ids(row.to_dict(), recursive=True))
-
-        return PageSummaryList.parse_obj(out)
+        pages, _ = self.manager.index_query(trans, payload)
+        return PageSummaryList.parse_obj([trans.security.encode_all_ids(p.to_dict(), recursive=True) for p in pages])
 
     def create(self, trans, payload: CreatePagePayload) -> PageSummary:
         """

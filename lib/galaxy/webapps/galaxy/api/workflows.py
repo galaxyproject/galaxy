@@ -1421,7 +1421,9 @@ MissingToolsQueryParam: bool = Query(
 
 ShowPublishedQueryParam: Optional[bool] = Query(default=None, title="Include published workflows.", description="")
 
-ShowSharedQueryParam: Optional[bool] = Query(default=None, title="Include shared workflows.", description="")
+ShowSharedQueryParam: Optional[bool] = Query(
+    default=None, title="Include workflows shared with authenticated user.", description=""
+)
 
 SortByQueryParam: Optional[WorkflowSortByEnum] = Query(
     default=None,

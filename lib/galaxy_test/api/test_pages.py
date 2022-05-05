@@ -1,6 +1,14 @@
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Union,
+)
 from unittest import SkipTest
 
 from requests import delete
+from requests.models import Response
 
 from galaxy.exceptions import error_codes
 from galaxy_test.api.sharable import SharingApiTests
@@ -100,11 +108,119 @@ steps:
 
     def test_index(self):
         create_response_json = self._create_valid_page_with_slug("indexpage")
-        assert self._users_index_has_page_with_id(create_response_json["id"])
+        assert self._users_index_has_page_with_id(create_response_json)
+
+    def test_index_deleted(self):
+        response1 = self._create_valid_page_with_slug("indexdeletedpageundeleted")
+        response2 = self._create_valid_page_with_slug("indexdeletedpagedeleted")
+        assert self._users_index_has_page_with_id(response1)
+        assert self._users_index_has_page_with_id(response2)
+        delete_response = self._delete(f"pages/{response2['id']}")
+        delete_response.raise_for_status()
+        assert self._users_index_has_page_with_id(response1)
+        assert not self._users_index_has_page_with_id(response2)
+        assert self._users_index_has_page_with_id(response2, dict(deleted=True))
+
+    def test_index_user_id_security(self):
+        user_id = self.dataset_populator.user_id()
+        response1 = self._create_valid_page_with_slug("indexuseridsecurity")
+        assert self._users_index_has_page_with_id(response1, dict(user_id=user_id))
+        with self._different_user():
+            response = self._index_raw()
+            assert response.status_code == 200
+            response = self._index_raw(dict(user_id=user_id))
+            assert response.status_code == 403
+
+    def test_index_user_published(self):
+        user_id = self.dataset_populator.user_id()
+        response1 = self._create_valid_page_with_slug("indexuseridpublish1")
+        with self._different_user():
+            response2 = self._create_valid_page_with_slug("indexuseridpublish2")
+            self._make_public(response2["id"])
+
+        assert self._users_index_has_page_with_id(response1)
+        assert self._users_index_has_page_with_id(response2)
+        assert self._users_index_has_page_with_id(response1, dict(user_id=user_id))
+        assert not self._users_index_has_page_with_id(response2, dict(user_id=user_id))
+
+    def test_index_show_published(self):
+        with self._different_user():
+            response = self._create_valid_page_with_slug("indexshowpublish2")
+            self._make_public(response["id"])
+
+        assert self._users_index_has_page_with_id(response)
+        assert self._users_index_has_page_with_id(response, dict(show_published=True))
+        assert not self._users_index_has_page_with_id(response, dict(show_published=False))
+
+    def test_index_show_shared_with_me(self):
+        user_id = self.dataset_populator.user_id()
+        with self._different_user():
+            response_published = self._create_valid_page_with_slug("indexshowsharedpublished")
+            self._make_public(response_published["id"])
+            response_shared = self._create_valid_page_with_slug("indexshowsharedshared")
+            self._share_with_user(response_shared["id"], user_id)
+
+        assert not self._users_index_has_page_with_id(response_shared)
+        assert self._users_index_has_page_with_id(response_shared, dict(show_shared=True))
+        assert not self._users_index_has_page_with_id(response_shared, dict(show_shared=False))
+        # make sure published workflows still enabled by default...
+        assert self._users_index_has_page_with_id(response_published, dict(show_shared=False))
+
+    def test_index_show_shared_with_me_deleted(self):
+        user_id = self.dataset_populator.user_id()
+        with self._different_user():
+            response_published = self._create_valid_page_with_slug("indexshowsharedpublished")
+            self._make_public(response_published["id"])
+            response_shared = self._create_valid_page_with_slug("indexshowsharedshared")
+            self._share_with_user(response_shared["id"], user_id)
+            self._delete(f"pages/{response_published['id']}").raise_for_status()
+            self._delete(f"pages/{response_shared['id']}").raise_for_status()
+
+        assert not self._users_index_has_page_with_id(response_shared, dict(show_shared=True, show_published=True))
+        assert not self._users_index_has_page_with_id(response_published, dict(show_shared=True, show_published=True))
+        assert not self._users_index_has_page_with_id(
+            response_shared, dict(show_shared=True, show_published=True, deleted=True)
+        )
+        assert not self._users_index_has_page_with_id(
+            response_published, dict(show_shared=True, show_published=True, deleted=True)
+        )
+
+    def test_index_ordering(self):
+        older1 = self._create_valid_page_with_slug("indexorderingcreatedfirst")["id"]
+        newer1 = self._create_valid_page_with_slug("indexorderingcreatedsecond")["id"]
+        index_ids = self._index_ids()
+        assert index_ids.index(older1) > index_ids.index(newer1)
+        index_ids = self._index_ids(dict(sort_desc=True))  # the default but verify it works when explicit
+        assert index_ids.index(older1) > index_ids.index(newer1)
+
+        index_ids = self._index_ids(dict(sort_desc=False))
+        assert index_ids.index(older1) < index_ids.index(newer1)
+
+        # update older1 so the update time is newer...
+        revision_data = dict(content="<p>NewContent!</p>")
+        self._post(f"pages/{older1}/revisions", data=revision_data).raise_for_status()
+        index_ids = self._index_ids()
+        assert index_ids.index(older1) < index_ids.index(newer1)
+
+        # if we switch to create time instead of update time, older1 still appears later in
+        # in the list...
+        index_ids = self._index_ids(dict(sort_by="create_time"))
+        assert index_ids.index(older1) > index_ids.index(newer1)
+
+    def test_limit_offset(self):
+        older1 = self._create_valid_page_with_slug("indexlimitoffsetcreatedfirst")["id"]
+        newer1 = self._create_valid_page_with_slug("indexlimitoffsetcreatedsecond")["id"]
+        index_ids = self._index_ids(dict(limit=1))
+        assert newer1 in index_ids
+        assert older1 not in index_ids
+
+        index_ids = self._index_ids(dict(limit=1, offset=1))
+        assert newer1 not in index_ids
+        assert older1 in index_ids
 
     def test_index_does_not_show_unavailable_pages(self):
         create_response_json = self._create_valid_page_as("others_page_index@bx.psu.edu", "otherspageindex")
-        assert not self._users_index_has_page_with_id(create_response_json["id"])
+        assert not self._users_index_has_page_with_id(create_response_json)
 
     def test_cannot_create_pages_with_same_slug(self):
         page_request = self._test_page_payload(slug="mypage1")
@@ -239,8 +355,34 @@ steps:
         pdf_response = self._get(f"pages/{page_id}.pdf")
         self._assert_status_code_is(pdf_response, 400)
 
-    def _users_index_has_page_with_id(self, id):
-        index_response = self._get("pages")
+    def _make_public(self, page_id: str) -> dict:
+        sharing_response = self._put(f"pages/{page_id}/publish")
+        assert sharing_response.status_code == 200
+        return sharing_response.json()
+
+    def _share_with_user(self, page_id: str, user_id_or_email: str):
+        data = {"user_ids": [user_id_or_email]}
+        response = self._put(f"pages/{page_id}/share_with_users", data, json=True)
+        api_asserts.assert_status_code_is_ok(response)
+
+    def _index_raw(self, params: Optional[Dict[str, Any]] = None) -> Response:
+        index_response = self._get("pages", data=params or {})
+        return index_response
+
+    def _index(self, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        index_response = self._index_raw(params)
         self._assert_status_code_is(index_response, 200)
-        pages = index_response.json()
-        return id in (_["id"] for _ in pages)
+        return index_response.json()
+
+    def _index_ids(self, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        return [p["id"] for p in self._index(params)]
+
+    def _users_index_has_page_with_id(
+        self, has_id: Union[Dict[str, Any], str], params: Optional[Dict[str, Any]] = None
+    ):
+        pages = self._index(params)
+        if isinstance(has_id, dict):
+            target_id = has_id["id"]
+        else:
+            target_id = has_id
+        return target_id in (_["id"] for _ in pages)
