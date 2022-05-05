@@ -3398,7 +3398,7 @@ class SortTool(DatabaseOperationTool):
             presort_elements = [(int(re.sub("[^0-9]", "", dce.element_identifier)), dce) for dce in elements]
         elif sorttype == "file":
             hda = incoming["sort_type"]["sort_file"]
-            data_lines = hda.metadata.get("data_lines", 0)
+            data_lines = hda.metadata_.get("data_lines", 0)
             if data_lines == len(elements):
                 old_elements_dict = {}
                 for element in elements:
