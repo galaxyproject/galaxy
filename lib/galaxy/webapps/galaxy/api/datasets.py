@@ -455,6 +455,8 @@ class DatasetsController(BaseGalaxyAPIController):
             trans, history_content_id, history_id, preview, filename, to_ext, raw, **kwd
         )
         trans.response.headers.update(headers)
+        if isinstance(display_data, ZipstreamWrapper):
+            return display_data.response()
         return display_data
 
     @web.expose_api
