@@ -2775,7 +2775,10 @@ def load_data_dict(
                 input_type = element_data.pop("type", "raw")
                 content = None
                 if input_type == "File":
-                    content = read_test_data(element_data)
+                    if 'content' in value:
+                        content = element_data.pop('content')
+                    else:
+                        content = read_test_data(element_data)
                 else:
                     content = element_data.pop("content")
                 if content is not None:
@@ -2815,7 +2818,10 @@ def load_data_dict(
         elif is_dict and "type" in value:
             input_type = value.pop("type")
             if input_type == "File":
-                content = open_test_data(value)
+                if 'content' in value:
+                    content = StringIO(value["content"])
+                else:
+                    content = open_test_data(value)
                 new_dataset_kwds = {"content": content}
                 if "name" in value:
                     new_dataset_kwds["name"] = value["name"]

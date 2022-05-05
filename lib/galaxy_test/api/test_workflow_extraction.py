@@ -320,13 +320,13 @@ steps:
         $link: split_up/split_output
 test_data:
   text_input1:
-      value: |
+      content: |
         samp1\t10.0
         samp2\t20.0
       type: File
       file_type: tabular
   text_input2:
-      value: |
+      content: |
         samp1\t30.0
         samp2\t40.0
       type: File
