@@ -111,12 +111,7 @@ class CondaContext(installable.InstallableContext):
         self.conda_prefix = conda_prefix
         if conda_exec is None:
             self.conda_exec = self._bin("conda")
-        if ensure_channels:
-            if not isinstance(ensure_channels, list):
-                ensure_channels = [c for c in ensure_channels.split(",") if c]
-        else:
-            ensure_channels = None
-        self.ensure_channels = ensure_channels
+        self.ensure_channels: List[str] = listify(ensure_channels)
         self._conda_version = None
         self._miniconda_version = None
         self._conda_build_available = None
