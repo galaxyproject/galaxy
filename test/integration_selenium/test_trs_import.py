@@ -43,7 +43,7 @@ class TrsImportTestCase(SeleniumIntegrationTestCase):
 
     def assert_workflow_imported(self, name):
         self.workflow_index_search_for(name)
-        assert len(self.workflow_index_table_elements()) == 1, "workflow ${name} not imported"
+        assert len(self.workflow_index_table_elements()) == 1, f"workflow ${name} not imported"
 
     def test_import_workflow_by_url_dockstore(self):
         import_url = f"workflows/trs_import?trs_server=dockstore.org&trs_version={TRS_VERSION_DOCKSTORE}&trs_id=%23{TRS_ID_DOCKSTORE}"

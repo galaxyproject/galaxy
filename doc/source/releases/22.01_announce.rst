@@ -11,7 +11,7 @@ Highlights
 **Galaxy starts as FastAPI application by default**
   Starting Galaxy via ``run.sh`` will use the new `gravity process manager
   <https://github.com/galaxyproject/gravity>`__.
-  The new configuration uses `gunicorn <https://gunicorn.org/>`__ and `FastAPI <https://fastapi.tiangolo.com/>`__ to drive Galaxy's web process and starts job handler and `Celery <https://docs.celeryproject.org/>`__ processes automatically.
+  The new configuration uses `gunicorn <https://gunicorn.org/>`__ and `FastAPI <https://fastapi.tiangolo.com/>`__ to drive Galaxy's web process and starts job handler and `Celery <https://docs.celeryq.dev/>`__ processes automatically.
   For more details and instructions please consult the `Migrating to Gunicorn documentation <https://docs.galaxyproject.org/en/latest/admin/migrating_to_gunicorn.html>`__.
   (`Pull Request 13224`_).
 
