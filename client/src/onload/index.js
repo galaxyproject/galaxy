@@ -19,5 +19,6 @@ export { getRootFromIndexLink } from "./getRootFromIndexLink";
 import config from "config";
 
 if (!config.testBuild === true) {
-    console.log("Configs:", config.name, config);
+    console.log(`Galaxy Client '${config.name}' build, dated ${config.buildTimestamp}`);
+    console.debug("Full configuration:", config);
 }

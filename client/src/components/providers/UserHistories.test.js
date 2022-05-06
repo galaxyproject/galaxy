@@ -10,6 +10,10 @@ let historySummaries;
 let fullHistories;
 let currentHistoryId;
 
+// These history tests can be flaky, so we allow a few retries while we work out
+// what's going on.
+jest.retryTimes(3, { logErrorsBeforeRetry: true });
+
 const resetTestData = () => {
     const ids = [1, 2, 3, 4];
     currentHistoryId = ids[0];
