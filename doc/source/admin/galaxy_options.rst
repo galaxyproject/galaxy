@@ -4672,7 +4672,7 @@
     the process that handled that particular request will tell all
     others to also reload, lock jobs, etc. For connection examples,
     see
-    http://docs.celeryproject.org/projects/kombu/en/latest/userguide/connections.html
+    https://docs.celeryq.dev/projects/kombu/en/stable/userguide/connections.html
     Without specifying anything here, galaxy will first attempt to use
     your specified database_connection above.  If that's not specified
     either, Galaxy will automatically create and use a separate sqlite
