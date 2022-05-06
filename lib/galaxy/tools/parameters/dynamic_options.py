@@ -495,7 +495,7 @@ class RemoveValueFilter(Filter):
                     data_ref, DatasetFilenameWrapper
                 ):
                     return options  # cannot modify options
-                value = data_ref.metadata.get(self.metadata_key, None)
+                value = data_ref.metadata_.get(self.metadata_key, None)
         # Default to the second column (i.e. 1) since this used to work only on options produced by the data_meta filter
         value_col = self.dynamic_option.columns.get("value", 1)
         return [option for option in options if not compare_value(option[value_col], value)]
@@ -709,7 +709,7 @@ class DynamicOptions:
             meta_file_key = self.meta_file_key
             for dataset in datasets:
                 if meta_file_key:
-                    dataset = getattr(dataset.metadata, meta_file_key, None)
+                    dataset = getattr(dataset.metadata_, meta_file_key, None)
                     if not isinstance(dataset, MetadataFile):
                         log.warning(
                             f"The meta_file_key `{meta_file_key}` was invalid or the referred object was not a valid file type metadata!"
