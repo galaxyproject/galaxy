@@ -9998,3 +9998,25 @@ def receive_init(target, args, kwargs):
         if obj:
             add_object_to_object_session(target, obj)
             return  # Once is enough.
+
+
+def handle_metadata_attribute(obj, attribute_name):
+    """
+    If the object is a DatasetInstance (HDA, LDDA) or a Mock DatasetInstance,
+    and the attribute_name is 'metadata', return 'metadata_' instead.
+
+    Rationale: `metadata` is reserved by SQLAlchemy for the MetaData instance
+    when using a declarative base class, so we use `metadata_` instead.
+    However, in some cases the old `metadata` attribute has to be preserved
+    (e.g. dataset serialization); there are also cases when model's attributes
+    are accessed dynamically. Therefore, we have this method which should be
+    called before dynamically accessing a model's attributes (i.e., via
+    setattr/getattr/hasattr).
+    """
+    if (
+        isinstance(obj, DatasetInstance)
+        or obj.__class__.__name__ == "MockHistoryDatasetAssociation"
+        and attribute_name == "metadata"
+    ):
+        return "metadata_"
+    return attribute_name

@@ -26,6 +26,7 @@ from galaxy.model import (
     Dataset,
     DatasetCollectionElement,
     DatasetInstance,
+    handle_metadata_attribute,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
@@ -2190,6 +2191,7 @@ class DataToolParameter(BaseDataToolParameter):
             call_attribute = False
         ref = value
         for attribute in options_filter_attribute.split("."):
+            attribute = handle_metadata_attribute(ref, attribute)
             ref = getattr(ref, attribute)
         if call_attribute:
             ref = ref()
