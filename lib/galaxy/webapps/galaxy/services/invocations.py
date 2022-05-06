@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import (
     Any,
     Dict,
@@ -19,10 +20,15 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 
+class InvocationSerializationView(str, Enum):
+    element = "element"
+    collection = "collection"
+
+
 class InvocationSerializationParams(BaseModel):
     """Contains common parameters for customizing model serialization."""
 
-    view: Optional[str] = Field(
+    view: Optional[InvocationSerializationView] = Field(
         default=None,
         title="View",
         description=(
@@ -93,7 +99,10 @@ class InvocationsService(ServiceBase):
         return invocation_dict, total_matches
 
     def serialize_workflow_invocation(
-        self, invocation, params: InvocationSerializationParams, default_view: str = "element"
+        self,
+        invocation,
+        params: InvocationSerializationParams,
+        default_view: InvocationSerializationView = InvocationSerializationView.element,
     ):
         view = params.view or default_view
         step_details = params.step_details
@@ -102,7 +111,10 @@ class InvocationsService(ServiceBase):
         return self.security.encode_all_ids(as_dict, recursive=True)
 
     def _serialize_workflow_invocations(
-        self, invocations, params: InvocationSerializationParams, default_view: str = "collection"
+        self,
+        invocations,
+        params: InvocationSerializationParams,
+        default_view: InvocationSerializationView = InvocationSerializationView.collection,
     ):
         return list(
             map(lambda i: self.serialize_workflow_invocation(i, params, default_view=default_view), invocations)
