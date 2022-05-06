@@ -531,7 +531,7 @@ class MappingTests(BaseModelTestCase):
 
     def test_metadata_spec(self):
         metadata = dict(chromCol=1, startCol=2, endCol=3)
-        d = model.HistoryDatasetAssociation(extension="interval", metadata_=metadata, sa_session=self.model.session)
+        d = model.HistoryDatasetAssociation(extension="interval", metadata=metadata, sa_session=self.model.session)
         assert d.metadata_.chromCol == 1
         assert d.metadata_.anyAttribute is None
         assert "items" not in d.metadata_
