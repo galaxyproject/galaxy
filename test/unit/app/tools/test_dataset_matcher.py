@@ -94,10 +94,11 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
         data1_val.dbkey = "hg18"
         self.other_values = {"data1": data1_val}
         assert self.test_context.filter_values == {"hg18"}
-#
-#        # mock_hda is hg19, other is hg18 so should not be "valid hda"
-#        hda_match = self.test_context.hda_match(self.mock_hda)
-#        assert not hda_match
+
+    #
+    #        # mock_hda is hg19, other is hg18 so should not be "valid hda"
+    #        hda_match = self.test_context.hda_match(self.mock_hda)
+    #        assert not hda_match
 
     def test_filtered_hda_unmatched_key(self):
         self.filtered_param = True

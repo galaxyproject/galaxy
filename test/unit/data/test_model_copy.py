@@ -152,7 +152,9 @@ def _create_hda(
     sa_session.flush([hda])
     object_store.update_from_file(hda, file_name=path, create=True)
     if include_metadata_file:
-        hda.metadata_.from_JSON_dict(json_dict={"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": path})})
+        hda.metadata_.from_JSON_dict(
+            json_dict={"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": path})}
+        )
         _check_metadata_file(hda)
     hda.set_size()
     history.add_dataset(hda)
