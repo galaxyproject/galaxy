@@ -175,7 +175,9 @@ export default {
             ctx.root = this.root;
             const extraParams = { search: this.filter, skip_step_counts: true };
             const promise = storedWorkflowsProvider(ctx, this.setRows, extraParams).catch(this.onError);
-            this.workflowItems = await promise;
+            const workflowItems = await promise;
+            (workflowItems || []).forEach((item) => this.services._addAttributes(item));
+            this.workflowItems = workflowItems;
             return this.workflowItems;
         },
         bookmarkWorkflow: function (id, checked) {
