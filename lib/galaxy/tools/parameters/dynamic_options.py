@@ -206,9 +206,9 @@ class DataMetaFilter(Filter):
         # is considered
         meta_value = set()
         for r in ref:
-            if not r.metadata.element_is_set(self.key):
+            if not r.metadata_.element_is_set(self.key):
                 continue
-            _add_meta(meta_value, r.metadata.get(self.key))
+            _add_meta(meta_value, r.metadata_.get(self.key))
 
         # if no meta data value could be determined just return a copy
         # of the original options
