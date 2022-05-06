@@ -71,7 +71,7 @@ def main():
         # we also want to clean up any runtime-popluated things
         for n in ('logs', 'database'):
             logging.debug(f"Clearing runtime {n}")
-            shutil.rmtree(builddir + "/" + n)
+            shutil.rmtree(builddir + "/" + n, ignore_errors=True)
             os.mkdir(builddir + "/" + n)
 
         # build the package.
