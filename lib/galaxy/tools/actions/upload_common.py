@@ -293,7 +293,7 @@ def create_paramfile(trans, uploaded_datasets):
             # we need to init metadata before the job is dispatched
             data.init_meta()
             for meta_name, meta_value in uploaded_dataset.metadata.items():
-                setattr(data.metadata, meta_name, meta_value)
+                setattr(data.metadata_, meta_name, meta_value)
             trans.sa_session.add(data)
             trans.sa_session.flush()
             params = dict(
