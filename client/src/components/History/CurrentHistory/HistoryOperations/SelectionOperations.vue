@@ -57,7 +57,8 @@
             <p v-localize>Really restore {{ numSelected }} content items?</p>
         </b-modal>
         <b-modal id="purge-selected-content" title="Purge Selected Content?" title-tag="h2" @ok="purgeSelected">
-            <p v-localize>Permanently delete {{ numSelected }} content items? This cannot be undone.</p>
+            <p v-localize>Permanently delete {{ numSelected }} content items?</p>
+            <p><strong v-localize class="text-danger">Warning, this operation cannot be undone.</strong></p>
         </b-modal>
     </section>
 </template>
@@ -134,12 +135,12 @@ export default {
             await this.runOnSelection(purgeSelectedContent);
         },
         async runOnSelection(operation) {
-            this.$emit("update:long-operation-running", true);
+            this.$emit("update:operation-running", true);
             const items = this.getExplicitlySelectedItems();
             const filters = getQueryDict(this.filterText);
-            this.$emit("reset-selection");
+            this.$emit("update:show-selection", false);
             await operation(this.history, filters, items);
-            this.$emit("update:long-operation-running", false);
+            this.$emit("update:operation-running", false);
         },
         getExplicitlySelectedItems() {
             if (this.isQuerySelection) {

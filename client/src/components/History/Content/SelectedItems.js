@@ -67,6 +67,8 @@ export default {
         reset() {
             this.items = new Map();
             this.resetQuerySelection();
+        },
+        cancelSelection() {
             this.showSelection = false;
         },
     },
@@ -74,6 +76,7 @@ export default {
         scopeKey(newKey, oldKey) {
             if (newKey !== oldKey) {
                 this.reset();
+                this.cancelSelection();
             }
         },
         selectionSize(newSize) {
@@ -84,6 +87,11 @@ export default {
         showSelection(newVal) {
             if (!newVal) {
                 this.reset();
+            }
+        },
+        totalItemsInQuery(newVal, oldVal) {
+            if (this.allSelected && newVal !== oldVal) {
+                this.resetQuerySelection();
             }
         },
     },
