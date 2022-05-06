@@ -31,42 +31,38 @@ const createdHistory = { id: 666, name: "I am new" };
 
 // test store data
 let currentHistoryId;
-let historyDetails;
-let historySummaries;
+let histories;
 const setTestData = () => {
     const ids = [1, 2, 3, 4];
     currentHistoryId = ids[0];
-    historySummaries = ids.map((i) => ({ id: i, name: `History #${i}` }));
-    historyDetails = historySummaries.map((h) => ({ ...h, detailView: true }));
+    histories = ids.map((i) => ({ id: i, name: `History #${i}` }));
 };
 
 // mock store queries
 getHistoryList.mockImplementation(async () => {
-    return [...historySummaries];
+    return [...histories];
 });
 getCurrentHistoryFromServer.mockImplementation(async () => {
-    return historyDetails.find((o) => o.id == currentHistoryId);
+    return histories.find((o) => o.id == currentHistoryId);
 });
 getHistoryById.mockImplementation(async (id) => {
-    return historyDetails.find((o) => o.id == id);
+    return histories.find((o) => o.id == id);
 });
 createNewHistory.mockImplementation(async () => {
-    historySummaries.push(createdHistory);
-    const newFullHistory = { ...createdHistory, detailView: true };
-    historyDetails.push(newFullHistory);
-    return Object.assign({}, newFullHistory);
+    histories.push(createdHistory);
+    return Object.assign({}, createdHistory);
 });
 setCurrentHistoryOnServer.mockImplementation(async (id) => {
     currentHistoryId = id;
-    const result = historyDetails.find((h) => h.id == id);
+    const result = histories.find((h) => h.id == id);
     return Object.assign({}, result);
 });
 updateHistoryFields.mockImplementation(async (id, payload = {}) => {
-    const existingHistory = historyDetails.find((h) => h.id == id);
+    const existingHistory = histories.find((h) => h.id == id);
     return { ...existingHistory, ...payload };
 });
 deleteHistoryById.mockImplementation(async (id) => {
-    return historyDetails.find((h) => h.id == id);
+    return histories.find((h) => h.id == id);
 });
 
 // user histories provider test cases
@@ -101,7 +97,7 @@ describe("UserHistories", () => {
         test("histories", async () => {
             const { histories } = slotProps;
             expect(histories).toBeInstanceOf(Array);
-            expect(histories.length).toEqual(historySummaries.length);
+            expect(histories.length).toEqual(histories.length);
             histories.forEach((h) => {
                 expect(h).toBeInstanceOf(Object);
             });
@@ -119,7 +115,7 @@ describe("UserHistories", () => {
             const { setCurrentHistory } = slotProps.handlers;
             expect(setCurrentHistory).toBeInstanceOf(Function);
             // set another history as current
-            const nextHistory = historySummaries[1];
+            const nextHistory = histories[1];
             await setCurrentHistory(nextHistory);
             // verify that current history has changed
             const { currentHistory: changedHistory, histories: newHistories } = slotProps;
@@ -132,7 +128,7 @@ describe("UserHistories", () => {
             const { createNewHistory } = slotProps.handlers;
             expect(createNewHistory).toBeInstanceOf(Function);
             // expect initial history id
-            expect(slotProps.currentHistory.id).toEqual(historySummaries[0].id);
+            expect(slotProps.currentHistory.id).toEqual(histories[0].id);
             // create new history
             await createNewHistory();
             // expect new history id
