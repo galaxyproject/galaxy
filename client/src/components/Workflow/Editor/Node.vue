@@ -43,6 +43,11 @@
                 <i class="fa fa-files-o" />
             </b-button>
             <i :class="iconClass" />
+            <span
+                v-b-tooltip.hover
+                title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."
+                >{{ stepIndex }}:
+            </span>
             <span class="node-title">{{ title }}</span>
         </div>
         <b-alert v-if="!!errors" variant="danger" show class="node-error">
@@ -177,6 +182,9 @@ export default {
         isInput() {
             return this.type == "data_input" || this.type == "data_collection_input" || this.type == "parameter_input";
         },
+        stepIndex() {
+            return parseInt(this.id) + 1;
+        },
     },
     mounted() {
         this.canvasManager = this.getCanvasManager();
@@ -235,6 +243,7 @@ export default {
             this.$emit("onUpdate", this);
         }
     },
+
     methods: {
         onChange() {
             this.onRedraw();

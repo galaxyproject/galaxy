@@ -102,7 +102,7 @@ class UpdateStepLabelAction(BaseAction):
 class UpdateStepPositionAction(BaseAction):
     action_type: Literal["update_step_position"]
     step: step_reference_union = step_target_field
-    position: Position
+    position_shift: Position
 
 
 class AddStepAction(BaseAction):
