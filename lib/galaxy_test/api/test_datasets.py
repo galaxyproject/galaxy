@@ -1,8 +1,11 @@
 import textwrap
+import zipfile
+from io import BytesIO
 
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    skip_without_datatype,
     skip_without_tool,
 )
 from ._framework import ApiTestCase
@@ -200,3 +203,24 @@ class DatasetsApiTestCase(ApiTestCase):
             f"histories/{self.history_id}/contents/{hda_id}",
             data={'datatype': 'invalid'}, json=True)
         self._assert_status_code_is(invalidly_updated_hda_response, 400)
+
+    @skip_without_datatype("velvet")
+    def test_composite_datatype_download(self):
+        item = {
+            "src": "composite",
+            "ext": "velvet",
+            "composite": {
+                "items": [
+                    {"src": "pasted", "paste_content": "sequences content"},
+                    {"src": "pasted", "paste_content": "roadmaps content"},
+                    {"src": "pasted", "paste_content": "log content"},
+                ]
+            },
+        }
+        output = self.dataset_populator.fetch_hda(self.history_id, item, wait=True)
+        print(output)
+        response = self._get(f"histories/{self.history_id}/contents/{output['id']}/display?to_ext=zip")
+        self._assert_status_code_is(response, 200)
+        archive = zipfile.ZipFile(BytesIO(response.content))
+        namelist = archive.namelist()
+        assert len(namelist) == 4, f"Expected 3 elements in [{namelist}]"
