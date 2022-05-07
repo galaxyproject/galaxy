@@ -49,7 +49,7 @@ Members
 - Martin Čech (@martenson)
 - John Chilton (@jmchilton)
 - Nate Coraor (@natefoo)
-- John Davis (@ic4f)
+- John Davis (@jdavcs)
 - Jeremy Goecks (@jgoecks)
 - Nuwan Goonasekera (@nuwang)
 - Björn Grüning (@bgruening)
