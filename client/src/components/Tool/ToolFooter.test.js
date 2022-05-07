@@ -5,7 +5,7 @@ import { getLocalVue } from "jest/helpers";
 import flushPromises from "flush-promises";
 import ToolFooter from "./ToolFooter";
 
-const localVue = getLocalVue();
+const localVue = getLocalVue(true);
 
 const citationsA = [{ format: "bibtex", content: "@misc{entry_a, year = {1111}}" }];
 const citationsB = [{ format: "bibtex", content: "@misc{entry_b, year = {2222}}" }];
@@ -45,6 +45,7 @@ describe("ToolFooter", () => {
 
     it("check props", async () => {
         await flushPromises();
+        expect(wrapper.findAll(".footer-section-name").at(0).text()).toBeLocalizationOf("Citations");
         const referenceA = wrapper.find(".formatted-reference .csl-entry");
         expect(referenceA.attributes()["data-csl-entry-id"]).toBe("entry_a");
         expect(referenceA.text()).toContain("1111");
