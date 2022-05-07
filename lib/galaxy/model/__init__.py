@@ -10013,10 +10013,23 @@ def handle_metadata_attribute(obj, attribute_name):
     called before dynamically accessing a model's attributes (i.e., via
     setattr/getattr/hasattr).
     """
-    if (
-        isinstance(obj, DatasetInstance)
-        or obj.__class__.__name__ == "MockHistoryDatasetAssociation"
-        and attribute_name == "metadata"
-    ):
+    if _is_dataset_instance_or_mock(obj) and attribute_name == "metadata":
         return "metadata_"
     return attribute_name
+
+
+def get_dataset_metadata(dataset):
+    """
+    See docstring in handle_metadata_attribute.
+
+    Sometimes we access the metadata attribute on an object that may or may not
+    be a DatasetInstance (e.g. tools.parameters.dynamic_options). In that case
+    we have to check the object's type to know what attribute to access.
+    """
+    if _is_dataset_instance_or_mock(dataset):
+        return dataset.metadata_
+    return dataset.metadata
+
+
+def _is_dataset_instance_or_mock(obj):
+    return isinstance(obj, DatasetInstance) or obj.__class__.__name__ == "MockHistoryDatasetAssociation"
