@@ -828,9 +828,9 @@ The ``get_field_components_options()`` method looks like this.
 ```python
 def get_field_components_options(dataset, field_name):
     options = []
-    if dataset.metadata is None:
+    if dataset.metadata_ is None:
         return options
-    if not hasattr(dataset.metadata, 'field_names'):
+    if not hasattr(dataset.metadata_, 'field_names'):
         return options
     if dataset.metadata.field_names is None:
         return options
