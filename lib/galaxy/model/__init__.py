@@ -7712,7 +7712,7 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
             assoc = cls.sa_session.query(cls).filter_by(server_url=server_url, handle=association.handle)[0]
         except IndexError:
             assoc = cls(server_url=server_url, handle=association.handle)
-        assoc.secret = base64.encodestring(association.secret).decode()
+        assoc.secret = base64.encodebytes(association.secret).decode()
         assoc.issued = association.issued
         assoc.lifetime = association.lifetime
         assoc.assoc_type = association.assoc_type
