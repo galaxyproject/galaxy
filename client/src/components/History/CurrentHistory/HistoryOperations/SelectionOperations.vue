@@ -119,28 +119,28 @@ export default {
     },
     methods: {
         // Selected content manipulation, hide/show/delete/purge
-        async hideSelected() {
-            await this.runOnSelection(hideSelectedContent);
+        hideSelected() {
+            this.runOnSelection(hideSelectedContent);
         },
-        async unhideSelected() {
-            await this.runOnSelection(unhideSelectedContent);
+        unhideSelected() {
+            this.runOnSelection(unhideSelectedContent);
         },
-        async deleteSelected() {
-            await this.runOnSelection(deleteSelectedContent);
+        deleteSelected() {
+            this.runOnSelection(deleteSelectedContent);
         },
-        async undeleteSelected() {
-            await this.runOnSelection(undeleteSelectedContent);
+        undeleteSelected() {
+            this.runOnSelection(undeleteSelectedContent);
         },
-        async purgeSelected() {
-            await this.runOnSelection(purgeSelectedContent);
+        purgeSelected() {
+            this.runOnSelection(purgeSelectedContent);
         },
         async runOnSelection(operation) {
-            this.$emit("update:operation-running", true);
+            this.$emit("update:operation-running", this.history.update_time);
             const items = this.getExplicitlySelectedItems();
             const filters = getQueryDict(this.filterText);
             this.$emit("update:show-selection", false);
             await operation(this.history, filters, items);
-            this.$emit("update:operation-running", false);
+            this.$emit("update:operation-running", this.history.update_time);
         },
         getExplicitlySelectedItems() {
             if (this.isQuerySelection) {

@@ -42,8 +42,8 @@
                             :show-selection="showSelection"
                             :expanded-count="expandedCount"
                             :has-matches="hasMatches(itemsLoaded)"
+                            :operation-running.sync="operationRunning"
                             @update:show-selection="setShowSelection"
-                            @update:operation-running="onUpdateOperationStatus"
                             @collapse-all="collapseAll">
                             <template v-slot:selection-operations>
                                 <HistorySelectionOperations
@@ -53,8 +53,8 @@
                                     :selection-size="selectionSize"
                                     :is-query-selection="isQuerySelection"
                                     :total-items-in-query="totalItemsInQuery"
+                                    :operation-running.sync="operationRunning"
                                     @update:show-selection="setShowSelection"
-                                    @update:operation-running="onUpdateOperationStatus"
                                     @hide-selection="onHideSelection"
                                     @reset-selection="resetSelection" />
                                 <HistorySelectionStatus
@@ -155,8 +155,7 @@ export default {
             invisible: {},
             offset: 0,
             showAdvanced: false,
-            isOperationRunning: false,
-            updateExpectedAfterDate: null,
+            operationRunning: null,
             querySelectionBreak: false,
         };
     },
@@ -178,12 +177,8 @@ export default {
             return !this.queryDefault;
         },
         /** @returns {Boolean} */
-        isHistoryUpdated() {
-            return !this.updateExpectedAfterDate || this.history.update_time > this.updateExpectedAfterDate;
-        },
-        /** @returns {Boolean} */
         isProcessing() {
-            return this.isOperationRunning || !this.isHistoryUpdated;
+            return this.operationRunning >= this.history.update_time;
         },
     },
     watch: {
@@ -193,12 +188,7 @@ export default {
         },
         historyId(newVal, oldVal) {
             if (newVal !== oldVal) {
-                this.stopExpectingHistoryUpdate();
-            }
-        },
-        isHistoryUpdated(updated) {
-            if (updated) {
-                this.stopExpectingHistoryUpdate();
+                this.operationRunning = null;
             }
         },
     },
@@ -231,18 +221,6 @@ export default {
         },
         setInvisible(item) {
             Vue.set(this.invisible, item.hid, true);
-        },
-        onUpdateOperationStatus(running) {
-            if (running) {
-                this.expectHistoryUpdate();
-            }
-            this.isOperationRunning = running;
-        },
-        expectHistoryUpdate() {
-            this.updateExpectedAfterDate = this.history.update_time;
-        },
-        stopExpectingHistoryUpdate() {
-            this.updateExpectedAfterDate = null;
         },
     },
 };
