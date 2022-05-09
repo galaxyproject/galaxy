@@ -1118,6 +1118,23 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
             # collections don't have a `purged` attribute but they should be marked deleted on purge
             assert purged_collection["deleted"] is True
 
+            # Un-deleting a purged dataset should not have any effect
+            payload = {
+                "operation": "undelete",
+                "items": [
+                    {
+                        "id": datasets_ids[0],
+                        "history_content_type": "dataset",
+                    },
+                ],
+            }
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            history_contents = self._get_history_contents(history_id)
+            self._assert_bulk_success(bulk_operation_result, 1)
+            purged_dataset = self._get_dataset_with_id_from_history_contents(history_contents, datasets_ids[0])
+            assert purged_dataset["deleted"] is True
+            assert purged_dataset["purged"] is True
+
     def test_index_returns_expected_total_matches(self):
         with self.dataset_populator.test_history() as history_id:
             datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)

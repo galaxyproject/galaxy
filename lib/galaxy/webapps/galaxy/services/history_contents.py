@@ -1390,6 +1390,8 @@ class HistoryItemOperator:
         manager.delete(item, flush=self.flush)
 
     def _undelete(self, item: HistoryItemModel):
+        if getattr(item, "purged", False):
+            return
         manager = self._get_item_manager(item)
         manager.undelete(item, flush=self.flush)
 
