@@ -136,12 +136,10 @@ export default {
     },
     watch: {
         localFilter(newFilterText) {
-            // get dict in form of converted aliases
+            // get filters in form of converted aliases
             const newFilterSettings = toAlias(getFilters(newFilterText));
-            // reset filterSettings when filterText changes
-            this.filterSettings = { ...filterDefaults };
-            // update filterSettings
-            Object.assign(this.filterSettings, newFilterSettings);
+            const defaultFilterSettings = { ...filterDefaults };
+            this.filterSettings = Object.assign(defaultFilterSettings, newFilterSettings);
         },
     },
     methods: {
