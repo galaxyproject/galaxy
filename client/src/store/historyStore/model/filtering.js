@@ -170,14 +170,21 @@ export function getFilters(filterText) {
             }
         });
     }
-    if (!hasMatches) {
-        if (filterText.length > 0) {
-            // assume name matching if no filter key has been matched
-            result["name"] = filterText;
-        } else {
-            // use default filters if custom filter has not been specified
-            result = { ...defaultFilters };
+    // assume name matching if no filter key has been matched
+    if (!hasMatches && filterText.length > 0) {
+        result["name"] = filterText;
+    }
+    // check if any default filter keys have been used
+    let hasDefaults = false;
+    for (const defaultKey in defaultFilters) {
+        if (result[defaultKey]) {
+            hasDefaults = true;
+            break;
         }
+    }
+    // use default filters if none of the default filters has been explicitly specified
+    if (!hasDefaults) {
+        result = { ...result, ...defaultFilters };
     }
     return Object.entries(result);
 }

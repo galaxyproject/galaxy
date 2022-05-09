@@ -6,7 +6,14 @@ const filterTexts = [
 ];
 describe("filtering", () => {
     test("parse default filter", () => {
-        const queryDict = getQueryDict("");
+        let queryDict = getQueryDict("");
+        expect(queryDict["deleted"]).toBe(false);
+        expect(queryDict["visible"]).toBe(true);
+        queryDict = getQueryDict("deleted=true");
+        expect(queryDict["deleted"]).toBe(true);
+        expect(queryDict["visible"]).toBeUndefined();
+        queryDict = getQueryDict("extension=ext");
+        expect(queryDict["extension-eq"]).toBe("ext");
         expect(queryDict["deleted"]).toBe(false);
         expect(queryDict["visible"]).toBe(true);
     });
