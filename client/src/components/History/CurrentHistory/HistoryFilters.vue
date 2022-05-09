@@ -94,15 +94,7 @@ import { STATES } from "../Content/model/states";
 
 // available filter keys with operator and default setting
 const filterDefaults = {
-    "create_time>": "",
-    "create_time<": "",
     "deleted=": false,
-    "extension=": "",
-    "hid>": "",
-    "hid<": "",
-    "name=": "",
-    "state=": "",
-    "tag=": "",
     "visible=": true,
 };
 
@@ -138,8 +130,7 @@ export default {
         localFilter(newFilterText) {
             // get filters as dict with keys converted to aliases
             const newFilterSettings = toAlias(getFilters(newFilterText));
-            const defaultFilterSettings = newFilterText ? {} : { ...filterDefaults };
-            this.filterSettings = Object.assign(defaultFilterSettings, newFilterSettings);
+            this.filterSettings = Object.assign({}, newFilterSettings);
         },
     },
     methods: {
