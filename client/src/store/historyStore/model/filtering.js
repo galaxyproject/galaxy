@@ -41,6 +41,10 @@ function equals(attribute, query = null, converter = null) {
         converter,
         query: query || `${attribute}-eq`,
         handler: (v, q) => {
+            if (converter) {
+                v = converter(v);
+                q = converter(q);
+            }
             return toLower(v) == toLower(q);
         },
     };
