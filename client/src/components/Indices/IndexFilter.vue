@@ -9,11 +9,17 @@
                     autocomplete="off"
                     :placeholder="placeholder | localize"
                     data-description="filter index input"
+                    class="search-query"
+                    :size="size"
                     @input="input"
                     @keyup.esc="onReset" />
             </DebouncedInput>
             <b-input-group-append>
-                <b-button data-description="show deleted filter toggle" @click="onHelp" title="Advanced Filtering Help">
+                <b-button
+                    data-description="show deleted filter toggle"
+                    @click="onHelp"
+                    title="Advanced Filtering Help"
+                    :size="size">
                     <icon icon="question" />
                 </b-button>
             </b-input-group-append>
@@ -56,6 +62,10 @@ export default {
         debounceDelay: {
             type: Number,
             default: 500,
+        },
+        size: {
+            type: String,
+            value: "sm",
         },
         value: {},
     },
