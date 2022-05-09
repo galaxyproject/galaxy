@@ -138,8 +138,8 @@ export function checkFilter(filterText, filterName, filterValue) {
 /** Parses single text input into a dict of field->value pairs. */
 export function getFilters(filterText) {
     const pairSplitRE = /[^\s']+(?:'[^']*'[^\s']*)*|(?:'[^']*'[^\s']*)+/g;
-    const result = {};
     const matches = filterText.match(pairSplitRE);
+    let result = {};
     let hasMatches = false;
     if (matches) {
         matches.forEach((pair) => {
@@ -166,14 +166,15 @@ export function getFilters(filterText) {
             }
         });
     }
-    if (!hasMatches && filterText.length > 0) {
-        result["name"] = filterText;
-    }
-    Object.entries(defaultFilters).forEach(([key, value]) => {
-        if (!result[key]) {
-            result[key] = value;
+    if (!hasMatches) {
+        if (filterText.length > 0) {
+            // assume name matching if no filter key has been matched
+            result["name"] = filterText;
+        } else {
+            // use default filters if custom filter has not been specified
+            result = { ...defaultFilters };
         }
-    });
+    }
     return Object.entries(result);
 }
 
