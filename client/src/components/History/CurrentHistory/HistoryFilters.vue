@@ -9,7 +9,7 @@
                     :placeholder="'search datasets' | localize"
                     data-description="filter text input"
                     @input="input"
-                    @keyup.esc="onReset" />
+                    @keyup.esc="updateFilter('')" />
             </DebouncedInput>
             <b-input-group-append>
                 <b-button
@@ -21,7 +21,7 @@
                     <icon v-if="showAdvanced" icon="angle-double-up" />
                     <icon v-else icon="angle-double-down" />
                 </b-button>
-                <b-button size="sm" data-description="show deleted filter toggle" @click="onReset">
+                <b-button size="sm" data-description="show deleted filter toggle" @click="updateFilter('')">
                     <icon icon="times" />
                 </b-button>
             </b-input-group-append>
@@ -92,12 +92,6 @@ import DebouncedInput from "components/DebouncedInput";
 import { getFilters, toAlias } from "store/historyStore/model/filtering";
 import { STATES } from "../Content/model/states";
 
-// available filter keys with operator and default setting
-const filterDefaults = {
-    "deleted=": false,
-    "visible=": true,
-};
-
 export default {
     components: {
         DebouncedInput,
@@ -106,12 +100,12 @@ export default {
         filterText: { type: String, default: null },
         showAdvanced: { type: Boolean, default: false },
     },
-    data() {
-        return {
-            filterSettings: { ...filterDefaults },
-        };
-    },
     computed: {
+        filterSettings() {
+            // get filters as dict with keys converted to aliases
+            const newFilterSettings = toAlias(getFilters(this.filterText));
+            return Object.assign({}, newFilterSettings);
+        },
         localFilter: {
             get() {
                 return this.filterText;
@@ -126,29 +120,17 @@ export default {
             return Object.keys(STATES);
         },
     },
-    watch: {
-        localFilter(newFilterText) {
-            // get filters as dict with keys converted to aliases
-            const newFilterSettings = toAlias(getFilters(newFilterText));
-            this.filterSettings = Object.assign({}, newFilterSettings);
-        },
-    },
     methods: {
-        onReset() {
-            this.updateFilter("");
-        },
         onSearch() {
             let newFilterText = "";
-            Object.entries(this.filterSettings).filter(([key, value]) => {
-                if (value !== filterDefaults[key]) {
-                    if (newFilterText) {
-                        newFilterText += " ";
-                    }
-                    if (String(value).includes(" ")) {
-                        value = `'${value}'`;
-                    }
-                    newFilterText += `${key}${value}`;
+            Object.entries(this.filterSettings).forEach(([key, value]) => {
+                if (newFilterText) {
+                    newFilterText += " ";
                 }
+                if (String(value).includes(" ")) {
+                    value = `'${value}'`;
+                }
+                newFilterText += `${key}${value}`;
             });
             this.onToggle();
             this.updateFilter(newFilterText);
