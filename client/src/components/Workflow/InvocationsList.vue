@@ -12,7 +12,6 @@
             v-model="invocationItemsModel"
             no-sort-reset
             :fields="invocationFields"
-            :items="provider"
             class="invocations-table">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflow invocations" />
@@ -82,12 +81,11 @@
 
 <script>
 import { mapActions, mapState } from "pinia";
-import { getAppRoot } from "onload/loadConfig";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import { getGalaxyInstance } from "app";
 import { invocationsProvider } from "components/providers/InvocationsProvider";
-import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
+import { WorkflowInvocationState } from "components/WorkflowInvocationState/WorkflowInvocationState";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 import UtcDate from "components/UtcDate";
 import { useWorkflowStore } from "stores/workflowStore";
@@ -126,11 +124,10 @@ export default {
         );
         return {
             tableId: "invocation-list-table",
-            invocationItems: [],
+            dataProvider: invocationsProvider,
             invocationItemsModel: [],
             invocationFields: fields,
             perPage: this.rowsPerPage(50),
-            root: getAppRoot(),
         };
     },
     computed: {
@@ -160,9 +157,22 @@ export default {
             }
             return message;
         },
+        dataProviderParameters() {
+            const extraParams = this.ownerGrid ? {} : { include_terminal: false };
+            if (this.storedWorkflowId) {
+                extraParams["workflow_id"] = this.storedWorkflowId;
+            }
+            if (this.historyId) {
+                extraParams["history_id"] = this.historyId;
+            }
+            if (this.userId) {
+                extraParams["user_id"] = this.userId;
+            }
+            return extraParams;
+        },
     },
     watch: {
-        invocationItems: function (invocations) {
+        items: function (invocations) {
             if (invocations) {
                 const historyIds = new Set();
                 const workflowIds = new Set();

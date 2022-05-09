@@ -206,9 +206,9 @@ export default {
             ],
             titleSearch: _l("Search Workflows"),
             workflowItemsModel: [],
-            workflowItems: [],
             helpHtml: helpHtml,
             perPage: this.rowsPerPage(50),
+            dataProvider: storedWorkflowsProvider,
         };
     },
     watch: {
@@ -216,19 +216,24 @@ export default {
             this.refresh();
         },
     },
+    computed: {
+        dataProviderParameters() {
+            let filter = this.filter;
+            const extraParams = { search: filter, skip_step_counts: true };
+            if (this.published) {
+                extraParams.show_published = true;
+                extraParams.show_shared = false;
+            }
+            return extraParams;
+        },
+    },
     created() {
         this.root = getAppRoot();
         this.services = new Services();
     },
     methods: {
-        async provider(ctx) {
-            ctx.root = this.root;
-            const extraParams = { search: this.filter, skip_step_counts: true };
-            const promise = storedWorkflowsProvider(ctx, this.setRows, extraParams).catch(this.onError);
-            const workflowItems = await promise;
-            (workflowItems || []).forEach((item) => this.services._addAttributes(item));
-            this.workflowItems = workflowItems;
-            return this.workflowItems;
+        decorateData(item) {
+            this.services._addAttributes(item);
         },
         bookmarkWorkflow: function (id, checked) {
             const data = {
@@ -246,7 +251,7 @@ export default {
                         getGalaxyInstance().config.stored_workflow_menu_entries.splice(indexToRemove, 1);
                     }
 
-                    this.workflowItems.find((workflow) => {
+                    this.items.find((workflow) => {
                         if (workflow.id === id) {
                             workflow.show_in_tool_panel = checked;
                             return true;

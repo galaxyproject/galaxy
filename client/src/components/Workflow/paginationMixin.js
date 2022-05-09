@@ -1,11 +1,14 @@
 import QueryStringParsing from "utils/query-string-parsing";
 import LoadingSpan from "components/LoadingSpan";
 import { errorMessageAsString } from "utils/simple-error";
+import { getAppRoot } from "onload/loadConfig";
 
 export default {
     components: { LoadingSpan },
     data() {
         return {
+            items: [],
+            root: getAppRoot(),
             currentPage: 1,
             perPage: 20,
             rows: 0,
@@ -39,6 +42,7 @@ export default {
                 id: this.tableId,
                 "per-page": this.perPage,
                 "current-page": this.currentPage,
+                items: this.tableProvider,
             };
         },
         showMessage() {
@@ -46,6 +50,16 @@ export default {
         },
     },
     methods: {
+        async tableProvider(ctx) {
+            ctx.root = this.root;
+            const extraParams = this.dataProviderParameters;
+            const promise = this.dataProvider(ctx, this.setRows, extraParams).catch(this.onError);
+            const items = await promise;
+            (items || []).forEach(this.decorateData);
+            this.items = items;
+            return items;
+        },
+        decorateData(item) {},
         refresh() {
             this.$root.$emit("bv::refresh::table", this.tableId);
         },
