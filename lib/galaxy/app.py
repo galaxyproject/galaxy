@@ -361,7 +361,7 @@ class ConfiguresGalaxyMixin:
             install_engine = build_engine(install_db_url, self.config.install_database_engine_options)
         return engine, install_engine
 
-    def _configure_models(self, check_migrate_databases=False, config_file=None):
+    def _configure_models(self, check_migrate_databases=True, config_file=None):
         """Preconditions: object_store must be set on self."""
         # TODO this block doesn't seem to belong in this method
         if getattr(self.config, "max_metadata_value_size", None):
@@ -433,7 +433,7 @@ class ConfiguresGalaxyMixin:
 class MinimalGalaxyApplication(BasicSharedApp, ConfiguresGalaxyMixin, HaltableContainer, SentryClientMixin):
     """Encapsulates the state of a minimal Galaxy application"""
 
-    def __init__(self, fsmon=False, **kwargs) -> None:
+    def __init__(self, fsmon=False, check_migrate_databases=True, **kwargs) -> None:
         super().__init__()
         self.haltables = [
             ("object store", self._shutdown_object_store),
@@ -455,7 +455,8 @@ class MinimalGalaxyApplication(BasicSharedApp, ConfiguresGalaxyMixin, HaltableCo
         config_file = kwargs.get("global_conf", {}).get("__file__", None)
         if config_file:
             log.debug('Using "galaxy.ini" config file: %s', config_file)
-        self._configure_models(check_migrate_databases=self.config.check_migrate_databases, config_file=config_file)
+        self._configure_models(check_migrate_databases=check_migrate_databases, config_file=config_file)
+
         # Security helper
         self._configure_security()
         self._register_singleton(IdEncodingHelper, self.security)
