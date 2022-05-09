@@ -2,7 +2,7 @@
     <div>
         <b-alert class="index-grid-message" :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
         <b-row class="mb-3">
-            <b-col cols="6">
+            <b-col cols="6" class="m-1">
                 <index-filter
                     :debounce-delay="inputDebounceDelay"
                     id="workflow-search"
