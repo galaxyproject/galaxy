@@ -50,7 +50,7 @@ export default {
             const newSelected = new Map(this.items);
             selected ? newSelected.set(key, item) : newSelected.delete(key);
             this.items = newSelected;
-            this.resetQuerySelection();
+            this.breakQuerySelection();
         },
         selectItems(items = []) {
             const newItems = [...this.items.values(), ...items];
@@ -59,16 +59,17 @@ export default {
                 return [key, item];
             });
             this.items = new Map(newEntries);
-            this.resetQuerySelection();
+            this.breakQuerySelection();
         },
-        resetQuerySelection() {
+        breakQuerySelection() {
+            if (this.allSelected) {
+                this.$emit("query-selection-break");
+            }
             this.allSelected = false;
         },
         reset() {
             this.items = new Map();
-            this.resetQuerySelection();
-        },
-        cancelSelection() {
+            this.allSelected = false;
             this.showSelection = false;
         },
     },
@@ -76,7 +77,6 @@ export default {
         scopeKey(newKey, oldKey) {
             if (newKey !== oldKey) {
                 this.reset();
-                this.cancelSelection();
             }
         },
         selectionSize(newSize) {
@@ -91,7 +91,7 @@ export default {
         },
         totalItemsInQuery(newVal, oldVal) {
             if (this.allSelected && newVal !== oldVal) {
-                this.resetQuerySelection();
+                this.breakQuerySelection();
             }
         },
     },

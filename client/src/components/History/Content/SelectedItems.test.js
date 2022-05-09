@@ -95,11 +95,13 @@ describe("History SelectedItems", () => {
             await selectAllItemsInCurrentQuery(loadedItems);
             expect(slotProps.isQuerySelection).toBe(true);
             expect(slotProps.selectionSize).toBe(expectedTotalItemsInQuery);
+            expect(wrapper.emitted()["query-selection-break"]).toBeUndefined();
 
             await unselectItem(loadedItems[0]);
 
             expect(slotProps.isQuerySelection).toBe(false);
             expect(slotProps.selectionSize).toBe(numberOfLoadedItems - 1);
+            expect(wrapper.emitted()["query-selection-break"]).toBeDefined();
         });
 
         it("should `break` query selection mode when the total number of items changes", async () => {
@@ -107,11 +109,13 @@ describe("History SelectedItems", () => {
             const loadedItems = generateTestItems(numberOfLoadedItems);
             await selectAllItemsInCurrentQuery(loadedItems);
             expect(slotProps.isQuerySelection).toBe(true);
+            expect(wrapper.emitted()["query-selection-break"]).toBeUndefined();
 
             await wrapper.setProps({ totalItemsInQuery: 80 });
 
             expect(slotProps.isQuerySelection).toBe(false);
             expect(slotProps.selectionSize).toBe(numberOfLoadedItems);
+            expect(wrapper.emitted()["query-selection-break"]).toBeDefined();
         });
     });
 
