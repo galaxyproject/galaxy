@@ -1,11 +1,11 @@
 <template>
     <span>
         <b-input-group>
-            <DebouncedInput :delay="debounceDelay" v-slot="{ value, input }" v-model="localFilter">
+            <DebouncedInput :delay="debounceDelay" v-slot="{ value: debouncedValue, input }" v-model="localFilter">
                 <b-form-input
                     :id="id"
                     name="query"
-                    :value="value"
+                    :value="debouncedValue"
                     autocomplete="off"
                     :placeholder="placeholder | localize"
                     data-description="filter index input"
@@ -65,9 +65,12 @@ export default {
         },
         size: {
             type: String,
-            value: "sm",
+            default: "sm",
         },
-        value: {},
+        value: {
+            type: String,
+            required: true,
+        },
     },
     data() {
         return {
