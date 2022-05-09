@@ -6,6 +6,11 @@ const filterTexts = [
 ];
 describe("filtering", () => {
     test("parse default filter", () => {
+        const queryDict = getQueryDict("");
+        expect(queryDict["deleted"]).toBe(false);
+        expect(queryDict["visible"]).toBe(true);
+    });
+    test("parse name filter", () => {
         const filters = getFilters("name of item");
         expect(filters[0][0]).toBe("name");
         expect(filters[0][1]).toBe("name of item");
@@ -85,6 +90,7 @@ describe("filtering", () => {
             expect(testFilters(filters, { ...item, tags: ["second"] })).toBe(false);
             expect(testFilters(filters, { ...item, visible: false })).toBe(false);
             expect(testFilters(filters, { ...item, deleted: true })).toBe(false);
+            expect(testFilters(filters, { ...item, deleted: "nottrue" })).toBe(true);
         });
     });
     test("Parsing & sync of filter settings", () => {
@@ -102,8 +108,8 @@ describe("filtering", () => {
             "visible=": "true",
         };
         // iterate through filterTexts and compare with parsedFilterSettings
-        filterTexts.forEach((filterText, index) => {
-            expect(toAlias(getFilters(filterTexts[index]))).toEqual(parsedFilterSettings);
+        filterTexts.forEach((filterText) => {
+            expect(toAlias(getFilters(filterText))).toEqual(parsedFilterSettings);
         });
     });
 });
