@@ -121,6 +121,19 @@ class ConditionalDependencies:
         except OSError:
             pass
 
+        # Parse oidc_backends_config_file specifically for PKCE support.
+        self.pkce_support = False
+        oidc_backend_conf_xml = self.config.get(
+            "oidc_backends_config_file", join(dirname(self.config_file), "oidc_backends_config.xml")
+        )
+        try:
+            for pkce_support_element in parse_xml(oidc_backend_conf_xml).iterfind("./provider/pkce_support"):
+                if pkce_support_element.text == "true":
+                    self.pkce_support = True
+                    break
+        except OSError:
+            pass
+
         # Parse error report config
         error_report_yml = self.config.get("error_report_file", join(dirname(self.config_file), "error_report.yml"))
         try:
@@ -272,6 +285,9 @@ class ConditionalDependencies:
 
     def check_hvac(self):
         return "hashicorp" == self.vault_type
+
+    def check_pkce(self):
+        return self.pkce_support
 
 
 def optional(config_file=None):
