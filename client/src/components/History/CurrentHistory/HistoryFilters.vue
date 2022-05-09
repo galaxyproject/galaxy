@@ -136,9 +136,9 @@ export default {
     },
     watch: {
         localFilter(newFilterText) {
-            // get filters in form of converted aliases
+            // get filters as dict with keys converted to aliases
             const newFilterSettings = toAlias(getFilters(newFilterText));
-            const defaultFilterSettings = { ...filterDefaults };
+            const defaultFilterSettings = newFilterText ? {} : { ...filterDefaults };
             this.filterSettings = Object.assign(defaultFilterSettings, newFilterSettings);
         },
     },
