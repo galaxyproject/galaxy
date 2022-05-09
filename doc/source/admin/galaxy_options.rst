@@ -3343,6 +3343,17 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
+``prefer_custos_login``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Controls the order of the login page to prefer Custos-based login
+    and registration.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
 ``allow_user_creation``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
