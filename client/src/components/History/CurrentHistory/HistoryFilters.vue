@@ -102,9 +102,12 @@ export default {
     },
     computed: {
         filterSettings() {
-            // get filters as dict with keys converted to aliases
-            const newFilterSettings = toAlias(getFilters(this.filterText));
-            return Object.assign({}, newFilterSettings);
+            if (this.filterText) {
+                // get filters as dict with keys converted to aliases
+                return toAlias(getFilters(this.filterText));
+            } else {
+                return {};
+            }
         },
         localFilter: {
             get() {
