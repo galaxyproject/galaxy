@@ -589,6 +589,37 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         assert their_workflow_id_1 in index_ids
         assert my_workflow_id_1 not in index_ids
 
+    def test_index_owner(self):
+        my_workflow_id_1 = self.workflow_populator.simple_workflow("ownertags_m_1")
+        email_1 = f"{uuid4()}@test.com"
+        with self._different_user(email=email_1):
+            published_workflow_id_1 = self.workflow_populator.simple_workflow("ownertags_p_1", publish=True)
+            owner_1 = self._show_workflow(published_workflow_id_1)["owner"]
+
+        email_2 = f"{uuid4()}@test.com"
+        with self._different_user(email=email_2):
+            published_workflow_id_2 = self.workflow_populator.simple_workflow("ownertags_p_2", publish=True)
+
+        index_ids = self.workflow_populator.index_ids(search="is:published", show_published=True)
+        assert published_workflow_id_1 in index_ids
+        assert published_workflow_id_2 in index_ids
+        assert my_workflow_id_1 not in index_ids
+
+        index_ids = self.workflow_populator.index_ids(search=f"is:published u:{owner_1}", show_published=True)
+        assert published_workflow_id_1 in index_ids
+        assert published_workflow_id_2 not in index_ids
+        assert my_workflow_id_1 not in index_ids
+
+        index_ids = self.workflow_populator.index_ids(search=f"is:published u:'{owner_1}'", show_published=True)
+        assert published_workflow_id_1 in index_ids
+        assert published_workflow_id_2 not in index_ids
+        assert my_workflow_id_1 not in index_ids
+
+        index_ids = self.workflow_populator.index_ids(search=f"is:published {owner_1}", show_published=True)
+        assert published_workflow_id_1 in index_ids
+        assert published_workflow_id_2 not in index_ids
+        assert my_workflow_id_1 not in index_ids
+
     def test_index_parameter_invalid_combinations(self):
         # these can all be called by themselves and return 200...
         response = self._get("workflows?show_hidden=true")
