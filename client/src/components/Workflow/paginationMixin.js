@@ -1,5 +1,6 @@
 import QueryStringParsing from "utils/query-string-parsing";
 import LoadingSpan from "components/LoadingSpan";
+import { errorMessageAsString } from "utils/simple-error";
 
 export default {
     components: { LoadingSpan },
@@ -9,6 +10,8 @@ export default {
             perPage: 20,
             rows: 0,
             loading: true,
+            message: null,
+            messageVariant: null,
         };
     },
     computed: {
@@ -26,6 +29,21 @@ export default {
                 "total-rows": this.rows,
             };
         },
+        indexTableAttrs() {
+            return {
+                hover: true,
+                striped: true,
+                "caption-top": true,
+                fixed: true,
+                "show-empty": true,
+                id: this.tableId,
+                "per-page": this.perPage,
+                "current-page": this.currentPage,
+            };
+        },
+        showMessage() {
+            return !!this.message;
+        },
     },
     methods: {
         refresh() {
@@ -38,6 +56,14 @@ export default {
         rowsPerPage(defaultPerPage) {
             const queryRowsPerPage = QueryStringParsing.get("rows_per_page");
             return queryRowsPerPage || defaultPerPage;
+        },
+        onSuccess: function (message) {
+            this.message = message;
+            this.messageVariant = "success";
+        },
+        onError: function (message) {
+            this.message = errorMessageAsString(message);
+            this.messageVariant = "danger";
         },
     },
 };

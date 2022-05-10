@@ -1,113 +1,67 @@
 <template>
     <div>
-        <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
-        <div v-else>
-            <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-            <b-row class="mb-3">
-                <b-col cols="6">
-                    <b-input
-                        id="workflow-search"
-                        class="m-1"
-                        name="query"
-                        :placeholder="titleSearchWorkflows"
-                        autocomplete="off"
-                        type="text"
-                        v-model="filter" />
-                </b-col>
-                <b-col>
-                    <span class="float-right">
-                        <b-button id="workflow-create" class="m-1" @click="createWorkflow">
-                            <font-awesome-icon icon="plus" />
-                            {{ titleCreate }}
-                        </b-button>
-                        <b-button id="workflow-import" class="m-1" @click="importWorkflow">
-                            <font-awesome-icon icon="upload" />
-                            {{ titleImport }}
-                        </b-button>
-                    </span>
-                </b-col>
-            </b-row>
-            <b-table
-                :id="tableId"
-                :fields="fields"
-                :items="provider"
-                v-model="workflowItemsModel"
-                :per-page="perPage"
-                :current-page="currentPage"
-                hover
-                striped
-                caption-top
-                fixed
-                show-empty>
-                <template v-slot:empty>
-                    <loading-span v-if="loading" message="Loading workflows" />
-                    <b-alert v-else id="no-workflows" variant="info" show>
-                        <div v-if="showNotFound">
-                            No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
-                            >.
-                        </div>
-                        <div v-if="showNotAvailable">No workflows found. You may create or import new workflows.</div>
-                    </b-alert>
-                </template>
-                <template v-slot:cell(name)="row">
-                    <WorkflowDropdown
-                        :workflow="row.item"
-                        @onAdd="onAdd"
-                        @onRemove="onRemove"
-                        @onUpdate="onUpdate"
-                        @onSuccess="onSuccess"
-                        @onError="onError" />
-                </template>
-                <template v-slot:cell(tags)="row">
-                    <Tags :index="row.index" :tags="row.item.tags" @input="onTags" @tag-click="onTagClick" />
-                </template>
-                <template v-slot:cell(published)="row">
-                    <font-awesome-icon
-                        v-if="row.item.published"
-                        v-b-tooltip.hover
-                        title="Published"
-                        icon="globe"
-                        @click="appendFilter('is:published')" />
-                    <font-awesome-icon
-                        v-if="row.item.shared"
-                        v-b-tooltip.hover
-                        title="Shared"
-                        icon="share-alt"
-                        @click="appendFilter('is:shared_with_me')" />
-                </template>
-                <template v-slot:cell(show_in_tool_panel)="row">
-                    <b-link @click="bookmarkWorkflow(row.item, false)" v-if="row.item.show_in_tool_panel">
-                        <font-awesome-icon :icon="['fas', 'star']" />
-                    </b-link>
-                    <b-link @click="bookmarkWorkflow(row.item, true)" v-else>
-                        <font-awesome-icon :icon="['far', 'star']" />
-                    </b-link>
-                </template>
-                <template v-slot:cell(update_time)="data">
-                    <UtcDate :date="data.value" mode="elapsed" />
-                </template>
-                <template v-slot:cell(execute)="row">
-                    <b-button
-                        v-b-tooltip.hover.bottom
-                        :title="titleRunWorkflow"
-                        class="workflow-run btn-sm btn-primary fa fa-play"
-                        @click.stop="executeWorkflow(row.item)" />
-                </template>
-            </b-table>
-            <b-pagination
-                v-model="currentPage"
-                v-show="rows >= perPage"
-                class="gx-workflows-grid-pager"
-                v-bind="paginationAttrs"></b-pagination>
-        </div>
+        <b-alert class="index-grid-message" :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
+        <b-row class="mb-3">
+            <b-col cols="6" class="m-1">
+                <index-filter
+                    :debounce-delay="inputDebounceDelay"
+                    id="workflow-search"
+                    :placeholder="titleSearch"
+                    :help-html="helpHtml"
+                    v-model="filter">
+                </index-filter>
+            </b-col>
+            <b-col>
+                <WorkflowIndexActions :root="root" class="float-right"> </WorkflowIndexActions>
+            </b-col>
+        </b-row>
+        <b-table :fields="fields" :items="provider" v-model="workflowItemsModel" v-bind="indexTableAttrs">
+            <template v-slot:empty>
+                <loading-span v-if="loading" message="Loading workflows" />
+                <b-alert v-else id="no-workflows" variant="info" show>
+                    <div v-if="isFiltered">
+                        No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
+                        >.
+                    </div>
+                    <div v-else>No workflows found. You may create or import new workflows.</div>
+                </b-alert>
+            </template>
+            <template v-slot:cell(name)="row">
+                <WorkflowDropdown
+                    :workflow="row.item"
+                    @onAdd="onAdd"
+                    @onRemove="onRemove"
+                    @onUpdate="onUpdate"
+                    @onSuccess="onSuccess"
+                    @onError="onError" />
+            </template>
+            <template v-slot:cell(tags)="row">
+                <Tags :index="row.index" :tags="row.item.tags" @input="onTags" @tag-click="onTagClick" />
+            </template>
+            <template v-slot:cell(published)="row">
+                <SharingIndicators :object="row.item" @filter="(filter) => appendFilter(filter)" />
+            </template>
+            <template v-slot:cell(show_in_tool_panel)="row">
+                <WorkflowBookmark
+                    :checked="row.item.show_in_tool_panel"
+                    @bookmark="(checked) => bookmarkWorkflow(row.item.id, checked)" />
+            </template>
+            <template v-slot:cell(update_time)="data">
+                <UtcDate :date="data.value" mode="elapsed" />
+            </template>
+            <template v-slot:cell(execute)="row">
+                <WorkflowRunButton :root="root" :id="row.item.id" />
+            </template>
+        </b-table>
+        <b-pagination
+            v-model="currentPage"
+            v-show="rows >= perPage"
+            class="gx-workflows-grid-pager"
+            v-bind="paginationAttrs"></b-pagination>
     </div>
 </template>
 <script>
 import _l from "utils/localization";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPlus, faShareAlt, faGlobe, faUpload, faSpinner, faStar } from "@fortawesome/free-solid-svg-icons";
-import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services";
 import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
@@ -116,21 +70,59 @@ import WorkflowDropdown from "./WorkflowDropdown";
 import UtcDate from "components/UtcDate";
 import { getGalaxyInstance } from "app";
 import paginationMixin from "./paginationMixin";
+import filtersMixin from "components/Indices/filtersMixin";
+import WorkflowIndexActions from "./WorkflowIndexActions";
+import WorkflowBookmark from "./WorkflowBookmark";
+import WorkflowRunButton from "./WorkflowRunButton.vue";
 
-library.add(faPlus, faUpload, faSpinner, faGlobe, faShareAlt, farStar, faStar);
+import SharingIndicators from "components/Indices/SharingIndicators";
+
+const helpHtml = `<div>
+<p>This textbox box can be used to filter the workflows displayed.
+
+<p>Text entered here will be searched against workflow names and tags. Additionally, advanced
+filtering tags can be used to refine the search more precisely. Tags are of the form
+<code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>.
+For instance to search just for RNAseq in the workflow name, <code>name:rnsseq</code> can be used.
+Notice by default the search is not case-sensitive.
+
+If the quoted version of tag is used, the search is not case sensitive and only full matches will be
+returned. So <code>name:'RNAseq'</code> would show only workflows named exactly <code>RNAseq</code>.
+
+<p>The available tags are:
+<dl>
+    <dt><code>name</code></dt>
+    <dd>This filters only against the workflow name.</dd>
+    <dt><code>tag</code></dt>
+    <dd>This filters only against the workflow tag. You may also just click on a tag in your list of workflows to filter on that tag using this directly.</dd>
+    <dt><code>is:published</code></dt>
+    <dd>This filters the workflows such that only published workflows are shown. You may also just click on the "published" icon of a worklfow in your list to filter on this directly.</dd>
+    <dt><code>is:shared</code></dt>
+    <dd>This filters the workflows such that only workflows shared from another user directly with you are are shown. You may also just click on the "shared with me" icon of a worklfow in your list to filter on this directly.</dd>
+</dl>
+</div>
+`;
 
 export default {
     components: {
-        FontAwesomeIcon,
         UtcDate,
         Tags,
         WorkflowDropdown,
+        WorkflowBookmark,
+        WorkflowIndexActions,
+        SharingIndicators,
+        WorkflowRunButton,
     },
-    mixins: [paginationMixin],
+    props: {
+        inputDebounceDelay: {
+            type: Number,
+            default: 500,
+        },
+    },
+    mixins: [paginationMixin, filtersMixin],
     data() {
         return {
             tableId: "workflow-table",
-            error: null,
             fields: [
                 {
                     key: "name",
@@ -162,32 +154,12 @@ export default {
                     label: "",
                 },
             ],
-            filter: "",
-            loading: true,
-            message: null,
-            messageVariant: null,
-            titleSearchWorkflows: _l("Search Workflows"),
-            titleCreate: _l("Create"),
-            titleImport: _l("Import"),
-            titleRunWorkflow: _l("Run workflow"),
+            titleSearch: _l("Search Workflows"),
             workflowItemsModel: [],
             workflowItems: [],
+            helpHtml: helpHtml,
             perPage: this.rowsPerPage(50),
         };
-    },
-    computed: {
-        showNotFound() {
-            return this.filter;
-        },
-        showNotAvailable() {
-            return !this.filter;
-        },
-        showMessage() {
-            return !!this.message;
-        },
-        apiUrl() {
-            return `${getAppRoot()}api/workflows`;
-        },
     },
     created() {
         this.root = getAppRoot();
@@ -200,22 +172,13 @@ export default {
     },
     methods: {
         async provider(ctx) {
-            ctx.apiUrl = this.apiUrl;
+            ctx.root = this.root;
             const extraParams = { search: this.filter, skip_step_counts: true };
-            this.workflowItems = await storedWorkflowsProvider(ctx, this.setRows, extraParams);
+            const promise = storedWorkflowsProvider(ctx, this.setRows, extraParams).catch(this.onError);
+            this.workflowItems = await promise;
             return this.workflowItems;
         },
-        createWorkflow: function (workflow) {
-            window.location = `${this.root}workflows/create`;
-        },
-        importWorkflow: function (workflow) {
-            window.location = `${this.root}workflows/import`;
-        },
-        executeWorkflow: function (workflow) {
-            window.location = `${this.root}workflows/run?id=${workflow.id}`;
-        },
-        bookmarkWorkflow: function (workflow, checked) {
-            const id = workflow.id;
+        bookmarkWorkflow: function (id, checked) {
             const data = {
                 show_in_tool_panel: checked,
             };
@@ -247,7 +210,6 @@ export default {
             workflow.tags = tags;
             this.services
                 .updateWorkflow(workflow.id, {
-                    show_in_tool_panel: workflow.show_in_tool_panel,
                     tags: workflow.tags,
                 })
                 .catch((error) => {
@@ -255,16 +217,7 @@ export default {
                 });
         },
         onTagClick: function (tag) {
-            const tagFilter = `tag:'${tag.text}'`;
-            this.appendFilter(tagFilter);
-        },
-        appendFilter(text) {
-            const initialFilter = this.filter;
-            if (initialFilter.length === 0) {
-                this.filter = text;
-            } else if (initialFilter.indexOf(text) < 0) {
-                this.filter = `${text} ${initialFilter}`;
-            }
+            this.appendTagFilter("tag", tag.text);
         },
         onAdd: function (workflow) {
             if (this.currentPage == 1) {
@@ -278,14 +231,6 @@ export default {
         },
         onUpdate: function (id, data) {
             this.refresh();
-        },
-        onSuccess: function (message) {
-            this.message = message;
-            this.messageVariant = "success";
-        },
-        onError: function (message) {
-            this.message = message;
-            this.messageVariant = "danger";
         },
     },
 };

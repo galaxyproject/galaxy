@@ -6,6 +6,8 @@ import { getLocalVue } from "jest/helpers";
 import mockInvocationData from "./test/json/invocation.json";
 import { parseISO, formatDistanceToNow } from "date-fns";
 
+import "jest-location-mock";
+
 const localVue = getLocalVue();
 
 describe("Invocations.vue", () => {
@@ -38,6 +40,23 @@ describe("Invocations.vue", () => {
 
         it("no invocations message should be shown when not loading", async () => {
             expect(wrapper.find("#no-invocations").exists()).toBe(true);
+        });
+    });
+
+    describe("with server error", () => {
+        beforeEach(async () => {
+            axiosMock.onAny().reply(403, { err_msg: "this is a problem" });
+            const propsData = {
+                ownerGrid: false,
+            };
+            wrapper = mount(Invocations, {
+                propsData,
+                localVue,
+            });
+        });
+
+        it("renders error message", async () => {
+            expect(wrapper.find(".index-grid-message").text()).toContain("this is a problem");
         });
     });
 
@@ -130,10 +149,8 @@ describe("Invocations.vue", () => {
         });
 
         it("calls executeWorkflow", async () => {
-            const mockMethod = jest.fn();
-            wrapper.vm.executeWorkflow = mockMethod;
-            await wrapper.find("#run-workflow").trigger("click");
-            expect(mockMethod).toHaveBeenCalledWith("workflowId");
+            await wrapper.find(".workflow-run").trigger("click");
+            expect(window.location).toBeAt("workflows/run?id=workflowId");
         });
     });
 });
