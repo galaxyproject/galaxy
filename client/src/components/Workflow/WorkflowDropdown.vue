@@ -7,7 +7,7 @@
             aria-haspopup="true"
             aria-expanded="false">
             <font-awesome-icon icon="caret-down" />
-            <span>{{ workflow.name }}</span>
+            <span class="workflow-dropdown-name">{{ workflow.name }}</span>
         </b-link>
         <font-awesome-icon
             v-if="sourceType.includes('trs')"
@@ -21,57 +21,47 @@
             :title="`Imported from ${workflow.source_metadata.url}`"
             class="workflow-external-link"
             icon="link" />
-        <p v-if="workflow.description">{{ workflow.description }}</p>
-        <div v-if="workflow.shared" class="dropdown-menu" aria-labelledby="workflow-dropdown">
-            <a class="dropdown-item" href="#" @click.prevent="onCopy">
-                <span class="fa fa-copy fa-fw mr-1" />
-                <span>Copy</span>
-            </a>
-            <a class="dropdown-item" :href="urlViewShared">
-                <span class="fa fa-eye fa-fw mr-1" />
-                <span>View</span>
-            </a>
-        </div>
-        <div v-else class="dropdown-menu" aria-labelledby="workflow-dropdown">
-            <a class="dropdown-item" :href="urlEdit">
+        <p class="workflow-dropdown-description" v-if="workflow.description">{{ workflow.description }}</p>
+        <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
+            <a v-if="!readOnly" class="dropdown-item" :href="urlEdit">
                 <span class="fa fa-edit fa-fw mr-1" />
-                <span>Edit</span>
+                <span v-localize>Edit</span>
             </a>
             <a class="dropdown-item" href="#" @click.prevent="onCopy">
                 <span class="fa fa-copy fa-fw mr-1" />
-                <span>Copy</span>
+                <span v-localize>Copy</span>
             </a>
-            <a class="dropdown-item" :href="urlInvocations">
+            <a v-if="!readOnly" class="dropdown-item" :href="urlInvocations">
                 <span class="fa fa-list fa-fw mr-1" />
-                <span>Invocations</span>
+                <span v-localize>Invocations</span>
             </a>
             <a class="dropdown-item" :href="urlDownload">
                 <span class="fa fa-download fa-fw mr-1" />
-                <span>Download</span>
+                <span v-localize>Download</span>
             </a>
-            <a class="dropdown-item" href="#" @click.prevent="onRename">
+            <a v-if="!readOnly" class="dropdown-item" href="#" @click.prevent="onRename">
                 <span class="fa fa-signature fa-fw mr-1" />
-                <span>Rename</span>
+                <span v-localize>Rename</span>
             </a>
-            <a class="dropdown-item" :href="urlShare">
+            <a v-if="!readOnly" class="dropdown-item" :href="urlShare">
                 <span class="fa fa-share-alt fa-fw mr-1" />
-                <span>Share</span>
+                <span v-localize>Share</span>
             </a>
-            <a class="dropdown-item" :href="urlExport">
+            <a v-if="!readOnly" class="dropdown-item" :href="urlExport">
                 <span class="fa fa-file-export fa-fw mr-1" />
-                <span>Export</span>
+                <span v-localize>Export</span>
             </a>
             <a class="dropdown-item" :href="urlView">
                 <span class="fa fa-eye fa-fw mr-1" />
-                <span>View</span>
+                <span v-localize>View</span>
             </a>
             <a v-if="sourceLabel" class="dropdown-item" :href="sourceUrl">
                 <span class="fa fa-globe fa-fw mr-1" />
-                <span>{{ sourceLabel }}</span>
+                <span v-localize>{{ sourceLabel }}</span>
             </a>
-            <a class="dropdown-item" href="#" @click.prevent="onDelete">
+            <a v-if="!readOnly" class="dropdown-item" href="#" @click.prevent="onDelete">
                 <span class="fa fa-trash fa-fw mr-1" />
-                <span>Delete</span>
+                <span v-localize>Delete</span>
             </a>
         </div>
     </div>
@@ -114,6 +104,9 @@ export default {
             return `${getAppRoot()}workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${
                 this.workflow.slug
             }`;
+        },
+        readOnly() {
+            return !!this.workflow.shared;
         },
         sourceUrl() {
             if (this.workflow.source_metadata?.url) {

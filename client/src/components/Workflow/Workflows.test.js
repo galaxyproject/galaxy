@@ -8,6 +8,8 @@ import { parseISO, formatDistanceToNow } from "date-fns";
 
 const localVue = getLocalVue();
 
+jest.mock("app");
+
 const mockWorkflowsData = [
     {
         id: "5f1915bcf9f35612",
@@ -16,8 +18,8 @@ const mockWorkflowsData = [
         name: "workflow name",
         tags: ["tagmoo", "tagcow"],
         published: true,
-        shared: true,
         show_in_tool_panel: true,
+        owner: "test",
     },
 ];
 
