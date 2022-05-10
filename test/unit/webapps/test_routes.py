@@ -6,7 +6,7 @@ from galaxy.webapps.base.webapp import WebApplication
 from galaxy.webapps.galaxy import buildapp as galaxy_buildapp
 
 
-class TestWebapp(WebApplication):
+class MockWebApplication(WebApplication):
     def _instantiate_controller(self, type, app):
         # Stub out all actual controllers - just want to test routes.
         return object()
@@ -15,15 +15,15 @@ class TestWebapp(WebApplication):
         map_result = self.mapper.match(url, environ={"REQUEST_METHOD": method})
         for key, expected_value in parts.items():
             actual_value = map_result[key]
-            if actual_value != expected_value:
-                message = "Problem mapping route [%s], part %s expected value [%s] but obtained [%s]"
-                raise AssertionError(message % (url, key, expected_value, actual_value))
+            assert (
+                actual_value == expected_value
+            ), f"Problem mapping route [{url}], part {key} expected value [{expected_value}] but obtained [{actual_value}]"
 
 
 def test_galaxy_routes():
     test_config = Bunch(template_cache_path="/tmp")
     app = Bunch(config=test_config, security=object(), trace_logger=None, name="galaxy")
-    test_webapp = TestWebapp(app)
+    test_webapp = MockWebApplication(app)
 
     galaxy_buildapp.populate_api_routes(test_webapp, app)
     config = request_config()
