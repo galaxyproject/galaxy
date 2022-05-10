@@ -85,6 +85,10 @@ describe("Invocations.vue", () => {
         it("no invocations message should be shown when not loading", async () => {
             expect(wrapper.find("#no-invocations").exists()).toBe(true);
         });
+
+        it("should not render pager", async () => {
+            expect(wrapper.find(".gx-invocations-grid-pager").exists()).toBeFalsy();
+        });
     });
 
     describe("for a history with an empty invocation list", () => {
@@ -111,6 +115,10 @@ describe("Invocations.vue", () => {
 
         it("no invocations message should be shown when not loading", async () => {
             expect(wrapper.find("#no-invocations").exists()).toBe(true);
+        });
+
+        it("should not render pager", async () => {
+            expect(wrapper.find(".gx-invocations-grid-pager").exists()).toBeFalsy();
         });
     });
 
@@ -185,6 +193,46 @@ describe("Invocations.vue", () => {
         it("calls executeWorkflow", async () => {
             await wrapper.find(".workflow-run").trigger("click");
             expect(window.location).toBeAt("workflows/run?id=workflowId");
+        });
+
+        it("should not render pager", async () => {
+            expect(wrapper.find(".gx-invocations-grid-pager").exists()).toBeFalsy();
+        });
+    });
+
+    describe("pagiantions", () => {
+        beforeEach(async () => {
+            axiosMock
+                .onGet("/api/invocations", { params: { limit: 1, offset: 0, include_terminal: false } })
+                .reply(200, [mockInvocationData], { total_matches: "3" });
+            const propsData = {
+                ownerGrid: false,
+                loading: false,
+                defaultPerPage: 1,
+            };
+            wrapper = mount(Invocations, {
+                propsData,
+                computed: {
+                    getWorkflowNameByInstanceId: (state) => (id) => "workflow name",
+                    getWorkflowByInstanceId: (state) => (id) => {
+                        return { id: "workflowId" };
+                    },
+                    getHistoryById: (state) => (id) => {
+                        return { id: "historyId" };
+                    },
+                    getHistoryNameById: () => () => "history name",
+                },
+                stubs: {
+                    "workflow-invocation-state": {
+                        template: "<span/>",
+                    },
+                },
+                localVue,
+            });
+        });
+
+        it("title should render pager", async () => {
+            expect(wrapper.find(".gx-invocations-grid-pager").exists()).toBeTruthy();
         });
     });
 });

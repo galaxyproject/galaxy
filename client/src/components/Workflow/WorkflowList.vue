@@ -1,15 +1,9 @@
 <template>
     <div>
-        <b-alert class="index-grid-message" :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
+        <b-alert v-bind="alertAttrs">{{ message }}</b-alert>
         <b-row class="mb-3">
             <b-col cols="6" class="m-1">
-                <index-filter
-                    id="workflow-search"
-                    v-model="filter"
-                    :debounce-delay="inputDebounceDelay"
-                    :placeholder="titleSearch"
-                    :help-html="helpHtml">
-                </index-filter>
+                <index-filter v-bind="filterAttrs" id="workflow-search" v-model="filter"> </index-filter>
             </b-col>
             <b-col>
                 <WorkflowIndexActions :root="root" class="float-right"> </WorkflowIndexActions>
@@ -115,10 +109,6 @@ export default {
     },
     mixins: [paginationMixin, filtersMixin],
     props: {
-        inputDebounceDelay: {
-            type: Number,
-            default: 500,
-        },
     },
     data() {
         return {
@@ -157,7 +147,7 @@ export default {
             titleSearch: _l("Search Workflows"),
             workflowItemsModel: [],
             helpHtml: helpHtml,
-            perPage: this.rowsPerPage(50),
+            perPage: this.rowsPerPage(this.defaultPerPage || 50),
             dataProvider: storedWorkflowsProvider,
         };
     },

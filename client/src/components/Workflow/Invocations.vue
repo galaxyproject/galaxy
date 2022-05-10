@@ -6,7 +6,7 @@
         <b-alert v-if="headerMessage" variant="info" show>
             {{ headerMessage }}
         </b-alert>
-        <b-alert class="index-grid-message" :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
+        <b-alert v-bind="alertAttrs">{{ message }}</b-alert>
         <b-table
             v-bind="indexTableAttrs"
             v-model="invocationItemsModel"
@@ -71,7 +71,7 @@
             </template>
         </b-table>
         <b-pagination
-            v-show="rows >= perPage"
+            v-if="rows >= perPage"
             v-model="currentPage"
             class="gx-invocations-grid-pager"
             v-bind="paginationAttrs"></b-pagination>
@@ -124,7 +124,7 @@ export default {
             dataProvider: invocationsProvider,
             invocationItemsModel: [],
             invocationFields: fields,
-            perPage: this.rowsPerPage(50),
+            perPage: this.rowsPerPage(this.defaultPerPage || 50),
         };
     },
     computed: {
