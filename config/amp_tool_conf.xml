@@ -1,7 +1,11 @@
 <?xml version='1.0' encoding='utf-8'?>
 <toolbox monitor="true">
   <section id="getext" name="Get Data">
+  	<!-- 
+  		Upload File tool is provided as a default feature above the Tool Panel; while the one below appears to be not responding. 
+  		This is a new change after Galaxy 19, and is effective in Galaxy 21.
     <tool file="data_source/upload.xml" />
+  	-->
     <!--  AMP MGMs START -->
     <tool file="amp_mgms/supplement.xml" />
     <!--  AMP MGMs END -->
