@@ -154,7 +154,7 @@ export default {
                     label: "",
                 },
             ],
-            titleSearch: _l("Search Workflows"),
+            titleSearch: _l("Search Workflows: search by phrase"),
             workflowItemsModel: [],
             workflowItems: [],
             helpHtml: helpHtml,
