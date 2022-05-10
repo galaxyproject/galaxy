@@ -5,6 +5,7 @@ import re
 from enum import Enum
 from typing import (
     Any,
+    cast,
     Dict,
     Iterable,
     List,
@@ -42,6 +43,7 @@ from galaxy.managers.collections_util import (
     dictify_dataset_collection_instance,
 )
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.genomes import GenomesManager
 from galaxy.managers.history_contents import (
     HistoryContentsFilters,
     HistoryContentsManager,
@@ -273,6 +275,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         hdca_serializer: hdcas.HDCASerializer,
         history_contents_filters: HistoryContentsFilters,
         short_term_storage_allocator: ShortTermStorageAllocator,
+        genomes_manager: GenomesManager,
     ):
         super().__init__(security)
         self.history_manager = history_manager
@@ -288,6 +291,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         self.history_contents_filters = history_contents_filters
         self.item_operator = HistoryItemOperator(self.hda_manager, self.hdca_manager, self.dataset_collection_manager)
         self.short_term_storage_allocator = short_term_storage_allocator
+        self.genomes_manager = genomes_manager
 
     def index(
         self,
@@ -687,6 +691,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     ) -> HistoryContentBulkOperationResult:
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
+        self._validate_bulk_operation_params(payload, trans.user)
         contents: List[HistoryItemModel]
         if payload.items:
             contents = self._get_contents_by_item_list(
@@ -1463,6 +1468,12 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             )
 
         return self.__collection_dict(trans, dataset_collection_instance, view="element")
+
+    def _validate_bulk_operation_params(self, payload: HistoryContentBulkOperationPayload, user: User):
+        if payload.operation == HistoryContentItemOperation.change_dbkey:
+            dbkey = cast(ChangeDbkeyOperationParams, payload.params).dbkey
+            if not self.genomes_manager.is_registered_dbkey(dbkey, user):
+                raise exceptions.RequestParameterInvalidException(f"{dbkey} is not registered")
 
     def _apply_bulk_operation(
         self,
