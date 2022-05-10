@@ -5,12 +5,19 @@ import { getAppRoot } from "onload/loadConfig";
 
 export default {
     components: { LoadingSpan },
+    props: {
+        defaultPerPage: {
+            type: Number,
+            required: false,
+            default: null,
+        },
+    },
     data() {
         return {
             items: [],
             root: getAppRoot(),
             currentPage: 1,
-            perPage: 20,
+            perPage: this.defaultPerPage || 20,
             rows: 0,
             loading: true,
             message: null,
@@ -43,6 +50,13 @@ export default {
                 "per-page": this.perPage,
                 "current-page": this.currentPage,
                 items: this.tableProvider,
+            };
+        },
+        alertAttrs() {
+            return {
+                class: "index-grid-message",
+                variant: this.messageVariant,
+                show: this.showMessage,
             };
         },
         showMessage() {
