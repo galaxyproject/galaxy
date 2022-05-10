@@ -52,19 +52,19 @@ export default {
         onCopy() {
             iframeRedirect("/dataset/copy_datasets");
         },
-        async unhideAll() {
-            await this.runOperation(() => unhideAllHiddenContent(this.history));
+        unhideAll() {
+            this.runOperation(() => unhideAllHiddenContent(this.history));
         },
-        async deleteAllHidden() {
-            await this.runOperation(() => deleteAllHiddenContent(this.history));
+        deleteAllHidden() {
+            this.runOperation(() => deleteAllHiddenContent(this.history));
         },
-        async purgeAllDeleted() {
-            await this.runOperation(() => purgeAllDeletedContent(this.history));
+        purgeAllDeleted() {
+            this.runOperation(() => purgeAllDeletedContent(this.history));
         },
         async runOperation(operation) {
-            this.$emit("update:operation-running", true);
+            this.$emit("update:operation-running", this.history.update_time);
             await operation();
-            this.$emit("update:operation-running", false);
+            this.$emit("update:operation-running", this.history.update_time);
         },
     },
 };

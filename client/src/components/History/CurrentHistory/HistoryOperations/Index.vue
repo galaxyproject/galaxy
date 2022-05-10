@@ -44,14 +44,14 @@ export default {
         history: { type: Object, required: true },
         showSelection: { type: Boolean, required: true },
         hasMatches: { type: Boolean, required: true },
-        expandedCount: { type: Number, required: false, default: 0 },
+        expandedCount: { type: Number, default: 0 },
     },
     methods: {
         toggleSelection() {
             this.$emit("update:show-selection", !this.showSelection);
         },
-        onUpdateOperationStatus(running) {
-            this.$emit("update:operation-running", running);
+        onUpdateOperationStatus(updateTime) {
+            this.$emit("update:operation-running", updateTime);
         },
     },
 };
