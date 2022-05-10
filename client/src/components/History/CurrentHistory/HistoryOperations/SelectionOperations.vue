@@ -61,6 +61,10 @@
             <p><strong v-localize class="text-danger">Warning, this operation cannot be undone.</strong></p>
         </b-modal>
     </section>
+     <!-- Fix this: Is out of total items, not active -->
+    <section v-else>
+        <b>{{ totalItemsInQuery }}</b> of {{ Object.keys(history).length }} found
+    </section>
 </template>
 
 <script>
