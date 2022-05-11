@@ -145,8 +145,8 @@ OffsetQueryParam: int = Query(
 query_tags = [
     IndexQueryTag("user", "The user email of the user that executed the Job.", "u"),
     IndexQueryTag("tool_id", "The tool ID corresponding to the job.", "t"),
-    IndexQueryTag("runner", "The job runner name used to execte the job.", "r"),
-    IndexQueryTag("handler", "The job handler name used to execute the job.", "h"),
+    IndexQueryTag("runner", "The job runner name used to execte the job.", "r", admin_only=True),
+    IndexQueryTag("handler", "The job handler name used to execute the job.", "h", admin_only=True),
 ]
 
 SearchQueryParam: Optional[str] = search_query_param(
