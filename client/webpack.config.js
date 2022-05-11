@@ -43,7 +43,7 @@ module.exports = (env = {}, argv = {}) => {
             filename: "[name].bundled.js",
         },
         resolve: {
-            extensions: [".js", ".json", ".vue", ".scss", ".ts"],
+            extensions: [".ts", ".js", ".json", ".vue", ".scss"],
             modules: [scriptsBase, "node_modules", styleBase, testsBase],
             fallback: {
                 timers: require.resolve("timers-browserify"),
@@ -86,6 +86,14 @@ module.exports = (env = {}, argv = {}) => {
         },
         module: {
             rules: [
+                // {
+                //     test: /\.ts$/,
+                //     // exclude: /node_modules|vue\/src/,
+                //     loader: "ts-loader",
+                //     // options: {
+                //     //     appendTsSuffixTo: [/\.vue$/],
+                //     // },
+                // },
                 {
                     test: /\.vue$/,
                     loader: "vue-loader",
