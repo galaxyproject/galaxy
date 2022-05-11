@@ -15,13 +15,13 @@ from galaxy.model import (
 )
 from galaxy.workflow.refactor.schema import RefactorActionExecutionMessageTypeEnum
 from galaxy_test.base.populators import WorkflowPopulator
-from galaxy_test.base.uses_shed import UsesShed
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_NESTED_WITH_MULTIPLE_VERSIONS_TOOL,
 )
 from galaxy_test.driver import integration_util
+from galaxy_test.driver.uses_shed import UsesShed
 
 REFACTORING_SIMPLE_TEST = """
 class: GalaxyWorkflow

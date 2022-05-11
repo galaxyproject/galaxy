@@ -2,8 +2,8 @@ import os
 from collections import namedtuple
 
 from galaxy_test.base.populators import DatasetPopulator
-from galaxy_test.base.uses_shed import UsesShed
 from galaxy_test.driver import integration_util
+from galaxy_test.driver.uses_shed import UsesShed
 from tool_shed.util import hg_util
 
 REPO_TYPE = namedtuple("REPO_TYPE", "name owner changeset")

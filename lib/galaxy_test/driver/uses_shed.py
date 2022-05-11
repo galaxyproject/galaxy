@@ -127,7 +127,7 @@ class UsesShed:
             )
         except AssertionError as e:
             if "Error attempting to retrieve installation information from tool shed" in unicodify(e):
-                pytest.skip("Toolshed '%s' unavailable" % tool_shed_url)
+                pytest.skip(f"Toolshed '{tool_shed_url}' unavailable")
             raise
 
     def uninstall_repository(self, owner, name, changeset, tool_shed_url="https://toolshed.g2.bx.psu.edu"):
