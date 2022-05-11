@@ -84,20 +84,20 @@ const promises = {
 const actions = {
     async copyHistory({ dispatch }, { history, name, copyAll }) {
         const newHistory = await cloneHistory(history, name, copyAll);
-        dispatch("selectHistory", newHistory);
+        return dispatch("selectHistory", newHistory);
     },
     async createNewHistory({ dispatch }) {
         // create history, then select it as current at the same time
         const newHistory = await createNewHistory();
-        dispatch("selectHistory", newHistory);
+        return dispatch("selectHistory", newHistory);
     },
     async deleteHistory({ dispatch, commit, getters }, { history, purge = false }) {
         const deletedHistory = await deleteHistoryById(history.id, purge);
         commit("deleteHistory", deletedHistory);
         if (getters.firstHistoryId) {
-            await dispatch("setCurrentHistoryId", getters.firstHistoryId);
+            return dispatch("setCurrentHistoryId", getters.firstHistoryId);
         } else {
-            await dispatch("createNewHistory");
+            return dispatch("createNewHistory");
         }
     },
     loadCurrentHistory({ dispatch }) {
