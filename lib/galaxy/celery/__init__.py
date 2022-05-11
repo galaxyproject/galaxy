@@ -72,6 +72,7 @@ def get_history_audit_table_prune_interval():
 
 broker = get_broker()
 celery_app = Celery('galaxy', broker=broker, include=['galaxy.celery.tasks'])
+celery_app.set_default()
 prune_interval = get_history_audit_table_prune_interval()
 if prune_interval > 0:
     celery_app.conf.beat_schedule = {
