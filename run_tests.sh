@@ -269,6 +269,7 @@ exists() {
     type "$1" >/dev/null 2>/dev/null
 }
 
+debug=""
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
 coverage_arg=""
@@ -495,9 +496,7 @@ do
           shift
           ;;
       --debug)
-          #TODO ipdb would be nicer.
-          NOSE_PDB=True
-          export NOSE_PDB
+          debug="--pdb"
           shift
           ;;
       -u|-unit|--unit)
@@ -652,10 +651,10 @@ if [ "$test_script" = 'pytest' ]; then
     else
         marker_args=()
     fi
-    args=(-v $structured_data_args --html "$report_file" --self-contained-html $coverage_arg $xunit_args $extra_args "${marker_args[@]}" "$@")
+    args=(-v $debug $structured_data_args --html "$report_file" --self-contained-html $coverage_arg $xunit_args $extra_args "${marker_args[@]}" "$@")
     "$test_script" "${args[@]}"
 else
-    python "$test_script" $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
+    python "$test_script" $coverage_arg -v --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
 fi
 exit_status=$?
 echo "Testing complete. HTML report is in \"$report_file\"." 1>&2

@@ -20,14 +20,6 @@ from packaging.version import (
 )
 from requests.cookies import RequestsCookieJar
 
-try:
-    from nose.tools import nottest
-except ImportError:
-
-    def nottest(x):
-        return x
-
-
 from galaxy import util
 from galaxy.tool_util.parser.interface import (
     TestCollectionDef,
@@ -358,13 +350,11 @@ class GalaxyInteractorApi:
         response = self._put(f"histories/{history_id}", json.dumps({"published": True}))
         response.raise_for_status()
 
-    @nottest
     def test_data_path(self, tool_id, filename, tool_version=None):
         version_fragment = f"&tool_version={tool_version}" if tool_version else ""
         response = self._get(f"tools/{tool_id}/test_data_path?filename={filename}{version_fragment}", admin=True)
         return response.json()
 
-    @nottest
     def test_data_download(self, tool_id, filename, mode="file", is_output=True, tool_version=None):
         result = None
         local_path = None
@@ -1556,7 +1546,6 @@ class ToolTestDescription:
         }
 
 
-@nottest
 def test_data_iter(required_files):
     for fname, extra in required_files:
         data_dict = dict(

@@ -1,13 +1,5 @@
 import logging
 
-try:
-    from nose.tools import nottest
-except ImportError:
-
-    def nottest(x):
-        return x
-
-
 from galaxy.tool_util.verify.interactor import (
     GalaxyInteractorApi,
     verify_tool,
@@ -50,7 +42,6 @@ class ToolTestCase(DrivenFunctionalTestCase):
         )
 
 
-@nottest
 def build_tests(
     app=None,
     testing_shed_tools=False,

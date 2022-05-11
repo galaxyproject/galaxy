@@ -2,7 +2,6 @@
 """
 import datetime
 import random
-import unittest
 
 from sqlalchemy import (
     column,
@@ -379,8 +378,3 @@ class HistoryContentsFilterParserTestCase(HistoryAsContainerBaseTestCase):
         self.log("should error if wrong milliseconds format is used")
         self.assertRaises(ValueError, self.filter_parser.parse_date, "2009-02-13 18:13:00.")
         self.assertRaises(ValueError, self.filter_parser.parse_date, "2009-02-13 18:13:00.1234567")
-
-
-if __name__ == "__main__":
-    # or more generally, nosetests test_resourcemanagers.py -s -v
-    unittest.main()

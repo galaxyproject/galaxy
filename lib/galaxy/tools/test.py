@@ -15,18 +15,9 @@ from galaxy.util import (
     unicodify,
 )
 
-try:
-    from nose.tools import nottest
-except ImportError:
-
-    def nottest(x):
-        return x
-
-
 log = logging.getLogger(__name__)
 
 
-@nottest
 def parse_tests(tool, tests_source):
     """
     Build ToolTestDescription objects for each "<test>" elements and

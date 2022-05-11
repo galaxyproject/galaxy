@@ -55,7 +55,6 @@ from galaxy_test.base.env import (
     target_url_parts,
 )
 from galaxy_test.base.instrument import StructuredTestDataPlugin
-from galaxy_test.base.nose_util import run
 from tool_shed.webapp.app import UniverseApplication as ToolshedUniverseApplication
 from tool_shed.webapp.fast_app import initialize_fast_app as init_tool_shed_fast_app
 from .test_logging import logging_config_file
@@ -82,6 +81,22 @@ log = logging.getLogger("test_driver")
 galaxy_context = None
 tool_shed_context = None
 install_context = None
+
+
+def run(test_config):
+    loader = nose.loader.TestLoader(config=test_config)
+    plug_loader = test_config.plugins.prepareTestLoader(loader)
+    if plug_loader is not None:
+        loader = plug_loader
+    tests = loader.loadTestsFromNames(test_config.testNames)
+    test_runner = nose.core.TextTestRunner(
+        stream=test_config.stream, verbosity=test_config.verbosity, config=test_config
+    )
+    plug_runner = test_config.plugins.prepareTestRunner(test_runner)
+    if plug_runner is not None:
+        test_runner = plug_runner
+    result = test_runner.run(tests)
+    return result
 
 
 def setup_tool_shed_tmp_dir():
@@ -341,34 +356,23 @@ def _tool_data_table_config_path(default_tool_data_table_config_path=None):
     return tool_data_table_config_path
 
 
-def nose_config_and_run(argv=None, env=None, ignore_files=None, plugins=None):
+def nose_config_and_run():
     """Setup a nose context and run tests.
 
-    Tests are specified by argv (defaulting to sys.argv).
+    Tests are specified by sys.argv .
     """
-    if env is None:
-        env = os.environ
-    if ignore_files is None:
-        ignore_files = []
-    if plugins is None:
-        plugins = nose.plugins.manager.DefaultPluginManager()
-    if argv is None:
-        argv = sys.argv
-
     test_config = nose.config.Config(
         env=os.environ,
-        ignoreFiles=ignore_files,
-        plugins=plugins,
+        ignoreFiles=[],
+        plugins=nose.plugins.manager.DefaultPluginManager(),
     )
 
     # Add custom plugin to produce JSON data used by planemo.
     test_config.plugins.addPlugin(StructuredTestDataPlugin())
-    test_config.configure(argv)
+    test_config.configure(sys.argv)
 
     result = run(test_config)
-
-    success = result.wasSuccessful()
-    return success
+    return result.wasSuccessful()
 
 
 def copy_database_template(source, db_path):
@@ -1114,7 +1118,6 @@ __all__ = (
     "FRAMEWORK_DATATYPES_CONF",
     "database_conf",
     "get_webapp_global_conf",
-    "nose_config_and_run",
     "setup_galaxy_config",
     "TestDriver",
     "wait_for_http_server",

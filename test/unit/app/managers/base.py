@@ -128,9 +128,3 @@ class CreatesCollectionsMixin:
             #    src = 'ldda'#?
             identifier_list.append(dict(src=src, name=element.name, id=element.id))
         return identifier_list
-
-
-# =============================================================================
-if __name__ == "__main__":
-    # or more generally, nosetests test_resourcemanagers.py -s -v
-    unittest.main()

@@ -98,13 +98,6 @@ window.localStorage && window.localStorage.setItem("galaxy:debug", true);
 window.localStorage && window.localStorage.setItem("galaxy:debug:flatten", true);
 """
 
-try:
-    from nose.tools import nottest
-except ImportError:
-
-    def nottest(x):
-        return x
-
 
 def managed_history(f):
     """Ensure a Selenium test has a distinct, named history.
@@ -169,7 +162,6 @@ def dump_test_information(self, name_prefix):
                 continue
 
 
-@nottest
 def selenium_test(f):
     test_name = f.__name__
 
@@ -240,7 +232,7 @@ class GalaxyTestSeleniumContext(GalaxySeleniumContext):
 
 
 class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, UsesCeleryTasks):
-    # If run one-off via nosetests, the next line ensures test
+    # If run one-off via pytest, the next line ensures test
     # tools and datatypes are used instead of configured tools.
     framework_tool_and_types = True
 

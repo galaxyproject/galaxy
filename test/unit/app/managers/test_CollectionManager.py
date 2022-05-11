@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """
 """
-import unittest
-
 from galaxy import model
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
@@ -118,9 +116,3 @@ class DatasetCollectionManagerTestCase(BaseTestCase, CreatesCollectionsMixin):
     #    self.log( "should be able to set deleted" )
     #    self.log( "should be able to set visible" )
     #    self.log( "should be able to set tags" )
-
-
-# =============================================================================
-if __name__ == "__main__":
-    # or more generally, nosetests test_resourcemanagers.py -s -v
-    unittest.main()
