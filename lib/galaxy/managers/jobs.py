@@ -126,25 +126,22 @@ class JobManager:
         workflow_id = payload.workflow_id
         invocation_id = payload.invocation_id
         if history_id is not None:
-            decoded_history_id = security.decode_id(history_id)
-            query = query.filter(model.Job.history_id == decoded_history_id)
+            query = query.filter(model.Job.history_id == history_id)
         if workflow_id or invocation_id:
             if workflow_id is not None:
-                decoded_workflow_id = security.decode_id(workflow_id)
                 wfi_step = (
                     trans.sa_session.query(model.WorkflowInvocationStep)
                     .join(model.WorkflowInvocation)
                     .join(model.Workflow)
                     .filter(
-                        model.Workflow.stored_workflow_id == decoded_workflow_id,
+                        model.Workflow.stored_workflow_id == workflow_id,
                     )
                     .subquery()
                 )
             elif invocation_id is not None:
-                decoded_invocation_id = security.decode_id(invocation_id)
                 wfi_step = (
                     trans.sa_session.query(model.WorkflowInvocationStep)
-                    .filter(model.WorkflowInvocationStep.workflow_invocation_id == decoded_invocation_id)
+                    .filter(model.WorkflowInvocationStep.workflow_invocation_id == invocation_id)
                     .subquery()
                 )
             query1 = query.join(wfi_step)

@@ -1074,14 +1074,14 @@ class JobIndexSortByEnum(str, Enum):
 class JobIndexQueryPayload(Model):
     states: Optional[List[str]] = None
     user_details: bool = False
-    user_id: Optional[str] = None
+    user_id: Optional[DecodedDatabaseIdField] = None
     tool_ids: Optional[List[str]] = None
     tool_ids_like: Optional[List[str]] = None
     date_range_min: Optional[str] = None
     date_range_max: Optional[str] = None
-    history_id: Optional[str] = None
-    workflow_id: Optional[str] = None
-    invocation_id: Optional[str] = None
+    history_id: Optional[DecodedDatabaseIdField] = None
+    workflow_id: Optional[DecodedDatabaseIdField] = None
+    invocation_id: Optional[DecodedDatabaseIdField] = None
     order_by: JobIndexSortByEnum = JobIndexSortByEnum.update_time
     search: Optional[str] = None
     limit: int = 500

@@ -72,7 +72,7 @@ UserDetailsQueryParam: bool = Query(
     description="If true, and requestor is an admin, will return external job id and user email. This is only available to admins.",
 )
 
-UserIdQueryParam: Optional[str] = Query(
+UserIdQueryParam: Optional[EncodedDatabaseIdField] = Query(
     default=None,
     title="User ID",
     description="an encoded user id to restrict query to, must be own id if not admin user",
@@ -110,19 +110,19 @@ DateRangeMaxQueryParam: Optional[str] = Query(
     description="Limit listing of jobs to those that are updated before specified date (e.g. '2014-01-01')",
 )
 
-HistoryIdQueryParam: Optional[str] = Query(
+HistoryIdQueryParam: Optional[EncodedDatabaseIdField] = Query(
     default=None,
     title="History ID",
     description="Limit listing of jobs to those that match the history_id. If none, jobs from any history may be returned.",
 )
 
-WorkflowIdQueryParam: Optional[str] = Query(
+WorkflowIdQueryParam: Optional[EncodedDatabaseIdField] = Query(
     default=None,
     title="Workflow ID",
     description="Limit listing of jobs to those that match the specified workflow ID. If none, jobs from any workflow (or from no workflows) may be returned.",
 )
 
-InvocationIdQueryParam: Optional[str] = Query(
+InvocationIdQueryParam: Optional[EncodedDatabaseIdField] = Query(
     default=None,
     title="Invocation ID",
     description="Limit listing of jobs to those that match the specified workflow invocation ID. If none, jobs from any workflow invocation (or from no workflows) may be returned.",
@@ -182,15 +182,15 @@ class FastAPIJobs:
         trans: ProvidesUserContext = DependsOnTrans,
         state: Optional[str] = StateQueryParam,
         user_details: bool = UserDetailsQueryParam,
-        user_id: Optional[str] = UserIdQueryParam,
+        user_id: Optional[EncodedDatabaseIdField] = UserIdQueryParam,
         view: JobIndexViewEnum = ViewQueryParam,
         tool_id: Optional[str] = ToolIdQueryParam,
         tool_id_like: Optional[str] = ToolIdLikeQueryParam,
         date_range_min: Optional[str] = DateRangeMinQueryParam,
         date_range_max: Optional[str] = DateRangeMaxQueryParam,
-        history_id: Optional[str] = HistoryIdQueryParam,
-        workflow_id: Optional[str] = WorkflowIdQueryParam,
-        invocation_id: Optional[str] = InvocationIdQueryParam,
+        history_id: Optional[EncodedDatabaseIdField] = HistoryIdQueryParam,
+        workflow_id: Optional[EncodedDatabaseIdField] = WorkflowIdQueryParam,
+        invocation_id: Optional[EncodedDatabaseIdField] = InvocationIdQueryParam,
         order_by: JobIndexSortByEnum = SortByQueryParam,
         search: Optional[str] = SearchQueryParam,
         limit: int = LimitQueryParam,

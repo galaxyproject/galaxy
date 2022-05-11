@@ -110,6 +110,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
             assert len(jobs) == 0
 
     @uses_test_history(require_new=True)
+    @skip_without_tool("cat1")
     def test_index_workflow_and_invocation_filter(self, history_id):
         workflow_simple = """
 class: GalaxyWorkflow
