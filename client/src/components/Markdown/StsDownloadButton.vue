@@ -44,6 +44,12 @@ export default {
             type: String,
             required: true,
         },
+        postParameters: {
+            type: Object,
+            default: () => {
+                return {};
+            },
+        },
         fallbackUrl: {
             type: String,
             default: null,
@@ -72,7 +78,7 @@ export default {
                 return;
             }
             this.waiting = true;
-            axios.post(this.downloadEndpoint).then(this.handleInitialize).catch(this.handleError);
+            axios.post(this.downloadEndpoint, this.postParameters).then(this.handleInitialize).catch(this.handleError);
         },
         handleInitialize(response) {
             const storageRequestId = response.data.storage_request_id;
