@@ -1,8 +1,7 @@
 import os
 import random
 import string
-
-from nose.plugins.skip import SkipTest
+from unittest import SkipTest
 
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
