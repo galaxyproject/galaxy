@@ -16,6 +16,7 @@ import subprocess
 import time
 import tarfile
 import io
+from lib.galaxy.version import VERSION
 
 def main():
     parser = argparse.ArgumentParser()
@@ -77,7 +78,7 @@ def main():
         # build the package.
         buildtime = datetime.now().strftime("%Y%m%d_%H%M%S")        
         if args.version is None:
-            args.version = buildtime
+            args.version = VERSION
 
         logging.info(f"Creating amp_galaxy package for with version {args.version} in {destdir}")
         basedir= f"amp_galaxy-{args.version}"
