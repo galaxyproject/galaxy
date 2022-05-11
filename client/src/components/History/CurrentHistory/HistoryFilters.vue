@@ -36,11 +36,7 @@
                 <b-form-input v-model="filterSettings['tag=']" size="sm" placeholder="any tag" />
                 <small class="mt-1">Filter by state:</small>
                 <b-form-input v-model="filterSettings['state=']" size="sm" placeholder="any state" list="stateSelect" />
-                <datalist id="stateSelect">
-                    <option v-for="state in states" :key="state">
-                        {{ state }}
-                    </option>
-                </datalist>
+                <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
                 <small class="mt-1">Filter by item index:</small>
                 <b-form-group class="m-0">
                     <b-input-group>
@@ -132,9 +128,7 @@ export default {
             },
         },
         states() {
-            let stateList = Object.keys(STATES);
-            // stateList.unshift({ value: "", text: "any state" });
-            return stateList;
+            return Object.keys(STATES);
         },
     },
     watch: {
