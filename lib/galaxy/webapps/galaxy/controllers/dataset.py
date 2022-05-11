@@ -37,6 +37,7 @@ from galaxy.util import (
     smart_str,
 )
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import form_builder
 from galaxy.web.framework.helpers import iff
 from galaxy.webapps.base.controller import (
@@ -214,6 +215,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         display_data, headers = data.datatype.display_data(
             trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd
         )
+        if isinstance(display_data, ZipstreamWrapper):
+            trans.response.headers.update(headers)
+            return display_data.response()
         trans.response.headers.update(headers)
         return display_data
 

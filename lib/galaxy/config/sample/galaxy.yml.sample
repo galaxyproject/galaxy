@@ -25,7 +25,7 @@ gravity:
   # galaxy_root:
 
   # Set to a directory that should contain log files for the processes controlled by Gravity.
-  # If not specified defaults to ``<state_dir>/logs``.
+  # If not specified defaults to ``<state_dir>/log``.
   # log_dir:
 
   # Set to Galaxy's virtualenv directory.
@@ -76,6 +76,13 @@ gravity:
     # Log Level to use for Celery Worker.
     # Valid options are: DEBUG, INFO, WARNING, ERROR
     # loglevel: DEBUG
+
+    # Queues to join
+    # queues: celery,galaxy.internal,galaxy.external
+
+    # Pool implementation
+    # Valid options are: prefork, eventlet, gevent, solo, processes, threads
+    # pool: threads
 
     # Extra arguments to pass to Celery command line.
     # extra_args:

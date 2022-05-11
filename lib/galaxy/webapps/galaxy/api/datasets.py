@@ -35,6 +35,7 @@ from galaxy.schema.schema import (
     DatasetSourceType,
     UpdateDatasetPermissionsPayload,
 )
+from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
     get_query_parameters_from_request_excluding,
@@ -252,6 +253,8 @@ class FastAPIDatasets:
             file_name = getattr(display_data, "name", None)
             if file_name:
                 return FileResponse(file_name, headers=headers)
+        elif isinstance(display_data, ZipstreamWrapper):
+            return StreamingResponse(display_data.response(), headers=headers)
         return StreamingResponse(display_data, headers=headers)
 
     @router.get(

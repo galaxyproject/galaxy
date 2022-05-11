@@ -126,6 +126,7 @@ if backend:
     celery_app_kwd["backend"] = backend
 
 celery_app = Celery("galaxy", **celery_app_kwd)
+celery_app.set_default()
 
 # setup cron like tasks...
 beat_schedule: Dict[str, Dict[str, Any]] = {}

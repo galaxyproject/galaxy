@@ -16,6 +16,7 @@ from json import loads
 from typing import (
     Any,
     Dict,
+    Iterable,
     List,
     TYPE_CHECKING,
 )
@@ -795,7 +796,7 @@ class JobConfiguration(ConfiguresHandlers):
             id_or_tag = self.default_destination_id
         return copy.deepcopy(self._get_single_item(self.destinations[id_or_tag]))
 
-    def get_destinations(self, id_or_tag):
+    def get_destinations(self, id_or_tag) -> Iterable[JobDestination]:
         """Given a destination ID or tag, return all JobDestinations matching the provided ID or tag
 
         :param id_or_tag: A destination ID or tag.
@@ -806,7 +807,7 @@ class JobConfiguration(ConfiguresHandlers):
         Destinations are not deepcopied, so they should not be passed to
         anything which might modify them.
         """
-        return self.destinations.get(id_or_tag, None)
+        return self.destinations.get(id_or_tag, [])
 
     def get_job_runner_plugins(self, handler_id):
         """Load all configured job runner plugins
