@@ -85,10 +85,11 @@
 </template>
 
 <script>
+import { defaultFilters, getFilters, toAlias } from "store/historyStore/model/filtering";
 import DebouncedInput from "components/DebouncedInput";
+import { STATES } from "components/History/Content/model/states";
+import { getFilterText } from "./filterConversion";
 import HistoryFiltersDefault from "./HistoryFiltersDefault";
-import { getFilters, toAlias } from "store/historyStore/model/filtering";
-import { STATES } from "../Content/model/states";
 
 export default {
     components: {
@@ -100,6 +101,13 @@ export default {
         showAdvanced: { type: Boolean, default: false },
     },
     computed: {
+        defaultsNormalized() {
+            const normalized = {};
+            Object.entries(defaultFilters).forEach(([key, value]) => {
+                normalized[`${key}=`] = value;
+            });
+            return normalized;
+        },
         filterSettings() {
             return toAlias(getFilters(this.filterText));
         },
@@ -122,20 +130,8 @@ export default {
             this.filterSettings[name] = value;
         },
         onSearch() {
-            let newFilterText = "";
-            Object.entries(this.filterSettings).forEach(([key, value]) => {
-                if (value !== undefined) {
-                    if (newFilterText) {
-                        newFilterText += " ";
-                    }
-                    if (String(value).includes(" ")) {
-                        value = `'${value}'`;
-                    }
-                    newFilterText += `${key}${value}`;
-                }
-            });
             this.onToggle();
-            this.updateFilter(newFilterText);
+            this.updateFilter(getFilterText(this.filterSettings));
         },
         onToggle() {
             this.$emit("update:show-advanced", !this.showAdvanced);

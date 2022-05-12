@@ -120,7 +120,7 @@ const validFilters = {
 };
 
 /** Default filters are set, unless explicitly specified by the user. */
-const defaultFilters = {
+export const defaultFilters = {
     deleted: false,
     visible: true,
 };
