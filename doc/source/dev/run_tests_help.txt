@@ -19,7 +19,7 @@
 'run_tests.sh -selenium (test_selector)' for running specified selenium web tests (using pytest selector syntax)
 
 This wrapper script largely serves as a point documentation and convenience for
-running Galaxy's Python tests. Most Python tests shipped with Galaxy can be run with
+running Galaxy's Python tests. All Python tests shipped with Galaxy can be run with
 pytest directly. Galaxy's client unit tests can be run with make client-test
 or yarn directly as documented in detail in client/README.md.
 
@@ -44,7 +44,7 @@ The main test types are as follows:
    framework twill to test ToolShed related functionality. These are
    located in lib/tool_shed/test.
 
-Python testing is mostly done via pytest. Specific tests can be selected
+Python testing is done via pytest. Specific tests can be selected
 using the pytest selector syntax is described at https://docs.pytest.org/en/latest/usage.html.
 
 The spots these selectors can be used is described in the above usage documentation
@@ -144,7 +144,7 @@ Extra options:
  --no_cleanup          Do not delete temp files for Python functional tests
                        (-toolshed, -framework, etc...)
  --coverage            Generate a test coverage report. This option currently
-                       should work with every test that uses pytest, but the
+                       works with every python test, but the
                        results may not be reliable with selenium or other
                        frameworks that primarily test the client.
  --debug               On python test error or failure invoke a pdb shell for
