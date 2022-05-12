@@ -1,21 +1,13 @@
 import { defaultFilters } from "store/historyStore/model/filtering";
 
-/** Normalize defaults by adding the operator to the key identifer */
-export function defaultsNormalized() {
-    const normalized = {};
-    Object.entries(defaultFilters).forEach(([key, value]) => {
-        normalized[`${key}=`] = value;
-    });
-    return normalized;
-}
-
 /** Check if all default options are set to default values */
 export function containsDefaults(filterSettings) {
-    const normalized = defaultsNormalized();
+    const normalized = getDefaults();
     let hasDefaults = true;
     for (const key in normalized) {
-        const value = filterSettings[key];
-        if (value !== normalized[key]) {
+        const value = String(filterSettings[key]).toLowerCase();
+        const normalizedValue = String(normalized[key]).toLowerCase();
+        if (value !== normalizedValue) {
             hasDefaults = false;
             break;
         }
@@ -23,10 +15,21 @@ export function containsDefaults(filterSettings) {
     return hasDefaults;
 }
 
+/** Normalize defaults by adding the operator to the key identifer */
+export function getDefaults() {
+    const normalized = {};
+    Object.entries(defaultFilters).forEach(([key, value]) => {
+        normalized[`${key}=`] = value;
+    });
+    return normalized;
+}
+
 /** Build a text filter from filter settings */
 export function getFilterText(filterSettings) {
-    const normalized = defaultsNormalized();
+    // prepare defaults
+    const normalized = getDefaults();
     const hasDefaults = containsDefaults(filterSettings);
+
     // build new filter text
     let newFilterText = "";
     Object.entries(filterSettings).forEach(([key, value]) => {

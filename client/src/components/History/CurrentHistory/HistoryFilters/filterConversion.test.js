@@ -1,8 +1,8 @@
-import { containsDefaults, defaultsNormalized, getFilterText } from "./filterConversion";
+import { containsDefaults, getDefaults, getFilterText } from "./filterConversion";
 
 describe("test filtering helpers to convert settings to filter text", () => {
     it("conversion from settings to new filter text", async () => {
-        const normalized = defaultsNormalized();
+        const normalized = getDefaults();
         expect(Object.keys(normalized).length).toBe(2);
         expect(normalized["deleted="]).toBe(false);
         expect(normalized["visible="]).toBe(true);
@@ -12,14 +12,14 @@ describe("test filtering helpers to convert settings to filter text", () => {
         const settings = {
             "deleted=": false,
             "visible=": true,
-        }
+        };
         expect(containsDefaults(settings)).toBe(true);
         settings["deleted="] = true;
         expect(containsDefaults(settings)).toBe(false);
         settings["deleted="] = false;
         settings["visible="] = false;
         expect(containsDefaults(settings)).toBe(false);
-        settings["visible="] = true;
+        settings["visible="] = "TRUE";
         expect(containsDefaults(settings)).toBe(true);
     });
 
@@ -28,7 +28,8 @@ describe("test filtering helpers to convert settings to filter text", () => {
             "deleted=": false,
             "visible=": true,
             "other=": "other",
-        }
+            "anything=": undefined,
+        };
         expect(getFilterText(settings)).toBe("other=other");
         settings["visible="] = false;
         expect(getFilterText(settings)).toBe("deleted=false visible=false other=other");

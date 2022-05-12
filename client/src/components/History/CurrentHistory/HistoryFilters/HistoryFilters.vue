@@ -101,13 +101,6 @@ export default {
         showAdvanced: { type: Boolean, default: false },
     },
     computed: {
-        defaultsNormalized() {
-            const normalized = {};
-            Object.entries(defaultFilters).forEach(([key, value]) => {
-                normalized[`${key}=`] = value;
-            });
-            return normalized;
-        },
         filterSettings() {
             return toAlias(getFilters(this.filterText));
         },
