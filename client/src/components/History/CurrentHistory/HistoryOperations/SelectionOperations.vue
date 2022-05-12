@@ -10,21 +10,21 @@
                 </span>
             </template>
             <b-dropdown-text>
-                <span v-localize>With {{ numSelected }} selected...</span>
+                <span v-localize data-test-id="selected-count">With {{ numSelected }} selected...</span>
             </b-dropdown-text>
-            <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content>
+            <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content data-test-id="unhide-option">
                 <span v-localize>Unhide</span>
             </b-dropdown-item>
-            <b-dropdown-item v-else v-b-modal:hide-selected-content>
+            <b-dropdown-item v-else v-b-modal:hide-selected-content data-test-id="hide-option">
                 <span v-localize>Hide</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="showDeleted" v-b-modal:restore-selected-content>
+            <b-dropdown-item v-if="showDeleted" v-b-modal:restore-selected-content data-test-id="undelete-option">
                 <span v-localize>Undelete</span>
             </b-dropdown-item>
-            <b-dropdown-item v-else v-b-modal:delete-selected-content>
+            <b-dropdown-item v-else v-b-modal:delete-selected-content data-test-id="delete-option">
                 <span v-localize>Delete</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="!showDeleted" v-b-modal:purge-selected-content>
+            <b-dropdown-item v-if="!showDeleted" v-b-modal:purge-selected-content data-test-id="purge-option">
                 <span v-localize>Delete (permanently)</span>
             </b-dropdown-item>
             <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
@@ -139,12 +139,12 @@ export default {
             const items = this.getExplicitlySelectedItems();
             const filters = getQueryDict(this.filterText);
             this.$emit("update:show-selection", false);
-            let waitForHistoryUpdate = false;
+            let expectHistoryUpdate = false;
             try {
                 const result = await operation(this.history, filters, items);
-                waitForHistoryUpdate = result.success_count > 0;
+                expectHistoryUpdate = result.success_count > 0;
                 if (result.errors.length) {
-                    const message = waitForHistoryUpdate
+                    const message = expectHistoryUpdate
                         ? "Some items couldn't be successfully processed"
                         : "The operation failed";
                     this.handleOperationError(message, result.errors);
@@ -152,7 +152,9 @@ export default {
             } catch (error) {
                 this.handleOperationError(error);
             }
-            this.$emit("update:operation-running", waitForHistoryUpdate ? this.history.update_time : null);
+            if (!expectHistoryUpdate) {
+                this.$emit("update:operation-running", null);
+            }
         },
         getExplicitlySelectedItems() {
             if (this.isQuerySelection) {
