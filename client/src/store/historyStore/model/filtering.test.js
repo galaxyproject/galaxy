@@ -12,6 +12,9 @@ describe("filtering", () => {
         queryDict = getQueryDict("deleted=true");
         expect(queryDict["deleted"]).toBe(true);
         expect(queryDict["visible"]).toBeUndefined();
+        queryDict = getQueryDict("visible=false");
+        expect(queryDict["deleted"]).toBeUndefined;
+        expect(queryDict["visible"]).toBe(false);
         queryDict = getQueryDict("extension=ext");
         expect(queryDict["extension-eq"]).toBe("ext");
         expect(queryDict["deleted"]).toBe(false);

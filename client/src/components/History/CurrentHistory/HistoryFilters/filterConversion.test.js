@@ -1,3 +1,4 @@
+import { defaultFilters } from "store/historyStore/model/filtering";
 import { containsDefaults, getDefaults, getFilterText } from "./filterConversion";
 
 describe("test filtering helpers to convert settings to filter text", () => {
@@ -9,31 +10,31 @@ describe("test filtering helpers to convert settings to filter text", () => {
     });
 
     it("verify the existence of defaults", async () => {
-        const settings = {
-            "deleted=": false,
-            "visible=": true,
-        };
+        const settings = {};
+        Object.entries(defaultFilters).forEach(([key, value]) => {
+            settings[`${key}=`] = value;
+        });
         expect(containsDefaults(settings)).toBe(true);
-        settings["deleted="] = true;
+        settings["deleted="] = !defaultFilters.deleted;
         expect(containsDefaults(settings)).toBe(false);
-        settings["deleted="] = false;
-        settings["visible="] = false;
+        settings["deleted="] = defaultFilters.deleted;
+        settings["visible="] = !defaultFilters.visible;
         expect(containsDefaults(settings)).toBe(false);
-        settings["visible="] = "TRUE";
+        settings["visible="] = String(defaultFilters.visible).toUpperCase();
         expect(containsDefaults(settings)).toBe(true);
     });
 
     it("verify correct conversion of settings", async () => {
         const settings = {
-            "deleted=": false,
-            "visible=": true,
+            "deleted=": defaultFilters.deleted,
+            "visible=": defaultFilters.visible,
             "other=": "other",
             "anything=": undefined,
         };
         expect(getFilterText(settings)).toBe("other=other");
-        settings["visible="] = false;
+        settings["visible="] = !defaultFilters.visible;
         expect(getFilterText(settings)).toBe("deleted=false visible=false other=other");
-        settings["visible="] = true;
+        settings["visible="] = defaultFilters.visible;
         expect(getFilterText(settings)).toBe("other=other");
     });
 });
