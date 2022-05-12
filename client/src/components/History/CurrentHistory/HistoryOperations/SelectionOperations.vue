@@ -82,7 +82,7 @@ export default {
         contentSelection: { type: Map, required: true },
         selectionSize: { type: Number, required: true },
         isQuerySelection: { type: Boolean, required: true },
-        totalItemsInQuery: { type: Number, required: false, default: 0 },
+        totalItemsInQuery: { type: Number, default: 0 },
     },
     computed: {
         /** @returns {Boolean} */
@@ -139,8 +139,20 @@ export default {
             const items = this.getExplicitlySelectedItems();
             const filters = getQueryDict(this.filterText);
             this.$emit("update:show-selection", false);
-            await operation(this.history, filters, items);
-            this.$emit("update:operation-running", this.history.update_time);
+            let waitForHistoryUpdate = false;
+            try {
+                const result = await operation(this.history, filters, items);
+                waitForHistoryUpdate = result.success_count > 0;
+                if (result.errors.length) {
+                    const message = waitForHistoryUpdate
+                        ? "Some items couldn't be successfully processed"
+                        : "The operation failed";
+                    this.handleOperationError(message, result.errors);
+                }
+            } catch (error) {
+                this.handleOperationError(error);
+            }
+            this.$emit("update:operation-running", waitForHistoryUpdate ? this.history.update_time : null);
         },
         getExplicitlySelectedItems() {
             if (this.isQuerySelection) {
@@ -150,6 +162,9 @@ export default {
                 return { id: item.id, history_content_type: item.history_content_type };
             });
             return items;
+        },
+        handleOperationError(errorMessage, details = null) {
+            this.$emit("operation-error", { errorMessage, details });
         },
 
         // collection creation, fires up a modal
