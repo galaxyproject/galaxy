@@ -13,7 +13,7 @@ TEST_PREFIX = "TestForTool_"
 
 
 class DefaultGalaxyTestDriver(driver_util.GalaxyTestDriver):
-    """Default Galaxy-style nose test driver.
+    """Default Galaxy-style test driver.
 
     Just populate non-shed tool tests and run tests. Works
     for tool tests, regular twill tests, and API testing.

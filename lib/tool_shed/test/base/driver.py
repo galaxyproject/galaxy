@@ -1,17 +1,10 @@
 #!/usr/bin/env python
 """Test driver for tool shed functional tests.
-
-Launch this script by running ``run_tests.sh -t`` from GALAXY_ROOT.
 """
 
 import os
 import string
-import sys
 import tempfile
-
-galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir, os.path.pardir))
-# Need to remove this directory from sys.path
-sys.path[0:1] = [os.path.join(galaxy_root, "lib")]
 
 # This is for the tool shed application.
 from galaxy.webapps.galaxy.buildapp import app_factory as galaxy_app_factory
@@ -46,7 +39,7 @@ shed_data_manager_conf_xml_template = """<?xml version="1.0"?>
 
 
 class ToolShedTestDriver(driver_util.TestDriver):
-    """Instantial a Galaxy-style nose TestDriver for testing the tool shed."""
+    """Instantiate a Galaxy-style TestDriver for testing the tool shed."""
 
     def setup(self):
         """Entry point for test driver script."""
@@ -73,7 +66,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
             "GALAXY_TEST_TOOL_SHEDS_CONF", os.path.join(tool_shed_test_tmp_dir, "test_sheds_conf.xml")
         )
         if "GALAXY_TEST_TOOL_DATA_PATH" in os.environ:
-            tool_data_path = os.environ.get("GALAXY_TEST_TOOL_DATA_PATH")
+            tool_data_path = os.environ["GALAXY_TEST_TOOL_DATA_PATH"]
         else:
             tool_data_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
             os.environ["GALAXY_TEST_TOOL_DATA_PATH"] = tool_data_path
@@ -125,6 +118,10 @@ class ToolShedTestDriver(driver_util.TestDriver):
         tool_shed_test_host = tool_shed_server_wrapper.host
         tool_shed_test_port = tool_shed_server_wrapper.port
         log.info(f"Functional tests will be run against {tool_shed_test_host}:{tool_shed_test_port}")
+
+        # Used by get_filename in tool shed's twilltestcase
+        if "TOOL_SHED_TEST_FILE_DIR" not in os.environ:
+            os.environ["TOOL_SHED_TEST_FILE_DIR"] = driver_util.TOOL_SHED_TEST_DATA
 
         # ---- Optionally start up a Galaxy instance ------------------------------------------------------
         if "TOOL_SHED_TEST_OMIT_GALAXY" not in os.environ:
@@ -180,7 +177,3 @@ class ToolShedTestDriver(driver_util.TestDriver):
             )
             log.info(f"Galaxy tests will be run against {galaxy_server_wrapper.host}:{galaxy_server_wrapper.port}")
             self.server_wrappers.append(galaxy_server_wrapper)
-
-
-if __name__ == "__main__":
-    driver_util.drive_test(ToolShedTestDriver)
