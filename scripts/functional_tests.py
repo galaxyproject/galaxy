@@ -23,7 +23,7 @@ log = driver_util.build_logger()
 
 
 class MigratedToolsGalaxyTestDriver(driver_util.GalaxyTestDriver):
-    """Instantiate a Galaxy-style nose TestDriver for testing migrated Galaxy tools."""
+    """Instantiate a Galaxy-style TestDriver for testing migrated Galaxy tools."""
 
     testing_shed_tools = True
 
@@ -36,7 +36,7 @@ class MigratedToolsGalaxyTestDriver(driver_util.GalaxyTestDriver):
 
 
 class InstalledToolsGalaxyTestDriver(driver_util.GalaxyTestDriver):
-    """Galaxy-style nose TestDriver for testing installed Galaxy tools."""
+    """Galaxy-style TestDriver for testing installed Galaxy tools."""
 
     testing_shed_tools = True
 
@@ -61,7 +61,7 @@ class DefaultGalaxyTestDriver(driver_util.GalaxyTestDriver):
 
 
 class SeleniumGalaxyTestDriver(driver_util.GalaxyTestDriver):
-    """Galaxy-style nose TestDriver for selenium framework testing."""
+    """Galaxy-style TestDriver for selenium framework testing."""
 
     framework_tool_and_types = True
 
@@ -73,7 +73,7 @@ class SeleniumGalaxyTestDriver(driver_util.GalaxyTestDriver):
 
 
 class FrameworkToolsGalaxyTestDriver(DefaultGalaxyTestDriver):
-    """Galaxy-style nose TestDriver for testing framework Galaxy tools."""
+    """Galaxy-style TestDriver for testing framework Galaxy tools."""
 
     framework_tool_and_types = True
     conda_auto_init = True
@@ -81,7 +81,7 @@ class FrameworkToolsGalaxyTestDriver(DefaultGalaxyTestDriver):
 
 
 class DataManagersGalaxyTestDriver(driver_util.GalaxyTestDriver):
-    """Galaxy-style nose TestDriver for testing framework Galaxy tools."""
+    """Galaxy-style TestDriver for testing framework Galaxy tools."""
 
     def build_tests(self):
         """Build data manager test methods."""

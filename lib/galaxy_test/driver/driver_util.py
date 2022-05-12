@@ -20,11 +20,6 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-import nose.config
-import nose.core
-import nose.loader
-import nose.plugins.manager
-
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.config import LOGGING_CONFIG_DEFAULT
 from galaxy.model import mapping
@@ -54,7 +49,6 @@ from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     target_url_parts,
 )
-from galaxy_test.base.instrument import StructuredTestDataPlugin
 from tool_shed.webapp.app import UniverseApplication as ToolshedUniverseApplication
 from tool_shed.webapp.fast_app import initialize_fast_app as init_tool_shed_fast_app
 from .test_logging import logging_config_file
@@ -83,22 +77,6 @@ tool_shed_context = None
 install_context = None
 
 
-def run(test_config):
-    loader = nose.loader.TestLoader(config=test_config)
-    plug_loader = test_config.plugins.prepareTestLoader(loader)
-    if plug_loader is not None:
-        loader = plug_loader
-    tests = loader.loadTestsFromNames(test_config.testNames)
-    test_runner = nose.core.TextTestRunner(
-        stream=test_config.stream, verbosity=test_config.verbosity, config=test_config
-    )
-    plug_runner = test_config.plugins.prepareTestRunner(test_runner)
-    if plug_runner is not None:
-        test_runner = plug_runner
-    result = test_runner.run(tests)
-    return result
-
-
 def setup_tool_shed_tmp_dir():
     tool_shed_test_tmp_dir = os.environ.get("TOOL_SHED_TEST_TMP_DIR", None)
     if tool_shed_test_tmp_dir is None:
@@ -116,19 +94,6 @@ def get_galaxy_test_tmp_dir():
     if galaxy_test_tmp_dir is None:
         galaxy_test_tmp_dir = tempfile.mkdtemp()
     return galaxy_test_tmp_dir
-
-
-def configure_environment():
-    """Hack up environment for test cases."""
-    # no op remove if unused
-    if "HTTP_ACCEPT_LANGUAGE" not in os.environ:
-        os.environ["HTTP_ACCEPT_LANGUAGE"] = DEFAULT_LOCALES
-
-    # Used by get_filename in tool shed's twilltestcase.
-    if "TOOL_SHED_TEST_FILE_DIR" not in os.environ:
-        os.environ["TOOL_SHED_TEST_FILE_DIR"] = TOOL_SHED_TEST_DATA
-
-    os.environ["GALAXY_TEST_ENVIRONMENT_CONFIGURED"] = "1"
 
 
 def build_logger():
@@ -354,25 +319,6 @@ def _tool_data_table_config_path(default_tool_data_table_config_path=None):
         test_tool_data_config = "test/functional/tool-data/sample_tool_data_tables.xml"
         tool_data_table_config_path = f"{default_tool_data_config},{test_tool_data_config}"
     return tool_data_table_config_path
-
-
-def nose_config_and_run():
-    """Setup a nose context and run tests.
-
-    Tests are specified by sys.argv .
-    """
-    test_config = nose.config.Config(
-        env=os.environ,
-        ignoreFiles=[],
-        plugins=nose.plugins.manager.DefaultPluginManager(),
-    )
-
-    # Add custom plugin to produce JSON data used by planemo.
-    test_config.plugins.addPlugin(StructuredTestDataPlugin())
-    test_config.configure(sys.argv)
-
-    result = run(test_config)
-    return result.wasSuccessful()
 
 
 def copy_database_template(source, db_path):
@@ -875,7 +821,7 @@ def launch_server(app_factory, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, gal
 class TestDriver:
     """Responsible for the life-cycle of a Galaxy-style functional test.
 
-    Sets up servers, configures tests, runs nose, and tears things
+    Sets up servers, configures tests, and tears things
     down. This is somewhat like a Python TestCase - but different
     because it is meant to provide a main() endpoint.
     """
@@ -891,7 +837,7 @@ class TestDriver:
         """Called before tests are built."""
 
     def build_tests(self):
-        """After environment is setup, setup nose tests."""
+        """After environment is setup, setup tests."""
 
     def tear_down(self):
         """Cleanup resources tracked by this object."""
@@ -919,28 +865,9 @@ class TestDriver:
         self.temp_directories.append(temp_directory)
         return temp_directory
 
-    def run(self):
-        """Driver whole test.
-
-        Setup environment, build tests (if needed), run test,
-        and finally cleanup resources.
-        """
-        configure_environment()
-        self.setup()
-        self.build_tests()
-        try:
-            success = nose_config_and_run()
-            return 0 if success else 1
-        except Exception as e:
-            log.info("Failure running tests")
-            raise e
-        finally:
-            log.info("Shutting down")
-            self.tear_down()
-
 
 class GalaxyTestDriver(TestDriver):
-    """Instantial a Galaxy-style nose TestDriver for testing Galaxy."""
+    """Instantial a Galaxy-style TestDriver for testing Galaxy."""
 
     server_wrappers: List[ServerWrapper]
     testing_shed_tools = False

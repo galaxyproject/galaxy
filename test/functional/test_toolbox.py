@@ -9,7 +9,6 @@ from galaxy_test.base.env import (
     setup_keep_outdir,
     target_url_parts,
 )
-from galaxy_test.base.instrument import register_job_data
 from galaxy_test.driver.testcase import DrivenFunctionalTestCase
 
 log = logging.getLogger(__name__)
@@ -38,7 +37,6 @@ class ToolTestCase(DrivenFunctionalTestCase):
             resource_parameters=resource_parameters,
             test_index=test_index,
             tool_version=tool_version,
-            register_job_data=register_job_data,
         )
 
 

@@ -7,6 +7,7 @@ from typing import (
 )
 from urllib.parse import urljoin
 
+import pytest
 import requests
 
 from galaxy.tool_util.verify.interactor import GalaxyInteractorApi
@@ -19,6 +20,7 @@ from galaxy_test.base.api_util import (
 )
 from galaxy_test.base.uses_shed_api import UsesShedApi
 from galaxy_test.driver.testcase import DrivenFunctionalTestCase
+from . import driver
 from .api_util import (
     get_admin_api_key,
     get_user_api_key,
@@ -37,6 +39,23 @@ class ShedBaseTestCase(DrivenFunctionalTestCase):
         self.galaxy_host = os.environ.get("GALAXY_TEST_HOST")
         self.galaxy_port = os.environ.get("GALAXY_TEST_PORT")
         self.galaxy_url = f"http://{self.galaxy_host}:{self.galaxy_port}"
+
+    __test__ = True
+    galaxy_driver_class = driver.ToolShedTestDriver
+
+    @classmethod
+    def setUpClass(cls):
+        """Configure and start Galaxy for a test."""
+        pass
+
+    @classmethod
+    def tearDownClass(cls):
+        """Shutdown Galaxy server and cleanup temp directory."""
+        pass
+
+    @pytest.fixture(autouse=True)
+    def _get_driver(self, tool_shed_test_driver):
+        self._test_driver = tool_shed_test_driver
 
 
 def ensure_user_with_email(admin_api_interactor: ShedApiInteractor, email: str, password: Optional[str]):
