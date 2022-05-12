@@ -356,7 +356,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             "Uninstalled",
         ]
         self.display_installed_repository_manage_page(installed_convert_repository, strings_displayed=strings_displayed)
-        self.test_db_util.install_session.refresh(installed_column_repository)
+        self.test_db_util.install_session().refresh(installed_column_repository)
 
     def test_0065_reinstall_column_repository(self):
         """Reinstall column_maker without repository dependencies, verify both convert_chars and column_maker are installed."""
@@ -408,7 +408,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             "Deactivated",
         ]
         self.display_installed_repository_manage_page(installed_column_repository, strings_displayed=strings_displayed)
-        self.test_db_util.install_session.refresh(installed_convert_repository)
+        self.test_db_util.install_session().refresh(installed_convert_repository)
 
     def test_0075_uninstall_column_repository(self):
         """Uninstall column_maker, verify that both convert_chars and column_maker are uninstalled."""
