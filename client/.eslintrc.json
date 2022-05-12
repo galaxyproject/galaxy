@@ -13,6 +13,27 @@
         "node": true,
         "jest": true
     },
+    "overrides": [
+        // Kind of a pain, but this way we can handle vue and ts. This overrides
+        // the 'standard' config config will override "normal" config
+        {
+            "files": ["*.ts"],
+            "parser": "@typescript-eslint/parser",
+            "parserOptions": {
+                "ecmaVersion": 2020,
+                "sourceType": "module",
+                "extraFileExtensions": [".vue"], // ADDED
+                "ecmaFeatures": {
+                    "jsx": true
+                }
+            },
+            "plugins": ["@typescript-eslint"],
+            "extends": ["plugin:@typescript-eslint/recommended"]
+            // "rules": [
+            //     // tbd
+            // ]
+        }
+    ],
     "rules": {
         // Standard rules
         "no-console": "off",
