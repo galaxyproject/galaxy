@@ -69,10 +69,7 @@
                     </b-input-group-append>
                 </b-input-group>
             </b-form-group>
-            <small>Show deleted:</small>
-            <b-form-checkbox v-model="filterSettings['deleted=']" size="sm" switch description="filter deleted" />
-            <small>Show visible:</small>
-            <b-form-checkbox v-model="filterSettings['visible=']" size="sm" switch description="filter visible" />
+            <history-filters-default :settings="filterSettings" @change="onOption" />
             <div class="mt-3">
                 <b-button class="mr-1" size="sm" variant="primary" description="apply filters" @click="onSearch">
                     <icon icon="search" />
@@ -89,12 +86,14 @@
 
 <script>
 import DebouncedInput from "components/DebouncedInput";
+import HistoryFiltersDefault from "./HistoryFiltersDefault";
 import { getFilters, toAlias } from "store/historyStore/model/filtering";
 import { STATES } from "../Content/model/states";
 
 export default {
     components: {
         DebouncedInput,
+        HistoryFiltersDefault,
     },
     props: {
         filterText: { type: String, default: null },
@@ -102,12 +101,7 @@ export default {
     },
     computed: {
         filterSettings() {
-            if (this.filterText) {
-                // get filters as dict with keys converted to aliases
-                return toAlias(getFilters(this.filterText));
-            } else {
-                return {};
-            }
+            return toAlias(getFilters(this.filterText));
         },
         localFilter: {
             get() {
@@ -124,16 +118,21 @@ export default {
         },
     },
     methods: {
+        onOption(name, value) {
+            this.filterSettings[name] = value;
+        },
         onSearch() {
             let newFilterText = "";
             Object.entries(this.filterSettings).forEach(([key, value]) => {
-                if (newFilterText) {
-                    newFilterText += " ";
+                if (value !== undefined) {
+                    if (newFilterText) {
+                        newFilterText += " ";
+                    }
+                    if (String(value).includes(" ")) {
+                        value = `'${value}'`;
+                    }
+                    newFilterText += `${key}${value}`;
                 }
-                if (String(value).includes(" ")) {
-                    value = `'${value}'`;
-                }
-                newFilterText += `${key}${value}`;
             });
             this.onToggle();
             this.updateFilter(newFilterText);
