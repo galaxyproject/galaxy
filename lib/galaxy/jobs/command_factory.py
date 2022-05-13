@@ -282,7 +282,7 @@ class CommandsBuilder:
         if TRAP_KILL_CONTAINER in self.commands:
             # We need to replace the container kill trap with one that removes the named pipes and kills the container
             self.commands = self.commands.replace(TRAP_KILL_CONTAINER, "")
-            trap_command = """trap 'rm -f "$__out" "$__err" _on_exit' EXIT"""
+            trap_command = """trap 'rm -f "$__out" "$__err"; _on_exit' EXIT"""
         self.prepend_command(
             f"""__out="${{TMPDIR:-.}}/out.$$" __err="${{TMPDIR:-.}}/err.$$"
 mkfifo "$__out" "$__err"
