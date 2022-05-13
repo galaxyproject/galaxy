@@ -22,7 +22,7 @@ CAPTURE_AND_REDIRECT = f"{TEE_REDIRECT}{RETURN_CODE_CAPTURE}"
 CP_WORK_DIR_OUTPUTS = '; \nif [ -f "foo" ] ; then cp "foo" "bar" ; fi'
 TEE_LOG = """__out="${TMPDIR:-.}/out.$$" __err="${TMPDIR:-.}/err.$$"
 mkfifo "$__out" "$__err"
-trap 'rm "$__out" "$__err" 2> /dev/null || true' EXIT
+trap 'rm "$__out" "$__err"' EXIT
 tee -a '../outputs/tool_stdout' < "$__out" &
 tee -a '../outputs/tool_stderr' < "$__err" >&2 & """
 
