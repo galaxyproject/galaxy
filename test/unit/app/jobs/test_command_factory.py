@@ -54,7 +54,7 @@ class TestCommandFactory(TestCase):
         self.job_wrapper.command_line = f"{TRAP_KILL_CONTAINER}{MOCK_COMMAND_LINE}"
         expected_command_line = self._surround_command(MOCK_COMMAND_LINE).replace(
             """trap 'rm "$__out" "$__err"' EXIT""",
-            """trap 'rm "$__out" "$__err" 2> /dev/null || true; _on_exit' EXIT"""
+            """trap 'rm -f "$__out" "$__err"; _on_exit' EXIT"""
         )
         self.__assert_command_is(expected_command_line)
 
