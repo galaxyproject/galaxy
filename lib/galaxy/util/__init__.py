@@ -32,6 +32,10 @@ from datetime import (
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
+from math import (
+    floor,
+    log10,
+)
 from os.path import relpath
 from typing import (
     Any,
@@ -1135,14 +1139,49 @@ def commaify(amount):
         return commaify(new)
 
 
-def roundify(amount, sfs=2):
+def trailing_zeros_to_powerof10(amount):
     """
-    Take a number in string form and truncate to 'sfs' significant figures.
+    >>> trailing_zeros_to_powerof10(23000)
+    '23000'
+    >>> trailing_zeros_to_powerof10(2300000)
+    '23 10^5'
+    >>> trailing_zeros_to_powerof10(23000000)
+    '23 10^6'
+    >>> trailing_zeros_to_powerof10(1)
+    '1'
+    >>> trailing_zeros_to_powerof10(0)
+    '0'
+    >>> trailing_zeros_to_powerof10(100)
+    '100'
+    >>> trailing_zeros_to_powerof10(-100)
+    '-100'
     """
-    if len(amount) <= sfs:
+    amount = str(amount)
+    zeros = 0
+    i = len(amount) - 1
+    while i >= 0 and amount[i] == "0":
+        zeros += 1
+        i -= 1
+    if len(amount) < len(f"{amount[:i+1]} 10^{zeros}"):
         return amount
     else:
-        return amount[0:sfs] + "0" * (len(amount) - sfs)
+        return f"{amount[:i+1]} 10^{zeros}"
+
+
+def roundify(amount, sfs=2):
+    """
+    Take a number and round it to 'sfs' significant figures.
+
+    >>> roundify(99)
+    99
+    >>> roundify(-99)
+    -99
+    >>> roundify(1111)
+    1100
+    >>> roundify(1999)
+    2000
+    """
+    return round(amount, -int(floor(log10(abs(amount)))) + sfs - 1)
 
 
 @overload
