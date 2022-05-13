@@ -144,13 +144,10 @@ export default {
                 const result = await operation(this.history, filters, items);
                 expectHistoryUpdate = result.success_count > 0;
                 if (result.errors.length) {
-                    const message = expectHistoryUpdate
-                        ? "Some items couldn't be successfully processed"
-                        : "The operation failed";
-                    this.handleOperationError(message, result.errors);
+                    this.handleOperationError(null, result);
                 }
             } catch (error) {
-                this.handleOperationError(error);
+                this.handleOperationError(error, null);
             }
             if (!expectHistoryUpdate) {
                 this.$emit("update:operation-running", null);
@@ -165,8 +162,8 @@ export default {
             });
             return items;
         },
-        handleOperationError(errorMessage, details = null) {
-            this.$emit("operation-error", { errorMessage, details });
+        handleOperationError(errorMessage, result) {
+            this.$emit("operation-error", { errorMessage, result });
         },
 
         // collection creation, fires up a modal

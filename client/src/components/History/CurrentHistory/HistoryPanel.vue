@@ -55,6 +55,7 @@
                                     :total-items-in-query="totalItemsInQuery"
                                     :operation-running.sync="operationRunning"
                                     @update:show-selection="setShowSelection"
+                                    @operation-error="onOperationError"
                                     @hide-selection="onHideSelection"
                                     @reset-selection="resetSelection" />
                                 <HistorySelectionStatus
@@ -65,6 +66,10 @@
                             </template>
                         </HistoryOperations>
                         <SelectionChangeWarning :query-selection-break="querySelectionBreak" />
+                        <OperationErrorDialog
+                            v-if="operationError"
+                            :operation-error="operationError"
+                            @hide="operationError = null" />
                     </section>
                     <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
                         <div>
@@ -127,6 +132,7 @@ import HistoryMessages from "./HistoryMessages";
 import HistorySelectionOperations from "./HistoryOperations/SelectionOperations";
 import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
 import SelectionChangeWarning from "./HistoryOperations/SelectionChangeWarning";
+import OperationErrorDialog from "./HistoryOperations/OperationErrorDialog";
 
 export default {
     components: {
@@ -145,6 +151,7 @@ export default {
         Listing,
         SelectedItems,
         SelectionChangeWarning,
+        OperationErrorDialog,
     },
     props: {
         history: { type: Object, required: true },
@@ -156,6 +163,7 @@ export default {
             offset: 0,
             showAdvanced: false,
             operationRunning: null,
+            operationError: null,
             querySelectionBreak: false,
         };
     },
@@ -221,6 +229,10 @@ export default {
         },
         setInvisible(item) {
             Vue.set(this.invisible, item.hid, true);
+        },
+        onOperationError(error) {
+            console.debug("OPERATION ERROR", error);
+            this.operationError = error;
         },
     },
 };

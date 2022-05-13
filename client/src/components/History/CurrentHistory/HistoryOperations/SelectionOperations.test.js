@@ -151,7 +151,7 @@ describe("History Selection Operations", () => {
             expect(wrapper.emitted()).toHaveProperty("operation-error");
         });
 
-        it("should emit operation error event with details when any item fail", async () => {
+        it("should emit operation error event with the result when any item fail", async () => {
             axiosMock.onPut(BULK_OPERATIONS_ENDPOINT).reply(200, BULK_ERROR_RESPONSE);
 
             expect(wrapper.emitted()).not.toHaveProperty("operation-error");
@@ -162,8 +162,8 @@ describe("History Selection Operations", () => {
             const operationErrorEvents = wrapper.emitted("operation-error");
             expect(operationErrorEvents).toHaveLength(1);
             const errorEvent = operationErrorEvents[0][0];
-            expect(errorEvent).toHaveProperty("details");
-            expect(errorEvent.details).toHaveLength(BULK_ERROR_RESPONSE.errors.length);
+            expect(errorEvent).toHaveProperty("result");
+            expect(errorEvent.result).toEqual(BULK_ERROR_RESPONSE);
         });
     });
 });
