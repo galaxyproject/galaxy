@@ -49,8 +49,6 @@ jobs:
       run: rsync -av --remove-source-files --exclude .git galaxy-test-data/ 'galaxy root/test-data/'
     - name: Install planemo
       run: pip install planemo
-    - name: Install jq
-      run: sudo apt-get install jq
     - name: Determine converters to check
       run: |
         ls 'galaxy root'/lib/galaxy/datatypes/converters/*xml | grep -v -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip > tool_list.txt
@@ -67,16 +65,17 @@ jobs:
     - name: Run tests
       run: |
         mkdir -p json_output
+        EXIT_CODE=0
         mapfile -t TOOL_ARRAY < tool_list.txt
         for CONVERTER in "${TOOL_ARRAY[@]}"; do
           json=$(mktemp -u -p json_output --suff .json)
-          planemo test --test_output_json "$json" --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' "$CONVERTER" || true
+          planemo test --test_output_json "$json" --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' "$CONVERTER" || EXIT_CODE=$?
         done
         planemo merge_test_reports json_output/*.json tool_test_output.json
         planemo test_reports tool_test_output.json --test_output tool_test_output.html
-        if jq '.["tests"][]["data"]["status"]' tool_test_output.json | grep -v "success"; then
+        if [ "$EXIT_CODE" -ne 0 ]; then
           echo "Unsuccessful tests found, inspect the 'Converter test results' artifact for details."
-          exit 1
+          exit $EXIT_CODE
         fi
     - uses: actions/upload-artifact@v3
       if: failure()
