@@ -26,50 +26,53 @@
                 </b-button>
             </b-input-group-append>
         </b-input-group>
-        <div v-if="showAdvanced" class="mt-2" description="advanced filters">
-            <b-form @keyup.enter="onSearch">
-                <small>Filter by name:</small>
-                <b-form-input v-model="filterSettings['name=']" size="sm" placeholder="any name" />
-                <small class="mt-1">Filter by extension:</small>
-                <b-form-input v-model="filterSettings['extension=']" size="sm" placeholder="any extension" />
-                <small class="mt-1">Filter by tag:</small>
-                <b-form-input v-model="filterSettings['tag=']" size="sm" placeholder="any tag" />
-                <small class="mt-1">Filter by state:</small>
-                <b-form-input v-model="filterSettings['state=']" size="sm" placeholder="any state" list="stateSelect" />
-                <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
-                <small class="mt-1">Filter by item index:</small>
-                <b-form-group class="m-0">
-                    <b-input-group>
-                        <b-form-input v-model="filterSettings['hid>']" size="sm" placeholder="index greater" />
-                        <b-form-input v-model="filterSettings['hid<']" size="sm" placeholder="index lower" />
-                    </b-input-group>
-                </b-form-group>
-                <small class="mt-1">Filter by creation time:</small>
-                <b-form-group class="m-0">
-                    <b-input-group>
-                        <b-form-input v-model="filterSettings['create_time>']" size="sm" placeholder="created after" />
-                        <b-input-group-append>
-                            <b-form-datepicker
-                                v-model="filterSettings['create_time>']"
-                                reset-button
-                                button-only
-                                size="sm" />
-                        </b-input-group-append>
-                        <b-form-input v-model="filterSettings['create_time<']" size="sm" placeholder="created before" />
-                        <b-input-group-append>
-                            <b-form-datepicker
-                                v-model="filterSettings['create_time<']"
-                                reset-button
-                                button-only
-                                size="sm" />
-                        </b-input-group-append>
-                    </b-input-group>
-                </b-form-group>
-                <small>Show deleted:</small>
-                <b-form-checkbox v-model="filterSettings['deleted=']" size="sm" switch description="filter deleted" />
-                <small>Show visible:</small>
-                <b-form-checkbox v-model="filterSettings['visible=']" size="sm" switch description="filter visible" />
-            </b-form>
+        <div
+            v-if="showAdvanced"
+            class="mt-2"
+            description="advanced filters"
+            @keyup.enter="onSearch"
+            @keyup.esc="onToggle">
+            <small>Filter by name:</small>
+            <b-form-input v-model="filterSettings['name=']" size="sm" placeholder="any name" />
+            <small class="mt-1">Filter by extension:</small>
+            <b-form-input v-model="filterSettings['extension=']" size="sm" placeholder="any extension" />
+            <small class="mt-1">Filter by tag:</small>
+            <b-form-input v-model="filterSettings['tag=']" size="sm" placeholder="any tag" />
+            <small class="mt-1">Filter by state:</small>
+            <b-form-input v-model="filterSettings['state=']" size="sm" placeholder="any state" list="stateSelect" />
+            <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
+            <small class="mt-1">Filter by item index:</small>
+            <b-form-group class="m-0">
+                <b-input-group>
+                    <b-form-input v-model="filterSettings['hid>']" size="sm" placeholder="index greater" />
+                    <b-form-input v-model="filterSettings['hid<']" size="sm" placeholder="index lower" />
+                </b-input-group>
+            </b-form-group>
+            <small class="mt-1">Filter by creation time:</small>
+            <b-form-group class="m-0">
+                <b-input-group>
+                    <b-form-input v-model="filterSettings['create_time>']" size="sm" placeholder="created after" />
+                    <b-input-group-append>
+                        <b-form-datepicker
+                            v-model="filterSettings['create_time>']"
+                            reset-button
+                            button-only
+                            size="sm" />
+                    </b-input-group-append>
+                    <b-form-input v-model="filterSettings['create_time<']" size="sm" placeholder="created before" />
+                    <b-input-group-append>
+                        <b-form-datepicker
+                            v-model="filterSettings['create_time<']"
+                            reset-button
+                            button-only
+                            size="sm" />
+                    </b-input-group-append>
+                </b-input-group>
+            </b-form-group>
+            <small>Show deleted:</small>
+            <b-form-checkbox v-model="filterSettings['deleted=']" size="sm" switch description="filter deleted" />
+            <small>Show visible:</small>
+            <b-form-checkbox v-model="filterSettings['visible=']" size="sm" switch description="filter visible" />
             <div class="mt-3">
                 <b-button class="mr-1" size="sm" variant="primary" description="apply filters" @click="onSearch">
                     <icon icon="search" />
