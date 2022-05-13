@@ -51,32 +51,32 @@ describe("History Selection Operations", () => {
 
         it("should display the total number of items to apply the operation", async () => {
             await wrapper.setProps({ selectionSize: 10 });
-            expect(wrapper.find('[data-test-id="selected-count"]').text()).toContain("10");
+            expect(wrapper.find('[data-description="selected count"]').text()).toContain("10");
         });
 
         it("should display 'hide' option only on visible items", async () => {
-            const option = '[data-test-id="hide-option"]';
+            const option = '[data-description="hide option"]';
             expect(wrapper.find(option).exists()).toBe(true);
             await wrapper.setProps({ filterText: "visible=false" });
             expect(wrapper.find(option).exists()).toBe(false);
         });
 
         it("should display 'unhide' option only on hidden items", async () => {
-            const option = '[data-test-id="unhide-option"]';
+            const option = '[data-description="unhide option"]';
             expect(wrapper.find(option).exists()).toBe(false);
             await wrapper.setProps({ filterText: "visible=false" });
             expect(wrapper.find(option).exists()).toBe(true);
         });
 
         it("should display 'delete' option only on non-deleted items", async () => {
-            const option = '[data-test-id="delete-option"]';
+            const option = '[data-description="delete option"]';
             expect(wrapper.find(option).exists()).toBe(true);
             await wrapper.setProps({ filterText: "deleted=true" });
             expect(wrapper.find(option).exists()).toBe(false);
         });
 
         it("should display 'undelete' option only on deleted items", async () => {
-            const option = '[data-test-id="undelete-option"]';
+            const option = '[data-description="undelete option"]';
             expect(wrapper.find(option).exists()).toBe(false);
             await wrapper.setProps({ filterText: "deleted=true" });
             expect(wrapper.find(option).exists()).toBe(true);

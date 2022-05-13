@@ -10,21 +10,21 @@
                 </span>
             </template>
             <b-dropdown-text>
-                <span v-localize data-test-id="selected-count">With {{ numSelected }} selected...</span>
+                <span v-localize data-description="selected count">With {{ numSelected }} selected...</span>
             </b-dropdown-text>
-            <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content data-test-id="unhide-option">
+            <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content data-description="unhide option">
                 <span v-localize>Unhide</span>
             </b-dropdown-item>
-            <b-dropdown-item v-else v-b-modal:hide-selected-content data-test-id="hide-option">
+            <b-dropdown-item v-else v-b-modal:hide-selected-content data-description="hide option">
                 <span v-localize>Hide</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="showDeleted" v-b-modal:restore-selected-content data-test-id="undelete-option">
+            <b-dropdown-item v-if="showDeleted" v-b-modal:restore-selected-content data-description="undelete option">
                 <span v-localize>Undelete</span>
             </b-dropdown-item>
-            <b-dropdown-item v-else v-b-modal:delete-selected-content data-test-id="delete-option">
+            <b-dropdown-item v-else v-b-modal:delete-selected-content data-description="delete option">
                 <span v-localize>Delete</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="!showDeleted" v-b-modal:purge-selected-content data-test-id="purge-option">
+            <b-dropdown-item v-if="!showDeleted" v-b-modal:purge-selected-content data-description="purge option">
                 <span v-localize>Delete (permanently)</span>
             </b-dropdown-item>
             <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
