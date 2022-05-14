@@ -10,21 +10,21 @@
                 </span>
             </template>
             <b-dropdown-text>
-                <span v-localize>With {{ numSelected }} selected...</span>
+                <span v-localize data-description="selected count">With {{ numSelected }} selected...</span>
             </b-dropdown-text>
-            <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content>
+            <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content data-description="unhide option">
                 <span v-localize>Unhide</span>
             </b-dropdown-item>
-            <b-dropdown-item v-else v-b-modal:hide-selected-content>
+            <b-dropdown-item v-else v-b-modal:hide-selected-content data-description="hide option">
                 <span v-localize>Hide</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="showDeleted" v-b-modal:restore-selected-content>
+            <b-dropdown-item v-if="showDeleted" v-b-modal:restore-selected-content data-description="undelete option">
                 <span v-localize>Undelete</span>
             </b-dropdown-item>
-            <b-dropdown-item v-else v-b-modal:delete-selected-content>
+            <b-dropdown-item v-else v-b-modal:delete-selected-content data-description="delete option">
                 <span v-localize>Delete</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="!showDeleted" v-b-modal:purge-selected-content>
+            <b-dropdown-item v-if="!showDeleted" v-b-modal:purge-selected-content data-description="purge option">
                 <span v-localize>Delete (permanently)</span>
             </b-dropdown-item>
             <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
@@ -82,7 +82,7 @@ export default {
         contentSelection: { type: Map, required: true },
         selectionSize: { type: Number, required: true },
         isQuerySelection: { type: Boolean, required: true },
-        totalItemsInQuery: { type: Number, required: false, default: 0 },
+        totalItemsInQuery: { type: Number, default: 0 },
     },
     computed: {
         /** @returns {Boolean} */
@@ -139,8 +139,19 @@ export default {
             const items = this.getExplicitlySelectedItems();
             const filters = getQueryDict(this.filterText);
             this.$emit("update:show-selection", false);
-            await operation(this.history, filters, items);
-            this.$emit("update:operation-running", this.history.update_time);
+            let expectHistoryUpdate = false;
+            try {
+                const result = await operation(this.history, filters, items);
+                expectHistoryUpdate = result.success_count > 0;
+                if (result.errors.length) {
+                    this.handleOperationError(null, result);
+                }
+            } catch (error) {
+                this.handleOperationError(error, null);
+            }
+            if (!expectHistoryUpdate) {
+                this.$emit("update:operation-running", null);
+            }
         },
         getExplicitlySelectedItems() {
             if (this.isQuerySelection) {
@@ -150,6 +161,9 @@ export default {
                 return { id: item.id, history_content_type: item.history_content_type };
             });
             return items;
+        },
+        handleOperationError(errorMessage, result) {
+            this.$emit("operation-error", { errorMessage, result });
         },
 
         // collection creation, fires up a modal
