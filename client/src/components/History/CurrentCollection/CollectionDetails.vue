@@ -8,6 +8,7 @@
         <template v-slot:name>
             <h3 v-short="dsc.name || 'Collection'" data-description="collection name display" />
             <CollectionDescription
+                :collection="dsc"
                 :collection-type="dsc.collection_type"
                 :element-count="dsc.element_count"
                 :elements-datatypes="dsc.elements_datatypes" />

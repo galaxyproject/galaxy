@@ -1,12 +1,20 @@
 <template>
-    <h6 class="description mt-1">
-        a {{ collectionLabel }} with {{ elementCount }}<b>{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
-    </h6>
+    <div>
+        <h6 class="description mt-1">
+            a {{ collectionLabel }} with {{ elementCount }}<b>{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
+        </h6>
+        <CollectionProgress :summary.sync="jobState" />
+    </div>
 </template>
 
 <script>
+import CollectionProgress from "./CollectionProgress";
+import { JobStateSummary } from "./JobStateSummary";
+
 export default {
+    components: { CollectionProgress },
     props: {
+        collection: { type: Object, required: true },
         collectionType: { type: String, required: true },
         elementCount: { type: Number, required: false, default: undefined },
         elementsDatatypes: { type: Array, required: false, default: () => [] },
@@ -22,6 +30,9 @@ export default {
         };
     },
     computed: {
+        jobState() {
+            return new JobStateSummary(this.collection);
+        },
         /**@return {String} */
         collectionLabel() {
             return this.labels[this.collectionType] || "nested list";

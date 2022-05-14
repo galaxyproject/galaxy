@@ -31,6 +31,7 @@
                     <span class="content-title name">{{ name }}</span>
                     <CollectionDescription
                         v-if="!isDataset"
+                        :collection="item"
                         :collection-type="item.collection_type"
                         :element-count="item.element_count"
                         :elements-datatypes="item.elements_datatypes" />
