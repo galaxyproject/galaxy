@@ -26,7 +26,12 @@
                 </b-button>
             </b-input-group-append>
         </b-input-group>
-        <div v-if="showAdvanced" class="mt-2" description="advanced filters">
+        <div
+            v-if="showAdvanced"
+            class="mt-2"
+            description="advanced filters"
+            @keyup.enter="onSearch"
+            @keyup.esc="onToggle">
             <small>Filter by name:</small>
             <b-form-input v-model="filterSettings['name=']" size="sm" placeholder="any name" />
             <small class="mt-1">Filter by extension:</small>
@@ -34,7 +39,8 @@
             <small class="mt-1">Filter by tag:</small>
             <b-form-input v-model="filterSettings['tag=']" size="sm" placeholder="any tag" />
             <small class="mt-1">Filter by state:</small>
-            <b-form-input v-model="filterSettings['state=']" size="sm" placeholder="any state" />
+            <b-form-input v-model="filterSettings['state=']" size="sm" placeholder="any state" list="stateSelect" />
+            <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
             <small class="mt-1">Filter by item index:</small>
             <b-form-group class="m-0">
                 <b-input-group>
@@ -46,7 +52,21 @@
             <b-form-group class="m-0">
                 <b-input-group>
                     <b-form-input v-model="filterSettings['create_time>']" size="sm" placeholder="created after" />
+                    <b-input-group-append>
+                        <b-form-datepicker
+                            v-model="filterSettings['create_time>']"
+                            reset-button
+                            button-only
+                            size="sm" />
+                    </b-input-group-append>
                     <b-form-input v-model="filterSettings['create_time<']" size="sm" placeholder="created before" />
+                    <b-input-group-append>
+                        <b-form-datepicker
+                            v-model="filterSettings['create_time<']"
+                            reset-button
+                            button-only
+                            size="sm" />
+                    </b-input-group-append>
                 </b-input-group>
             </b-form-group>
             <small>Show deleted:</small>
@@ -70,6 +90,7 @@
 <script>
 import DebouncedInput from "components/DebouncedInput";
 import { getFilters, toAlias } from "store/historyStore/model/filtering";
+import { STATES } from "../Content/model/states";
 
 // available filter keys with operator and default setting
 const filterDefaults = {
@@ -108,6 +129,9 @@ export default {
                     this.updateFilter(newVal);
                 }
             },
+        },
+        states() {
+            return Object.keys(STATES);
         },
     },
     watch: {
