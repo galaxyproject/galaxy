@@ -556,13 +556,14 @@ class Tabular(TabularData):
                             comment_lines = None  # type: ignore [assignment]
                         break
                     i += 1
-
+        print(column_types)
         # we error on the larger number of columns
         # first we pad our column_types by using data from first line
         if len(first_line_column_types) > len(column_types):
             for column_type in first_line_column_types[len(column_types) :]:
                 column_types.append(column_type)
         # Now we fill any unknown (None) column_types with data from first line
+        print(column_types)
         for i in range(len(column_types)):
             if column_types[i] is None:
                 if len(first_line_column_types) <= i or first_line_column_types[i] is None:

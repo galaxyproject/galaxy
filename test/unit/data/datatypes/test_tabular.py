@@ -22,3 +22,18 @@ def test_tabular_set_meta_large_file():
         assert dataset.metadata.columns == 2
         assert dataset.metadata.delimiter == "\t"
         assert not hasattr(dataset.metadata, "column_names")
+
+
+def test_tabular_set_meta_empty():
+    with tempfile.NamedTemporaryFile(mode="w") as test_file:
+        test_file.flush()
+        dataset = MockDataset(id=1)
+        dataset.file_name = test_file.name
+        Tabular().set_meta(dataset)
+        # data and comment lines are not stored if more than MAX_DATA_LINES
+        assert dataset.metadata.data_lines == 0
+        assert dataset.metadata.comment_lines == 0
+        assert dataset.metadata.column_types == []
+        assert dataset.metadata.columns == 0
+        assert dataset.metadata.delimiter == "\t"
+        assert not hasattr(dataset.metadata, "column_names")
