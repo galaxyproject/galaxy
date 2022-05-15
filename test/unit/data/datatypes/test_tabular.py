@@ -15,3 +15,10 @@ def test_tabular_set_meta_large_file():
         dataset = MockDataset(id=1)
         dataset.set_file_name(test_file.name)
         Tabular().set_meta(dataset)  # type: ignore [arg-type]
+        # data and comment lines are not stored if more than MAX_DATA_LINES
+        assert dataset.metadata.data_lines is None
+        assert dataset.metadata.comment_lines is None
+        assert dataset.metadata.column_types == ["str", "str"]
+        assert dataset.metadata.columns == 2
+        assert dataset.metadata.delimiter == "\t"
+        assert not hasattr(dataset.metadata, "column_names")
