@@ -9,6 +9,8 @@ import { Dataset, createTabularDatasetChunkedView, TabularDataset } from "mvc/da
 import visualization from "viz/visualization";
 import { TracksterUI } from "viz/trackster";
 import _l from "utils/localization";
+import WinBox from "winbox/src/js/winbox.js";
+import "winbox/dist/css/winbox.min.css";
 
 export default Backbone.View.extend({
     initialize: function (options) {
@@ -51,7 +53,7 @@ export default Backbone.View.extend({
 
     getFrames() {
         // needed for Vue.js integration
-        return this.frames;
+        return this;
     },
 
     beforeUnload() {
@@ -232,7 +234,7 @@ export default Backbone.View.extend({
             }
         } else {
             options.url = this._build_url(options.url, { hide_panels: true, hide_masthead: true });
-            this.frames.add(options);
+            WinBox.new(options);
         }
     },
 
