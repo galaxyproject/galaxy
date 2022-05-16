@@ -1,10 +1,9 @@
-/** Frame manager uses the ui-frames to create the scratch book masthead icon and functionality **/
+/** Frame manager uses the window manager to create the scratch book masthead icon and functionality **/
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import Frames from "mvc/ui/ui-frames";
 import { Dataset, createTabularDatasetChunkedView, TabularDataset } from "mvc/dataset/data";
 import visualization from "viz/visualization";
 import { TracksterUI } from "viz/trackster";
@@ -15,8 +14,8 @@ import "winbox/dist/css/winbox.min.css";
 export default Backbone.View.extend({
     initialize: function (options) {
         options = options || {};
-        this.frames = new Frames.View({ visible: false });
-        this.setElement(this.frames.$el);
+        this.setElement("<div />");
+        this.counter = 0;
         this.active = false;
         this.buttonActive = {
             id: "enable-scratchbook",
@@ -29,7 +28,7 @@ export default Backbone.View.extend({
                 this.buttonActive.show_note = this.active;
                 this.buttonActive.note_cls = this.active && "fa fa-check";
                 if (!this.active) {
-                    this.frames.hide();
+                    this.$el.hide();
                 }
             },
         };
@@ -41,10 +40,10 @@ export default Backbone.View.extend({
             visible: false,
             note: "",
             onclick: (e) => {
-                if (this.frames.visible) {
-                    this.frames.hide();
+                if (this.visible) {
+                    this.$el.hide();
                 } else {
-                    this.frames.show();
+                    this.$el.show();
                 }
             },
         };
@@ -58,13 +57,13 @@ export default Backbone.View.extend({
 
     beforeUnload() {
         let confirmText = "";
-        if (this.frames.length() > 0) {
-            confirmText = `You opened ${this.frames.length()} frame(s) which will be lost.`;
+        if (this.counter > 0) {
+            confirmText = `You opened ${this.counter} frame(s) which will be lost.`;
         }
         return confirmText;
     },
 
-    /** Add a dataset to the frames */
+    /** Add a dataset */
     addDataset: function (dataset_id) {
         const self = this;
         let current_dataset = null;
@@ -170,7 +169,7 @@ export default Backbone.View.extend({
         });
     },
 
-    /** Add a trackster visualization to the frames. */
+    /** Add a trackster visualization. */
     addTrackster: function (viz_id) {
         const self = this;
         const viz = new visualization.Visualization({ id: viz_id });
@@ -234,6 +233,7 @@ export default Backbone.View.extend({
             }
         } else {
             options.url = this._build_url(options.url, { hide_panels: true, hide_masthead: true });
+            options.class = "modern";
             WinBox.new(options);
         }
     },

@@ -99,9 +99,9 @@ export default {
         frames
             .on("add remove", () => {
                 const tab = this.mastheadState.frame.buttonLoad;
-                tab.note = String(frames.length());
-                tab.visible = frames.length() > 0;
-                tab.show_note = frames.length() > 0;
+                tab.note = String(frames.counter);
+                tab.visible = frames.counter > 0;
+                tab.show_note = frames.counter > 0;
             })
             .on("show hide", () => {
                 this._reflectScratchbookFrames();
@@ -128,7 +128,7 @@ export default {
             return Object.assign({}, defaults, asJson);
         },
         _reflectScratchbookFrames() {
-            const frames = this.mastheadState.frame.getFrames();
+            const frames = this.mastheadState.frame;
             const tab = this.mastheadState.frame.buttonLoad;
             tab.toggle = frames.visible;
             tab.icon = (frames.visible && "fa-eye") || "fa-eye-slash";
