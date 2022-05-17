@@ -15,7 +15,7 @@ on:
       - scripts/release.sh
       - test/release.sh
 concurrency:
-  group: test-galaxy-release-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   test:

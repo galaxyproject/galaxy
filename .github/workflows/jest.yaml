@@ -9,7 +9,7 @@ on:
       - 'client/**'
       - '.github/workflows/jest.yaml'
 concurrency:
-  group: client-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   client-unit-test:
