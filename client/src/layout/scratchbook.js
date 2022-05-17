@@ -1,6 +1,5 @@
 /** Frame manager uses the window manager to create the scratch book masthead icon and functionality **/
 import _ from "underscore";
-import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
@@ -192,7 +191,9 @@ export default Backbone.View.extend({
     _build_url: function (url, options) {
         if (url) {
             url += url.indexOf("?") == -1 ? "?" : "&";
-            url += $.param(options, true);
+            Object.entries(options).forEach(([key, value]) => {
+                url += `${key}=${value}&`;
+            });
             return url;
         }
     },
