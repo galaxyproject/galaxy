@@ -205,7 +205,7 @@
   <tool file="model_attributes.xml" />
   <tool file="python_environment_problem.xml" />
   <tool file="config_vars.xml" />
-
+  <tool file="test_with_unuploadable_dataset.xml"/>
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v01galaxy6.xml" />
   <tool file="multiple_versions_v02.xml" />

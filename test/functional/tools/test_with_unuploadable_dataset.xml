@@ -1,0 +1,17 @@
+<tool id="test_with_unuploadable_dataset" name="test with unuploadable dataset" version="1.0.0">
+    <command>
+        cat '$input' > '$output'
+    </command>
+    <inputs>
+        <param name="input" type="data" format="iqtree" />
+    </inputs>
+    <outputs>
+        <data name="output" format="iqtree" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="1.txt" ftype="iqtree" />
+            <output name="output" value="1.txt" ftype="iqtree" />
+        </test>
+    </tests>
+</tool>
