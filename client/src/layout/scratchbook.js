@@ -5,8 +5,6 @@ import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import { createTabularDatasetChunkedView, TabularDataset } from "mvc/dataset/data";
-import visualization from "viz/visualization";
-import { TracksterUI } from "viz/trackster";
 import _l from "utils/localization";
 import WinBox from "winbox/src/js/winbox.js";
 import "winbox/dist/css/winbox.min.css";
@@ -163,51 +161,6 @@ export default Backbone.View.extend({
                           content: null,
                       }
             );
-        });
-    },
-
-    /** Add a trackster visualization. */
-    addTrackster: function (viz_id) {
-        const self = this;
-        const viz = new visualization.Visualization({ id: viz_id });
-        $.when(viz.fetch()).then(() => {
-            const ui = new TracksterUI(getAppRoot());
-
-            // Construct frame config based on dataset's type.
-            const frame_config = {
-                title: viz.get("name"),
-                type: "other",
-                content: function (parent_elt) {
-                    // Create view config.
-                    const view_config = {
-                        container: parent_elt,
-                        name: viz.get("title"),
-                        id: viz.id,
-                        // FIXME: this will not work with custom builds b/c the dbkey needed to be encoded.
-                        dbkey: viz.get("dbkey"),
-                        stand_alone: false,
-                    };
-
-                    const latest_revision = viz.get("latest_revision");
-                    const drawables = latest_revision.config.view.drawables;
-
-                    // Set up datasets in drawables.
-                    _.each(drawables, (d) => {
-                        d.dataset = {
-                            hda_ldda: d.hda_ldda,
-                            id: d.dataset_id,
-                        };
-                    });
-                    ui.create_visualization(
-                        view_config,
-                        latest_revision.config.viewport,
-                        latest_revision.config.view.drawables,
-                        latest_revision.config.bookmarks,
-                        false
-                    );
-                },
-            };
-            self.add(frame_config);
         });
     },
 
