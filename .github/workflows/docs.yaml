@@ -9,7 +9,7 @@ on:
       - 'client/**'
       - 'lib/galaxy_test/selenium/**'
 concurrency:
-  group: docs-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   build:

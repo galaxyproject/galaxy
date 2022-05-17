@@ -11,7 +11,7 @@ on:
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
 concurrency:
-  group: mulled-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   test:

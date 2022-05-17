@@ -9,7 +9,7 @@ on:
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
 concurrency:
-  group: osx-first-startup-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   test:
