@@ -187,7 +187,8 @@ export var DatasetListItemView = _super.extend(
                     if (Galaxy.frame && Galaxy.frame.active) {
                         // Add dataset to frames.
                         const identifier = self.model.get("element_id") || self.model.get("id");
-                        Galaxy.frame.addDataset(identifier);
+                        const url = `datasets/${identifier}/display/?preview=True`;
+                        Galaxy.frame.add({ url });
                         ev.preventDefault();
                     }
                 };

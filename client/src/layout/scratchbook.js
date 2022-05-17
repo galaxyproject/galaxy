@@ -1,13 +1,9 @@
 /** Frame manager uses the window manager to create the scratch book masthead icon and functionality **/
 import _ from "underscore";
-import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
-import { createTabularDatasetChunkedView, TabularDataset } from "mvc/dataset/data";
 import _l from "utils/localization";
+import Backbone from "backbone";
 import WinBox from "winbox/src/js/winbox.js";
 import "winbox/dist/css/winbox.min.css";
-import { urlData } from "utils/url";
 
 export default Backbone.View.extend({
     initialize: function (options) {
@@ -59,108 +55,6 @@ export default Backbone.View.extend({
             confirmText = `You opened ${this.counter} frame(s) which will be lost.`;
         }
         return confirmText;
-    },
-
-    /** Add a dataset */
-    addDataset: function (dataset_id) {
-        const self = this;
-        let current_dataset = null;
-        const Galaxy = getGalaxyInstance();
-        if (Galaxy && Galaxy.currHistoryPanel) {
-            const history_id = Galaxy.currHistoryPanel.model.id;
-            this.history_cache[history_id] = {
-                name: Galaxy.currHistoryPanel.model.get("name"),
-                dataset_ids: [],
-            };
-            Galaxy.currHistoryPanel.collection.each((model) => {
-                if (!model.get("deleted") && model.get("visible") && model.get("history_content_type") == "dataset") {
-                    self.history_cache[history_id].dataset_ids.push(model.get("id"));
-                }
-            });
-        }
-        const _findDataset = (dataset, offset) => {
-            if (dataset) {
-                const history_details = self.history_cache[dataset.get("history_id")];
-                if (history_details && history_details.dataset_ids) {
-                    const dataset_list = history_details.dataset_ids;
-                    const pos = dataset_list.indexOf(dataset.get("id"));
-                    if (pos !== -1 && pos + offset >= 0 && pos + offset < dataset_list.length) {
-                        return dataset_list[pos + offset];
-                    }
-                }
-            }
-        };
-        const _loadOffset = (dataset, offset, frame) => {
-            const new_dataset_id = _findDataset(dataset, offset);
-            if (new_dataset_id) {
-                self._loadDataset(new_dataset_id, (new_dataset, config) => {
-                    current_dataset = new_dataset;
-                    frame.model.set(config);
-                });
-            }
-        };
-        this._loadDataset(dataset_id, (dataset, config) => {
-            current_dataset = dataset;
-            self.add(
-                _.extend(
-                    {
-                        menu: [
-                            {
-                                icon: "fa fa-chevron-circle-left",
-                                tooltip: _l("Previous in History"),
-                                onclick: function (frame) {
-                                    _loadOffset(current_dataset, -1, frame);
-                                },
-                                disabled: function () {
-                                    return !_findDataset(current_dataset, -1);
-                                },
-                            },
-                            {
-                                icon: "fa fa-chevron-circle-right",
-                                tooltip: _l("Next in History"),
-                                onclick: function (frame) {
-                                    _loadOffset(current_dataset, 1, frame);
-                                },
-                                disabled: function () {
-                                    return !_findDataset(current_dataset, 1);
-                                },
-                            },
-                        ],
-                    },
-                    config
-                )
-            );
-        });
-    },
-
-    _loadDataset: function (dataset_id, callback) {
-        const url = `api/datasets/${dataset_id}`;
-        urlData({ url }).then((dataset) => {
-            const is_tabular = _.find(
-                ["tabular", "interval"],
-                (data_type) => dataset.data_type.indexOf(data_type) !== -1
-            );
-            const history_details = this.history_cache[dataset.history_id];
-            const title = history_details ? `${history_details.name}: ${dataset.name}` : dataset.name;
-            callback(
-                dataset,
-                is_tabular
-                    ? {
-                          title: title,
-                          url: null,
-                          content: createTabularDatasetChunkedView({
-                              model: new TabularDataset(dataset.toJSON()),
-                              embedded: true,
-                              height: "100%",
-                          }).$el,
-                      }
-                    : {
-                          title: title,
-                          url: `${getAppRoot()}datasets/${dataset_id}/display/?preview=True`,
-                          content: null,
-                      }
-            );
-        });
     },
 
     /** Add and display a new frame/window based on options. */
