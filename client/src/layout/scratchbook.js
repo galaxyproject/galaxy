@@ -4,12 +4,13 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import { Dataset, createTabularDatasetChunkedView, TabularDataset } from "mvc/dataset/data";
+import { createTabularDatasetChunkedView, TabularDataset } from "mvc/dataset/data";
 import visualization from "viz/visualization";
 import { TracksterUI } from "viz/trackster";
 import _l from "utils/localization";
 import WinBox from "winbox/src/js/winbox.js";
 import "winbox/dist/css/winbox.min.css";
+import { urlData } from "utils/url";
 
 export default Backbone.View.extend({
     initialize: function (options) {
@@ -136,18 +137,14 @@ export default Backbone.View.extend({
     },
 
     _loadDataset: function (dataset_id, callback) {
-        const self = this;
-        const dataset = new Dataset({ id: dataset_id });
-        $.when(dataset.fetch()).then(() => {
+        const url = `api/datasets/${dataset_id}`;
+        urlData({ url }).then((dataset) => {
             const is_tabular = _.find(
                 ["tabular", "interval"],
-                (data_type) => dataset.get("data_type").indexOf(data_type) !== -1
+                (data_type) => dataset.data_type.indexOf(data_type) !== -1
             );
-            let title = dataset.get("name");
-            const history_details = self.history_cache[dataset.get("history_id")];
-            if (history_details) {
-                title = `${history_details.name}: ${title}`;
-            }
+            const history_details = this.history_cache[dataset.history_id];
+            const title = history_details ? `${history_details.name}: ${dataset.name}` : dataset.name;
             callback(
                 dataset,
                 is_tabular
