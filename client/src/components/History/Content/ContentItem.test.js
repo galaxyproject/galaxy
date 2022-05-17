@@ -15,6 +15,8 @@ describe("ContentItem", () => {
                     id: "item_id",
                     some_data: "some_data",
                     tags: ["tag1", "tag2", "tag3"],
+                    deleted: false,
+                    visible: true,
                 },
                 id: 1,
                 isDataset: true,
