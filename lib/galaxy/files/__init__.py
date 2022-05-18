@@ -4,7 +4,13 @@ from collections import (
     defaultdict,
     namedtuple,
 )
-from typing import Set
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Set,
+)
 
 from galaxy import exceptions
 from galaxy.util import plugin_config
@@ -158,7 +164,9 @@ class ConfiguredFileSources:
             schemes.add(file_source.get_scheme())
         return schemes
 
-    def plugins_to_dict(self, for_serialization=False, user_context=None):
+    def plugins_to_dict(
+        self, for_serialization: bool = False, user_context: Optional["FileSourceDictifiable"] = None
+    ) -> List[Dict[str, Any]]:
         rval = []
         for file_source in self._file_sources:
             if not file_source.user_has_access(user_context):
@@ -167,7 +175,9 @@ class ConfiguredFileSources:
             rval.append(el)
         return rval
 
-    def to_dict(self, for_serialization=False, user_context=None):
+    def to_dict(
+        self, for_serialization: bool = False, user_context: Optional["FileSourceDictifiable"] = None
+    ) -> Dict[str, Any]:
         return {
             "file_sources": self.plugins_to_dict(for_serialization=for_serialization, user_context=user_context),
             "config": self._file_sources_config.to_dict(),
