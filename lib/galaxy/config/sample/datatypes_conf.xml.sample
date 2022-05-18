@@ -28,8 +28,8 @@
     <datatype extension="anvio_variability" type="galaxy.datatypes.tabular:TSV" display_in_upload="false" subclass="true" />
     <datatype extension="arff" type="galaxy.datatypes.text:Arff" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="paf" auto_compressed_types="gz" type="galaxy.datatypes.text:Paf" mimetype="text/plain" display_in_upload="true"/>
-    <datatype extension="gfa1" type="galaxy.datatypes.text:Gfa1" mimetype="text/plain" display_in_upload="true"/>
-    <datatype extension="gfa2" type="galaxy.datatypes.text:Gfa2" mimetype="text/plain" display_in_upload="true"/>
+    <datatype extension="gfa1" auto_compressed_types="gz" type="galaxy.datatypes.text:Gfa1" mimetype="text/plain" display_in_upload="true"/>
+    <datatype extension="gfa2" auto_compressed_types="gz" type="galaxy.datatypes.text:Gfa2" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true" description="blastz pairwise alignment format.  Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.  Blocks are separated from one another by blank lines.  The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Axt"/>
