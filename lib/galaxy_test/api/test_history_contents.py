@@ -1135,6 +1135,21 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
             assert purged_dataset["deleted"] is True
             assert purged_dataset["purged"] is True
 
+    def test_purging_collection_should_purge_contents(self):
+        with self.dataset_populator.test_history() as history_id:
+            datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
+
+            # Purge all collections
+            payload = {"operation": "purge"}
+            query = "q=history_content_type-eq&qv=dataset_collection"
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload, query)
+            history_contents = self._get_history_contents(history_id)
+            self._assert_bulk_success(bulk_operation_result, len(collection_ids))
+            for item in history_contents:
+                assert item["deleted"] is True
+                if item["history_content_type"] == "dataset":
+                    assert item["purged"] is True
+
     def test_index_returns_expected_total_matches(self):
         with self.dataset_populator.test_history() as history_id:
             datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)

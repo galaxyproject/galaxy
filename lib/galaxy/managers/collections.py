@@ -759,7 +759,7 @@ class DatasetCollectionManager:
         return data, sources
 
     def __get_history_collection_instance(self, trans, id, check_ownership=False, check_accessible=True):
-        instance_id = int(trans.app.security.decode_id(id))
+        instance_id = trans.app.security.decode_id(id) if isinstance(id, str) else id
         collection_instance = trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(
             instance_id
         )
