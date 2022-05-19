@@ -529,7 +529,7 @@ def best_search_result(
         hits = sorted(hits, key=lambda hit: hit["build_number"], reverse=True)
         hits = sorted(hits, key=lambda hit: packaging.version.parse(hit["version"]), reverse=True)
     except commands.CommandLineException as e:
-        log.error("Could not execute: '%s'\n%s", e.command, e)
+        log.error(f"Could not execute: '{e.command}'\n{e}")
         hits = []
 
     if len(hits) == 0:

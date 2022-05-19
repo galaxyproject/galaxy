@@ -246,14 +246,14 @@ def mull_targets(
             bind_path = channel[7:]
             binds.append(f"{bind_path}:{bind_path}")
 
-    channels = ",".join(channels)
+    channels_str = ",".join(channels)
     target_str = ",".join(map(conda_build_target_str, targets))
     bind_str = ",".join(binds)
     involucro_args = [
         "-f",
         f"{DIRNAME}/invfile.lua",
         "-set",
-        f"CHANNELS={channels}",
+        f"CHANNELS={channels_str}",
         "-set",
         f"TARGETS={target_str}",
         "-set",

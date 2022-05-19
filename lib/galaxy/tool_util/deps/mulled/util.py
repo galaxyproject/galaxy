@@ -332,8 +332,11 @@ def v2_image_name(targets, image_build=None, name_override=None):
 
 def get_file_from_recipe_url(url):
     """Downloads file at url and returns tarball"""
-    r = requests.get(url, timeout=MULLED_SOCKET_TIMEOUT)
-    return tarfile.open(mode="r:bz2", fileobj=BytesIO(r.content))
+    if url.startswith("file://"):
+        return tarfile.open(mode="r:bz2", name=url[7:])
+    else:
+        r = requests.get(url, timeout=MULLED_SOCKET_TIMEOUT)
+        return tarfile.open(mode="r:bz2", fileobj=BytesIO(r.content))
 
 
 def split_container_name(name):
