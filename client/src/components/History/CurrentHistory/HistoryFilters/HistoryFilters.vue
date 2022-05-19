@@ -85,7 +85,7 @@
 </template>
 
 <script>
-import { defaultFilters, getFilters, toAlias } from "store/historyStore/model/filtering";
+import { getFilters, toAlias } from "store/historyStore/model/filtering";
 import DebouncedInput from "components/DebouncedInput";
 import { STATES } from "components/History/Content/model/states";
 import { getFilterText } from "./filterConversion";
