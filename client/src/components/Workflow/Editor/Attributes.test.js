@@ -34,16 +34,18 @@ describe("Attributes", () => {
         });
         expect(wrapper.find(`[itemprop='description']`).attributes("content")).toBe(TEST_ANNOTATION);
         expect(wrapper.find(`[itemprop='name']`).attributes("content")).toBe(TEST_NAME);
-        expect(wrapper.find(`#workflow-version-area`).attributes("value")); //TODO (low) does an `itemprop` need to be created in Attributes.vue (and why)?
+        expect(wrapper.find(`#workflow-version-area > select`).exists()).toBeTruthy(); //TODO (low) does an `itemprop` need to be created in Attributes.vue (and why)?
 
         const name = wrapper.find("#workflow-name");
         expect(name.element.value).toBe(TEST_NAME);
         await wrapper.setProps({ name: "new_workflow_name" });
         expect(name.element.value).toBe("new_workflow_name");
 
-        const versionArea = wrapper.find("#workflow-version-area").attributes("value"); //TODO (high) does `wrapper` = document.getElementById("workflow-version-area");
-        var version = versionArea.querySelector("select[class='custom-select']");        
+        const version = wrapper.findAll("#workflow-version-area > select > option");
+        console.log('version', version);
         for (const v of version) {
+            console.log('v', v); {
+            console.log('v.label', v.label);
             const versionDate = (v.label).substring(versionLabel.indexOf(":") + 1, (v.label).indexOf(",")).trim();
             expect(isDate(new Date(versionDate))).toBe(true);
         }
