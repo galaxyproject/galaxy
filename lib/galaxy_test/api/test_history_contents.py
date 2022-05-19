@@ -1150,6 +1150,15 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
                 if item["history_content_type"] == "dataset":
                     assert item["purged"] is True
 
+    def test_only_owner_can_apply_bulk_operations(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._create_test_history_contents(history_id)
+
+            with self._different_user():
+                payload = {"operation": "hide"}
+                bulk_operation_result = self._apply_bulk_operation(history_id, payload, expected_status_code=403)
+                assert bulk_operation_result["err_msg"]
+
     def test_index_returns_expected_total_matches(self):
         with self.dataset_populator.test_history() as history_id:
             datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
@@ -1261,14 +1270,16 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
                 return item
         return None
 
-    def _apply_bulk_operation(self, history_id: str, payload, query: str = ""):
+    def _apply_bulk_operation(self, history_id: str, payload, query: str = "", expected_status_code: int = 200):
         if query:
             query = f"?{query}"
-        return self._put(
+        response = self._put(
             f"histories/{history_id}/contents/bulk{query}",
             data=payload,
             json=True,
-        ).json()
+        )
+        self._assert_status_code_is(response, expected_status_code)
+        return response.json()
 
     def _assert_bulk_success(self, bulk_operation_result, expected_success_count: int):
         assert bulk_operation_result["success_count"] == expected_success_count, bulk_operation_result
