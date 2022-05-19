@@ -135,7 +135,10 @@ export default {
                 const current_wf = this.versions[i];
                 let update_time;
                 if (current_wf.update_time) {
-                    update_time = `${format(parseISO(current_wf.update_time, "yyyy-MM-dd", new Date()), "MMM do yyyy")}`;
+                    update_time = `${format(
+                        parseISO(current_wf.update_time, "yyyy-MM-dd", new Date()),
+                        "MMM do yyyy"
+                    )}`;
                 } else {
                     update_time = "";
                 }
