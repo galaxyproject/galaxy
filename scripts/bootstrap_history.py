@@ -25,23 +25,6 @@ PROJECT_API = f"https://api.github.com/repos/{PROJECT_OWNER}/{PROJECT_NAME}/"
 RELEASES_PATH = os.path.join(PROJECT_DIRECTORY, "doc", "source", "releases")
 RELEASE_DELTA_MONTHS = 4  # Number of months between releases.
 
-# Uncredit pull requestors... kind of arbitrary at this point.
-DEVTEAM = [
-    "afgane",
-    "dannon",
-    "blankenberg",
-    "davebx",
-    "jmchilton",
-    "natefoo",
-    "jgoecks",
-    "guerler",
-    "jennaj",
-    "nekrut",
-    "jxtx",
-    "mvdbeek",
-    "galaxyproject",
-]
-
 TEMPLATE = """
 .. to_doc
 
@@ -591,15 +574,12 @@ def main(argv, seen_prs=None):
         else:
             user = req["head"].user
             owner = user.login
-            if owner in DEVTEAM:
-                owner = None
             text = ".. _Pull Request {0}: {1}/pull/{0}".format(pull_request, PROJECT_URL)
             prs_content = extend_target("github_links", text, prs_content)
-            if owner:
-                to_doc += "\n(thanks to `@{} <https://github.com/{}>`__).".format(
-                    owner,
-                    owner,
-                )
+            to_doc += "\n(thanks to `@{} <https://github.com/{}>`__).".format(
+                owner,
+                owner,
+            )
             to_doc += f"\n`Pull Request {pull_request}`_"
             labels = None
             if req and "labels" in req:
