@@ -160,7 +160,7 @@ export default {
         submitOIDCLogin(idp) {
             const rootUrl = getAppRoot();
             axios
-                .post(`${rootUrl}authnz/${idp}/login`)
+                .get(`${rootUrl}authnz/${idp}/login`)
                 .then((response) => {
                     if (response.data.redirect_uri) {
                         window.location = response.data.redirect_uri;
