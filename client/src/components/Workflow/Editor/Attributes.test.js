@@ -7,7 +7,7 @@ jest.mock("app");
 
 const TEST_ANNOTATION = "my cool annotation";
 const TEST_NAME = "workflow_name";
-const TEST_VERSION = [  //TODO (high) does it make sense to pre-fill this, if this is coming from prior user actions?
+const TEST_VERSIONS = [  //TODO (high) does it make sense to pre-fill this, if this is coming from prior user actions?
     { versions: 0, update_time: "2022-01-01", steps: 10 },
     { versions: 1, update_time: "2022-01-02", steps: 20 },
 ];
