@@ -29,6 +29,7 @@ from galaxy import (
     model,
     util,
 )
+from galaxy.files.uris import validate_uri_access
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import (
     fetch_job_states,
@@ -305,9 +306,8 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             archive_file = payload.get("archive_file")
             archive_data = None
             if archive_source:
+                validate_uri_access(archive_source, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
                 if archive_source.startswith("file://"):
-                    if not trans.user_is_admin:
-                        raise exceptions.AdminRequiredException()
                     workflow_src = {"src": "from_path", "path": archive_source[len("file://") :]}
                     payload["workflow"] = workflow_src
                     return self.__api_import_new_workflow(trans, payload, **kwd)

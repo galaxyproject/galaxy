@@ -178,6 +178,7 @@ DO_NOT_TEST = [
     "disable_library_comptypes",  # broken: default overridden with empty string
     "enable_per_request_sql_debugging",  # overridden for tests
     "expose_dataset_path",  # broken: default overridden
+    "fetch_url_allowlist",  # specified in driver_util to allow history export tests to target localhost
     "ftp_upload_purge",  # broken: default overridden
     "ftp_upload_dir_template",  # dynamically sets os.path.sep
     "galaxy_data_manager_data_path",  # broken: review config/, possibly refactor

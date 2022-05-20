@@ -7,7 +7,10 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-from galaxy.exceptions import ConfigDoesNotAllowException
+from galaxy.exceptions import (
+    AdminRequiredException,
+    ConfigDoesNotAllowException,
+)
 from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
@@ -15,6 +18,17 @@ log = logging.getLogger(__name__)
 IpAddressT = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
 IpNetwrokT = Union[ipaddress.IPv4Network, ipaddress.IPv6Network]
 IpAllowedListEntryT = Union[IpAddressT, IpNetwrokT]
+
+
+def validate_uri_access(uri: str, is_admin: bool, ip_allowlist: List[IpAllowedListEntryT]) -> None:
+    """Perform uniform checks on supplied URIs.
+
+    - Prevent access to local IPs not found in ip_allowlist.
+    - Don't allow non-admins to access file:// URIs.
+    """
+    validate_non_local(uri, ip_allowlist)
+    if not is_admin and uri.lstrip().startswith("file://"):
+        raise AdminRequiredException()
 
 
 def validate_non_local(uri: str, ip_allowlist: List[IpAllowedListEntryT]) -> str:
