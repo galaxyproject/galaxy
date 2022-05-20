@@ -42,6 +42,7 @@ from galaxy.job_execution.actions.post import ActionBox
 from galaxy.managers import sharable
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model.index_filter_util import (
+    append_user_filter,
     raw_text_column_filter,
     tag_filter,
     text_column_filter,
@@ -95,6 +96,8 @@ INDEX_SEARCH_FILTERS = {
     "tag": "tag",
     "n": "name",
     "t": "tag",
+    "user": "user",
+    "u": "user",
     "is": "is",
 }
 
@@ -178,6 +181,8 @@ class WorkflowsManager(sharable.SharableModelManager):
                         query = query.filter(tf)
                     elif key == "name":
                         query = query.filter(name_filter(term))
+                    elif key == "user":
+                        query = append_user_filter(query, model.StoredWorkflow, term)
                     elif key == "is":
                         if q == "published":
                             query = query.filter(model.StoredWorkflow.published == true())
@@ -188,11 +193,14 @@ class WorkflowsManager(sharable.SharableModelManager):
                             query = query.filter(model.StoredWorkflowUserShareAssociation.user == user)
                 elif isinstance(term, RawTextTerm):
                     tf = w_tag_filter(term.text, False)
+                    alias = aliased(model.User)
+                    query = query.outerjoin(model.StoredWorkflow.user.of_type(alias))
                     query = query.filter(
                         raw_text_column_filter(
                             [
                                 model.StoredWorkflow.name,
                                 tf,
+                                alias.username,
                             ],
                             term,
                         )

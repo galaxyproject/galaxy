@@ -1455,6 +1455,7 @@ query_tags = [
         "The workflow's tag, if the tag contains a colon an approach will be made to match the key and value of the tag separately.",
         "t",
     ),
+    IndexQueryTag("user", "The stored workflow's owner's username.", "u"),
     IndexQueryTag(
         "is:published",
         "Include only published workflows in the final result. Be sure the the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.",
@@ -1468,7 +1469,7 @@ query_tags = [
 SearchQueryParam: Optional[str] = search_query_param(
     model_name="Stored Workflow",
     tags=query_tags,
-    free_text_fields=["name", "tag"],
+    free_text_fields=["name", "tag", "user"],
 )
 
 SkipStepCountsQueryParam: bool = Query(

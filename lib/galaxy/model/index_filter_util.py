@@ -8,9 +8,13 @@ from sqlalchemy import (
     and_,
     or_,
 )
-from sqlalchemy.orm import InstrumentedAttribute
+from sqlalchemy.orm import (
+    aliased,
+    InstrumentedAttribute,
+)
 from sqlalchemy.sql.expression import BinaryExpression
 
+from galaxy import model
 from galaxy.util.search import (
     FilteredTerm,
     RawTextTerm,
@@ -51,3 +55,10 @@ def tag_filter(assocation_model_class, term_text, quoted: bool = False):
             return assocation_model_class.user_tname.ilike(f"%{term_text}%")
         else:
             return assocation_model_class.user_tname == term_text
+
+
+def append_user_filter(query, model_class, term: FilteredTerm):
+    alias = aliased(model.User)
+    query = query.outerjoin(model_class.user.of_type(alias))
+    query = query.filter(text_column_filter(alias.username, term))
+    return query
