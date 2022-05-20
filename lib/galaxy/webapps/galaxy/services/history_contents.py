@@ -221,7 +221,7 @@ class HistoriesContentsService(ServiceBase):
         self.hda_deserializer = hda_deserializer
         self.hdca_serializer = hdca_serializer
         self.history_contents_filters = history_contents_filters
-        self.item_operator = HistoryItemOperator(self.hda_manager, self.hdca_manager)
+        self.item_operator = HistoryItemOperator(self.hda_manager, self.hdca_manager, self.dataset_collection_manager)
         self.short_term_storage_allocator = short_term_storage_allocator
 
     def index(
@@ -533,7 +533,7 @@ class HistoriesContentsService(ServiceBase):
                 history,
                 filters,
             )
-        errors = self._apply_bulk_operation(contents, payload.operation)
+        errors = self._apply_bulk_operation(contents, payload.operation, trans)
         trans.sa_session.flush()
         success_count = len(contents) - len(errors)
         return HistoryContentBulkOperationResult.construct(success_count=success_count, errors=errors)
@@ -1301,10 +1301,11 @@ class HistoriesContentsService(ServiceBase):
         self,
         contents: Iterable[HistoryItemModel],
         operation: HistoryContentItemOperation,
+        trans: ProvidesHistoryContext,
     ) -> List[BulkOperationItemError]:
         errors: List[BulkOperationItemError] = []
         for item in contents:
-            error = self._apply_operation_to_item(operation, item)
+            error = self._apply_operation_to_item(operation, item, trans)
             if error:
                 errors.append(error)
         return errors
@@ -1313,9 +1314,10 @@ class HistoriesContentsService(ServiceBase):
         self,
         operation: HistoryContentItemOperation,
         item: HistoryItemModel,
+        trans: ProvidesHistoryContext,
     ) -> Optional[BulkOperationItemError]:
         try:
-            self.item_operator.apply(operation, item)
+            self.item_operator.apply(operation, item, trans)
             return None
         except BaseException as exc:
             return BulkOperationItemError.construct(
@@ -1348,7 +1350,7 @@ class HistoriesContentsService(ServiceBase):
 
 
 class ItemOperation(Protocol):
-    def __call__(self, item: HistoryItemModel) -> None:
+    def __call__(self, item: HistoryItemModel, trans: ProvidesHistoryContext) -> None:
         ...
 
 
@@ -1359,20 +1361,22 @@ class HistoryItemOperator:
         self,
         hda_manager: hdas.HDAManager,
         hdca_manager: hdcas.HDCAManager,
+        dataset_collection_manager: DatasetCollectionManager,
     ):
         self.hda_manager = hda_manager
         self.hdca_manager = hdca_manager
+        self.dataset_collection_manager = dataset_collection_manager
         self.flush = False
         self._operation_map: Dict[HistoryContentItemOperation, ItemOperation] = {
-            HistoryContentItemOperation.hide: lambda item: self._hide(item),
-            HistoryContentItemOperation.unhide: lambda item: self._unhide(item),
-            HistoryContentItemOperation.delete: lambda item: self._delete(item),
-            HistoryContentItemOperation.undelete: lambda item: self._undelete(item),
-            HistoryContentItemOperation.purge: lambda item: self._purge(item),
+            HistoryContentItemOperation.hide: lambda item, trans: self._hide(item),
+            HistoryContentItemOperation.unhide: lambda item, trans: self._unhide(item),
+            HistoryContentItemOperation.delete: lambda item, trans: self._delete(item),
+            HistoryContentItemOperation.undelete: lambda item, trans: self._undelete(item),
+            HistoryContentItemOperation.purge: lambda item, trans: self._purge(item, trans),
         }
 
-    def apply(self, operation: HistoryContentItemOperation, item: HistoryItemModel):
-        self._operation_map[operation](item)
+    def apply(self, operation: HistoryContentItemOperation, item: HistoryItemModel, trans: ProvidesHistoryContext):
+        self._operation_map[operation](item, trans)
 
     def _get_item_manager(self, item: HistoryItemModel):
         if isinstance(item, HistoryDatasetAssociation):
@@ -1390,9 +1394,12 @@ class HistoryItemOperator:
         manager.delete(item, flush=self.flush)
 
     def _undelete(self, item: HistoryItemModel):
+        if getattr(item, "purged", False):
+            return
         manager = self._get_item_manager(item)
         manager.undelete(item, flush=self.flush)
 
-    def _purge(self, item: HistoryItemModel):
-        manager = self._get_item_manager(item)
-        manager.purge(item, flush=self.flush)
+    def _purge(self, item: HistoryItemModel, trans: ProvidesHistoryContext):
+        if isinstance(item, HistoryDatasetCollectionAssociation):
+            return self.dataset_collection_manager.delete(trans, "history", item.id, recursive=True, purge=True)
+        self.hda_manager.purge(item, flush=self.flush)

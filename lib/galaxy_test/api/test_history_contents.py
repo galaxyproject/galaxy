@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import (
     Any,
     List,
+    Optional,
     Tuple,
 )
 
@@ -1110,6 +1111,53 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
             bulk_operation_result = self._apply_bulk_operation(history_id, payload)
             history_contents = self._get_history_contents(history_id)
             self._assert_bulk_success(bulk_operation_result, expected_purged_count)
+            purged_dataset = self._get_dataset_with_id_from_history_contents(history_contents, datasets_ids[0])
+            assert purged_dataset["deleted"] is True
+            assert purged_dataset["purged"] is True
+            purged_collection = self._get_collection_with_id_from_history_contents(history_contents, collection_ids[0])
+            # collections don't have a `purged` attribute but they should be marked deleted on purge
+            assert purged_collection["deleted"] is True
+
+            # Un-deleting a purged dataset should not have any effect
+            payload = {
+                "operation": "undelete",
+                "items": [
+                    {
+                        "id": datasets_ids[0],
+                        "history_content_type": "dataset",
+                    },
+                ],
+            }
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            history_contents = self._get_history_contents(history_id)
+            self._assert_bulk_success(bulk_operation_result, 1)
+            purged_dataset = self._get_dataset_with_id_from_history_contents(history_contents, datasets_ids[0])
+            assert purged_dataset["deleted"] is True
+            assert purged_dataset["purged"] is True
+
+    def test_purging_collection_should_purge_contents(self):
+        with self.dataset_populator.test_history() as history_id:
+            datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
+
+            # Purge all collections
+            payload = {"operation": "purge"}
+            query = "q=history_content_type-eq&qv=dataset_collection"
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload, query)
+            history_contents = self._get_history_contents(history_id)
+            self._assert_bulk_success(bulk_operation_result, len(collection_ids))
+            for item in history_contents:
+                assert item["deleted"] is True
+                if item["history_content_type"] == "dataset":
+                    assert item["purged"] is True
+
+    def test_only_owner_can_apply_bulk_operations(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._create_test_history_contents(history_id)
+
+            with self._different_user():
+                payload = {"operation": "hide"}
+                bulk_operation_result = self._apply_bulk_operation(history_id, payload, expected_status_code=403)
+                assert bulk_operation_result["err_msg"]
 
     def test_index_returns_expected_total_matches(self):
         with self.dataset_populator.test_history() as history_id:
@@ -1208,14 +1256,30 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
     def _get_hidden_items_from_history_contents(self, history_contents) -> List[Any]:
         return [content for content in history_contents if not content["visible"]]
 
-    def _apply_bulk_operation(self, history_id: str, payload, query: str = ""):
+    def _get_collection_with_id_from_history_contents(self, history_contents, collection_id: str) -> Optional[Any]:
+        return self._get_item_with_id_from_history_contents(history_contents, "dataset_collection", collection_id)
+
+    def _get_dataset_with_id_from_history_contents(self, history_contents, dataset_id: str) -> Optional[Any]:
+        return self._get_item_with_id_from_history_contents(history_contents, "dataset", dataset_id)
+
+    def _get_item_with_id_from_history_contents(
+        self, history_contents, history_content_type: str, dataset_id: str
+    ) -> Optional[Any]:
+        for item in history_contents:
+            if item["history_content_type"] == history_content_type and item["id"] == dataset_id:
+                return item
+        return None
+
+    def _apply_bulk_operation(self, history_id: str, payload, query: str = "", expected_status_code: int = 200):
         if query:
             query = f"?{query}"
-        return self._put(
+        response = self._put(
             f"histories/{history_id}/contents/bulk{query}",
             data=payload,
             json=True,
-        ).json()
+        )
+        self._assert_status_code_is(response, expected_status_code)
+        return response.json()
 
     def _assert_bulk_success(self, bulk_operation_result, expected_success_count: int):
         assert bulk_operation_result["success_count"] == expected_success_count, bulk_operation_result
