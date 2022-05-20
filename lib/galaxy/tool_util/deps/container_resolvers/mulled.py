@@ -635,7 +635,7 @@ class MulledSingularityContainerResolver(SingularityCliContainerResolver, Mulled
             )
             # when Galaxy runs in Docker with uswgi, HOME remains set to /root, this is a workaround for that case
             homedir = os.environ.get("HOME")
-            if homedir is not None and not (os.access(homedir, os.R_OK) and os.access(homedir, os.X_OK)):
+            if homedir and not (os.access(homedir, os.R_OK) and os.access(homedir, os.X_OK)):
                 galaxy_homedir = os.environ.get("GALAXY_HOME")
                 if galaxy_homedir is not None:
                     homedir = galaxy_homedir
