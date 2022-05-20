@@ -1202,6 +1202,28 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
                 else:
                     assert expected_tag in item["tags"]
 
+    def test_bulk_dbkey_change(self):
+        with self.dataset_populator.test_history() as history_id:
+            _, _, history_contents = self._create_test_history_contents(history_id)
+
+            expected_dbkey = "apiMel3"
+            # Change dbkey of all items (only datasets will be affected)
+            payload = {
+                "operation": "change_dbkey",
+                "params": {
+                    "type": "change_dbkey",
+                    "dbkey": expected_dbkey,
+                },
+            }
+            # All items should success (even collections)
+            expected_success_count = len(history_contents)
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            self._assert_bulk_success(bulk_operation_result, expected_success_count)
+            history_contents = self._get_history_contents(history_id, query="?v=dev&keys=dbkey")
+            for item in history_contents:
+                if item["history_content_type"] == "dataset":
+                    assert item["dbkey"] == expected_dbkey
+
     def test_index_returns_expected_total_matches(self):
         with self.dataset_populator.test_history() as history_id:
             datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
@@ -1293,8 +1315,8 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
             collection_ids.append(collection_id)
         return collection_ids
 
-    def _get_history_contents(self, history_id: str):
-        return self._get(f"histories/{history_id}/contents").json()
+    def _get_history_contents(self, history_id: str, query: str = ""):
+        return self._get(f"histories/{history_id}/contents{query}").json()
 
     def _get_hidden_items_from_history_contents(self, history_contents) -> List[Any]:
         return [content for content in history_contents if not content["visible"]]
