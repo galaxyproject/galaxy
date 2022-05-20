@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 import shutil
@@ -29,6 +30,7 @@ from galaxy_test.base.populators import (
     RunJobsSummary,
     skip_without_tool,
     wait_on,
+    workflow_str,
     WorkflowPopulator,
 )
 from galaxy_test.base.workflow_fixtures import (
@@ -966,6 +968,15 @@ steps:
         assert (
             workflow.get("source_metadata").get("url") == url
         )  # disappearance of source_metadata on modification is tested in test_trs_import
+
+    def test_base64_import(self):
+        base64_url = "base64://" + base64.b64encode(workflow_str.encode("utf-8")).decode("utf-8")
+        response = self._post("workflows", data={"archive_source": base64_url})
+        print(response.content)
+        response.raise_for_status()
+        workflow_id = response.json()["id"]
+        workflow = self._download_workflow(workflow_id)
+        assert "TestWorkflow1" in workflow["name"]
 
     def test_trs_import(self):
         trs_payload = {
