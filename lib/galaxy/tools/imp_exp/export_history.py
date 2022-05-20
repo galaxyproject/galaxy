@@ -12,6 +12,7 @@ import os
 import shutil
 import sys
 
+from galaxy.files import ConfiguredFileSources
 from galaxy.model.store import tar_export_directory
 from galaxy.util import unicodify
 
@@ -62,7 +63,7 @@ def main(argv=None):
     return exit
 
 
-def _write_to_destination(file_sources_path, out_file, destination_uri):
+def _write_to_destination(file_sources_path: str, out_file: str, destination_uri: str):
     file_sources = get_file_sources(file_sources_path)
     file_source_path = file_sources.get_file_source_path(destination_uri)
     file_source = file_source_path.file_source
@@ -70,10 +71,8 @@ def _write_to_destination(file_sources_path, out_file, destination_uri):
     file_source.write_from(file_source_path.path, out_file)
 
 
-def get_file_sources(file_sources_path):
+def get_file_sources(file_sources_path: str) -> ConfiguredFileSources:
     assert os.path.exists(file_sources_path), f"file sources path [{file_sources_path}] does not exist"
-    from galaxy.files import ConfiguredFileSources
-
     with open(file_sources_path) as f:
         file_sources_as_dict = json.load(f)
     file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)

@@ -124,6 +124,8 @@ def replace_metadata_file(metadata: Dict[str, Any], dataset_instance: model.Data
 
 
 class ModelImportStore(metaclass=abc.ABCMeta):
+    app: Optional[StoreAppProtocol]
+
     def __init__(
         self,
         import_options=None,
@@ -1733,14 +1735,14 @@ class BagArchiveModelExportStore(BagDirectoryModelExportStore):
         shutil.rmtree(self.export_directory)
 
 
-def tar_export_directory(export_directory, out_file, gzip):
+def tar_export_directory(export_directory: str, out_file: str, gzip: bool) -> None:
     tarfile_mode = "w"
     if gzip:
         tarfile_mode += ":gz"
 
-    with tarfile.open(out_file, tarfile_mode, dereference=True) as history_archive:
+    with tarfile.open(out_file, tarfile_mode, dereference=True) as store_archive:
         for export_path in os.listdir(export_directory):
-            history_archive.add(os.path.join(export_directory, export_path), arcname=export_path)
+            store_archive.add(os.path.join(export_directory, export_path), arcname=export_path)
 
 
 def get_export_dataset_filename(name, ext, hid):
