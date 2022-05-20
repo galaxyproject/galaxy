@@ -1,9 +1,13 @@
 import ipaddress
 import logging
+import os
 import socket
 import tempfile
+import urllib.request
 from typing import (
     List,
+    Optional,
+    TYPE_CHECKING,
     Union,
 )
 from urllib.parse import urlparse
@@ -13,12 +17,43 @@ from galaxy.exceptions import (
     ConfigDoesNotAllowException,
 )
 from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    get_charset_from_http_headers,
     stream_to_open_named_file,
     unicodify,
 )
 
+if TYPE_CHECKING:
+    from galaxy.files import ConfiguredFileSources
+
 
 log = logging.getLogger(__name__)
+
+
+def stream_url_to_str(
+    path: str, file_sources: Optional["ConfiguredFileSources"] = None, prefix: str = "gx_file_stream"
+) -> str:
+    tmp_file = stream_url_to_file(path, file_sources=file_sources, prefix=prefix)
+    try:
+        with open(tmp_file, "r") as f:
+            return f.read()
+    finally:
+        os.remove(tmp_file)
+
+
+def stream_url_to_file(
+    path: str, file_sources: Optional["ConfiguredFileSources"] = None, prefix: str = "gx_file_stream"
+) -> str:
+    if file_sources and file_sources.looks_like_uri(path):
+        file_source_path = file_sources.get_file_source_path(path)
+        with tempfile.NamedTemporaryFile(prefix=prefix, delete=False) as temp:
+            temp_name = temp.name
+        file_source_path.file_source.realize_to(file_source_path.path, temp_name)
+        return temp_name
+    else:
+        page = urllib.request.urlopen(path, timeout=DEFAULT_SOCKET_TIMEOUT)  # page will be .close()ed in stream_to_file
+        temp_name = stream_to_file(page, prefix=prefix, source_encoding=get_charset_from_http_headers(page.headers))
+        return temp_name
 
 
 def stream_to_file(stream, suffix="", prefix="", dir=None, text=False, **kwd):

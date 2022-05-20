@@ -13,16 +13,16 @@ import os
 import tarfile
 from base64 import b64decode
 
-from galaxy.datatypes import sniff
+from galaxy.files import ConfiguredFileSources
+from galaxy.files.uris import stream_url_to_file
 
 # Set max size of archive/file that will be handled to be 100 GB. This is
 # arbitrary and should be adjusted as needed.
 MAX_SIZE = 100 * math.pow(2, 30)
 
 
-def get_file_sources(file_sources_path):
+def get_file_sources(file_sources_path) -> ConfiguredFileSources:
     assert os.path.exists(file_sources_path), f"file sources path [{file_sources_path}] does not exist"
-    from galaxy.files import ConfiguredFileSources
 
     with open(file_sources_path) as f:
         file_sources_as_dict = json.load(f)
@@ -63,7 +63,9 @@ def main(options, args):
 
     # Get archive from URL.
     if is_url:
-        archive_file = sniff.stream_url_to_file(archive_source, file_sources=get_file_sources(options.file_sources))
+        archive_file = stream_url_to_file(
+            archive_source, file_sources=get_file_sources(options.file_sources), prefix="gx_history_archive"
+        )
     elif is_file:
         archive_file = archive_source
 

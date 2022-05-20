@@ -21,7 +21,10 @@ from galaxy.datatypes.upload_util import (
     handle_upload,
     UploadProblemException,
 )
-from galaxy.files.uris import stream_to_file
+from galaxy.files.uris import (
+    stream_to_file,
+    stream_url_to_file,
+)
 from galaxy.util import (
     in_directory,
     safe_makedirs,
@@ -423,7 +426,7 @@ def _has_src_to_path(upload_config, item, is_dataset=False) -> Tuple[str, str]:
     if src == "url":
         url = item.get("url")
         try:
-            path = sniff.stream_url_to_file(url, file_sources=get_file_sources(upload_config.working_directory))
+            path = stream_url_to_file(url, file_sources=get_file_sources(upload_config.working_directory))
         except Exception as e:
             raise Exception(f"Failed to fetch url {url}. {str(e)}")
 

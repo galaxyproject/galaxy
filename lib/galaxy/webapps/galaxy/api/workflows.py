@@ -13,7 +13,6 @@ from typing import (
     Optional,
 )
 
-import requests
 from fastapi import (
     Body,
     Path,
@@ -29,7 +28,10 @@ from galaxy import (
     model,
     util,
 )
-from galaxy.files.uris import validate_uri_access
+from galaxy.files.uris import (
+    stream_url_to_str,
+    validate_uri_access,
+)
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import (
     fetch_job_states,
@@ -319,7 +321,9 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                     archive_data = self.app.trs_proxy.get_version_descriptor(trs_server, trs_tool_id, trs_version_id)
                 else:
                     try:
-                        archive_data = requests.get(archive_source, timeout=util.DEFAULT_SOCKET_TIMEOUT).text
+                        archive_data = stream_url_to_str(
+                            archive_source, trans.app.file_sources, prefix="gx_workflow_download"
+                        )
                         import_source = "URL"
                     except Exception:
                         raise exceptions.MessageException(f"Failed to open URL '{escape(archive_source)}'.")
