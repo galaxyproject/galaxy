@@ -56,10 +56,10 @@
 export default {
     props: {
         isDataset: { type: Boolean, required: true },
-        isDeleted: { type: Boolean, required: true },
+        isDeleted: { type: Boolean, default: false },
         isHistoryItem: { type: Boolean, required: true },
         isPurged: { type: Boolean, default: false },
-        isVisible: { type: Boolean, required: true },
+        isVisible: { type: Boolean, default: true },
         state: { type: String, default: "" },
     },
     computed: {
