@@ -1163,6 +1163,45 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
                 bulk_operation_result = self._apply_bulk_operation(history_id, payload, expected_status_code=403)
                 assert bulk_operation_result["err_msg"]
 
+    def test_bulk_tag_changes(self):
+        with self.dataset_populator.test_history() as history_id:
+            _, collection_ids, history_contents = self._create_test_history_contents(history_id)
+
+            expected_tag = "cool_tag"
+            # Add same tag to all items
+            payload = {
+                "operation": "add_tag",
+                "params": {
+                    "type": "add_tag",
+                    "tag_name": expected_tag,
+                },
+            }
+            expected_success_count = len(history_contents)
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            self._assert_bulk_success(bulk_operation_result, expected_success_count)
+            history_contents = self._get_history_contents(history_id)
+            for item in history_contents:
+                assert expected_tag in item["tags"]
+
+            # Remove tag from all collections
+            payload = {
+                "operation": "remove_tag",
+                "params": {
+                    "type": "remove_tag",
+                    "tag_name": expected_tag,
+                },
+            }
+            query = "q=history_content_type-eq&qv=dataset_collection"
+            expected_success_count = len(collection_ids)
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload, query)
+            self._assert_bulk_success(bulk_operation_result, expected_success_count)
+            history_contents = self._get_history_contents(history_id)
+            for item in history_contents:
+                if item["history_content_type"] == "dataset_collection":
+                    assert not item["tags"]
+                else:
+                    assert expected_tag in item["tags"]
+
     def test_index_returns_expected_total_matches(self):
         with self.dataset_populator.test_history() as history_id:
             datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
