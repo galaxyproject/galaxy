@@ -151,7 +151,6 @@ class HttpDataResolver(CachedFileDataResolver):
                 h = hashlib.new(self.hash_type)
                 h.update(tmp_fh.read())
                 if self.hash_value != h.hexdigest():
-                    log.error(f"Hash does not match {self.hash_value} != {h.digest}")
                     return
                 # extract
                 tmp_fh.seek(0)
