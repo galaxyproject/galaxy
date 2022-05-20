@@ -637,11 +637,11 @@ class MulledSingularityContainerResolver(SingularityCliContainerResolver, Mulled
             homedir = os.environ.get("HOME")
             if homedir and not (os.access(homedir, os.R_OK) and os.access(homedir, os.X_OK)):
                 galaxy_homedir = os.environ.get("GALAXY_HOME")
-                if galaxy_homedir is not None:
+                if galaxy_homedir:
                     homedir = galaxy_homedir
                 else:
                     homedir = "/tmp"
-            shell(cmds=cmds)
+            shell(cmds=cmds, env={'HOME': homedir})
             self.cache_directory.invalidate_cache()
 
     def __str__(self):
