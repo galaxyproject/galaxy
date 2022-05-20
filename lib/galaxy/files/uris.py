@@ -1,6 +1,7 @@
 import ipaddress
 import logging
 import socket
+import tempfile
 from typing import (
     List,
     Union,
@@ -11,9 +12,20 @@ from galaxy.exceptions import (
     AdminRequiredException,
     ConfigDoesNotAllowException,
 )
-from galaxy.util import unicodify
+from galaxy.util import (
+    stream_to_open_named_file,
+    unicodify,
+)
+
 
 log = logging.getLogger(__name__)
+
+
+def stream_to_file(stream, suffix="", prefix="", dir=None, text=False, **kwd):
+    """Writes a stream to a temporary file, returns the temporary file's name"""
+    fd, temp_name = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=dir, text=text)
+    return stream_to_open_named_file(stream, fd, temp_name, **kwd)
+
 
 IpAddressT = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
 IpNetwrokT = Union[ipaddress.IPv4Network, ipaddress.IPv6Network]

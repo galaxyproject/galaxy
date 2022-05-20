@@ -26,6 +26,7 @@ from typing_extensions import Protocol
 
 from galaxy import util
 from galaxy.files import ConfiguredFileSources
+from galaxy.files.uris import stream_to_file
 from galaxy.util import (
     compression_utils,
     file_reader,
@@ -79,12 +80,6 @@ def stream_url_to_file(path: str, file_sources: Optional[ConfiguredFileSources] 
             page, prefix=prefix, source_encoding=util.get_charset_from_http_headers(page.headers)
         )
         return temp_name
-
-
-def stream_to_file(stream, suffix="", prefix="", dir=None, text=False, **kwd):
-    """Writes a stream to a temporary file, returns the temporary file's name"""
-    fd, temp_name = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=dir, text=text)
-    return stream_to_open_named_file(stream, fd, temp_name, **kwd)
 
 
 def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts):

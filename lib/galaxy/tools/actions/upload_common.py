@@ -17,9 +17,8 @@ from sqlalchemy.orm import joinedload
 from webob.compat import cgi_FieldStorage
 
 from galaxy import util
-from galaxy.datatypes.sniff import stream_to_file
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.files.uris import validate_non_local
+from galaxy.files.uris import stream_to_file, validate_non_local
 from galaxy.model import (
     FormDefinition,
     LibraryDataset,
