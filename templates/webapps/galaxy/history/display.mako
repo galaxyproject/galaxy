@@ -20,9 +20,9 @@
     switch_url = h.url_for( controller='history', action='switch_to_history', hist_id=encoded_history_id )
 %>
     %if not user_is_owner:
-        <a href="javascript:void(0)" class="history-copy-link btn btn-secondary fa fa-plus float-right" title="Import history"></a>
+        <a href="javascript:void(0)" class="history-copy-link btn btn-secondary float-right" title="Import this history">Import</a>
     %else:
-        <a href="${switch_url}" class="btn btn-secondary fa fa-plus float-right" title="${_('Switch to this history')}"></a>
+        <a href="${switch_url}" class="btn btn-secondary fa fa-exchange float-right" title="${_('Switch to this history')}"></a>
     %endif
 </%def>
 
