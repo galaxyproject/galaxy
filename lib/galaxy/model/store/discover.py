@@ -94,7 +94,6 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         storage_callbacks=None,
         purged=False,
     ):
-        # log.error(f"create_dataset default_format {default_format}")
         tag_list = tag_list or []
         sources = sources or []
         hashes = hashes or []

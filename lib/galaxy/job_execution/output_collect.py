@@ -110,9 +110,6 @@ class MetadataSourceProvider(AbstractMetadataSourceProvider):
             self._inp_collections = []
 
     def get_metadata_source(self, input_name):
-        # log.error(f"MetadataSourceProvider.get_metadata_source self._inp_data {self._inp_data}")
-        # log.error(f"MetadataSourceProvider.get_metadata_source self._inp_collections {self._inp_collections}")
-        # log.error(f"MetadataSourceProvider.get_metadata_source input_name {input_name}")
         if input_name in self._inp_data:
             return self._inp_data[input_name]
         elif input_name in self._inp_collections:
@@ -131,8 +128,6 @@ class MetadataSourceProvider(AbstractMetadataSourceProvider):
 
 
 def evaluate_source(source, output_collection_def, metadata_source_provider):
-    # log.error(f"evaluate_format_source output_collection_def {output_collection_def}")
-    # log.error(f"evaluate_format_source metadata_source_provider {metadata_source_provider}")
 
     source_name = getattr(output_collection_def, source)
     if source_name is None:
@@ -140,42 +135,14 @@ def evaluate_source(source, output_collection_def, metadata_source_provider):
     source = metadata_source_provider.get_metadata_source(source_name)
     return source.ext
 
-    # ext = None
-    # if format_source is not None and format_source in input_datasets:
-    #     try:
-    #         input_dataset = input_datasets[output.format_source]
-    #         input_extension = input_dataset.ext
-    #         ext = input_extension
-    #     except Exception:
-    #         pass
-    # elif format_source is not None:
-    #     if re.match(r"^[^\[\]]*\[[^\[\]]*\]$", format_source):
-    #         collection_name, element_index = format_source[0:-1].split("[")
-    #         # Treat as json to interpret "forward" vs 0 with type
-    #         # Make it feel more like Python, single quote better in XML also.
-    #         element_index = element_index.replace("'", '"')
-    #         element_index = json.loads(element_index)
-
-    #         if collection_name in input_dataset_collections:
-    #             try:
-    #                 input_collection = input_dataset_collections[collection_name][0][0]
-    #                 input_dataset = input_collection.collection[element_index].element_object
-    #                 input_extension = input_dataset.ext
-    #                 ext = input_extension
-    #             except Exception as e:
-    #                 log.debug("Exception while trying to determine format_source: %s", e)
-    # return None
-
 
 def collect_dynamic_outputs(
     job_context,
     output_collections,
 ):
-    # log.error("collect_dynamic_outputs")
     # unmapped outputs do not correspond to explicit outputs of the tool, they were inferred entirely
     # from the tool provided metadata (e.g. galaxy.json).
     for unnamed_output_dict in job_context.tool_provided_metadata.get_unnamed_outputs():
-        log.error(f"collect_dynamic_outputs unnamed_output_dict {unnamed_output_dict}")
         assert "destination" in unnamed_output_dict
         assert "elements" in unnamed_output_dict
         destination = unnamed_output_dict["destination"]
@@ -216,8 +183,6 @@ def collect_dynamic_outputs(
             persist_hdas(elements, job_context, final_job_state=job_context.final_job_state)
 
     for name, has_collection in output_collections.items():
-        # log.error(f"collect_dynamic_outputs name {name}")
-        # log.error(f"collect_dynamic_outputs has_collection {has_collection}")
         output_collection_def = job_context.output_collection_def(name)
         log.error(f"collect_dynamic_outputs output_collection_def {output_collection_def}")
         if not output_collection_def:
@@ -227,7 +192,6 @@ def collect_dynamic_outputs(
             continue
 
         default_ext = evaluate_source("format_source", output_collection_def, job_context.metadata_source_provider)
-        # log.error(f"collect_dynamic_outputs default_ext {default_ext}")
 
         # Could be HDCA for normal jobs or a DC for mapping
         # jobs.
