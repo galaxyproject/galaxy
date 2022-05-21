@@ -1,1 +1,1 @@
-lib/galaxy/datatypes/converters/gff_to_bed_converter.py
+../../lib/galaxy/datatypes/converters/gff_to_bed_converter.py
