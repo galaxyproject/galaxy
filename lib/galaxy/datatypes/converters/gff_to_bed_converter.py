@@ -4,7 +4,7 @@ import argparse
 
 
 def get_bed12_line(chrom, name, strand, blocks):
-    """ Returns a BED12 line for given data. """
+    """Returns a BED12 line for given data."""
 
     # Build lists for transcript blocks' starts, sizes.
     block_starts, block_ends = zip(*blocks)
@@ -32,15 +32,15 @@ def get_bed12_line(chrom, name, strand, blocks):
         t_end,
         len(block_starts),
         ",".join(block_sizes),
-        ",".join(block_starts)
+        ",".join(block_starts),
     )
 
 
 def __main__():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--bedcols', type=int, choices=[6, 12], help="Type of BED to produce, either bed6 or bed12")
-    parser.add_argument('input', type=str)
-    parser.add_argument('output', type=str)
+    parser.add_argument("--bedcols", type=int, choices=[6, 12], help="Type of BED to produce, either bed6 or bed12")
+    parser.add_argument("input", type=str)
+    parser.add_argument("output", type=str)
     args = parser.parse_args()
     input_name = args.input
     output_name = args.output
@@ -51,6 +51,7 @@ def __main__():
     i = 0
     if bedcols == 12:
         from galaxy.datatypes.util.gff_util import parse_gff_attributes
+
         cur_transcript_chrome = None
         cur_transcript_id = None
         cur_transcript_strand = None
@@ -85,7 +86,14 @@ def __main__():
                         # Write previous transcript.
                         if cur_transcript_id:
                             # Write BED entry.
-                            out.write(get_bed12_line(cur_transcript_chrome, cur_transcript_id, cur_transcript_strand, cur_transcripts_blocks))
+                            out.write(
+                                get_bed12_line(
+                                    cur_transcript_chrome,
+                                    cur_transcript_id,
+                                    cur_transcript_strand,
+                                    cur_transcripts_blocks,
+                                )
+                            )
 
                         out.write(get_bed12_line(elems[0], name, strand, [coords]))
                         continue
@@ -104,7 +112,11 @@ def __main__():
                     # Write previous transcript.
                     if cur_transcript_id:
                         # Write BED entry.
-                        out.write(get_bed12_line(cur_transcript_chrome, cur_transcript_id, cur_transcript_strand, cur_transcripts_blocks))
+                        out.write(
+                            get_bed12_line(
+                                cur_transcript_chrome, cur_transcript_id, cur_transcript_strand, cur_transcripts_blocks
+                            )
+                        )
 
                     # Start new transcript.
                     cur_transcript_chrome = elems[0]
@@ -124,7 +136,9 @@ def __main__():
         # Write last transcript.
         if bedcols == 12 and cur_transcript_id:
             # Write BED entry.
-            out.write(get_bed12_line(cur_transcript_chrome, cur_transcript_id, cur_transcript_strand, cur_transcripts_blocks))
+            out.write(
+                get_bed12_line(cur_transcript_chrome, cur_transcript_id, cur_transcript_strand, cur_transcripts_blocks)
+            )
     info_msg = "%i lines converted to BED.  " % (i + 1 - skipped_lines)
     if skipped_lines > 0:
         info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (
