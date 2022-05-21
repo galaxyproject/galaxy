@@ -39,7 +39,7 @@ var View = Backbone.View.extend({
         // set new value
         if (val !== undefined) {
             this.selections.empty();
-            if ($.isArray(val)) {
+            if (Array.isArray(val)) {
                 for (var i in val) {
                     var v = val[i];
                     var v_id = null;

@@ -5,22 +5,17 @@ import logging
 
 from galaxy.managers.base import get_object
 from galaxy.managers.pages import PageManager
-from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import (
-    BaseAPIController,
-    SharableItemSecurityMixin,
-    SharableMixin
+from . import (
+    BaseGalaxyAPIController,
+    depends,
 )
 
 log = logging.getLogger(__name__)
 
 
-class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotations, SharableMixin):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.manager = PageManager(app)
+class PageRevisionsController(BaseGalaxyAPIController):
+    manager: PageManager = depends(PageManager)
 
     @expose_api
     def index(self, trans, page_id, **kwd):
@@ -34,7 +29,7 @@ class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin, Uses
         :rtype:     list
         :returns:   dictionaries containing different revisions of the page
         """
-        page = get_object(trans, page_id, 'Page', check_ownership=False, check_accessible=True)
+        page = get_object(trans, page_id, "Page", check_ownership=False, check_accessible=True)
         r = trans.sa_session.query(trans.app.model.PageRevision).filter_by(page_id=page.id)
         out = []
         for page in r:
@@ -57,7 +52,7 @@ class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin, Uses
         :rtype:     dictionary
         :returns:   Dictionary with 'success' or 'error' element to indicate the result of the request
         """
-        page = get_object(trans, page_id, 'Page', check_ownership=True)
+        page = get_object(trans, page_id, "Page", check_ownership=True)
         page_revision = self.manager.save_new_revision(trans, page, payload)
         rval = self.encode_all_ids(trans, page_revision.to_dict(view="element"), True)
         self.manager.rewrite_content_for_export(trans, rval)

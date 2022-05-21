@@ -6,45 +6,40 @@
                     ><b>View Report {{ indexStr }}</b></a
                 >
                 <a
+                    v-b-tooltip
                     class="fa fa-print ml-1 invocation-pdf-link"
                     :href="invocationPdfLink"
-                    v-b-tooltip
-                    title="Download PDF"
-                />
+                    title="Download PDF" />
             </span>
         </div>
         <div v-else>
             <span class="fa fa-spinner fa-spin" />
             <span>Invocation {{ indexStr }}...</span>
             <span
-                class="fa fa-times cancel-workflow-scheduling"
                 v-if="!invocationSchedulingTerminal"
                 v-b-tooltip.hover
+                class="fa fa-times cancel-workflow-scheduling"
                 title="Cancel scheduling of workflow invocation"
-                @click="cancelWorkflowScheduling"
-            ></span>
+                @click="cancelWorkflowScheduling"></span>
         </div>
         <progress-bar v-if="!stepCount" note="Loading step state summary..." :loading="true" class="steps-progress" />
         <progress-bar
             v-else-if="invocationState == 'cancelled'"
             note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
             :error-count="1"
-            class="steps-progress"
-        />
+            class="steps-progress" />
         <progress-bar
             v-else-if="invocationState == 'failed'"
             note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
             :error-count="1"
-            class="steps-progress"
-        />
+            class="steps-progress" />
         <progress-bar
             v-else
             :note="stepStatesStr"
             :total="stepCount"
             :ok-count="stepStates.scheduled"
             :loading="!invocationSchedulingTerminal"
-            class="steps-progress"
-        />
+            class="steps-progress" />
         <progress-bar
             :note="jobStatesStr"
             :total="jobCount"
@@ -53,16 +48,14 @@
             :new-count="newCount"
             :error-count="errorCount"
             :loading="!invocationAndJobTerminal"
-            class="jobs-progress"
-        />
+            class="jobs-progress" />
         <span v-if="invocationAndJobTerminal">
             <a class="bco-json" :href="bcoJSON"><b>Download BioCompute Object</b></a>
         </span>
         <workflow-invocation-details
             v-if="invocation"
             :invocation="invocation"
-            :invocationAndJobTerminal="invocationAndJobTerminal"
-        />
+            :invocation-and-job-terminal="invocationAndJobTerminal" />
     </div>
 </template>
 <script>
@@ -100,10 +93,6 @@ export default {
             jobStatesInterval: null,
         };
     },
-    created: function () {
-        this.pollStepStatesUntilTerminal();
-        this.pollJobStatesUntilTerminal();
-    },
     computed: {
         ...mapGetters(["getInvocationById", "getInvocationJobsSummaryById"]),
         indexStr() {
@@ -140,7 +129,7 @@ export default {
             return stepStates;
         },
         invocationAndJobTerminal: function () {
-            return this.invocationSchedulingTerminal && this.jobStatesTerminal;
+            return !!(this.invocationSchedulingTerminal && this.jobStatesTerminal);
         },
         invocationLink: function () {
             return getUrl(`workflows/invocations/report?id=${this.invocationId}`);
@@ -180,6 +169,14 @@ export default {
             return !jobsSummary ? null : new JOB_STATES_MODEL.JobStatesSummary(jobsSummary);
         },
     },
+    created: function () {
+        this.pollStepStatesUntilTerminal();
+        this.pollJobStatesUntilTerminal();
+    },
+    beforeDestroy: function () {
+        clearTimeout(this.jobStatesInterval);
+        clearTimeout(this.stepStatesInterval);
+    },
     methods: {
         ...mapActions(["fetchInvocationForId", "fetchInvocationJobsSummaryForId"]),
         pollStepStatesUntilTerminal: function () {
@@ -205,10 +202,6 @@ export default {
         cancelWorkflowScheduling: function () {
             cancelWorkflowScheduling(this.invocationId).then(this.onCancel).catch(this.onError);
         },
-    },
-    beforeDestroy: function () {
-        clearTimeout(this.jobStatesInterval);
-        clearTimeout(this.stepStatesInterval);
     },
 };
 </script>

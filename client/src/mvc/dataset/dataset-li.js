@@ -135,6 +135,7 @@ export var DatasetListItemView = _super.extend(
             _super.prototype._swapNewRender.call(this, $newRender);
             if (this.model.has("state")) {
                 this.$el.addClass(`state-${this.model.get("state")}`);
+                this.$el.attr("data-state", this.model.get("state"));
             }
             return this.$el;
         },
@@ -271,22 +272,25 @@ export var DatasetListItemView = _super.extend(
          *  @returns {jQuery} rendered DOM
          */
         _renderShowParamsButton: function () {
-            // gen. safe to show in all cases
             return faIconButton({
                 title: _l("View details"),
                 classes: "params-btn",
                 href: this.model.urls.show_params,
                 target: this.linkTarget,
                 faIcon: "fa-info-circle",
-                onclick: function (ev) {
+                onclick: (ev) => {
                     const Galaxy = getGalaxyInstance();
+                    const showDetailsUrl = `/datasets/${this.model.get("element_id") || this.model.get("id")}/details`;
                     if (Galaxy.frame && Galaxy.frame.active) {
-                        Galaxy.frame.add({
-                            title: _l("Dataset details"),
-                            url: this.href,
-                        });
                         ev.preventDefault();
-                        ev.stopPropagation();
+                        Galaxy.frame.add({
+                            url: showDetailsUrl,
+                            title: `Dataset Details of ${this.model.get("name")}`,
+                        });
+                    } else if (Galaxy.router) {
+                        ev.preventDefault();
+                        Galaxy.router.push(showDetailsUrl);
+                        Galaxy.trigger("activate-hda", this.model.get("element_id") || this.model.get("id"));
                     }
                 },
             });
@@ -317,11 +321,11 @@ export var DatasetListItemView = _super.extend(
                     style: style,
                     title: title,
                     onclick: function () {
-                        if (!isUnsharable)
+                        if (!isUnsharable) {
                             navigator.clipboard.writeText(`${window.location.origin}${urls.download}`).then(() => {
                                 Toast.info("Link is copied to your clipboard");
                             });
-                        else {
+                        } else {
                             Toast.warning("Dataset is not sharable");
                         }
                     },
@@ -332,7 +336,9 @@ export var DatasetListItemView = _super.extend(
          *  @returns {jQuery} rendered DOM
          */
         _renderDownloadButton: function () {
-            if (this.isPurged()) return null;
+            if (this.isPurged()) {
+                return null;
+            }
 
             // return either: a popupmenu with links to download assoc. meta files (if there are meta files)
             //  or a single download icon-button (if there are no meta files)
@@ -573,7 +579,7 @@ DatasetListItemView.prototype.templates = (() => {
         resubmitted: BASE_MVC.wrapTemplate([
             // deleted not purged
             "<% if( model.resubmitted ){ %>",
-            '<div class="resubmitted-msg infomessagesmall">',
+            '<div class="resubmitted-msg alert alert-info">',
             _l("The job creating this dataset has been resubmitted"),
             "</div>",
             "<% } %>",

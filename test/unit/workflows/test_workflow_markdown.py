@@ -1,7 +1,11 @@
 from galaxy import model
-from galaxy.managers.markdown_util import resolve_invocation_markdown, validate_galaxy_markdown
+from galaxy.managers.markdown_parse import validate_galaxy_markdown
+from galaxy.managers.markdown_util import resolve_invocation_markdown
 from .test_workflow_progress import TEST_WORKFLOW_YAML
-from .workflow_support import MockTrans, yaml_to_model
+from .workflow_support import (
+    MockTrans,
+    yaml_to_model,
+)
 
 
 def test_workflow_section_expansion():
@@ -53,6 +57,18 @@ history_dataset_peek(input=input1)
     assert "```galaxy\nhistory_dataset_peek(history_dataset_id=567)\n```" in galaxy_markdown
 
 
+def test_invocation_time():
+    workflow_markdown = """
+And outputs...
+
+```galaxy
+invocation_time()
+```
+"""
+    galaxy_markdown = resolved_markdown(workflow_markdown)
+    assert "```galaxy\ninvocation_time(invocation_id=44)\n```" in galaxy_markdown
+
+
 def test_output_reference_mapping():
     workflow_markdown = """
 And outputs...
@@ -78,6 +94,7 @@ def example_invocation(trans):
     invocation = model.WorkflowInvocation()
     workflow = yaml_to_model(TEST_WORKFLOW_YAML)
     workflow.id = 342
+    invocation.id = 44
     invocation.workflow = workflow
 
     # TODO: fix this to use workflow id and eliminate hack.

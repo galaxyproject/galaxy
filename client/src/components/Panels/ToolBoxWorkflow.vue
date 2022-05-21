@@ -1,52 +1,63 @@
 <template>
     <div class="unified-panel">
-        <div class="unified-panel-header" unselectable="on">
+        <div unselectable="on">
             <div class="unified-panel-header-inner">
-                <div class="panel-header-text">Tools</div>
+                <nav class="d-flex justify-content-between mx-3 my-2">
+                    <h4 v-localize class="m-1">Tools</h4>
+                    <div class="panel-header-buttons">
+                        <panel-view-button
+                            v-if="panelViews && Object.keys(panelViews).length > 1"
+                            :panel-views="panelViews"
+                            :current-panel-view="currentPanelView"
+                            @updatePanelView="updatePanelView" />
+                    </div>
+                </nav>
             </div>
         </div>
         <div class="unified-panel-controls">
-            <tool-search placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
+            <tool-search
+                :current-panel-view="currentPanelView"
+                placeholder="search tools"
+                :query="query"
+                @onQuery="onQuery"
+                @onResults="onResults" />
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
                 <tool-section
                     v-for="category in moduleSections"
+                    :key="category.name"
                     :hide-name="true"
                     :category="category"
                     tool-key="name"
                     :section-name="category.name"
                     :query-filter="query"
                     :disable-filter="true"
-                    :key="category.name"
-                    @onClick="onInsertModule"
-                />
+                    @onClick="onInsertModule" />
                 <tool-section
                     v-if="hasDataManagerSection"
-                    :category="dataManagerSection"
                     :key="dataManagerSection.id"
+                    :category="dataManagerSection"
                     :query-filter="query"
                     :disable-filter="true"
-                    @onClick="onInsertTool"
-                />
+                    @onClick="onInsertTool" />
                 <tool-section
                     v-for="section in sections"
+                    :key="section.id"
                     :category="section"
                     :query-filter="query"
-                    :key="section.id"
-                    @onClick="onInsertTool"
-                />
+                    @onClick="onInsertTool" />
                 <tool-section
                     v-if="hasWorkflowSection"
-                    :category="workflowSection"
                     :key="workflowSection.name"
+                    :category="workflowSection"
+                    section-name="workflows"
                     operation-icon="fa fa-files-o"
                     operation-title="Insert individual steps."
                     :query-filter="query"
                     :disable-filter="true"
                     @onClick="onInsertWorkflow"
-                    @onOperation="onInsertWorkflowSteps"
-                />
+                    @onOperation="onInsertWorkflowSteps" />
             </div>
         </div>
     </div>
@@ -57,23 +68,25 @@ import _l from "utils/localization";
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import { filterToolSections } from "./utilities";
+import PanelViewButton from "./Buttons/PanelViewButton";
 
 export default {
     name: "ToolBox",
     components: {
         ToolSection,
         ToolSearch,
-    },
-    data() {
-        return {
-            query: null,
-            results: null,
-        };
+        PanelViewButton,
     },
     props: {
         toolbox: {
             type: Array,
             required: true,
+        },
+        panelViews: {
+            type: Object,
+        },
+        currentPanelView: {
+            type: String,
         },
         workflows: {
             type: Array,
@@ -87,6 +100,12 @@ export default {
             type: Array,
             required: true,
         },
+    },
+    data() {
+        return {
+            query: null,
+            results: null,
+        };
     },
     computed: {
         hasWorkflowSection() {
@@ -145,6 +164,9 @@ export default {
         },
         onInsertWorkflowSteps(workflow) {
             this.$emit("onInsertWorkflowSteps", workflow.id, workflow.step_count);
+        },
+        updatePanelView(panelView) {
+            this.$emit("updatePanelView", panelView);
         },
     },
 };

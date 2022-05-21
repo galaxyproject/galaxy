@@ -11,7 +11,6 @@ from galaxy.util import config_directories_from_setting
 from ._interface import ToursRegistry
 from ._schema import TourList
 
-
 log = logging.getLogger(__name__)
 
 
@@ -21,24 +20,23 @@ def build_tours_registry(tour_directories: str):
 
 def load_tour_steps(contents_dict):
     #  Some of this can be done on the clientside.  Maybe even should?
-    title_default = contents_dict.get('title_default')
-    for step in contents_dict['steps']:
-        if 'intro' in step:
-            step['content'] = step.pop('intro')
-        if 'position' in step:
-            step['placement'] = step.pop('position')
-        if 'element' not in step:
-            step['orphan'] = True
-        if title_default and 'title' not in step:
-            step['title'] = title_default
+    title_default = contents_dict.get("title_default")
+    for step in contents_dict["steps"]:
+        if "intro" in step:
+            step["content"] = step.pop("intro")
+        if "position" in step:
+            step["placement"] = step.pop("position")
+        if "element" not in step:
+            step["orphan"] = True
+        if title_default and "title" not in step:
+            step["title"] = title_default
 
 
 @ToursRegistry.register
 class ToursRegistryImpl:
-
     def __init__(self, tour_directories):
         self.tour_directories = config_directories_from_setting(tour_directories)
-        self._extensions = ('.yml', '.yaml')
+        self._extensions = (".yml", ".yaml")
         self._load_tours()
 
     def get_tours(self):
@@ -46,10 +44,10 @@ class ToursRegistryImpl:
         tours = []
         for k in self.tours.keys():
             tourdata = {
-                'id': k,
-                'name': self.tours[k].get('name'),
-                'description': self.tours[k].get('description'),
-                'tags': self.tours[k].get('tags')
+                "id": k,
+                "name": self.tours[k].get("name"),
+                "description": self.tours[k].get("description"),
+                "tags": self.tours[k].get("tags"),
             }
             tours.append(tourdata)
         return parse_obj_as(TourList, tours)
@@ -93,15 +91,18 @@ class ToursRegistryImpl:
                 tour = yaml.safe_load(f)
                 load_tour_steps(tour)
                 self.tours[tour_id] = tour
-                log.info("Loaded tour '%s'" % tour_id)
+                log.info(f"Loaded tour '{tour_id}'")
         except OSError:
-            log.exception("Tour '%s' could not be loaded, error reading file." % tour_id)
+            log.exception(f"Tour '{tour_id}' could not be loaded, error reading file.")
         except yaml.error.YAMLError:
-            log.exception("Tour '%s' could not be loaded, error within file."
-                " Please check your yaml syntax." % tour_id)
+            log.exception(
+                "Tour '%s' could not be loaded, error within file." " Please check your yaml syntax." % tour_id
+            )
         except TypeError:
-            log.exception("Tour '%s' could not be loaded, error within file."
-                " Possibly spacing related. Please check your yaml syntax." % tour_id)
+            log.exception(
+                "Tour '%s' could not be loaded, error within file."
+                " Possibly spacing related. Please check your yaml syntax." % tour_id
+            )
 
     def _get_tour_id_from_path(self, tour_path):
         filename = os.path.basename(tour_path)

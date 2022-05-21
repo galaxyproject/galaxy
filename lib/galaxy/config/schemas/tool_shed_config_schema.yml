@@ -1,0 +1,636 @@
+type: map
+mapping:
+  tool_shed:
+    type: map
+    required: true
+    desc: |
+      Tool Shed configuration options.
+    mapping:
+      log_level:
+        type: str
+        default: DEBUG
+        required: false
+        desc: |
+          Verbosity of console log messages.  Acceptable values can be found here:
+          https://docs.python.org/library/logging.html#logging-levels
+
+      database_connection:
+        type: str
+        default: sqlite:///./database/community.sqlite?isolation_level=IMMEDIATE
+        required: false
+        desc: |
+          By default, the Tool Shed uses a SQLite database at 'database/community.sqlite'.  You
+          may use a SQLAlchemy connection string to specify an external database
+          instead.  This string takes many options which are explained in detail in the
+          config file documentation.
+
+      hgweb_config_dir:
+        type: str
+        required: false
+        desc: |
+          Where the hgweb.config file is stored.
+          The default is the Galaxy installation directory.
+
+      file_path:
+        type: str
+        default: database/community_files
+        required: false
+        desc: |
+          Where Tool Shed repositories are stored.
+
+      new_file_path:
+        type: str
+        default: database/tmp
+        required: false
+        desc: |
+          Where temporary files are stored.
+
+      builds_file_path:
+        type: str
+        default: tool-data/shared/ucsc/builds.txt
+        required: false
+        desc: |
+          File containing old-style genome builds
+
+      pretty_datetime_format:
+        type: str
+        default: $locale (UTC)
+        required: false
+        desc: |
+          Format string used when showing date and time information.
+          The string may contain:
+          - the directives used by Python time.strftime() function (see
+            https://docs.python.org/library/time.html#time.strftime ),
+          - $locale (complete format string for the server locale),
+          - $iso8601 (complete format string as specified by ISO 8601 international
+            standard).
+
+      toolshed_search_on:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          -- Repository and Tool search
+          Using the script located at scripts/build_ts_whoosh_index.py
+          you can generate search index and allow full text API searching over
+          the repositories and tools within the Tool Shed given that you specify
+          the following two config options.
+
+      whoosh_index_dir:
+        type: str
+        default: database/toolshed_whoosh_indexes
+        required: false
+        desc: |
+          -- Repository and Tool search
+          Using the script located at scripts/build_ts_whoosh_index.py
+          you can generate search index and allow full text API searching over
+          the repositories and tools within the Tool Shed given that you specify
+          the following two config options.
+
+      repo_name_boost:
+        type: float
+        default: 0.9
+        required: false
+        desc: |
+          For searching repositories at /api/repositories:
+
+      repo_description_boost:
+        type: float
+        default: 0.6
+        required: false
+        desc: |
+          For searching repositories at /api/repositories:
+
+      repo_long_description_boost:
+        type: float
+        default: 0.5
+        required: false
+        desc: |
+          For searching repositories at /api/repositories:
+
+      repo_homepage_url_boost:
+        type: float
+        default: 0.3
+        required: false
+        desc: |
+          For searching repositories at /api/repositories:
+
+      repo_remote_repository_url_boost:
+        type: float
+        default: 0.2
+        required: false
+        desc: |
+          For searching repositories at /api/repositories:
+
+      repo_owner_username_boost:
+        type: float
+        default: 0.3
+        required: false
+        desc: |
+          For searching repositories at /api/repositories:
+
+      categories_boost:
+        type: float
+        default: 0.5
+        required: false
+        desc: |
+          For searching repositories at /api/repositories:
+
+      tool_name_boost:
+        type: float
+        default: 1.2
+        required: false
+        desc: |
+          For searching tools at /api/tools
+
+      tool_description_boost:
+        type: float
+        default: 0.6
+        required: false
+        desc: |
+          For searching tools at /api/tools
+
+      tool_help_boost:
+        type: float
+        default: 0.4
+        required: false
+        desc: |
+          For searching tools at /api/tools
+
+      tool_repo_owner_username:
+        type: float
+        default: 0.3
+        required: false
+        desc: |
+          For searching tools at /api/tools
+
+      ga_code:
+        type: str
+        required: false
+        desc: |
+          You can enter tracking code here to track visitor's behavior
+          through your Google Analytics account. Example: UA-XXXXXXXX-Y
+
+      plausible_server:
+        type: str
+        required: false
+        desc: |
+          Please enter the URL for the Plausible server (including https) so this can be used for tracking
+          with Plausible (https://plausible.io/).
+
+      plausible_domain:
+        type: str
+        required: false
+        desc: |
+          Please enter the URL for the Galaxy server so this can be used for tracking
+          with Plausible (https://plausible.io/).
+
+      matomo_server:
+        type: str
+        required: false
+        desc: |
+          Please enter the URL for the Matomo server (including https) so this can be used for tracking
+          with Matomo (https://matomo.org/).
+
+      matomo_site_id:
+        type: str
+        required: false
+        desc: |
+          Please enter the site ID for the Matomo server so this can be used for tracking
+          with Matomo (https://matomo.org/).
+
+      id_secret:
+        type: str
+        default: changethisinproductiontoo
+        required: false
+        desc: |
+          The Tool Shed encodes various internal values when these values will be output in
+          some format (for example, in a URL or cookie).  You should set a key to be
+          used by the algorithm that encodes and decodes these values.  It can be any
+          string.  If left unchanged, anyone could construct a cookie that would grant
+          them access to others' sessions.
+          One simple way to generate a value for this is with the shell command:
+            python -c 'from __future__ import print_function; import time; print(time.time())' | md5sum | cut -f 1 -d ' '
+
+      use_remote_user:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          User authentication can be delegated to an upstream proxy server (usually
+          Apache).  The upstream proxy should set a REMOTE_USER header in the request.
+          Enabling remote user disables regular logins.  For more information, see:
+          https://galaxyproject.org/admin/config/apache-external-user-auth/
+
+      remote_user_secret:
+        type: str
+        default: changethisinproductiontoo
+        required: false
+        desc: |
+          If use_remote_user is enabled, anyone who can log in to the Galaxy host may
+          impersonate any other user by simply sending the appropriate header. Thus a
+          secret shared between the upstream proxy server, and Galaxy is required.
+          If anyone other than the Galaxy user is using the server, then apache/nginx
+          should pass a value in the header 'GX_SECRET' that is identical the one below
+
+      remote_user_maildomain:
+        type: str
+        required: false
+        desc: |
+          If use_remote_user is enabled and your external authentication
+          method just returns bare usernames, set a default mail domain to be appended
+          to usernames, to become your Galaxy usernames (email addresses).
+
+      remote_user_header:
+        type: str
+        default: HTTP_REMOTE_USER
+        required: false
+        desc: |
+          If use_remote_user is enabled, the header that the upstream proxy provides
+          the remote username in defaults to HTTP_REMOTE_USER (the 'HTTP_' is prepended
+          by WSGI).  This option allows you to change the header.  Note, you still need
+          to prepend 'HTTP_' to the header in this option, but your proxy server should
+          *not* include 'HTTP_' at the beginning of the header name.
+
+      remote_user_logout_href:
+        type: str
+        required: false
+        desc: |
+          If use_remote_user is enabled, you can set this to a URL that will log your
+          users out.
+
+      debug:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Configuration for debugging middleware
+
+      use_lint:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Check for WSGI compliance.
+
+      use_printdebug:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Intercept print statements and show them on the returned page.
+
+      admin_users:
+        type: str
+        required: false
+        desc: |
+          Administrative users - set this to a comma-separated list of valid Tool Shed
+          users (email addresses).  These users will have access to the Admin section
+          of the server, and will have access to create users, groups, roles,
+          libraries, and more.
+
+      require_login:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Force everyone to log in (disable anonymous access)
+
+      allow_user_creation:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Allow unregistered users to create new accounts (otherwise, they will have to
+          be created by an admin).
+
+      allow_user_deletion:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Allow administrators to delete accounts.
+
+
+      smtp_server:
+        type: str
+        required: false
+        desc: |
+          For use by email messages sent from the Tool Shed.
+          (smtp.your_tool_shed_server)
+
+      email_from:
+        type: str
+        required: false
+        desc: |
+          For use by email messages sent from the Tool Shed.
+          (your_tool_shed_email@server)
+
+      smtp_username:
+        type: str
+        required: false
+        desc: |
+          If your SMTP server requires a username and password, you can provide them
+          here (password in cleartext here, but if your server supports STARTTLS it
+          will be sent over the network encrypted).
+
+      smtp_password:
+        type: str
+        required: false
+        desc: |
+          If your SMTP server requires a username and password, you can provide them
+          here (password in cleartext here, but if your server supports STARTTLS it
+          will be sent over the network encrypted).
+
+      smtp_ssl:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          If your SMTP server requires SSL from the beginning of the connection
+
+      support_url:
+        type: str
+        default: https://galaxyproject.org/support/
+        required: false
+        desc: |
+          The URL linked by the "Support" link in the "Help" menu.
+
+      mailing_join_addr:
+        type: str
+        default: galaxy-announce-join@bx.psu.edu
+        required: false
+        desc: |
+          Address to join mailing list
+
+      use_heartbeat:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Write thread status periodically to 'heartbeat.log' (careful, uses disk
+           space rapidly!)
+
+      use_profile:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Profiling middleware (cProfile based)
+
+      enable_galaxy_flavor_docker_image:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable creation of Galaxy flavor Docker Image
+
+      message_box_visible:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Show a message box under the masthead.
+
+      message_box_content:
+        type: str
+        required: false
+        desc: |
+          Show a message box under the masthead.
+
+      message_box_class:
+        type: str
+        default: info
+        required: false
+        desc: |
+          Class of the message box under the masthead. Possible values are:
+          'info' (the default), 'warning', 'error', 'done'.
+
+      static_enabled:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Serving static files (needed if running standalone)
+
+      static_cache_time:
+        type: int
+        default: 360
+        required: false
+        desc: |
+          Serving static files (needed if running standalone)
+
+      static_dir:
+        type: str
+        default: static/
+        required: false
+        desc: |
+          Serving static files (needed if running standalone)
+
+      static_images_dir:
+        type: str
+        default: static/images
+        required: false
+        desc: |
+          Serving static files (needed if running standalone)
+
+      static_favicon_dir:
+        type: str
+        default: static/favicon.ico
+        required: false
+        desc: |
+          Serving static files (needed if running standalone)
+
+      static_scripts_dir:
+        type: str
+        default: static/scripts/
+        required: false
+        desc: |
+          Serving static files (needed if running standalone)
+
+      static_style_dir:
+        type: str
+        default: static/style
+        required: false
+        desc: |
+          Serving static files (needed if running standalone)
+
+      enable_beta_gdpr:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables GDPR Compliance mode. This makes several changes to the way
+          Galaxy logs and exposes data externally such as removing
+          emails/usernames from logs and bug reports.
+
+          You are responsible for removing personal data from backups.
+
+          Please read the GDPR section under the special topics area of the
+          admin documentation.
+
+      apache_xsendfile:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          For help on configuring the Advanced proxy features, see:
+          https://docs.galaxyproject.org/en/master/admin/production.html
+
+          Apache can handle file downloads (Galaxy-to-user) via mod_xsendfile.  Set
+          this to True to inform Galaxy that mod_xsendfile is enabled upstream.
+
+      nginx_x_accel_redirect_base:
+        type: str
+        required: false
+        desc: |
+          The same download handling can be done by nginx using X-Accel-Redirect.  This
+          should be set to the path defined in the nginx config as an internal redirect
+          with access to Galaxy's data files (see documentation linked above).
+
+      nginx_upload_path:
+        type: str
+        required: false
+        desc: |
+          This value overrides the action set on the file upload form, e.g. the web
+          path where the nginx_upload_module has been configured to intercept upload
+          requests.
+
+      email_domain_blocklist_file:
+        type: str
+        required: false
+        desc: |
+          E-mail domains blocklist is used for filtering out users that are using
+          disposable email addresses at registration.  If their address domain matches any
+          domain on the list, they are refused registration.
+
+      email_domain_allowlist_file:
+        type: str
+        required: false
+        desc: |
+          E-mail domains allowlist is used to specify allowed email address domains.
+          If the list is non-empty and a user attempts registration using an email
+          address belonging to a domain that is not on the list, registration will be
+          denied. This is a more restrictive option than <email_domain_blocklist_file>, and
+          therefore, in case <email_domain_allowlist_file> is set and is not empty,
+          <email_domain_blocklist_file> will be ignored.
+
+      brand:
+        type: str
+        required: false
+        desc: |
+          Append "/{brand}" to the "Galaxy" text in the masthead.
+
+      citation_cache_type:
+        type: str
+        default: file
+        required: false
+        desc: |
+          Citation related caching.  Tool citations information maybe fetched from
+          external sources such as https://doi.org/ by Galaxy - the following
+          parameters can be used to control the caching used to store this information.
+
+      citation_cache_data_dir:
+        type: str
+        default: database/citations/data
+        required: false
+        desc: |
+          Citation related caching.  Tool citations information maybe fetched from
+          external sources such as https://doi.org/ by Galaxy - the following
+          parameters can be used to control the caching used to store this information.
+
+      citation_cache_lock_dir:
+        type: str
+        default: database/citations/lock
+        required: false
+        desc: |
+          Citation related caching.  Tool citations information maybe fetched from
+          external sources such as https://doi.org/ by Galaxy - the following
+          parameters can be used to control the caching used to store this information.
+
+      log_actions:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Turn on logging of user actions to the database.  Actions currently logged
+          are grid views, tool searches, and use of "recently" used tools menu.  The
+          log_events and log_actions functionality will eventually be merged.
+
+      password_expiration_period:
+        type: int
+        default: 0
+        required: false
+        desc: |
+          Password expiration period (in days). Users are required to change their
+          password every x days. Users will be redirected to the change password
+          screen when they log in after their password expires. Enter 0 to disable
+          password expiration.
+
+      sentry_dsn:
+        type: str
+        required: false
+        desc: |
+          Log to Sentry
+          Sentry is an open source logging and error aggregation platform.  Setting
+          sentry_dsn will enable the Sentry middleware and errors will be sent to the
+          indicated sentry instance.  This connection string is available in your
+          sentry instance under <project_name> -> Settings -> API Keys.
+
+      sentry_event_level:
+        type: str
+        default: ERROR
+        required: false
+        desc: |
+          Determines the minimum log level that will be sent as an event to Sentry.
+          Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
+
+      session_duration:
+        type: int
+        default: 0
+        required: false
+        desc: |
+          Galaxy Session Timeout
+          This provides a timeout (in minutes) after which a user will have to log back in.
+          A duration of 0 disables this feature.
+
+      terms_url:
+        type: str
+        required: false
+        desc: |
+          The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
+          as on the user registration and login forms and in the activation emails.
+
+      auth_config_file:
+        type: str
+        default: auth_conf.xml
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          XML config file that allows the use of different authentication providers
+          (e.g. LDAP) instead or in addition to local authentication (.sample is used
+          if default does not exist).
+
+      shed_tool_data_table_config:
+        type: str
+        default: shed_tool_data_table_conf.xml
+        path_resolves_to: managed_config_dir
+        required: false
+        desc: |
+          XML config file that contains additional data table entries for the
+          ToolDataTableManager.  This file is automatically generated based on the
+          current installed tool shed repositories that contain valid
+          tool_data_table_conf.xml.sample files.  At the time of installation, these
+          entries are automatically added to the following file, which is parsed and
+          applied to the ToolDataTableManager at server start up.
+
+      datatypes_config_file:
+        type: str
+        default: datatypes_conf.xml
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          Datatypes config file(s), defines what data (file) types are available in
+          Galaxy (.sample is used if default does not exist).  If a datatype appears in
+          multiple files, the last definition is used (though the first sniffer is used
+          so limit sniffer definitions to one file).

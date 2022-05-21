@@ -21,7 +21,8 @@ Galaxy with testing fixtures.
 The first example notebook is good for prototyping stand-alone applications that drive
 Galaxy, the second example notebook is setup to mirror the environment available to Selenium
 test cases that ship with Galaxy (e.g. :class:`galaxy_test.selenium.framework:SeleniumTestCase`)
-and can be used for interactively developing Selenium tests for Galaxy.
+and can be used for interactively developing Selenium tests for Galaxy. Additionally, it shows how can ActionChains
+could be accessed within Jupyter notebook.
 
 These notebooks start with a cell that simply defines a ``config`` variable in the Python
 environment on a cell that is marked with metadata indicated it is "parameters". This

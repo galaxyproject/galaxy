@@ -1,7 +1,7 @@
 <template>
     <upload-wrapper wrapper-class="upload-view-composite">
-        <div class="upload-helper" v-show="showHelper">Select Composite Type to show files required to upload</div>
-        <table class="upload-table ui-table-striped" v-show="!showHelper" ref="uploadTable">
+        <div v-show="showHelper" class="upload-helper">Select a composite type</div>
+        <table v-show="!showHelper" ref="uploadTable" class="upload-table ui-table-striped">
             <thead>
                 <tr>
                     <th />
@@ -18,36 +18,40 @@
         <template v-slot:footer>
             <span class="upload-footer-title">Composite Type:</span>
             <select2
-                container-class="upload-footer-extension"
                 ref="footerExtension"
                 v-model="extension"
-                :enabled="!running"
-            >
+                container-class="upload-footer-extension"
+                :enabled="!running">
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
-            <span class="upload-footer-extension-info upload-icon-button fa fa-search" ref="footerExtensionInfo" />
+            <span ref="footerExtensionInfo" class="upload-footer-extension-info upload-icon-button fa fa-search" />
             <span class="upload-footer-title">Genome/Build:</span>
-            <select2 container-class="upload-footer-genome" ref="footerGenome" v-model="genome" :enabled="!running">
-                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">{{
-                    listGenome.text
-                }}</option>
+            <select2 ref="footerGenome" v-model="genome" container-class="upload-footer-genome" :enabled="!running">
+                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
+                    {{ listGenome.text }}
+                </option>
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" @click="app.dismiss()">
-                {{ btnCloseTitle }}
+            <b-button ref="btnClose" class="ui-button-default" :title="btnCloseTitle" @click="$emit('dismiss')">
+                {{ btnCloseTitle | localize }}
             </b-button>
             <b-button
+                id="btn-start"
                 ref="btnStart"
                 class="ui-button-default"
-                @click="_eventStart"
-                id="btn-start"
                 :disabled="!readyStart"
+                :title="btnStartTitle"
                 :variant="readyStart ? 'primary' : ''"
-            >
+                @click="_eventStart">
                 {{ btnStartTitle }}
             </b-button>
-            <b-button ref="btnReset" class="ui-button-default" id="btn-reset" @click="_eventReset">
+            <b-button
+                id="btn-reset"
+                ref="btnReset"
+                class="ui-button-default"
+                :title="btnResetTitle"
+                @click="_eventReset">
                 {{ btnResetTitle }}
             </b-button>
         </template>
@@ -57,10 +61,11 @@
 <script>
 import _l from "utils/localization";
 import _ from "underscore";
-import $ from "jquery";
 import { getGalaxyInstance } from "app";
 import UploadRow from "mvc/upload/composite/composite-row";
 import UploadBoxMixin from "./UploadBoxMixin";
+import { uploadModelsToPayload } from "./helpers";
+import { submitUpload } from "utils/uploadbox";
 
 export default {
     mixins: [UploadBoxMixin],
@@ -74,13 +79,8 @@ export default {
             showHelper: true,
             btnResetTitle: _l("Reset"),
             btnStartTitle: _l("Start"),
-            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
             readyStart: false,
         };
-    },
-    created() {
-        this.initCollection();
-        this.initAppProperties();
     },
     computed: {
         extensions() {
@@ -88,6 +88,25 @@ export default {
             result.unshift({ id: "_select_", text: "Select" });
             return result;
         },
+    },
+    watch: {
+        extension: function (value) {
+            this.collection.reset();
+            const details = this.extensionDetails(value);
+            if (details && details.composite_files) {
+                _.each(details.composite_files, (item) => {
+                    this.collection.add({
+                        id: this.collection.size(),
+                        file_desc: item.description || item.name,
+                        optional: item.optional,
+                    });
+                });
+            }
+        },
+    },
+    created() {
+        this.initCollection();
+        this.initAppProperties();
     },
     mounted() {
         this.initExtensionInfo();
@@ -140,9 +159,9 @@ export default {
                     extension: this.extension,
                 });
             });
-            $.uploadpost({
+            submitUpload({
                 url: this.app.uploadPath,
-                data: this.app.toData(this.collection.filter()),
+                data: uploadModelsToPayload(this.collection.filter(), this.history_id, true),
                 success: (message) => {
                     this._eventSuccess(message);
                 },
@@ -186,21 +205,6 @@ export default {
             this.collection.each((it) => {
                 it.set({ status: "error", info: message });
             });
-        },
-    },
-    watch: {
-        extension: function (value) {
-            this.collection.reset();
-            const details = this.extensionDetails(value);
-            if (details && details.composite_files) {
-                _.each(details.composite_files, (item) => {
-                    this.collection.add({
-                        id: this.collection.size(),
-                        file_desc: item.description || item.name,
-                        optional: item.optional,
-                    });
-                });
-            }
         },
     },
 };

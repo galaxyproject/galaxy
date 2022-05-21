@@ -57,5 +57,29 @@ describe("WorkflowRun.vue", () => {
         expect(model.hasUpgradeMessages).toBe(false);
         expect(model.hasStepVersionChanges).toBe(false);
         expect(model.wpInputs.wf_param.label).toBe("wf_param");
+        // all steps are expanded since data and parameter steps are expanded by default,
+        // the same is true for tools with unconnected data inputs.
+        model.steps.forEach((step) => {
+            expect(step.expanded).toBe(true);
+        });
+    });
+
+    it("displays submission error", async () => {
+        // waits for vue to render wrapper
+        await localVue.nextTick();
+
+        expect(wrapper.vm.loading).toBe(true);
+        expect(wrapper.vm.error).toBeNull();
+        expect(wrapper.vm.model).toBeNull();
+
+        await watchForChange({ vm: wrapper.vm, propName: "loading" });
+
+        expect(wrapper.vm.error).toBeNull();
+        expect(wrapper.vm.loading).toBe(false);
+        expect(wrapper.find("b-alert-stub").exists()).toBe(false);
+        wrapper.vm.handleSubmissionError("Some exception here");
+        await localVue.nextTick();
+        expect(wrapper.vm.submissionError).toBe("Some exception here");
+        expect(wrapper.find("b-alert-stub").attributes("variant")).toEqual("danger");
     });
 });

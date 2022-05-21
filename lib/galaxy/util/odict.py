@@ -2,7 +2,7 @@
 Ordered dictionary implementation with `insert` functionality.
 
 This is only used in one specific place in the codebase:
-    galaxy.tools.toolbox.panel
+    galaxy.tool_util.toolbox.panel
 
 Whenever possible the stdlib `collections.OrderedDict` should be used instead of
 this custom implementation.
@@ -61,7 +61,7 @@ class odict(UserDict):
         try:
             key = self._keys[-1]
         except IndexError:
-            raise KeyError('dictionary is empty')
+            raise KeyError("dictionary is empty")
         val = self[key]
         del self[key]
         return (key, val)

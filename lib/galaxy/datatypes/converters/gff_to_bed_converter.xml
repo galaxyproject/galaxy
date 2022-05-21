@@ -22,16 +22,16 @@ python '$__tool_directory__/gff_to_bed_converter.py'
     <tests>
         <test>
             <param name="input1" ftype="gff" value="gff_filter_by_feature_count_out2.gff"/>
-            <output name="output1" file="bed_filter_by_feature_count_out2.bed"/>
+            <output name="output1"  ftype="bed6" file="bed_filter_by_feature_count_out2.bed"/>
         </test>
         <test>
             <param name="input1" value="5.gff" ftype="gff"/>
-            <output name="output1" file="gff2bed_out.bed"/>
+            <output name="output1" ftype="bed6" file="gff2bed_out.bed"/>
         </test>
         <!-- Test conversion of GFF3 file -->
         <test>
             <param name="input1" value="5.gff3" ftype="gff"/>
-            <output name="output1" file="gff2bed_out3.bed"/>
+            <output name="output1" ftype="bed6" file="gff2bed_out3.bed"/>
         </test>
     </tests>
     <help><![CDATA[

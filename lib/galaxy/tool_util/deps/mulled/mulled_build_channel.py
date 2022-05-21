@@ -33,21 +33,27 @@ from .mulled_build import (
     get_affected_packages,
     mull_targets,
 )
-from .util import quay_versions, version_sorted
+from .util import (
+    quay_versions,
+    version_sorted,
+)
 
 
 def _fetch_repo_data(args):
     repo_data = args.repo_data
     channel = args.channel
     if not os.path.exists(repo_data):
-        platform_tag = 'osx-64' if sys.platform == 'darwin' else 'linux-64'
-        subprocess.check_call([
-            'wget', '--quiet', f'https://conda.anaconda.org/{channel}/{platform_tag}/repodata.json.bz2',
-            '-O', '%s.bz2' % repo_data
-        ])
-        subprocess.check_call([
-            'bzip2', '-d', '%s.bz2' % repo_data
-        ])
+        platform_tag = "osx-64" if sys.platform == "darwin" else "linux-64"
+        subprocess.check_call(
+            [
+                "wget",
+                "--quiet",
+                f"https://conda.anaconda.org/{channel}/{platform_tag}/repodata.json.bz2",
+                "-O",
+                f"{repo_data}.bz2",
+            ]
+        )
+        subprocess.check_call(["bzip2", "-d", f"{repo_data}.bz2"])
     return repo_data
 
 
@@ -82,18 +88,27 @@ def run_channel(args, build_last_n_versions=1):
 
 def get_pkg_names(args):
     """Print package names that would be affected."""
-    print('\n'.join(pkg_name for pkg_name, pkg_tests in get_affected_packages(args)))
+    print("\n".join(pkg_name for pkg_name, pkg_tests in get_affected_packages(args)))
 
 
 def add_channel_arguments(parser):
     """Add arguments only used if running mulled over a whole conda channel."""
-    parser.add_argument('--repo-data', dest='repo_data', required=True,
-                        help='Published repository data. If you want to build all containers for bioconda, this parameter needs to be set to "bioconda"')
-    parser.add_argument('--diff-hours', dest='diff_hours', default="25",
-                        help='If finding all recently changed recipes, use this number of hours.')
-    parser.add_argument('--recipes-dir', dest="recipes_dir", default="./bioconda-recipes")
-    parser.add_argument('--force-rebuild', dest="force_rebuild", action="store_true",
-                        help="Rebuild package even if already published.")
+    parser.add_argument(
+        "--repo-data",
+        dest="repo_data",
+        required=True,
+        help='Published repository data. If you want to build all containers for bioconda, this parameter needs to be set to "bioconda"',
+    )
+    parser.add_argument(
+        "--diff-hours",
+        dest="diff_hours",
+        default="25",
+        help="If finding all recently changed recipes, use this number of hours.",
+    )
+    parser.add_argument("--recipes-dir", dest="recipes_dir", default="./bioconda-recipes")
+    parser.add_argument(
+        "--force-rebuild", dest="force_rebuild", action="store_true", help="Rebuild package even if already published."
+    )
 
 
 def main(argv=None):
@@ -101,9 +116,16 @@ def main(argv=None):
     parser = arg_parser(argv, globals())
     add_channel_arguments(parser)
     add_build_arguments(parser)
-    parser.add_argument('command', metavar='COMMAND', help='Command (list, build-and-test, build, all)')
-    parser.add_argument('--targets', dest="targets", default=None, help="Build a single container with specific package(s).")
-    parser.add_argument('--repository-name', dest="repository_name", default=None, help="Name of a single container (leave blank to auto-generate based on packages).")
+    parser.add_argument("command", metavar="COMMAND", help="Command (list, build-and-test, build, all)")
+    parser.add_argument(
+        "--targets", dest="targets", default=None, help="Build a single container with specific package(s)."
+    )
+    parser.add_argument(
+        "--repository-name",
+        dest="repository_name",
+        default=None,
+        help="Name of a single container (leave blank to auto-generate based on packages).",
+    )
     args = parser.parse_args()
     if args.command == "list":
         get_pkg_names(args)
@@ -111,8 +133,8 @@ def main(argv=None):
         run_channel(args)
 
 
-__all__ = ("main", )
+__all__ = ("main",)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

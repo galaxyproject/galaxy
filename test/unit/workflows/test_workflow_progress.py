@@ -2,7 +2,10 @@ import unittest
 
 from galaxy import model
 from galaxy.workflow.run import WorkflowProgress
-from .workflow_support import TestApp, yaml_to_model
+from .workflow_support import (
+    MockApp,
+    yaml_to_model,
+)
 
 TEST_WORKFLOW_YAML = """
 steps:
@@ -62,9 +65,8 @@ UNSCHEDULED_STEP = object()
 
 
 class WorkflowProgressTestCase(unittest.TestCase):
-
     def setUp(self):
-        self.app = TestApp()
+        self.app = MockApp()
         self.inputs_by_step_id = {}
         self.invocation = model.WorkflowInvocation()
         self.progress = {}
@@ -74,9 +76,7 @@ class WorkflowProgressTestCase(unittest.TestCase):
         self.invocation.workflow = workflow
 
     def _new_workflow_progress(self):
-        return WorkflowProgress(
-            self.invocation, self.inputs_by_step_id, MockModuleInjector(self.progress), {}
-        )
+        return WorkflowProgress(self.invocation, self.inputs_by_step_id, MockModuleInjector(self.progress), {})
 
     def _set_previous_progress(self, outputs):
         for i, (step_id, step_value) in enumerate(outputs):
@@ -85,7 +85,7 @@ class WorkflowProgressTestCase(unittest.TestCase):
 
                 workflow_invocation_step = model.WorkflowInvocationStep()
                 workflow_invocation_step.workflow_step_id = step_id
-                workflow_invocation_step.state = 'scheduled'
+                workflow_invocation_step.state = "scheduled"
                 workflow_invocation_step.workflow_step = self._step(i)
                 self.assertEqual(step_id, self._step(i).id)
                 # workflow_invocation_step.workflow_invocation = self.invocation
@@ -150,13 +150,15 @@ class WorkflowProgressTestCase(unittest.TestCase):
     def test_remaining_steps_with_progress(self):
         self._setup_workflow(TEST_WORKFLOW_YAML)
         hda3 = model.HistoryDatasetAssociation()
-        self._set_previous_progress([
-            (100, {"output": model.HistoryDatasetAssociation()}),
-            (101, {"output": model.HistoryDatasetAssociation()}),
-            (102, {"out_file1": hda3}),
-            (103, {"out_file1": model.HistoryDatasetAssociation()}),
-            (104, UNSCHEDULED_STEP),
-        ])
+        self._set_previous_progress(
+            [
+                (100, {"output": model.HistoryDatasetAssociation()}),
+                (101, {"output": model.HistoryDatasetAssociation()}),
+                (102, {"out_file1": hda3}),
+                (103, {"out_file1": model.HistoryDatasetAssociation()}),
+                (104, UNSCHEDULED_STEP),
+            ]
+        )
         progress = self._new_workflow_progress()
         steps = progress.remaining_steps()
         assert len(steps) == 1, steps
@@ -178,10 +180,12 @@ class WorkflowProgressTestCase(unittest.TestCase):
     def test_subworkflow_progress(self):
         self._setup_workflow(TEST_SUBWORKFLOW_YAML)
         hda = model.HistoryDatasetAssociation()
-        self._set_previous_progress([
-            (100, {"output": hda}),
-            (101, UNSCHEDULED_STEP),
-        ])
+        self._set_previous_progress(
+            [
+                (100, {"output": hda}),
+                (101, UNSCHEDULED_STEP),
+            ]
+        )
         subworkflow_invocation = self.invocation.create_subworkflow_invocation_for_step(
             self.invocation.workflow.step_by_index(1)
         )
@@ -196,7 +200,7 @@ class WorkflowProgressTestCase(unittest.TestCase):
         subworkflow_input_step = subworkflow.step_by_index(0)
         subworkflow_invocation_step = model.WorkflowInvocationStep()
         subworkflow_invocation_step.workflow_step_id = subworkflow_input_step.id
-        subworkflow_invocation_step.state = 'new'
+        subworkflow_invocation_step.state = "new"
         subworkflow_invocation_step.workflow_step = subworkflow_input_step
 
         subworkflow_progress.set_outputs_for_input(subworkflow_invocation_step)
@@ -214,7 +218,6 @@ class WorkflowProgressTestCase(unittest.TestCase):
 
 
 class MockModuleInjector:
-
     def __init__(self, progress):
         self.progress = progress
 
@@ -223,7 +226,6 @@ class MockModuleInjector:
 
 
 class MockModule:
-
     def __init__(self, progress):
         self.progress = progress
 

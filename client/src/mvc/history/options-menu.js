@@ -32,6 +32,7 @@ var menu = [
                 Galaxy.router.push(`/histories/sharing?id=${Galaxy.currHistoryPanel.model.id}`);
             }
         },
+        singleUserDisable: true,
     },
     {
         html: _l("Show Structure"),
@@ -55,6 +56,7 @@ var menu = [
                 Galaxy.router.push(`/histories/permissions?id=${Galaxy.currHistoryPanel.model.id}`);
             }
         },
+        singleUserDisable: true,
     },
     {
         html: _l("Make Private"),
@@ -200,7 +202,11 @@ Webhooks.load({
 });
 
 function buildMenu(isAnon, purgeAllowed, urlRoot) {
+    const Galaxy = getGalaxyInstance();
     return _.clone(menu).filter((menuOption) => {
+        if (Galaxy.config.single_user && menuOption.singleUserDisable) {
+            return false;
+        }
         if (isAnon && !menuOption.anon) {
             return false;
         }
@@ -213,6 +219,7 @@ function buildMenu(isAnon, purgeAllowed, urlRoot) {
             menuOption.href = urlRoot + menuOption.href;
             menuOption.target = menuOption.target || "galaxy_main";
         }
+        menuOption.title = menuOption.html;
 
         if (menuOption.confirm) {
             menuOption.func = () => {

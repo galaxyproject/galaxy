@@ -41,7 +41,7 @@ following (and more):
 Configuration
 ----------------------------
 
-- Configure ``config/reports.yml`` in the same manner as your main galaxy instance (i.e., same database connection, but different web server port). This is a uWSGI YAML configuration file and should contain a ``reports`` section with app-specific configuration (options described below).
+- Configure ``config/reports.yml`` in the same manner as your main galaxy instance (i.e., same database connection, but different web server port). This is a YAML configuration file and should contain a ``reports`` section with app-specific configuration (options described below).
 
     - The default port for the reports application is ``9001``, and like Galaxy it only binds to localhost by default.
     - ``database_connection`` should match the value used in your Galaxy configuration
@@ -49,7 +49,7 @@ Configuration
       experimental support for MySQL is available but SQLite is not supported
       at all.
 
-- Run reports in a uWSGI server with ``sh run_reports.sh``
+- Run reports in a Gunicorn server with ``sh run_reports.sh``
 - Use a web browser and go to the address you configured in ``reports.yml`` (defaults to http://localhost:9001/)
 - If you'd like the report tool to persist between sessions then use
   ``sh run_reports.sh --daemon`` to run it as a background process. As with

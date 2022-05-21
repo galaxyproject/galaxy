@@ -1,0 +1,47 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 22.1.0
+    hooks:
+    - id: black
+      language_version: python3.7
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 4.0.1
+    hooks:
+    - id: flake8
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v2.6.0 # Use the sha or tag you want to point at
+    hooks:
+      - id: prettier
+        types: [file]
+        types_or: [javascript, jsx, ts, tsx, vue]
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0  # Use the ref you want to point at
+    hooks:
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: destroyed-symlinks
+      - id: end-of-file-fixer
+  - repo: https://github.com/detailyang/pre-commit-shell
+    rev: v1.0.6
+    hooks:
+    - id: shell-lint
+      args: [--format=json]
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.14.0
+    hooks:
+      - id: check-github-workflows
+  - repo: local
+    hooks:
+    -   id: eslint
+        name: client eslint
+        language: system
+        files: ^client/
+        entry: .ci/eslint_wrapper.sh
+        types: [file]
+        types_or: [javascript, jsx, ts, tsx, vue]
+#  - repo: https://github.com/pycqa/isort
+#    rev: 5.10.1
+#    hooks:
+#      - id: isort
+#        name: isort (python)

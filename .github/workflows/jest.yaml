@@ -1,18 +1,37 @@
 name: Client Unit Testing
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - 'client/**'
+      - '.github/workflows/jest.yaml'
+  pull_request:
+    paths:
+      - 'client/**'
+      - '.github/workflows/jest.yaml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  jest:
+  client-unit-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [12]
+        node: [16]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Setup node
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node}}
-    - run: yarn install
+        cache: 'yarn'
+        cache-dependency-path: 'client/yarn.lock'
+    - run: yarn install --frozen-lockfile
+      working-directory: client
+    - name: Stage client libs (Gulp)
+      run: yarn run gulp client
+      working-directory: client
+    - name: Run Unit Tests
+      run: yarn run qunit
       working-directory: client
     - run: yarn jest
       working-directory: client

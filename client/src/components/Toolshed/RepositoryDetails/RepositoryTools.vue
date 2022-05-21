@@ -33,7 +33,12 @@
 </template>
 <script>
 export default {
-    props: ["tools"],
+    props: {
+        tools: {
+            type: Array,
+            required: true,
+        },
+    },
     data() {
         return {
             clsExpanded: "bg-transparent border-bottom",

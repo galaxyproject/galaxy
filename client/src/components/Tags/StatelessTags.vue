@@ -9,23 +9,22 @@ upstream component or environment that is accessed through props and events -->
             href="javascript:void(0)"
             role="button"
             class="toggle-link"
-            @click.prevent="toggleTagDisplay"
-        >
+            @click.prevent="toggleTagDisplay">
             {{ linkText }}
         </a>
         <vue-tags-input
             v-if="tagsVisible"
-            class="tags-input tag-area"
             v-model="tagText"
+            class="tags-input tag-area"
             :tags="tagModels"
             :autocomplete-items="autocompleteTags"
             :disabled="disabled"
             placeholder="Add Tags"
             :add-on-key="triggerKeys"
+            :validation="validation"
             @before-adding-tag="beforeAddingTag"
             @before-deleting-tag="beforeDeletingTag"
-            @tags-changed="tagsChanged"
-        >
+            @tags-changed="tagsChanged">
             <template v-slot:tag-center="t">
                 <div class="tag-name" @click="$emit('tag-click', t.tag)">{{ t.tag.label }}</div>
             </template>
@@ -35,7 +34,7 @@ upstream component or environment that is accessed through props and events -->
 
 <script>
 import VueTagsInput from "@johmun/vue-tags-input";
-import { createTag } from "./model";
+import { createTag, VALID_TAG_RE } from "./model";
 
 export default {
     components: {
@@ -56,6 +55,12 @@ export default {
             tagText: "",
             tagToggle: !isClosed,
             triggerKeys: [13, " "],
+            validation: [
+                {
+                    classes: "error",
+                    rule: VALID_TAG_RE,
+                },
+            ],
         };
     },
     computed: {
@@ -156,6 +161,24 @@ export default {
         .ti-input {
             padding: 0;
             border: none;
+
+            .ti-new-tag-input {
+                &.error:focus {
+                    //TODO: These relative URLs are unfortunate.
+                    background: url("../../../node_modules/@fortawesome/fontawesome-free/svgs/solid/times.svg");
+                    padding-right: 1.5rem;
+                    background-repeat: no-repeat;
+                    background-size: contain;
+                    background-position: right;
+                }
+                &:not(.error):focus {
+                    background: url("../../../node_modules/@fortawesome/fontawesome-free/svgs/solid/check.svg");
+                    padding-right: 1.5rem;
+                    background-repeat: no-repeat;
+                    background-size: contain;
+                    background-position: right;
+                }
+            }
         }
         .ti-tag {
             border-radius: 4px;

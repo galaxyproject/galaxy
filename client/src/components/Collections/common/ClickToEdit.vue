@@ -1,12 +1,11 @@
 <template>
     <input
-        class="click-to-edit-input"
         v-if="editable"
-        contenteditable
         v-model="localValue"
+        class="click-to-edit-input"
+        contenteditable
         @blur="editable = false"
-        @keyup.enter="editable = false"
-    />
+        @keyup.enter="editable = false" />
     <label v-else @click="editable = true">
         {{ localValue }}
     </label>

@@ -2,71 +2,47 @@ import json
 import logging
 from typing import List
 
-from pkg_resources import resource_string
 from pydantic import (
     BaseModel,
     Field,
-    HttpUrl
+    HttpUrl,
 )
 
 from galaxy import exceptions
+from galaxy.util.resources import resource_string
 
 log = logging.getLogger(__name__)
 
 
 # https://github.com/spdx/license-list-data/blob/master/accessingLicenses.md#license-list-table-of-contents
 class LicenseMetadataModel(BaseModel):
-    licenseId: str = Field(
-        title="Identifier",
-        description="SPDX Identifier",
-        example="Apache-2.0"
-    )
-    name: str = Field(
-        title="Name",
-        description="Full name of the license",
-        example="Apache License 2.0"
-    )
+    licenseId: str = Field(title="Identifier", description="SPDX Identifier", example="Apache-2.0")
+    name: str = Field(title="Name", description="Full name of the license", example="Apache License 2.0")
     reference: str = Field(
-        title="Reference",
-        description="Reference to the HTML format for the license file",
-        example="./Apache-2.0.html"
+        title="Reference", description="Reference to the HTML format for the license file", example="./Apache-2.0.html"
     )
     referenceNumber: int = Field(
-        title="Reference number",
-        description="*Deprecated* - this field is generated and is no longer in use"
+        title="Reference number", description="*Deprecated* - this field is generated and is no longer in use"
     )
     isDeprecatedLicenseId: bool = Field(
-        title="Deprecated License",
-        description="True if the entire license is deprecated",
-        example=False
+        title="Deprecated License", description="True if the entire license is deprecated", example=False
     )
     isOsiApproved: bool = Field(
         title="OSI approved",
         description="Indicates if the [OSI](https://opensource.org/) has approved the license",
-        example=True
+        example=True,
     )
     seeAlso: List[HttpUrl] = Field(
-        title="Reference URLs",
-        description="Cross reference URL pointing to additional copies of the license"
+        title="Reference URLs", description="Cross reference URL pointing to additional copies of the license"
     )
     detailsUrl: HttpUrl = Field(
         title="Details URL",
         description="URL to the SPDX json details for this license",
-        example="http://spdx.org/licenses/Apache-2.0.json"
+        example="http://spdx.org/licenses/Apache-2.0.json",
     )
-    recommended: bool = Field(
-        title="Recommended",
-        description="True if this license is recommended to be used"
-    )
-    url: HttpUrl = Field(
-        title="URL",
-        description="License URL",
-        example="http://www.apache.org/licenses/LICENSE-2.0"
-    )
-    spdxUrl: HttpUrl = Field(
-        title="SPDX URL",
-        example="https://spdx.org/licenses/Apache-2.0.html"
-    )
+    recommended: bool = Field(title="Recommended", description="True if this license is recommended to be used")
+    url: HttpUrl = Field(title="URL", description="License URL", example="http://www.apache.org/licenses/LICENSE-2.0")
+    spdxUrl: HttpUrl = Field(title="SPDX URL", example="https://spdx.org/licenses/Apache-2.0.html")
 
 
 # https://docs.google.com/document/d/16vnRtDjrx5eHSl4jXs2vMaDTI6luyyLzU6xMvRHsnbI/edit#heading=h.1pihjj16olz2
@@ -85,11 +61,11 @@ RECOMMENDED_LICENSES = [
     "MPL-2.0",
     "PDDL-1.0",
 ]
-SPDX_LICENSES_STRING = resource_string(__name__, 'licenses.json').decode("UTF-8")
+SPDX_LICENSES_STRING = resource_string(__package__, "licenses.json")
 SPDX_LICENSES = json.loads(SPDX_LICENSES_STRING)
 for license in SPDX_LICENSES["licenses"]:
     license["recommended"] = license["licenseId"] in RECOMMENDED_LICENSES
-    license["spdxUrl"] = "https://spdx.org/licenses/%s" % license["reference"][len("./"):]
+    license["spdxUrl"] = f"https://spdx.org/licenses/{license['reference'][len('./'):]}"
     seeAlso = license.get("seeAlso", [])
     if len(seeAlso) > 0:
         url = seeAlso[0]
@@ -99,7 +75,6 @@ for license in SPDX_LICENSES["licenses"]:
 
 
 class LicensesManager:
-
     def __init__(self):
         by_index = {}
         for spdx_license in self.index():
@@ -117,10 +92,8 @@ class LicensesManager:
         if uri in self._by_index:
             return self._by_index[uri]
         else:
-            log.warning("Unknown license URI encountered [%s]" % uri)
-        return {
-            "url": uri
-        }
+            log.warning(f"Unknown license URI encountered [{uri}]")
+        return {"url": uri}
 
     def get_licenses(self) -> List[LicenseMetadataModel]:
         return SPDX_LICENSES["licenses"]

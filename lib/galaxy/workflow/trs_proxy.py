@@ -6,7 +6,10 @@ import requests
 import yaml
 
 from galaxy.exceptions import MessageException
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    DEFAULT_SOCKET_TIMEOUT,
+)
 from galaxy.util.search import parse_filters
 
 log = logging.getLogger(__name__)
@@ -37,16 +40,15 @@ def parse_search_kwds(search_query):
         "descriptorType": "GALAXY",
     }
     if description_term and description_term.strip():
-        query_kwd["description"] = description_term,
+        query_kwd["description"] = (description_term,)
 
     if keyed_terms is not None:
-        for (key, value) in keyed_terms:
+        for (key, value, _) in keyed_terms:
             query_kwd[key] = value
     return query_kwd
 
 
 class TrsProxy:
-
     def __init__(self, config=None):
         config_file = getattr(config, "trs_servers_config_file", None)
         if config_file and os.path.exists(config_file):
@@ -75,26 +77,27 @@ class TrsProxy:
         return self._get(trs_api_url)
 
     def get_versions(self, trs_server, tool_id, **kwd):
-        trs_api_url = self._get_tool_api_endpoint(trs_server, tool_id, **kwd) + "/versions"
+        trs_api_url = f"{self._get_tool_api_endpoint(trs_server, tool_id, **kwd)}/versions"
         return self._get(trs_api_url)
 
     def get_version(self, trs_server, tool_id, version_id, **kwd):
-        trs_api_url = self._get_tool_api_endpoint(trs_server, tool_id, **kwd) + "/versions/" + version_id
+        trs_api_url = f"{self._get_tool_api_endpoint(trs_server, tool_id, **kwd)}/versions/{version_id}"
         return self._get(trs_api_url)
 
     def get_version_descriptor(self, trs_server, tool_id, version_id, **kwd):
-        trs_api_url = self._get_tool_api_endpoint(trs_server, tool_id, **kwd) + "/versions/" + version_id + "/%s/descriptor" % GA4GH_GALAXY_DESCRIPTOR
+        trs_api_url = f"{self._get_tool_api_endpoint(trs_server, tool_id, **kwd)}/versions/{version_id}/{GA4GH_GALAXY_DESCRIPTOR}/descriptor"
         return self._get(trs_api_url)["content"]
 
     def _quote(self, tool_id, **kwd):
         if asbool(kwd.get("tool_id_b64_encoded", False)):
             import base64
+
             tool_id = base64.b64decode(tool_id)
         tool_id = urllib.parse.quote_plus(tool_id)
         return tool_id
 
     def _get(self, url, params=None):
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=DEFAULT_SOCKET_TIMEOUT)
         if response.ok:
             return response.json()
         else:
@@ -110,10 +113,10 @@ class TrsProxy:
 
     def _get_api_endpoint(self, trs_server, **kwd):
         trs_url = self._server_dict[trs_server]["api_url"]
-        trs_api_endpoint = trs_url + "/" + "ga4gh/trs/v2/tools"
+        trs_api_endpoint = f"{trs_url}/ga4gh/trs/v2/tools"
         return trs_api_endpoint
 
     def _get_tool_api_endpoint(self, trs_server, tool_id, **kwd):
         tool_id = self._quote(tool_id, **kwd)
-        trs_api_url = self._get_api_endpoint(trs_server, **kwd) + "/" + tool_id
+        trs_api_url = f"{self._get_api_endpoint(trs_server, **kwd)}/{tool_id}"
         return trs_api_url

@@ -1,4 +1,4 @@
-# TODO: this is largely copied from galaxy.tools.toolbox.galaxy and generalized, the tool-oriented watchers in that
+# TODO: this is largely copied from galaxy.tool_util.toolbox.galaxy and generalized, the tool-oriented watchers in that
 # module should probably be updated to use this where possible
 
 
@@ -6,11 +6,11 @@ import logging
 import os.path
 import time
 
-
 try:
     from watchdog.events import FileSystemEventHandler
     from watchdog.observers import Observer
     from watchdog.observers.polling import PollingObserver
+
     can_watch = True
 except ImportError:
     Observer = None
@@ -24,8 +24,7 @@ log = logging.getLogger(__name__)
 
 
 def get_observer_class(config_name, config_value, default, monitor_what_str):
-    """
-    """
+    """ """
     config_value = config_value or default
     config_value = str(config_value).lower()
     if config_value in ("true", "yes", "on", "auto"):
@@ -34,7 +33,7 @@ def get_observer_class(config_name, config_value, default, monitor_what_str):
     elif config_value == "polling":
         expect_observer = True
         observer_class = PollingObserver
-    elif config_value in ('false', 'no', 'off'):
+    elif config_value in ("false", "no", "off"):
         expect_observer = False
         observer_class = None
     else:
@@ -42,7 +41,7 @@ def get_observer_class(config_name, config_value, default, monitor_what_str):
         raise Exception(message)
 
     if expect_observer and observer_class is None:
-        message = "Watchdog library unavailable, cannot monitor %s." % monitor_what_str
+        message = f"Watchdog library unavailable, cannot monitor {monitor_what_str}."
         if config_value == "auto":
             log.info(message)
         else:
@@ -51,8 +50,9 @@ def get_observer_class(config_name, config_value, default, monitor_what_str):
     return observer_class
 
 
-def get_watcher(config, config_name, default="False", monitor_what_str=None, watcher_class=None,
-                event_handler_class=None, **kwargs):
+def get_watcher(
+    config, config_name, default="False", monitor_what_str=None, watcher_class=None, event_handler_class=None, **kwargs
+):
     config_value = getattr(config, config_name, None)
     observer_class = get_observer_class(config_name, config_value, default=default, monitor_what_str=monitor_what_str)
     if observer_class is not None:
@@ -64,11 +64,10 @@ def get_watcher(config, config_name, default="False", monitor_what_str=None, wat
 
 
 class BaseWatcher:
-
-    def __init__(self, observer_class, even_handler_class, **kwargs):
+    def __init__(self, observer_class, event_handler_class, **kwargs):
         self.observer = None
         self.observer_class = observer_class
-        self.event_handler = even_handler_class(self)
+        self.event_handler = event_handler_class(self)
         self.monitored_dirs = {}
 
     def start(self):
@@ -94,7 +93,6 @@ class BaseWatcher:
 
 
 class Watcher(BaseWatcher):
-
     def __init__(self, observer_class, event_handler_class, **kwargs):
         super().__init__(observer_class, event_handler_class, **kwargs)
         self.path_hash = {}
@@ -113,7 +111,9 @@ class Watcher(BaseWatcher):
             self.monitor(dir_path)
             log.debug("Watching for changes to file: %s", file_path)
 
-    def watch_directory(self, dir_path, callback=None, recursive=False, ignore_extensions=None, require_extensions=None):
+    def watch_directory(
+        self, dir_path, callback=None, recursive=False, ignore_extensions=None, require_extensions=None
+    ):
         dir_path = os.path.abspath(dir_path)
         if dir_path not in self.monitored_dirs:
             if callback is not None:
@@ -123,11 +123,10 @@ class Watcher(BaseWatcher):
             if require_extensions:
                 self.require_extensions[dir_path] = require_extensions
             self.monitor(dir_path, recursive=recursive)
-            log.debug("Watching for changes in directory%s: %s", ' (recursively)' if recursive else '', dir_path)
+            log.debug("Watching for changes in directory%s: %s", " (recursively)" if recursive else "", dir_path)
 
 
 class EventHandler(FileSystemEventHandler):
-
     def __init__(self, watcher):
         self.watcher = watcher
 
@@ -144,10 +143,10 @@ class EventHandler(FileSystemEventHandler):
         # modified events will only have src path, move events will
         # have dest_path and src_path but we only care about dest. So
         # look at dest if it exists else use src.
-        path = getattr(event, 'dest_path', None) or event.src_path
+        path = getattr(event, "dest_path", None) or event.src_path
         path = os.path.abspath(path)
         callback = self.watcher.file_callbacks.get(path)
-        if os.path.basename(path).startswith('.'):
+        if os.path.basename(path).startswith("."):
             return
         if callback:
             ext_ok = self._extension_check(path, path)
@@ -174,7 +173,6 @@ class EventHandler(FileSystemEventHandler):
 
 
 class NullWatcher:
-
     def start(self):
         pass
 

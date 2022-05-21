@@ -1,4 +1,5 @@
 .hg*
+
 # Downloaded and locally built eggs
 eggs
 scripts/scramble/build
@@ -21,26 +22,7 @@ lib/galaxy/web/framework/static/scripts
 lib/galaxy/web/framework/static/style
 
 # Database stuff
-database/*.sqlite
-database/beaker_sessions
-database/citations
-database/community_files
-database/compiled_templates
-database/dependencies
-database/files
-database/job_working_directory
-database/jobs_directory
-database/mulled
-database/object_store_cache
-database/objects
-database/openid_consumer_cache
-database/pbs
-database/shed_tools
-database/test_errors
-database/tmp
-database/tool_cache
-database/tool_search_index
-database/tool_recommendation_model.hdf5
+/database/
 
 
 # Python bytecode
@@ -50,6 +32,10 @@ database/tool_recommendation_model.hdf5
 *.lock
 *.log
 *.pid
+celerybeat-schedule
+
+# Celery state files
+celerybeat-schedule.*
 
 # Tool Shed Runtime Files
 tool_shed_webapp.lock
@@ -123,12 +109,13 @@ tool-data/**/*.fa
 .pytest_cache/
 assets/
 test-data-cache
+run_api_tests.html
+run_cwl_tests.html
 run_framework_tests.html
 run_functional_tests.html
 run_integration_tests.html
 run_selenium_tests.html
 run_toolshed_tests.html
-run_api_tests.html
 test/tool_shed/tmp/*
 .coverage
 htmlcov
@@ -142,6 +129,7 @@ test/unit/**.log
 .vscode
 client/**/jsconfig.json
 vetur.config.js
+.pre-commit-config.yaml
 
 # Chrom len files
 *.len
@@ -164,7 +152,7 @@ doc/build
 doc/schema.md
 doc/source/admin/config_logging_default_yaml.rst
 doc/source/dev/schema.md
-client/styleguide
+client/docs/dist
 
 # webpack stats
 client/webpack-stats.json
@@ -181,7 +169,16 @@ packages/*/*.egg-info
 *~
 
 # standalone script + main, or build into dist.
-config/plugins/visualizations/**/static/dist
-config/plugins/visualizations/**/static/script.js
-config/plugins/visualizations/**/static/main.css
-config/plugins/visualizations/**/static/plugin_build_hash.txt
+config/plugins/**/static/dist
+config/plugins/**/static/script.js
+config/plugins/**/static/main.css
+config/plugins/**/static/plugin_build_hash.txt
+config/plugins/**/static/*.map
+
+# viz-specific build artifacts to ignore (until these are removed from codebase)
+config/plugins/visualizations/annotate_image/static/jquery.contextMenu.css
+config/plugins/visualizations/nvd3/nvd3_bar/static/nvd3.js
+
+# CWL conformance tests
+lib/galaxy_test/api/cwl/test_cwl_conformance_v1_?.py
+test/functional/tools/cwl_tools/v1.?/

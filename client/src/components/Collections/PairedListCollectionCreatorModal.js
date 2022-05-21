@@ -1,28 +1,25 @@
 import _l from "utils/localization";
 import Vue from "vue";
 import { collectionCreatorModalSetup } from "./common/modal";
+import PairedListCollectionCreator from "./PairedListCollectionCreator.vue";
 
 function pairedListCollectionCreatorModal(elements, options) {
     options = options || {};
     options.title = _l("Create a collection of paired datasets");
     const { promise, showEl } = collectionCreatorModalSetup(options);
-    return import(/* webpackChunkName: "PairedListCollectionCreator" */ "./PairedListCollectionCreator.vue").then(
-        (module) => {
-            var pairedListCollectionCreatorInstance = Vue.extend(module.default);
-            var vm = document.createElement("div");
-            showEl(vm);
-            new pairedListCollectionCreatorInstance({
-                propsData: {
-                    initialElements: elements,
-                    creationFn: options.creationFn,
-                    oncancel: options.oncancel,
-                    oncreate: options.oncreate,
-                    defaultHideSourceItems: options.defaultHideSourceItems,
-                },
-            }).$mount(vm);
-            return promise;
-        }
-    );
+    var pairedListCollectionCreatorInstance = Vue.extend(PairedListCollectionCreator);
+    var vm = document.createElement("div");
+    showEl(vm);
+    new pairedListCollectionCreatorInstance({
+        propsData: {
+            initialElements: elements,
+            creationFn: options.creationFn,
+            oncancel: options.oncancel,
+            oncreate: options.oncreate,
+            defaultHideSourceItems: options.defaultHideSourceItems,
+        },
+    }).$mount(vm);
+    return promise;
 }
 
 /** Use a modal to create a list collection, then add it to the given history contents.

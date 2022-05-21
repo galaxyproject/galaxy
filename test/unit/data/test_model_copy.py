@@ -5,10 +5,15 @@ import threading
 import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
+from galaxy.model import (
+    History,
+    HistoryDatasetAssociation,
+    User,
+)
 from galaxy.model.metadata import MetadataTempFile
+from galaxy.objectstore.unittest_utils import Config as TestConfig
+from galaxy.objectstore.unittest_utils import DISK_TEST_CONFIG
 from galaxy.util import ExecutionTimer
-from ..unittest_utils.objectstore_helpers import DISK_TEST_CONFIG, TestConfig
-
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes()
@@ -48,7 +53,9 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
             hdas = []
             for i in range(list_size * 2):
                 hda_path = test_config.write("moo", "test_metadata_original_%d" % i)
-                hda = _create_hda(model, object_store, old_history, hda_path, visible=False, include_metadata_file=False)
+                hda = _create_hda(
+                    model, object_store, old_history, hda_path, visible=False, include_metadata_file=False
+                )
                 hdas.append(hda)
 
             list_elements = []
@@ -57,7 +64,9 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
                 paired_collection = model.DatasetCollection(collection_type="paired")
                 forward_dce = model.DatasetCollectionElement(collection=paired_collection, element=hdas[j * 2])
                 reverse_dce = model.DatasetCollectionElement(collection=paired_collection, element=hdas[j * 2 + 1])
-                paired_collection_element = model.DatasetCollectionElement(collection=list_collection, element=paired_collection)
+                paired_collection_element = model.DatasetCollectionElement(
+                    collection=list_collection, element=paired_collection
+                )
                 list_elements.append(paired_collection_element)
                 model.context.add_all([forward_dce, reverse_dce, paired_collection_element])
             history_dataset_collection = model.HistoryDatasetCollectionAssociation(collection=list_collection)
@@ -66,10 +75,17 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
 
             model.context.flush()
             old_history.add_dataset_collection(history_dataset_collection)
-            history_dataset_collection.add_item_annotation(model.context, old_history.user, history_dataset_collection, "annotation #%d" % history_dataset_collection.hid)
+            history_dataset_collection.add_item_annotation(
+                model.context,
+                old_history.user,
+                history_dataset_collection,
+                "annotation #%d" % history_dataset_collection.hid,
+            )
 
         model.context.flush()
-        annotation_str = history_dataset_collection.get_item_annotation_str(model.context, old_history.user, history_dataset_collection)
+        annotation_str = history_dataset_collection.get_item_annotation_str(
+            model.context, old_history.user, history_dataset_collection
+        )
 
         # Saving magic SA invocations for detecting full flushes that may harm performance.
         # from sqlalchemy import event
@@ -99,17 +115,24 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
 def _setup_mapping_and_user():
     with TestConfig(DISK_TEST_CONFIG) as (test_config, object_store):
         # Start the database and connect the mapping
-        model = mapping.init("/tmp", "sqlite:///:memory:", create_tables=True, object_store=object_store, slow_query_log_threshold=SLOW_QUERY_LOG_THRESHOLD, thread_local_log=THREAD_LOCAL_LOG)
+        model = mapping.init(
+            "/tmp",
+            "sqlite:///:memory:",
+            create_tables=True,
+            object_store=object_store,
+            slow_query_log_threshold=SLOW_QUERY_LOG_THRESHOLD,
+            thread_local_log=THREAD_LOCAL_LOG,
+        )
 
-        u = model.User(email="historycopy@example.com", password="password")
-        h1 = model.History(name="HistoryCopyHistory1", user=u)
+        u = User(email="historycopy@example.com", password="password")
+        h1 = History(name="HistoryCopyHistory1", user=u)
         model.context.add_all([u, h1])
         model.context.flush()
         yield test_config, object_store, model, h1
 
 
 def _create_hda(model, object_store, history, path, visible=True, include_metadata_file=False):
-    hda = model.HistoryDatasetAssociation(extension="bam", create_dataset=True, sa_session=model.context)
+    hda = HistoryDatasetAssociation(extension="bam", create_dataset=True, sa_session=model.context)
     hda.visible = visible
     model.context.add(hda)
     model.context.flush([hda])

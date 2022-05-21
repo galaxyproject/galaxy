@@ -30,8 +30,8 @@ const HistoryPanel = Backbone.View.extend({
         this.buttonRefresh = new Ui.ButtonLink({
             id: "history-refresh-button",
             title: _l("Refresh history"),
-            cls: "panel-header-button",
-            icon: "fa fa-refresh",
+            cls: "panel-header-button history-refresh-button",
+            icon: "fa fa-sync",
             onclick: () => {
                 this.historyView.loadCurrentHistory();
             },
@@ -42,7 +42,7 @@ const HistoryPanel = Backbone.View.extend({
             this.buttonNew = new Ui.ButtonLink({
                 id: "history-new-button",
                 title: _l("Create new history"),
-                cls: "panel-header-button",
+                cls: "panel-header-button history-new-button",
                 icon: "fa fa-plus",
                 onclick: function () {
                     Galaxy.currHistoryPanel.createNewHistory();
@@ -54,7 +54,7 @@ const HistoryPanel = Backbone.View.extend({
         this.buttonViewMulti = new Ui.ButtonLink({
             id: "history-view-multi-button",
             title: _l("View all histories"),
-            cls: "panel-header-button",
+            cls: "panel-header-button history-view-multi-button",
             icon: "fa fa-columns",
             href: `${this.root}history/view_multiple`,
         });
@@ -63,16 +63,17 @@ const HistoryPanel = Backbone.View.extend({
         this.buttonOptions = new Ui.ButtonLink({
             id: "history-options-button",
             title: _l("History options"),
-            cls: "panel-header-button",
+            cls: "panel-header-button menu-expand-button",
             target: "galaxy_main",
             icon: "fa fa-cog",
             href: `${this.root}root/history_options`,
+            description: "history options",
         });
         panelHeaderButtons.push(this.buttonOptions);
 
         this.model = new Backbone.Model({
             // define components
-            cls: "history-right-panel",
+            cls: "history-right-panel details",
             title: _l("History"),
             buttons: panelHeaderButtons,
         });

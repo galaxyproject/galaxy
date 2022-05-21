@@ -11,7 +11,7 @@ import yaml
 
 from galaxy.util import (
     galaxy_directory,
-    unicodify
+    unicodify,
 )
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
@@ -30,7 +30,6 @@ def skip_unless_module(module):
 
 
 class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
-
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -77,7 +76,9 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         assert delete_response.status_code == 200
         assert delete_response.json()["purged"] is False
         config_file = self.write_config_file()
-        output = self._scripts_check_output(script, ["-c", config_file, "--older-than", "0", "--sequence", "purge_deleted_histories"])
+        output = self._scripts_check_output(
+            script, ["-c", config_file, "--older-than", "0", "--sequence", "purge_deleted_histories"]
+        )
         print(output)
         history_response = self.dataset_populator._get("histories/%s" % history_id)
         assert history_response.status_code == 200
@@ -150,8 +151,8 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         assert output.strip() == "1"
 
     def test_database_scripts(self):
-        self._scripts_check_argparse_help("create_db.py")
-        self._scripts_check_argparse_help("manage_db.py")
+        self._scripts_check_argparse_help("create_toolshed_db.py")
+        self._scripts_check_argparse_help("migrate_toolshed_db.py")
         # TODO: test creating a smaller database - e.g. tool install database based on fresh
         # config file.
 
@@ -178,7 +179,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
             return unicodify(subprocess.check_output(cmd, cwd=cwd, env=clean_env))
         except Exception as e:
             if isinstance(e, subprocess.CalledProcessError):
-                raise Exception("{}\nOutput was:\n{}".format(unicodify(e), unicodify(e.output)))
+                raise Exception(f"{unicodify(e)}\nOutput was:\n{unicodify(e.output)}")
             raise
 
     def write_config_file(self):
@@ -187,7 +188,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         self._test_driver.temp_directories.extend([config_dir])
         config = self._raw_config
         # Update config dict with database_connection, which might be set through env variables
-        config['database_connection'] = self._app.config.database_connection
+        config["database_connection"] = self._app.config.database_connection
         with open(path, "w") as f:
             yaml.dump({"galaxy": config}, f)
 

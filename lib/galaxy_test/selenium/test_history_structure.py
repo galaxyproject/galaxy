@@ -1,7 +1,7 @@
 from .framework import (
     managed_history,
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
 
 
@@ -24,9 +24,8 @@ class HistoryStructureTestCase(SeleniumTestCase):
         self.wait_for_history()
         self.components.history_structure.header.assert_absent_or_hidden()
         self.components.history_structure.dataset.assert_absent_or_hidden()
-        self.click_history_options()
 
-        self.components.history_panel.options_show_history_structure.wait_for_and_click()
+        self.history_panel_show_structure()
 
         # assert details are not visible before expand
         self.components.history_structure.details.assert_absent_or_hidden()

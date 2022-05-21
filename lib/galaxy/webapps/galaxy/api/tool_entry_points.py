@@ -3,21 +3,24 @@ related to running and queued jobs.
 """
 import logging
 
-from galaxy import exceptions, util
+from galaxy import (
+    exceptions,
+    util,
+)
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     InteractiveToolEntryPoint,
     Job,
 )
+from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api_anonymous_and_sessionless
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class ToolEntryPointsAPIController(BaseAPIController):
-
-    def __init__(self, app):
+class ToolEntryPointsAPIController(BaseGalaxyAPIController):
+    def __init__(self, app: StructuredApp):
         self.app = app
         self.interactivetool_manager = app.interactivetool_manager
 
@@ -43,7 +46,9 @@ class ToolEntryPointsAPIController(BaseAPIController):
             raise exceptions.RequestParameterInvalidException("Currently this API must passed a job id or running=true")
 
         if job_id is not None and running:
-            raise exceptions.RequestParameterInvalidException("Currently this API must passed only a job id or running=true")
+            raise exceptions.RequestParameterInvalidException(
+                "Currently this API must passed only a job id or running=true"
+            )
 
         if job_id is not None:
             job = trans.sa_session.query(Job).get(self.decode_id(job_id))

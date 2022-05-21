@@ -1,0 +1,3 @@
+include *.rst *.txt LICENSE
+include galaxy/config/schemas/*.yml
+include galaxy/config/sample/*.sample*

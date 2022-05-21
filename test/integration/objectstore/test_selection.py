@@ -3,13 +3,17 @@
 import os
 import string
 
-from ._base import BaseObjectStoreIntegrationTestCase, files_count
+from ._base import (
+    BaseObjectStoreIntegrationTestCase,
+    files_count,
+)
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "selection_job_conf.xml")
 JOB_RESOURCE_PARAMETERS_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "selection_job_resource_parameters_conf.xml")
 
-DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0"?>
+DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
+    """<?xml version="1.0"?>
 <object_store type="distributed" id="primary" order="0">
     <backends>
         <backend id="default" type="disk" weight="1" name="Default Store">
@@ -35,10 +39,17 @@ DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0
         </backend>
     </backends>
 </object_store>
-""")
+"""
+)
 
 
 class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
+    # populated by config_object_store
+    files_default_path: str
+    files_static_path: str
+    files_dynamic_path: str
+    files_dynamic_ebs_path: str
+    files_dynamic_s3_path: str
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -78,7 +89,6 @@ class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase
                     tool_id,
                     inputs,
                     history_id,
-                    assert_ok=True,
                 )
                 self.dataset_populator.wait_for_history(history_id)
 
@@ -99,20 +109,20 @@ class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase
             self._assert_file_counts(1, 2, 0, 0)
 
             # should create two files in ebs object store.
-            create_10_inputs = {
+            create_10_inputs_1 = {
                 "input1": hda1_input,
                 "input2": hda1_input,
             }
-            _run_tool("create_10", create_10_inputs)
+            _run_tool("create_10", create_10_inputs_1)
             self._assert_file_counts(1, 2, 10, 0)
 
             # should create 10 files in S3 object store.
-            create_10_inputs = {
+            create_10_inputs_2 = {
                 "__job_resource|__job_resource__select": "yes",
                 "__job_resource|how_store": "slow",
                 "input1": hda1_input,
                 "input2": hda1_input,
             }
-            _run_tool("create_10", create_10_inputs)
+            _run_tool("create_10", create_10_inputs_2)
             self._assert_file_counts(1, 2, 10, 10)
             self._assert_no_external_filename()

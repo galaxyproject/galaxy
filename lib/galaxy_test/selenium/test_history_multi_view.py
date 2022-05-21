@@ -1,6 +1,6 @@
 from .framework import (
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
 
 
@@ -11,23 +11,24 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
     @selenium_test
     def test_create_new_old_slides_next(self):
         history_id = self.current_history_id()
-        input_collection = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json()
-        input_hid = input_collection["hid"]
+        input_collection = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["0", "1", "0", "1"], wait=True
+        ).json()
+        input_hid = input_collection["outputs"][0]["hid"]
 
         self.home()
 
-        hdca_selector = self.history_panel_wait_for_hid_state(input_hid, "ok")
-
-        self.components.history_panel.multi_view_button.wait_for_and_click()
+        self.open_history_multi_view()
+        hdca_selector = self.history_panel_wait_for_hid_state(input_hid, "ok", multi_history_panel=True)
+        self.wait_for_visible(hdca_selector)
         self.components.multi_history_view.create_new_button.wait_for_and_click()
         self.components.multi_history_view.drag_drop_help.wait_for_visible()
-        self.wait_for_visible(hdca_selector)
         self.screenshot("multi_history_collection")
 
     @selenium_test
     def test_list_list_display(self):
         history_id = self.current_history_id()
-        method = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json
+        method = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True).json
         selector = self.prepare_multi_history_view(method)
         first_level_element_selector = selector.descendant(".dataset-collection-element")
         self.wait_for_and_click(first_level_element_selector)
@@ -40,7 +41,9 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
     @selenium_test
     def test_list_list_list_display(self):
         history_id = self.current_history_id()
-        method = self.dataset_collection_populator.create_nested_collection(history_id, collection_type="list:list:list").json
+        method = self.dataset_collection_populator.create_nested_collection(
+            history_id, collection_type="list:list:list"
+        ).json
         selector = self.prepare_multi_history_view(method)
 
         first_level_element_selector = selector.descendant(".dataset-collection-element")
@@ -56,7 +59,9 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
     @selenium_test
     def test_copy_history(self):
         history_id = self.current_history_id()
-        method = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json
+        method = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["0", "1", "0", "1"]
+        ).json
 
         self.prepare_multi_history_view(method)
         self.copy_history(history_id)
@@ -65,7 +70,9 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
     @selenium_test
     def test_delete_history(self):
         history_id = self.current_history_id()
-        method = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json
+        method = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["0", "1", "0", "1"]
+        ).json
 
         self.prepare_multi_history_view(method)
         self.copy_history(history_id)
@@ -79,7 +86,9 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
     @selenium_test
     def test_purge_history(self):
         history_id = self.current_history_id()
-        method = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json
+        method = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["0", "1", "0", "1"]
+        ).json
 
         self.prepare_multi_history_view(method)
         self.copy_history(history_id)
@@ -87,14 +96,14 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
         # click on purge button with corresponding history_id
         self.components.multi_history_view.history_dropdown_menu.purge(history_id=history_id).wait_for_and_click()
 
-        self.driver.switch_to_alert().accept()
+        self.driver.switch_to.alert.accept()
         self.sleep_for(self.wait_types.UX_RENDER)
 
         self.assert_history(history_id, should_exist=False)
 
     @selenium_test
     def test_switch_history(self):
-        '''
+        """
         1. Load the multi history view. There should be a selector for the button
            to create a new history.
         2. Create a new history. This *should* automatically switch to the newly
@@ -103,11 +112,11 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
            previously created history that allows switching back to that one, and
            the history ID should now match the ID of the history with which we
            started.
-        '''
+        """
         self.home()
         original_history_id = self.current_history_id()
         # Load the multi-view
-        self.components.history_panel.multi_view_button.wait_for_and_click()
+        self.open_history_multi_view()
         # There should be only one
         self.assert_history(original_history_id, histories_number=1)
         # Creating a new history should automatically switch to it
@@ -129,7 +138,9 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
         histories = self.components.multi_history_view.histories.all()
         assert len(histories) == histories_number
         # search for history with history_id
-        assert should_exist == any(history.get_attribute("id") == "history-column-" + history_id for history in histories)
+        assert should_exist == any(
+            history.get_attribute("id") == f"history-column-{history_id}" for history in histories
+        )
 
     def copy_history(self, history_id):
         self.components.multi_history_view.history_dropdown_btn(history_id=history_id).wait_for_and_click()
@@ -139,11 +150,13 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
 
     def prepare_multi_history_view(self, collection_populator_method):
         collection = collection_populator_method()
+        if "outputs" in collection:
+            collection = self.dataset_collection_populator.wait_for_fetched_collection(collection)
         collection_hid = collection["hid"]
 
         self.home()
-        self.components.history_panel.multi_view_button.wait_for_and_click()
+        self.open_history_multi_view()
 
-        selector = self.history_panel_wait_for_hid_state(collection_hid, "ok")
+        selector = self.history_panel_wait_for_hid_state(collection_hid, "ok", multi_history_panel=True)
         self.click(selector)
         return selector

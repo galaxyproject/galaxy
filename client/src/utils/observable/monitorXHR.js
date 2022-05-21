@@ -31,24 +31,26 @@ export const monitorXHR = (cfg = {}) => {
 };
 
 // matches incoming method/url against config
-export const matchRoutes = (cfg = {}) => ({ method, url }) => {
-    const { methods = ["GET", "POST", "PUT", "DELETE"], routes = [], exclude = [] } = cfg;
+export const matchRoutes =
+    (cfg = {}) =>
+    ({ method, url }) => {
+        const { methods = ["GET", "POST", "PUT", "DELETE"], routes = [], exclude = [] } = cfg;
 
-    // match fun compares route def to current url
-    const matcher = matchUrlToRoute(url);
+        // match fun compares route def to current url
+        const matcher = matchUrlToRoute(url);
 
-    if (!methods.includes(method)) {
+        if (!methods.includes(method)) {
+            return false;
+        }
+        if (exclude.length && exclude.find(matcher)) {
+            return false;
+        }
+        if (routes.length) {
+            const routeMatch = routes.find(matcher);
+            return !!routeMatch;
+        }
         return false;
-    }
-    if (exclude.length && exclude.find(matcher)) {
-        return false;
-    }
-    if (routes.length) {
-        const routeMatch = routes.find(matcher);
-        return !!routeMatch;
-    }
-    return false;
-};
+    };
 
 const matchUrlToRoute = (url) => (rt) => {
     let result = false;

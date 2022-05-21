@@ -23,16 +23,24 @@ class FilteredLineDataProvider(base.LimitedOffsetDataProvider):
     optional control over which line to start on and how many lines
     to return.
     """
-    DEFAULT_COMMENT_CHAR = '#'
+
+    DEFAULT_COMMENT_CHAR = "#"
     settings = {
-        'strip_lines': 'bool',
-        'strip_newlines': 'bool',
-        'provide_blank': 'bool',
-        'comment_char': 'str',
+        "strip_lines": "bool",
+        "strip_newlines": "bool",
+        "provide_blank": "bool",
+        "comment_char": "str",
     }
 
-    def __init__(self, source, strip_lines=True, strip_newlines=False, provide_blank=False,
-                 comment_char=DEFAULT_COMMENT_CHAR, **kwargs):
+    def __init__(
+        self,
+        source,
+        strip_lines=True,
+        strip_newlines=False,
+        provide_blank=False,
+        comment_char=DEFAULT_COMMENT_CHAR,
+        **kwargs,
+    ):
         """
         :param strip_lines: remove whitespace from the beginning an ending
             of each line (or not).
@@ -72,8 +80,8 @@ class FilteredLineDataProvider(base.LimitedOffsetDataProvider):
             if self.strip_lines:
                 line = line.strip()
             elif self.strip_newlines:
-                line = line.strip('\n')
-            if not self.provide_blank and line == '':
+                line = line.strip("\n")
+            if not self.provide_blank and line == "":
                 return None
             elif self.comment_char and line.startswith(self.comment_char):
                 return None
@@ -90,9 +98,10 @@ class RegexLineDataProvider(FilteredLineDataProvider):
     .. note:: the regex matches are effectively OR'd (if **any** regex matches
         the line it is considered valid and will be provided).
     """
+
     settings = {
-        'regex_list': 'list:escaped',
-        'invert': 'bool',
+        "regex_list": "list:escaped",
+        "invert": "bool",
     }
 
     def __init__(self, source, regex_list=None, invert=False, **kwargs):
@@ -121,7 +130,7 @@ class RegexLineDataProvider(FilteredLineDataProvider):
         return line
 
     def filter_by_regex(self, line):
-        matches = any([regex.match(line) for regex in self.compiled_regex_list])
+        matches = any(regex.match(line) for regex in self.compiled_regex_list)
         if self.invert:
             return line if not matches else None
         return line if matches else None
@@ -153,8 +162,7 @@ class BlockDataProvider(base.LimitedOffsetDataProvider):
         """
         # composition - not inheritance
         # TODO: not a fan of this:
-        (filter_fn, limit, offset) = (kwargs.pop('filter_fn', None),
-                                      kwargs.pop('limit', None), kwargs.pop('offset', 0))
+        (filter_fn, limit, offset) = (kwargs.pop("filter_fn", None), kwargs.pop("limit", None), kwargs.pop("offset", 0))
         line_provider = FilteredLineDataProvider(source, **kwargs)
         super().__init__(line_provider, filter_fn=filter_fn, limit=limit, offset=offset)
 

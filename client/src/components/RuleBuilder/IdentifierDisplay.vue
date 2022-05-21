@@ -25,14 +25,6 @@ export default {
             required: true,
         },
     },
-    methods: {
-        remove() {
-            this.$emit("remove");
-        },
-        edit() {
-            this.$emit("edit");
-        },
-    },
     computed: {
         typeDisplay() {
             return MAPPING_TARGETS[this.type].label;
@@ -48,6 +40,14 @@ export default {
         },
         columnsLabel() {
             return RuleDefs.columnDisplay(this.columns, this.colHeaders);
+        },
+    },
+    methods: {
+        remove() {
+            this.$emit("remove");
+        },
+        edit() {
+            this.$emit("edit");
         },
     },
 };

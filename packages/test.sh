@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 # Don't display the pip progress bar when running under CI
 [ "$CI" = 'true' ] && export PIP_PROGRESS_BAR=off
@@ -14,14 +14,16 @@ TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 
 virtualenv -p "$TEST_PYTHON" "$TEST_ENV_DIR"
 . "${TEST_ENV_DIR}/bin/activate"
-pip install mypy
+pip install --upgrade pip 'setuptools<58' wheel
+pip install -r../lib/galaxy/dependencies/pinned-lint-requirements.txt
 
 # ensure ordered by dependency dag
 PACKAGE_DIRS=(
     util
     objectstore
     job_metrics
-    containers
+    config
+    files
     tool_util
     data
     job_execution
@@ -31,32 +33,26 @@ PACKAGE_DIRS=(
     app
     webapps
 )
-# tool_util not yet working 100%,
-# data has many problems quota, tool shed install database, etc..
-RUN_TESTS=(1 1 1 1 1 1 1 1 1 1 1 0)
-RUN_MYPY=(1 1 1 1 1 1 1 1 1 1 1 1)
 for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
+    printf "\n========= TESTING PACKAGE ${PACKAGE_DIRS[$i]} =========\n\n"
     package_dir=${PACKAGE_DIRS[$i]}
-    run_tests=${RUN_TESTS[$i]}
-    run_mypy=${RUN_MYPY[$i]}
 
     cd "$package_dir"
-    pip install -e '.'
-    pip install -r test-requirements.txt
 
     # Install extras (if needed)
     if [ "$package_dir" = "util" ]; then
         pip install -e '.[template,jstree]'
-    fi
-    if [ "$package_dir" = "tool_util" ]; then
-        pip install -e '.[mulled]'
+    elif [ "$package_dir" = "tool_util" ]; then
+        pip install -e '.[cwl,mulled,edam]'
+    else
+        pip install -e '.'
     fi
 
-    if [[ "$run_tests" == "1" ]]; then
-        pytest --doctest-modules galaxy tests
-    fi
-    if [[ "$run_mypy" == "1" ]]; then
-        make mypy
-    fi
+    pip install -r test-requirements.txt
+
+    # Prevent execution of alembic/env.py at test collection stage (alembic.context not set)
+    unit_extra='--doctest-modules --ignore galaxy/model/migrations/alembic'
+    pytest $unit_extra galaxy tests
+    make mypy
     cd ..
 done

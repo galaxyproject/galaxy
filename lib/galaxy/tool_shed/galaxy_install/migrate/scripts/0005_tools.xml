@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<toolshed name="toolshed.g2.bx.psu.edu">
-    <repository name="bwa_wrappers" description="Galaxy wrappers for the BWA short read aligner." changeset_revision="ffa8aaa14f7c">
-        <tool id="bwa_wrapper" version="1.2.3" file="sr_mapping/bwa_wrapper.xml"/>
-        <tool id="bwa_color_wrapper" version="1.0.2" file="sr_mapping/bwa_color_wrapper.xml"/>
-    </repository>
-</toolshed>

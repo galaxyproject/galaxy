@@ -3,125 +3,105 @@ API operations on Group objects.
 """
 import logging
 
-from galaxy import web
-from galaxy.util import unicodify
-from galaxy.webapps.base.controller import BaseAPIController, url_for
+from fastapi import Path
+
+from galaxy.managers.context import ProvidesAppContext
+from galaxy.managers.group_users import GroupUsersManager
+from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import (
+    GroupUserListModel,
+    GroupUserModel,
+)
+from . import (
+    depends,
+    DependsOnTrans,
+    Router,
+)
 
 log = logging.getLogger(__name__)
 
+router = Router(tags=["group_users"])
 
-class GroupUsersAPIController(BaseAPIController):
+GroupIDParam: EncodedDatabaseIdField = Path(..., title="GroupID", description="The ID of the group")
 
-    @web.require_admin
-    @web.legacy_expose_api
-    def index(self, trans, group_id, **kwd):
+UserIDParam: EncodedDatabaseIdField = Path(..., title="UserID", description="The ID of the user")
+
+
+def group_user_to_model(trans, encoded_group_id, user):
+    encoded_user_id = trans.security.encode_id(user.id)
+    url = trans.url_builder("group_user", group_id=encoded_group_id, id=encoded_user_id)
+    return GroupUserModel(id=encoded_user_id, email=user.email, url=url)
+
+
+@router.cbv
+class FastAPIGroupUsers:
+    manager: GroupUsersManager = depends(GroupUsersManager)
+
+    @router.get("/api/groups/{group_id}/users", require_admin=True, summary="Displays a collection (list) of groups.")
+    def index(
+        self, trans: ProvidesAppContext = DependsOnTrans, group_id: EncodedDatabaseIdField = GroupIDParam
+    ) -> GroupUserListModel:
         """
         GET /api/groups/{encoded_group_id}/users
         Displays a collection (list) of groups.
         """
-        decoded_group_id = trans.security.decode_id(group_id)
-        try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-        except Exception:
-            group = None
-        if not group:
-            trans.response.status = 400
-            return "Invalid group id ( %s ) specified." % str(group_id)
-        rval = []
-        try:
-            for uga in group.users:
-                user = uga.user
-                encoded_id = trans.security.encode_id(user.id)
-                rval.append(dict(id=encoded_id,
-                                 email=user.email,
-                                 url=url_for('group_user', group_id=group_id, id=encoded_id, )))
-        except Exception as e:
-            rval = "Error in group API at listing users"
-            log.error(rval + ": %s", unicodify(e))
-            trans.response.status = 500
-        return rval
+        group_users = self.manager.index(trans, group_id)
+        return GroupUserListModel(__root__=[group_user_to_model(trans, group_id, gr) for gr in group_users])
 
-    @web.require_admin
-    @web.legacy_expose_api
-    def show(self, trans, id, group_id, **kwd):
+    @router.get(
+        "/api/groups/{group_id}/user/{id}",
+        alias="/api/groups/{group_id}/users/{id}",
+        name="group_user",
+        require_admin=True,
+        summary="Displays information about a group user.",
+    )
+    def show(
+        self,
+        trans: ProvidesAppContext = DependsOnTrans,
+        group_id: EncodedDatabaseIdField = GroupIDParam,
+        id: EncodedDatabaseIdField = UserIDParam,
+    ) -> GroupUserModel:
         """
         GET /api/groups/{encoded_group_id}/users/{encoded_user_id}
         Displays information about a group user.
         """
-        user_id = id
-        decoded_group_id = trans.security.decode_id(group_id)
-        decoded_user_id = trans.security.decode_id(user_id)
-        item = None
-        try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-            user = trans.sa_session.query(trans.app.model.User).get(decoded_user_id)
-            for uga in group.users:
-                if uga.user == user:
-                    item = dict(id=user_id,
-                                email=user.email,
-                                url=url_for('group_user', group_id=group_id, id=user_id))  # TODO Fix This
-            if not item:
-                item = f"user {user.email} not in group {group.name}"
-        except Exception as e:
-            item = f"Error in group_user API group {group.name} user {user.email}"
-            log.error(item + ": %s", unicodify(e))
-        return item
+        user = self.manager.show(trans, id, group_id)
+        return group_user_to_model(trans, group_id, user)
 
-    @web.require_admin
-    @web.legacy_expose_api
-    def update(self, trans, id, group_id, **kwd):
+    @router.put(
+        "/api/groups/{group_id}/users/{user_id}",
+        alias="/api/groups/{group_id}/user/{user_id}",
+        require_admin=True,
+        summary="Adds a user to a group",
+    )
+    def update(
+        self,
+        trans: ProvidesAppContext = DependsOnTrans,
+        group_id: EncodedDatabaseIdField = GroupIDParam,
+        user_id: EncodedDatabaseIdField = UserIDParam,
+    ) -> GroupUserModel:
         """
         PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
         Adds a user to a group
         """
-        user_id = id
-        decoded_group_id = trans.security.decode_id(group_id)
-        decoded_user_id = trans.security.decode_id(user_id)
-        item = None
-        try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-            user = trans.sa_session.query(trans.app.model.User).get(decoded_user_id)
-            for uga in group.users:
-                if uga.user == user:
-                    item = dict(id=user_id,
-                                email=user.email,
-                                url=url_for('group_user', group_id=group_id, id=user_id))
-            if not item:
-                uga = trans.app.model.UserGroupAssociation(user, group)
-                # Add UserGroupAssociations
-                trans.sa_session.add(uga)
-                trans.sa_session.flush()
-                item = dict(id=user_id,
-                            email=user.email,
-                            url=url_for('group_user', group_id=group_id, id=user_id))
-        except Exception as e:
-            item = f"Error in group_user API Adding user {user.email} to group {group.name}"
-            log.error(item + ": %s", unicodify(e))
-        return item
+        user = self.manager.update(trans, user_id, group_id)
+        return group_user_to_model(trans, group_id, user)
 
-    @web.require_admin
-    @web.legacy_expose_api
-    def delete(self, trans, id, group_id, **kwd):
+    @router.delete(
+        "/api/groups/{group_id}/user/{user_id}",
+        alias="/api/groups/{group_id}/users/{user_id}",
+        require_admin=True,
+        summary="Removes a user from a group",
+    )
+    def delete(
+        self,
+        trans: ProvidesAppContext = DependsOnTrans,
+        group_id: EncodedDatabaseIdField = GroupIDParam,
+        user_id: EncodedDatabaseIdField = UserIDParam,
+    ) -> GroupUserModel:
         """
         DELETE /api/groups/{encoded_group_id}/users/{encoded_user_id}
         Removes a user from a group
         """
-        user_id = id
-        decoded_group_id = trans.security.decode_id(group_id)
-        decoded_user_id = trans.security.decode_id(user_id)
-        try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-            user = trans.sa_session.query(trans.app.model.User).get(decoded_user_id)
-            for uga in group.users:
-                if uga.user == user:
-                    trans.sa_session.delete(uga)
-                    trans.sa_session.flush()
-                    item = dict(id=user_id,
-                                email=user.email,
-                                url=url_for('group_user', group_id=group_id, id=user_id))
-            if not item:
-                item = f"user {user.email} not in group {group.name}"
-        except Exception as e:
-            item = f"Error in group_user API Removing user {user.email} from group {group.name}"
-            log.error(item + ": %s", unicodify(e))
-        return item
+        user = self.manager.delete(trans, user_id, group_id)
+        return group_user_to_model(trans, group_id, user)

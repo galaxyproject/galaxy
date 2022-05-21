@@ -2,14 +2,9 @@
 VENV?=.venv
 # Source virtualenv to execute command (flake8, sphinx, twine, etc...)
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
-RELEASE_CURR:=16.01
-RELEASE_CURR_MINOR_NEXT:=$(shell $(IN_VENV) python scripts/bootstrap_history.py --print-next-minor-version)
-RELEASE_NEXT:=16.04
-# TODO: This needs to be updated with create_release_rc
-#RELEASE_NEXT_BRANCH:=release_$(RELEASE_NEXT)
-RELEASE_NEXT_BRANCH:=dev
+RELEASE_CURR:=22.05
 RELEASE_UPSTREAM:=upstream
-MY_UPSTREAM:=origin
+TARGET_BRANCH=$(RELEASE_UPSTREAM)/dev
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 DOCS_DIR=doc
@@ -18,6 +13,13 @@ SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
 OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
 YARN := $(shell command -v yarn 2> /dev/null)
+YARN_INSTALL_OPTS=--network-timeout 300000 --check-files
+CWL_TARGETS := test/functional/tools/cwl_tools/v1.0/conformance_tests.yaml \
+	test/functional/tools/cwl_tools/v1.1/conformance_tests.yaml \
+	test/functional/tools/cwl_tools/v1.2/conformance_tests.yaml \
+	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_0.py \
+	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_1.py \
+	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_2.py
 
 all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
@@ -35,6 +37,13 @@ docs-develop: ## Fast doc generation and more warnings (for development)
 
 setup-venv:
 	if [ ! -f $(VENV)/bin/activate ]; then bash scripts/common_startup.sh --dev-wheels; fi
+
+diff-format:  ## Format Python code changes since last commit
+	$(IN_VENV) darker .
+
+format:  ## Format Python code base
+	$(IN_VENV) isort .
+	$(IN_VENV) black .
 
 list-dependency-updates: setup-venv
 	$(IN_VENV) pip list --outdated --format=columns
@@ -54,9 +63,6 @@ open-docs: docs _open-docs ## generate Sphinx HTML documentation and open in bro
 
 open-project: ## open project on github
 	$(OPEN_RESOURCE) $(PROJECT_URL)
-
-uwsgi-rebuild-validation: ## rebuild uwsgi_config.yml kwalify schema against latest uwsgi master.
-	$(CONFIG_MANAGE) build_uwsgi_yaml
 
 tool-shed-config-validate: ## validate tool shed YAML configuration file
 	$(CONFIG_MANAGE) validate tool_shed
@@ -135,12 +141,30 @@ update-lint-requirements:
 update-dependencies: update-lint-requirements ## update pinned and dev dependencies
 	$(IN_VENV) ./lib/galaxy/dependencies/update.sh
 
+$(CWL_TARGETS):
+	./scripts/update_cwl_conformance_tests.sh
+
+generate-cwl-conformance-tests: $(CWL_TARGETS)  ## Initialise CWL conformance tests
+
+clean-cwl-conformance-tests:  ## Clean CWL conformance tests
+	for f in $(CWL_TARGETS); do \
+		if [ $$(basename "$$f") = conformance_tests.yaml ]; then \
+			rm -rf $$(dirname "$$f"); \
+		else \
+			rm -f "$$f"; \
+		fi \
+	done
+
+update-cwl-conformance-tests: ## update CWL conformance tests
+	$(MAKE) clean-cwl-conformance-tests
+	$(MAKE) generate-cwl-conformance-tests
+
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN
 	@echo "Could not find yarn, which is required to build the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
 	false;
 else
-	cd client && yarn install --network-timeout 300000 --check-files
+	cd client && yarn install $(YARN_INSTALL_OPTS)
 endif
 	
 
@@ -154,22 +178,25 @@ client-production-maps: node-deps ## Rebuild client-side artifacts for a product
 	cd client && yarn run build-production-maps
 
 client-format: node-deps ## Reformat client code
-	cd client && yarn run prettier
+	cd client && yarn run format
 
 client-watch: node-deps ## A useful target for parallel development building.  See also client-dev-server.
 	cd client && yarn run watch
 
 client-dev-server: node-deps ## Starts a webpack dev server for client development (HMR enabled)
-	cd client && yarn run webpack-dev-server
+	cd client && yarn run serve
 
 client-test: node-deps  ## Run JS unit tests
 	cd client && yarn run test
+
+client-eslint-precommit: node-deps # Client linting for pre-commit hook; skips glob input and takes specific paths
+	cd client && yarn run eslint-precommit
 
 client-eslint: node-deps # Run client linting
 	cd client && yarn run eslint
 
 client-format-check: node-deps # Run client formatting check
-	cd client && yarn run prettier-check
+	cd client && yarn run format-check
 
 client-lint: client-eslint client-format-check ## ES lint and check format of client
 
@@ -180,97 +207,13 @@ serve-selenium-notebooks: ## Serve testing notebooks for Jupyter
 	cd lib && export PYTHONPATH=`pwd`; jupyter notebook --notebook-dir=galaxy_test/selenium/jupyter
 
 # Release Targets
-release-create-rc: release-ensure-upstream ## Create a release-candidate branch
-	git checkout dev
-	git pull --ff-only $(RELEASE_UPSTREAM) dev
-	git push $(MY_UPSTREAM) dev
-	git checkout -b release_$(RELEASE_CURR)
-	git push $(MY_UPSTREAM) release_$(RELEASE_CURR)
-	git push $(RELEASE_UPSTREAM) release_$(RELEASE_CURR)
-	git checkout -b version-$(RELEASE_CURR)
-	sed -i.bak -e "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_CURR)\"/" lib/galaxy/version.py
-	sed -i.bak -e "s/^VERSION_MINOR = .*/VERSION_MINOR = \"rc1\"/" lib/galaxy/version.py
-	rm -f lib/galaxy/version.py.bak
-	git add lib/galaxy/version.py
-	git commit -m "Update version to $(RELEASE_CURR).rc1"
-	git checkout dev
+release-create-rc: ## Create a release-candidate branch or new release-candidate version
+	$(IN_VENV) ./scripts/release.sh -c
 
-	git checkout -b version-$(RELEASE_NEXT).dev
-	sed -i.bak -e "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_NEXT)\"/" lib/galaxy/version.py
-	rm -f lib/galaxy/version.py.bak
-	git add lib/galaxy/version.py
-	git commit -m "Update version to $(RELEASE_NEXT).dev"
+release-create: ## Create a release branch
+	$(IN_VENV) ./scripts/release.sh
 
-	-git merge version-$(RELEASE_CURR)
-	git checkout --ours lib/galaxy/version.py
-	git add lib/galaxy/version.py
-	git commit -m "Merge branch 'version-$(RELEASE_CURR)' into version-$(RELEASE_NEXT).dev"
-	git push $(MY_UPSTREAM) version-$(RELEASE_CURR):version-$(RELEASE_CURR)
-	git push $(MY_UPSTREAM) version-$(RELEASE_NEXT).dev:version-$(RELEASE_NEXT).dev
-	git checkout dev
-	# TODO: Use hub to automate these PR creations or push directly.
-	@echo "Open a PR from version-$(RELEASE_CURR) of your fork to release_$(RELEASE_CURR)"
-	@echo "Open a PR from version-$(RELEASE_NEXT).dev of your fork to dev"
-
-release-create: release-ensure-upstream ## Create a release branch
-	git checkout master
-	git pull --ff-only $(RELEASE_UPSTREAM) master
-	git push $(MY_UPSTREAM) master
-	git checkout release_$(RELEASE_CURR)
-	git pull --ff-only $(RELEASE_UPSTREAM) release_$(RELEASE_CURR)
-	#git push $(MY_UPSTREAM) release_$(RELEASE_CURR)
-	git checkout dev
-	git pull --ff-only $(RELEASE_UPSTREAM) dev
-	#git push $(MY_UPSTREAM) dev
-	# Test run of merging. If there are conflicts, it will fail here.
-	git merge release_$(RELEASE_CURR)
-	git checkout release_$(RELEASE_CURR)
-	sed -i.bak -e "s/^VERSION_MINOR = .*/VERSION_MINOR = None/" lib/galaxy/version.py
-	rm -f lib/galaxy/version.py.bak
-	git add lib/galaxy/version.py
-	git commit -m "Update version to $(RELEASE_CURR)"
-	git tag -m "Tag version $(RELEASE_CURR)" v$(RELEASE_CURR)
-
-	git checkout dev
-	-git merge release_$(RELEASE_CURR)
-	git checkout --ours lib/galaxy/version.py
-	git add lib/galaxy/version.py
-	git commit -m "Merge branch 'release_$(RELEASE_CURR)' into dev"
-	git checkout master
-	git merge release_$(RELEASE_CURR)
-	git push $(RELEASE_UPSTREAM) release_$(RELEASE_CURR):release_$(RELEASE_CURR)
-	git push $(RELEASE_UPSTREAM) dev:dev
-	git push $(RELEASE_UPSTREAM) master:master
-	git push $(RELEASE_UPSTREAM) --tags
-
-release-create-point: ## Create a point release
-	git pull --ff-only $(RELEASE_UPSTREAM) master
-	git push $(MY_UPSTREAM) master
-	git checkout release_$(RELEASE_CURR)
-	git pull --ff-only $(RELEASE_UPSTREAM) release_$(RELEASE_CURR)
-	#git push $(MY_UPSTREAM) release_$(RELEASE_CURR)
-	git checkout $(RELEASE_NEXT_BRANCH)
-	git pull --ff-only $(RELEASE_UPSTREAM) $(RELEASE_NEXT_BRANCH)
-	#git push $(MY_UPSTREAM) $(RELEASE_NEXT_BRANCH)
-	git merge release_$(RELEASE_CURR)
-	git checkout release_$(RELEASE_CURR)
-	sed -i.bak -e "s/^VERSION_MINOR = .*/VERSION_MINOR = \"$(RELEASE_CURR_MINOR_NEXT)\"/" lib/galaxy/version.py
-	rm -f lib/galaxy/version.py.bak
-	git add lib/galaxy/version.py
-	git commit -m "Update version to $(RELEASE_CURR).$(RELEASE_CURR_MINOR_NEXT)"
-	git tag -m "Tag version $(RELEASE_CURR).$(RELEASE_CURR_MINOR_NEXT)" v$(RELEASE_CURR).$(RELEASE_CURR_MINOR_NEXT)
-	git checkout $(RELEASE_NEXT_BRANCH)
-	-git merge release_$(RELEASE_CURR)
-	git checkout --ours lib/galaxy/version.py
-	git add lib/galaxy/version.py
-	git commit -m "Merge branch 'release_$(RELEASE_CURR)' into $(RELEASE_NEXT_BRANCH)"
-	git checkout master
-	git merge release_$(RELEASE_CURR)
-	#git push origin release_$(RELEASE_CURR):release_$(RELEASE_CURR)
-	#git push origin $(RELEASE_NEXT_BRANCH):release_$(RELEASE_NEXT_BRANCH)
-	#git push origin master:master
-	#git push origin --tags
-	git checkout release_$(RELEASE_CURR)
+release-create-point: release-create ## Create a point release
 
 .PHONY: help
 

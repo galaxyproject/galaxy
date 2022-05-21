@@ -44,8 +44,24 @@ def diff_files(old, new):
     old_k = set(old_kv.keys())
     new_k = set(new_kv.keys())
 
-    added = new_k - old_k
-    removed = old_k - new_k
+    added = []
+    for item in new_k - old_k:
+        parent = ".".join(item.split(".")[0:-1])
+        if parent in new_k and parent not in old_k:
+            added.append(item)
+        else:
+            added.append(parent)
+    added = set(added)
+
+    removed = []
+    for item in old_k - new_k:
+        parent = ".".join(item.split(".")[0:-1])
+        if parent in old_k and parent not in new_k:
+            removed.append(item)
+        else:
+            removed.append(parent)
+    removed = set(removed)
+
     shared = old_k & new_k
     changed = [(k, old_kv[k], new_kv[k]) for k in shared if old_kv[k] != new_kv[k]]
 
@@ -68,6 +84,12 @@ def _report_dict(title, subheading, data, mapper):
     print()
 
 
+def _indent(s, by=4):
+    whitespace = " " * by
+    s = s if isinstance(s, list) else s.splitlines()
+    return "\n".join(f"{whitespace}{line}" for line in s)
+
+
 def report_diff(added, changed, removed, new_files):
     # Print out report
     if added or changed or removed:
@@ -76,27 +98,19 @@ def report_diff(added, changed, removed, new_files):
         print()
 
     if added:
-        _report_dict(
-            "Added",
-            "The following configuration options are new",
-            added,
-            lambda x: f"-  {x}"
-        )
+        _report_dict("Added", "The following configuration options are new", added, lambda x: f"-  {x}")
 
     if changed:
         _report_dict(
             "Changed",
             "The following configuration options have been changed",
             changed,
-            lambda x: f"-  {x[0]} has changed from ``{x[1]}`` to ``{x[2]}``"
+            lambda x: f"-  {x[0]} has changed from\n\n   ::\n\n{_indent(x[1])}\n\n   to\n\n   ::\n\n{_indent(x[2])}\n\n",
         )
 
     if removed:
         _report_dict(
-            "Removed",
-            "The following configuration options have been completely removed",
-            removed,
-            lambda x: f"-  {x}"
+            "Removed", "The following configuration options have been completely removed", removed, lambda x: f"-  {x}"
         )
 
     if new_files:
@@ -111,40 +125,42 @@ def report_diff(added, changed, removed, new_files):
 
 def load_at_time(path, revision=None):
     if revision is not None:
-        return subprocess.check_output(
-            ["git", "show", f"{revision}:{path}"], stderr=subprocess.STDOUT
-        )
+        return subprocess.check_output(["git", "show", f"{revision}:{path}"], stderr=subprocess.STDOUT)
     else:
         with open(path) as handle:
             return handle.read()
 
 
 def main(old_revision, new_revision=None):
-    files_to_diff = glob.glob("config/*.yml.sample")
+    globs = (
+        "config/*.yml.sample",
+        "lib/galaxy/config/schemas/*schema.yml",
+    )
+    files_to_diff = [f for g in globs for f in glob.glob(g)]
     added = {}
     removed = {}
     changed = {}
     new_files = []
 
     for file in files_to_diff:
+        filename = file
+        if "config_schema.yml" in file:
+            filename = "config/galaxy.yml.sample:galaxy"
+
         real_path = Path(file).resolve().relative_to(Path.cwd())
         try:
-            old_contents = yaml.load(
-                load_at_time(real_path, old_revision), Loader=MockOrderedLoader
-            )
-            new_contents = yaml.load(
-                load_at_time(real_path, new_revision), Loader=MockOrderedLoader
-            )
+            old_contents = yaml.load(load_at_time(real_path, old_revision), Loader=MockOrderedLoader)
+            new_contents = yaml.load(load_at_time(real_path, new_revision), Loader=MockOrderedLoader)
 
             (a, r, c) = diff_files(old_contents, new_contents)
             if a:
-                added[file] = a
+                added[filename] = sorted(a)
 
             if r:
-                removed[file] = r
+                removed[filename] = sorted(r)
 
             if c:
-                changed[file] = c
+                changed[filename] = sorted(c)
 
         except subprocess.CalledProcessError:
             new_files.append(file)
@@ -153,9 +169,7 @@ def main(old_revision, new_revision=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Diff yaml configuration files between two points in time."
-    )
+    parser = argparse.ArgumentParser(description="Diff yaml configuration files between two points in time.")
     parser.add_argument("old_revision", help="Old revision")
     parser.add_argument(
         "--new_revision",

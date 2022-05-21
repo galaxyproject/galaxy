@@ -3,15 +3,14 @@
         <b-alert v-if="error" variant="danger" show>
             {{ error }}
         </b-alert>
-        <b-card no-body v-if="showItems" class="my-2">
+        <b-card v-if="showItems" no-body class="my-2">
             <h5 class="m-3">Currently installing...</h5>
             <b-table
                 class="mx-3 mb-0"
                 sticky-header
                 thead-class="installation-monitor-header"
                 :items="items"
-                :fields="fields"
-            >
+                :fields="fields">
                 <template v-slot:cell(name)="row">
                     <b-link @click="onQuery(row.item.name)"> {{ row.item.name }} ({{ row.item.owner }}) </b-link>
                 </template>
@@ -19,20 +18,16 @@
                     <InstallationButton
                         class="float-right"
                         :status="row.item.status"
-                        @onUninstall="uninstallRepository(row.item)"
-                    />
+                        @onUninstall="uninstallRepository(row.item)" />
                 </template>
             </b-table>
         </b-card>
-        <b-alert v-if="showEmpty" variant="info" show>
-            Currently there are no installing repositories.
-        </b-alert>
+        <b-alert v-if="showEmpty" variant="info" show> Currently there are no installing repositories. </b-alert>
     </div>
 </template>
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { getAppRoot } from "onload/loadConfig";
 import { Services } from "../services";
 import InstallationButton from "../RepositoryDetails/InstallationButton";
 
@@ -60,8 +55,7 @@ export default {
         },
     },
     created() {
-        this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
+        this.services = new Services();
         this.load();
     },
     destroyed() {

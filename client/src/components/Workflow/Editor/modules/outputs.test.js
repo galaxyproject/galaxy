@@ -48,7 +48,7 @@ describe("Workflow Outputs", () => {
         expect(activeOutputs_1.count()).toBe(3);
 
         // Test output filtering
-        activeOutputs.filterOutputs({ output_0: true, output_2: true });
+        activeOutputs.filterOutputs(["output_0", "output_2"]);
         expect(activeOutputs.count()).toBe(2);
         expect(activeOutputs.entries["output_0"].label).toBe("label_0");
         expect(activeOutputs.entries["output_1"]).toBe(undefined);
@@ -56,14 +56,14 @@ describe("Workflow Outputs", () => {
 
         // Update output label
         const response = activeOutputs.labelOutput("output_0", "label_3");
-        expect(response).toBe(null);
+        expect(response).toBe(true);
         expect(activeOutputs.entries["output_0"].label).toBe("label_3");
         const response_1 = activeOutputs.labelOutput("output_0", "label_1");
-        expect(response_1).toBe("label_3");
+        expect(response_1).toBe(false);
         expect(activeOutputs.entries["output_0"].label).toBe("label_3");
 
         // Test output removal
-        activeOutputs.filterOutputs({});
+        activeOutputs.filterOutputs([]);
         expect(Object.keys(allLabels).length).toBe(1);
     });
 });

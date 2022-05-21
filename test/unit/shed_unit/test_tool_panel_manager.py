@@ -3,16 +3,15 @@ import os
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.util import parse_xml
 from tool_shed.tools import tool_version_manager
-from ..tools.test_toolbox import (
+from ..app.tools.test_toolbox import (
     BaseToolBoxTestCase,
-    SimplifiedToolBox
+    SimplifiedToolBox,
 )
 
 DEFAULT_GUID = "123456"
 
 
 class ToolPanelManagerTestCase(BaseToolBoxTestCase):
-
     def get_new_toolbox(self):
         return SimplifiedToolBox(self)
 
@@ -116,16 +115,24 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
         self._setup_two_versions_remove_one(section=True, uninstall=True)
         self._verify_version_2_removed_from_panel()
         # Not in tool conf because it was uninstalled.
-        assert "github.com/galaxyproject/example/test_tool/0.2" not in open(os.path.join(self.test_directory, "tool_conf.xml")).read()
+        assert (
+            "github.com/galaxyproject/example/test_tool/0.2"
+            not in open(os.path.join(self.test_directory, "tool_conf.xml")).read()
+        )
         new_toolbox = self.get_new_toolbox()
-        assert "tool_github.com/galaxyproject/example/test_tool/0.2" not in new_toolbox._integrated_tool_panel["tid"].elems
+        assert (
+            "tool_github.com/galaxyproject/example/test_tool/0.2" not in new_toolbox._integrated_tool_panel["tid"].elems
+        )
         self._verify_tool_confs()
 
     def test_uninstall_outside_section(self):
         self._setup_two_versions_remove_one(section=False, uninstall=True)
         self._verify_version_2_removed_from_panel(section=False)
         # Still in tool conf since not uninstalled only deactivated...
-        assert "github.com/galaxyproject/example/test_tool/0.2" not in open(os.path.join(self.test_directory, "tool_conf.xml")).read()
+        assert (
+            "github.com/galaxyproject/example/test_tool/0.2"
+            not in open(os.path.join(self.test_directory, "tool_conf.xml")).read()
+        )
         self._verify_tool_confs()
 
         self._remove_repository_contents("github.com/galaxyproject/example/test_tool/0.1", uninstall=True)
@@ -154,7 +161,9 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
             assert len(section.elems) == 1
             assert next(iter(section.elems.values())).id == "github.com/galaxyproject/example/test_tool/0.1"
 
-            assert "github.com/galaxyproject/example/test_tool/0.2" not in new_toolbox._integrated_tool_panel["tid"].elems
+            assert (
+                "github.com/galaxyproject/example/test_tool/0.2" not in new_toolbox._integrated_tool_panel["tid"].elems
+            )
         else:
             assert next(iter(new_toolbox._tool_panel.values())).id == "github.com/galaxyproject/example/test_tool/0.1"
             assert "github.com/galaxyproject/example/test_tool/0.2" not in new_toolbox._integrated_tool_panel
@@ -183,7 +192,7 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
     def _init_ts_tool(self, guid=DEFAULT_GUID, **kwds):
         tool = self._init_tool(**kwds)
         tool.guid = guid
-        tool.version = kwds.get('version', '1.0')
+        tool.version = kwds.get("version", "1.0")
         return tool
 
     @property

@@ -10,7 +10,9 @@ echo \$(id -g) > '$group_id' &&
 echo \$(pwd) > '$pwd' &&
 echo "\$HOME" > '$home' &&
 echo "\$TMP"  > '$tmp' &&
-echo "\$SOME_ENV_VAR" > '$some_env_var'
+echo "\$SOME_ENV_VAR" > '$some_env_var' &&
+touch "\$_GALAXY_JOB_TMP_DIR/tmp_test" &&
+touch "\$HOME/home_test"
     ]]></command>
     <inputs>
     </inputs>

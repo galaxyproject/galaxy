@@ -6,13 +6,13 @@
         <div v-else>
             <p>
                 This dataset is stored in
-                <span class="display-os-by-name" v-if="storageInfo.name">
+                <span v-if="storageInfo.name" class="display-os-by-name">
                     a Galaxy object store named <b>{{ storageInfo.name }}</b>
                 </span>
-                <span class="display-os-by-id" v-else-if="storageInfo.object_store_id">
+                <span v-else-if="storageInfo.object_store_id" class="display-os-by-id">
                     a Galaxy object store with id <b>{{ storageInfo.object_store_id }}</b>
                 </span>
-                <span class="display-os-default" v-else> the default configured Galaxy object store </span>.
+                <span v-else class="display-os-default"> the default configured Galaxy object store </span>.
             </p>
             <div v-html="descriptionRendered"></div>
         </div>
@@ -66,7 +66,7 @@ export default {
             const description = storageInfo.description;
             this.storageInfo = storageInfo;
             if (description) {
-                this.descriptionRendered = MarkdownIt().render(storageInfo.description);
+                this.descriptionRendered = MarkdownIt({ html: true }).render(storageInfo.description);
             } else {
                 this.descriptionRendered = null;
             }

@@ -1,27 +1,46 @@
 name: Converter tests
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+  pull_request:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+  schedule:
+    # Run at midnight UTC every Tuesday
+    - cron: '0 0 * * 2'
+env:
+  GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-
   test:
     name: Test
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7]
+        python-version: ['3.7']
     steps:
-    - uses: actions/checkout@v2
+    - if: github.event_name == 'schedule'
+      run: |
+        echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
+        echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
+    - uses: actions/checkout@v3
       with:
         path: 'galaxy root'
     - name: Clone galaxyproject/galaxy-test-data
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         repository: galaxyproject/galaxy-test-data
         path: galaxy-test-data
-    - uses: actions/setup-python@v1
+    - uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
     - name: Cache venv dir
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       id: pip-cache
       with:
         path: ~/.cache/pip
@@ -30,5 +49,37 @@ jobs:
       run: rsync -av --remove-source-files --exclude .git galaxy-test-data/ 'galaxy root/test-data/'
     - name: Install planemo
       run: pip install planemo
+    - name: Install jq
+      run: sudo apt-get install jq
+    - name: Determine converters to check
+      run: |
+        ls 'galaxy root'/lib/galaxy/datatypes/converters/*xml | grep -v -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip > tool_list.txt
+        echo "Skipping checks for the following converters:"
+        ls 'galaxy root'/lib/galaxy/datatypes/converters/*xml | grep -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip
+        echo "Checking only the following converters:"
+        cat tool_list.txt
+    - name: Lint converters
+      run: |
+        mapfile -t TOOL_ARRAY < tool_list.txt
+        for CONVERTER in "${TOOL_ARRAY[@]}"; do
+          planemo lint --skip citations,stdio,help --report_level warn "$CONVERTER"
+        done
     - name: Run tests
-      run: planemo test --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' 'galaxy root'/lib/galaxy/datatypes/converters/*xml
+      run: |
+        mkdir -p json_output
+        mapfile -t TOOL_ARRAY < tool_list.txt
+        for CONVERTER in "${TOOL_ARRAY[@]}"; do
+          json=$(mktemp -u -p json_output --suff .json)
+          planemo test --test_output_json "$json" --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' "$CONVERTER" || true
+        done
+        planemo merge_test_reports json_output/*.json tool_test_output.json
+        planemo test_reports tool_test_output.json --test_output tool_test_output.html
+        if jq '.["tests"][]["data"]["status"]' tool_test_output.json | grep -v "success"; then
+          echo "Unsuccessful tests found, inspect the 'Converter test results' artifact for details."
+          exit 1
+        fi
+    - uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: Converter test results (${{ matrix.python-version }})
+        path: tool_test_output.html

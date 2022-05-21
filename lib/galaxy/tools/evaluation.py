@@ -2,14 +2,26 @@ import json
 import logging
 import os
 import shlex
+import string
 import tempfile
-
+from datetime import datetime
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+)
 
 from galaxy import model
-from galaxy.files import ProvidesUserFileSourcesUserContext
+from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.none_like import NoneDataset
-from galaxy.tools import global_tool_errors
+from galaxy.security.object_wrapper import wrap_with_safe_string
+from galaxy.structured_app import (
+    BasicSharedApp,
+    MinimalToolApp,
+)
 from galaxy.tools.parameters import (
     visit_input_values,
     wrapped_json,
@@ -22,7 +34,7 @@ from galaxy.tools.parameters.basic import (
 from galaxy.tools.parameters.grouping import (
     Conditional,
     Repeat,
-    Section
+    Section,
 )
 from galaxy.tools.wrappers import (
     DatasetCollectionWrapper,
@@ -41,26 +53,58 @@ from galaxy.util import (
     safe_makedirs,
     unicodify,
 )
-from galaxy.util.bunch import Bunch
-from galaxy.util.object_wrapper import wrap_with_safe_string
 from galaxy.util.template import fill_template
 from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)
 
 
+class ToolErrorLog:
+    def __init__(self):
+        self.error_stack = []
+        self.max_errors = 100
+
+    def add_error(self, file, phase, exception):
+        self.error_stack.insert(
+            0, {"file": file, "time": str(datetime.now()), "phase": phase, "error": unicodify(exception)}
+        )
+        if len(self.error_stack) > self.max_errors:
+            self.error_stack.pop()
+
+
+global_tool_errors = ToolErrorLog()
+
+
+def global_tool_logs(func, config_file, action_str):
+    try:
+        return func()
+    except Exception as e:
+        # capture and log parsing errors
+        global_tool_errors.add_error(config_file, action_str, e)
+        raise e
+
+
 class ToolEvaluator:
-    """ An abstraction linking together a tool and a job runtime to evaluate
+    """An abstraction linking together a tool and a job runtime to evaluate
     tool inputs in an isolated, testable manner.
     """
 
-    def __init__(self, app, tool, job, local_working_directory):
+    app: MinimalToolApp
+    job: model.Job
+
+    def __init__(self, app: MinimalToolApp, tool, job, local_working_directory):
         self.app = app
         self.job = job
         self.tool = tool
         self.local_working_directory = local_working_directory
+        self.file_sources_dict: Dict[str, Any] = {}
+        self.param_dict: Dict[str, Any] = {}
+        self.extra_filenames: List[str] = []
+        self.environment_variables: List[Dict[str, str]] = []
+        self.version_command_line: Optional[str] = None
+        self.command_line: Optional[str] = None
 
-    def set_compute_environment(self, compute_environment, get_special=None):
+    def set_compute_environment(self, compute_environment: ComputeEnvironment, get_special: Optional[Callable] = None):
         """
         Setup the compute environment and established the outline of the param_dict
         for evaluating command and config cheetah templates.
@@ -73,11 +117,12 @@ class ToolEvaluator:
 
         # Full parameter validation
         request_context = WorkRequestContext(app=self.app, user=self._user, history=self._history)
-        self.request_context = request_context
+        self.file_sources_dict = compute_environment.get_file_sources_dict()
 
         def validate_inputs(input, value, context, **kwargs):
             value = input.from_json(value, request_context, context)
             input.validate(value, request_context)
+
         visit_input_values(self.tool.inputs, incoming, validate_inputs)
 
         # Restore input / output data lists
@@ -86,27 +131,28 @@ class ToolEvaluator:
         if get_special:
             special = get_special()
             if special:
-                out_data["output_file"] = special.fda
+                out_data["output_file"] = special
 
         # These can be passed on the command line if wanted as $__user_*__
-        incoming.update(model.User.user_template_environment(job.history and job.history.user))
+        incoming.update(model.User.user_template_environment(self._user))
 
         # Build params, done before hook so hook can use
-        param_dict = self.build_param_dict(
+        self.param_dict = self.build_param_dict(
             incoming,
             inp_data,
             out_data,
             output_collections=out_collections,
         )
+        self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming)
 
+    def execute_tool_hooks(self, inp_data, out_data, incoming):
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
-        self.tool.exec_before_job(self.app, inp_data, out_data, param_dict)
+        self.tool.exec_before_job(self.app, inp_data, out_data, self.param_dict)
         # Run the before queue ("exec_before_job") hook
-        self.tool.call_hook('exec_before_job', self.app, inp_data=inp_data,
-                            out_data=out_data, tool=self.tool, param_dict=incoming)
-
-        self.param_dict = param_dict
+        self.tool.call_hook(
+            "exec_before_job", self.app, inp_data=inp_data, out_data=out_data, tool=self.tool, param_dict=incoming
+        )
 
     def build_param_dict(self, incoming, input_datasets, output_datasets, output_collections):
         """
@@ -119,16 +165,20 @@ class ToolEvaluator:
         compute_environment = self.compute_environment
         job_working_directory = compute_environment.working_directory()
 
-        param_dict = dict()
+        param_dict = self.param_dict
 
         def input():
             raise SyntaxError("Unbound variable input.")  # Don't let $input hang Python evaluation process.
 
         param_dict["input"] = input
-        param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = os.path.join(job_working_directory, 'registry.xml')
+        param_dict["__datatypes_config__"] = param_dict["GALAXY_DATATYPES_CONF_FILE"] = os.path.join(
+            job_working_directory, "registry.xml"
+        )
+        if self.job.tool_id == "upload1":
+            param_dict["paramfile"] = os.path.join(job_working_directory, "upload_params.json")
         if self._history:
-            param_dict['__history_id__'] = self.app.security.encode_id(self._history.id)
-        param_dict['__galaxy_url__'] = self.compute_environment.galaxy_url()
+            param_dict["__history_id__"] = self.app.security.encode_id(self._history.id)
+        param_dict["__galaxy_url__"] = self.compute_environment.galaxy_url()
         param_dict.update(self.tool.template_macro_params)
         # All parameters go into the param_dict
         param_dict.update(incoming)
@@ -142,14 +192,11 @@ class ToolEvaluator:
         self.__sanitize_param_dict(param_dict)
         # Parameters added after this line are not sanitized
         self.__populate_non_job_params(param_dict)
-        # Populate and store templated InteractiveTools values
-        self.__populate_interactivetools(param_dict)
 
         # Return the dictionary of parameters
         return param_dict
 
     def __walk_inputs(self, inputs, input_values, func):
-
         def do_walk(inputs, input_values):
             """
             Wraps parameters as neccesary.
@@ -172,86 +219,50 @@ class ToolEvaluator:
         do_walk(inputs, input_values)
 
     def __populate_wrappers(self, param_dict, input_datasets, job_working_directory):
-
         def wrap_input(input_values, input):
             value = input_values[input.name]
             if isinstance(input, DataToolParameter) and input.multiple:
                 dataset_instances = DatasetListWrapper.to_dataset_instances(value)
-                input_values[input.name] = \
-                    DatasetListWrapper(job_working_directory,
-                                       dataset_instances,
-                                       compute_environment=self.compute_environment,
-                                       datatypes_registry=self.app.datatypes_registry,
-                                       tool=self.tool,
-                                       name=input.name,
-                                       formats=input.formats)
+                input_values[input.name] = DatasetListWrapper(
+                    job_working_directory,
+                    dataset_instances,
+                    compute_environment=self.compute_environment,
+                    datatypes_registry=self.app.datatypes_registry,
+                    tool=self.tool,
+                    name=input.name,
+                    formats=input.formats,
+                )
 
             elif isinstance(input, DataToolParameter):
-                # FIXME: We're populating param_dict with conversions when
-                #        wrapping values, this should happen as a separate
-                #        step before wrapping (or call this wrapping step
-                #        something more generic) (but iterating this same
-                #        list twice would be wasteful)
-                # Add explicit conversions by name to current parent
-                for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
-                    # If we are at building cmdline step, then converters
-                    # have already executed
-                    direct_match, conv_ext, converted_dataset = input_values[input.name].find_conversion_destination(conversion_datatypes)
-                    # When dealing with optional inputs, we'll provide a
-                    # valid extension to be used for None converted dataset
-                    if not direct_match and not conv_ext:
-                        conv_ext = conversion_extensions[0]
-                    # input_values[ input.name ] is None when optional
-                    # dataset, 'conversion' of optional dataset should
-                    # create wrapper around NoneDataset for converter output
-                    if input_values[input.name] and not converted_dataset:
-                        # Input that converter is based from has a value,
-                        # but converted dataset does not exist
-                        raise Exception('A path for explicit datatype conversion has not been found: %s --/--> %s'
-                                        % (input_values[input.name].extension, conversion_extensions))
-                    else:
-                        # Trick wrapper into using target conv ext (when
-                        # None) without actually being a tool parameter
-                        input_values[conversion_name] = \
-                            DatasetFilenameWrapper(converted_dataset,
-                                                   datatypes_registry=self.app.datatypes_registry,
-                                                   tool=Bunch(conversion_name=Bunch(extensions=conv_ext)),
-                                                   name=conversion_name)
-                # Wrap actual input dataset
                 dataset = input_values[input.name]
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
                     tool=self,
                     name=input.name,
-                    compute_environment=self.compute_environment
+                    compute_environment=self.compute_environment,
                 )
                 element_identifier = element_identifier_mapper.identifier(dataset, param_dict)
                 if element_identifier:
                     wrapper_kwds["identifier"] = element_identifier
-                input_values[input.name] = \
-                    DatasetFilenameWrapper(dataset, **wrapper_kwds)
+                input_values[input.name] = DatasetFilenameWrapper(dataset, **wrapper_kwds)
             elif isinstance(input, DataCollectionToolParameter):
                 dataset_collection = value
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
                     compute_environment=self.compute_environment,
                     tool=self,
-                    name=input.name
+                    name=input.name,
                 )
-                wrapper = DatasetCollectionWrapper(
-                    job_working_directory,
-                    dataset_collection,
-                    **wrapper_kwds
-                )
+                wrapper = DatasetCollectionWrapper(job_working_directory, dataset_collection, **wrapper_kwds)
                 input_values[input.name] = wrapper
             elif isinstance(input, SelectToolParameter):
                 if input.multiple:
                     value = listify(value)
                 input_values[input.name] = SelectToolParameterWrapper(
-                    input, value, other_values=param_dict, compute_environment=self.compute_environment)
+                    input, value, other_values=param_dict, compute_environment=self.compute_environment
+                )
             else:
-                input_values[input.name] = InputValueWrapper(
-                    input, value, param_dict)
+                input_values[input.name] = InputValueWrapper(input, value, param_dict)
 
         # HACK: only wrap if check_values is not false, this deals with external
         #       tools where the inputs don't even get passed through. These
@@ -261,8 +272,6 @@ class ToolEvaluator:
             self.__walk_inputs(self.tool.inputs, param_dict, wrap_input)
 
     def __populate_input_dataset_wrappers(self, param_dict, input_datasets):
-        # TODO: Update this method for dataset collections? Need to test. -John.
-
         # FIXME: when self.check_values==True, input datasets are being wrapped
         #        twice (above and below, creating 2 separate
         #        DatasetFilenameWrapper objects - first is overwritten by
@@ -272,17 +281,17 @@ class ToolEvaluator:
         # - Only necessary when self.check_values is False (==external dataset
         #   tool?: can this be abstracted out as part of being a datasouce tool?)
         # For now we try to not wrap unnecessarily, but this should be untangled at some point.
+        matches = None
         for name, data in input_datasets.items():
             param_dict_value = param_dict.get(name, None)
             if data and param_dict_value is None:
                 # We may have a nested parameter that is not fully prefixed.
                 # We try recovering from param_dict, but tool authors should really use fully-qualified
                 # variables
-                wrappers = find_instance_nested(param_dict,
-                                                instances=(DatasetFilenameWrapper, DatasetListWrapper),
-                                                match_key=name)
-                if len(wrappers) == 1:
-                    wrapper = wrappers[0]
+                if matches is None:
+                    matches = find_instance_nested(param_dict, instances=(DatasetFilenameWrapper, DatasetListWrapper))
+                wrapper = matches.get(name)
+                if wrapper:
                     param_dict[name] = wrapper
                     continue
             if not isinstance(param_dict_value, (DatasetFilenameWrapper, DatasetListWrapper)):
@@ -306,19 +315,14 @@ class ToolEvaluator:
             wrapper_kwds = dict(
                 datatypes_registry=self.app.datatypes_registry,
                 compute_environment=self.compute_environment,
-                io_type='output',
+                io_type="output",
                 tool=tool,
-                name=name
+                name=name,
             )
-            wrapper = DatasetCollectionWrapper(
-                job_working_directory,
-                out_collection,
-                **wrapper_kwds
-            )
+            wrapper = DatasetCollectionWrapper(job_working_directory, out_collection, **wrapper_kwds)
             param_dict[name] = wrapper
             # TODO: Handle nested collections...
-            output_def = tool.output_collections[name]
-            for element_identifier, output_def in output_def.outputs.items():
+            for element_identifier, output_def in tool.output_collections[name].outputs.items():
                 if not output_def.implicit:
                     dataset_wrapper = wrapper[element_identifier]
                     param_dict[output_def.name] = dataset_wrapper
@@ -328,13 +332,19 @@ class ToolEvaluator:
         for name, hda in output_datasets.items():
             # Write outputs to the working directory (for security purposes)
             # if desired.
-            param_dict[name] = DatasetFilenameWrapper(hda, compute_environment=self.compute_environment, io_type="output")
+            param_dict[name] = DatasetFilenameWrapper(
+                hda, compute_environment=self.compute_environment, io_type="output"
+            )
+            if "|__part__|" in name:
+                unqualified_name = name.split("|__part__|")[-1]
+                if unqualified_name not in param_dict:
+                    param_dict[unqualified_name] = param_dict[name]
             output_path = str(param_dict[name])
             # Conditionally create empty output:
             # - may already exist (e.g. symlink output)
             # - parent directory might not exist (e.g. Pulsar)
             if not os.path.exists(output_path) and os.path.exists(os.path.dirname(output_path)):
-                open(output_path, 'w').close()
+                open(output_path, "w").close()
 
             # Provide access to a path to store additional files
             # TODO: move compute path logic into compute environment, move setting files_path
@@ -358,62 +368,62 @@ class ToolEvaluator:
             """
             Queries and returns an entry in a data table.
             """
-
             if table_name in self.app.tool_data_tables:
                 return self.app.tool_data_tables[table_name].get_entry(query_attr, query_val, return_attr)
 
-        param_dict['__tool_directory__'] = self.compute_environment.tool_directory()
-        param_dict['__get_data_table_entry__'] = get_data_table_entry
-        param_dict['__local_working_directory__'] = self.local_working_directory
+        param_dict["__tool_directory__"] = self.compute_environment.tool_directory()
+        param_dict["__get_data_table_entry__"] = get_data_table_entry
+        param_dict["__local_working_directory__"] = self.local_working_directory
         # We add access to app here, this allows access to app.config, etc
-        param_dict['__app__'] = RawObjectWrapper(self.app)
+        param_dict["__app__"] = RawObjectWrapper(self.app)
         # More convienent access to app.config.new_file_path; we don't need to
         # wrap a string, but this method of generating additional datasets
         # should be considered DEPRECATED
-        param_dict['__new_file_path__'] = self.compute_environment.new_file_path()
+        param_dict["__new_file_path__"] = self.compute_environment.new_file_path()
         # The following points to location (xxx.loc) files which are pointers
         # to locally cached data
-        param_dict['__tool_data_path__'] = param_dict['GALAXY_DATA_INDEX_DIR'] = self.app.config.tool_data_path
+        param_dict["__tool_data_path__"] = param_dict["GALAXY_DATA_INDEX_DIR"] = self.app.config.tool_data_path
         # For the upload tool, we need to know the root directory and the
         # datatypes conf path, so we can load the datatypes registry
-        param_dict['__root_dir__'] = param_dict['GALAXY_ROOT_DIR'] = os.path.abspath(self.app.config.root)
-        param_dict['__admin_users__'] = self.app.config.admin_users
-        param_dict['__user__'] = RawObjectWrapper(param_dict.get('__user__', None))
+        param_dict["__root_dir__"] = param_dict["GALAXY_ROOT_DIR"] = os.path.abspath(self.app.config.root)
+        param_dict["__admin_users__"] = self.app.config.admin_users
+        param_dict["__user__"] = RawObjectWrapper(param_dict.get("__user__", None))
 
     def __populate_unstructured_path_rewrites(self, param_dict):
-
         def rewrite_unstructured_paths(input_values, input):
             if isinstance(input, SelectToolParameter):
                 input_values[input.name] = SelectToolParameterWrapper(
-                    input, input_values[input.name], other_values=param_dict, compute_environment=self.compute_environment)
+                    input,
+                    input_values[input.name],
+                    other_values=param_dict,
+                    compute_environment=self.compute_environment,
+                )
 
         if not self.tool.check_values and self.compute_environment:
             # The tools weren't "wrapped" yet, but need to be in order to get
             # the paths rewritten.
             self.__walk_inputs(self.tool.inputs, param_dict, rewrite_unstructured_paths)
 
-    def __populate_interactivetools(self, param_dict):
+    def populate_interactivetools(self):
         """
         Populate InteractiveTools templated values.
         """
         it = []
-        for ep in getattr(self.tool, 'ports', []):
+        for ep in getattr(self.tool, "ports", []):
             ep_dict = {}
-            for key in 'port', 'name', 'url', 'requires_domain':
+            for key in "port", "name", "url", "requires_domain":
                 val = ep.get(key, None)
                 if val is not None and not isinstance(val, bool):
-                    val = fill_template(val, context=param_dict, python_template_version=self.tool.python_template_version)
+                    val = fill_template(
+                        val, context=self.param_dict, python_template_version=self.tool.python_template_version
+                    )
                     clean_val = []
-                    for line in val.split('\n'):
+                    for line in val.split("\n"):
                         clean_val.append(line.strip())
-                    val = '\n'.join(clean_val)
+                    val = "\n".join(clean_val)
                     val = val.replace("\n", " ").replace("\r", " ").strip()
                 ep_dict[key] = val
             it.append(ep_dict)
-        self.interactivetools = it
-        it_man = getattr(self.app, "interactivetool_manager", None)
-        if it_man:
-            it_man.create_interactivetool(self.job, self.tool, it)
         return it
 
     def __sanitize_param_dict(self, param_dict):
@@ -425,14 +435,16 @@ class ToolEvaluator:
         Note: this method follows the style of the similar populate calls, in that param_dict is modified in-place.
         """
         # chromInfo is a filename, do not sanitize it.
-        skip = ['chromInfo'] + list(self.tool.template_macro_params.keys())
+        skip = ["chromInfo"] + list(self.tool.template_macro_params.keys())
         if not self.tool or not self.tool.options or self.tool.options.sanitize:
             for key, value in list(param_dict.items()):
                 if key not in skip:
                     # Remove key so that new wrapped object will occupy key slot
                     del param_dict[key]
                     # And replace with new wrapped key
-                    param_dict[wrap_with_safe_string(key, no_wrap_classes=ToolParameterValueWrapper)] = wrap_with_safe_string(value, no_wrap_classes=ToolParameterValueWrapper)
+                    param_dict[
+                        wrap_with_safe_string(key, no_wrap_classes=ToolParameterValueWrapper)
+                    ] = wrap_with_safe_string(value, no_wrap_classes=ToolParameterValueWrapper)
 
     def build(self):
         """
@@ -440,40 +452,19 @@ class ToolEvaluator:
         config templates corresponding to this tool with these inputs on this
         compute environment.
         """
-        self.extra_filenames = []
-        self.command_line = None
+        config_file = self.tool.config_file
+        global_tool_logs(self._build_config_files, config_file, "Building Config Files")
+        global_tool_logs(self._build_param_file, config_file, "Building Param File")
+        global_tool_logs(self._build_command_line, config_file, "Building Command Line")
+        global_tool_logs(self._build_version_command, config_file, "Building Version Command Line")
+        global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables")
+        return self.command_line, self.version_command_line, self.extra_filenames, self.environment_variables
 
-        try:
-            self.__build_config_files()
-        except Exception as e:
-            # capture and log parsing errors
-            global_tool_errors.add_error(self.tool.config_file, "Building Config Files", e)
-            raise e
-        try:
-            self.__build_param_file()
-        except Exception as e:
-            # capture and log parsing errors
-            global_tool_errors.add_error(self.tool.config_file, "Building Param File", e)
-            raise e
-        try:
-            self.__build_command_line()
-        except Exception as e:
-            # capture and log parsing errors
-            global_tool_errors.add_error(self.tool.config_file, "Building Command Line", e)
-            raise e
-        try:
-            self.__build_environment_variables()
-        except Exception as e:
-            global_tool_errors.add_error(self.tool.config_file, "Building Environment Variables", e)
-            raise e
-
-        return self.command_line, self.extra_filenames, self.environment_variables
-
-    def __build_command_line(self):
+    def _build_command_line(self):
         """
         Build command line to invoke this tool given a populated param_dict
         """
-        command = self.tool.command
+        command = self.tool.command or ""
         param_dict = self.param_dict
         interpreter = self.tool.interpreter
         command_line = None
@@ -481,12 +472,14 @@ class ToolEvaluator:
             return
         try:
             # Substituting parameters into the command
-            command_line = fill_template(command, context=param_dict, python_template_version=self.tool.python_template_version)
+            command_line = fill_template(
+                command, context=param_dict, python_template_version=self.tool.python_template_version
+            )
             cleaned_command_line = []
             # Remove leading and trailing whitespace from each line for readability.
-            for line in command_line.split('\n'):
+            for line in command_line.split("\n"):
                 cleaned_command_line.append(line.strip())
-            command_line = '\n'.join(cleaned_command_line)
+            command_line = "\n".join(cleaned_command_line)
             # Remove newlines from command line, and any leading/trailing white space
             command_line = command_line.replace("\n", " ").replace("\r", " ").strip()
         except Exception:
@@ -495,15 +488,22 @@ class ToolEvaluator:
             raise
         if interpreter:
             # TODO: path munging for cluster/dataset server relocatability
-            command_line_tokens = shlex.split(command_line)
-            executable = command_line_tokens[0]
+            executable = command_line.split()[0]
             tool_dir = os.path.abspath(self.tool.tool_dir)
             abs_executable = os.path.join(tool_dir, executable)
-            command_line_tokens[0:1] = [interpreter, abs_executable]
-            command_line = ' '.join(map(shlex.quote, command_line_tokens))
+            command_line = command_line.replace(executable, f"{interpreter} {shlex.quote(abs_executable)}", 1)
         self.command_line = command_line
 
-    def __build_config_files(self):
+    def _build_version_command(self):
+        version_string_cmd_raw = self.tool.version_string_cmd
+        if version_string_cmd_raw:
+            version_command_template = string.Template(version_string_cmd_raw)
+            version_command = version_command_template.safe_substitute(
+                {"__tool_directory__": self.compute_environment.tool_directory()}
+            )
+            self.version_command_line = f"{version_command} > {self.compute_environment.version_path()} 2>&1;\n"
+
+    def _build_config_files(self):
         """
         Build temporary file for file based parameter transfer if needed
         """
@@ -513,57 +513,65 @@ class ToolEvaluator:
             config_text, is_template = self.__build_config_file_text(content)
             # If a particular filename was forced by the config use it
             directory = ensure_configs_directory(self.local_working_directory)
+            with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
+                config_filename = temp.name
             if filename is not None:
-                # Explicit filename was requested, needs to be placed in tool working directory
+                # Explicit filename was requested, this is implemented as symbolic link
+                # to the actual config file that is placed in tool working directory
                 directory = os.path.join(self.local_working_directory, "working")
-                config_filename = os.path.join(directory, filename)
-            else:
-                with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
-                    config_filename = temp.name
+                os.link(config_filename, os.path.join(directory, filename))
             self.__write_workdir_file(config_filename, config_text, param_dict, is_template=is_template)
             self.__register_extra_file(name, config_filename)
             config_filenames.append(config_filename)
         return config_filenames
 
-    def __build_environment_variables(self):
+    def _build_environment_variables(self):
         param_dict = self.param_dict
-        environment_variables = []
+        environment_variables = self.environment_variables
         for environment_variable_def in self.tool.environment_variables:
             directory = self.local_working_directory
             environment_variable = environment_variable_def.copy()
             environment_variable_template = environment_variable_def["template"]
             inject = environment_variable_def.get("inject")
             if inject == "api_key":
-                if self._user:
+                if self._user and isinstance(self.app, BasicSharedApp):
                     from galaxy.managers import api_keys
+
                     environment_variable_template = api_keys.ApiKeyManager(self.app).get_or_create_api_key(self._user)
                 else:
                     environment_variable_template = ""
                 is_template = False
             else:
                 is_template = True
-            with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
+            with tempfile.NamedTemporaryFile(dir=directory, prefix="tool_env_", delete=False) as temp:
                 config_filename = temp.name
-            self.__write_workdir_file(config_filename, environment_variable_template, param_dict, is_template=is_template, strip=environment_variable_def.get("strip", False))
+            self.__write_workdir_file(
+                config_filename,
+                environment_variable_template,
+                param_dict,
+                is_template=is_template,
+                strip=environment_variable_def.get("strip", False),
+            )
             config_file_basename = os.path.basename(config_filename)
             # environment setup in job file template happens before `cd $working_directory`
-            environment_variable["value"] = '`cat "$_GALAXY_JOB_DIR/%s"`' % config_file_basename
+            environment_variable[
+                "value"
+            ] = f'`cat "{self.compute_environment.env_config_directory()}/{config_file_basename}"`'
             environment_variable["raw"] = True
+            environment_variable["job_directory_path"] = config_filename
             environment_variables.append(environment_variable)
 
         home_dir = self.compute_environment.home_directory()
         tmp_dir = self.compute_environment.tmp_directory()
         if home_dir:
-            environment_variable = dict(name="HOME", value='"%s"' % home_dir, raw=True)
+            environment_variable = dict(name="HOME", value=f'"{home_dir}"', raw=True)
             environment_variables.append(environment_variable)
         if tmp_dir:
             for tmp_directory_var in self.tool.tmp_directory_vars:
-                environment_variable = dict(name=tmp_directory_var, value='"%s"' % tmp_dir, raw=True)
+                environment_variable = dict(name=tmp_directory_var, value=f'"{tmp_dir}"', raw=True)
                 environment_variables.append(environment_variable)
-        self.environment_variables = environment_variables
-        return environment_variables
 
-    def __build_param_file(self):
+    def _build_param_file(self):
         """
         Build temporary file for file based parameter transfer if needed
         """
@@ -571,14 +579,14 @@ class ToolEvaluator:
         directory = self.local_working_directory
         command = self.tool.command
         if self.tool.profile < 16.04 and command and "$param_file" in command:
-            with tempfile.NamedTemporaryFile(mode='w', dir=directory, delete=False) as param:
+            with tempfile.NamedTemporaryFile(mode="w", dir=directory, delete=False) as param:
                 for key, value in param_dict.items():
                     # parameters can be strings or lists of strings, coerce to list
                     if not isinstance(value, list):
                         value = [value]
                     for elem in value:
-                        param.write(f'{key}={elem}\n')
-            self.__register_extra_file('param_file', param.name)
+                        param.write(f"{key}={elem}\n")
+            self.__register_extra_file("param_file", param.name)
             return param.name
         else:
             return None
@@ -596,17 +604,18 @@ class ToolEvaluator:
                 message = template % content_format
                 raise Exception(message)
         elif config_type == "files":
-            user_context = ProvidesUserFileSourcesUserContext(self.request_context)
-            file_sources_dict = self.app.file_sources.to_dict(for_serialization=True, user_context=user_context)
+            file_sources_dict = self.file_sources_dict
             rval = json.dumps(file_sources_dict)
             return rval, False
         else:
-            raise Exception("Unknown config file type %s" % config_type)
+            raise Exception(f"Unknown config file type {config_type}")
 
-        return json.dumps(wrapped_json.json_wrap(self.tool.inputs,
-                                                 self.param_dict,
-                                                 self.tool.profile,
-                                                 handle_files=handle_files)), False
+        return (
+            json.dumps(
+                wrapped_json.json_wrap(self.tool.inputs, self.param_dict, self.tool.profile, handle_files=handle_files)
+            ),
+            False,
+        )
 
     def __write_workdir_file(self, config_filename, content, context, is_template=True, strip=False):
         parent_dir = os.path.dirname(config_filename)
@@ -618,7 +627,7 @@ class ToolEvaluator:
             value = unicodify(content)
         if strip:
             value = value.strip()
-        with open(config_filename, "w", encoding='utf-8') as f:
+        with open(config_filename, "w", encoding="utf-8") as f:
             f.write(value)
         # For running jobs as the actual user, ensure the config file is globally readable
         os.chmod(config_filename, RW_R__R__)
@@ -651,3 +660,30 @@ class ToolEvaluator:
             return history.user
         else:
             return self.job.user
+
+
+class PartialToolEvaluator(ToolEvaluator):
+    """
+    ToolEvaluator that only builds Environment Variables.
+    """
+
+    def build(self):
+        config_file = self.tool.config_file
+        global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables")
+        return self.command_line, self.version_command_line, self.extra_filenames, self.environment_variables
+
+
+class RemoteToolEvaluator(ToolEvaluator):
+    """ToolEvaluator that skips unnecessary steps already executed during job setup."""
+
+    def execute_tool_hooks(self, inp_data, out_data, incoming):
+        # These have already run while preparing the job
+        pass
+
+    def build(self):
+        config_file = self.tool.config_file
+        global_tool_logs(self._build_config_files, config_file, "Building Config Files")
+        global_tool_logs(self._build_param_file, config_file, "Building Param File")
+        global_tool_logs(self._build_command_line, config_file, "Building Command Line")
+        global_tool_logs(self._build_version_command, config_file, "Building Version Command Line")
+        return self.command_line, self.version_command_line, self.extra_filenames, self.environment_variables

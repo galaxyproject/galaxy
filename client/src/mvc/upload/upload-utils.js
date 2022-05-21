@@ -12,9 +12,23 @@ const AUTO_EXTENSION = {
 const DEFAULT_GENOME = "?";
 const DEFAULT_EXTENSION = "auto";
 
-function getUploadDatatypes(callback, datatypesDisableAuto, auto) {
+export function getUploadDatatypes(datatypesDisableAuto, auto) {
+    return loadUploadDatatypes().then((result) => {
+        const listExtensions = [...result];
+        if (!datatypesDisableAuto) {
+            listExtensions.unshift(auto);
+        }
+        return listExtensions;
+    });
+}
+
+let _cachedDatatypes;
+function loadUploadDatatypes() {
+    if (_cachedDatatypes) {
+        return Promise.resolve(_cachedDatatypes);
+    }
     const url = `${getAppRoot()}api/datatypes?extension_only=False`;
-    axios
+    return axios
         .get(url)
         .then((response) => {
             const datatypes = response.data;
@@ -33,43 +47,54 @@ function getUploadDatatypes(callback, datatypesDisableAuto, auto) {
                 var b_text = b.text && b.text.toLowerCase();
                 return a_text > b_text ? 1 : a_text < b_text ? -1 : 0;
             });
-            if (!datatypesDisableAuto) {
-                listExtensions.unshift(auto);
-            }
-            callback(listExtensions);
+            return listExtensions;
         })
-        .catch((errorMessage) => {
-            console.log(errorMessage);
+        .then((result) => {
+            _cachedDatatypes = result;
+            return result;
         });
 }
 
-function getUploadGenomes(callback, defaultGenome) {
+export function getUploadGenomes(defaultGenome) {
+    return loadGenomes().then((result) => {
+        const listGenomes = [...result];
+        listGenomes.sort(genomeSort(defaultGenome));
+        return listGenomes;
+    });
+}
+
+const genomeSort = (defaultGenome) => (a, b) => {
+    if (a.id == defaultGenome) {
+        return -1;
+    }
+    if (b.id == defaultGenome) {
+        return 1;
+    }
+    return a.text > b.text ? 1 : a.text < b.text ? -1 : 0;
+};
+
+let _cachedGenomes;
+function loadGenomes() {
+    if (_cachedGenomes) {
+        return Promise.resolve(_cachedGenomes);
+    }
     const url = `${getAppRoot()}api/genomes`;
-    axios
+    return axios
         .get(url)
         .then((response) => {
             const genomes = response.data;
             const listGenomes = [];
-
             for (var key in genomes) {
                 listGenomes.push({
                     id: genomes[key][1],
                     text: genomes[key][0],
                 });
             }
-            listGenomes.sort((a, b) => {
-                if (a.id == defaultGenome) {
-                    return -1;
-                }
-                if (b.id == defaultGenome) {
-                    return 1;
-                }
-                return a.text > b.text ? 1 : a.text < b.text ? -1 : 0;
-            });
-            callback(listGenomes);
+            return listGenomes;
         })
-        .catch((errorMessage) => {
-            console.log(errorMessage);
+        .then((result) => {
+            _cachedGenomes = result;
+            return result;
         });
 }
 

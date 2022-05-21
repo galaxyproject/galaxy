@@ -8,7 +8,7 @@ import axios from "axios";
 
 const getters = {
     job: (state) => (jobId) => {
-        return state.job[jobId] || [];
+        return state.job[jobId];
     },
 };
 

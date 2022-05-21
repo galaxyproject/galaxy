@@ -2,7 +2,6 @@ import InteractiveTools from "./InteractiveTools";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import flushPromises from "flush-promises";
-import _l from "utils/localization";
 import testInteractiveToolsResponse from "./testData/testInteractiveToolsResponse";
 
 import MockAdapter from "axios-mock-adapter";
@@ -10,12 +9,13 @@ import axios from "axios";
 
 describe("InteractiveTools/InteractiveTools.vue", () => {
     const localVue = getLocalVue();
-    localVue.filter("localize", (value) => _l(value));
     let wrapper;
     let axiosMock;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
+        axiosMock.onGet("/api/entry_points?running=true").reply(200, testInteractiveToolsResponse);
+        axiosMock.onDelete(new RegExp("/api/entry_points/*")).reply(200, { status: "ok", message: "ok" });
         wrapper = mount(InteractiveTools, {
             computed: {
                 currentHistory() {
@@ -26,8 +26,7 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
             },
             localVue,
         });
-        axiosMock.onGet("/api/entry_points?running=true").reply(200, testInteractiveToolsResponse);
-        axiosMock.onDelete(new RegExp("/api/entry_points/*")).reply(200, { status: "ok", message: "ok" });
+
         await flushPromises();
     });
 

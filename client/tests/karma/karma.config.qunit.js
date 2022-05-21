@@ -10,7 +10,7 @@
  */
 
 const baseKarmaConfig = require("./karma.config.base");
-const testFiles = ["../node_modules/@babel/polyfill/dist/polyfill.js", "../tests/qunit/testBundle.js"];
+const testFiles = ["polyfills.js", "../tests/qunit/testBundle.js"];
 const preprocessors = testFiles.reduce((result, path) => {
     result[path] = ["webpack"];
     return result;

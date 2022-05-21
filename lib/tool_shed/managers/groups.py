@@ -3,16 +3,23 @@ Manager and Serializer for TS groups.
 """
 import logging
 
-from sqlalchemy import false, true
-from sqlalchemy.orm.exc import MultipleResultsFound
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy import (
+    false,
+    true,
+)
+from sqlalchemy.orm.exc import (
+    MultipleResultsFound,
+    NoResultFound,
+)
 
-from galaxy.exceptions import Conflict
-from galaxy.exceptions import InconsistentDatabase
-from galaxy.exceptions import InternalServerError
-from galaxy.exceptions import ItemAccessibilityException
-from galaxy.exceptions import ObjectNotFound
-from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import (
+    Conflict,
+    InconsistentDatabase,
+    InternalServerError,
+    ItemAccessibilityException,
+    ObjectNotFound,
+    RequestParameterInvalidException,
+)
 
 log = logging.getLogger(__name__)
 
@@ -37,30 +44,32 @@ class GroupManager:
         :rtype:     tool_shed.model.Group
         """
         if decoded_group_id is None and name is None:
-            raise RequestParameterInvalidException('You must supply either ID or a name of the group.')
+            raise RequestParameterInvalidException("You must supply either ID or a name of the group.")
 
         name_query = trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.name == name)
-        id_query = trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.id == decoded_group_id)
+        id_query = trans.sa_session.query(trans.app.model.Group).filter(
+            trans.app.model.Group.table.c.id == decoded_group_id
+        )
 
         try:
             group = id_query.one() if decoded_group_id else name_query.one()
         except MultipleResultsFound:
-            raise InconsistentDatabase('Multiple groups found with the same identifier.')
+            raise InconsistentDatabase("Multiple groups found with the same identifier.")
         except NoResultFound:
-            raise ObjectNotFound('No group found with the identifier provided.')
+            raise ObjectNotFound("No group found with the identifier provided.")
         except Exception:
-            raise InternalServerError('Error loading from the database.')
+            raise InternalServerError("Error loading from the database.")
         return group
 
-    def create(self, trans, name, description=''):
+    def create(self, trans, name, description=""):
         """
         Create a new group.
         """
         if not trans.user_is_admin:
-            raise ItemAccessibilityException('Only administrators can create groups.')
+            raise ItemAccessibilityException("Only administrators can create groups.")
         else:
             if self.get(trans, name=name):
-                raise Conflict('Group with the given name already exists. Name: ' + str(name))
+                raise Conflict(f"Group with the given name already exists. Name: {str(name)}")
             # TODO add description field to the model
             group = trans.app.model.Group(name=name)
             trans.sa_session.add(group)
@@ -73,9 +82,9 @@ class GroupManager:
         """
         changed = False
         if not trans.user_is_admin:
-            raise ItemAccessibilityException('Only administrators can update groups.')
+            raise ItemAccessibilityException("Only administrators can update groups.")
         if group.deleted:
-            raise RequestParameterInvalidException('You cannot modify a deleted group. Undelete it first.')
+            raise RequestParameterInvalidException("You cannot modify a deleted group. Undelete it first.")
         if name is not None:
             group.name = name
             changed = True
@@ -92,7 +101,7 @@ class GroupManager:
         Mark given group deleted/undeleted based on the flag.
         """
         if not trans.user_is_admin:
-            raise ItemAccessibilityException('Only administrators can delete and undelete groups.')
+            raise ItemAccessibilityException("Only administrators can delete and undelete groups.")
         if undelete:
             group.deleted = False
         else:

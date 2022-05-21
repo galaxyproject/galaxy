@@ -3,53 +3,48 @@
 from logging import getLogger
 from os import path
 
-from galaxy.jobs import JobState
-from ..job import BaseJobExec, job_states
+from ..job import (
+    BaseJobExec,
+    job_states,
+)
+from ... import runner_states
 
 log = getLogger(__name__)
 
 argmap = {
-    'memory': '-M',  # There is code in job_script_kwargs relying on this name's setting
-    'cores': '-n',
-    'queue': '-q',
-    'working_dir': '-cwd',
-    'project': '-P'
+    "memory": "-M",  # There is code in job_script_kwargs relying on this name's setting
+    "cores": "-n",
+    "queue": "-q",
+    "working_dir": "-cwd",
+    "project": "-P",
 }
 
 
 class LSF(BaseJobExec):
-
-    def __init__(self, **params):
-        self.params = {}
-        for k, v in params.items():
-            self.params[k] = v
-
     def job_script_kwargs(self, ofile, efile, job_name):
-        scriptargs = {'-o': ofile,
-                      '-e': efile,
-                      '-J': job_name}
+        scriptargs = {"-o": ofile, "-e": efile, "-J": job_name}
 
         # Map arguments using argmap.
         for k, v in self.params.items():
-            if k == 'plugin' or k == 'excluded_hosts':
+            if k == "plugin" or k == "excluded_hosts":
                 continue
             try:
-                if k == 'memory':
+                if k == "memory":
                     # Memory requires both -m and -R rusage[mem=v] request
-                    scriptargs['-R'] = "\"rusage[mem=%s]\"" % v
-                if not k.startswith('-'):
+                    scriptargs["-R"] = f'"rusage[mem={v}]"'
+                if not k.startswith("-"):
                     k = argmap[k]
                 scriptargs[k] = v
             except Exception:
-                log.warning('Unrecognized long argument passed to LSF CLI plugin: %s' % k)
+                log.warning(f"Unrecognized long argument passed to LSF CLI plugin: {k}")
 
         # Generated template.
-        template_scriptargs = ''
+        template_scriptargs = ""
         for k, v in scriptargs.items():
-            template_scriptargs += f'#BSUB {k} {v}\n'
+            template_scriptargs += f"#BSUB {k} {v}\n"
         # Excluded hosts use the same -R option already in use for mem, so easier adding here.
         for host in self._get_excluded_hosts():
-            template_scriptargs += f'#BSUB -R \"select[hname!=\'{host}\']\"\n'
+            template_scriptargs += f"#BSUB -R \"select[hname!='{host}']\"\n"
         return dict(headers=template_scriptargs)
 
     def submit(self, script_file):
@@ -60,13 +55,13 @@ class LSF(BaseJobExec):
         return "bsub <%s | awk '{ print $2}' | sed 's/[<>]//g'" % script_file
 
     def delete(self, job_id):
-        return 'bkill %s' % job_id
+        return f"bkill {job_id}"
 
     def get_status(self, job_ids=None):
-        return "bjobs -a -o \"id stat\" -noheader"  # check this
+        return 'bjobs -a -o "id stat" -noheader'  # check this
 
     def get_single_status(self, job_id):
-        return "bjobs -o stat -noheader " + job_id
+        return f"bjobs -o stat -noheader {job_id}"
 
     def parse_status(self, status, job_ids):
         # Get status for each job, skipping header.
@@ -86,12 +81,12 @@ class LSF(BaseJobExec):
             # which would be badly handled here. So this only works well when Galaxy
             # is constantly monitoring the jobs. The logic here is that DONE jobs get forgotten
             # faster than failed jobs.
-            log.warning("Job id '%s' not found LSF status check" % job_id)
+            log.warning(f"Job id '{job_id}' not found LSF status check")
             return job_states.OK
         return self._get_job_state(status)
 
     def get_failure_reason(self, job_id):
-        return "bjobs -l " + job_id
+        return f"bjobs -l {job_id}"
 
     def parse_failure_reason(self, reason, job_id):
         # LSF will produce the following in the job output file:
@@ -99,7 +94,7 @@ class LSF(BaseJobExec):
         # Exited with exit code 143.
         for line in reason.splitlines():
             if "TERM_MEMLIMIT" in line:
-                return JobState.runner_states.MEMORY_LIMIT_REACHED
+                return runner_states.MEMORY_LIMIT_REACHED
         return None
 
     def _get_job_state(self, state):
@@ -108,19 +103,19 @@ class LSF(BaseJobExec):
         # https://www.ibm.com/support/knowledgecenter/en/SSETD4_9.1.2/lsf_command_ref/bjobs.1.html
         try:
             return {
-                'EXIT': job_states.ERROR,
-                'RUN': job_states.RUNNING,
-                'PEND': job_states.QUEUED,
-                'DONE': job_states.OK,
-                'PSUSP': job_states.ERROR,
-                'USUSP': job_states.ERROR,
-                'SSUSP': job_states.ERROR,
-                'UNKWN': job_states.ERROR,
-                'WAIT': job_states.QUEUED,
-                'ZOMBI': job_states.ERROR
+                "EXIT": job_states.ERROR,
+                "RUN": job_states.RUNNING,
+                "PEND": job_states.QUEUED,
+                "DONE": job_states.OK,
+                "PSUSP": job_states.ERROR,
+                "USUSP": job_states.ERROR,
+                "SSUSP": job_states.ERROR,
+                "UNKWN": job_states.ERROR,
+                "WAIT": job_states.QUEUED,
+                "ZOMBI": job_states.ERROR,
             }.get(state)
         except KeyError:
-            raise KeyError("Failed to map LSF status code [%s] to job state." % state)
+            raise KeyError(f"Failed to map LSF status code [{state}] to job state.")
 
     def _get_excluded_hosts(self):
         """
@@ -148,4 +143,4 @@ class LSF(BaseJobExec):
         return []
 
 
-__all__ = ('LSF',)
+__all__ = ("LSF",)

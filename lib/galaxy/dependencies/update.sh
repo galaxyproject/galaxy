@@ -1,21 +1,46 @@
 #!/bin/sh
+
+# This script installs poetry if it's not already installed in the user account.
+# It then runs poetry inside Galaxy's root directory, potentially updating 
+# pyproject.toml and poetry.lock, and the pinned and dev requirements files.
+
 set -e
 
-# You can pass one or more package specifications to this script to add only
-# them without updating all the rest of the requirements.
+this_directory="$(cd "$(dirname "$0")" > /dev/null && pwd)"
 
-if [ -z "$VIRTUAL_ENV" ]; then
-    echo "Please run this script inside a virtual environment!"
-    exit 1
+usage() {
+    printf "Usage: %s: [-a] [pkg_spec...]\n" ${0##*/} >&2
+}
+
+add=
+while getopts 'a' OPTION
+do
+    case $OPTION in
+        a) add=1
+           ;;
+        ?) usage
+           exit 2
+           ;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+if [ -n "$add" ] && [ $# -eq 0 ]; then
+    printf "When adding (-a), you must provide at least one package specification.\n" >&2
+    usage
+    exit 2
 fi
 
-THIS_DIRECTORY="$(cd "$(dirname "$0")" > /dev/null && pwd)"
+# Install the latest version of poetry into the user account
+curl -sSL https://install.python-poetry.org | python3 -
 
-pip install --upgrade pip setuptools poetry
-if [ $# -gt 0 ]; then
-    poetry add --lock "$@"
+# Run poetry (this may update pyproject.toml and poetry.lock).
+if [ -z "$add" ]; then
+    poetry update -vv --lock "$@"
 else
-    poetry update -vv --lock
+    poetry add -vv --lock "$@"
 fi
-poetry export -f requirements.txt --without-hashes --output "$THIS_DIRECTORY/pinned-requirements.txt"
-poetry export --dev -f requirements.txt --without-hashes --output "$THIS_DIRECTORY/dev-requirements.txt"
+
+# Update pinned requirements.
+poetry export -f requirements.txt --without-hashes --output "$this_directory/pinned-requirements.txt"
+poetry export --dev -f requirements.txt --without-hashes --output "$this_directory/dev-requirements.txt"

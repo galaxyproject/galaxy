@@ -3,13 +3,22 @@
   <requirements>
     <requirement type="package" version="3.7">python</requirement>
   </requirements>
-  <command> python '$__tool_directory__/ref_to_seq_taxonomy_converter.py' '$input' '$output'</command>
+  <command><![CDATA[
+    python '$__tool_directory__/ref_to_seq_taxonomy_converter.py' '$input' '$output'
+  ]]></command>
   <inputs>
     <param name="input" type="data" format="mothur.ref.taxonomy" label="a Sequence Taxomony file"/>
   </inputs>
   <outputs>
     <data name="output" format="mothur.seq.taxonomy"/>
   </outputs>
+  <tests>
+    <!-- TODO replace this mock test -->
+    <test>
+      <param name="input" value="empty.txt" ftype="mothur.ref.taxonomy"/>
+      <output name="output" file="empty.txt" ftype="mothur.seq.taxonomy"/>
+    </test>
+  </tests>
   <help>
   </help>
 </tool>

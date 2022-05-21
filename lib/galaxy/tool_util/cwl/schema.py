@@ -17,7 +17,6 @@ REWRITE_EXPRESSIONS = False
 
 
 class SchemaLoader:
-
     def __init__(self, strict=True, validate=True):
         self._strict = strict
         self._validate = validate
@@ -33,34 +32,24 @@ class SchemaLoader:
         loading_context.do_validate = self._validate
         loading_context.loader = self.raw_document_loader
         loading_context.do_update = True
+        loading_context.relax_path_checks = True
         return loading_context
 
     def raw_process_reference(self, path, loading_context=None):
         with tempfile.TemporaryDirectory() as output_dir:
-            suffix = ''
-            if '#' in path:
-                path, suffix = path.split('#')
-            print(f""" -------
-
-{open(path).read()}
-
-            -------
-            """)
+            suffix = ""
+            if "#" in path:
+                path, suffix = path.split("#")
             processed_path = os.path.join(output_dir, os.path.basename(path))
             path = os.path.abspath(path)
-            uri = "file://" + path
+            uri = f"file://{path}"
             loading_context = loading_context or self.loading_context()
             if REWRITE_EXPRESSIONS:
-                from cwl_utils import cwl_v1_0_expression_refactor
-                exit_code = cwl_v1_0_expression_refactor.main([output_dir, path, '--skip-some1', '--skip-some2'])
+                from cwl_utils import cwl_expression_refactor
+
+                exit_code = cwl_expression_refactor.main([output_dir, path, "--skip-some1", "--skip-some2"])
                 if exit_code == 0:
                     uri = f"file://{processed_path}"
-                    print(f""" -------
-
-{open(processed_path).read()}
-
-            -------
-                    """)
             if suffix:
                 uri = f"{uri}#{suffix}"
             loading_context, process_object, uri = load_tool.fetch_document(uri, loadingContext=loading_context)

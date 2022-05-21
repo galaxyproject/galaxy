@@ -110,8 +110,9 @@ const AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: _l("Manage Allowlist"),
-                        url: "admin/sanitize_allowlist",
+                        url: "admin/sanitize_allow",
                         id: "admin-link-allowlist",
+                        target: "__use_router__",
                     },
                     {
                         title: _l("Manage Dependencies"),
@@ -128,11 +129,6 @@ const AdminPanel = Backbone.View.extend({
                         url: "admin/tool_versions",
                         target: "__use_router__",
                         id: "admin-link-tool-versions",
-                    },
-                    {
-                        title: _l("View Migration Stages"),
-                        url: "admin/review_tool_migration_stages",
-                        id: "admin-link-migrations",
                     },
                     {
                         title: _l("View Error Logs"),
@@ -154,6 +150,7 @@ const AdminPanel = Backbone.View.extend({
             _.each(category.get("items"), (item) => {
                 if (item.enabled === undefined || item.enabled) {
                     const $link = $("<a/>")
+                        .addClass("title-link")
                         .attr({ href: this.root + item.url })
                         .text(_l(item.title));
                     if (item.id) {

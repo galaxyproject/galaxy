@@ -21,11 +21,11 @@ import sys
 
 # Setup DB scripting environment
 from sqlalchemy import *  # noqa
-from sqlalchemy.orm import *  # noqa
 from sqlalchemy.exc import *  # noqa
+from sqlalchemy.orm import *  # noqa
 from sqlalchemy.sql import label  # noqa
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 from galaxy.datatypes.registry import Registry
 from galaxy.model import *  # noqa
@@ -36,8 +36,9 @@ from galaxy.model.orm.scripts import get_config
 registry = Registry()
 registry.load_datatypes()
 set_datatypes_registry(registry)
-db_url = get_config(sys.argv)['db_url']
-sa_session = init('/tmp/', db_url).context
+config = get_config(sys.argv)
+db_url = config["db_url"]
+sa_session = init("/tmp/", db_url).context
 
 
 # Helper function for debugging sqlalchemy queries...
@@ -50,6 +51,7 @@ def printquery(statement, bind=None):
     please also note that this function is quite slow
     """
     import sqlalchemy.orm
+
     if isinstance(statement, sqlalchemy.orm.Query):
         if bind is None:
             bind = statement.session.get_bind()
@@ -61,15 +63,9 @@ def printquery(statement, bind=None):
     compiler = statement._compiler(dialect)
 
     class LiteralCompiler(compiler.__class__):
-        def visit_bindparam(
-                self, bindparam, within_columns_clause=False,
-                literal_binds=False, **kwargs
-        ):
+        def visit_bindparam(self, bindparam, within_columns_clause=False, literal_binds=False, **kwargs):
             return super().render_literal_bindparam(
-                bindparam,
-                within_columns_clause=within_columns_clause,
-                literal_binds=literal_binds,
-                **kwargs
+                bindparam, within_columns_clause=within_columns_clause, literal_binds=literal_binds, **kwargs
             )
 
         def render_literal_value(self, value, type_):
@@ -95,9 +91,7 @@ def printquery(statement, bind=None):
                 return "TO_DATE('%s','YYYY-MM-DD HH24:MI:SS')" % value.strftime("%Y-%m-%d %H:%M:%S")
 
             else:
-                raise NotImplementedError(
-                    "Don't know how to literal-quote value %r" % value
-                )
+                raise NotImplementedError("Don't know how to literal-quote value %r" % value)
 
     compiler = LiteralCompiler(dialect, statement)
     print(compiler.process(statement))

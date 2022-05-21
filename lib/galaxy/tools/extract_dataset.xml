@@ -1,8 +1,8 @@
 <tool id="__EXTRACT_DATASET__"
-      name="Extract Dataset"
-      version="1.0.0"
+      name="Extract dataset"
+      version="1.0.1"
       tool_type="extract_element">
-  <description>from a list</description>
+  <description></description>
   <type class="ExtractDatasetCollectionTool" module="galaxy.tools" />
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
@@ -30,7 +30,7 @@
         </param>
       </when>
       <when value="by_index">
-        <param name="index" label="Element index:" type="integer" value="0" help="Starting from 0.">
+        <param name="index" label="Element index:" type="integer" value="0" help="Starting from 0">
         </param>
       </when>
     </conditional>
@@ -39,6 +39,22 @@
     <data name="output" label="${on_string} (extracted element)" />
   </outputs>
   <help><![CDATA[
+
+========
+Synopsis
+========
+
+Extracts datasets from a collection based on either position or identifier.
+
+===========
+Description
+===========
+
+The tool allow extracting datasets based on position (**The first dataset** and **Select by index** options) or name (**Select by element identifier** option). This tool effectively collapses the inner-most collection into a dataset. For nested collections (e.g a list of lists of lists: outer:middle:inner, extracting the inner dataset element) a new list is created where the selected element takes the position of the inner-most collection (so outer:middle, where middle is not a collection but the inner dataset element).
+
+.. class:: warningmark 
+
+**Note**: Dataset index (numbering) begins with 0 (zero). 
 
 .. class:: infomark
 

@@ -6,21 +6,22 @@ from abc import abstractmethod
 
 from galaxy import (
     exceptions,
-    managers
+    managers,
 )
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import (
-    BaseAPIController,
-    UsesStoredWorkflowMixin
+from galaxy.webapps.base.controller import UsesStoredWorkflowMixin
+from . import (
+    BaseGalaxyAPIController,
+    depends,
 )
 
 log = logging.getLogger(__name__)
 
 
-class BaseAnnotationsController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnnotations):
+class BaseAnnotationsController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, UsesAnnotations):
     tagged_item_id: str
 
     @expose_api
@@ -65,10 +66,7 @@ class BaseAnnotationsController(BaseAPIController, UsesStoredWorkflowMixin, Uses
 class HistoryAnnotationsController(BaseAnnotationsController):
     controller_name = "history_annotations"
     tagged_item_id = "history_id"
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.history_manager = managers.histories.HistoryManager(app)
+    history_manager: managers.histories.HistoryManager = depends(managers.histories.HistoryManager)
 
     def _get_item_from_id(self, trans: ProvidesHistoryContext, idstr):
         decoded_idstr = self.decode_id(idstr)
@@ -79,10 +77,7 @@ class HistoryAnnotationsController(BaseAnnotationsController):
 class HistoryContentAnnotationsController(BaseAnnotationsController):
     controller_name = "history_content_annotations"
     tagged_item_id = "history_content_id"
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.hda_manager = managers.hdas.HDAManager(app)
+    hda_manager: managers.hdas.HDAManager = depends(managers.hdas.HDAManager)
 
     def _get_item_from_id(self, trans: ProvidesHistoryContext, idstr):
         decoded_idstr = self.decode_id(idstr)

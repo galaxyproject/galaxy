@@ -4,17 +4,16 @@
         <b-form id="externalLogin">
             <!-- OIDC login-->
             <hr class="my-4" />
-            <div class="cilogon" v-if="cilogonListShow">
+            <div v-if="cilogonListShow" class="cilogon">
                 <div v-if="login_page">
                     <!--Only Display if CILogon/Custos is configured-->
                     <b-form-group label="Use existing institutional login">
                         <multiselect
-                            placeholder="Select your institution"
                             v-model="selected"
+                            placeholder="Select your institution"
                             :options="cilogon_idps"
                             label="DisplayName"
-                            track-by="EntityID"
-                        >
+                            track-by="EntityID">
                         </multiselect>
                     </b-form-group>
 
@@ -24,14 +23,14 @@
                         </b-form-checkbox>
                     </b-form-group>
 
-                    <b-button v-if="cilogon_enabled" @click="submitCILogon('cilogon')" :disabled="selected === null"
+                    <b-button v-if="cilogon_enabled" :disabled="selected === null" @click="submitCILogon('cilogon')"
                         >Sign in with Institutional Credentials*</b-button
                     >
                     <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
                     <b-button
                         v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')"
-                        @click="submitCILogon('custos')"
                         :disabled="selected === null"
+                        @click="submitCILogon('custos')"
                         >Sign in with Custos*</b-button
                     >
                 </div>
@@ -45,18 +44,17 @@
 
                     <b-form-group v-if="toggle_cilogon">
                         <multiselect
-                            placeholder="Select your institution"
                             v-model="selected"
+                            placeholder="Select your institution"
                             :options="cilogon_idps"
                             label="DisplayName"
-                            track-by="EntityID"
-                        >
+                            track-by="EntityID">
                         </multiselect>
 
                         <b-button
                             v-if="toggle_cilogon"
-                            @click="submitCILogon(cilogonOrCustos)"
                             :disabled="selected === null"
+                            @click="submitCILogon(cilogonOrCustos)"
                             >Login*</b-button
                         >
                     </b-form-group>
@@ -147,6 +145,13 @@ export default {
             return Object.prototype.hasOwnProperty.call(this.oidc_idps, "custos");
         },
     },
+    created() {
+        this.rememberIdp = this.getIdpPreference() !== null;
+        /* Only fetch CILogonIDPs if custos/cilogon configured */
+        if (this.cilogonListShow) {
+            this.getCILogonIdps();
+        }
+    },
     methods: {
         toggleCILogon(idp) {
             this.toggle_cilogon = !this.toggle_cilogon;
@@ -169,10 +174,13 @@ export default {
         },
         submitCILogon(idp) {
             const rootUrl = getAppRoot();
-            if (this.login_page) this.setIdpPreference();
+            if (this.login_page) {
+                this.setIdpPreference();
+            }
             axios
                 .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
                 .then((response) => {
+                    localStorage.setItem("galaxy-provider", idp);
                     if (response.data.redirect_uri) {
                         window.location = response.data.redirect_uri;
                     }
@@ -223,13 +231,6 @@ export default {
         getIdpPreference() {
             return localStorage.getItem("galaxy-remembered-idp");
         },
-    },
-    created() {
-        this.rememberIdp = this.getIdpPreference() !== null;
-        /* Only fetch CILogonIDPs if custos/cilogon configured */
-        if (this.cilogonListShow) {
-            this.getCILogonIdps();
-        }
     },
 };
 </script>

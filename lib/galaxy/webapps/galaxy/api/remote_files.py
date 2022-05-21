@@ -1,107 +1,102 @@
 """
 API operations on remote files.
 """
-import hashlib
 import logging
-from operator import itemgetter
-
-from galaxy import exceptions
-from galaxy.files import ProvidesUserFileSourcesUserContext
-from galaxy.managers.context import ProvidesUserContext
-from galaxy.util import (
-    jstree,
-    smart_str,
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
 )
-from galaxy.web import expose_api
-from galaxy.webapps.base.controller import BaseAPIController
+
+from fastapi.param_functions import Query
+
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.remote_files import RemoteFilesManager
+from galaxy.schema.remote_files import (
+    FilesSourcePluginList,
+    RemoteFilesDisableMode,
+    RemoteFilesFormat,
+    RemoteFilesTarget,
+)
+from . import (
+    depends,
+    DependsOnTrans,
+    Router,
+)
 
 log = logging.getLogger(__name__)
 
+router = Router(tags=["remote files"])
 
-class RemoteFilesAPIController(BaseAPIController):
+TargetQueryParam: str = Query(
+    default=RemoteFilesTarget.ftpdir,
+    title="Target source",
+    description=("The source to load datasets from." " Possible values: ftpdir, userdir, importdir"),
+)
 
-    @expose_api
-    def index(self, trans: ProvidesUserContext, **kwd):
-        """
-        GET /api/remote_files/
+FormatQueryParam: Optional[RemoteFilesFormat] = Query(
+    default=RemoteFilesFormat.uri,
+    title="Response format",
+    description=(
+        "The requested format of returned data. Either `flat` to simply list all the files"
+        ", `jstree` to get a tree representation of the files, or the default `uri` to list "
+        "files and directories by their URI."
+    ),
+)
 
-        Displays remote files.
+RecursiveQueryParam: Optional[bool] = Query(
+    default=None,
+    title="Recursive",
+    description=(
+        "Wether to recursively lists all sub-directories." " This will be `True` by default depending on the `target`."
+    ),
+)
 
-        :param  target:      target to load available datasets from, defaults to ftpdir
-            possible values: ftpdir, userdir, importdir
-        :type   target:      str
+DisableModeQueryParam: Optional[RemoteFilesDisableMode] = Query(
+    default=None,
+    title="Disable mode",
+    description=(
+        "(This only applies when `format` is `jstree`)"
+        " The value can be either `folders` or `files` and it will disable the"
+        " corresponding nodes of the tree."
+    ),
+)
 
-        :param  format:      requested format of data, defaults to flat
-            possible values: flat, jstree
 
-        :returns:   list of available files
-        :rtype:     list
-        """
-        # If set, target must be one of 'ftpdir' (default), 'userdir', 'importdir'
-        target = kwd.get('target', 'ftpdir')
+@router.cbv
+class FastAPIRemoteFiles:
+    manager: RemoteFilesManager = depends(RemoteFilesManager)
 
-        user_context = ProvidesUserFileSourcesUserContext(trans)
-        default_recursive = False
-        default_format = "uri"
+    @router.get(
+        "/api/remote_files",
+        summary="Displays remote files available to the user.",
+        response_description="A list with details about the remote files available to the user.",
+    )
+    @router.get(
+        "/api/ftp_files",
+        deprecated=True,
+        summary="Displays remote files available to the user. Please use /api/remote_files instead.",
+    )
+    async def index(
+        self,
+        user_ctx: ProvidesUserContext = DependsOnTrans,
+        target: str = TargetQueryParam,
+        format: Optional[RemoteFilesFormat] = FormatQueryParam,
+        recursive: Optional[bool] = RecursiveQueryParam,
+        disable: Optional[RemoteFilesDisableMode] = DisableModeQueryParam,
+    ) -> List[Dict[str, Any]]:
+        """Lists all remote files available to the user from different sources."""
+        return self.manager.index(user_ctx, target, format, recursive, disable)
 
-        if "://" in target:
-            uri = target
-        elif target == 'userdir':
-            uri = "gxuserimport://"
-            default_format = "flat"
-            default_recursive = True
-        elif target == 'importdir':
-            uri = 'gximport://'
-            default_format = "flat"
-            default_recursive = True
-        elif target in ['ftpdir', 'ftp']:  # legacy, allow both
-            uri = 'gxftp://'
-            default_format = "flat"
-            default_recursive = True
-        else:
-            raise exceptions.RequestParameterInvalidException("Invalid target parameter supplied [%s]" % target)
-
-        format = kwd.get('format', default_format)
-        recursive = kwd.get('recursive', default_recursive)
-
-        file_sources = self.app.file_sources
-        file_sources.validate_uri_root(uri, user_context=user_context)
-
-        file_source_path = file_sources.get_file_source_path(uri)
-        file_source = file_source_path.file_source
-        index = file_source.list(file_source_path.path, recursive=recursive, user_context=user_context)
-        if format == "flat":
-            # rip out directories, ensure sorted by path
-            index = [i for i in index if i["class"] == "File"]
-            index = sorted(index, key=itemgetter("path"))
-        if format == "jstree":
-            disable = kwd.get('disable', 'folders')
-
-            jstree_paths = []
-            for ent in index:
-                path = ent["path"]
-                path_hash = hashlib.sha1(smart_str(path)).hexdigest()
-                if ent["class"] == "Directory":
-                    path_type = 'folder'
-                    disabled = True if disable == 'folders' else False
-                else:
-                    path_type = 'file'
-                    disabled = True if disable == 'files' else False
-
-                jstree_paths.append(jstree.Path(path, path_hash, {'type': path_type, 'state': {'disabled': disabled}, 'li_attr': {'full_path': path}}))
-            userdir_jstree = jstree.JSTree(jstree_paths)
-            index = userdir_jstree.jsonData()
-
-        return index
-
-    @expose_api
-    def plugins(self, trans: ProvidesUserContext, **kwd):
-        """
-        GET /api/remote_files/plugins
-
-        Display plugin information for each of the gxfiles:// URI targets available.
-
-        :returns:   list of configured plugins
-        :rtype:     list
-        """
-        return self.app.file_sources.plugins_to_dict()
+    @router.get(
+        "/api/remote_files/plugins",
+        summary="Display plugin information for each of the gxfiles:// URI targets available.",
+        response_description="A list with details about each plugin.",
+    )
+    async def plugins(
+        self,
+        user_ctx: ProvidesUserContext = DependsOnTrans,
+    ) -> FilesSourcePluginList:
+        """Display plugin information for each of the gxfiles:// URI targets available."""
+        return self.manager.get_files_source_plugins(user_ctx)

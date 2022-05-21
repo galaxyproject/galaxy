@@ -6,13 +6,12 @@
             <b-col cols="6">
                 <b-input
                     id="interactivetool-search"
+                    v-model="filter"
                     class="m-1"
                     name="query"
                     placeholder="Search Interactive Tool"
                     autocomplete="off"
-                    type="text"
-                    v-model="filter"
-                />
+                    type="text" />
             </b-col>
         </b-row>
         <b-table
@@ -21,15 +20,14 @@
             :fields="fields"
             :items="activeInteractiveTools"
             :filter="filter"
-            @filtered="filtered"
-        >
+            @filtered="filtered">
             <template v-slot:cell(checkbox)="row">
                 <b-form-checkbox :id="createId('checkbox', row.item.id)" v-model="row.item.marked" />
             </template>
             <template v-slot:cell(name)="row">
                 <a
-                    :index="row.index"
                     :id="createId('link', row.item.id)"
+                    :index="row.index"
                     :href="row.item.target"
                     target="_blank"
                     :name="row.item.name"
@@ -37,12 +35,8 @@
                 >
             </template>
             <template v-slot:cell(job_info)="row">
-                <label v-if="row.item.active">
-                    running
-                </label>
-                <label v-else>
-                    stopped
-                </label>
+                <label v-if="row.item.active"> running </label>
+                <label v-else> stopped </label>
             </template>
             <template v-slot:cell(created_time)="row">
                 <UtcDate :date="row.item.created_time" mode="elapsed" />
@@ -53,12 +47,12 @@
         </b-table>
         <label v-if="isActiveToolsListEmpty">You do not have active interactive tools yet </label>
         <div v-if="showNotFound">
-            No matching entries found for: <span class="font-weight-bold">{{ this.filter }}</span
+            No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
             >.
         </div>
         <b-button
-            id="stopInteractiveTool"
             v-if="isCheckboxMarked"
+            id="stopInteractiveTool"
             v-b-tooltip.hover.bottom
             title="Terminate selected tools"
             @click.stop="stopInteractiveToolSession()"
@@ -68,14 +62,9 @@
 </template>
 
 <script>
-import { Services } from "./services";
-import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
+import { Services } from "./services";
 import UtcDate from "components/UtcDate";
-import { getGalaxyInstance } from "app";
-import BootstrapVue from "bootstrap-vue";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {
@@ -125,9 +114,6 @@ export default {
         },
         isActiveToolsListEmpty() {
             return this.activeInteractiveTools.length === 0;
-        },
-        currentHistory() {
-            return getGalaxyInstance().currHistoryPanel;
         },
     },
     created() {

@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: testing
+  name: testing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: test
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: test
+    spec:
+      containers:
+      - image: postgres:12
+        name: postgres
+        ports:
+        - containerPort: 5432
+        env:
+          - name: POSTGRES_DB
+            value: postgres
+          - name: POSTGRES_USER
+            value:  postgres
+          - name: POSTGRES_PASSWORD
+            value: postgres
+      - image: rabbitmq
+        name: rabbitmq
+        ports:
+        - containerPort: 5672

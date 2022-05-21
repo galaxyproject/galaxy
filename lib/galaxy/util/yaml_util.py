@@ -3,11 +3,12 @@ import os
 from collections import OrderedDict
 
 import yaml
+from yaml.constructor import ConstructorError
+
 try:
     from yaml import CSafeLoader as SafeLoader
 except ImportError:
-    from yaml import SafeLoader  # type: ignore
-from yaml.constructor import ConstructorError
+    from yaml import SafeLoader  # type: ignore[misc]
 
 
 log = logging.getLogger(__name__)
@@ -29,24 +30,29 @@ class OrderedLoader(SafeLoader):
 def ordered_load(stream, merge_duplicate_keys=False):
     """
     Parse the first YAML document in a stream and produce the corresponding
-    Python object, using OrderedDicts instead of dicts.
+    Python object.
 
     If merge_duplicate_keys is True, merge the values of duplicate mapping keys
     into a list, as the uWSGI "dumb" YAML parser would do.
     Otherwise, following YAML 1.2 specification which says that "each key is
     unique in the association", raise a ConstructionError exception.
     """
+
     def construct_mapping(loader, node, deep=False):
         loader.flatten_mapping(node)
-        mapping = OrderedDict()
+        mapping = {}
         merged_duplicate = {}
         for key_node, value_node in node.value:
             key = loader.construct_object(key_node, deep=deep)
             value = loader.construct_object(value_node, deep=deep)
             if key in mapping:
                 if not merge_duplicate_keys:
-                    raise ConstructorError("while constructing a mapping", node.start_mark,
-                        "found duplicated key (%s)" % key, key_node.start_mark)
+                    raise ConstructorError(
+                        "while constructing a mapping",
+                        node.start_mark,
+                        f"found duplicated key ({key})",
+                        key_node.start_mark,
+                    )
                 log.debug("Merging values for duplicate key '%s' into a list", key)
                 if merged_duplicate.get(key):
                     mapping[key].append(value)
@@ -57,10 +63,8 @@ def ordered_load(stream, merge_duplicate_keys=False):
                 mapping[key] = value
         return mapping
 
-    OrderedLoader.add_constructor(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        construct_mapping)
-    OrderedLoader.add_constructor('!include', OrderedLoader.include)
+    OrderedLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
+    OrderedLoader.add_constructor("!include", OrderedLoader.include)
 
     return yaml.load(stream, OrderedLoader)
 
@@ -70,8 +74,7 @@ def ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
         pass
 
     def _dict_representer(dumper, data):
-        return dumper.represent_mapping(
-            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-            list(data.items()))
+        return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, list(data.items()))
+
     OrderedDumper.add_representer(OrderedDict, _dict_representer)
     return yaml.dump(data, stream, OrderedDumper, **kwds)

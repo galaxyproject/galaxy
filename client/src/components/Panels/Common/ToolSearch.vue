@@ -1,5 +1,5 @@
 <template>
-    <delayed-input :query="query" :loading="loading" :placeholder="placeholder" @onChange="checkQuery" />
+    <DelayedInput class="mb-3" :query="query" :loading="loading" :placeholder="placeholder" @change="checkQuery" />
 </template>
 
 <script>
@@ -14,11 +14,17 @@ export default {
         DelayedInput,
     },
     props: {
-        query: {
+        currentPanelView: {
             type: String,
+            required: true,
         },
         placeholder: {
             type: String,
+            default: "search tools",
+        },
+        query: {
+            type: String,
+            default: null,
         },
     },
     data() {
@@ -44,7 +50,7 @@ export default {
                     this.loading = true;
                     axios
                         .get(`${getAppRoot()}api/tools`, {
-                            params: { q },
+                            params: { q, view: this.currentPanelView },
                         })
                         .then((response) => {
                             this.loading = false;

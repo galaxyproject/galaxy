@@ -6,7 +6,7 @@ from .framework import (
     retry_during_transitions,
     selenium_test,
     SeleniumTestCase,
-    UsesLibraryAssertions
+    UsesLibraryAssertions,
 )
 
 
@@ -33,13 +33,14 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.assert_num_displayed_items_is(1)
 
         # check empty folder
-        new_folder_link = self.wait_for_xpath_visible('//a[contains(text(), "%s")]' % sub_folder_name)
+        new_folder_link = self.wait_for_xpath_visible(f'//a[contains(text(), "{sub_folder_name}")]')
         new_folder_link.click()
 
         # assert that 'empty folder message' is present
         self.components.libraries.folder.empty_folder_message.wait_for_present()
+
         # go one folder up
-        self.components.libraries.folder.btn_open_upper_folder.wait_for_and_click()
+        self.components.libraries.folder.btn_open_parent_folder(folder_name=self.name).wait_for_and_click()
         # assert empty description
         self.components.libraries.folder.description_field.assert_absent_or_hidden()
         # change description
@@ -138,8 +139,9 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         elements = self.find_elements(self.navigation.libraries.dataset.selectors.table_rows)
         table_as_dict = {}
         for element in elements:
-            key = element.find_element_by_tag_name("th").text
-            value = element.find_element_by_tag_name("td").text
+            row_values = element.text.split("\n")
+            key = row_values[0]
+            value = row_values[1]
             table_as_dict[key] = value
 
         assert table_as_dict["Name"] == "1.txt", table_as_dict
@@ -149,23 +151,20 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
     def test_import_dataset_from_import_dir(self):
         self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
-        self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_import_dir)
-        self.select_dataset_from_lib_import_modal("1.axt")
-        self.assert_num_displayed_items_is(1)
+        filenames = ["1.axt", "1.bed", "1.bam"]
+        self.populate_library_folder_from_import_dir(self.name, filenames)
+        self.assert_num_displayed_items_is(len(filenames))
 
     @selenium_test
     def test_show_details(self):
         self.navigate_to_new_library()
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.wait_for_selector_clickable(".toolbtn-show-locinfo").click()
+        self.components.libraries.folder.open_location_details_btn.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.wait_for_selector_clickable(".ui-modal #button-0").click()
-        self.wait_for_overlays_cleared()
+        self.components.libraries.folder.location_details_ok_btn.wait_for_and_click()
         self.screenshot("libraries_show_details")
-
-    def navigate_to_new_library(self, login=True):
-        self.create_new_library(login)
-        self.libraries_open_with_name(self.name)
+        self.wait_for_overlays_cleared()
+        self.screenshot("libraries_show_details_done")
 
     @retry_during_transitions
     def _select_history_option(self, select_id, label_text):

@@ -22,6 +22,33 @@ export default {
             type: String,
         },
     },
+    data() {
+        return {
+            pathDestination: undefined,
+        };
+    },
+    computed: {
+        linkLabel() {
+            // if sub-directory, we could potentially implement subdir compression
+            if (this.pathDestination.isDirectory) {
+                return `Path: ${this.path} is a directory!`;
+            }
+
+            if (!this.pathDestination.fileLink) {
+                return `Path: ${this.path} was not found!`;
+            }
+
+            if (this.label !== undefined && this.label !== "undefined") {
+                return this.label;
+            } else {
+                return `${
+                    this.pathDestination.datasetRootDir && this.path
+                        ? `DATASET: ${this.pathDestination.datasetRootDir} FILEPATH: ${this.path}`
+                        : `${this.history_dataset_id}`
+                } `;
+            }
+        },
+    },
     created() {
         this.services = new Services({ root: getAppRoot() });
         this.pathDestination = {};
@@ -36,29 +63,6 @@ export default {
                 this.pathDestination = { fileLink: `${response.download_url}?to_ext=${response.file_ext}` };
             });
         }
-    },
-    data() {
-        return {
-            pathDestination: undefined,
-        };
-    },
-    computed: {
-        linkLabel() {
-            // if sub-directory, we could potentially implement subdir compression
-            if (this.pathDestination.isDirectory) return `Path: ${this.path} is a directory!`;
-
-            if (!this.pathDestination.fileLink) return `Path: ${this.path} was not found!`;
-
-            if (this.label !== undefined && this.label !== "undefined") {
-                return this.label;
-            } else {
-                return `${
-                    this.pathDestination.datasetRootDir && this.path
-                        ? `DATASET: ${this.pathDestination.datasetRootDir} FILEPATH: ${this.path}`
-                        : `${this.history_dataset_id}`
-                } `;
-            }
-        },
     },
     methods: {
         ...mapCacheActions(["fetchPathDestination"]),

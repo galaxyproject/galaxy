@@ -32,6 +32,7 @@ var _super = LIST_VIEW.ModelListPanel;
 var HistoryView = _super.extend(
     /** @lends HistoryView.prototype */ {
         _logNamespace: "history",
+        actionButtonClass: "history-contents-list-action-menu-btn",
 
         /** class to use for constructing the HDA views */
         HDAViewClass: HDA_LI.HDAListItemView,
@@ -172,18 +173,18 @@ var HistoryView = _super.extend(
             // do not render (and remove even) if nothing to select
             if (!this.views.length) {
                 this.hideSelectors();
-                $where.find(".controls .actions .show-selectors-btn").remove();
+                $where.find(".controls .actions .show-history-content-selectors-btn").remove();
                 return null;
             }
             // don't bother rendering if there's one already
-            var $existing = $where.find(".controls .actions .show-selectors-btn");
+            var $existing = $where.find(".controls .actions .show-history-content-selectors-btn");
             if ($existing.length) {
                 return $existing;
             }
 
             return faIconButton({
                 title: _l("Operations on multiple datasets"),
-                classes: "show-selectors-btn",
+                classes: "show-history-content-selectors-btn",
                 faIcon: "fa-check-square-o",
                 tooltipConfig: { placement: "top" },
             }).prependTo($where.find(".controls .actions"));
@@ -248,7 +249,9 @@ var HistoryView = _super.extend(
         /** render pagination controls if not searching and contents says we're paginating */
         _renderPagination: function ($whereTo) {
             var $paginationControls = $whereTo.find("> .controls .list-pagination");
-            if (this.searchFor || !this.model.contents.shouldPaginate()) return $paginationControls.empty();
+            if (this.searchFor || !this.model.contents.shouldPaginate()) {
+                return $paginationControls.empty();
+            }
 
             $paginationControls.html(
                 this.templates.pagination(
@@ -345,7 +348,7 @@ var HistoryView = _super.extend(
         // ------------------------------------------------------------------------ panel events
         /** event map */
         events: _.extend(_.clone(_super.prototype.events), {
-            "click .show-selectors-btn": "toggleSelectors",
+            "click .show-history-content-selectors-btn": "toggleSelectors",
             "click > .controls .prev": "_clickPrevPage",
             "click > .controls .next": "_clickNextPage",
             "change > .controls .pages": "_changePageSelect",
@@ -427,7 +430,9 @@ var HistoryView = _super.extend(
 
         /** clear the search filters and show all views that are normally shown */
         clearSearch: function (searchFor) {
-            if (!this.searchFor) return this;
+            if (!this.searchFor) {
+                return this;
+            }
             //this.log( 'onSearchClear', this );
             this.searchFor = "";
             this.trigger("search:clear", this);
@@ -516,16 +521,16 @@ var HistoryView = _super.extend(
 HistoryView.prototype.templates = (() => {
     var mainTemplate = () =>
         `<div>
-            <div class="controls"></div>
+            <div class="controls details"></div>
             <ul class="list-items"></ul>
-            <div class="empty-message infomessagesmall"></div>',
+            <div class="empty-message alert alert-info"></div>',
         </div>`;
 
     var controlsTemplate = BASE_MVC.wrapTemplate(
         [
-            '<div class="controls">',
+            '<div class="controls details">',
             '<div class="title">',
-            '<div class="name"><%- history.name %></div>',
+            '<div class="name history-title"><%- history.name %></div>',
             "</div>",
             '<div class="subtitle"></div>',
             '<div class="history-size"><%- history.nice_size %></div>',
@@ -557,7 +562,7 @@ HistoryView.prototype.templates = (() => {
 
             // add tags and annotations
             '<div class="tags-display"></div>',
-            '<div class="annotation-display"></div>',
+            '<div class="annotation-display history-annotation"></div>',
 
             '<div class="search">',
             '<div class="search-input"></div>',

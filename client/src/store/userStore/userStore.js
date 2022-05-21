@@ -11,7 +11,8 @@ const getters = {
     // hydrate with model object using the getter
     currentUser(state) {
         const userProps = state.currentUser || {};
-        return new User(userProps);
+        const user = new User(userProps);
+        return Object.freeze(user);
     },
 };
 
@@ -21,10 +22,28 @@ const mutations = {
     },
 };
 
+// Holds promise for in-flight loads
+let loadPromise;
+
 const actions = {
-    async loadUser({ commit }) {
-        const user = await getCurrentUser();
+    loadUser({ dispatch }) {
+        if (!loadPromise) {
+            loadPromise = getCurrentUser()
+                .then((user) => {
+                    dispatch("setCurrentUser", user);
+                })
+                .catch((err) => {
+                    console.warn("loadUser error", err);
+                })
+                .finally(() => {
+                    loadPromise = null;
+                });
+        }
+    },
+    async setCurrentUser({ commit, dispatch }, user) {
         commit("setCurrentUser", user);
+        dispatch("history/loadCurrentHistory", user, { root: true });
+        dispatch("history/loadHistories", user, { root: true });
     },
 };
 

@@ -12,12 +12,12 @@
 //@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
 
 $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/fontawesome";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/brands";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/regular";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/solid";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/v4-shims";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/_variables";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";
+@import "~@fortawesome/fontawesome-free/scss/brands";
+@import "~@fortawesome/fontawesome-free/scss/regular";
+@import "~@fortawesome/fontawesome-free/scss/solid";
+@import "~@fortawesome/fontawesome-free/scss/v4-shims";
+@import "~@fortawesome/fontawesome-free/scss/_variables";
 
 @import "select2.scss";
 @import "jquery.rating.scss";
@@ -38,6 +38,7 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 @import "markdown.scss";
 @import "toolshed.scss";
 @import "workflow.scss";
+@import "multiselect.scss";
 
 // ==== Select2 ====
 /* fix for zero width select2 - remove when fixed there */
@@ -160,7 +161,7 @@ body {
     @extend .unified-panel;
     right: 0px;
     width: $panel-width;
-    overflow: unset;
+    overflow: unset !important;
 }
 #right > .unified-panel-footer {
     .drag {
@@ -224,10 +225,11 @@ body {
         min-width: max-content;
         align-items: center;
         justify-content: space-between;
+        display: flex;
     }
     .panel-header-buttons {
-        @extend .float-right;
         order: 9999;
+        @extend .d-flex;
         .panel-header-button {
             text-align: center;
             &:not(:last-child) {
@@ -235,6 +237,20 @@ body {
             }
             &:hover {
                 color: $brand-info;
+            }
+        }
+        .panel-header-button-toolbox {
+            color: $brand-dark;
+            flex: 1;
+            @extend .p-1;
+            text-align: center;
+            font-size: $h4-font-size;
+            align-items: center;
+            &:hover {
+                color: $brand-info;
+                background-color: $brand-light;
+                text-decoration: none !important;
+                border-color: $brand-light;
             }
         }
     }
@@ -360,12 +376,12 @@ body {
                     color: $brand-masthead-text-hover;
                 }
                 &.nav-icon {
-                    font-size: 1.7em;
+                    font-size: 1.3em;
                     .nav-note {
                         @extend .font-weight-bold;
                         @extend .position-absolute;
-                        left: 2.2rem;
-                        top: 2.2rem;
+                        left: 1.9rem;
+                        top: 1.9rem;
                         font-size: 0.6rem;
                     }
                 }
@@ -585,11 +601,6 @@ div.form-row-input label {
     padding-top: 10px;
     padding-bottom: 10px;
     margin-top: 5px;
-}
-
-#run-workflow {
-    @extend .float-right;
-    @extend .mt-3;
 }
 
 .form-row {
@@ -1276,7 +1287,7 @@ div.toolSectionTitle {
     .labels {
         float: right;
     }
-    a {
+    .title-link {
         @extend .px-3;
         @extend .py-1;
         text-decoration: none;

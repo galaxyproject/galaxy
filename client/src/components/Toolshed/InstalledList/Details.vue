@@ -20,10 +20,15 @@ import RepositoryDetails from "../RepositoryDetails/Index.vue";
 import LoadingSpan from "components/LoadingSpan";
 
 export default {
-    props: ["repo"],
     components: {
         LoadingSpan,
         RepositoryDetails,
+    },
+    props: {
+        repo: {
+            type: Object,
+            required: true,
+        },
     },
     data() {
         return {
@@ -34,7 +39,7 @@ export default {
     },
     created() {
         this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
+        this.services = new Services();
         this.load();
     },
     methods: {

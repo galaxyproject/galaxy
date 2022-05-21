@@ -1,13 +1,12 @@
 <template>
     <b-card body-class="history-import-component" title="Import a history from an archive">
-        <b-alert v-if="errorMessage" variant="danger" dismissible @dismissed="errorMessage = null" show>
+        <b-alert v-if="errorMessage" variant="danger" dismissible show @dismissed="errorMessage = null">
             {{ errorMessage }}
             <JobError
                 v-if="jobError"
-                style="margin-top: 15px;"
+                style="margin-top: 15px"
                 header="History import job ended in error"
-                :job="jobError"
-            />
+                :job="jobError" />
         </b-alert>
         <div v-if="initializing">
             <loading-span message="Loading server configuration." />
@@ -23,13 +22,12 @@
         </div>
         <div v-else>
             <b-form @submit.prevent="submit">
-                <b-form-group label="How would you like to specify the history archive?" v-slot="{ ariaDescribedby }">
+                <b-form-group v-slot="{ ariaDescribedby }" label="How would you like to specify the history archive?">
                     <b-form-radio-group
                         v-model="importType"
                         :aria-describedby="ariaDescribedby"
                         name="import-type"
-                        stacked
-                    >
+                        stacked>
                         <b-form-radio value="externalUrl">
                             Export URL from another Galaxy instance
                             <font-awesome-icon icon="external-link-alt" />
@@ -38,21 +36,21 @@
                             Upload local file from your computer
                             <font-awesome-icon icon="upload" />
                         </b-form-radio>
-                        <b-form-radio value="remoteFilesUri" v-if="hasFileSources">
+                        <b-form-radio v-if="hasFileSources" value="remoteFilesUri">
                             Select a remote file (e.g. Galaxy's FTP)
                             <font-awesome-icon icon="folder-open" />
                         </b-form-radio>
                     </b-form-radio-group>
                 </b-form-group>
                 <b-form-group v-if="importType == 'externalUrl'" label="Archived History URL">
-                    <b-form-input type="url" v-model="sourceURL" />
+                    <b-form-input v-model="sourceURL" type="url" />
                 </b-form-group>
                 <b-form-group v-if="importType == 'upload'" label="Archived History File">
                     <b-form-file v-model="sourceFile" />
                 </b-form-group>
                 <b-form-group v-show="importType == 'remoteFilesUri'" label="Remote File">
                     <!-- using v-show so we can have a persistent ref and launch dialog on select -->
-                    <files-input v-model="sourceRemoteFilesUri" ref="filesInput" />
+                    <files-input ref="filesInput" v-model="sourceRemoteFilesUri" />
                 </b-form-group>
                 <b-button class="import-button" variant="primary" type="submit" :disabled="!importReady"
                     >Import history</b-button
@@ -97,9 +95,6 @@ export default {
             hasFileSources: false,
         };
     },
-    async mounted() {
-        await this.initialize();
-    },
     computed: {
         importReady() {
             const importType = this.importType;
@@ -116,6 +111,16 @@ export default {
         historyLink() {
             return `${getAppRoot()}histories/list`;
         },
+    },
+    watch: {
+        importType() {
+            if (this.importType == "remoteFilesUri" && !this.sourceRemoteFilesUri) {
+                this.$refs.filesInput.selectFile();
+            }
+        },
+    },
+    async mounted() {
+        await this.initialize();
     },
     methods: {
         async initialize() {
@@ -152,13 +157,6 @@ export default {
             this.errorMessage = errorMessageAsString(err, "History import failed.");
             if (err?.data?.stderr) {
                 this.jobError = err.data;
-            }
-        },
-    },
-    watch: {
-        importType() {
-            if (this.importType == "remoteFilesUri" && !this.sourceRemoteFilesUri) {
-                this.$refs.filesInput.selectFile();
             }
         },
     },

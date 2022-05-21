@@ -1,17 +1,18 @@
 <template>
-    <span class="utc-time" v-if="mode == 'date'" :title="elapsedTime">
-        {{ fullDate }}
+    <span v-if="mode == 'date'" class="utc-time" :title="elapsedTime">
+        {{ fullISO }}
     </span>
-    <span class="utc-time utc-time-elapsed" v-else-if="mode === 'elapsed'" :title="fullDate">
+    <span v-else-if="mode === 'elapsed'" class="utc-time utc-time-elapsed" :title="fullISO">
         {{ elapsedTime }}
     </span>
-    <span class="utc-time" v-else :title="elapsedTime">
+    <span v-else class="utc-time" :title="elapsedTime">
         {{ pretty }}
     </span>
 </template>
 
 <script>
-import moment from "moment";
+import { formatDistanceToNow, parse, parseISO } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 
 export default {
     props: {
@@ -30,20 +31,21 @@ export default {
     },
     computed: {
         elapsedTime: function () {
-            return moment(moment.utc(this.formattedDate)).from(moment().utc());
+            return formatDistanceToNow(this.parsedDate, { addSuffix: true });
         },
-        fullDate: function () {
-            return moment.utc(this.formattedDate).format();
+        fullISO: function () {
+            return this.parsedDate.toISOString();
         },
-        formattedDate: function () {
+        parsedDate: function () {
             if (this.customFormat !== undefined) {
-                return moment(this.date, this.customFormat).format();
+                return parse(this.date, this.customFormat, new Date());
             } else {
-                return this.date;
+                // assume ISO format date, except in Galaxy this won't have TZinfo -- it will always be Zulu
+                return parseISO(`${this.date}Z`);
             }
         },
         pretty: function () {
-            return moment.utc(this.formattedDate).format("dddd MMM Do h:mm:ss YYYY [UTC]");
+            return `${formatInTimeZone(this.parsedDate, "Etc/Zulu", "eeee MMM do H:mm:ss yyyy")} UTC`;
         },
     },
 };

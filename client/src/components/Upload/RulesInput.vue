@@ -1,8 +1,8 @@
 <template>
-    <upload-wrapper ref="wrapper" :top-info="topInfo">
-        <span style="width: 25%; display: inline; height: 100%;" class="float-left">
+    <upload-wrapper ref="wrapper" :top-info="topInfo | l">
+        <span style="width: 25%; display: inline; height: 100%" class="float-left">
             <div class="upload-rule-option">
-                <div class="upload-rule-option-title">{{ l("Upload data as") }}</div>
+                <div class="upload-rule-option-title">{{ "Upload data as" | l }}</div>
                 <div class="rule-data-type">
                     <select2 v-model="dataType" container-class="upload-footer-selection">
                         <option value="datasets">Datasets</option>
@@ -11,23 +11,21 @@
                 </div>
             </div>
             <div class="upload-rule-option">
-                <div class="upload-rule-option-title">{{ l("Load tabular data from") }}</div>
+                <div class="upload-rule-option-title">{{ "Load tabular data from" | l }}</div>
                 <div class="rule-select-type">
-                    <select2 container-class="upload-footer-selection" v-model="selectionType">
-                        <option value="paste">{{ l("Pasted Table") }}</option>
-                        <option value="dataset">{{ l("History Dataset") }}</option>
-                        <option v-if="ftpUploadSite" value="ftp">{{ l("FTP Directory") }} </option>
-                        <option value="remote_files">{{ l("Remote Files Directory") }}</option>
+                    <select2 v-model="selectionType" container-class="upload-footer-selection">
+                        <option value="paste">{{ "Pasted Table" | l }}</option>
+                        <option value="dataset">{{ "History Dataset" | l }}</option>
+                        <option v-if="ftpUploadSite" value="ftp">{{ "FTP Directory" | l }}</option>
+                        <option value="remote_files">{{ "Remote Files Directory" | l }}</option>
                     </select2>
                 </div>
             </div>
-            <div id="upload-rule-dataset-option" class="upload-rule-option" v-if="selectionType == 'dataset'">
-                <div class="upload-rule-option-title">
-                    History dataset
-                </div>
+            <div v-if="selectionType == 'dataset'" id="upload-rule-dataset-option" class="upload-rule-option">
+                <div class="upload-rule-option-title">History dataset</div>
                 <div>
-                    <b-link @click="onSelectDataset" v-if="selectedDatasetName == null">
-                        {{ l("Select") }}
+                    <b-link v-if="selectedDatasetName == null" @click="onSelectDataset">
+                        {{ "Select" | l }}
                     </b-link>
                     <span v-else>
                         {{ selectedDatasetName }} <font-awesome-icon icon="edit" @click="onSelectDataset" />
@@ -35,43 +33,46 @@
                 </div>
             </div>
         </span>
-        <span style="display: inline; float: right; width: 75%; height: 300px;">
+        <span style="display: inline; float: right; width: 75%; height: 300px">
             <textarea
-                class="upload-rule-source-content form-control"
-                style="height: 100%;"
                 v-model="sourceContent"
-                :disabled="selectionType != 'paste'"
-            ></textarea>
+                class="upload-rule-source-content form-control"
+                style="height: 100%"
+                :disabled="selectionType != 'paste'"></textarea>
         </span>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.dismiss()">
-                {{ btnCloseTitle }}
+            <b-button
+                id="btn-close"
+                ref="btnClose"
+                class="ui-button-default"
+                :title="btnCloseTitle"
+                @click="$emit('dismiss')">
+                {{ btnCloseTitle | l }}
             </b-button>
             <b-button
+                id="btn-build"
                 ref="btnBuild"
                 class="ui-button-default"
-                id="btn-build"
-                @click="_eventBuild"
                 :disabled="!sourceContent"
+                :title="btnBuildTitle"
                 :variant="sourceContent ? 'primary' : ''"
-            >
-                {{ btnBuildTitle }}
+                @click="_eventBuild">
+                {{ btnBuildTitle | l }}
             </b-button>
             <b-button
+                id="btn-reset"
                 ref="btnReset"
                 class="ui-button-default"
-                id="btn-reset"
-                @click="_eventReset"
+                :title="btnResetTitle"
                 :disabled="!enableReset"
-            >
-                {{ btnResetTitle }}
+                @click="_eventReset">
+                {{ btnResetTitle | l }}
             </b-button>
         </template>
     </upload-wrapper>
 </template>
 
 <script>
-import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
 import UploadBoxMixin from "./UploadBoxMixin";
 import UploadUtils from "mvc/upload/upload-utils";
@@ -86,30 +87,28 @@ import { BButton, BLink } from "bootstrap-vue";
 library.add(faEdit);
 
 export default {
-    mixins: [UploadBoxMixin],
     components: { BLink, BButton, FontAwesomeIcon },
+    mixins: [UploadBoxMixin],
     data() {
         return {
-            l: _l,
             datasets: [],
             ftpFiles: [],
             uris: [],
-            topInfo: _l("Tabular source data to extract collection files and metadata from"),
-            enableReset: false,
+            topInfo: "Tabular source data to extract collection files and metadata from",
             enableBuild: false,
             dataType: "datasets",
             selectedDatasetId: null,
             selectedDatasetName: null,
             sourceContent: "",
             selectionType: "paste",
-            btnBuildTitle: _l("Build"),
-            btnResetTitle: _l("Reset"),
-            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
+            btnBuildTitle: "Build",
+            btnResetTitle: "Reset",
         };
     },
-    created() {
-        this.initCollection();
-        this.initAppProperties();
+    computed: {
+        enableReset: function () {
+            return this.sourceContent.length > 0;
+        },
     },
     watch: {
         selectionType: function (selectionType) {
@@ -141,6 +140,10 @@ export default {
                 })
                 .catch((error) => console.log(error));
         },
+    },
+    created() {
+        this.initCollection();
+        this.initAppProperties();
     },
     methods: {
         _eventReset: function () {
@@ -193,8 +196,8 @@ export default {
                 selection.elements = this.uris;
             }
             selection.dataType = this.dataType;
-            Galaxy.currHistoryPanel.buildCollection("rules", selection, true);
-            this.app.hide();
+            Galaxy.currHistoryPanel.buildCollection("rules", selection, true, true);
+            this.$emit("dismiss");
         },
     },
 };

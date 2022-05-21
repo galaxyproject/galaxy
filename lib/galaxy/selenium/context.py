@@ -39,6 +39,12 @@ class GalaxySeleniumContext(NavigatesGalaxy):
         self.driver.save_screenshot(target)
         return target
 
+    def screenshot_if(self, label: Optional[str]) -> Optional[str]:
+        target = None
+        if label:
+            target = self.screenshot(label)
+        return target
+
     @abstractmethod
     def _screenshot_path(self, label: str, extension=".png") -> str:
         """Path to store screenshots in."""
@@ -64,7 +70,7 @@ class GalaxySeleniumContextImpl(GalaxySeleniumContext):
 
 def init(config=None, clazz=GalaxySeleniumContextImpl) -> GalaxySeleniumContext:
     if os.path.exists("galaxy_selenium_context.yml"):
-        with open("galaxy_selenium_context.yml", "r") as f:
+        with open("galaxy_selenium_context.yml") as f:
             as_dict = yaml.safe_load(f)
         context = clazz(as_dict)
     else:

@@ -2,7 +2,7 @@ import os
 
 from .framework import (
     selenium_test,
-    SeleniumIntegrationTestCase
+    SeleniumIntegrationTestCase,
 )
 
 
@@ -39,7 +39,11 @@ class HistoryImportExportFtpSeleniumIntegrationTestCase(SeleniumIntegrationTestC
         history_export.tab_export_to_file.wait_for_and_click()
         history_export.export_link.wait_for_absent_or_hidden()
         history_export.directory_input.wait_for_and_click()
-        files_dialog.ftp_row.wait_for_and_click()
+
+        # open directory by clicking on its name
+        files_dialog.ftp_label.wait_for_and_click()
+        self.components.upload.file_dialog_ok.wait_for_and_click()
+
         history_export.name_input.wait_for_and_send_keys("my_export.tar.gz")
         history_export.export_button.wait_for_and_click()
 
@@ -51,7 +55,7 @@ class HistoryImportExportFtpSeleniumIntegrationTestCase(SeleniumIntegrationTestC
         gx_selenium_context.components.histories.import_button.wait_for_and_click()
         history_import = gx_selenium_context.components.history_import
         history_import.radio_button_remote_files.wait_for_and_click()
-        files_dialog.ftp_row.wait_for_and_click()
+        files_dialog.ftp_label.wait_for_and_click()
         files_dialog.row(uri="gxftp://my_export.tar.gz").wait_for_and_click()
 
         history_import.import_button.wait_for_and_click()

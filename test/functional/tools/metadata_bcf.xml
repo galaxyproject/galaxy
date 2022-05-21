@@ -1,4 +1,7 @@
 <tool id="metadata_bcf" name="metadata_BCF" version="1.0.0">
+    <requirements>
+        <requirement type="package" version="5.39">file</requirement>
+    </requirements>
     <command><![CDATA[
 file '${input_bcf.metadata.bcf_index}' > '${output_of_input_metadata}'
     ]]></command>

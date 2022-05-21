@@ -1,17 +1,22 @@
 import logging
 
-from sqlalchemy import and_, false, or_
+from sqlalchemy import (
+    and_,
+    false,
+    or_,
+)
 
 import tool_shed.repository_types.util as rt_util
-from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
+from tool_shed.util import (
+    hg_util,
+    metadata_util,
+)
 from tool_shed.webapp import model
 
 log = logging.getLogger(__name__)
 
 
 class Registry:
-
     def __init__(self, app):
         log.debug("Loading the repository registry...")
         self.app = app
@@ -140,16 +145,19 @@ class Registry:
     def get_certified_level_one_clause_list(self):
         certified_level_one_tuples = []
         clause_list = []
-        for repository in self.sa_session.query(model.Repository) \
-                                         .filter(and_(model.Repository.table.c.deleted == false(),
-                                                      model.Repository.table.c.deprecated == false())):
+        for repository in self.sa_session.query(model.Repository).filter(
+            and_(model.Repository.table.c.deleted == false(), model.Repository.table.c.deprecated == false())
+        ):
             certified_level_one_tuple = self.get_certified_level_one_tuple(repository)
             latest_installable_changeset_revision, is_level_one_certified = certified_level_one_tuple
             if is_level_one_certified:
                 certified_level_one_tuples.append(certified_level_one_tuple)
-                clause_list.append(and_(
-                    model.RepositoryMetadata.table.c.repository_id == repository.id,
-                    model.RepositoryMetadata.table.c.changeset_revision == latest_installable_changeset_revision))
+                clause_list.append(
+                    and_(
+                        model.RepositoryMetadata.table.c.repository_id == repository.id,
+                        model.RepositoryMetadata.table.c.changeset_revision == latest_installable_changeset_revision,
+                    )
+                )
         return clause_list
 
     def get_certified_level_one_tuple(self, repository):
@@ -161,12 +169,14 @@ class Registry:
         if repository.deleted or repository.deprecated:
             return (None, False)
         # Get the latest installable changeset revision since that is all that is currently configured for testing.
-        latest_installable_changeset_revision = metadata_util.get_latest_downloadable_changeset_revision(self.app, repository)
+        latest_installable_changeset_revision = metadata_util.get_latest_downloadable_changeset_revision(
+            self.app, repository
+        )
         if latest_installable_changeset_revision not in [None, hg_util.INITIAL_CHANGELOG_HASH]:
             encoded_repository_id = self.app.security.encode_id(repository.id)
-            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app,
-                                                                                              encoded_repository_id,
-                                                                                              latest_installable_changeset_revision)
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
+                self.app, encoded_repository_id, latest_installable_changeset_revision
+            )
             if repository_metadata:
                 # No repository_metadata.
                 return (latest_installable_changeset_revision, True)
@@ -180,7 +190,11 @@ class Registry:
             if repository:
                 if repository.deprecated or repository.deleted:
                     return False
-                tuple = (str(repository.name), str(repository.user.username), str(repository_metadata.changeset_revision))
+                tuple = (
+                    str(repository.name),
+                    str(repository.user.username),
+                    str(repository_metadata.changeset_revision),
+                )
                 if repository.type in [rt_util.REPOSITORY_SUITE_DEFINITION]:
                     return tuple in self.certified_level_one_suite_tuples
                 else:
@@ -220,16 +234,19 @@ class Registry:
 
     def load_repository_and_suite_tuples(self):
         # Load self.certified_level_one_repository_and_suite_tuples and self.certified_level_one_suite_tuples.
-        for repository in self.sa_session.query(model.Repository) \
-                                         .join(model.RepositoryMetadata.table) \
-                                         .filter(or_(*self.certified_level_one_clause_list)) \
-                                         .join(model.User.table):
+        for repository in (
+            self.sa_session.query(model.Repository)
+            .join(model.RepositoryMetadata.table)
+            .filter(or_(*self.certified_level_one_clause_list))
+            .join(model.User.table)
+        ):
             self.load_certified_level_one_repository_and_suite_tuple(repository)
         # Load self.repository_and_suite_tuples and self.suite_tuples
-        for repository in self.sa_session.query(model.Repository) \
-                                         .filter(and_(model.Repository.table.c.deleted == false(),
-                                                      model.Repository.table.c.deprecated == false())) \
-                                         .join(model.User.table):
+        for repository in (
+            self.sa_session.query(model.Repository)
+            .filter(and_(model.Repository.table.c.deleted == false(), model.Repository.table.c.deprecated == false()))
+            .join(model.User.table)
+        ):
             self.load_repository_and_suite_tuple(repository)
 
     def load_viewable_repositories_and_suites_by_category(self):
@@ -262,9 +279,9 @@ class Registry:
                     is_valid = self.is_valid(repository)
                     encoded_repository_id = self.app.security.encode_id(repository.id)
                     tip_changeset_hash = repository.tip()
-                    repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app,
-                                                                                                      encoded_repository_id,
-                                                                                                      tip_changeset_hash)
+                    repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
+                        self.app, encoded_repository_id, tip_changeset_hash
+                    )
                     self.viewable_repositories_and_suites_by_category[category_name] += 1
                     if is_valid:
                         self.viewable_valid_repositories_and_suites_by_category[category_name] += 1
@@ -327,7 +344,9 @@ class Registry:
                     if is_level_one_certified:
                         if category_name in self.certified_level_one_viewable_repositories_and_suites_by_category:
                             if self.certified_level_one_viewable_repositories_and_suites_by_category[category_name] > 0:
-                                self.certified_level_one_viewable_repositories_and_suites_by_category[category_name] -= 1
+                                self.certified_level_one_viewable_repositories_and_suites_by_category[
+                                    category_name
+                                ] -= 1
                         else:
                             self.certified_level_one_viewable_repositories_and_suites_by_category[category_name] = 0
                         if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
@@ -347,7 +366,7 @@ class Registry:
 
     @property
     def sa_session(self):
-        return self.app.model.context.current
+        return self.app.model.session
 
     def unload_certified_level_one_repository_and_suite_tuple(self, repository):
         # The received repository has been determined to be level one certified.

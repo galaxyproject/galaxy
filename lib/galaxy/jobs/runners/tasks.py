@@ -9,13 +9,14 @@ from galaxy.jobs.runners import BaseJobRunner
 
 log = logging.getLogger(__name__)
 
-__all__ = ('TaskedJobRunner', )
+__all__ = ("TaskedJobRunner",)
 
 
 class TaskedJobRunner(BaseJobRunner):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
+
     runner_name = "TaskRunner"
 
     def __init__(self, app, nworkers):
@@ -31,7 +32,7 @@ class TaskedJobRunner(BaseJobRunner):
         # command line has been added to the wrapper by prepare_job()
         command_line = job_wrapper.runner_command_line
 
-        stderr = stdout = ''
+        stderr = stdout = ""
 
         # Persist the destination
         job_wrapper.set_job_destination(job_wrapper.job_destination)
@@ -51,10 +52,12 @@ class TaskedJobRunner(BaseJobRunner):
             # Split with the defined method.
             parallelism = job_wrapper.get_parallelism()
             try:
-                splitter = getattr(__import__('galaxy.jobs.splitters', globals(), locals(), [parallelism.method]), parallelism.method)
+                splitter = getattr(
+                    __import__("galaxy.jobs.splitters", globals(), locals(), [parallelism.method]), parallelism.method
+                )
             except Exception:
                 job_wrapper.change_state(model.Job.states.ERROR)
-                job_wrapper.fail("Job Splitting Failed, no match for '%s'" % parallelism)
+                job_wrapper.fail(f"Job Splitting Failed, no match for '{parallelism}'")
                 return
             tasks = splitter.do_split(job_wrapper)
             # Not an option for now.  Task objects don't *do* anything
@@ -75,9 +78,7 @@ class TaskedJobRunner(BaseJobRunner):
             sleep_time = 1
             # sleep/loop until no more progress can be made. That is when
             # all tasks are one of { OK, ERROR, DELETED }. If a task
-            completed_states = [model.Task.states.OK,
-                                model.Task.states.ERROR,
-                                model.Task.states.DELETED]
+            completed_states = [model.Task.states.OK, model.Task.states.ERROR, model.Task.states.DELETED]
 
             # TODO: Should we report an error (and not merge outputs) if
             # one of the subtasks errored out?  Should we prevent any that
@@ -94,10 +95,9 @@ class TaskedJobRunner(BaseJobRunner):
                 tasks_complete = True
                 for tw in task_wrappers:
                     task_state = tw.get_state()
-                    if (model.Task.states.ERROR == task_state):
+                    if model.Task.states.ERROR == task_state:
                         job_exit_code = tw.get_exit_code()
-                        log.debug("Canceling job %d: Task %s returned an error"
-                                  % (tw.job_id, tw.task_id))
+                        log.debug("Canceling job %d: Task %s returned an error" % (tw.job_id, tw.task_id))
                         self._cancel_job(job_wrapper, task_wrappers)
                         tasks_complete = True
                         break
@@ -110,8 +110,8 @@ class TaskedJobRunner(BaseJobRunner):
                     sleep(sleep_time)
                     if sleep_time < 8:
                         sleep_time *= 2
-            job_wrapper.reclaim_ownership()      # if running as the actual user, change ownership before merging.
-            log.debug('execution finished - beginning merge: %s' % command_line)
+            job_wrapper.reclaim_ownership()  # if running as the actual user, change ownership before merging.
+            log.debug(f"execution finished - beginning merge: {command_line}")
             stdout, stderr = splitter.do_merge(job_wrapper, task_wrappers)
         except Exception:
             job_wrapper.fail("failure running job", exception=True)
@@ -136,9 +136,9 @@ class TaskedJobRunner(BaseJobRunner):
         # to retrieve a job's list of tasks.
         job = job_wrapper.get_job()
         tasks = job.get_tasks()
-        if (len(tasks) > 0):
+        if len(tasks) > 0:
             for task in tasks:
-                log.debug("Killing task's job %s" % task.id)
+                log.debug(f"Killing task's job {task.id}")
                 self.app.job_manager.job_handler.dispatcher.stop(task)
 
         # There were no subtasks, so just kill the job. We'll touch
@@ -148,17 +148,21 @@ class TaskedJobRunner(BaseJobRunner):
             # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
             job_ext_output_metadata = job.get_external_output_metadata()
             if job_ext_output_metadata:
-                pid = job_ext_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
+                pid = job_ext_output_metadata[
+                    0
+                ].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
             else:
                 pid = job.job_runner_external_id
-            if pid in [None, '']:
-                log.warning("stop_job(): %s: no PID in database for job, unable to stop" % job.id)
+            if pid in [None, ""]:
+                log.warning(f"stop_job(): {job.id}: no PID in database for job, unable to stop")
                 return
             self._stop_pid(pid, job.id)
 
     def recover(self, job, job_wrapper):
         # DBTODO Task Recovery, this should be possible.
-        job_wrapper.change_state(model.Job.states.ERROR, info="This job was killed when Galaxy was restarted.  Please retry the job.")
+        job_wrapper.change_state(
+            model.Job.states.ERROR, info="This job was killed when Galaxy was restarted.  Please retry the job."
+        )
 
     def _cancel_job(self, job_wrapper, task_wrappers):
         """
@@ -188,9 +192,10 @@ class TaskedJobRunner(BaseJobRunner):
         for task_wrapper in task_wrappers:
             task = task_wrapper.get_task()
             task_state = task.get_state()
-            if (model.Task.states.QUEUED == task_state):
-                log.debug("_cancel_job for job %d: Task %d is not running; setting state to DELETED"
-                          % (job.id, task.id))
+            if model.Task.states.QUEUED == task_state:
+                log.debug(
+                    "_cancel_job for job %d: Task %d is not running; setting state to DELETED" % (job.id, task.id)
+                )
                 task_wrapper.change_state(task.states.DELETED)
         # If a task failed, then the caller will have waited a few seconds
         # before recognizing the failure. In that time, a queued task could
@@ -199,10 +204,9 @@ class TaskedJobRunner(BaseJobRunner):
         # are running.
         sleep(5)
         for task_wrapper in task_wrappers:
-            if (model.Task.states.RUNNING == task_wrapper.get_state()):
+            if model.Task.states.RUNNING == task_wrapper.get_state():
                 task = task_wrapper.get_task()
-                log.debug("_cancel_job for job %d: Stopping running task %d"
-                          % (job.id, task.id))
+                log.debug("_cancel_job for job %d: Stopping running task %d" % (job.id, task.id))
                 job_wrapper.app.job_manager.job_handler.dispatcher.stop(task)
 
     def _check_pid(self, pid):
@@ -217,7 +221,7 @@ class TaskedJobRunner(BaseJobRunner):
         job's id (which is used for logging messages only right now).
         """
         pid = int(pid)
-        log.debug("Stopping pid %s" % pid)
+        log.debug(f"Stopping pid {pid}")
         if not self._check_pid(pid):
             log.warning("_stop_pid(): %s: PID %d was already dead or can't be signaled" % (job_id, pid))
             return
@@ -227,7 +231,10 @@ class TaskedJobRunner(BaseJobRunner):
             except OSError as e:
                 # This warning could be bogus; many tasks are stopped with
                 # SIGTERM (signal 15), but ymmv depending on the platform.
-                log.warning("_stop_pid(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % (job_id, errno.errorcode[e.errno], sig, pid, e.strerror))
+                log.warning(
+                    "_stop_pid(): %s: Got errno %s when attempting to signal %d to PID %d: %s"
+                    % (job_id, errno.errorcode[e.errno], sig, pid, e.strerror)
+                )
                 return
             # TODO: If we're stopping lots of tasks, then we will want to put this
             # avoid a two-second overhead using some other asynchronous method.

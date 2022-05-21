@@ -5,7 +5,9 @@ import DevToolsPlugin from "rxjs-spy-devtools-plugin";
 // initialize spy
 let spy = undefined;
 export const initSpy = () => {
-    if (!config.rxjsDebug || spy) return spy;
+    if (!config.rxjsDebug || spy) {
+        return spy;
+    }
 
     // How to use the rxjs dev panel in chrome:
     // https://github.com/ardoq/rxjs-devtools/tree/master/packages/rxjs-spy-devtools-plugin

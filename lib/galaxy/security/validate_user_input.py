@@ -16,11 +16,10 @@ VALID_EMAIL_RE = re.compile(r"[^@]+@[^@]+\.[^@]+")
 EMAIL_MAX_LEN = 255
 
 # Public name validity parameters
-PUBLICNAME_MIN_LEN = 3
 PUBLICNAME_MAX_LEN = 255
 VALID_PUBLICNAME_RE = re.compile(r"^[a-z0-9._\-]+$")
 VALID_PUBLICNAME_SUB = re.compile(r"[^a-z0-9._\-]")
-FILL_CHAR = '-'
+FILL_CHAR = "-"
 
 # Password validity parameters
 PASSWORD_MIN_LEN = 6
@@ -30,7 +29,7 @@ def validate_email_str(email):
     """Validates a string containing an email address."""
     if not email:
         return "No email address was provided."
-    if not(VALID_EMAIL_RE.match(email)):
+    if not (VALID_EMAIL_RE.match(email)):
         return "The format of the email address is not correct."
     elif len(email) > EMAIL_MAX_LEN:
         return "Email address cannot be more than %d characters in length." % EMAIL_MAX_LEN
@@ -45,13 +44,13 @@ def validate_password_str(password):
 
 def validate_publicname_str(publicname):
     """Validates a string containing a public username."""
-    if len(publicname) < PUBLICNAME_MIN_LEN:
-        return "Public name must be at least %d characters in length." % (PUBLICNAME_MIN_LEN)
+    if not publicname:
+        return "Public name cannot be empty"
     if len(publicname) > PUBLICNAME_MAX_LEN:
         return "Public name cannot be more than %d characters in length." % (PUBLICNAME_MAX_LEN)
-    if not(VALID_PUBLICNAME_RE.match(publicname)):
+    if not (VALID_PUBLICNAME_RE.match(publicname)):
         return "Public name must contain only lower-case letters, numbers, '.', '_' and '-'."
-    return ''
+    return ""
 
 
 def validate_email(trans, email, user=None, check_dup=True, allow_empty=False):
@@ -59,12 +58,17 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False):
     Validates the email format, also checks whether the domain is blocklisted in the disposable domains configuration.
     """
     if (user and user.email == email) or (email == "" and allow_empty):
-        return ''
+        return ""
     message = validate_email_str(email)
     if message:
         pass
-    elif check_dup and trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == email.lower()).first():
-        message = "User with email '%s' already exists." % email
+    elif (
+        check_dup
+        and trans.sa_session.query(trans.app.model.User)
+        .filter(func.lower(trans.app.model.User.table.c.email) == email.lower())
+        .first()
+    ):
+        message = f"User with email '{email}' already exists."
     #  If the allowlist is not empty filter out any domain not in the list and ignore blocklist.
     elif trans.app.config.email_domain_allowlist_content is not None:
         domain = extract_domain(email)
@@ -79,10 +83,10 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False):
 
 
 def extract_domain(email, base_only=False):
-    domain = email.split('@')[1]
-    parts = domain.split('.')
+    domain = email.split("@")[1]
+    parts = domain.split(".")
     if len(parts) > 2 and base_only:
-        return ('.').join(parts[-2:])
+        return (".").join(parts[-2:])
     return domain
 
 
@@ -92,13 +96,13 @@ def validate_publicname(trans, publicname, user=None):
     allowed characters, and that the username is not taken already.
     """
     if user and user.username == publicname:
-        return ''
+        return ""
     message = validate_publicname_str(publicname)
     if message:
         return message
     if trans.sa_session.query(trans.app.model.User).filter_by(username=publicname).first():
         return "Public name is taken; please choose another."
-    return ''
+    return ""
 
 
 def transform_publicname(publicname):
@@ -108,10 +112,11 @@ def transform_publicname(publicname):
     FILL_CHAR is used to extend or replace characters.
     """
     # TODO: Enhance to allow generation of semi-random publicnnames e.g., when valid but taken
-    if publicname not in ['None', None, '']:
-        publicname = publicname.lower()
-        publicname = re.sub(VALID_PUBLICNAME_SUB, FILL_CHAR, publicname)
-        publicname = publicname.ljust(PUBLICNAME_MIN_LEN + 1, FILL_CHAR)[:PUBLICNAME_MAX_LEN]
+    if not publicname:
+        raise ValueError("Public name cannot be empty")
+    publicname = publicname.lower()
+    publicname = re.sub(VALID_PUBLICNAME_SUB, FILL_CHAR, publicname)
+    publicname = publicname[:PUBLICNAME_MAX_LEN]
     return publicname
 
 

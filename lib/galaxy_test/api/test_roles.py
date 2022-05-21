@@ -4,20 +4,16 @@ from galaxy_test.base.api_asserts import (
     assert_has_keys,
     assert_status_code_is,
 )
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-)
+from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
 
 
 class RolesApiTestCase(ApiTestCase):
-
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_list_and_show(self):
-
         def check_roles_response(response):
             assert_status_code_is(response, 200)
             as_list = response.json()
@@ -47,7 +43,7 @@ class RolesApiTestCase(ApiTestCase):
         assert different_user_role_id in admin_roles_response_ids
 
         # Check showing a valid, role.
-        role_response = self._get("roles/%s" % user_role_id)
+        role_response = self._get(f"roles/{user_role_id}")
         assert_status_code_is(role_response, 200)
         role = role_response.json()
         RolesApiTestCase.check_role_dict(role, assert_id=user_role_id)
@@ -67,7 +63,7 @@ class RolesApiTestCase(ApiTestCase):
         }
         response = self._post("roles", payload, admin=True, json=True)
         assert_status_code_is(response, 400)
-        assert_error_code_is(response, error_codes.USER_REQUEST_MISSING_PARAMETER)
+        assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_MISSING_PARAMETER"].code)
         assert "description" in response.json()["err_msg"]
 
         # Test missing name
@@ -78,7 +74,7 @@ class RolesApiTestCase(ApiTestCase):
         }
         response = self._post("roles", payload, admin=True, json=True)
         assert_status_code_is(response, 400)
-        assert_error_code_is(response, error_codes.USER_REQUEST_MISSING_PARAMETER)
+        assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_MISSING_PARAMETER"].code)
         assert "name" in response.json()["err_msg"]
 
         # Test invalid type for name
@@ -89,7 +85,7 @@ class RolesApiTestCase(ApiTestCase):
         }
         response = self._post("roles", payload, admin=True, json=True)
         assert_status_code_is(response, 400)
-        assert_error_code_is(response, error_codes.USER_REQUEST_INVALID_PARAMETER)
+        assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"].code)
         assert "name" in response.json()["err_msg"]
         assert "validation_errors" in response.json()
 
@@ -128,12 +124,15 @@ class RolesApiTestCase(ApiTestCase):
         # Trying to access roles are errors - should probably be 403 not 400 though?
         with self._different_user():
             different_user_role_id = self.dataset_populator.user_private_role_id()
-        response = self._get("roles/%s" % different_user_role_id)
+        response = self._get(f"roles/{different_user_role_id}")
         assert_status_code_is(response, 400)
 
     def test_create_only_admin(self):
         response = self._post("roles", json=True)
         assert_status_code_is(response, 403)
+        response_err = response.json()
+        assert response_err["err_code"] == 403006
+        assert "administrator" in response_err["err_msg"]
 
     @staticmethod
     def check_role_dict(role_dict, assert_id=None):

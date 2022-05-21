@@ -1,35 +1,82 @@
-<tool id="Grep1" name="Select" version="1.0.1">
+<tool id="Grep1" name="Select" version="1.0.3" profile="20.05">
   <description>lines that match an expression</description>
+  <requirements>
+    <requirement type="package" version="3.4">grep</requirement>
+  </requirements>
   <edam_operations>
     <edam_operation>operation_3695</edam_operation>
   </edam_operations>
-  <command interpreter="python">grep.py -i $input -o $out_file1 -pattern '$pattern' -v $invert</command>
+  <stdio>
+    <exit_code range="2:" level="warning" description="Select failed" />
+  </stdio>
+  <command><![CDATA[
+    set -eo pipefail;
+    #if $keep_header
+      head -n 1 '$input' > '$out_file1' &&
+      tail -n +2 '$input'
+    #else
+      cat '$input'
+    #end if
+    | grep -P -f '$pattern_file' $invert > '$out_file1'
+  ]]></command>
+  <configfiles>
+    <configfile name="pattern_file">$pattern</configfile>
+  </configfiles>
   <inputs>
     <param format="txt" name="input" type="data" label="Select lines from"/>
     <param name="invert" type="select" label="that">
-      <option value="false">Matching</option>
-      <option value="true">NOT Matching</option>
+      <option value="">Matching</option>
+      <option value="-v">NOT Matching</option>
     </param>
     <param name="pattern" type="text" value="^chr([0-9A-Za-z])+" label="the pattern" help="here you can enter text or regular expression (for syntax check lower part of this frame)">
       <sanitizer>
         <valid initial="string.printable">
-         <remove value="&apos;"/>
         </valid>
-        <mapping initial="none">
-          <add source="&apos;" target="__sq__"/>
-        </mapping>
       </sanitizer>
     </param>
+    <param name="keep_header" type="boolean" truevalue="true" falsevalue="false" label="Keep header line" help="i.e. the first line is kept independent of the regular expression"/>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input"/>
+    <data format_source="input" name="out_file1" metadata_source="input"/>
   </outputs>
   <tests>
     <test>
       <param name="input" value="1.bed"/>
-      <param name="invert" value="false"/>
+      <param name="invert" value=""/>
       <param name="pattern" value="^chr[0-9]*"/>
       <output name="out_file1" file="fs-grep.dat"/>
+    </test>
+    <test>
+      <param name="input" value="1.bed"/>
+      <param name="invert" value=""/>
+      <param name="pattern" value="+"/>
+      <param name="keep_header" value="true"/>
+      <output name="out_file1">
+        <assert_contents>
+          <not_has_text text="CCDS989.1_cds_0_0_chr1_147962193_r"/>
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <param name="input" value="1.bed"/>
+      <param name="invert" value=""/>
+      <param name="pattern" value="&lt;&gt;\&quot;[A]{1}"/>
+      <param name="keep_header" value="true"/>
+      <output name="out_file1">
+        <assert_contents>
+          <not_has_text text="CCDS989.1_cds_0_0_chr1_147962193_r"/>
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <param name="input" value="1.bed"/>
+      <param name="invert" value=""/>
+      <param name="pattern" value="147962192|147984545"/>
+      <output name="out_file1">
+        <assert_contents>
+          <has_n_lines n="2"></has_n_lines>
+        </assert_contents>
+      </output>
     </test>
   </tests>
   <help>

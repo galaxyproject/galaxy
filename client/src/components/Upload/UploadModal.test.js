@@ -1,15 +1,20 @@
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
-import UploadModal from "./UploadModal.vue";
+import UploadModal from "./UploadModal";
+import UploadModalContent from "./UploadModalContent";
 import store from "../../store";
-import { shallowMount, createLocalVue } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
+
+import MockCurrentUser from "../providers/MockCurrentUser";
+import MockCurrentHistory from "../providers/MockCurrentHistory";
 
 jest.mock("app");
-jest.mock("../History/caching");
 
 const propsData = {
     chunkUploadSize: 1024,
     uploadPath: "/api/tools",
+    fileSourcesConfigured: true,
 };
 
 describe("UploadModal.vue", () => {
@@ -37,12 +42,29 @@ describe("UploadModal.vue", () => {
         ];
         axiosMock.onGet(`/api/genomes`).reply(200, genomesResponse);
 
-        const localVue = createLocalVue();
+        // mock current user & history
 
-        wrapper = await shallowMount(UploadModal, {
+        axiosMock.onGet(`/api/datatypes?extension_only=False`).reply(200, datatypesResponse);
+
+        const localVue = getLocalVue();
+
+        wrapper = await mount(UploadModal, {
             store,
             propsData,
             localVue,
+            stubs: {
+                // Need to stub all this horrible-ness because of the last 2 tests
+                // which need to dig into the first layer of the mount tree, will remove
+                // all of this shortly with a PR that completely replaces Upload
+                CurrentUser: MockCurrentUser({ id: "fakeuser" }),
+                UserHistories: MockCurrentHistory({ id: "fakehistory" }),
+                BTabs: true,
+                BTab: true,
+                Collection: true,
+                Composite: true,
+                Default: true,
+                RulesInput: true,
+            },
         });
     });
 
@@ -57,12 +79,17 @@ describe("UploadModal.vue", () => {
     });
 
     it("should fetch datatypes and parse them", async () => {
-        expect(wrapper.vm.listExtensions.length).toBe(2);
-        expect(wrapper.vm.listExtensions[0].id).toBe("auto");
-        expect(wrapper.vm.listExtensions[1].id).toBe("fasta");
+        // lists are one layer deeper now, it won't matter after refactoring
+        const contentWrapper = wrapper.findComponent(UploadModalContent);
+        expect(contentWrapper.exists()).toBe(true);
+        expect(contentWrapper.vm.listExtensions.length).toBe(2);
+        expect(contentWrapper.vm.listExtensions[0].id).toBe("auto");
+        expect(contentWrapper.vm.listExtensions[1].id).toBe("fasta");
     });
 
     it("should fetch genomes and parse them", async () => {
-        expect(wrapper.vm.listGenomes.length).toBe(3);
+        // lists are one yaer deeper now, it won't matter after refactoring
+        const contentWrapper = wrapper.findComponent(UploadModalContent);
+        expect(contentWrapper.vm.listGenomes.length).toBe(3);
     });
 });

@@ -1,6 +1,6 @@
-<tool id="interactive_tool_climate_notebook" tool_type="interactive" name="Interactive Climate Notebook" version="0.2">
+<tool id="interactive_tool_climate_notebook" tool_type="interactive" name="Interactive Climate Notebook" version="0.4" profile="22.01">
     <requirements>
-        <container type="docker">nordicesmhub/docker-climate-notebook:1.2</container>
+        <container type="docker">quay.io/nordicesmhub/docker-climate-notebook:2021-03-18</container>
     </requirements>
     <entry_points>
         <entry_point name="Climate Interactive Tool" requires_domain="True">
@@ -15,7 +15,7 @@
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
         <environment_variable name="API_KEY" inject="api_key" />
     </environment_variables>
-    <command detect_errors="aggressive"><![CDATA[
+    <command><![CDATA[
         #import re
         export GALAXY_WORKING_DIR=`pwd` &&
         mkdir -p ./jupyter/outputs/ &&
@@ -29,6 +29,7 @@
 
         ## change into the directory where the notebooks are located
         cd ./jupyter/ &&
+        export HOME=/home/jovyan/ &&
         export PATH=/home/jovyan/.local/bin:\$PATH &&
 
         #if $mode.mode_select == 'scratch':
@@ -95,12 +96,12 @@
 
     You can import data into the notebook via a predefined `get()` function and write results back to Galaxy with a `put()` function.
 
-    The Climate version of the Jupyter Notebook offers a lot of preinstalled tools for climate science. The list of packages is based on what is available 
+    The Climate version of the Jupyter Notebook offers a lot of preinstalled tools for climate science. The list of packages is based on what is available
 	on the [Pangeo](http://pangeo.io/) platform and [Pangeo stacks](https://pangeo-data.github.io/pangeo-stacks/).
 
     - **Core scipy packages**: numpy, scipy, matplotlib, pandas, xarray, sparse and sympy
     - **Data science**: scikit-image, scikit-learn, dask-ml, tensorflow, keras, pytorch-cpu, dask_labextension
-    - **Visualization**: holoviews, panel, geoviews, hvplot, geoviews, datashader, seaborn, altair, descartes, folium, vega, 
+    - **Visualization**: holoviews, panel, geoviews, hvplot, geoviews, datashader, seaborn, altair, descartes, folium, vega,
 	                     vega_datasets, palettable, cmocean,plotly, psy-maps, psy-reg, psyplot, psyplot-gui, psy-maps, psy-reg,
 						 geopy, branca
 	- **Geospatial**: iris, cartopy, basemap, basemap-data-hires, geopandas, rasterio, netcdf4, erddapy, pydap, h5py, h5netcdf, regionmask and rio-cogeo

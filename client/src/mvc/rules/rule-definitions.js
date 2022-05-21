@@ -270,13 +270,19 @@ const RULES = {
                 rule.replacement = component.addColumnRegexReplacement;
             }
             if (component.addColumnRegexGroupCount) {
-                rule.group_count = component.addColumnRegexGroupCount;
+                rule.group_count = parseInt(component.addColumnRegexGroupCount);
             }
         },
         apply: (rule, data, sources, columns) => {
             const target = rule.target_column;
             const rval = applyRegex(rule.expression, target, data, rule.replacement, rule.group_count);
-            columns.push(NEW_COLUMN);
+            if (rule.group_count) {
+                for (let i = 0; i < rule.group_count; i++) {
+                    columns.push(NEW_COLUMN);
+                }
+            } else {
+                columns.push(NEW_COLUMN);
+            }
             rval.columns = columns;
             return rval;
         },
@@ -898,3 +904,5 @@ export default {
     RULES: RULES,
     MAPPING_TARGETS: MAPPING_TARGETS,
 };
+
+export { RULES, MAPPING_TARGETS };

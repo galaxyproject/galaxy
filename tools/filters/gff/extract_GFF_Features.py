@@ -33,21 +33,21 @@ def main():
     if features is None:
         stop_err("Column %d has no features to display, select another column." % (column + 1))
 
-    fo = open(out_file, 'w')
+    fo = open(out_file, "w")
     for line in open(inp_file):
-        line = line.rstrip('\r\n')
-        if line and line.startswith('#'):
+        line = line.rstrip("\r\n")
+        if line and line.startswith("#"):
             # Keep valid comment lines in the output
             fo.write("%s\n" % line)
         else:
             try:
-                if line.split('\t')[column] in features.split(','):
+                if line.split("\t")[column] in features.split(","):
                     fo.write("%s\n" % line)
             except Exception:
                 pass
     fo.close()
 
-    print('Column %d features: %s' % (column + 1, features))
+    print("Column %d features: %s" % (column + 1, features))
 
 
 if __name__ == "__main__":

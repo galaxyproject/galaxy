@@ -1,5 +1,9 @@
 from contextlib import contextmanager
 from os.path import join
+from typing import (
+    Any,
+    Dict,
+)
 
 from galaxy.tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
 from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
@@ -10,7 +14,6 @@ TEST_INSTALL_DIR = "%s/test_install_dir" % TEST_DEPENDENCIES_DIR
 
 
 class MockApp:
-
     def __init__(self):
         pass
 
@@ -18,19 +21,27 @@ class MockApp:
 def test_create_or_update_env_shell_file():
     test_path = "/usr/share/R/libs"
     env_file_builder = EnvFileBuilder(test_path)
-    line, path = env_file_builder.create_or_update_env_shell_file(TEST_INSTALL_DIR, dict(action="append_to", name="R_LIBS", value=test_path))
+    line, path = env_file_builder.create_or_update_env_shell_file(
+        TEST_INSTALL_DIR, dict(action="append_to", name="R_LIBS", value=test_path)
+    )
     assert path == join(TEST_INSTALL_DIR, "env.sh")
     assert line == "R_LIBS=$R_LIBS:/usr/share/R/libs; export R_LIBS"
 
-    line, path = env_file_builder.create_or_update_env_shell_file(TEST_INSTALL_DIR, dict(action="prepend_to", name="R_LIBS", value=test_path))
+    line, path = env_file_builder.create_or_update_env_shell_file(
+        TEST_INSTALL_DIR, dict(action="prepend_to", name="R_LIBS", value=test_path)
+    )
     assert path == join(TEST_INSTALL_DIR, "env.sh")
     assert line == "R_LIBS=/usr/share/R/libs:$R_LIBS; export R_LIBS"
 
-    line, path = env_file_builder.create_or_update_env_shell_file(TEST_INSTALL_DIR, dict(action="set_to", name="R_LIBS", value=test_path))
+    line, path = env_file_builder.create_or_update_env_shell_file(
+        TEST_INSTALL_DIR, dict(action="set_to", name="R_LIBS", value=test_path)
+    )
     assert path == join(TEST_INSTALL_DIR, "env.sh")
     assert line == "R_LIBS=/usr/share/R/libs; export R_LIBS"
 
-    line, path = env_file_builder.create_or_update_env_shell_file(TEST_INSTALL_DIR, dict(action="source", value=test_path))
+    line, path = env_file_builder.create_or_update_env_shell_file(
+        TEST_INSTALL_DIR, dict(action="source", value=test_path)
+    )
     assert path == join(TEST_INSTALL_DIR, "env.sh")
     assert line == "if [ -f /usr/share/R/libs ] ; then . /usr/share/R/libs ; fi"
 
@@ -47,15 +58,15 @@ def test_get_env_shell_file_paths_from_setup_environment_elem():
     """
     mock_app = MockApp()
     action_elem = parse_xml_string(xml)
-    required_for_install_env_sh = '/path/to/existing.sh'
+    required_for_install_env_sh = "/path/to/existing.sh"
     all_env_paths = [required_for_install_env_sh]
-    action_dict = {}
+    action_dict: Dict[str, Any] = {}
     env_manager = EnvManager(mock_app)
 
-    r_env_sh = '/path/to/go/env.sh'
+    r_env_sh = "/path/to/go/env.sh"
 
     def mock_get_env_shell_file_paths(elem):
-        assert elem.get('name') in ["package_r_3_0_1", "package_zlib_1_2_8"]
+        assert elem.get("name") in ["package_r_3_0_1", "package_zlib_1_2_8"]
         return [r_env_sh]
 
     with __mock_common_util_method(env_manager, "get_env_shell_file_paths", mock_get_env_shell_file_paths):
@@ -65,15 +76,15 @@ def test_get_env_shell_file_paths_from_setup_environment_elem():
         # Verify new ones added.
         assert r_env_sh in all_env_paths
         # env_shell_file_paths includes everything
-        assert all([env in action_dict['env_shell_file_paths'] for env in all_env_paths])
+        assert all(env in action_dict["env_shell_file_paths"] for env in all_env_paths)
         # for every given repository there should be one env
         # file + the required_for_install_env_sh file
-        assert len(action_dict['env_shell_file_paths']) == 3
+        assert len(action_dict["env_shell_file_paths"]) == 3
 
         # action_shell_file_paths includes only env files defined
         # inside the setup_ action element.
-        assert required_for_install_env_sh in action_dict['action_shell_file_paths']
-        assert r_env_sh in action_dict['action_shell_file_paths']
+        assert required_for_install_env_sh in action_dict["action_shell_file_paths"]
+        assert r_env_sh in action_dict["action_shell_file_paths"]
 
 
 # Poor man's mocking. Need to get a real mocking library as real Galaxy development

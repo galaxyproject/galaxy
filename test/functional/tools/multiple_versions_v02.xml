@@ -1,19 +1,19 @@
 <tool id="multiple_versions" name="multiple_versions" version="0.2">
-    <command>
-        echo "Version 0.2" > $out_file1
-    </command>
+    <command><![CDATA[
+        echo "Version 0.2" > '$out_file1'
+    ]]></command>
     <inputs>
-        <param name="inttest" value="1" type="integer" />
+        <param name="inttest" value="1" type="integer"/>
     </inputs>
     <outputs>
-        <data name="out_file1" format="txt" />
+        <data name="out_file1" format="txt"/>
     </outputs>
     <tests>
         <test>
-            <param name="intest" value="1" />
-            <output name="out_file1">
+            <param name="intest" value="1"/>
+            <output name="out_file1" file="multiple_versions_0.2.txt">
                 <assert_contents>
-                    <has_line line="Version 0.2" />
+                    <has_line line="Version 0.2"/>
                 </assert_contents>
             </output>
         </test>

@@ -252,6 +252,15 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
                     _.extend(element, {
                         parent_hdca_id: parentHdcaId,
                     });
+
+                    // Warning: MEGA-hack ahead...
+                    if (!element.element_type && !element.object) {
+                        // The DCE has to be in error state... so we simulate it
+                        _.extend(element, {
+                            element_type: "hda",
+                            object: { state: "error" },
+                        });
+                    }
                 });
                 this.elements = new collectionClass(elements);
                 //this.debug( 'collectionClass:', this.collectionClass + '', this.elements );

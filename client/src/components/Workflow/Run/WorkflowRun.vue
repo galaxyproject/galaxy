@@ -1,17 +1,14 @@
 <template>
     <span>
-        <b-alert variant="danger" show v-if="error">
+        <b-alert v-if="error" variant="danger" show>
+            <h5>Workflow cannot be executed. Please resolve the following issue:</h5>
             {{ error }}
         </b-alert>
         <span v-else>
             <b-alert v-if="loading" variant="info" show>
                 <loading-span message="Loading workflow run data" />
             </b-alert>
-            <workflow-run-success
-                v-else-if="invocations != null"
-                :invocations="invocations"
-                :workflow-name="workflowName"
-            />
+            <workflow-run-success v-else-if="!!invocations" :invocations="invocations" :workflow-name="workflowName" />
             <div v-else class="ui-form-composite">
                 <div class="ui-form-composite-messages mb-4">
                     <b-alert v-if="hasUpgradeMessages" variant="warning" show>
@@ -25,41 +22,23 @@
                         instance. To upgrade your workflow and dismiss this message simply edit the workflow and re-save
                         it.
                     </b-alert>
+                    <b-alert v-if="submissionError" variant="danger" show>
+                        Workflow submission failed: {{ submissionError }}
+                    </b-alert>
                 </div>
-                <!-- h4 as a class here looks odd but it was in the Backbone -->
-                <div class="ui-form-composite-header h4">
-                    <b>Workflow: {{ workflowName }}</b>
-                    <wait-button
-                        title="Run Workflow"
-                        id="run-workflow"
-                        variant="primary"
-                        :disabled="!runButtonEnabled"
-                        :waiting="!runButtonEnabled"
-                        :wait-text="runButtonWaitText"
-                        :percentage="runButtonPercentage"
-                        @click="execute"
-                    >
-                    </wait-button>
-                </div>
-                <workflow-run-form
-                    ref="runform"
+                <workflow-run-form-simple
+                    v-if="simpleForm"
                     :model="model"
-                    v-if="!simpleForm"
-                    :set-run-button-status="setRunButtonStatus"
+                    :target-history="simpleFormTargetHistory"
+                    :use-job-cache="simpleFormUseJobCache"
                     @submissionSuccess="handleInvocations"
-                />
-                <div v-else>
-                    <workflow-run-form-simple
-                        ref="runform"
-                        :model="model"
-                        :set-run-button-status="setRunButtonStatus"
-                        :target-history="simpleFormTargetHistory"
-                        :use-job-cache="simpleFormUseJobCache"
-                        @submissionSuccess="handleInvocations"
-                    />
-                    <!-- Options to default one way or the other, disable if admins want, etc.. -->
-                    <a href="#" @click="showAdvanced">Expand to full workflow form.</a>
-                </div>
+                    @submissionError="handleSubmissionError"
+                    @showAdvanced="showAdvanced" />
+                <workflow-run-form
+                    v-else
+                    :model="model"
+                    @submissionSuccess="handleInvocations"
+                    @submissionError="handleSubmissionError" />
             </div>
         </span>
     </span>
@@ -67,7 +46,6 @@
 
 <script>
 import { getRunData } from "./services";
-import WaitButton from "components/WaitButton";
 import LoadingSpan from "components/LoadingSpan";
 import WorkflowRunSuccess from "./WorkflowRunSuccess";
 import WorkflowRunForm from "./WorkflowRunForm";
@@ -78,13 +56,15 @@ import { errorMessageAsString } from "utils/simple-error";
 export default {
     components: {
         LoadingSpan,
-        WaitButton,
         WorkflowRunSuccess,
         WorkflowRunForm,
         WorkflowRunFormSimple,
     },
     props: {
-        workflowId: { type: String },
+        workflowId: {
+            type: String,
+            required: true,
+        },
         preferSimpleForm: {
             type: Boolean,
             default: false,
@@ -105,18 +85,16 @@ export default {
             hasUpgradeMessages: false,
             hasStepVersionChanges: false,
             workflowName: "",
-            runForm: null,
-            runButtonEnabled: true,
-            runButtonWaitText: "",
-            runButtonPercentage: -1,
             invocations: null,
             simpleForm: null,
+            submissionError: null,
             model: null,
         };
     },
     created() {
         getRunData(this.workflowId)
             .then((runData) => {
+                this.loading = false;
                 const model = new WorkflowRunModel(runData);
                 let simpleForm = this.preferSimpleForm;
                 if (simpleForm) {
@@ -150,24 +128,17 @@ export default {
                 this.hasUpgradeMessages = model.hasUpgradeMessages;
                 this.hasStepVersionChanges = model.hasStepVersionChanges;
                 this.workflowName = this.model.name;
-                this.loading = false;
             })
             .catch((response) => {
-                console.log(response);
                 this.error = errorMessageAsString(response);
             });
     },
     methods: {
-        execute() {
-            this.$refs.runform.execute();
-        },
-        setRunButtonStatus(enabled, waitText, percentage) {
-            this.runButtonEnabled = enabled;
-            this.runButtonWaitText = waitText;
-            this.runButtonPercentage = percentage;
-        },
         handleInvocations(invocations) {
             this.invocations = invocations;
+        },
+        handleSubmissionError(error) {
+            this.submissionError = errorMessageAsString(error);
         },
         showAdvanced() {
             this.simpleForm = false;

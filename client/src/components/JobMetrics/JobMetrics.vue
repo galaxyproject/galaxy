@@ -13,18 +13,20 @@
             </table>
         </div>
 
-        <div id="aws-estimate" v-if="isAwsEstimate && awsEstimate">
-            <h3>AWS estimate</h3>
-            <b>{{ awsEstimate.price }} USD</b><br />
-            This job requested {{ awsEstimate.vcpus }} cores and {{ awsEstimate.memory }} Gb. Given this, the smallest
-            EC2 machine we could find is <span id="aws_name">{{ awsEstimate.instance.name }}</span> (<span
-                id="aws_mem"
-                >{{ awsEstimate.instance.mem }}</span
-            >
-            GB / <span id="aws_vcpus">{{ awsEstimate.instance.vcpus }}</span> vCPUs /
-            <span id="aws_cpu">{{ awsEstimate.instance.cpu }}</span
-            >). That instance is priced at {{ awsEstimate.instance.price }} USD/hour.<br />
-            Please note, that those numbers are only estimates, all jobs are always free of charge for all users.
+        <div v-if="aws_estimate && computedAwsEstimate" id="aws-estimate">
+            <div class="aws">
+                <h3>AWS estimate</h3>
+                <b>{{ computedAwsEstimate.price }} USD</b><br />
+                This job requested {{ computedAwsEstimate.vcpus }} cores and {{ computedAwsEstimate.memory }} Gb. Given
+                this, the smallest EC2 machine we could find is
+                <span id="aws_name">{{ computedAwsEstimate.instance.name }}</span> (<span id="aws_mem">{{
+                    computedAwsEstimate.instance.mem
+                }}</span>
+                GB / <span id="aws_vcpus">{{ computedAwsEstimate.instance.vcpus }}</span> vCPUs /
+                <span id="aws_cpu">{{ computedAwsEstimate.instance.cpu }}</span
+                >). That instance is priced at {{ computedAwsEstimate.instance.price }} USD/hour.<br />
+                Please note, that those numbers are only estimates, all jobs are always free of charge for all users.
+            </div>
         </div>
     </div>
 </template>
@@ -43,7 +45,7 @@ export default {
             type: String,
         },
         aws_estimate: {
-            type: String,
+            type: Boolean,
         },
         datasetType: {
             type: String,
@@ -54,23 +56,12 @@ export default {
             default: true,
         },
     },
-    data() {
-        return {};
-    },
-    created: function () {
-        if (this.jobId) {
-            this.fetchJobMetricsForJobId(this.jobId);
-        } else {
-            this.fetchJobMetricsForDatasetId({ datasetId: this.datasetId, datasetType: this.datasetType });
-        }
-    },
     computed: {
         ...mapGetters(["getJobMetricsByDatasetId", "getJobMetricsByJobId"]),
-        isAwsEstimate: function () {
-            return this.aws_estimate && this.aws_estimate.toUpperCase() === "true".toUpperCase();
-        },
-        awsEstimate: function () {
-            if (!this.isAwsEstimate) return;
+        computedAwsEstimate: function () {
+            if (!this.aws_estimate) {
+                return;
+            }
 
             const aws = {};
             this.jobMetrics.forEach((metric) => {
@@ -88,15 +79,21 @@ export default {
                 }
             });
 
-            if (aws.memory) aws.memory /= 1024;
+            if (aws.memory) {
+                aws.memory /= 1024;
+            }
             // if memory was not specified, assign the smallest amount (we judge based on CPU-count only)
-            else aws.memory = 0.5;
+            else {
+                aws.memory = 0.5;
+            }
 
             // ec2 is already pre-sorted
             aws.instance = ec2.find((ec) => {
                 return ec.mem >= aws.memory && ec.vcpus >= aws.vcpus;
             });
-            if (aws.instance === undefined) return;
+            if (aws.instance === undefined) {
+                return;
+            }
             aws.price = ((aws.seconds * aws.instance.price) / 3600).toFixed(2);
             return aws;
         },
@@ -123,8 +120,20 @@ export default {
             return Object.keys(this.metricsByPlugins).sort();
         },
     },
+    created: function () {
+        if (this.jobId) {
+            this.fetchJobMetricsForJobId(this.jobId);
+        } else {
+            this.fetchJobMetricsForDatasetId({ datasetId: this.datasetId, datasetType: this.datasetType });
+        }
+    },
     methods: {
         ...mapCacheActions(["fetchJobMetricsForDatasetId", "fetchJobMetricsForJobId"]),
     },
 };
 </script>
+<style scoped>
+.aws {
+    padding-top: 0.6rem;
+}
+</style>

@@ -126,6 +126,53 @@ The images used for containers can either be specified explicitely in the ``<des
 tool requirements of the Galaxy tool being executed. In this latter case the image is specified by the
 tool using a ``<container>`` tag in the ``<requirements>`` section.
 
+### Running jobs on a Kubernetes cluster via Pulsar
+
+In order to dispatch jobs to a Kubernetes (K8s) cluster via Pulsar,
+Pulsar implements a "two-container" architecture per pod, where
+one container stages job execution environment (`pulsar-container`)
+and another container encompasses tool's executables (`tool-container`).
+
+Note that this architecture is experimental and under active development,
+it is increasingly improved and it will soon be production-grade ready.
+
+In order to setup Galaxy to use the "two-container" architecture, you may
+take the following steps:
+
+1. In the `galaxy.yml` set the following attributes: 
+
+- `job_config_file: job_conf.yml`
+- Appropriately configure `galaxy_infrastructure_url`; for example,
+set it as the following on macOS:
+`galaxy_infrastructure_url: 'http://host.docker.internal:$GALAXY_WEB_PORT'`
+
+2. In the `job_conf.yml` set the following runners and execution attributes appropriately:
+
+```yaml
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+  pulsar_k8s:
+    load: galaxy.jobs.runners.pulsar:PulsarKubernetesJobRunner
+    amqp_url: amqp://guest:guest@localhost:5672//
+
+execution:
+  default: pulsar_k8s_environment
+  environments:
+    pulsar_k8s_environment:
+      k8s_config_path: ~/.kube/config
+      k8s_galaxy_instance_id: any-dns-friendly-random-str
+      k8s_namespace: default
+      runner: pulsar_k8s
+      docker_enabled: true
+      docker_default_container_id: busybox:ubuntu-14.04
+      pulsar_app_config:
+        message_queue_url: 'amqp://guest:guest@host.docker.internal:5672//'
+    local_environment:
+      runner: local
+```
+
 ### Macros
 
 The job configuration XML file may contain any number of macro definitions using the same
@@ -313,7 +360,6 @@ The following example assumes the existence of a job destination with ids `short
     <destination>
     ...
 ```
-
 
 With these if place, the following `default_runner` rule function will route all tools with id containing `mothur` to the `long_pbs` destination defined `jobs_conf.xml` and all other tools to the `short_pbs` destination:
 

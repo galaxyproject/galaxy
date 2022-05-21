@@ -1,0 +1,31 @@
+<tool name="NCBI Datasets Genomes" id="ncbi_datasets_source" tool_type="data_source" version="@TOOL_VERSION@" profile="21.09">
+    <description>import data from the NCBI Datasets Genomes page</description>
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
+    <macros>
+        <token name="@TOOL_VERSION@">13.14.0</token>
+    </macros>
+    <requirements>
+        <requirement type="package" version="@TOOL_VERSION@">ncbi-datasets-cli</requirement>
+    </requirements>
+    <version_command>datasets version</version_command>
+    <command><![CDATA[
+## If running in container use certificate from ca-certificates instead of outdated / missing container certificates
+[ -f /usr/local/ssl/cacert.pem ] && export SSL_CERT_FILE="/usr/local/ssl/cacert.pem";
+datasets download --input-json '$file_param' --filename '$compressed_archive' --no-progressbar
+&& unzip -l '$compressed_archive'
+    ]]></command>
+    <inputs action="https://www.ncbi.nlm.nih.gov/datasets/genomes" check_values="true" method="get">
+        <display>go to NCBI Datasets Genomes server $GALAXY_URL</display>
+        <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=ncbi_datasets_source"/>
+        <param name="file_param" type="file"/>
+    </inputs>
+    <outputs>
+        <data name="compressed_archive" format="ncbi_genome_dataset.zip" label="NCBI Genome Dataset"/>
+    </outputs>
+    <options sanitize="true"/>
+    <citations>
+        <citation type="doi">10.1093/database/bar011</citation>
+    </citations>
+</tool>

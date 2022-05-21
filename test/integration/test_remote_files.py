@@ -1,22 +1,33 @@
-import json
 import operator
 import os
 import shutil
 from tempfile import mkdtemp
+from typing import ClassVar
 
 from galaxy.exceptions import error_codes
-from galaxy_test.base.api_asserts import assert_error_code_is, assert_error_message_contains
-from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.base.api_asserts import (
+    assert_error_code_is,
+    assert_error_message_contains,
+)
+from galaxy_test.base.populators import (
+    DatasetCollectionPopulator,
+    DatasetPopulator,
+)
 from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_JOB_CONF = os.path.join(SCRIPT_DIRECTORY, "file_sources_conf.yml")
+VCF_GZ_PATH = os.path.join(SCRIPT_DIRECTORY, os.path.pardir, os.path.pardir, "test-data", "test.vcf.gz")
 
-USERNAME = 'user--bx--psu--edu'
-USER_EMAIL = 'user@bx.psu.edu'
+USERNAME = "user--bx--psu--edu"
+USER_EMAIL = "user@bx.psu.edu"
 
 
 class ConfiguresRemoteFilesIntegrationTestCase(integration_util.IntegrationTestCase):
+    library_dir: ClassVar[str]
+    user_library_dir: ClassVar[str]
+    ftp_upload_dir: ClassVar[str]
+    root: ClassVar[str]
 
     framework_tool_and_types = True
 
@@ -32,14 +43,16 @@ class ConfiguresRemoteFilesIntegrationTestCase(integration_util.IntegrationTestC
         config["user_library_import_dir"] = cls.user_library_dir
         config["ftp_upload_dir"] = cls.ftp_upload_dir
         config["ftp_upload_site"] = "ftp://cow.com"
-
         # driver_util sets this to False, though the Galaxy default is True.
         # Restore default for these tests.
         config["ftp_upload_purge"] = True
+        config["metadata_strategy"] = "extended"
+        config["tool_evaluation_strategy"] = "remote"
 
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
         for d in [self.library_dir, self.user_library_dir, self.ftp_upload_dir]:
             if os.path.exists(d):
@@ -55,7 +68,6 @@ class ConfiguresRemoteFilesIntegrationTestCase(integration_util.IntegrationTestC
 
 
 class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
-
     def test_index(self):
         index = self.galaxy_interactor.get("remote_files?target=importdir").json()
         self._assert_index_empty(index)
@@ -66,7 +78,7 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
 
         # Get a 404 if the directory doesn't exist.
         index = self.galaxy_interactor.get("remote_files?target=userdir").json()
-        assert_error_code_is(index, error_codes.USER_OBJECT_NOT_FOUND)
+        assert_error_code_is(index, error_codes.error_codes_by_name["USER_OBJECT_NOT_FOUND"])
 
         users_dir = os.path.join(self.user_library_dir, USER_EMAIL)
         os.mkdir(users_dir)
@@ -90,7 +102,7 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
                 "destination": {"type": "hdas"},
                 "elements": [element],
             }
-            targets = json.dumps([target])
+            targets = [target]
             payload = {
                 "history_id": history_id,
                 "targets": targets,
@@ -110,7 +122,7 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
                 "destination": {"type": "hdas"},
                 "elements": [element],
             }
-            targets = json.dumps([target])
+            targets = [target]
             payload = {
                 "history_id": history_id,
                 "targets": targets,
@@ -131,9 +143,95 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
             }
             response = dataset_populator.run_tool("directory_uri", inputs, history_id)
             dataset_populator.wait_for_job(response["jobs"][0]["id"])
-            assert 'helloworld' in os.listdir(ftp_dir)
-            with open(os.path.join(ftp_dir, 'helloworld')) as f:
-                assert 'hello world!\n' == f.read()
+            assert "helloworld" in os.listdir(ftp_dir)
+            with open(os.path.join(ftp_dir, "helloworld")) as f:
+                assert "hello world!\n" == f.read()
+
+    def test_export_remote_tool_default(self):
+        dataset_populator = self.dataset_populator
+        ftp_dir = self.user_ftp_dir
+        _write_file_fixtures(self.root, ftp_dir)
+        with dataset_populator.test_history() as history_id:
+            dataset = dataset_populator.new_dataset(history_id, content="example content", wait=True, name="foo")
+            infile = {"src": "hda", "id": dataset["id"]}
+            inputs = {
+                "d_uri": "gxftp://",
+                "export_type|export_type_selector": "datasets_named",
+                "export_type|datasets_0|infile": infile,
+                "export_type|datasets_0|name": ".my_cool/utf8_name_😻.txt",
+            }
+            response = dataset_populator.run_tool("export_remote", inputs, history_id)
+            dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+            with open(os.path.join(ftp_dir, "my_cool", "utf8_name_😻.txt")) as f:
+                assert "example content\n" == f.read()
+
+    def test_export_remote_tool_default_duplicate_name_fails(self):
+        dataset_populator = self.dataset_populator
+        ftp_dir = self.user_ftp_dir
+        _write_file_fixtures(self.root, ftp_dir)
+        with dataset_populator.test_history() as history_id:
+            dataset = dataset_populator.new_dataset(history_id, content="example content", wait=True, name="foo")
+            infile = {"src": "hda", "id": dataset["id"]}
+            inputs = {
+                "d_uri": "gxftp://",
+                "export_type|export_type_selector": "datasets_named",
+                "export_type|datasets_0|infile": infile,
+                "export_type|datasets_0|name": "name.txt",
+                "export_type|datasets_1|infile": infile,
+                "export_type|datasets_1|name": "name.txt",
+            }
+            response = dataset_populator.run_tool("export_remote", inputs, history_id)
+            job_id = response["jobs"][0]["id"]
+            dataset_populator.wait_for_job(job_id, assert_ok=False)
+            job = self.dataset_populator.get_job_details(job_id, full=True).json()
+            assert job["state"] == "error"
+            assert "Duplicate export filenames given" in job["tool_stderr"]
+            assert not os.path.exists(os.path.join(ftp_dir, "name.txt"))
+
+    def test_export_remote_tool_with_metadata_file_auto_name(self):
+        dataset_populator = self.dataset_populator
+        ftp_dir = self.user_ftp_dir
+        _write_file_fixtures(self.root, ftp_dir)
+        with dataset_populator.test_history() as history_id:
+            with open(VCF_GZ_PATH, "rb") as vcf_gz:
+                dataset = dataset_populator.new_dataset(
+                    history_id, content=vcf_gz, file_type="vcf_bgzip", wait=True, name="foo/1"
+                )
+            infile = {"src": "hda", "id": dataset["id"]}
+            inputs = {
+                "d_uri": "gxftp://",
+                "export_type|export_type_selector": "datasets_auto",
+                "export_type|infiles": [infile],
+            }
+            response = dataset_populator.run_tool("export_remote", inputs, history_id)
+            dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+            with open(os.path.join(ftp_dir, "foo_1.vcf.gz"), "rb") as export, open(VCF_GZ_PATH, "rb") as vcf_gz:
+                assert export.read() == vcf_gz.read()
+            assert os.path.exists(os.path.join(ftp_dir, "foo_1.vcf.gz.tbi"))
+
+    def test_export_remote_tool_collection_structure(self):
+        dataset_populator = self.dataset_populator
+        ftp_dir = self.user_ftp_dir
+        assert "test0" not in os.listdir(ftp_dir)
+        _write_file_fixtures(self.root, ftp_dir)
+        with dataset_populator.test_history() as history_id:
+            hdca = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True).json()
+            outer_elements = hdca["elements"][0]
+            assert outer_elements["element_identifier"] == "test0"
+            for i in range(2):
+                assert outer_elements["object"]["elements"][i]["element_identifier"] == f"data{i}"
+                assert outer_elements["object"]["elements"][i]["object"]["file_ext"] == "txt"
+            incollection = {"src": "hdca", "id": hdca["id"]}
+            inputs = {
+                "d_uri": "gxftp://",
+                "export_type|export_type_selector": "collection_auto",
+                "export_type|infiles": [incollection],
+            }
+            response = dataset_populator.run_tool("export_remote", inputs, history_id)
+            dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+            assert "test0" in os.listdir(ftp_dir)
+            subdir_content = os.listdir(os.path.join(ftp_dir, "test0"))
+            assert sorted(subdir_content) == ["data0.txt", "data1.txt", "data2.txt"]
 
     def _assert_index_empty(self, index):
         assert len(index) == 0
@@ -157,7 +255,6 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
 
 
 class RemoteFilesNotConfiguredIntegrationTestCase(integration_util.IntegrationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["library_import_dir"] = None
@@ -166,20 +263,20 @@ class RemoteFilesNotConfiguredIntegrationTestCase(integration_util.IntegrationTe
 
     def test_configuration_statuses(self):
         importfiles = self.galaxy_interactor.get("remote_files?target=importdir")
-        assert_error_code_is(importfiles, error_codes.CONFIG_DOES_NOT_ALLOW)
-        assert_error_message_contains(importfiles, 'import directory')
+        assert_error_code_is(importfiles, error_codes.error_codes_by_name["CONFIG_DOES_NOT_ALLOW"])
+        assert_error_message_contains(importfiles, "import directory")
 
         importfiles = self.galaxy_interactor.get("remote_files?target=ftpdir")
-        assert_error_code_is(importfiles, error_codes.CONFIG_DOES_NOT_ALLOW)
-        assert_error_message_contains(importfiles, 'FTP directories')
+        assert_error_code_is(importfiles, error_codes.error_codes_by_name["CONFIG_DOES_NOT_ALLOW"])
+        assert_error_message_contains(importfiles, "FTP directories")
 
         importfiles = self.galaxy_interactor.get("remote_files?target=userdir")
-        assert_error_code_is(importfiles, error_codes.CONFIG_DOES_NOT_ALLOW)
-        assert_error_message_contains(importfiles, 'user directories')
+        assert_error_code_is(importfiles, error_codes.error_codes_by_name["CONFIG_DOES_NOT_ALLOW"])
+        assert_error_message_contains(importfiles, "user directories")
 
         # invalid request parameter waitwhat...
         importfiles = self.galaxy_interactor.get("remote_files?target=waitwhat")
-        assert_error_code_is(importfiles, error_codes.USER_REQUEST_INVALID_PARAMETER)
+        assert_error_code_is(importfiles, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
 
 
 def _write_file_fixtures(tmp, root):

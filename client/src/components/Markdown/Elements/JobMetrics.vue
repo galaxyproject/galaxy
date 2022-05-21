@@ -1,9 +1,7 @@
 <template>
-    <div class="w-50 p-2 float-left">
-        <b-card nobody>
-            <JobMetrics class="job-metrics" :job-id="args.job_id" />
-        </b-card>
-    </div>
+    <b-card nobody>
+        <JobMetrics class="job-metrics" :job-id="args.job_id" />
+    </b-card>
 </template>
 
 <script>

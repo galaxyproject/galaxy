@@ -16,11 +16,6 @@ defaults logging to a single file with the following:
 
 galaxy-main -d --server-name handler0 --daemon-log-file=handler0-daemon.log --pid-file handler0.pid --log-file handler0.log
 
-This can also be used to start Galaxy as a uWSGI mule, e.g. for job handling:
-
-uwsgi ... --py-call-osafterfork --mule=lib/galaxy/main.py --mule=lib/galaxy/main.py --farm=job-handlers:1,2
-
-The --py-call-osafterfork allows for proper shutdown on SIGTERM/SIGINT.
 """
 import functools
 import logging
@@ -37,16 +32,11 @@ try:
 except ImportError:
     Daemonize = None
 
-try:
-    import uwsgi
-except ImportError:
-    uwsgi = None
-
 log = logging.getLogger(__name__)
 
 real_file = os.path.realpath(__file__)
 GALAXY_ROOT_DIR_ = os.path.abspath(os.path.join(os.path.dirname(real_file), os.pardir))
-if not os.path.exists(os.path.join(GALAXY_ROOT_DIR_, 'run.sh')):
+if not os.path.exists(os.path.join(GALAXY_ROOT_DIR_, "run.sh")):
     # Galaxy is installed
     GALAXY_ROOT_DIR = None
 else:
@@ -73,20 +63,11 @@ DEFAULT_PID = "galaxy.pid"
 DEFAULT_VERBOSE = True
 DESCRIPTION = "Daemonized entry point for Galaxy."
 
-SHUTDOWN_MSG = '__SHUTDOWN__'
-UWSGI_FARMS_VAR = '_GALAXY_UWSGI_FARM_NAMES'
-
 
 exit = threading.Event()
 
 
-def load_galaxy_app(
-    config_builder,
-    config_env=False,
-    log=None,
-    attach_to_pools=None,
-    **kwds
-):
+def load_galaxy_app(config_builder, config_env=False, log=None, attach_to_pools=None, **kwds):
     # Allow specification of log so daemon can reuse properly configured one.
     if log is None:
         log = logging.getLogger(__name__)
@@ -102,34 +83,25 @@ def load_galaxy_app(
 
     config_builder.setup_logging()
     from galaxy.util.properties import load_app_properties
+
     kwds = config_builder.app_kwds()
     kwds = load_app_properties(**kwds)
     from galaxy.app import UniverseApplication
-    app = UniverseApplication(
-        global_conf=config_builder.global_conf(),
-        attach_to_pools=attach_to_pools,
-        **kwds
-    )
+
+    app = UniverseApplication(global_conf=config_builder.global_conf(), attach_to_pools=attach_to_pools, **kwds)
     app.database_heartbeat.start()
     app.application_stack.log_startup()
     return app
 
 
 def handle_signal(signum, frame):
-    log.info('Received signal %d, exiting', signum)
-    if uwsgi and 'mule_id' in dir(uwsgi) and uwsgi.mule_id() > 0:
-        farms = os.environ.get(UWSGI_FARMS_VAR, None)
-        if farms:
-            for farm in farms.split(','):
-                uwsgi.farm_msg(farm, SHUTDOWN_MSG)
-        else:
-            uwsgi.mule_msg(SHUTDOWN_MSG, uwsgi.mule_id())
+    log.info("Received signal %d, exiting", signum)
     exit.set()
 
 
 def register_signals():
-    for name in ('TERM', 'INT', 'HUP'):
-        sig = getattr(signal, 'SIG%s' % name)
+    for name in ("TERM", "INT", "HUP"):
+        sig = getattr(signal, f"SIG{name}")
         signal.signal(sig, handle_signal)
 
 
@@ -160,8 +132,7 @@ def app_loop(args, log):
 
 
 class GalaxyConfigBuilder:
-    """ Generate paste-like configuration from supplied command-line arguments.
-    """
+    """Generate paste-like configuration from supplied command-line arguments."""
 
     def __init__(self, args=None, **kwds):
         self.config_file = None
@@ -170,8 +141,8 @@ class GalaxyConfigBuilder:
         config_file = kwds.get("config_file", None) or (args and args.config_file)
         # If given app_conf_path - use that - else we need to ensure we have a
         # config file path.
-        if not config_file and 'config_file' in self.app_kwds():
-            config_file = self.app_kwds()['config_file']
+        if not config_file and "config_file" in self.app_kwds():
+            config_file = self.app_kwds()["config_file"]
         if not config_file:
             galaxy_root = kwds.get("galaxy_root", GALAXY_ROOT_DIR)
             config_file = find_config(config_file, galaxy_root)
@@ -179,22 +150,35 @@ class GalaxyConfigBuilder:
         self.config_file = unicodify(config_file)
         # FIXME: this won't work for non-Paste ini configs
         if self.config_is_ini:
-            self.config_section = "app:%s" % unicodify(kwds.get("app") or (args and args.app) or DEFAULT_INI_APP)
+            self.config_section = f"app:{unicodify(kwds.get('app') or args and args.app or DEFAULT_INI_APP)}"
         else:
             self.config_section = self.app_name
-        self.log_file = (args and args.log_file)
+        self.log_file = args and args.log_file
 
     @classmethod
     def populate_options(cls, arg_parser):
-        arg_parser.add_argument("-c", "--config-file", default=None, help="Galaxy config file (defaults to config/galaxy.ini)")
+        arg_parser.add_argument(
+            "-c", "--config-file", default=None, help="Galaxy config file (defaults to config/galaxy.ini)"
+        )
         arg_parser.add_argument("--ini-path", default=None, help="DEPRECATED: use -c/--config-file")
-        arg_parser.add_argument("--app", default=None, help="app section in config file (defaults to 'galaxy' for YAML/JSON, 'main' (w/ 'app:' prepended) for INI")
+        arg_parser.add_argument(
+            "--app",
+            default=None,
+            help="app section in config file (defaults to 'galaxy' for YAML/JSON, 'main' (w/ 'app:' prepended) for INI",
+        )
         arg_parser.add_argument("-d", "--daemonize", default=False, help="Daemonize process", action="store_true")
         arg_parser.add_argument("--daemon-log-file", default=None, help="log file for daemon script ")
-        arg_parser.add_argument("--log-file", default=None, help="Galaxy log file (overrides log configuration in config_file if set)")
-        arg_parser.add_argument("--pid-file", default=DEFAULT_PID, help="pid file (default is %s)" % DEFAULT_PID)
+        arg_parser.add_argument(
+            "--log-file", default=None, help="Galaxy log file (overrides log configuration in config_file if set)"
+        )
+        arg_parser.add_argument("--pid-file", default=DEFAULT_PID, help=f"pid file (default is {DEFAULT_PID})")
         arg_parser.add_argument("--server-name", default=None, help="set a galaxy server name")
-        arg_parser.add_argument("--attach-to-pool", action="append", default=None, help="attach to asynchronous worker pool (specify multiple times for multiple pools)")
+        arg_parser.add_argument(
+            "--attach-to-pool",
+            action="append",
+            default=None,
+            help="attach to asynchronous worker pool (specify multiple times for multiple pools)",
+        )
 
     @property
     def config_is_ini(self):
@@ -202,10 +186,10 @@ class GalaxyConfigBuilder:
 
     def app_kwds(self):
         kwds = get_app_kwds(self.app_name, app_name=self.app_name)
-        if 'config_file' not in kwds:
-            kwds['config_file'] = self.config_file
-        if 'config_section' not in kwds:
-            kwds['config_section'] = self.config_section
+        if "config_file" not in kwds:
+            kwds["config_file"] = self.config_file
+        if "config_section" not in kwds:
+            kwds["config_section"] = self.config_section
         return kwds
 
     def global_conf(self):
@@ -223,12 +207,9 @@ class GalaxyConfigBuilder:
         if self.config_is_ini:
             raw_config = ConfigParser()
             raw_config.read([self.config_file])
-            if raw_config.has_section('loggers'):
+            if raw_config.has_section("loggers"):
                 config_file = os.path.abspath(self.config_file)
-                fileConfig(
-                    config_file,
-                    dict(__file__=config_file, here=os.path.dirname(config_file))
-                )
+                fileConfig(config_file, dict(__file__=config_file, here=os.path.dirname(config_file)))
 
 
 def main(func=app_loop):

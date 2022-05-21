@@ -5,7 +5,12 @@ Migration script to add the new_repo_alert column to the galaxy_user table.
 import logging
 import sys
 
-from sqlalchemy import Boolean, Column, MetaData, Table
+from sqlalchemy import (
+    Boolean,
+    Column,
+    MetaData,
+    Table,
+)
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -30,13 +35,13 @@ def upgrade(migrate_engine):
         c.create(User_table, index_name="ix_galaxy_user_new_repo_alert")
         assert c is User_table.c.new_repo_alert
         # Initialize.
-        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+        if migrate_engine.name == "mysql" or migrate_engine.name == "sqlite":
             default_false = "0"
-        elif migrate_engine.name in ['postgresql', 'postgres']:
+        elif migrate_engine.name in ["postgresql", "postgres"]:
             default_false = "false"
         else:
             log.debug("unknown migrate_engine dialect")
-        migrate_engine.execute("UPDATE galaxy_user SET new_repo_alert=%s" % default_false)
+        migrate_engine.execute(f"UPDATE galaxy_user SET new_repo_alert={default_false}")
     except Exception:
         log.exception("Adding new_repo_alert column to the galaxy_user table failed.")
 

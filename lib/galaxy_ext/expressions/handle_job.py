@@ -16,7 +16,7 @@ warnings.filterwarnings("ignore", message=r"[\n.]DEPRECATION: Python 2", module=
 try:
     from cwltool import expression
 except ImportError:
-    expression = None  # type: ignore
+    expression = None
 
 from galaxy.tools.expressions import evaluate
 
@@ -38,8 +38,8 @@ def run(environment_path=None):
     del inputs["outputs"]
     result = evaluate(None, inputs)
 
-    if '__error_message' in result:
-        raise Exception(result['__error_message'])
+    if "__error_message" in result:
+        raise Exception(result["__error_message"])
     for output in outputs:
         path = output["path"]
         from_expression = output["from_expression"]

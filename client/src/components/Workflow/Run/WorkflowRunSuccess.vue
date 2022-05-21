@@ -11,19 +11,15 @@
             </p>
             <p v-else-if="wasNewHistoryTarget">
                 This workflow will generate results in a new history.
-                <a :href="historyTarget">Switch to that history now</a>.
+                <a class="workflow-new-history-target-link" :href="historyTarget">Switch to that history now</a>.
             </p>
-            <p v-else>
-                You can check the status of queued jobs and view the resulting data by refreshing the History pane, if
-                this has not already happened automatically.
-            </p>
+            <p v-else>You can check the status of queued jobs and view the resulting data the History panel.</p>
         </div>
         <workflow-invocation-state
             v-for="(invocation, index) in invocations"
             :key="invocation.id"
             :index="index"
-            :invocation-id="invocation.id"
-        />
+            :invocation-id="invocation.id" />
         <div id="webhook-view"></div>
     </div>
 </template>
@@ -80,14 +76,23 @@ export default {
             );
         },
     },
+    mounted() {
+        new Webhooks.WebhookView({
+            type: "workflow",
+            toolId: null,
+            toolVersion: null,
+        });
+        this._refreshHistory();
+    },
     methods: {
         _refreshHistory() {
+            // remove when disabling backbone history
             const Galaxy = getGalaxyInstance();
             var history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
             if (this.refreshHistoryTimeout) {
                 window.clearTimeout(this.refreshHistoryTimeout);
             }
-            if (history) {
+            if (history && history.refresh) {
                 history.refresh().success(() => {
                     if (history.numOfUnfinishedShownContents() === 0) {
                         this.refreshHistoryTimeout = window.setTimeout(() => {
@@ -97,14 +102,6 @@ export default {
                 });
             }
         },
-    },
-    mounted() {
-        new Webhooks.WebhookView({
-            type: "workflow",
-            toolId: null,
-            toolVersion: null,
-        });
-        this._refreshHistory();
     },
 };
 </script>

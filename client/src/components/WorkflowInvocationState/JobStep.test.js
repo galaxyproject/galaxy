@@ -3,8 +3,6 @@ import JobStep from "./JobStep";
 import { mount } from "@vue/test-utils";
 import jobs from "./test/json/jobs.json";
 
-jest.mock("../History/caching");
-
 import { createLocalVue } from "@vue/test-utils";
 
 // create an extended `Vue` constructor
@@ -37,13 +35,11 @@ describe("DatasetUIWrapper.vue with Dataset", () => {
         expect(wrapper.vm.toggledItems["1"]).toBe(undefined);
         expect(wrapper.find(".expanded").exists()).toBeFalsy();
         // expand
-        wrapper.find("tbody").find("tbody").find("tr").trigger("click");
-        await localVue.nextTick();
+        await wrapper.find("tbody").find("tbody").find("tr").trigger("click");
         expect(wrapper.vm.toggledItems["1"]).toBeTruthy();
         expect(wrapper.find(".expanded").exists()).toBeTruthy();
-        wrapper.find("tbody").find("tbody").find("tr").trigger("click");
+        await wrapper.find("tbody").find("tbody").find("tr").trigger("click");
         // close again
-        await localVue.nextTick();
         expect(wrapper.vm.toggledItems["1"]).toBeFalsy();
         expect(wrapper.find(".expanded").exists()).toBeFalsy();
     });
@@ -52,16 +48,14 @@ describe("DatasetUIWrapper.vue with Dataset", () => {
         expect(wrapper.vm.toggledItems["1"]).toBe(undefined);
         expect(wrapper.find(".expanded").exists()).toBeFalsy();
         // expand
-        wrapper.find("tbody").find("tbody").find("tr").trigger("click");
-        await localVue.nextTick();
+        await wrapper.find("tbody").find("tbody").find("tr").trigger("click");
         expect(wrapper.vm.toggledItems["1"]).toBeTruthy();
         expect(wrapper.find(".expanded").exists()).toBeTruthy();
         // 2 collapsed rows, plus 1 expanded row
         expect(wrapper.find("tbody").findAll("tr").length).toBe(3);
         // update data
         const additionalJob = { ...jobs[0], id: 3 };
-        wrapper.setProps({ jobs: [...jobs, additionalJob] });
-        await localVue.nextTick();
+        await wrapper.setProps({ jobs: [...jobs, additionalJob] });
         // verify new data is displayed
         expect(wrapper.find("tbody").findAll("tr").length).toBe(4);
         // verify first row is still expanded

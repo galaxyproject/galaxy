@@ -1,6 +1,6 @@
 <template>
     <div v-infinite-scroll="loadMore" infinite-scroll-disabled="busy">
-        <h2 class="mb-3" style="text-align: center;">
+        <h2 class="mb-3" style="text-align: center">
             <span id="tools-view">Consolidated view of {{ tools.length }} available tools.</span>
         </h2>
         <div v-if="!loading">
@@ -13,8 +13,7 @@
                                     v-model="filterText"
                                     placeholder="Type to Search"
                                     @keyup.native="filter('filterByText')"
-                                    @keyup.esc.native="filterText = ''"
-                                />
+                                    @keyup.esc.native="filterText = ''" />
                                 <b-input-group-append>
                                     <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
                                 </b-input-group-append>
@@ -27,10 +26,9 @@
                 ref="iso"
                 :options="isoOptions"
                 :list="buffer"
-                style="margin: 0 auto;"
-                @filter="filterOption = arguments[2]"
-            >
-                <b-card v-for="(info, index) in buffer" :key="index" ref="cards" class="m-2" style="width: 23rem;">
+                style="margin: 0 auto"
+                @filter="filterOption = arguments[2]">
+                <b-card v-for="(info, index) in buffer" :key="index" ref="cards" class="m-2" style="width: 23rem">
                     <template v-slot:header>
                         <div>
                             <b-link :href="info.url" target="_blank">
@@ -41,7 +39,7 @@
                     </template>
                     <p class="card-text" v-html="helpSummary(info.help) || info.description" />
                     <p class="card-text">
-                        <b-btn :index="index" v-b-modal="'modal-' + '-' + index">Info</b-btn>
+                        <b-btn v-b-modal="'modal-' + '-' + index" :index="index">Info</b-btn>
                         <b-modal :id="'modal-' + '-' + index" centered ok-only :static="true" :title="info.name">
                             <b>{{ info.version + " / " + info.id }}</b>
                             <p>{{ info.description }}</p>
@@ -55,8 +53,7 @@
                         @rendered="layout"
                         @show="show(index)"
                         @shown="shown(index)"
-                        @hidden="hidden(index)"
-                    />
+                        @hidden="hidden(index)" />
                 </b-card>
             </isotope>
         </div>
@@ -185,8 +182,13 @@ export default {
             const parser = new DOMParser();
             const helpDoc = parser.parseFromString(help, "text/html");
             const xpath = "//strong[text()='What it does']/../following-sibling::*";
-            const match = helpDoc.evaluate(xpath, helpDoc, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
-                .singleNodeValue;
+            const match = helpDoc.evaluate(
+                xpath,
+                helpDoc,
+                null,
+                XPathResult.FIRST_ORDERED_NODE_TYPE,
+                null
+            ).singleNodeValue;
             if (match) {
                 return match.innerHTML;
             }

@@ -55,23 +55,23 @@ def __main__():
         cur_transcript_id = None
         cur_transcript_strand = None
         cur_transcripts_blocks = []  # (start, end) for each block
-    with open(output_name, 'w') as out, open(input_name) as in_fh:
-        for i, line in enumerate(in_fh):
-            line = line.rstrip('\r\n')
-            if line and not line.startswith('#'):
+    with open(input_name) as fh, open(output_name, "w") as out:
+        for i, line in enumerate(fh):
+            line = line.rstrip("\r\n")
+            if line and not line.startswith("#"):
                 try:
                     # GFF format: chrom, source, feature, chromStart, chromEnd, score, strand, frame, attributes
-                    elems = line.split('\t')
+                    elems = line.split("\t")
                     start = str(int(elems[3]) - 1)
                     strand = elems[6]
-                    if strand not in ['+', '-']:
-                        strand = '+'
+                    if strand not in ["+", "-"]:
+                        strand = "+"
                     # Replace any spaces in the name with underscores so UCSC will not complain.
                     name = elems[2].replace(" ", "_")
 
                     if bedcols == 6:
                         # BED6 format: chrom, chromStart, chromEnd, name, score, strand
-                        out.write("{}\t{}\t{}\t{}\t0\t{}\n".format(elems[0], start, elems[4], name, strand))
+                        out.write(f"{elems[0]}\t{start}\t{elems[4]}\t{name}\t0\t{strand}\n")
                         continue
 
                     coords = (int(start), int(elems[4]))
@@ -127,7 +127,10 @@ def __main__():
             out.write(get_bed12_line(cur_transcript_chrome, cur_transcript_id, cur_transcript_strand, cur_transcripts_blocks))
     info_msg = "%i lines converted to BED.  " % (i + 1 - skipped_lines)
     if skipped_lines > 0:
-        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (skipped_lines, first_skipped_line)
+        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (
+            skipped_lines,
+            first_skipped_line,
+        )
     print(info_msg)
 
 

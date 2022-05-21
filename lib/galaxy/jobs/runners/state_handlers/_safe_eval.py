@@ -5,17 +5,54 @@ from ast import (
 )
 
 AST_NODE_TYPE_ALLOWLIST = [
-    'Expr', 'Load', 'Str', 'Num', 'BoolOp', 'Compare', 'And', 'Eq', 'NotEq',
-    'Or', 'GtE', 'LtE', 'Lt', 'Gt', 'BinOp', 'Add', 'Div', 'Sub', 'Mult', 'Mod',
-    'Pow', 'LShift', 'GShift', 'BitAnd', 'BitOr', 'BitXor', 'UnaryOp', 'Invert',
-    'Not', 'NotIn', 'In', 'Is', 'IsNot', 'List', 'Index', 'Subscript', 'Constant',
+    "Expr",
+    "Load",
+    "Str",
+    "Num",
+    "BoolOp",
+    "Compare",
+    "And",
+    "Eq",
+    "NotEq",
+    "Or",
+    "GtE",
+    "LtE",
+    "Lt",
+    "Gt",
+    "BinOp",
+    "Add",
+    "Div",
+    "Sub",
+    "Mult",
+    "Mod",
+    "Pow",
+    "LShift",
+    "GShift",
+    "BitAnd",
+    "BitOr",
+    "BitXor",
+    "UnaryOp",
+    "Invert",
+    "Not",
+    "NotIn",
+    "In",
+    "Is",
+    "IsNot",
+    "List",
+    "Index",
+    "Subscript",
+    "Constant",
     # Further checks
-    'Name', 'Call', 'Attribute',
+    "Name",
+    "Call",
+    "Attribute",
 ]
 
 
-BUILTIN_AND_MATH_FUNCTIONS = 'abs|all|any|bin|chr|cmp|complex|divmod|float|hex|int|len|long|max|min|oct|ord|pow|range|reversed|round|sorted|str|sum|type|unichr|unicode|log|exp|sqrt|ceil|floor'.split('|')
-STRING_AND_LIST_METHODS = [name for name in dir('') + dir([]) if not name.startswith('_')]
+BUILTIN_AND_MATH_FUNCTIONS = "abs|all|any|bin|chr|cmp|complex|divmod|float|hex|int|len|long|max|min|oct|ord|pow|range|reversed|round|sorted|str|sum|type|unichr|unicode|log|exp|sqrt|ceil|floor".split(
+    "|"
+)
+STRING_AND_LIST_METHODS = [name for name in dir("") + dir([]) if not name.startswith("_")]
 VALID_FUNCTIONS = BUILTIN_AND_MATH_FUNCTIONS + STRING_AND_LIST_METHODS
 
 
@@ -38,10 +75,10 @@ def _check_call(ast_node):
     # string or list function.
     ast_func = ast_node.func
     ast_func_class = ast_func.__class__.__name__
-    if ast_func_class == 'Name':
+    if ast_func_class == "Name":
         if ast_func.id not in BUILTIN_AND_MATH_FUNCTIONS:
             return False
-    elif ast_func_class == 'Attribute':
+    elif ast_func_class == "Attribute":
         if not _check_attribute(ast_func):
             return False
     else:
@@ -96,7 +133,7 @@ def _check_expression(text, allowed_variables=None):
     if not len(statements) == 1:
         return False
     expression = statements[0]
-    if expression.__class__.__name__ != 'Expr':
+    if expression.__class__.__name__ != "Expr":
         return False
 
     for ast_node in walk(expression):
@@ -108,17 +145,17 @@ def _check_expression(text, allowed_variables=None):
             return False
 
         # White-list more potentially dangerous types AST elements.
-        if ast_node_class == 'Name':
+        if ast_node_class == "Name":
             # In order to prevent loading 'exec', 'eval', etc...
             # put string restriction on names allowed.
             if not _check_name(ast_node, allowed_variables):
                 return False
         # Check only valid, white-listed functions are called.
-        elif ast_node_class == 'Call':
+        elif ast_node_class == "Call":
             if not _check_call(ast_node):
                 return False
         # Check only valid, white-listed attributes are accessed
-        elif ast_node_class == 'Attribute':
+        elif ast_node_class == "Attribute":
             if not _check_attribute(ast_node):
                 return False
 
@@ -137,5 +174,5 @@ def safe_eval(expression, variables):
     True
     """
     if not _check_expression(expression, allowed_variables=list(variables.keys())):
-        raise Exception("Invalid expression [%s], only a very simple subset of Python is allowed." % expression)
+        raise Exception(f"Invalid expression [{expression}], only a very simple subset of Python is allowed.")
     return eval(expression, globals(), variables)

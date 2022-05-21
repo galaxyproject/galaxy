@@ -157,6 +157,7 @@ class Terminal extends EventEmitter {
         }
         if (!this.mapOver.equal(val)) {
             this.mapOver = val;
+            this.node.mapOver = output_val;
             Object.values(this.node.outputTerminals).forEach((outputTerminal) => {
                 outputTerminal.setMapOver(output_val);
             });
@@ -168,6 +169,7 @@ class Terminal extends EventEmitter {
     }
     resetMapping() {
         this.mapOver = NULL_COLLECTION_TYPE_DESCRIPTION;
+        this.node.mapOver = undefined;
         this.emit("change");
     }
     resetCollectionTypeSource() {
@@ -221,6 +223,15 @@ class BaseInputTerminal extends Terminal {
         super(attr);
         this.datatypesMapper = attr.datatypesMapper;
         this.update(attr.input); // subclasses should implement this...
+    }
+    setDefaultMapOver(connector) {
+        var other_output = connector.outputHandle;
+        if (other_output) {
+            var otherCollectionType = this._otherCollectionType(other_output);
+            if (otherCollectionType.isCollection) {
+                this.setMapOver(otherCollectionType);
+            }
+        }
     }
     canAccept(other) {
         if (this._inputFilled()) {
@@ -339,6 +350,11 @@ class BaseInputTerminal extends Terminal {
                     this._isSubType(cat_outputs[other_datatype_i], thisDatatype)
                 ) {
                     return new ConnectionAcceptable(true, null);
+                } else if (!this.datatypesMapper.datatypes.includes(other_datatype)) {
+                    return new ConnectionAcceptable(
+                        false,
+                        `Effective output data type [${other_datatype}] unknown. This tool cannot be executed on this Galaxy Server at this moment, please contact the Administrator.`
+                    );
                 }
             }
         }
@@ -378,14 +394,7 @@ class InputTerminal extends BaseInputTerminal {
     }
     connect(connector) {
         super.connect(connector);
-        var other_output = connector.outputHandle;
-        if (!other_output) {
-            return;
-        }
-        var otherCollectionType = this._otherCollectionType(other_output);
-        if (otherCollectionType.isCollection) {
-            this.setMapOver(otherCollectionType);
-        }
+        this.setDefaultMapOver(connector);
     }
     attachable(other) {
         var otherCollectionType = this._otherCollectionType(other);
@@ -452,6 +461,10 @@ class InputParameterTerminal extends BaseInputTerminal {
     update(input) {
         this.type = input.type;
         this.optional = input.optional;
+    }
+    connect(connector) {
+        super.connect(connector);
+        this.setDefaultMapOver(connector);
     }
     effectiveType(parameterType) {
         return parameterType == "select" ? "text" : parameterType;
@@ -589,6 +602,9 @@ class BaseOutputTerminal extends Terminal {
         super(attr);
         this.datatypes = attr.datatypes;
         this.optional = attr.optional;
+        if (this.node.mapOver) {
+            this.setMapOver(this.node.mapOver);
+        }
     }
     get force_datatype() {
         const changeOutputDatatype = this.node.postJobActions["ChangeDatatypeAction" + this.name];

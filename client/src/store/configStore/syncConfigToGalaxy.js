@@ -9,9 +9,7 @@ export function syncConfigToGalaxy(galaxy$, store) {
     );
 
     return cfg$.subscribe(
-        (cfg) => {
-            store.commit("config/setConfigs", cfg);
-        },
+        (cfg) => store.commit("config/setConfigs", cfg),
         (err) => console.log("syncConfigToGalaxy error", err),
         () => console.log("syncConfigToGalaxy complete")
     );

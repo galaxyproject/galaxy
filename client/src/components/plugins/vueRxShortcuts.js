@@ -3,15 +3,21 @@ import { isObservable } from "rxjs";
 import { pluck } from "rxjs/operators";
 
 const defaultNext = (label) => (result) => {
-    if (label) console.log(`[${label}] next`, result);
+    if (label) {
+        console.log(`[${label}] next`, result);
+    }
 };
 
 const defaultErr = (label) => (err) => {
-    if (label) console.warn(`[${label}] error`, err);
+    if (label) {
+        console.warn(`[${label}] error`, err);
+    }
 };
 
 const defaultComplete = (label) => () => {
-    if (label) console.log(`[${label}] complete`);
+    if (label) {
+        console.log(`[${label}] complete`);
+    }
 };
 
 export const vueRxShortcuts = {

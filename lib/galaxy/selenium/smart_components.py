@@ -31,8 +31,7 @@ class SmartComponent:
 
 
 class SmartTarget:
-    """Wrap a Target with driver aware methods.
-    """
+    """Wrap a Target with driver aware methods."""
 
     def __init__(self, target, has_driver):
         self._target = target
@@ -56,6 +55,9 @@ class SmartTarget:
     def all(self):
         return self._has_driver.driver.find_elements(*self._target.element_locator)
 
+    def wait_for_element_count_of_at_least(self, n: int, **kwds):
+        self._has_driver.wait_for_element_count_of_at_least(self._target, n, **kwds)
+
     def wait_for_and_click(self, **kwds):
         return self._has_driver.wait_for_and_click(self._target, **kwds)
 
@@ -74,6 +76,10 @@ class SmartTarget:
     @property
     def is_displayed(self):
         return self._has_driver.is_displayed(self._target)
+
+    @property
+    def is_absent(self):
+        return self._has_driver.element_absent(self._target)
 
     def wait_for_absent_or_hidden(self, **kwds):
         self._has_driver.wait_for_absent_or_hidden(self._target, **kwds)
@@ -94,7 +100,8 @@ class SmartTarget:
         self._has_driver.assert_absent_or_hidden_after_transitions(self._target, **kwds)
 
     def has_class(self, class_name):
-        return class_name in self._has_driver.driver.find_element(*self._target.element_locator).get_attribute("class")
+        classes_str = self._has_driver.driver.find_element(*self._target.element_locator).get_attribute("class") or ""
+        return class_name in classes_str.split(" ")
 
-    def wait_for_and_send_keys(self, text):
-        self.wait_for_visible().send_keys(text)
+    def wait_for_and_send_keys(self, *text):
+        self.wait_for_visible().send_keys(*text)

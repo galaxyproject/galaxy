@@ -37,46 +37,30 @@ with the following command-line.
 
 ::
 
-    gunicorn 'galaxy.webapps.galaxy.fast_factory:factory()' --env GALAXY_CONFIG_FILE=config/galaxy.ini --pythonpath lib -w 4 -k uvicorn.workers.UvicornWorker
+    gunicorn 'galaxy.webapps.galaxy.fast_factory:factory()' --env GALAXY_CONFIG_FILE=config/galaxy.ini --pythonpath lib -w 4 -k uvicorn.workers.UvicornWorker --config lib/galaxy/web_stack/gunicorn_config.py
 
 """
-import os
 
 from galaxy.main_config import (
-    absolute_config_path,
-    config_is_ini,
     DEFAULT_CONFIG_SECTION,
-    DEFAULT_INI_APP,
-    find_config,
+    WebappConfigResolver,
+    WebappSetupProps,
 )
-from galaxy.web_stack import get_app_kwds
-from galaxy.webapps.galaxy.buildapp import app_factory
+from galaxy.webapps.galaxy.buildapp import app_pair
 from .fast_app import initialize_fast_app
 
 
 def factory():
-    kwds = get_app_kwds("galaxy", "galaxy")
-    config_file = kwds.get("config_file")
-    if not config_file and "GALAXY_CONFIG_FILE" in os.environ:
-        config_file = os.path.abspath(os.environ["GALAXY_CONFIG_FILE"])
-    else:
-        galaxy_root = kwds.get("galaxy_root")
-        config_file = find_config(config_file, galaxy_root)
-        config_file = absolute_config_path(config_file, galaxy_root=galaxy_root)
-
-    if "GALAXY_CONFIG_SECTION" in os.environ:
-        config_section = os.environ["GALAXY_CONFIG_SECTION"]
-    elif config_is_ini(config_file):
-        config_section = "app:%s" % DEFAULT_INI_APP
-    else:
-        config_section = DEFAULT_CONFIG_SECTION
-
-    if 'config_file' not in kwds:
-        kwds['config_file'] = config_file
-    if 'config_section' not in kwds:
-        kwds['config_section'] = config_section
-    global_conf = {}
-    if config_is_ini(config_file):
-        global_conf["__file__"] = config_file
-    gx = app_factory(global_conf=global_conf, load_app_kwds=kwds)
-    return initialize_fast_app(gx)
+    props = WebappSetupProps(
+        app_name="galaxy",
+        default_section_name=DEFAULT_CONFIG_SECTION,
+        env_config_file="GALAXY_CONFIG_FILE",
+        env_config_section="GALAXY_CONFIG_SECTION",
+        check_galaxy_root=True,
+    )
+    config_provider = WebappConfigResolver(props)
+    config = config_provider.resolve_config()
+    gx_wsgi_webapp, gx_app = app_pair(
+        global_conf=config.global_conf, load_app_kwds=config.load_app_kwds, wsgi_preflight=config.wsgi_preflight
+    )
+    return initialize_fast_app(gx_wsgi_webapp, gx_app)

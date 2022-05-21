@@ -48,6 +48,12 @@
     %if app.config.ga_code:
         ${ galaxy_client.config_google_analytics(app.config.ga_code)}
     %endif
+    %if app.config.plausible_server and app.config.plausible_domain:
+        ${ galaxy_client.config_plausible_analytics(app.config.plausible_server, app.config.plausible_domain) }
+    %endif
+    %if app.config.matomo_server:
+        ${ galaxy_client.config_matomo_analytics(app.config.matomo_server) }
+    %endif
 
     ## start main tag
     <nav id="masthead" class="navbar navbar-expand fixed-top justify-content-center navbar-dark">
@@ -132,17 +138,11 @@
                 ## Help tab.
                 <%
                     menu_options = []
-                    qa_url = app.config.get( "qa_url", None )
-                    if qa_url:
-                        menu_options = [ [_('Galaxy Q&A'), qa_url, "_blank" ] ]
                     menu_options.extend( [
-                        [_('Tool Shed Wiki'), app.config.get( "wiki_url", "https://galaxyproject.org/toolshed" ), "_blank" ],
+                        [_('About Tool Shed'), app.config.get( "wiki_url", "https://galaxyproject.org/toolshed" ), "_blank" ],
                         [_('Support'), app.config.get( "support_url", "https://galaxyproject.org/support" ), "_blank" ],
-                        [_('Search'), app.config.get( "search_url", "http://galaxyproject.org/search/" ), "_blank" ],
-                        [_('Mailing Lists'), app.config.get( "mailing_lists_url", "https://galaxyproject.org/mailing-lists" ), "_blank" ],
                         [_('Videos'), app.config.get( "screencasts_url", "https://vimeo.com/galaxyproject" ), "_blank" ],
-                        [_('Wiki'), app.config.get( "wiki_url", "http://galaxyproject.org/" ), "_blank" ],
-                        [_('How to Cite Galaxy'), app.config.get( "citation_url", "https://galaxyproject.org/citing-galaxy" ), "_blank" ]
+                        [_('How to Cite Tool Shed'), app.config.get( "citation_url", "https://galaxyproject.org/citing-galaxy" ), "_blank" ]
                     ] )
                     tab( "help", _("Help"), None, menu_options=menu_options )
                 %>

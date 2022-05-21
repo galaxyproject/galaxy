@@ -12,21 +12,21 @@ class Region:
         self.qualifiers = {}
         self.start = None
         self.end = None
-        self.strand = '+'
+        self.strand = "+"
 
     def set_coordinates_by_location(self, location):
-        location = location.strip().lower().replace('..', ',')
+        location = location.strip().lower().replace("..", ",")
         if "complement(" in location:  # if part of the sequence is on the negative strand, it all is?
-            self.strand = '-'  # default of + strand
+            self.strand = "-"  # default of + strand
         for remove_text in ["join(", "order(", "complement(", ")"]:
             location = location.replace(remove_text, "")
-        for number in location.split(','):
-            number = number.strip('\n\r\t <>,()')
+        for number in location.split(","):
+            number = number.strip("\n\r\t <>,()")
             if number:
                 if "^" in number:
                     # a single point
                     # check that this is correct for points, ie: 413/NC_005027.gbk:     misc_feature    6636286^6636287  ===> 6636285,6636286
-                    end = int(number.split('^')[0])
+                    end = int(number.split("^")[0])
                     start = end - 1
                 else:
                     end = int(number)
@@ -39,6 +39,7 @@ class Region:
 
 class GenBankFeatureParser:
     """Parses Features from Single Locus GenBank file"""
+
     def __init__(self, fh):
         self.fh = fh
         self.features = {}
@@ -48,7 +49,7 @@ class GenBankFeatureParser:
         base_indent = 0
         last_attr_name = None
         for line in fh:
-            if not in_features and line.startswith('FEATURES'):
+            if not in_features and line.startswith("FEATURES"):
                 in_features = True
                 continue
             if in_features:
@@ -71,8 +72,8 @@ class GenBankFeatureParser:
                 else:
                     # add info to last known feature
                     line = line.strip()
-                    if line.startswith('/'):
-                        fields = line[1:].split('=', 1)
+                    if line.startswith("/"):
+                        fields = line[1:].split("=", 1)
                         if len(fields) == 2:
                             last_attr_name, content = fields
                         else:
@@ -88,10 +89,14 @@ class GenBankFeatureParser:
                         self.features[last_feature_name][-1].set_coordinates_by_location(line)
                     else:
                         # continuation of multi-line qualifier content
-                        if last_feature_name.lower() in ['translation']:
-                            self.features[last_feature_name][-1].qualifiers[last_attr_name][-1] = "{}{}".format(self.features[last_feature_name][-1].qualifiers[last_attr_name][-1], line.rstrip('"'))
+                        if last_feature_name.lower() in ["translation"]:
+                            self.features[last_feature_name][-1].qualifiers[last_attr_name][-1] = "{}{}".format(
+                                self.features[last_feature_name][-1].qualifiers[last_attr_name][-1], line.rstrip('"')
+                            )
                         else:
-                            self.features[last_feature_name][-1].qualifiers[last_attr_name][-1] = "{} {}".format(self.features[last_feature_name][-1].qualifiers[last_attr_name][-1], line.rstrip('"'))
+                            self.features[last_feature_name][-1].qualifiers[last_attr_name][-1] = "{} {}".format(
+                                self.features[last_feature_name][-1].qualifiers[last_attr_name][-1], line.rstrip('"')
+                            )
 
     def get_features_by_type(self, feature_type):
         if feature_type not in self.features:
@@ -108,7 +113,7 @@ def get_bed_from_genbank(gb_file, chrom, feature_list):
         features[feature_type] = []
         for feature in genbank_parser.get_features_by_type(feature_type):
             name = ""
-            for name_tag in ['gene', 'locus_tag', 'db_xref']:
+            for name_tag in ["gene", "locus_tag", "db_xref"]:
                 if name_tag in feature.qualifiers:
                     if name:
                         name = name + ";"
@@ -116,7 +121,9 @@ def get_bed_from_genbank(gb_file, chrom, feature_list):
             if not name:
                 name = "unknown"
 
-            features[feature_type].append("{}\t{}\t{}\t{}\t{}\t{}".format(chrom, feature.start, feature.end, name, 0, feature.strand))  # append new bed field here
+            features[feature_type].append(
+                f"{chrom}\t{feature.start}\t{feature.end}\t{name}\t{0}\t{feature.strand}"
+            )  # append new bed field here
     return features
 
 
@@ -136,7 +143,14 @@ def get_bed_from_GeneMark(geneMark_filename, chr):
     for block in orfs.split("\n\n"):
         if block.startswith("List of Regions of interest"):
             break
-        best_block = {'start': 0, 'end': 0, 'strand': '+', 'avg_prob': -sys.maxsize, 'start_prob': -sys.maxsize, 'name': 'DNE'}
+        best_block = {
+            "start": 0,
+            "end": 0,
+            "strand": "+",
+            "avg_prob": -sys.maxsize,
+            "start_prob": -sys.maxsize,
+            "name": "DNE",
+        }
         ctr += 1
         ctr2 = 0
         for line in block.split("\n"):
@@ -145,7 +159,7 @@ def get_bed_from_GeneMark(geneMark_filename, chr):
             start = int(fields.pop(0)) - 1
             end = int(fields.pop(0))
             strand = fields.pop(0)
-            if strand == 'complement':
+            if strand == "complement":
                 strand = "-"
             else:
                 strand = "+"
@@ -157,9 +171,28 @@ def get_bed_from_GeneMark(geneMark_filename, chr):
             except Exception:
                 start_prob = 0
             name = "orf_" + str(ctr) + "_" + str(ctr2)
-            if avg_prob >= best_block['avg_prob'] and start_prob > best_block['start_prob']:
-                best_block = {'start': start, 'end': end, 'strand': strand, 'avg_prob': avg_prob, 'start_prob': start_prob, 'name': name}
-        regions.append(chr + "\t" + str(best_block['start']) + "\t" + str(best_block['end']) + "\t" + best_block['name'] + "\t" + str(int(best_block['avg_prob'] * 1000)) + "\t" + best_block['strand'])
+            if avg_prob >= best_block["avg_prob"] and start_prob > best_block["start_prob"]:
+                best_block = {
+                    "start": start,
+                    "end": end,
+                    "strand": strand,
+                    "avg_prob": avg_prob,
+                    "start_prob": start_prob,
+                    "name": name,
+                }
+        regions.append(
+            chr
+            + "\t"
+            + str(best_block["start"])
+            + "\t"
+            + str(best_block["end"])
+            + "\t"
+            + best_block["name"]
+            + "\t"
+            + str(int(best_block["avg_prob"] * 1000))
+            + "\t"
+            + best_block["strand"]
+        )
     return regions
 
 
@@ -214,7 +247,7 @@ def get_bed_from_glimmer3(glimmer3_filename, chr):
         else:
             strand = "+"
         start = start - 1
-        score = (float(fields.pop(0)))
+        score = float(fields.pop(0))
         if score > max_score:
             max_score = score
         if score < min_score:

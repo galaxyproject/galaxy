@@ -11,7 +11,6 @@ from ._framework import ApiTestCase
 
 
 class ToolDataApiTestCase(ApiTestCase):
-
     def test_admin_only(self):
         index_response = self._get("tool_data", admin=False)
         self._assert_status_code_is(index_response, 403)
@@ -40,7 +39,7 @@ class ToolDataApiTestCase(ApiTestCase):
         field = show_field_response.json()
         self._assert_has_keys(field, "files", "name", "fields", "fingerprint", "base_dir")
         files = field["files"]
-        assert len(files) == 2, "Length of files [%s] was not 2." % files
+        assert len(files) == 2, f"Length of files [{files}] was not 2."
 
     def test_download_field_file(self):
         show_field_response = self._get("tool_data/testalpha/fields/data1/files/entry.txt", admin=True)
@@ -53,7 +52,7 @@ class ToolDataApiTestCase(ApiTestCase):
         self._assert_status_code_is(show_response, 200)
         print(show_response.content)
         data_table = show_response.json()
-        assert data_table["columns"] == ['value', 'dbkey', 'name', 'path']
+        assert data_table["columns"] == ["value", "dbkey", "name", "path"]
 
     def test_show_unknown_raises_404(self):
         show_response = self._get("tool_data/unknown", admin=True)

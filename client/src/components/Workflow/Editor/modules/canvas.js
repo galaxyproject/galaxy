@@ -103,8 +103,11 @@ class CanvasManager {
         this.init_drag();
         // Initialize Copy & Paste events
         this.init_copy_paste();
+        this.init_scroll_zoom();
+        this.isWheeled = false;
     }
     setZoom(zoomLevel) {
+        this.isWheeled = false;
         this.zoomLevel = Math.min(Math.max(0, zoomLevel), zoomLevels.length - 1);
         this.canvasZoom = zoomLevels[this.zoomLevel];
         // Set CSS transform to appropriate zoom level
@@ -117,6 +120,41 @@ class CanvasManager {
         this._fitCanvasToNodes();
         this.drawOverview();
         return this.zoomLevel;
+    }
+    init_scroll_zoom() {
+        /*
+            The scroll_zoom event binding allows for the functionality of zooming in
+            using the mouse scroll wheel.
+        */
+        // Zooming within canvas background
+        document.getElementById("workflow-canvas").addEventListener("wheel", (e) => {
+            this.isWheeled = true;
+            e.preventDefault();
+            var zoomScale = this.canvasZoom;
+            zoomScale += e.deltaY * -0.001;
+            // // Get value within range of zoom/scale levels (0.25 - 4)
+            zoomScale = Math.min(Math.max(0.25, zoomScale), 4);
+            // Find index (zoomLevel) for the zoom value (canvasZoom)
+            let zoomIndex = 0;
+            while (zoomLevels[zoomIndex] < zoomScale) {
+                zoomIndex++;
+            }
+            // Tried to use setZoom() function but it requires zoomLevel as input
+            // i.e.: won't allow for smooth zooming (will only allow 15 levels
+            // of zoom like in ZoomControl)
+            // this.setZoom(i);
+            this.zoomLevel = zoomIndex;
+            this.canvasZoom = zoomScale;
+            // Set CSS transform to appropriate zoom level
+            this.cv.css("transform-origin", "top left");
+            this.cv.css("transform", "scale(" + this.canvasZoom + ")");
+            // Modify canvas size to account for scale
+            this.cv.css("width", `${100 / this.canvasZoom}%`);
+            this.cv.css("height", `${100 / this.canvasZoom}%`);
+            // Update canvas size
+            this._fitCanvasToNodes();
+            this.drawOverview();
+        });
     }
     move(x, y) {
         x = Math.min(x, this.cv.width() / 2);
@@ -136,9 +174,7 @@ class CanvasManager {
     init_drag() {
         var self = this;
         // Dragging within canvas background
-        this.cc.each(function () {
-            this.scroll_panel = new ScrollPanel(this);
-        });
+        this.scrollPanel = new ScrollPanel(this.cc);
         var x_adjust;
         var y_adjust;
         this.cv
@@ -220,12 +256,17 @@ class CanvasManager {
     }
     init_copy_paste() {
         /*
-            Both of these copy/paste event bindings check the active element
+            The copy/paste event bindings check the active element
             and, if it's one of the text inputs, skip the workflow copy/paste
             logic so we don't interfere with standard copy/paste functionality.
+            The copy binding also skips the node copy if text is currently highlighted.
         */
         document.addEventListener("copy", (e) => {
-            if (document.activeElement && !inputElementTypes.includes(document.activeElement.type)) {
+            if (
+                document.activeElement &&
+                !inputElementTypes.includes(document.activeElement.type) &&
+                !document.getSelection().toString()
+            ) {
                 if (this.app.activeNode && this.app.activeNode.type !== "subworkflow") {
                     e.clipboardData.setData(
                         "application/json",
@@ -233,8 +274,8 @@ class CanvasManager {
                             nodeId: this.app.activeNode.id,
                         })
                     );
+                    e.preventDefault();
                 }
-                e.preventDefault();
             }
         });
         document.addEventListener("paste", (e) => {

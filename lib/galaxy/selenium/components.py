@@ -4,6 +4,7 @@ from abc import (
     ABCMeta,
     abstractproperty,
 )
+from typing import Union
 
 from selenium.webdriver.common.by import By
 
@@ -11,7 +12,6 @@ from galaxy.util.bunch import Bunch
 
 
 class Target(metaclass=ABCMeta):
-
     @abstractproperty
     def description(self):
         """Return a plain-text description of the browser target for logging/messages."""
@@ -22,13 +22,16 @@ class Target(metaclass=ABCMeta):
 
 
 class SelectorTemplate(Target):
-
-    def __init__(self, selector, selector_type, children=None, kwds=None, with_classes=None):
+    def __init__(self, selector: str, selector_type: str, children=None, kwds=None, with_classes=None, with_data=None):
+        if selector_type == "data-description":
+            selector_type = "css"
+            selector = f'[data-description="{selector}"]'
         self._selector = selector
         self.selector_type = selector_type
         self._children = children or {}
         self.__kwds = kwds or {}
         self.with_classes = with_classes or []
+        self._with_data = with_data or {}
 
     @staticmethod
     def from_dict(raw_value, children=None):
@@ -40,7 +43,27 @@ class SelectorTemplate(Target):
 
     def with_class(self, class_):
         assert self.selector_type == "css"
-        return SelectorTemplate(self._selector, self.selector_type, kwds=self.__kwds, with_classes=self.with_classes + [class_], children=self._children)
+        return SelectorTemplate(
+            self._selector,
+            self.selector_type,
+            kwds=self.__kwds,
+            with_classes=self.with_classes + [class_],
+            with_data=self._with_data.copy(),
+            children=self._children,
+        )
+
+    def with_data(self, key, value):
+        assert self.selector_type == "css"
+        with_data = self._with_data.copy()
+        with_data[key] = value
+        return SelectorTemplate(
+            self._selector,
+            self.selector_type,
+            kwds=self.__kwds,
+            with_classes=self.with_classes,
+            with_data=with_data,
+            children=self._children,
+        )
 
     def descendant(self, has_selector):
         assert self.selector_type == "css"
@@ -49,12 +72,16 @@ class SelectorTemplate(Target):
         else:
             selector = has_selector
 
-        return SelectorTemplate(self.selector + " " + selector, self.selector_type, kwds=self.__kwds, children=self._children)
+        return SelectorTemplate(
+            f"{self.selector} {selector}", self.selector_type, kwds=self.__kwds, children=self._children
+        )
 
     def __call__(self, **kwds):
         new_kwds = self.__kwds.copy()
         new_kwds.update(**kwds)
-        return SelectorTemplate(self._selector, self.selector_type, kwds=new_kwds, with_classes=self.with_classes, children=self._children)
+        return SelectorTemplate(
+            self._selector, self.selector_type, kwds=new_kwds, with_classes=self.with_classes, children=self._children
+        )
 
     @property
     def description(self):
@@ -71,7 +98,10 @@ class SelectorTemplate(Target):
         selector = self._selector
         if self.__kwds is not None:
             selector = string.Template(selector).substitute(self.__kwds)
-        selector = selector + "".join(".%s" % c for c in self.with_classes)
+        selector = selector + "".join(f".{c}" for c in self.with_classes)
+        if self._with_data:
+            for key, value in self._with_data.items():
+                selector = selector + f'[data-{key}="{value}"]'
         return selector
 
     @property
@@ -83,7 +113,7 @@ class SelectorTemplate(Target):
         elif self.selector_type == "id":
             by = By.ID
         else:
-            raise Exception("Unknown selector type")
+            raise Exception(f"Unknown selector type {self.selector_type}")
         return (by, self.selector)
 
     @property
@@ -102,13 +132,12 @@ class SelectorTemplate(Target):
 
 
 class Label(Target):
-
     def __init__(self, text):
         self.text = text
 
     @property
     def description(self):
-        return "Link text [%s]" % self.text
+        return f"Link text [{self.text}]"
 
     @property
     def element_locator(self):
@@ -116,21 +145,22 @@ class Label(Target):
 
 
 class Text(Target):
-
     def __init__(self, text):
         self.text = text
 
     @property
     def description(self):
-        return "Text containing [%s]" % self.text
+        return f"Text containing [{self.text}]"
 
     @property
     def element_locator(self):
         return (By.PARTIAL_LINK_TEXT, self.text)
 
 
-class Component:
+HasText = Union[Label, Text]
 
+
+class Component:
     def __init__(self, name, sub_components, selectors, labels, text):
         self._name = name
         self._sub_components = sub_components
@@ -147,7 +177,7 @@ class Component:
         if "_" in self._selectors:
             return self._selectors["_"]
         else:
-            raise Exception("No _ selector for [%s]" % self)
+            raise Exception(f"No _ selector for [{self}]")
 
     @staticmethod
     def from_dict(name, raw_value):
@@ -191,9 +221,9 @@ class Component:
         elif attr in self._text:
             return self._text[attr]
         else:
-            raise AttributeError("Failed to find referenced sub-component/selector/label/text [%s]" % attr)
+            raise AttributeError(f"Failed to find referenced sub-component/selector/label/text [{attr}]")
 
     __getitem__ = __getattr__
 
     def __str__(self):
-        return "Component[%s]" % self._name
+        return f"Component[{self._name}]"

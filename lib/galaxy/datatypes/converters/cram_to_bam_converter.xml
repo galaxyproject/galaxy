@@ -2,13 +2,25 @@
     <requirements>
         <requirement type="package" version="0.15.4">pysam</requirement>
     </requirements>
-    <command><![CDATA[python $__tool_directory__/cram_to_bam.py '$input' '$output']]></command>
+    <command><![CDATA[
+python '$__tool_directory__/cram_to_bam.py' '$input' '$output'
+    ]]></command>
     <inputs>
         <param format="cram" name="input" type="data" label="Choose CRAM file"/>
     </inputs>
     <outputs>
         <data format="bam" name="output"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="cram" value="2.cram"/>
+            <output name="output" ftype="bam">
+                <assert_contents>
+                    <has_size value="57232"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
     <help>
     </help>
 </tool>

@@ -377,7 +377,11 @@ var EmbeddedTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
 });
 
 function search(str, array) {
-    for (var j = 0; j < array.length; j++) if (array[j].match(str)) return j;
+    for (var j = 0; j < array.length; j++) {
+        if (array[j].match(str)) {
+            return j;
+        }
+    }
     return -1;
 }
 
@@ -525,7 +529,9 @@ var TabularButtonTracksterView = Backbone.View.extend({
         }
 
         // check
-        if (this.col.chrom === null) return;
+        if (this.col.chrom === null) {
+            return;
+        }
 
         // get selected data line
         var row = $(e.target).parent();
@@ -603,7 +609,7 @@ export var createTabularDatasetChunkedView = (options) => {
     view.render();
 
     if (parent_elt) {
-        parent_elt.append(view.$el);
+        parent_elt.append(view.el);
         // If we're sticking this in another element, once it's appended check
         // to make sure we've filled enough space.
         // Without this, the scroll elements don't work.

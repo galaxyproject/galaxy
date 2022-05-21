@@ -1,38 +1,75 @@
 <template>
-    <tr @click="toggleExpanded">
+    <tr
+        v-b-tooltip.hover
+        :title="`click to ${action}`"
+        @mousedown="mouseIsDown = true"
+        @mousemove="mouseIsDown ? (mouseMoved = true) : (mouseMoved = false)"
+        @mouseup="toggleExpanded()">
         <td>
             {{ codeLabel }}
         </td>
-        <td v-if="expanded">
-            <pre class="code">{{ codeItem }}</pre>
-        </td>
-        <td v-else-if="codeItem">
-            <pre class="code preview">{{ codeItem }}</pre>
-            <b>(Click to expand)</b>
+        <td v-if="codeItem">
+            <b-row align-v="center">
+                <b-col cols="11">
+                    <pre :class="codeClass">{{ codeItem }}</pre>
+                </b-col>
+                <b-col class="nopadding pointer">
+                    <font-awesome-icon :icon="iconClass" />
+                </b-col>
+            </b-row>
         </td>
         <td v-else><i>empty</i></td>
     </tr>
 </template>
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
+import { faCompressAlt, faExpandAlt } from "@fortawesome/free-solid-svg-icons";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-Vue.use(BootstrapVue);
-
+library.add(faCompressAlt, faExpandAlt);
 export default {
+    components: {
+        FontAwesomeIcon,
+    },
     props: {
         codeLabel: String,
         codeItem: String,
     },
     data() {
-        return { expanded: false };
+        return {
+            mouseIsDown: false,
+            mouseMoved: false,
+            expanded: false,
+        };
+    },
+    computed: {
+        action() {
+            return this.expanded ? "collapse" : "expand";
+        },
+        codeClass() {
+            return this.expanded ? "code" : "code preview";
+        },
+        iconClass() {
+            return this.expanded ? ["fas", "compress-alt"] : ["fas", "expand-alt"];
+        },
     },
     methods: {
         toggleExpanded() {
-            if (this.codeItem) {
+            this.mouseIsDown = false;
+            if (this.codeItem && !this.mouseMoved) {
                 this.expanded = !this.expanded;
             }
         },
     },
 };
 </script>
+
+<style scoped>
+.pointer {
+    cursor: pointer;
+}
+.nopadding {
+    padding: 0;
+    margin: 0;
+}
+</style>

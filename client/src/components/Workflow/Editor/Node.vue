@@ -3,28 +3,25 @@
         :id="idString"
         :name="name"
         :node-label="label"
-        :class="{ 'workflow-node': true, 'node-on-scroll-to': scrolledTo, 'node-highlight': highlight }"
-    >
+        :class="{ 'workflow-node': true, 'node-on-scroll-to': scrolledTo, 'node-highlight': highlight }">
         <div class="node-header unselectable clearfix">
             <b-button
+                v-b-tooltip.hover
                 class="node-destroy py-0 float-right"
                 variant="primary"
                 size="sm"
                 aria-label="destroy node"
-                v-b-tooltip.hover
                 title="Remove"
-                @click="onRemove"
-            >
+                @click="onRemove">
                 <i class="fa fa-times" />
             </b-button>
             <b-button
-                :id="popoverId"
                 v-if="isEnabled"
+                :id="popoverId"
                 class="node-recommendations py-0 float-right"
                 variant="primary"
                 size="sm"
-                aria-label="tool recommendations"
-            >
+                aria-label="tool recommendations">
                 <i class="fa fa-arrow-right" />
             </b-button>
             <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
@@ -32,22 +29,25 @@
                     :get-node="getNode"
                     :get-manager="getManager"
                     :datatypes-mapper="datatypesMapper"
-                    @onCreate="onCreate"
-                />
+                    @onCreate="onCreate" />
             </b-popover>
             <b-button
                 v-if="canClone"
+                v-b-tooltip.hover
                 class="node-clone py-0 float-right"
                 variant="primary"
                 size="sm"
                 aria-label="clone node"
-                v-b-tooltip.hover
                 title="Duplicate"
-                @click="onClone"
-            >
+                @click="onClone">
                 <i class="fa fa-files-o" />
             </b-button>
             <i :class="iconClass" />
+            <span
+                v-b-tooltip.hover
+                title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."
+                >{{ stepIndex }}:
+            </span>
             <span class="node-title">{{ title }}</span>
         </div>
         <b-alert v-if="!!errors" variant="danger" show class="node-error">
@@ -63,8 +63,8 @@
                 :get-manager="getManager"
                 :datatypes-mapper="datatypesMapper"
                 @onAdd="onAddInput"
-                @onChange="onChange"
-            />
+                @onRemove="onRemoveInput"
+                @onChange="onChange" />
             <div v-if="showRule" class="rule" />
             <node-output
                 v-for="output in outputs"
@@ -73,9 +73,9 @@
                 :get-node="getNode"
                 :get-manager="getManager"
                 @onAdd="onAddOutput"
+                @onRemove="onRemoveOutput"
                 @onToggle="onToggleOutput"
-                @onChange="onChange"
-            />
+                @onChange="onChange" />
         </div>
     </div>
 </template>
@@ -92,6 +92,8 @@ import NodeOutput from "./NodeOutput";
 import { ActiveOutputs } from "./modules/outputs";
 import { attachDragging } from "./modules/dragging";
 Vue.use(BootstrapVue);
+
+const OFFSET_RANGE = 100;
 
 export default {
     components: {
@@ -144,11 +146,45 @@ export default {
             outputTerminals: {},
             errors: null,
             label: null,
+            annotation: null,
             config_form: {},
             showLoading: true,
             highlight: false,
             scrolledTo: false,
         };
+    },
+    computed: {
+        title() {
+            return this.label || this.name;
+        },
+        idString() {
+            return `wf-node-step-${this.id}`;
+        },
+        showRule() {
+            return this.inputs.length > 0 && this.outputs.length > 0;
+        },
+        iconClass() {
+            const iconType = WorkflowIcons[this.type];
+            if (iconType) {
+                return `icon fa fa-fw ${iconType}`;
+            }
+            return null;
+        },
+        popoverId() {
+            return `popover-${this.id}`;
+        },
+        canClone() {
+            return this.type != "subworkflow";
+        },
+        isEnabled() {
+            return getGalaxyInstance().config.enable_tool_recommendations;
+        },
+        isInput() {
+            return this.type == "data_input" || this.type == "data_collection_input" || this.type == "parameter_input";
+        },
+        stepIndex() {
+            return parseInt(this.id) + 1;
+        },
     },
     mounted() {
         this.canvasManager = this.getCanvasManager();
@@ -166,8 +202,10 @@ export default {
             const p = document.getElementById("canvas-viewport");
             const o = document.getElementById("canvas-container");
             if (p && o) {
-                const left = -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2;
-                const top = -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2;
+                const left =
+                    -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
+                const top =
+                    -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
                 el.style.top = `${top}px`;
                 el.style.left = `${left}px`;
             }
@@ -199,64 +237,33 @@ export default {
 
         // initialize node data
         this.$emit("onAdd", this);
-        if (this.step._complete) {
+        if (this.step.config_form) {
             this.initData(this.step);
-            this.updateData(this.step);
         } else {
             this.$emit("onUpdate", this);
         }
     },
-    computed: {
-        title() {
-            return this.label || this.name;
-        },
-        idString() {
-            return `wf-node-step-${this.id}`;
-        },
-        showRule() {
-            return this.inputs.length > 0 && this.outputs.length > 0;
-        },
-        iconClass() {
-            const iconType = WorkflowIcons[this.type];
-            if (iconType) {
-                return `icon fa fa-fw ${iconType}`;
-            }
-            return null;
-        },
-        popoverId() {
-            return `popover-${this.id}`;
-        },
-        canClone() {
-            return this.type != "subworkflow";
-        },
-        isEnabled() {
-            return getGalaxyInstance().config.enable_tool_recommendations;
-        },
-        isInput() {
-            return this.type == "data_input" || this.type == "data_collection_input" || this.type == "parameter_input";
-        },
-    },
+
     methods: {
         onChange() {
+            this.onRedraw();
             this.$emit("onChange");
         },
         onAddInput(input, terminal) {
-            const existingTerminal = this.inputTerminals[input.name];
-            if (existingTerminal) {
-                existingTerminal.update(input);
-                existingTerminal.destroyInvalidConnections();
-            } else {
-                this.inputTerminals[input.name] = terminal;
-            }
+            this.inputTerminals[input.name] = terminal;
+            this.onRedraw();
+        },
+        onRemoveInput(input) {
+            delete this.inputTerminals[input.name];
+            this.onRedraw();
         },
         onAddOutput(output, terminal) {
-            const existingTerminal = this.outputTerminals[output.name];
-            if (existingTerminal) {
-                existingTerminal.update(output);
-                existingTerminal.destroyInvalidConnections();
-            } else {
-                this.outputTerminals[output.name] = terminal;
-            }
+            this.outputTerminals[output.name] = terminal;
+            this.onRedraw();
+        },
+        onRemoveOutput(output) {
+            delete this.outputTerminals[output.name];
+            this.onRedraw();
         },
         onToggleOutput(name) {
             this.activeOutputs.toggle(name);
@@ -276,7 +283,7 @@ export default {
             Object.values(this.outputTerminals).forEach((t) => {
                 t.destroy();
             });
-            this.activeOutputs.filterOutputs({});
+            this.activeOutputs.filterOutputs([]);
             this.$emit("onRemove", this);
         },
         onRedraw() {
@@ -291,169 +298,37 @@ export default {
             return this;
         },
         setNode(data) {
-            data.workflow_outputs = data.outputs.map((o) => {
-                return {
-                    output_name: o.name,
-                    label: o.label,
-                };
-            });
             this.initData(data);
-            Vue.nextTick(() => {
-                this.updateData(data);
-                this.$emit("onActivate", this);
-            });
+            this.$emit("onChange");
+            this.$emit("onActivate", this);
         },
         setAnnotation(annotation) {
-            if (this.annotationTimeout) {
-                clearTimeout(this.annotationTimeout);
-            }
-            this.annotationTimeout = setTimeout(() => {
-                this.annotation = annotation;
-            }, 100);
+            this.annotation = annotation;
+            this.$emit("onChange");
         },
         setLabel(label) {
-            if (this.labelTimeout) {
-                clearTimeout(this.labelTimeout);
-            }
-            this.labelTimeout = setTimeout(() => {
-                this.label = label;
-            }, 100);
+            this.label = label;
+            this.$emit("onChange");
         },
         setData(data) {
-            this.config_form = data.config_form;
+            this.content_id = data.content_id;
             this.tool_state = data.tool_state;
             this.errors = data.errors;
-            this.annotation = data.annotation;
             this.tooltip = data.tooltip || "";
-            this.postJobActions = data.post_job_actions || {};
-            this.label = data.label;
-            this.uuid = data.uuid;
-        },
-        initData(data) {
-            this.setData(data);
             this.inputs = data.inputs ? data.inputs.slice() : [];
             this.outputs = data.outputs ? data.outputs.slice() : [];
+            const outputNames = this.outputs.map((output) => output.name);
             this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
-            this.$emit("onChange");
-        },
-        updateData(data) {
-            this.setData(data);
-
-            // Create a dictionary of all incoming outputs
-            const outputNames = {};
-            const outputIndex = {};
-            data.outputs.forEach((output) => {
-                const name = output.name;
-                outputNames[name] = 1;
-                outputIndex[name] = output;
-            });
-
-            // Identify unused outputs which existed previously
-            for (let i = this.outputs.length - 1; i >= 0; i--) {
-                const output = this.outputs[i];
-                const name = output.name;
-                if (!outputNames[name]) {
-                    // Remove the noodle connectors
-                    this.outputTerminals[name].connectors.forEach((x) => {
-                        if (x) {
-                            x.destroy();
-                        }
-                    });
-                    // Remove the reference to the output and output terminal
-                    delete this.outputTerminals[name];
-                    this.outputs.splice(i, 1);
-                } else {
-                    // Output exists in both sources
-                    outputNames[name] = 2;
-                    // Update existing outputs with incoming output attributes
-                    const outputIncoming = outputIndex[name];
-                    Object.entries(outputIncoming).forEach(([key, newValue]) => {
-                        Vue.set(output, key, newValue);
-                    });
-                }
-            }
-
-            // Add or update remaining outputs
-            data.outputs.forEach((output) => {
-                const terminal = this.outputTerminals[output.name];
-                if (terminal) {
-                    terminal.update(output);
-                    terminal.destroyInvalidConnections();
-                }
-                if (outputNames[output.name] == 1) {
-                    this.outputs.push(output);
-                }
-            });
-
-            // Create a list of all current input names
-            const inputNames = {};
-            const inputIndex = {};
-            data.inputs.forEach((input) => {
-                const name = input.name;
-                inputNames[name] = 1;
-                inputIndex[name] = input;
-            });
-
-            // Identify unused inputs which existed previously
-            for (let i = this.inputs.length - 1; i >= 0; i--) {
-                const name = this.inputs[i].name;
-                if (!inputNames[name] || inputIndex[name].input_type !== this.inputs[i].input_type) {
-                    this.inputTerminals[name].destroy();
-                    delete this.inputTerminals[name];
-                    this.inputs.splice(i, 1);
-                } else {
-                    inputNames[name] = 2;
-                }
-            }
-
-            // Add and update input rows
-            data.inputs.forEach((input) => {
-                const terminal = this.inputTerminals[input.name];
-                if (terminal) {
-                    terminal.update(input);
-                    terminal.destroyInvalidConnections();
-                }
-                if (inputNames[input.name] == 1) {
-                    this.inputs.push(input);
-                }
-            });
-
-            this.inputs.forEach((input) => {
-                // Update input terminal labels
-                input.label = inputIndex[input.name].label;
-            });
-
-            // removes output from list of workflow outputs
             this.activeOutputs.filterOutputs(outputNames);
-
-            // trigger legacy events
-            Vue.nextTick(() => {
-                this.onRedraw();
-            });
-
-            // emit change completion event
+            this.postJobActions = data.post_job_actions || {};
+            this.config_form = data.config_form;
+        },
+        initData(data) {
+            this.uuid = data.uuid;
+            this.annotation = data.annotation;
+            this.label = data.label;
+            this.setData(data);
             this.showLoading = false;
-            this.$emit("onChange");
-        },
-        labelOutput(outputName, label) {
-            return this.activeOutputs.labelOutput(outputName, label);
-        },
-        changeOutputDatatype(outputName, datatype) {
-            if (datatype === "__empty__") {
-                datatype = null;
-            }
-            const outputTerminal = this.outputTerminals[outputName];
-            if (datatype) {
-                this.postJobActions["ChangeDatatypeAction" + outputName] = {
-                    action_arguments: { newtype: datatype },
-                    action_type: "ChangeDatatypeAction",
-                    output_name: outputName,
-                };
-            } else {
-                delete this.postJobActions["ChangeDatatypeAction" + outputName];
-            }
-            outputTerminal.destroyInvalidConnections();
-            this.$emit("onChange");
         },
         onScrollTo() {
             this.scrolledTo = true;
@@ -473,6 +348,7 @@ export default {
         makeInactive() {
             // Keep inactive nodes stacked from most to least recently active
             // by moving element to the end of parent's node list
+            document.activeElement.blur();
             const element = this.element;
             ((p) => {
                 p.removeChild(element);
@@ -480,6 +356,9 @@ export default {
             })(element.parentNode);
             // Remove active class
             element.classList.remove("node-active");
+        },
+        offsetVaryPosition(offsetRange) {
+            return Math.floor(Math.random() * offsetRange);
         },
     },
 };

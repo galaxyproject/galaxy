@@ -10,24 +10,24 @@ log = logging.getLogger(__name__)
 
 
 class ShedToolDataTableManager:
-
     def __init__(self, app):
         self.app = app
 
-    def generate_repository_info_elem(self, tool_shed, repository_name, changeset_revision, owner,
-                                      parent_elem=None, **kwd):
+    def generate_repository_info_elem(
+        self, tool_shed, repository_name, changeset_revision, owner, parent_elem=None, **kwd
+    ):
         """Create and return an ElementTree repository info Element."""
         if parent_elem is None:
-            elem = etree.Element('tool_shed_repository')
+            elem = etree.Element("tool_shed_repository")
         else:
-            elem = etree.SubElement(parent_elem, 'tool_shed_repository')
-        tool_shed_elem = etree.SubElement(elem, 'tool_shed')
+            elem = etree.SubElement(parent_elem, "tool_shed_repository")
+        tool_shed_elem = etree.SubElement(elem, "tool_shed")
         tool_shed_elem.text = tool_shed
-        repository_name_elem = etree.SubElement(elem, 'repository_name')
+        repository_name_elem = etree.SubElement(elem, "repository_name")
         repository_name_elem.text = repository_name
-        repository_owner_elem = etree.SubElement(elem, 'repository_owner')
+        repository_owner_elem = etree.SubElement(elem, "repository_owner")
         repository_owner_elem.text = owner
-        changeset_revision_elem = etree.SubElement(elem, 'installed_changeset_revision')
+        changeset_revision_elem = etree.SubElement(elem, "installed_changeset_revision")
         changeset_revision_elem.text = changeset_revision
         # add additional values
         # TODO: enhance additional values to allow e.g. use of dict values that will recurse
@@ -37,12 +37,14 @@ class ShedToolDataTableManager:
         return elem
 
     def generate_repository_info_elem_from_repository(self, tool_shed_repository, parent_elem=None, **kwd):
-        return self.generate_repository_info_elem(tool_shed_repository.tool_shed,
-                                                  tool_shed_repository.name,
-                                                  tool_shed_repository.installed_changeset_revision,
-                                                  tool_shed_repository.owner,
-                                                  parent_elem=parent_elem,
-                                                  **kwd)
+        return self.generate_repository_info_elem(
+            tool_shed_repository.tool_shed,
+            tool_shed_repository.name,
+            tool_shed_repository.installed_changeset_revision,
+            tool_shed_repository.owner,
+            parent_elem=parent_elem,
+            **kwd,
+        )
 
     def get_tool_index_sample_files(self, sample_files):
         """
@@ -53,7 +55,7 @@ class ShedToolDataTableManager:
         for s in sample_files:
             # The problem with this is that Galaxy does not follow a standard naming
             # convention for file names.
-            if s.endswith('.loc.sample') or s.endswith('.xml.sample') or s.endswith('.txt.sample'):
+            if s.endswith(".loc.sample") or s.endswith(".xml.sample") or s.endswith(".txt.sample"):
                 tool_index_sample_files.append(str(s))
         return tool_index_sample_files
 
@@ -73,12 +75,12 @@ class ShedToolDataTableManager:
         if missing_data_table_entry:
             # The repository must contain a tool_data_table_conf.xml.sample file that includes
             # all required entries for all tools in the repository.
-            sample_tool_data_table_conf = hg_util.get_config_from_disk('tool_data_table_conf.xml.sample',
-                                                                       relative_install_dir)
+            sample_tool_data_table_conf = hg_util.get_config_from_disk(
+                "tool_data_table_conf.xml.sample", relative_install_dir
+            )
             if sample_tool_data_table_conf:
                 # Add entries to the ToolDataTableManager's in-memory data_tables dictionary.
-                error, message = self.handle_sample_tool_data_table_conf_file(sample_tool_data_table_conf,
-                                                                              persist=True)
+                error, message = self.handle_sample_tool_data_table_conf_file(sample_tool_data_table_conf, persist=True)
                 if error:
                     # TODO: Do more here than logging an exception.
                     log.debug(message)
@@ -96,11 +98,12 @@ class ShedToolDataTableManager:
         """
         error = False
         try:
-            new_table_elems, message = self.app.tool_data_tables \
-                .add_new_entries_from_config_file(config_filename=filename,
-                                                  tool_data_path=self.app.config.shed_tool_data_path,
-                                                  shed_tool_data_table_config=self.app.config.shed_tool_data_table_config,
-                                                  persist=persist)
+            new_table_elems, message = self.app.tool_data_tables.add_new_entries_from_config_file(
+                config_filename=filename,
+                tool_data_path=self.app.config.shed_tool_data_path,
+                shed_tool_data_table_config=self.app.config.shed_tool_data_table_config,
+                persist=persist,
+            )
             if message:
                 error = True
         except Exception as e:
@@ -117,23 +120,27 @@ class ShedToolDataTableManager:
         return target_dir, tool_path, relative_target_dir
 
     def install_tool_data_tables(self, tool_shed_repository, tool_index_sample_files):
-        TOOL_DATA_TABLE_FILE_NAME = 'tool_data_table_conf.xml'
-        TOOL_DATA_TABLE_FILE_SAMPLE_NAME = '%s.sample' % (TOOL_DATA_TABLE_FILE_NAME)
-        SAMPLE_SUFFIX = '.sample'
+        TOOL_DATA_TABLE_FILE_NAME = "tool_data_table_conf.xml"
+        TOOL_DATA_TABLE_FILE_SAMPLE_NAME = f"{TOOL_DATA_TABLE_FILE_NAME}.sample"
+        SAMPLE_SUFFIX = ".sample"
         SAMPLE_SUFFIX_OFFSET = -len(SAMPLE_SUFFIX)
         target_dir, tool_path, relative_target_dir = self.get_target_install_dir(tool_shed_repository)
         for sample_file in tool_index_sample_files:
             path, filename = os.path.split(sample_file)
             target_filename = filename
             if target_filename.endswith(SAMPLE_SUFFIX):
-                target_filename = target_filename[: SAMPLE_SUFFIX_OFFSET]
+                target_filename = target_filename[:SAMPLE_SUFFIX_OFFSET]
             source_file = os.path.join(tool_path, sample_file)
             # We're not currently uninstalling index files, do not overwrite existing files.
             target_path_filename = os.path.join(target_dir, target_filename)
             if not os.path.exists(target_path_filename) or target_filename == TOOL_DATA_TABLE_FILE_NAME:
                 shutil.copy2(source_file, target_path_filename)
             else:
-                log.debug("Did not copy sample file '%s' to install directory '%s' because file already exists.", filename, target_dir)
+                log.debug(
+                    "Did not copy sample file '%s' to install directory '%s' because file already exists.",
+                    filename,
+                    target_dir,
+                )
             # For provenance and to simplify introspection, let's keep the original data table sample file around.
             if filename == TOOL_DATA_TABLE_FILE_SAMPLE_NAME:
                 shutil.copy2(source_file, os.path.join(target_dir, filename))
@@ -144,21 +151,24 @@ class ShedToolDataTableManager:
             if tree:
                 for elem in tree.getroot():
                     # Append individual table elems or other elemes, but not tables elems.
-                    if elem.tag == 'tables':
+                    if elem.tag == "tables":
                         # TODO: this code need to be revised
                         for _table_elem in elems:
                             elems.append(elem)
                     else:
                         elems.append(elem)
         else:
-            log.debug("The '%s' data table file was not found, but was expected to be copied from '%s' during repository installation.",
-                      tool_data_table_conf_filename, TOOL_DATA_TABLE_FILE_SAMPLE_NAME)
+            log.debug(
+                "The '%s' data table file was not found, but was expected to be copied from '%s' during repository installation.",
+                tool_data_table_conf_filename,
+                TOOL_DATA_TABLE_FILE_SAMPLE_NAME,
+            )
         for elem in elems:
-            if elem.tag == 'table':
-                for file_elem in elem.findall('file'):
-                    path = file_elem.get('path', None)
+            if elem.tag == "table":
+                for file_elem in elem.findall("file"):
+                    path = file_elem.get("path", None)
                     if path:
-                        file_elem.set('path', os.path.normpath(os.path.join(target_dir, os.path.split(path)[1])))
+                        file_elem.set("path", os.path.normpath(os.path.join(target_dir, os.path.split(path)[1])))
                 # Store repository info in the table tag set for trace-ability.
                 self.generate_repository_info_elem_from_repository(tool_shed_repository, parent_elem=elem)
         if elems:
@@ -175,3 +185,9 @@ class ShedToolDataTableManager:
 
 # For backwards compatibility with exisiting data managers
 ToolDataTableManager = ShedToolDataTableManager
+
+
+__all__ = (
+    "ToolDataTableManager",
+    "ShedToolDataTableManager",
+)

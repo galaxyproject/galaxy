@@ -22,3 +22,8 @@ export function waitForInit(selector, cfg = {}) {
         takeUntil(timer(timeout))
     );
 }
+
+export function awaitValue(selector, cfg) {
+    const val$ = waitForInit(selector, cfg);
+    return val$.toPromise();
+}

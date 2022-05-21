@@ -1,23 +1,36 @@
 # These dependencies are only required when certain config options are set
-psycopg2-binary==2.8.4
+psycopg2-binary==2.9.1
 mysqlclient
 fluent-logger
-raven
+sentry-sdk
 pbs_python
 drmaa
 statsd
-docker
 azure-storage==0.32.0
-python-irodsclient==0.8.5
-python-ldap==3.2.0
+python-irodsclient==1.1.3
+python-ldap==3.4.0
 python-pam
 galaxycloudrunner
+pkce
 
-fs.webdavfs
-fs.dropboxfs
+# For file sources plugins
+fs.webdavfs>=0.4.2  # type: webdav
+fs.dropboxfs  # type: dropbox
+fs.sshfs  # type: ssh
+fs-s3fs  # type: s3
+s3fs  # type: s3fs
+fs.anvilfs # type: anvil
+fs.googledrivefs # type: googledrive
+fs-gcsfs # type: googlecloudstorage
+fs-onedatafs # type: onedata
+fs-basespace # type: basespace
+
+# Vault backend
+hvac
+custos-sdk
 
 # Chronos client
-chronos-python==0.38.0
+chronos-python==1.2.1
 
 # Kubernetes job runner
 pykube==0.15.0
@@ -28,9 +41,15 @@ kamaki
 watchdog
 
 # Error reporters optional modules
-python-gitlab
+python-gitlab>=2.10.0
 pygithub
 influxdb
 
 # Deep learning packages for tool recommendation
-tensorflow==2.4.0
+tensorflow==2.5.3
+
+# weasyprint has problematic requirements so make it optional (i.e. cairo)
+# xref https://github.com/galaxyproject/galaxy/pull/9651
+# Run run.sh or common_startup script with GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT=1
+# to install weasyprint as part of Galaxy's conditonal dependency instalation process.
+weasyprint
