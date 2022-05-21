@@ -1,0 +1,30 @@
+<tool id="http_test_data_zip" name="http test data zip" version="1.0.0" profile="22.01">
+    <command><![CDATA[
+        cat '$input1' > '$output'
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" format="txt" label="Input 1" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test_data_resolver value="https://zenodo.org/record/6566747/files/online_test_dir.tar.gz?download=1" checksum="md5$93129a5e362dce3cd6cd4b229ab27ccb"/>
+        <test>
+            <param name="input1" value="online_test_file.txt" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="hooray" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input1" value="online_test_file2.txt" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="booo" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
