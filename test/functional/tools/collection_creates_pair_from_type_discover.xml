@@ -1,8 +1,7 @@
 <tool id="collection_creates_pair_from_type_discover" name="collection_creates_pair_from_type" version="0.1.0">
   <command>
-    echo '$input_collection1';
-    sed 'n;d' $input1 > A.fastq;
-    sed -n 'g;n;p' $input1 > B.fastq;
+    cat '$input1' > A.fastq;
+    cat '$input1' > B.fastq;
   </command>
   <inputs>
     <param name="input1" type="data" label="Input" help="Input to be split." />
@@ -35,15 +34,18 @@
     </collection>
   </outputs>
   <tests>
+    <!-- test uses fastq files as input but uses the txt datatype for them.
+         if format_source would not work then autodetect should make the
+         outputs fastq -->
     <test>
-      <param name="input1" value="simple_lines_interleaved.txt" ftype="txt" />
-      <param name="input_multiple" value="simple_line_no_newline.txt,simple_line_x2.txt" ftype="txt" />
+      <param name="input1" value="1.fastq" ftype="txt" />
+      <param name="input_multiple" value="1.fastq,2.fastq" ftype="txt" />
       <param name="input_collection">
         <collection type="list:list">
           <element name="i1">
             <collection type="list">
-              <element name="1" value="simple_line.txt" />
-              <element name="2" value="simple_line_alternative.txt" />
+              <element name="1" value="1.fastq" ftype="txt"/>
+              <element name="2" value="2.fastq" ftype="txt" />
             </collection>
           </element>
         </collection>
@@ -51,48 +53,48 @@
       <output_collection name="paired_output" type="list">
         <element name="A.fastq" ftype="txt">
           <assert_contents>
-            <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
+            <has_text_matching expression="^@HANNIBAL_1_FC302VTAAXX:2:1:228:167$" />
           </assert_contents>
         </element>
         <element name="B.fastq" ftype="txt">
           <assert_contents>
-            <has_text_matching expression="^This is a different line of text.\nThis is a different line of text.\n$" />
+            <has_text_matching expression="^@HANNIBAL_1_FC302VTAAXX:2:1:228:167$" />
           </assert_contents>
         </element>
       </output_collection>
       <output_collection name="paired_output_discoveredext" type="list">
         <element name="A" ftype="fastq">
           <assert_contents>
-            <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
+            <has_text_matching expression="^@HANNIBAL_1_FC302VTAAXX:2:1:228:167$" />
           </assert_contents>
         </element>
         <element name="B" ftype="fastq">
           <assert_contents>
-            <has_text_matching expression="^This is a different line of text.\nThis is a different line of text.\n$" />
+            <has_text_matching expression="^@HANNIBAL_1_FC302VTAAXX:2:1:228:167$" />
           </assert_contents>
         </element>
       </output_collection>
       <output_collection name="paired_output_frommultiple" type="list">
         <element name="A.fastq" ftype="txt">
           <assert_contents>
-            <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
+            <has_text_matching expression="^@HANNIBAL_1_FC302VTAAXX:2:1:228:167$" />
           </assert_contents>
         </element>
         <element name="B.fastq" ftype="txt">
           <assert_contents>
-            <has_text_matching expression="^This is a different line of text.\nThis is a different line of text.\n$" />
+            <has_text_matching expression="^@HANNIBAL_1_FC302VTAAXX:2:1:228:167$" />
           </assert_contents>
         </element>
       </output_collection>
       <output_collection name="paired_output_fromcollection" type="list">
         <element name="A.fastq" ftype="txt">
           <assert_contents>
-            <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
+            <has_text_matching expression="^@HANNIBAL_1_FC302VTAAXX:2:1:228:167$" />
           </assert_contents>
         </element>
         <element name="B.fastq" ftype="txt">
           <assert_contents>
-            <has_text_matching expression="^This is a different line of text.\nThis is a different line of text.\n$" />
+            <has_text_matching expression="^@HANNIBAL_1_FC302VTAAXX:2:1:228:167$" />
           </assert_contents>
         </element>
       </output_collection>
