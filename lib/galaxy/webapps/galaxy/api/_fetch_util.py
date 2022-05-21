@@ -185,6 +185,7 @@ def validate_and_normalize_targets(trans, payload):
             item["in_place"] = run_as_real_user
         elif src == "files":
             item["in_place"] = run_as_real_user
+            item["purge_source"] = True
 
         # Small disagreement with traditional uploads - we purge less by default since whether purging
         # happens varies based on upload options in non-obvious ways.
