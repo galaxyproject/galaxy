@@ -31,18 +31,28 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
     the same number of columns as the number of indeces asked for (even if they
     are filled with None).
     """
+
     settings = {
-        'indeces': 'list:int',
-        'column_count': 'int',
-        'column_types': 'list:str',
-        'parse_columns': 'bool',
-        'deliminator': 'str',
-        'filters': 'list:str'
+        "indeces": "list:int",
+        "column_count": "int",
+        "column_types": "list:str",
+        "parse_columns": "bool",
+        "deliminator": "str",
+        "filters": "list:str",
     }
 
-    def __init__(self, source, indeces=None,
-                 column_count=None, column_types=None, parsers=None, parse_columns=True,
-                 deliminator='\t', filters=None, **kwargs):
+    def __init__(
+        self,
+        source,
+        indeces=None,
+        column_count=None,
+        column_types=None,
+        parsers=None,
+        parse_columns=True,
+        deliminator="\t",
+        filters=None,
+        **kwargs,
+    ):
         """
 
         :param indeces: a list of indeces of columns to gather from each row
@@ -114,7 +124,7 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
                 self.column_filters.append(parsed)
 
     def parse_filter(self, filter_param_str):
-        split = filter_param_str.split('-', 2)
+        split = filter_param_str.split("-", 2)
         if not len(split) >= 3:
             return None
         column, op, val = split
@@ -123,11 +133,11 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         column = int(column)
         if column > len(self.column_types):
             return None
-        if self.column_types[column] in ('float', 'int'):
+        if self.column_types[column] in ("float", "int"):
             return self.create_numeric_filter(column, op, val)
-        if self.column_types[column] in ('str'):
+        if self.column_types[column] in ("str"):
             return self.create_string_filter(column, op, val)
-        if self.column_types[column] in ('list'):
+        if self.column_types[column] in ("list"):
             return self.create_list_filter(column, op, val)
         return None
 
@@ -153,17 +163,17 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
             val = float(val)
         except ValueError:
             return None
-        if 'lt' == op:
+        if "lt" == op:
             return lambda d: d[column] < val
-        elif 'le' == op:
+        elif "le" == op:
             return lambda d: d[column] <= val
-        elif 'eq' == op:
+        elif "eq" == op:
             return lambda d: d[column] == val
-        elif 'ne' == op:
+        elif "ne" == op:
             return lambda d: d[column] != val
-        elif 'ge' == op:
+        elif "ge" == op:
             return lambda d: d[column] >= val
-        elif 'gt' == op:
+        elif "gt" == op:
             return lambda d: d[column] > val
         return None
 
@@ -180,11 +190,11 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         - has: the column contains the substring `val`
         - re: the column matches the regular expression in `val`
         """
-        if 'eq' == op:
+        if "eq" == op:
             return lambda d: d[column] == val
-        elif 'has' == op:
+        elif "has" == op:
             return lambda d: val in d[column]
-        elif 're' == op:
+        elif "re" == op:
             val = unquote_plus(val)
             val = re.compile(val)
             return lambda d: val.match(d[column]) is not None
@@ -202,10 +212,10 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         - eq: the list `val` exactly matches the list in the column
         - has: the list in the column contains the sublist `val`
         """
-        if 'eq' == op:
-            val = self.parse_value(val, 'list')
+        if "eq" == op:
+            val = self.parse_value(val, "list")
             return lambda d: d[column] == val
-        elif 'has' == op:
+        elif "has" == op:
             return lambda d: val in d[column]
         return None
 
@@ -223,10 +233,9 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         # TODO: move to module level (or datatypes, util)
         return {
             # str is default and not needed here
-            'int': int,
-            'float': float,
-            'bool': bool,
-
+            "int": int,
+            "float": float,
+            "bool": bool,
             # unfortunately, 'list' is used in dataset metadata both for
             #   query style maps (9th col gff) AND comma-sep strings.
             #   (disabled for now)
@@ -235,12 +244,9 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
             # i don't like how urlparses does sub-lists...
             # 'querystr' : lambda v: dict([ ( p.split( '=', 1 ) if '=' in p else ( p, True ) )
             #                              for p in v.split( ';', 1 ) ])
-
             # 'scifloat': #floating point which may be in scientific notation
-
             # always with the 1 base, biologists?
             # 'int1'  : ( lambda i: int( i ) - 1 ),
-
             # 'gffval': string or '.' for None
             # 'gffint': # int or '.' for None
             # 'gffphase': # 0, 1, 2, or '.' for None
@@ -290,7 +296,7 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
             or `value` if no `type` found in `parsers`
             or `None` if there was a parser error (ValueError)
         """
-        if type == 'str' or type is None:
+        if type == "str" or type is None:
             return val
         try:
             return self.parsers[type](val)
@@ -332,8 +338,9 @@ class DictDataProvider(ColumnarDataProvider):
     .. note:: The subclass constructors are passed kwargs - so their
         params (limit, offset, etc.) are also applicable here.
     """
+
     settings = {
-        'column_names': 'list:str',
+        "column_names": "list:str",
     }
 
     def __init__(self, source, column_names=None, **kwargs):

@@ -9,17 +9,15 @@ HANDLER_TEMPLATE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "handler_templ
 
 
 class WritesConfig:
-
     def _with_handlers_config(self, assign_with=None, default=None, handlers=None):
         handlers = handlers or []
         template = {
-            'assign_with': ' assign_with="%s"' % assign_with if assign_with is not None else '',
-            'default': ' default="%s"' % default if default is not None else '',
-            'handlers': '\n'.join(
-                '<handler id="{id}"{tags}/>'.format(
-                    id=x['id'],
-                    tags=' tags="%s"' % x['tags'] if 'tags' in x else ''
-                ) for x in handlers),
+            "assign_with": ' assign_with="%s"' % assign_with if assign_with is not None else "",
+            "default": ' default="%s"' % default if default is not None else "",
+            "handlers": "\n".join(
+                '<handler id="{id}"{tags}/>'.format(id=x["id"], tags=' tags="%s"' % x["tags"] if "tags" in x else "")
+                for x in handlers
+            ),
         }
         self.__write_config_from(HANDLER_TEMPLATE_JOB_CONFIG_FILE, template=template)
 
@@ -46,35 +44,32 @@ class BaseHandlerAssignmentMethodIntegrationTestCase(integration_util.Integratio
 
 
 class DBPreassignHandlerAssignmentMethodIntegrationTestCase(BaseHandlerAssignmentMethodIntegrationTestCase):
-
     def setUp(self):
-        self._with_handlers_config(assign_with='db-preassign', handlers=[{'id': 'main'}])
+        self._with_handlers_config(assign_with="db-preassign", handlers=[{"id": "main"}])
         super().setUp()
 
     def test_handler_assignment(self):
-        tool_id = 'config_vars'
+        tool_id = "config_vars"
         self._run_tool_test(tool_id)
 
 
 class DBTransactionIsolationHandlerAssignmentMethodIntegrationTestCase(BaseHandlerAssignmentMethodIntegrationTestCase):
-
     def setUp(self):
-        self._with_handlers_config(assign_with='db-transaction-isolation', handlers=[{'id': 'main'}])
+        self._with_handlers_config(assign_with="db-transaction-isolation", handlers=[{"id": "main"}])
         super().setUp()
 
     def test_handler_assignment(self):
         self._skip_unless_postgres()
-        tool_id = 'config_vars'
+        tool_id = "config_vars"
         self._run_tool_test(tool_id)
 
 
 class DBSkipLockedHandlerAssignmentMethodIntegrationTestCase(BaseHandlerAssignmentMethodIntegrationTestCase):
-
     def setUp(self):
-        self._with_handlers_config(assign_with='db-skip-locked', handlers=[{'id': 'main'}])
+        self._with_handlers_config(assign_with="db-skip-locked", handlers=[{"id": "main"}])
         super().setUp()
 
     def test_handler_assignment(self):
         self._skip_unless_postgres()
-        tool_id = 'config_vars'
+        tool_id = "config_vars"
         self._run_tool_test(tool_id)

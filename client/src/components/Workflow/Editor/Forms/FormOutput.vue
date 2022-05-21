@@ -143,9 +143,6 @@ export default {
             renameHelpUrl: "https://galaxyproject.org/learn/advanced-workflow/variables/",
         };
     },
-    created() {
-        this.setExpanded();
-    },
     computed: {
         outputTitle() {
             const title = this.outputLabel || this.outputName;
@@ -190,6 +187,9 @@ export default {
             }
             return `${helpSection}<ul>${helpLabels}</ul>`;
         },
+    },
+    created() {
+        this.setExpanded();
     },
     methods: {
         setExpanded() {

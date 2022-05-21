@@ -1,5 +1,6 @@
 <template>
     <div>
+        <b-button variant="link" @click="onGoBack">Go back to Libraries</b-button>
         <PermissionsHeader v-if="library" :name="library.name" />
         <h2 class="text-center">Library permissions</h2>
         <PermissionsInputField
@@ -11,16 +12,6 @@
             alert="User with <strong>any</strong> of these roles can access this library. If there are no access roles set on the library it is considered <strong>unrestricted</strong>."
             title="Roles that can access the library"
             @input="setUserPermissionsPreferences" />
-        <PermissionsInputField
-            v-if="manage_library_role_list"
-            :id="library_id"
-            :permission_type="manage_type"
-            :initial_value="manage_library_role_list"
-            :api-root-url="apiRootUrl"
-            alert="User with <strong>any</strong> of these roles can manage permissions on this library (includes giving access)."
-            title="Roles that can manage permissions on this library"
-            @input="setUserPermissionsPreferences" />
-
         <PermissionsInputField
             v-if="add_library_item_role_list"
             :id="library_id"
@@ -63,28 +54,26 @@ Vue.use(BootstrapVue);
 initPermissionsIcons();
 
 export default {
+    components: {
+        PermissionsHeader,
+        PermissionsInputField,
+        FontAwesomeIcon,
+    },
     props: {
         library_id: {
             type: String,
             required: true,
         },
     },
-    components: {
-        PermissionsHeader,
-        PermissionsInputField,
-        FontAwesomeIcon,
-    },
     data() {
         return {
             permissions: undefined,
             library: undefined,
             add_library_item_role_list: undefined,
-            manage_library_role_list: undefined,
             modify_library_role_list: undefined,
             access_library_role_list: undefined,
             apiRootUrl: `${getAppRoot()}api/libraries`,
             add_type: "add_library_item_role_list",
-            manage_type: "manage_library_role_list",
             modify_type: "modify_library_role_list",
             access_type: "access_library_role_list",
         };
@@ -95,7 +84,6 @@ export default {
         this.services.getLibraryPermissions(this.library_id).then((fetched_permissions) => {
             console.log("fetched_permissions", fetched_permissions);
             this.add_library_item_role_list = extractRoles(fetched_permissions.add_library_item_role_list);
-            this.manage_library_role_list = extractRoles(fetched_permissions.manage_library_role_list);
             this.modify_library_role_list = extractRoles(fetched_permissions.modify_library_role_list);
             this.access_library_role_list = extractRoles(fetched_permissions.access_library_role_list);
         });
@@ -114,7 +102,6 @@ export default {
                 this.library_id,
                 [
                     { "add_ids[]": this.add_library_item_role_list },
-                    { "manage_ids[]": this.manage_library_role_list },
                     { "modify_ids[]": this.modify_library_role_list },
                     { "access_ids[]": this.access_library_role_list },
                 ],
@@ -127,6 +114,9 @@ export default {
                     console.error(error);
                 }
             );
+        },
+        onGoBack() {
+            this.$router.go(-1);
         },
     },
 };

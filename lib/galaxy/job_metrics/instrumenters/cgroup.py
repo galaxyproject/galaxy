@@ -2,8 +2,16 @@
 import logging
 import numbers
 from collections import namedtuple
+from typing import (
+    Any,
+    Dict,
+    List,
+)
 
-from galaxy.util import asbool, nice_size
+from galaxy.util import (
+    asbool,
+    nice_size,
+)
 from . import InstrumentPlugin
 from .. import formatting
 
@@ -18,12 +26,12 @@ TITLES = {
     "memory.failcnt": "Failed to allocate memory count",
     "memory.oom_control.oom_kill_disable": "OOM Control enabled",
     "memory.oom_control.under_oom": "Was OOM Killer active?",
-    "cpuacct.usage": "CPU Time"
+    "cpuacct.usage": "CPU Time",
 }
 CONVERSION = {
     "memory.oom_control.oom_kill_disable": lambda x: "No" if x == 1 else "Yes",
     "memory.oom_control.under_oom": lambda x: "Yes" if x == 1 else "No",
-    "cpuacct.usage": lambda x: formatting.seconds_to_str(x / 10**9)  # convert nanoseconds
+    "cpuacct.usage": lambda x: formatting.seconds_to_str(x / 10**9),  # convert nanoseconds
 }
 CPU_USAGE_TEMPLATE = r"""
 if [ -e "/proc/$$/cgroup" -a -d "{cgroup_mount}" ]; then
@@ -37,7 +45,9 @@ if [ -e "/proc/$$/cgroup" -a -d "{cgroup_mount}" ]; then
         fi;
     done;
 fi
-""".replace("\n", " ").strip()
+""".replace(
+    "\n", " "
+).strip()
 MEMORY_USAGE_TEMPLATE = """
 if [ -e "/proc/$$/cgroup" -a -d "{cgroup_mount}" ]; then
     cgroup_path=$(cat "/proc/$$/cgroup" | awk -F':' '$2=="memory"{{print $3}}');
@@ -48,14 +58,15 @@ if [ -e "/proc/$$/cgroup" -a -d "{cgroup_mount}" ]; then
         echo "__$(basename $f)__" >> {metrics}; cat "$f" >> {metrics} 2>/dev/null;
     done;
 fi
-""".replace("\n", " ").strip()
+""".replace(
+    "\n", " "
+).strip()
 
 
 Metric = namedtuple("Metric", ("key", "subkey", "value"))
 
 
 class CgroupPluginFormatter(formatting.JobMetricFormatter):
-
     def format(self, key, value):
         title = TITLES.get(key, key)
         if key in CONVERSION:
@@ -65,14 +76,14 @@ class CgroupPluginFormatter(formatting.JobMetricFormatter):
                 return title, nice_size(value)
             except ValueError:
                 pass
-        elif isinstance(value, numbers.Number) and value == int(value):
+        elif isinstance(value, (numbers.Integral, numbers.Real)) and value == int(value):
             value = int(value)
         return title, value
 
 
 class CgroupPlugin(InstrumentPlugin):
-    """ Plugin that collects memory and cpu utilization from within a cgroup.
-    """
+    """Plugin that collects memory and cpu utilization from within a cgroup."""
+
     plugin_type = "cgroup"
     formatter = CgroupPluginFormatter()
 
@@ -83,31 +94,35 @@ class CgroupPlugin(InstrumentPlugin):
         if params_str:
             params = [v.strip() for v in params_str.split(",")]
         else:
-            params = TITLES.keys()
+            params = list(TITLES.keys())
         self.params = params
 
-    def post_execute_instrument(self, job_directory):
-        commands = []
+    def post_execute_instrument(self, job_directory: str) -> List[str]:
+        commands: List[str] = []
         commands.append(self.__record_cgroup_cpu_usage(job_directory))
         commands.append(self.__record_cgroup_memory_usage(job_directory))
         return commands
 
-    def job_properties(self, job_id, job_directory):
+    def job_properties(self, job_id, job_directory: str) -> Dict[str, Any]:
         metrics = self.__read_metrics(self.__cgroup_metrics_file(job_directory))
         return metrics
 
-    def __record_cgroup_cpu_usage(self, job_directory):
+    def __record_cgroup_cpu_usage(self, job_directory: str) -> str:
         # comounted cgroups (which cpu and cpuacct are on the supported Linux distros) can appear in any order (cpu,cpuacct or cpuacct,cpu)
-        return CPU_USAGE_TEMPLATE.format(metrics=self.__cgroup_metrics_file(job_directory), cgroup_mount=self.cgroup_mount)
+        return CPU_USAGE_TEMPLATE.format(
+            metrics=self.__cgroup_metrics_file(job_directory), cgroup_mount=self.cgroup_mount
+        )
 
-    def __record_cgroup_memory_usage(self, job_directory):
-        return MEMORY_USAGE_TEMPLATE.format(metrics=self.__cgroup_metrics_file(job_directory), cgroup_mount=self.cgroup_mount)
+    def __record_cgroup_memory_usage(self, job_directory: str) -> str:
+        return MEMORY_USAGE_TEMPLATE.format(
+            metrics=self.__cgroup_metrics_file(job_directory), cgroup_mount=self.cgroup_mount
+        )
 
     def __cgroup_metrics_file(self, job_directory):
         return self._instrument_file_path(job_directory, "_metrics")
 
     def __read_metrics(self, path):
-        metrics = {}
+        metrics: Dict[str, str] = {}
         key = None
         with open(path) as infile:
             for line in infile:
@@ -126,7 +141,7 @@ class CgroupPlugin(InstrumentPlugin):
             metrics[metric.subkey] = metric.value
 
     def __read_key_value(self, line, key):
-        if line.startswith('__') and line.endswith('__'):
+        if line.startswith("__") and line.endswith("__"):
             # line is the beginning of a new param
             key = line[2:][:-2]
             return (None, key)
@@ -151,4 +166,4 @@ class CgroupPlugin(InstrumentPlugin):
             return value
 
 
-__all__ = ('CgroupPlugin', )
+__all__ = ("CgroupPlugin",)

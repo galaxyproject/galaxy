@@ -224,6 +224,15 @@ class BaseInputTerminal extends Terminal {
         this.datatypesMapper = attr.datatypesMapper;
         this.update(attr.input); // subclasses should implement this...
     }
+    setDefaultMapOver(connector) {
+        var other_output = connector.outputHandle;
+        if (other_output) {
+            var otherCollectionType = this._otherCollectionType(other_output);
+            if (otherCollectionType.isCollection) {
+                this.setMapOver(otherCollectionType);
+            }
+        }
+    }
     canAccept(other) {
         if (this._inputFilled()) {
             return new ConnectionAcceptable(
@@ -385,14 +394,7 @@ class InputTerminal extends BaseInputTerminal {
     }
     connect(connector) {
         super.connect(connector);
-        var other_output = connector.outputHandle;
-        if (!other_output) {
-            return;
-        }
-        var otherCollectionType = this._otherCollectionType(other_output);
-        if (otherCollectionType.isCollection) {
-            this.setMapOver(otherCollectionType);
-        }
+        this.setDefaultMapOver(connector);
     }
     attachable(other) {
         var otherCollectionType = this._otherCollectionType(other);
@@ -459,6 +461,10 @@ class InputParameterTerminal extends BaseInputTerminal {
     update(input) {
         this.type = input.type;
         this.optional = input.optional;
+    }
+    connect(connector) {
+        super.connect(connector);
+        this.setDefaultMapOver(connector);
     }
     effectiveType(parameterType) {
         return parameterType == "select" ? "text" : parameterType;

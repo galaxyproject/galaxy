@@ -13,19 +13,15 @@ from galaxy.model import (
     WorkflowStep,
     WorkflowStepConnection,
 )
-from galaxy.workflow.refactor.schema import (
-    RefactorActionExecutionMessageTypeEnum,
-)
-from galaxy_test.base.populators import (
-    WorkflowPopulator,
-)
+from galaxy.workflow.refactor.schema import RefactorActionExecutionMessageTypeEnum
+from galaxy_test.base.populators import WorkflowPopulator
+from galaxy_test.base.uses_shed import UsesShed
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_NESTED_WITH_MULTIPLE_VERSIONS_TOOL,
 )
 from galaxy_test.driver import integration_util
-
 
 REFACTORING_SIMPLE_TEST = """
 class: GalaxyWorkflow
@@ -42,7 +38,7 @@ steps:
 """
 
 
-class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCase):
+class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCase, UsesShed):
 
     framework_tool_and_types = True
 
@@ -78,9 +74,7 @@ class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCas
         assert self._latest_workflow.creator_metadata[0]["class"] == "Person"
         assert self._latest_workflow.creator_metadata[0]["name"] == "Mary"
 
-        actions = [
-            {"action_type": "update_report", "report": {"markdown": "my report..."}}
-        ]
+        actions = [{"action_type": "update_report", "report": {"markdown": "my report..."}}]
         self._refactor(actions)
         assert self._latest_workflow.reports_config["markdown"] == "my report..."
 
@@ -91,17 +85,15 @@ class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCas
         self._refactor(actions)
         assert self._latest_workflow.step_by_index(0).label == "new_label"
 
-        actions = [
-            {"action_type": "update_step_position", "step": {"order_index": 0}, "position": {"left": 3, "top": 5}},
-        ]
-        self._refactor(actions)
-        assert self._latest_workflow.step_by_index(0).label == "new_label"
-        assert self._latest_workflow.step_by_index(0).position["left"] == 3
-        assert self._latest_workflow.step_by_index(0).position["top"] == 5
-
         # Build raw steps...
         actions = [
-            {"action_type": "add_step", "type": "parameter_input", "label": "new_param", "tool_state": {"parameter_type": "text"}, "position": {"left": 10, "top": 50}},
+            {
+                "action_type": "add_step",
+                "type": "parameter_input",
+                "label": "new_param",
+                "tool_state": {"parameter_type": "text"},
+                "position": {"left": 10, "top": 50},
+            },
         ]
         self._refactor(actions)
         assert self._latest_workflow.step_by_label("new_param").label == "new_param"
@@ -109,9 +101,28 @@ class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCas
         assert self._latest_workflow.step_by_label("new_param").position["left"] == 10
         assert self._latest_workflow.step_by_label("new_param").position["top"] == 50
 
+        # update new_param positions
+        actions = [
+            {
+                "action_type": "update_step_position",
+                "step": {"label": "new_param"},
+                "position_shift": {"left": 3, "top": 5},
+            },
+        ]
+        self._refactor(actions)
+        assert self._latest_workflow.step_by_index(1).label == "new_param"
+        assert self._latest_workflow.step_by_index(1).position["left"] == 13
+        assert self._latest_workflow.step_by_index(1).position["top"] == 55
+
         # Cleaner syntax for defining inputs...
         actions = [
-            {"action_type": "add_input", "type": "text", "label": "new_param2", "optional": True, "position": {"top": 1, "left": 2}},
+            {
+                "action_type": "add_input",
+                "type": "text",
+                "label": "new_param2",
+                "optional": True,
+                "position": {"top": 1, "left": 2},
+            },
         ]
         self._refactor(actions)
         assert self._latest_workflow.step_by_label("new_param2").label == "new_param2"
@@ -203,14 +214,18 @@ class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCas
         assert creator["class"] == "Person"
         assert creator["name"] == "Mary"
 
-        actions = [
-            {"action_type": "update_report", "report": {"markdown": "my report..."}}
-        ]
+        actions = [{"action_type": "update_report", "report": {"markdown": "my report..."}}]
         response = self._dry_run(actions)
         assert response.workflow["report"]["markdown"] == "my report..."
 
         actions = [
-            {"action_type": "add_step", "type": "parameter_input", "label": "new_param", "tool_state": {"parameter_type": "text"}, "position": {"left": 10, "top": 50}},
+            {
+                "action_type": "add_step",
+                "type": "parameter_input",
+                "label": "new_param",
+                "tool_state": {"parameter_type": "text"},
+                "position": {"left": 10, "top": 50},
+            },
         ]
         response = self._dry_run(actions)
         workflow_dict = response.workflow
@@ -243,7 +258,7 @@ class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCas
         num_lines = random_lines_state["num_lines"]
         assert isinstance(num_lines, dict)
         assert "__class__" in num_lines
-        assert num_lines["__class__"] == 'ConnectedValue'
+        assert num_lines["__class__"] == "ConnectedValue"
         assert "seed_source" in random_lines_state
         seed_source = random_lines_state["seed_source"]
         assert isinstance(seed_source, dict)
@@ -251,7 +266,7 @@ class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCas
         seed = seed_source["seed"]
         assert isinstance(seed, dict)
         assert "__class__" in seed
-        assert seed["__class__"] == 'ConnectedValue'
+        assert seed["__class__"] == "ConnectedValue"
 
         # cannot handle mixed, incompatible types on the inputs though
         wf = self.workflow_populator.load_workflow_from_resource("test_workflow_randomlines_legacy_params_mixed_types")
@@ -271,7 +286,8 @@ class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCas
         # test parameters used in PJA without being used in tool state.
         # These will work fine with the simplified workflow UI, but should probably
         # be formalized and assigned a unique label and informative annotation.
-        self.workflow_populator.upload_yaml_workflow("""
+        self.workflow_populator.upload_yaml_workflow(
+            """
 class: GalaxyWorkflow
 inputs:
   test_input: data
@@ -283,7 +299,8 @@ steps:
     outputs:
       out_file1:
         rename: "${pja_only_param} name"
-""")
+"""
+        )
         actions = [
             {"action_type": "extract_untyped_parameter", "name": "pja_only_param"},
         ]
@@ -292,7 +309,8 @@ steps:
 
     def test_refactoring_legacy_parameters_without_tool_state_dry_run(self):
         # same as above but dry run...
-        self.workflow_populator.upload_yaml_workflow("""
+        self.workflow_populator.upload_yaml_workflow(
+            """
 class: GalaxyWorkflow
 inputs:
   test_input: data
@@ -304,7 +322,8 @@ steps:
     outputs:
       out_file1:
         rename: "${pja_only_param} name"
-""")
+"""
+        )
         actions = [
             {"action_type": "extract_untyped_parameter", "name": "pja_only_param"},
         ]
@@ -316,7 +335,8 @@ steps:
 
     def test_refactoring_legacy_parameters_without_tool_state_relabel(self):
         # same thing as above, but apply relabeling and ensure PJA gets updated.
-        self.workflow_populator.upload_yaml_workflow("""
+        self.workflow_populator.upload_yaml_workflow(
+            """
 class: GalaxyWorkflow
 inputs:
   test_input: data
@@ -328,7 +348,8 @@ steps:
     outputs:
       out_file1:
         rename: "${pja_only_param} name"
-""")
+"""
+        )
         actions = [
             {"action_type": "extract_untyped_parameter", "name": "pja_only_param", "label": "new_label"},
         ]
@@ -482,7 +503,8 @@ steps:
         assert message.input_name == "num_lines"
 
     def test_tool_version_upgrade_no_state_change(self):
-        self.workflow_populator.upload_yaml_workflow("""
+        self.workflow_populator.upload_yaml_workflow(
+            """
 class: GalaxyWorkflow
 steps:
   the_step:
@@ -490,7 +512,8 @@ steps:
     tool_version: '0.1'
     state:
       inttest: 0
-""")
+"""
+        )
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
         actions = [
             {"action_type": "upgrade_tool", "step": {"label": "the_step"}},
@@ -504,7 +527,8 @@ steps:
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.2"
 
     def test_tool_version_upgrade_state_added(self):
-        self.workflow_populator.upload_yaml_workflow("""
+        self.workflow_populator.upload_yaml_workflow(
+            """
 class: GalaxyWorkflow
 steps:
   the_step:
@@ -512,7 +536,8 @@ steps:
     tool_version: '0.1'
     state:
       inttest: 0
-""")
+"""
+        )
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
         actions = [
             {"action_type": "upgrade_tool", "step": {"label": "the_step"}, "tool_version": "0.2"},
@@ -536,11 +561,7 @@ steps:
         nested_stored_workflow = self._recent_stored_workflow(2)
         assert len(nested_stored_workflow.workflows) == 1
 
-        self._increment_nested_workflow_version(
-            nested_stored_workflow,
-            num_lines_from="1",
-            num_lines_to="2"
-        )
+        self._increment_nested_workflow_version(nested_stored_workflow, num_lines_from="1", num_lines_to="2")
         self._app.model.session.expunge(nested_stored_workflow)
         # ensure subworkflow updated properly...
         nested_stored_workflow = self._recent_stored_workflow(2)
@@ -574,23 +595,19 @@ steps:
         nested_stored_workflow = self._recent_stored_workflow(2)
 
         # create two versions so we can test jumping to the middle one...
-        self._increment_nested_workflow_version(
-            nested_stored_workflow,
-            num_lines_from="1",
-            num_lines_to="20"
-        )
-        self._increment_nested_workflow_version(
-            nested_stored_workflow,
-            num_lines_from="20",
-            num_lines_to="30"
-        )
+        self._increment_nested_workflow_version(nested_stored_workflow, num_lines_from="1", num_lines_to="20")
+        self._increment_nested_workflow_version(nested_stored_workflow, num_lines_from="20", num_lines_to="30")
         self._app.model.session.expunge(nested_stored_workflow)
         # ensure subworkflow updated properly...
         nested_stored_workflow = self._recent_stored_workflow(2)
         assert len(nested_stored_workflow.workflows) == 3
         middle_workflow_id = self._app.security.encode_id(nested_stored_workflow.workflows[1].id)
         actions = [
-            {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}, "content_id": middle_workflow_id},
+            {
+                "action_type": "upgrade_subworkflow",
+                "step": {"label": "nested_workflow"},
+                "content_id": middle_workflow_id,
+            },
         ]
         action_executions = self._dry_run(actions).action_executions
         assert len(action_executions) == 1
@@ -693,17 +710,15 @@ steps:
         assert message.output_label == "outer_output"
 
     def test_upgrade_all_steps(self):
+        self.install_repository("iuc", "compose_text_param", "feb3acba1e0a")  # 0.1.0
+        self.install_repository("iuc", "compose_text_param", "e188c9826e0f")  # 0.1.1
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_WITH_MULTIPLE_VERSIONS_TOOL)
         nested_stored_workflow = self._recent_stored_workflow(2)
         assert self._latest_workflow.step_by_label("tool_update_step").tool_version == "0.1"
         updated_nested_step = nested_stored_workflow.latest_workflow.step_by_label("random_lines")
         assert updated_nested_step.tool_inputs["num_lines"] == "1"
 
-        self._increment_nested_workflow_version(
-            nested_stored_workflow,
-            num_lines_from="1",
-            num_lines_to="2"
-        )
+        self._increment_nested_workflow_version(nested_stored_workflow, num_lines_from="1", num_lines_to="2")
         self._app.model.session.expunge(nested_stored_workflow)
         # ensure subworkflow updated properly...
         nested_stored_workflow = self._recent_stored_workflow(2)
@@ -716,13 +731,18 @@ steps:
         nested_stored_workflow = self._recent_stored_workflow(2)
         updated_nested_step = nested_stored_workflow.latest_workflow.step_by_label("random_lines")
         assert updated_nested_step.tool_inputs["num_lines"] == "2"
+        assert self._latest_workflow.step_by_label("compose_text_param").tool_version == "0.1.1"
+        assert (
+            self._latest_workflow.step_by_label("compose_text_param").tool_id
+            == "toolshed.g2.bx.psu.edu/repos/iuc/compose_text_param/compose_text_param/0.1.1"
+        )
 
         assert len(action_executions) == 1
         messages = action_executions[0].messages
         assert len(messages) == 1
         message = messages[0]
         assert message.message_type == RefactorActionExecutionMessageTypeEnum.connection_drop_forced
-        assert message.order_index == 1
+        assert message.order_index == 2
         assert message.step_label == "tool_update_step"
         assert message.output_name == "output"
 
@@ -745,16 +765,14 @@ steps:
         original_url_for = app.url_for
 
         def url_for(*args, **kwd):
-            return ''
+            return ""
 
         app.url_for = url_for
         try:
             return self._manager.refactor(
                 mock_trans,
                 stored_workflow or self._most_recent_stored_workflow,
-                RefactorRequest(
-                    actions=actions, dry_run=dry_run, style=style
-                )
+                RefactorRequest(actions=actions, dry_run=dry_run, style=style),
             )
         finally:
             app = url_for = original_url_for
@@ -855,11 +873,10 @@ def _step_with_label(native_dict, label):
     for step_dict in native_dict["steps"].values():
         if step_dict.get("label") == label:
             return step_dict
-    raise AssertionError(f'Failed to find step with label {label}')
+    raise AssertionError(f"Failed to find step with label {label}")
 
 
 class MockTrans(ProvidesAppContext):
-
     def __init__(self, app, user):
         self._app = app
         self.user = user

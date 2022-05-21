@@ -26,45 +26,47 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "nvd3/nvd3_bar",
     "openlayers",
     "openseadragon",
+    "PCA_3Dplot",
     "pv",
     "nora",
     "venn",
 ];
-
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];
-
 const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
 
-const paths = {
-    node_modules: "./node_modules",
-    plugin_dirs: [
-        "../config/plugins/{visualizations,interactive_environments,welcome_page}/*/static/**/*",
-        "../config/plugins/{visualizations,interactive_environments,welcome_page}/*/*/static/**/*",
-    ],
-    plugin_build_modules: [
-        `../config/plugins/{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`,
-    ],
-    lib_locs: {
+const PATHS = {
+    nodeModules: "./node_modules",
+    stagedLibraries: {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
         // not be necessary.
         backbone: ["backbone.js", "backbone.js"],
-        "@galaxyproject/bootstrap-tour": ["build/js/bootstrap-tour.js", "bootstrap-tour.js"],
         jquery: ["dist/jquery.js", "jquery/jquery.js"],
-        "jquery.complexify": ["jquery.complexify.js", "jquery/jquery.complexify.js"],
-        "jquery.cookie": ["jquery.cookie.js", "jquery/jquery.cookie.js"],
         "jquery-migrate": ["dist/jquery-migrate.js", "jquery/jquery.migrate.js"],
         "jquery-mousewheel": ["jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],
         requirejs: ["require.js", "require.js"],
         underscore: ["underscore.js", "underscore.js"],
     },
-    libs: ["src/libs/**/*.js"],
 };
 
+PATHS.pluginBaseDir =
+    (process.env.GALAXY_PLUGIN_PATH && process.env.GALAXY_PLUGIN_PATH !== "None"
+        ? process.env.GALAXY_PLUGIN_PATH
+        : undefined) || "../config/plugins/";
+
+PATHS.pluginDirs = [
+    path.join(PATHS.pluginBaseDir, "{visualizations,welcome_page}/*/static/**/*"),
+    path.join(PATHS.pluginBaseDir, "{visualizations,welcome_page}/*/*/static/**/*"),
+];
+
+PATHS.pluginBuildModules = [
+    path.join(PATHS.pluginBaseDir, `{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`),
+];
+
 function stageLibs(callback) {
-    Object.keys(paths.lib_locs).forEach((lib) => {
-        var p1 = path.resolve(path.join(paths.node_modules, lib, paths.lib_locs[lib][0]));
-        var p2 = path.resolve(path.join("src", "libs", paths.lib_locs[lib][1]));
+    Object.keys(PATHS.stagedLibraries).forEach((lib) => {
+        var p1 = path.resolve(path.join(PATHS.nodeModules, lib, PATHS.stagedLibraries[lib][0]));
+        var p2 = path.resolve(path.join("src", "libs", PATHS.stagedLibraries[lib][1]));
         if (fs.existsSync(p1)) {
             del.sync(p2);
             fs.createReadStream(p1).pipe(fs.createWriteStream(p2));
@@ -79,57 +81,75 @@ function stageLibs(callback) {
 }
 
 function fonts() {
-    return src(path.resolve(path.join(paths.node_modules, "font-awesome/fonts/**/*"))).pipe(
+    return src(path.resolve(path.join(PATHS.nodeModules, "font-awesome/fonts/**/*"))).pipe(
         dest("../static/images/fonts")
     );
 }
 
 function stagePlugins() {
-    return src(paths.plugin_dirs).pipe(dest("../static/plugins/"));
+    return src(PATHS.pluginDirs).pipe(dest("../static/plugins/"));
 }
 
-function buildPlugins(callback) {
+function buildPlugins(callback, forceRebuild) {
     /*
-     * Walk plugin_build_modules glob and attempt to build modules.
+     * Walk pluginBuildModules glob and attempt to build modules.
      * */
-    paths.plugin_build_modules.map((build_module) => {
-        glob(build_module, {}, (er, files) => {
+    PATHS.pluginBuildModules.map((buildModule) => {
+        glob(buildModule, {}, (er, files) => {
             files.map((file) => {
-                let skip_build = false;
-                const f = path.join(process.cwd(), file).slice(0, -12);
-                const plugin_name = path.dirname(file).split(path.sep).pop();
-                const hash_file_path = path.join(
-                    f,
-                    DIST_PLUGIN_BUILD_IDS.indexOf(plugin_name) > -1 ? "dist" : "static",
+                let skipBuild = false;
+                const pluginDir = path.dirname(file);
+                const pluginName = pluginDir.split(path.sep).pop();
+
+                const hashFilePath = path.join(
+                    pluginDir,
+                    DIST_PLUGIN_BUILD_IDS.indexOf(pluginName) > -1 ? "dist" : "static",
                     "plugin_build_hash.txt"
                 );
 
-                if (fs.existsSync(hash_file_path)) {
-                    skip_build =
-                        child_process.spawnSync("git", ["diff", "--quiet", `$(cat ${hash_file_path})`, "--", f], {
-                            stdio: "inherit",
-                            shell: true,
-                        }).status === 0;
+                if (forceRebuild) {
+                    skipBuild = false;
                 } else {
-                    console.log(`No build hashfile detected for ${plugin_name}, generating now.`);
+                    if (fs.existsSync(hashFilePath)) {
+                        skipBuild =
+                            child_process.spawnSync(
+                                "git",
+                                ["diff", "--quiet", `$(cat ${hashFilePath})`, "--", pluginDir],
+                                {
+                                    stdio: "inherit",
+                                    shell: true,
+                                }
+                            ).status === 0;
+                    } else {
+                        console.log(`No build hashfile detected for ${pluginName}, generating now.`);
+                    }
                 }
 
-                if (skip_build) {
-                    console.log(`No changes detected for ${plugin_name}`);
+                if (skipBuild) {
+                    console.log(`No changes detected for ${pluginName}`);
                 } else {
-                    console.log(`Installing Dependencies for ${plugin_name}`);
+                    console.log(`Installing Dependencies for ${pluginName}`);
                     child_process.spawnSync(
                         "yarn",
                         ["install", "--production=false", "--network-timeout=300000", "--check-files"],
                         {
-                            cwd: f,
+                            cwd: pluginDir,
                             stdio: "inherit",
                             shell: true,
                         }
                     );
-                    console.log(`Building ${plugin_name}`);
-                    child_process.spawnSync("yarn", ["build"], { cwd: f, stdio: "inherit", shell: true });
-                    child_process.exec(`(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hash_file_path}`);
+                    console.log(`Building ${pluginName}`);
+                    if (
+                        child_process.spawnSync("yarn", ["build"], { cwd: pluginDir, stdio: "inherit", shell: true })
+                            .status === 0
+                    ) {
+                        console.log(`Successfully built, saving build state to ${hashFilePath}`);
+                        child_process.exec(`(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hashFilePath}`);
+                    } else {
+                        console.error(
+                            `Error building ${pluginName}, not saving build state.  Please report this issue to the Galaxy Team.`
+                        );
+                    }
                 }
             });
         });
@@ -137,21 +157,27 @@ function buildPlugins(callback) {
     return callback();
 }
 
+function forceBuildPlugins(callback) {
+    return buildPlugins(callback, true);
+}
+
 function cleanPlugins() {
-    return del(["../static/plugins/{visualizations,interactive_environments,welcome_page}/*"], { force: true });
+    return del(["../static/plugins/{visualizations,welcome_page}/*"], { force: true });
 }
 
 const client = parallel(fonts, stageLibs);
 const plugins = series(buildPlugins, cleanPlugins, stagePlugins);
+const pluginsRebuild = series(forceBuildPlugins, cleanPlugins, stagePlugins);
 
 function watchPlugins() {
     const BUILD_PLUGIN_WATCH_GLOB = [
-        `../config/plugins/{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`,
+        path.join(PATHS.pluginBaseDir, `{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`),
     ];
     watch(BUILD_PLUGIN_WATCH_GLOB, { queue: false }, plugins);
 }
 
 module.exports.client = client;
 module.exports.plugins = plugins;
+module.exports.pluginsRebuild = pluginsRebuild;
 module.exports.watchPlugins = watchPlugins;
 module.exports.default = parallel(client, plugins);

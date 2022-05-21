@@ -1,10 +1,10 @@
 <template>
     <tr
+        v-b-tooltip.hover
+        :title="`click to ${action}`"
         @mousedown="mouseIsDown = true"
         @mousemove="mouseIsDown ? (mouseMoved = true) : (mouseMoved = false)"
-        @mouseup="toggleExpanded()"
-        v-b-tooltip.hover
-        :title="`click to ${action}`">
+        @mouseup="toggleExpanded()">
         <td>
             {{ codeLabel }}
         </td>

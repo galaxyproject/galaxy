@@ -7,7 +7,7 @@ from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
 class OneDataFilesSource(PyFilesystem2FilesSource):
-    plugin_type = 'onedata'
+    plugin_type = "onedata"
     required_module = OnedataFS
     required_package = "fs-onedatafs"
 
@@ -17,4 +17,4 @@ class OneDataFilesSource(PyFilesystem2FilesSource):
         return handle
 
 
-__all__ = ('OneDataFilesSource',)
+__all__ = ("OneDataFilesSource",)

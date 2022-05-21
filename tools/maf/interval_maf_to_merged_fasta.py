@@ -49,7 +49,9 @@ def __main__():
     else:
         primary_species = None
     if primary_species in [None, "?", "None"]:
-        stop_err("You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file.")
+        stop_err(
+            "You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file."
+        )
 
     include_primary = True
     secondary_species = maf_utilities.parse_species_option(options.species)
@@ -76,7 +78,9 @@ def __main__():
         if options.chromCol:
             chr_col = int(options.chromCol) - 1
         else:
-            stop_err("Chromosome column not set, click the pencil icon in the history item to set the metadata attributes.")
+            stop_err(
+                "Chromosome column not set, click the pencil icon in the history item to set the metadata attributes."
+            )
 
         if options.startCol:
             start_col = int(options.startCol) - 1
@@ -94,7 +98,7 @@ def __main__():
     mafIndexFile = "%s/maf_index.loc" % options.mafIndexFileDir
 
     overwrite_with_gaps = True
-    if options.overwrite_with_gaps and options.overwrite_with_gaps.lower() == 'false':
+    if options.overwrite_with_gaps and options.overwrite_with_gaps.lower() == "false":
         overwrite_with_gaps = False
 
     # Finish parsing command line
@@ -108,7 +112,9 @@ def __main__():
             stop_err("The MAF source specified (%s) appears to be invalid." % (options.mafSource))
     elif options.mafSourceType.lower() in ["user"]:
         # index maf for use here, need to remove index_file when finished
-        index, index_filename = maf_utilities.open_or_build_maf_index(options.mafSource, options.mafIndex, species=[primary_species])
+        index, index_filename = maf_utilities.open_or_build_maf_index(
+            options.mafSource, options.mafIndex, species=[primary_species]
+        )
         if index is None:
             stop_err("Your MAF file appears to be malformed.")
     else:
@@ -120,10 +126,18 @@ def __main__():
     if options.geneBED:
         region_enumerator = maf_utilities.line_enumerator(open(interval_file).readlines())
     else:
-        region_enumerator = enumerate(bx.intervals.io.NiceReaderWrapper(
-            open(interval_file), chrom_col=chr_col, start_col=start_col,
-            end_col=end_col, strand_col=strand_col, fix_strand=True,
-            return_header=False, return_comments=False))
+        region_enumerator = enumerate(
+            bx.intervals.io.NiceReaderWrapper(
+                open(interval_file),
+                chrom_col=chr_col,
+                start_col=start_col,
+                end_col=end_col,
+                strand_col=strand_col,
+                fix_strand=True,
+                return_header=False,
+                return_comments=False,
+            )
+        )
 
     # Step through intervals
     regions_extracted = 0
@@ -135,9 +149,16 @@ def __main__():
                     starts, ends, fields = maf_utilities.get_starts_ends_fields_from_gene_bed(line)
                     # create spliced alignment object
                     alignment = maf_utilities.get_spliced_region_alignment(
-                        index, primary_species, fields[0], starts, ends,
-                        strand='+', species=species, mincols=mincols,
-                        overwrite_with_gaps=overwrite_with_gaps)
+                        index,
+                        primary_species,
+                        fields[0],
+                        starts,
+                        ends,
+                        strand="+",
+                        species=species,
+                        mincols=mincols,
+                        overwrite_with_gaps=overwrite_with_gaps,
+                    )
                     primary_name = secondary_name = fields[3]
                     alignment_strand = fields[5]
                 except Exception as e:
@@ -147,9 +168,16 @@ def __main__():
                 try:
                     # create spliced alignment object
                     alignment = maf_utilities.get_region_alignment(
-                        index, primary_species, line.chrom, line.start,
-                        line.end, strand='+', species=species, mincols=mincols,
-                        overwrite_with_gaps=overwrite_with_gaps)
+                        index,
+                        primary_species,
+                        line.chrom,
+                        line.start,
+                        line.end,
+                        strand="+",
+                        species=species,
+                        mincols=mincols,
+                        overwrite_with_gaps=overwrite_with_gaps,
+                    )
                     primary_name = "%s(%s):%s-%s" % (line.chrom, line.strand, line.start, line.end)
                     secondary_name = ""
                     alignment_strand = line.strand

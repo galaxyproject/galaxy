@@ -3,7 +3,7 @@
         <span v-if="requirements.length == 0">
             <i>no requirements defined</i>
         </span>
-        <div v-else :key="index" v-for="(requirement, index) in requirements">
+        <div v-for="(requirement, index) in requirements" v-else :key="index">
             <requirement :requirement="requirement" />
         </div>
     </span>

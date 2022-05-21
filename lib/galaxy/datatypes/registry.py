@@ -2,11 +2,18 @@
 Provides mapping between extensions and datatypes, mime-types, etc.
 """
 
-import imp
+import importlib.util
 import logging
 import os
+import pkgutil
 from string import Template
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import (
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
+)
 
 import yaml
 
@@ -24,7 +31,7 @@ from . import (
     tabular,
     text,
     tracks,
-    xml
+    xml,
 )
 from .display_applications.application import DisplayApplication
 
@@ -37,7 +44,6 @@ class ConfigurationError(Exception):
 
 
 class Registry:
-
     def __init__(self, config=None):
         self.log = logging.getLogger(__name__)
         self.log.addHandler(logging.NullHandler())
@@ -85,7 +91,16 @@ class Registry:
         self.display_sites = {}
         self.legacy_build_sites = {}
 
-    def load_datatypes(self, root_dir=None, config=None, deactivate=False, override=True, use_converters=True, use_display_applications=True, use_build_sites=True):
+    def load_datatypes(
+        self,
+        root_dir=None,
+        config=None,
+        deactivate=False,
+        override=True,
+        use_converters=True,
+        use_display_applications=True,
+        use_build_sites=True,
+    ):
         """
         Parse a datatypes XML file located at root_dir/config (if processing the Galaxy distributed config) or contained within
         an installed Tool Shed repository.  If deactivate is True, an installed Tool Shed repository that includes custom datatypes
@@ -94,10 +109,15 @@ class Registry:
         registry has been initialized at server startup, its contents cannot be overridden by newly introduced conflicting data types.
         """
 
-        def __import_module(full_path, datatype_module, datatype_class_name):
-            open_file_obj, file_name, description = imp.find_module(datatype_module, [full_path])
-            imported_module = imp.load_module(datatype_class_name, open_file_obj, file_name, description)
-            return imported_module
+        def __import_module(full_path: str, datatype_module: str):
+            path_entry_finder = pkgutil.get_importer(full_path)
+            assert path_entry_finder, "path_entry_finder is None"
+            spec = path_entry_finder.find_spec(datatype_module)
+            assert spec, "spec is None"
+            module = importlib.util.module_from_spec(spec)
+            assert spec.loader, "spec.loader is None"
+            spec.loader.exec_module(module)
+            return module
 
         if root_dir and config:
             # If handling_proprietary_datatypes is determined as True below, we'll have an elem that looks something like this:
@@ -115,63 +135,71 @@ class Registry:
                 root = tree.getroot()
                 # Load datatypes and converters from config
                 if deactivate:
-                    self.log.debug(f'Deactivating datatypes from {config}')
+                    self.log.debug(f"Deactivating datatypes from {config}")
                 else:
-                    self.log.debug(f'Loading datatypes from {config}')
+                    self.log.debug(f"Loading datatypes from {config}")
             else:
                 root = config
-            registration = root.find('registration')
+            registration = root.find("registration")
             # Set default paths defined in local datatypes_conf.xml.
             if use_converters:
                 if not self.converters_path:
-                    self.converters_path_attr = registration.get('converters_path', 'lib/galaxy/datatypes/converters')
+                    self.converters_path_attr = registration.get("converters_path", "lib/galaxy/datatypes/converters")
                     self.converters_path = os.path.join(root_dir, self.converters_path_attr)
-                    if self.converters_path_attr == 'lib/galaxy/datatypes/converters' \
-                            and not os.path.isdir(self.converters_path):
+                    if self.converters_path_attr == "lib/galaxy/datatypes/converters" and not os.path.isdir(
+                        self.converters_path
+                    ):
                         # Deal with the old default of this path being set in
                         # datatypes_conf.xml.sample (this path is not useful in an
                         # "installed Galaxy" world)
-                        self.converters_path_attr = os.path.abspath(os.path.join(os.path.dirname(__file__), 'converters'))
+                        self.converters_path_attr = os.path.abspath(
+                            os.path.join(os.path.dirname(__file__), "converters")
+                        )
                         self.converters_path = self.converters_path_attr
                     if not os.path.isdir(self.converters_path):
                         raise ConfigurationError(f"Directory does not exist: {self.converters_path}")
             if use_display_applications:
                 if not self.display_applications_path:
-                    self.display_path_attr = registration.get('display_path', 'display_applications')
+                    self.display_path_attr = registration.get("display_path", "display_applications")
                     self.display_applications_path = os.path.join(root_dir, self.display_path_attr)
-                    if self.display_path_attr == 'display_applications' \
-                            and not os.path.isdir('display_applications'):
+                    if self.display_path_attr == "display_applications" and not os.path.isdir("display_applications"):
                         # Ditto as with converters_path
-                        self.display_path_attr = os.path.abspath(os.path.join(os.path.dirname(__file__), 'display_applications', 'configs'))
+                        self.display_path_attr = os.path.abspath(
+                            os.path.join(os.path.dirname(__file__), "display_applications", "configs")
+                        )
                         self.display_applications_path = self.display_path_attr
             # Proprietary datatype's <registration> tag may have special attributes, proprietary_converter_path and proprietary_display_path.
-            proprietary_converter_path = registration.get('proprietary_converter_path', None)
-            proprietary_display_path = registration.get('proprietary_display_path', None)
-            if proprietary_converter_path is not None or proprietary_display_path is not None and not handling_proprietary_datatypes:
+            proprietary_converter_path = registration.get("proprietary_converter_path", None)
+            proprietary_display_path = registration.get("proprietary_display_path", None)
+            if (
+                proprietary_converter_path is not None
+                or proprietary_display_path is not None
+                and not handling_proprietary_datatypes
+            ):
                 handling_proprietary_datatypes = True
-            for elem in registration.findall('datatype'):
+            for elem in registration.findall("datatype"):
                 # Keep a status of the process steps to enable stopping the process of handling the datatype if necessary.
                 ok = True
                 extension = self.get_extension(elem)
-                dtype = elem.get('type', None)
-                type_extension = elem.get('type_extension', None)
-                auto_compressed_types = galaxy.util.listify(elem.get('auto_compressed_types', ''))
+                dtype = elem.get("type", None)
+                type_extension = elem.get("type_extension", None)
+                auto_compressed_types = galaxy.util.listify(elem.get("auto_compressed_types", ""))
                 sniff_compressed_types = galaxy.util.string_as_bool_or_none(elem.get("sniff_compressed_types", "None"))
                 if sniff_compressed_types is None:
                     sniff_compressed_types = getattr(self.config, "sniff_compressed_dynamic_datatypes_default", True)
                     # Make sure this is set in the elems we write out so the config option is passed to the upload
                     # tool which does not have a config object.
                     elem.set("sniff_compressed_types", str(sniff_compressed_types))
-                mimetype = elem.get('mimetype', None)
-                display_in_upload = galaxy.util.string_as_bool(elem.get('display_in_upload', False))
+                mimetype = elem.get("mimetype", None)
+                display_in_upload = galaxy.util.string_as_bool(elem.get("display_in_upload", False))
                 # If make_subclass is True, it does not necessarily imply that we are subclassing a datatype that is contained
                 # in the distribution.
-                make_subclass = galaxy.util.string_as_bool(elem.get('subclass', False))
-                edam_format = elem.get('edam_format', None)
+                make_subclass = galaxy.util.string_as_bool(elem.get("subclass", False))
+                edam_format = elem.get("edam_format", None)
                 if edam_format and not make_subclass:
                     self.log.warning("Cannot specify edam_format without setting subclass to True, skipping datatype.")
                     continue
-                edam_data = elem.get('edam_data', None)
+                edam_data = elem.get("edam_data", None)
                 if edam_data and not make_subclass:
                     self.log.warning("Cannot specify edam_data without setting subclass to True, skipping datatype.")
                     continue
@@ -179,26 +207,34 @@ class Registry:
                 # (proprietary_path and proprietary_datatype_module) if they depend on proprietary datatypes classes.
                 # The value of proprietary_path is the path to the cloned location of the tool shed repository's contained
                 # datatypes_conf.xml file.
-                proprietary_path = elem.get('proprietary_path', None)
-                proprietary_datatype_module = elem.get('proprietary_datatype_module', None)
-                if proprietary_path is not None or proprietary_datatype_module is not None and not handling_proprietary_datatypes:
+                proprietary_path = elem.get("proprietary_path", None)
+                proprietary_datatype_module = elem.get("proprietary_datatype_module", None)
+                if (
+                    proprietary_path is not None
+                    or proprietary_datatype_module is not None
+                    and not handling_proprietary_datatypes
+                ):
                     handling_proprietary_datatypes = True
                 if deactivate:
                     # We are deactivating or uninstalling an installed tool shed repository, so eliminate the datatype
                     # elem from the in-memory list of datatype elems.
                     for in_memory_elem in self.datatype_elems:
-                        in_memory_extension = in_memory_elem.get('extension', None)
+                        in_memory_extension = in_memory_elem.get("extension", None)
                         if in_memory_extension == extension:
-                            in_memory_dtype = elem.get('type', None)
-                            in_memory_type_extension = elem.get('type_extension', None)
-                            in_memory_mimetype = elem.get('mimetype', None)
-                            in_memory_display_in_upload = galaxy.util.string_as_bool(elem.get('display_in_upload', False))
-                            in_memory_make_subclass = galaxy.util.string_as_bool(elem.get('subclass', False))
-                            if in_memory_dtype == dtype and \
-                                    in_memory_type_extension == type_extension and \
-                                    in_memory_mimetype == mimetype and \
-                                    in_memory_display_in_upload == display_in_upload and \
-                                    in_memory_make_subclass == make_subclass:
+                            in_memory_dtype = elem.get("type", None)
+                            in_memory_type_extension = elem.get("type_extension", None)
+                            in_memory_mimetype = elem.get("mimetype", None)
+                            in_memory_display_in_upload = galaxy.util.string_as_bool(
+                                elem.get("display_in_upload", False)
+                            )
+                            in_memory_make_subclass = galaxy.util.string_as_bool(elem.get("subclass", False))
+                            if (
+                                in_memory_dtype == dtype
+                                and in_memory_type_extension == type_extension
+                                and in_memory_mimetype == mimetype
+                                and in_memory_display_in_upload == display_in_upload
+                                and in_memory_make_subclass == make_subclass
+                            ):
                                 self.datatype_elems.remove(in_memory_elem)
                     if extension is not None and extension in self.datatypes_by_extension:
                         # We are deactivating or uninstalling an installed tool shed repository, so eliminate the datatype
@@ -218,11 +254,11 @@ class Registry:
                     if can_process_datatype:
                         if dtype is not None:
                             try:
-                                fields = dtype.split(':')
+                                fields = dtype.split(":")
                                 datatype_module = fields[0]
                                 datatype_class_name = fields[1]
                             except Exception:
-                                self.log.exception('Error parsing datatype definition for dtype %s', str(dtype))
+                                self.log.exception("Error parsing datatype definition for dtype %s", str(dtype))
                                 ok = False
                             if ok:
                                 datatype_class = None
@@ -230,36 +266,44 @@ class Registry:
                                     # TODO: previously comments suggested this needs to be locked because it modifies
                                     # the sys.path, probably true but the previous lock wasn't doing that.
                                     try:
-                                        imported_module = __import_module(proprietary_path,
-                                                                          proprietary_datatype_module,
-                                                                          datatype_class_name)
+                                        imported_module = __import_module(proprietary_path, proprietary_datatype_module)
                                         if imported_module not in self.imported_modules:
                                             self.imported_modules.append(imported_module)
                                         if hasattr(imported_module, datatype_class_name):
                                             datatype_class = getattr(imported_module, datatype_class_name)
                                     except Exception as e:
                                         full_path = os.path.join(proprietary_path, proprietary_datatype_module)
-                                        self.log.debug("Exception importing proprietary code file %s: %s", full_path, galaxy.util.unicodify(e))
+                                        self.log.debug(
+                                            "Exception importing proprietary code file %s: %s",
+                                            full_path,
+                                            e,
+                                        )
                                 # Either the above exception was thrown because the proprietary_datatype_module is not derived from a class
                                 # in the repository, or we are loading Galaxy's datatypes. In either case we'll look in the registry.
                                 if datatype_class is None:
                                     try:
                                         # The datatype class name must be contained in one of the datatype modules in the Galaxy distribution.
-                                        fields = datatype_module.split('.')[1:]
+                                        fields = datatype_module.split(".")[1:]
                                         module = __import__(datatype_module)
                                         for mod in fields:
                                             module = getattr(module, mod)
                                         datatype_class = getattr(module, datatype_class_name)
-                                        self.log.debug(f'Retrieved datatype module {str(datatype_module)}:{datatype_class_name} from the datatype registry for extension {extension}.')
+                                        self.log.debug(
+                                            f"Retrieved datatype module {str(datatype_module)}:{datatype_class_name} from the datatype registry for extension {extension}."
+                                        )
                                     except Exception:
-                                        self.log.exception('Error importing datatype module %s', str(datatype_module))
+                                        self.log.exception("Error importing datatype module %s", str(datatype_module))
                                         ok = False
                         elif type_extension is not None:
                             try:
                                 datatype_class = self.datatypes_by_extension[type_extension].__class__
-                                self.log.debug(f'Retrieved datatype module {str(datatype_class.__name__)} from type_extension {type_extension} for extension {extension}.')
+                                self.log.debug(
+                                    f"Retrieved datatype module {str(datatype_class.__name__)} from type_extension {type_extension} for extension {extension}."
+                                )
                             except Exception:
-                                self.log.exception('Error determining datatype_class for type_extension %s', str(type_extension))
+                                self.log.exception(
+                                    "Error determining datatype_class for type_extension %s", str(type_extension)
+                                )
                                 ok = False
                         if ok:
                             if not deactivate:
@@ -269,10 +313,12 @@ class Registry:
                                 if extension in self.datatypes_by_extension:
                                     # Because of the way that the value of can_process_datatype was set above, we know that the value of
                                     # override is True.
-                                    self.log.debug("Overriding conflicting datatype with extension '%s', using datatype from %s." %
-                                                   (str(extension), str(config)))
+                                    self.log.debug(
+                                        "Overriding conflicting datatype with extension '%s', using datatype from %s."
+                                        % (str(extension), str(config))
+                                    )
                                 if make_subclass:
-                                    datatype_class = type(datatype_class_name, (datatype_class, ), {})
+                                    datatype_class = type(datatype_class_name, (datatype_class,), {})
                                     if edam_format:
                                         datatype_class.edam_format = edam_format
                                     if edam_data:
@@ -291,30 +337,38 @@ class Registry:
                                 if display_in_upload and extension not in self.upload_file_formats:
                                     self.upload_file_formats.append(extension)
                                 # Max file size cut off for setting optional metadata.
-                                self.datatypes_by_extension[extension].max_optional_metadata_filesize = elem.get('max_optional_metadata_filesize', None)
-                                for converter in elem.findall('converter'):
+                                self.datatypes_by_extension[extension].max_optional_metadata_filesize = elem.get(
+                                    "max_optional_metadata_filesize", None
+                                )
+                                for converter in elem.findall("converter"):
                                     # Build the list of datatype converters which will later be loaded into the calling app's toolbox.
-                                    converter_config = converter.get('file', None)
-                                    target_datatype = converter.get('target_datatype', None)
-                                    depends_on = converter.get('depends_on', None)
+                                    converter_config = converter.get("file", None)
+                                    target_datatype = converter.get("target_datatype", None)
+                                    depends_on = converter.get("depends_on", None)
                                     if depends_on is not None and target_datatype is not None:
                                         if extension not in self.converter_deps:
                                             self.converter_deps[extension] = {}
-                                        self.converter_deps[extension][target_datatype] = depends_on.split(',')
+                                        self.converter_deps[extension][target_datatype] = depends_on.split(",")
                                     if converter_config and target_datatype:
                                         if proprietary_converter_path:
-                                            self.proprietary_converters.append((converter_config, extension, target_datatype))
+                                            self.proprietary_converters.append(
+                                                (converter_config, extension, target_datatype)
+                                            )
                                         else:
                                             self.converters.append((converter_config, extension, target_datatype))
                                 # Add composite files.
-                                for composite_file in elem.findall('composite_file'):
-                                    name = composite_file.get('name', None)
+                                for composite_file in elem.findall("composite_file"):
+                                    name = composite_file.get("name", None)
                                     if name is None:
-                                        self.log.warning(f"You must provide a name for your composite_file ({composite_file}).")
-                                    optional = composite_file.get('optional', False)
-                                    mimetype = composite_file.get('mimetype', None)
-                                    self.datatypes_by_extension[extension].add_composite_file(name, optional=optional, mimetype=mimetype)
-                                for _display_app in elem.findall('display'):
+                                        self.log.warning(
+                                            f"You must provide a name for your composite_file ({composite_file})."
+                                        )
+                                    optional = composite_file.get("optional", False)
+                                    mimetype = composite_file.get("mimetype", None)
+                                    self.datatypes_by_extension[extension].add_composite_file(
+                                        name, optional=optional, mimetype=mimetype
+                                    )
+                                for _display_app in elem.findall("display"):
                                     if proprietary_display_path:
                                         if elem not in self.proprietary_display_app_containers:
                                             self.proprietary_display_app_containers.append(elem)
@@ -329,7 +383,7 @@ class Registry:
                                 }
                                 composite_files = datatype_instance.composite_files
                                 if composite_files:
-                                    datatype_info_dict['composite_files'] = [_.dict() for _ in composite_files.values()]
+                                    datatype_info_dict["composite_files"] = [_.dict() for _ in composite_files.values()]
                                 self.datatype_info_dicts.append(datatype_info_dict)
 
                                 for auto_compressed_type in auto_compressed_types:
@@ -345,7 +399,14 @@ class Registry:
                                         raise Exception(f"Unknown auto compression type [{auto_compressed_type}]")
                                     attributes["file_ext"] = compressed_extension
                                     attributes["uncompressed_datatype_instance"] = datatype_instance
-                                    compressed_datatype_class = type(auto_compressed_type_name, (datatype_class, dynamic_parent, ), attributes)
+                                    compressed_datatype_class = type(
+                                        auto_compressed_type_name,
+                                        (
+                                            datatype_class,
+                                            dynamic_parent,
+                                        ),
+                                        attributes,
+                                    )
                                     if edam_format:
                                         compressed_datatype_class.edam_format = edam_format
                                     if edam_data:
@@ -354,13 +415,25 @@ class Registry:
                                     self.datatypes_by_extension[compressed_extension] = compressed_datatype_instance
                                     if display_in_upload and compressed_extension not in self.upload_file_formats:
                                         self.upload_file_formats.append(compressed_extension)
-                                    self.datatype_info_dicts.append({
-                                        "display_in_upload": display_in_upload,
-                                        "extension": compressed_extension,
-                                        "description": description,
-                                        "description_url": description_url,
-                                    })
-                                    self.converters.append((f"{auto_compressed_type}_to_uncompressed.xml", compressed_extension, extension))
+                                    self.datatype_info_dicts.append(
+                                        {
+                                            "display_in_upload": display_in_upload,
+                                            "extension": compressed_extension,
+                                            "description": description,
+                                            "description_url": description_url,
+                                        }
+                                    )
+                                    if auto_compressed_type == "gz":
+                                        self.converters.append(
+                                            (
+                                                f"uncompressed_to_{auto_compressed_type}.xml",
+                                                extension,
+                                                compressed_extension,
+                                            )
+                                        )
+                                    self.converters.append(
+                                        (f"{auto_compressed_type}_to_uncompressed.xml", compressed_extension, extension)
+                                    )
                                     if datatype_class not in compressed_sniffers:
                                         compressed_sniffers[datatype_class] = []
                                     if sniff_compressed_types:
@@ -375,14 +448,18 @@ class Registry:
                                     if not override:
                                         # Do not load the datatype since it conflicts with an existing datatype which we are not supposed
                                         # to override.
-                                        self.log.debug(f"Ignoring conflicting datatype with extension '{extension}' from {config}.")
+                                        self.log.debug(
+                                            f"Ignoring conflicting datatype with extension '{extension}' from {config}."
+                                        )
             # Load datatype sniffers from the config - we'll do this even if one or more datatypes were not properly processed in the config
             # since sniffers are not tightly coupled with datatypes.
-            self.load_datatype_sniffers(root,
-                                        deactivate=deactivate,
-                                        handling_proprietary_datatypes=handling_proprietary_datatypes,
-                                        override=override,
-                                        compressed_sniffers=compressed_sniffers)
+            self.load_datatype_sniffers(
+                root,
+                deactivate=deactivate,
+                handling_proprietary_datatypes=handling_proprietary_datatypes,
+                override=override,
+                compressed_sniffers=compressed_sniffers,
+            )
             self.upload_file_formats.sort()
             # Load build sites
             if use_build_sites:
@@ -396,23 +473,25 @@ class Registry:
                 # has a sniff() method and was not defined with subclass="true".
                 # Do not add dynamic compressed types - these were carefully added or not
                 # to the sniff order in the proper position above.
-                if type(datatype) not in sniff_order_classes and \
-                        hasattr(datatype, 'sniff') and not datatype.is_subclass and \
-                        not hasattr(datatype, "uncompressed_datatype_instance"):
+                if (
+                    type(datatype) not in sniff_order_classes
+                    and hasattr(datatype, "sniff")
+                    and not datatype.is_subclass
+                    and not hasattr(datatype, "uncompressed_datatype_instance")
+                ):
                     self.sniff_order.append(datatype)
 
         append_to_sniff_order()
 
     def _load_build_sites(self, root):
-
         def load_build_site(build_site_config):
             # Take in either an XML element or simple dictionary from YAML and add build site for this.
-            if not (build_site_config.get('type') and build_site_config.get('file')):
+            if not (build_site_config.get("type") and build_site_config.get("file")):
                 self.log.exception("Site is missing required 'type' and 'file' attributes")
                 return
 
-            site_type = build_site_config.get('type')
-            path = build_site_config.get('file')
+            site_type = build_site_config.get("type")
+            path = build_site_config.get("file")
             if not os.path.exists(path):
                 sample_path = f"{path}.sample"
                 if os.path.exists(sample_path):
@@ -420,19 +499,19 @@ class Registry:
                     path = sample_path
 
             self.build_sites[site_type] = path
-            if site_type in ('ucsc', 'gbrowse'):
+            if site_type in ("ucsc", "gbrowse"):
                 self.legacy_build_sites[site_type] = galaxy.util.read_build_sites(path)
-            if build_site_config.get('display', None):
-                display = build_site_config.get('display')
+            if build_site_config.get("display", None):
+                display = build_site_config.get("display")
                 if not isinstance(display, list):
-                    display = [x.strip() for x in display.lower().split(',')]
+                    display = [x.strip() for x in display.lower().split(",")]
                 self.display_sites[site_type] = display
                 self.log.debug("Loaded build site '%s': %s with display sites: %s", site_type, path, display)
             else:
                 self.log.debug("Loaded build site '%s': %s", site_type, path)
 
-        if root.find('build_sites') is not None:
-            for elem in root.find('build_sites').findall('site'):
+        if root.find("build_sites") is not None:
+            for elem in root.find("build_sites").findall("site"):
                 load_build_site(elem)
         else:
             build_sites_config_file = getattr(self.config, "build_sites_config_file", None)
@@ -451,14 +530,16 @@ class Registry:
     def get_legacy_sites_by_build(self, site_type, build):
         sites = []
         for site in self.legacy_build_sites.get(site_type, []):
-            if build in site['builds']:
-                sites.append((site['name'], site['url']))
+            if build in site["builds"]:
+                sites.append((site["name"], site["url"]))
         return sites
 
     def get_display_sites(self, site_type):
         return self.display_sites.get(site_type, [])
 
-    def load_datatype_sniffers(self, root, deactivate=False, handling_proprietary_datatypes=False, override=False, compressed_sniffers=None):
+    def load_datatype_sniffers(
+        self, root, deactivate=False, handling_proprietary_datatypes=False, override=False, compressed_sniffers=None
+    ):
         """
         Process the sniffers element from a parsed a datatypes XML file located at root_dir/config (if processing the Galaxy
         distributed config) or contained within an installed Tool Shed repository.  If deactivate is True, an installed Tool
@@ -467,13 +548,13 @@ class Registry:
         Since installation is occurring after the datatypes registry has been initialized at server startup, its contents
         cannot be overridden by newly introduced conflicting sniffers.
         """
-        sniffer_elem_classes = [e.attrib['type'] for e in self.sniffer_elems]
-        sniffers = root.find('sniffers')
+        sniffer_elem_classes = [e.attrib["type"] for e in self.sniffer_elems]
+        sniffers = root.find("sniffers")
         if sniffers is not None:
-            for elem in sniffers.findall('sniffer'):
+            for elem in sniffers.findall("sniffer"):
                 # Keep a status of the process steps to enable stopping the process of handling the sniffer if necessary.
                 ok = True
-                dtype = elem.get('type', None)
+                dtype = elem.get("type", None)
                 if dtype is not None:
                     try:
                         fields = dtype.split(":")
@@ -481,7 +562,7 @@ class Registry:
                         datatype_class_name = fields[1]
                         module = None
                     except Exception:
-                        self.log.exception('Error determining datatype class or module for dtype %s', str(dtype))
+                        self.log.exception("Error determining datatype class or module for dtype %s", str(dtype))
                         ok = False
                     if ok:
                         if handling_proprietary_datatypes:
@@ -494,7 +575,7 @@ class Registry:
                             try:
                                 # The datatype class name must be contained in one of the datatype modules in the Galaxy distribution.
                                 module = __import__(datatype_module)
-                                for comp in datatype_module.split('.')[1:]:
+                                for comp in datatype_module.split(".")[1:]:
                                     module = getattr(module, comp)
                             except Exception:
                                 self.log.exception("Error importing datatype class for '%s'", str(dtype))
@@ -503,23 +584,29 @@ class Registry:
                             try:
                                 aclass = getattr(module, datatype_class_name)()
                             except Exception:
-                                self.log.exception('Error calling method %s from class %s', str(datatype_class_name), str(module))
+                                self.log.exception(
+                                    "Error calling method %s from class %s", str(datatype_class_name), str(module)
+                                )
                                 ok = False
                             if ok:
                                 if deactivate:
                                     # We are deactivating or uninstalling an installed Tool Shed repository, so eliminate the appropriate sniffers.
-                                    sniffer_class = elem.get('type', None)
+                                    sniffer_class = elem.get("type", None)
                                     if sniffer_class is not None:
                                         for index, s_e_c in enumerate(sniffer_elem_classes):
                                             if sniffer_class == s_e_c:
                                                 del self.sniffer_elems[index]
-                                                sniffer_elem_classes = [elem.attrib['type'] for elem in self.sniffer_elems]
+                                                sniffer_elem_classes = [
+                                                    elem.attrib["type"] for elem in self.sniffer_elems
+                                                ]
                                                 self.log.debug(f"Removed sniffer element for datatype '{str(dtype)}'")
                                                 break
                                         for sniffer_class in self.sniff_order:
                                             if sniffer_class.__class__ == aclass.__class__:
                                                 self.sniff_order.remove(sniffer_class)
-                                                self.log.debug(f"Removed sniffer class for datatype '{str(dtype)}' from sniff order")
+                                                self.log.debug(
+                                                    f"Removed sniffer class for datatype '{str(dtype)}' from sniff order"
+                                                )
                                                 break
                                 else:
                                     # We are loading new sniffer, so see if we have a conflicting sniffer already loaded.
@@ -539,14 +626,14 @@ class Registry:
                                         self.sniff_order.append(aclass)
                                         self.log.debug(f"Loaded sniffer for datatype '{dtype}'")
                                     # Processing the new sniffer elem is now complete, so make sure the element defining it is loaded if necessary.
-                                    sniffer_class = elem.get('type', None)
+                                    sniffer_class = elem.get("type", None)
                                     if sniffer_class is not None:
                                         if sniffer_class not in sniffer_elem_classes:
                                             self.sniffer_elems.append(elem)
 
     def is_extension_unsniffable_binary(self, ext):
         datatype = self.get_datatype_by_extension(ext)
-        return datatype is not None and isinstance(datatype, binary.Binary) and not hasattr(datatype, 'sniff')
+        return datatype is not None and isinstance(datatype, binary.Binary) and not hasattr(datatype, "sniff")
 
     def get_datatype_class_by_name(self, name):
         """
@@ -555,7 +642,7 @@ class Registry:
         """
         # TODO: obviously not ideal but some of these base classes that are useful for testing datatypes
         # aren't loaded into the datatypes registry, so we'd need to test for them here
-        if name == 'images.Image':
+        if name == "images.Image":
             return images.Image
 
         # TODO: too inefficient - would be better to generate this once as a map and store in this object
@@ -569,14 +656,14 @@ class Registry:
     def get_available_tracks(self):
         return self.available_tracks
 
-    def get_mimetype_by_extension(self, ext, default='application/octet-stream'):
+    def get_mimetype_by_extension(self, ext, default="application/octet-stream"):
         """Returns a mimetype based on an extension"""
         try:
             mimetype = self.mimetypes_by_extension[ext]
         except KeyError:
             # datatype was never declared
             mimetype = default
-            self.log.warning(f'unknown mimetype in data factory {str(ext)}')
+            self.log.warning(f"unknown mimetype in data factory {str(ext)}")
         return mimetype
 
     def get_datatype_by_extension(self, ext):
@@ -610,7 +697,7 @@ class Registry:
             source_datatype = elem[1]
             target_datatype = elem[2]
             if installed_repository_dict:
-                converter_path = installed_repository_dict['converter_path']
+                converter_path = installed_repository_dict["converter_path"]
             else:
                 converter_path = self.converters_path
             try:
@@ -620,17 +707,17 @@ class Registry:
                 if installed_repository_dict:
                     # If the converter is included in an installed tool shed repository, set the tool
                     # shed related tool attributes.
-                    converter.tool_shed = installed_repository_dict['tool_shed']
-                    converter.repository_name = installed_repository_dict['repository_name']
-                    converter.repository_owner = installed_repository_dict['repository_owner']
-                    converter.installed_changeset_revision = installed_repository_dict['installed_changeset_revision']
+                    converter.tool_shed = installed_repository_dict["tool_shed"]
+                    converter.repository_name = installed_repository_dict["repository_name"]
+                    converter.repository_owner = installed_repository_dict["repository_owner"]
+                    converter.installed_changeset_revision = installed_repository_dict["installed_changeset_revision"]
                     converter.old_id = converter.id
                     # The converter should be included in the list of tools defined in tool_dicts.
-                    tool_dicts = installed_repository_dict['tool_dicts']
+                    tool_dicts = installed_repository_dict["tool_dicts"]
                     for tool_dict in tool_dicts:
-                        if tool_dict['id'] == converter.id:
-                            converter.guid = tool_dict['guid']
-                            converter.id = tool_dict['guid']
+                        if tool_dict["id"] == converter.id:
+                            converter.guid = tool_dict["guid"]
+                            converter.id = tool_dict["guid"]
                             break
                 if deactivate:
                     toolbox.remove_tool_by_id(converter.id, remove_from_panel=False)
@@ -643,7 +730,7 @@ class Registry:
                     if source_datatype not in self.datatype_converters:
                         self.datatype_converters[source_datatype] = {}
                     self.datatype_converters[source_datatype][target_datatype] = converter
-                    if not hasattr(toolbox.app, 'tool_cache') or converter.id in toolbox.app.tool_cache._new_tool_ids:
+                    if not hasattr(toolbox.app, "tool_cache") or converter.id in toolbox.app.tool_cache._new_tool_ids:
                         self.log.debug("Loaded converter: %s", converter.id)
             except Exception:
                 if deactivate:
@@ -665,16 +752,16 @@ class Registry:
             datatype_elems = self.display_app_containers
         for elem in datatype_elems:
             extension = self.get_extension(elem)
-            for display_app in elem.findall('display'):
-                display_file = display_app.get('file', None)
+            for display_app in elem.findall("display"):
+                display_file = display_app.get("file", None)
                 if installed_repository_dict:
-                    display_path = installed_repository_dict['display_path']
+                    display_path = installed_repository_dict["display_path"]
                     display_file_head, display_file_tail = os.path.split(display_file)
                     config_path = os.path.join(display_path, display_file_tail)
                 else:
                     config_path = os.path.join(self.display_applications_path, display_file)
                 try:
-                    inherit = galaxy.util.string_as_bool(display_app.get('inherit', 'False'))
+                    inherit = galaxy.util.string_as_bool(display_app.get("inherit", "False"))
                     display_app = DisplayApplication.from_file(config_path, app)
                     if display_app:
                         if display_app.id in self.display_applications:
@@ -686,17 +773,19 @@ class Registry:
                         elif installed_repository_dict:
                             # If the display application is included in an installed tool shed repository,
                             # set the tool shed related tool attributes.
-                            display_app.tool_shed = installed_repository_dict['tool_shed']
-                            display_app.repository_name = installed_repository_dict['repository_name']
-                            display_app.repository_owner = installed_repository_dict['repository_owner']
-                            display_app.installed_changeset_revision = installed_repository_dict['installed_changeset_revision']
+                            display_app.tool_shed = installed_repository_dict["tool_shed"]
+                            display_app.repository_name = installed_repository_dict["repository_name"]
+                            display_app.repository_owner = installed_repository_dict["repository_owner"]
+                            display_app.installed_changeset_revision = installed_repository_dict[
+                                "installed_changeset_revision"
+                            ]
                             display_app.old_id = display_app.id
                             # The display application should be included in the list of tools defined in tool_dicts.
-                            tool_dicts = installed_repository_dict['tool_dicts']
+                            tool_dicts = installed_repository_dict["tool_dicts"]
                             for tool_dict in tool_dicts:
-                                if tool_dict['id'] == display_app.id:
-                                    display_app.guid = tool_dict['guid']
-                                    display_app.id = tool_dict['guid']
+                                if tool_dict["id"] == display_app.id:
+                                    display_app.guid = tool_dict["guid"]
+                                    display_app.id = tool_dict["guid"]
                                     break
                         if deactivate:
                             if display_app.id in self.display_applications:
@@ -704,15 +793,31 @@ class Registry:
                             if extension in self.datatypes_by_extension:
                                 if display_app.id in self.datatypes_by_extension[extension].display_applications:
                                     del self.datatypes_by_extension[extension].display_applications[display_app.id]
-                            if inherit and (self.datatypes_by_extension[extension], display_app) in self.inherit_display_application_by_class:
-                                self.inherit_display_application_by_class.remove((self.datatypes_by_extension[extension], display_app))
-                            self.log.debug(f"Deactivated display application '{display_app.id}' for datatype '{extension}'.")
+                            if (
+                                inherit
+                                and (self.datatypes_by_extension[extension], display_app)
+                                in self.inherit_display_application_by_class
+                            ):
+                                self.inherit_display_application_by_class.remove(
+                                    (self.datatypes_by_extension[extension], display_app)
+                                )
+                            self.log.debug(
+                                f"Deactivated display application '{display_app.id}' for datatype '{extension}'."
+                            )
                         else:
                             self.display_applications[display_app.id] = display_app
                             self.datatypes_by_extension[extension].add_display_application(display_app)
-                            if inherit and (self.datatypes_by_extension[extension], display_app) not in self.inherit_display_application_by_class:
-                                self.inherit_display_application_by_class.append((self.datatypes_by_extension[extension], display_app))
-                            self.log.debug(f"Loaded display application '{display_app.id}' for datatype '{extension}', inherit={inherit}.")
+                            if (
+                                inherit
+                                and (self.datatypes_by_extension[extension], display_app)
+                                not in self.inherit_display_application_by_class
+                            ):
+                                self.inherit_display_application_by_class.append(
+                                    (self.datatypes_by_extension[extension], display_app)
+                                )
+                            self.log.debug(
+                                f"Loaded display application '{display_app.id}' for datatype '{extension}', inherit={inherit}."
+                            )
                 except Exception:
                     if deactivate:
                         self.log.exception(f"Error deactivating display application ({config_path})")
@@ -742,7 +847,9 @@ class Registry:
                 self.display_applications[display_application_id].reload()
                 reloaded.append(display_application_id)
             except Exception as e:
-                self.log.debug('Requested to reload display application "%s", but failed: %s.', display_application_id, e)
+                self.log.debug(
+                    'Requested to reload display application "%s", but failed: %s.', display_application_id, e
+                )
                 failed.append(display_application_id)
         return (reloaded, failed)
 
@@ -751,7 +858,9 @@ class Registry:
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll load a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
         # Properly building a tool without relying on parsing an XML file is near difficult...so we bundle with Galaxy.
-        set_meta_tool = toolbox.load_hidden_lib_tool(os.path.abspath(os.path.join(os.path.dirname(__file__), "set_metadata_tool.xml")))
+        set_meta_tool = toolbox.load_hidden_lib_tool(
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "set_metadata_tool.xml"))
+        )
         self.set_external_metadata_tool = set_meta_tool
         self.log.debug("Loaded external metadata tool: %s", self.set_external_metadata_tool.id)
 
@@ -759,80 +868,80 @@ class Registry:
         # Default values.
         if not self.datatypes_by_extension:
             self.datatypes_by_extension = {
-                'ab1': binary.Ab1(),
-                'axt': sequence.Axt(),
-                'bam': binary.Bam(),
-                'jp2': binary.JP2(),
-                'bed': interval.Bed(),
-                'coverage': coverage.LastzCoverage(),
-                'customtrack': interval.CustomTrack(),
-                'csfasta': sequence.csFasta(),
-                'fasta': sequence.Fasta(),
-                'eland': tabular.Eland(),
-                'fastq': sequence.Fastq(),
-                'fastqsanger': sequence.FastqSanger(),
-                'gtf': interval.Gtf(),
-                'gff': interval.Gff(),
-                'gff3': interval.Gff3(),
-                'genetrack': tracks.GeneTrack(),
-                'h5': binary.H5(),
-                'interval': interval.Interval(),
-                'laj': images.Laj(),
-                'lav': sequence.Lav(),
-                'maf': sequence.Maf(),
-                'pileup': tabular.Pileup(),
-                'qualsolid': qualityscore.QualityScoreSOLiD(),
-                'qualsolexa': qualityscore.QualityScoreSolexa(),
-                'qual454': qualityscore.QualityScore454(),
-                'sam': tabular.Sam(),
-                'scf': binary.Scf(),
-                'sff': binary.Sff(),
-                'tabular': tabular.Tabular(),
-                'csv': tabular.CSV(),
-                'taxonomy': tabular.Taxonomy(),
-                'txt': data.Text(),
-                'wig': interval.Wiggle(),
-                'xml': xml.GenericXml(),
+                "ab1": binary.Ab1(),
+                "axt": sequence.Axt(),
+                "bam": binary.Bam(),
+                "jp2": binary.JP2(),
+                "bed": interval.Bed(),
+                "coverage": coverage.LastzCoverage(),
+                "customtrack": interval.CustomTrack(),
+                "csfasta": sequence.csFasta(),
+                "fasta": sequence.Fasta(),
+                "eland": tabular.Eland(),
+                "fastq": sequence.Fastq(),
+                "fastqsanger": sequence.FastqSanger(),
+                "gtf": interval.Gtf(),
+                "gff": interval.Gff(),
+                "gff3": interval.Gff3(),
+                "genetrack": tracks.GeneTrack(),
+                "h5": binary.H5(),
+                "interval": interval.Interval(),
+                "laj": images.Laj(),
+                "lav": sequence.Lav(),
+                "maf": sequence.Maf(),
+                "pileup": tabular.Pileup(),
+                "qualsolid": qualityscore.QualityScoreSOLiD(),
+                "qualsolexa": qualityscore.QualityScoreSolexa(),
+                "qual454": qualityscore.QualityScore454(),
+                "sam": tabular.Sam(),
+                "scf": binary.Scf(),
+                "sff": binary.Sff(),
+                "tabular": tabular.Tabular(),
+                "csv": tabular.CSV(),
+                "taxonomy": tabular.Taxonomy(),
+                "txt": data.Text(),
+                "wig": interval.Wiggle(),
+                "xml": xml.GenericXml(),
             }
             self.mimetypes_by_extension = {
-                'ab1': 'application/octet-stream',
-                'axt': 'text/plain',
-                'bam': 'application/octet-stream',
-                'jp2': 'application/octet-stream',
-                'bed': 'text/plain',
-                'customtrack': 'text/plain',
-                'csfasta': 'text/plain',
-                'eland': 'application/octet-stream',
-                'fasta': 'text/plain',
-                'fastq': 'text/plain',
-                'fastqsanger': 'text/plain',
-                'gtf': 'text/plain',
-                'gff': 'text/plain',
-                'gff3': 'text/plain',
-                'h5': 'application/octet-stream',
-                'interval': 'text/plain',
-                'laj': 'text/plain',
-                'lav': 'text/plain',
-                'maf': 'text/plain',
-                'memexml': 'application/xml',
-                'pileup': 'text/plain',
-                'qualsolid': 'text/plain',
-                'qualsolexa': 'text/plain',
-                'qual454': 'text/plain',
-                'sam': 'text/plain',
-                'scf': 'application/octet-stream',
-                'sff': 'application/octet-stream',
-                'tabular': 'text/plain',
-                'csv': 'text/plain',
-                'taxonomy': 'text/plain',
-                'txt': 'text/plain',
-                'wig': 'text/plain',
-                'xml': 'application/xml',
+                "ab1": "application/octet-stream",
+                "axt": "text/plain",
+                "bam": "application/octet-stream",
+                "jp2": "application/octet-stream",
+                "bed": "text/plain",
+                "customtrack": "text/plain",
+                "csfasta": "text/plain",
+                "eland": "application/octet-stream",
+                "fasta": "text/plain",
+                "fastq": "text/plain",
+                "fastqsanger": "text/plain",
+                "gtf": "text/plain",
+                "gff": "text/plain",
+                "gff3": "text/plain",
+                "h5": "application/octet-stream",
+                "interval": "text/plain",
+                "laj": "text/plain",
+                "lav": "text/plain",
+                "maf": "text/plain",
+                "memexml": "application/xml",
+                "pileup": "text/plain",
+                "qualsolid": "text/plain",
+                "qualsolexa": "text/plain",
+                "qual454": "text/plain",
+                "sam": "text/plain",
+                "scf": "application/octet-stream",
+                "sff": "application/octet-stream",
+                "tabular": "text/plain",
+                "csv": "text/plain",
+                "taxonomy": "text/plain",
+                "txt": "text/plain",
+                "wig": "text/plain",
+                "xml": "application/xml",
             }
         # super supertype fix for input steps in workflows.
-        if 'data' not in self.datatypes_by_extension:
-            self.datatypes_by_extension['data'] = data.Data()
-            self.mimetypes_by_extension['data'] = 'application/octet-stream'
+        if "data" not in self.datatypes_by_extension:
+            self.datatypes_by_extension["data"] = data.Data()
+            self.mimetypes_by_extension["data"] = "application/octet-stream"
         # Default values - the order in which we attempt to determine data types is critical
         # because some formats are much more flexibly defined than others.
         if len(self.sniff_order) < 1:
@@ -863,7 +972,7 @@ class Registry:
                 interval.Interval(),
                 tabular.Sam(),
                 tabular.Eland(),
-                tabular.CSV()
+                tabular.CSV(),
             ]
 
     def get_converters_by_datatype(self, ext):
@@ -874,7 +983,7 @@ class Registry:
             for ext2, converters_dict in self.datatype_converters.items():
                 converter_datatype = type(self.get_datatype_by_extension(ext2))
                 if issubclass(source_datatype, converter_datatype):
-                    converters.update(converters_dict)
+                    converters.update({k: v for k, v in converters_dict.items() if k != ext})
             # Ensure ext-level converters are present
             if ext in self.datatype_converters.keys():
                 converters.update(self.datatype_converters[ext])
@@ -903,13 +1012,17 @@ class Registry:
             ext = dataset_or_ext
             dataset = None
 
-        if self.get_datatype_by_extension(ext) is not None and self.get_datatype_by_extension(ext).matches_any(accepted_formats):
+        if self.get_datatype_by_extension(ext) is not None and self.get_datatype_by_extension(ext).matches_any(
+            accepted_formats
+        ):
             return True, None, None
 
         for convert_ext in self.get_converters_by_datatype(ext):
             convert_ext_datatype = self.get_datatype_by_extension(convert_ext)
             if convert_ext_datatype is None:
-                self.log.warning(f"Datatype class not found for extension '{convert_ext}', which is used as target for conversion from datatype '{dataset.ext}'")
+                self.log.warning(
+                    f"Datatype class not found for extension '{convert_ext}', which is used as target for conversion from datatype '{dataset.ext}'"
+                )
             elif convert_ext_datatype.matches_any(accepted_formats):
                 converted_dataset = dataset and dataset.get_converted_files_by_type(convert_ext)
                 if converted_dataset:
@@ -934,31 +1047,32 @@ class Registry:
                     help_txt = meta_spec.desc
                     if not help_txt or help_txt == meta_name:
                         help_txt = ""
-                    inputs.append(f'<param type="text" name="{meta_name}" label="Set metadata value for &quot;{meta_name}&quot;" value="{meta_spec.default}" help="{help_txt}"/>')
+                    inputs.append(
+                        f'<param type="text" name="{meta_name}" label="Set metadata value for &quot;{meta_name}&quot;" value="{meta_spec.default}" help="{help_txt}"/>'
+                    )
             rval[ext] = "\n".join(inputs)
-        if 'auto' not in rval and 'txt' in rval:  # need to manually add 'auto' datatype
-            rval['auto'] = rval['txt']
+        if "auto" not in rval and "txt" in rval:  # need to manually add 'auto' datatype
+            rval["auto"] = rval["txt"]
         return rval
 
     @property
     def edam_formats(self):
-        """
-        """
+        """ """
         if not self._edam_formats_mapping:
             self._edam_formats_mapping = {k: v.edam_format for k, v in self.datatypes_by_extension.items()}
         return self._edam_formats_mapping
 
     @property
     def edam_data(self):
-        """
-        """
+        """ """
         if not self._edam_data_mapping:
             self._edam_data_mapping = {k: v.edam_data for k, v in self.datatypes_by_extension.items()}
         return self._edam_data_mapping
 
     def to_xml_file(self, path):
         if not self._registry_xml_string:
-            registry_string_template = Template("""<?xml version="1.0"?>
+            registry_string_template = Template(
+                """<?xml version="1.0"?>
             <datatypes>
               <registration converters_path="$converters_path" display_path="$display_path">
                 $datatype_elems
@@ -967,16 +1081,19 @@ class Registry:
                 $sniffer_elems
               </sniffers>
             </datatypes>
-            """)
-            converters_path = self.converters_path_attr or ''
-            display_path = self.display_path_attr or ''
+            """
+            )
+            converters_path = self.converters_path_attr or ""
+            display_path = self.display_path_attr or ""
             datatype_elems = "".join(galaxy.util.xml_to_string(elem) for elem in self.datatype_elems)
             sniffer_elems = "".join(galaxy.util.xml_to_string(elem) for elem in self.sniffer_elems)
-            self._registry_xml_string = registry_string_template.substitute(converters_path=converters_path,
-                                                                            display_path=display_path,
-                                                                            datatype_elems=datatype_elems,
-                                                                            sniffer_elems=sniffer_elems)
-        with open(os.path.abspath(path), 'w') as registry_xml:
+            self._registry_xml_string = registry_string_template.substitute(
+                converters_path=converters_path,
+                display_path=display_path,
+                datatype_elems=datatype_elems,
+                sniffer_elems=sniffer_elems,
+            )
+        with open(os.path.abspath(path), "w") as registry_xml:
             os.chmod(path, RW_R__R__)
             registry_xml.write(self._registry_xml_string)
 
@@ -986,11 +1103,14 @@ class Registry:
         :param elem:
         :return extension:
         """
-        extension = elem.get('extension', None)
+        extension = elem.get("extension", None)
         # If extension is not None and is uppercase or mixed case, we need to lowercase it
         if extension is not None and not extension.islower():
-            self.log.debug("%s is not lower case, that could cause troubles in the future. \
-            Please change it to lower case" % extension)
+            self.log.debug(
+                "%s is not lower case, that could cause troubles in the future. \
+            Please change it to lower case"
+                % extension
+            )
             extension = extension.lower()
         return extension
 

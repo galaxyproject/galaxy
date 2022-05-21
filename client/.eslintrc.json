@@ -1,0 +1,47 @@
+{
+    "root": true,
+    "extends": [
+        "eslint:recommended",
+        "plugin:vue/recommended",
+        "plugin:compat/recommended"
+        //"airbnb-base", eventually (?)
+    ],
+    "env": {
+        "browser": true,
+        "commonjs": true,
+        "es6": true,
+        "node": true,
+        "jest": true
+    },
+    "rules": {
+        // Standard rules
+        "no-console": "off",
+        "no-unused-vars": ["error", { "args": "none" }],
+        "prefer-const": "error",
+        "one-var": ["error", "never"],
+        "curly": "error",
+
+        "vue/valid-v-slot": "error",
+        "vue/v-slot-style": ["error", { "atComponent": "v-slot", "default": "v-slot", "named": "longform" }],
+
+        // vue/multi-word-component names is considered an error, that we
+        // downgrade to a warning here.  It should be prioritized to get fixed
+        // and compliant.
+        // TODO: We want to fix or add inline exceptions documenting these.
+        "vue/multi-word-component-names": "warn",
+        "vue/prop-name-casing": "warn",
+        "vue/require-prop-types": "warn",
+        "vue/require-default-prop": "warn",
+        "vue/no-v-html": "warn",
+
+        // Prettier compromises/workarounds -- mostly #wontfix?
+        "vue/html-indent": "off",
+        "vue/max-attributes-per-line": "off",
+        "vue/html-self-closing": "off",
+        "vue/singleline-html-element-content-newline": "off",
+        "vue/multiline-html-element-content-newline": "off",
+        "vue/html-closing-bracket-newline": "off",
+        "vue/html-closing-bracket-spacing": "off"
+    },
+    "ignorePatterns": ["src/qunit", "src/mocha", "src/libs", "src/nls", "src/legacy"]
+}

@@ -42,7 +42,8 @@ const actions = {
     },
     async setCurrentUser({ commit, dispatch }, user) {
         commit("setCurrentUser", user);
-        await dispatch("betaHistory/loadUserHistories", user, { root: true });
+        dispatch("history/loadCurrentHistory", user, { root: true });
+        dispatch("history/loadHistories", user, { root: true });
     },
 };
 

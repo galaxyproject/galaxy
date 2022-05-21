@@ -85,6 +85,7 @@ Fernet key, use the following Python code:
 ```python
 from cryptography.fernet import Fernet
 Fernet.generate_key().decode('utf-8')
+```
 
 If multiple encryption keys are defined, only the first key is used to encrypt secrets. The remaining keys are tried in turn during decryption. This is useful for key rotation.
 We recommend periodically generating a new fernet key and rotating old keys. However, before removing an old key, make sure that any data encrypted using that old key is no longer

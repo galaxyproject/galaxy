@@ -6,8 +6,8 @@
                     class="more-help"
                     href="javascript:void(0);"
                     role="button"
-                    @click="_clickForHelp"
-                    :title="titleForHelp">
+                    :title="titleForHelp"
+                    @click="_clickForHelp">
                     <div v-if="!isExpanded">
                         <i class="fas fa-chevron-down"></i>
                     </div>
@@ -22,8 +22,8 @@
                         class="more-help"
                         href="javascript:void(0);"
                         role="button"
-                        @click="_clickForHelp"
-                        :title="titleForHelp">
+                        :title="titleForHelp"
+                        @click="_clickForHelp">
                     </a>
                 </div>
             </div>
@@ -34,24 +34,24 @@
         <div class="footer flex-row no-flex">
             <div class="attributes clear">
                 <div class="clear">
-                    <label class="setting-prompt float-right" v-if="renderExtensionsToggle">
+                    <label v-if="renderExtensionsToggle" class="setting-prompt float-right">
                         {{ removeFileExtensionsText }}
                         <input
                             class="remove-extensions float-right"
                             type="checkbox"
-                            @click="$emit('remove-extensions-toggle')"
-                            checked />
+                            checked
+                            @click="$emit('remove-extensions-toggle')" />
                     </label>
                     <label class="setting-prompt float-right">
                         {{ hideOriginalsText }}
-                        <input class="hide-originals float-right" type="checkbox" v-model="localHideSourceItems" />
+                        <input v-model="localHideSourceItems" class="hide-originals float-right" type="checkbox" />
                     </label>
                 </div>
                 <div class="clear">
                     <input
+                        v-model="collectionName"
                         class="collection-name form-control float-right"
-                        :placeholder="placeholderEnterName"
-                        v-model="collectionName" />
+                        :placeholder="placeholderEnterName" />
                     <div class="collection-name-prompt float-right">
                         {{ l("Name:") }}
                     </div>
@@ -66,8 +66,8 @@
                 <div class="main-options float-right">
                     <button
                         class="create-collection btn btn-primary"
-                        @click="$emit('clicked-create', collectionName)"
-                        :disabled="!validInput">
+                        :disabled="!validInput"
+                        @click="$emit('clicked-create', collectionName)">
                         {{ l("Create collection") }}
                     </button>
                 </div>
@@ -98,11 +98,6 @@ export default {
             default: "",
         },
     },
-    computed: {
-        validInput: function () {
-            return this.collectionName.length > 0;
-        },
-    },
     data: function () {
         return {
             titleForHelp: _l("Expand or Close Help"),
@@ -115,6 +110,16 @@ export default {
             removeFileExtensionsText: "Remove file extensions?",
             localHideSourceItems: this.hideSourceItems,
         };
+    },
+    computed: {
+        validInput: function () {
+            return this.collectionName.length > 0;
+        },
+    },
+    watch: {
+        localHideSourceItems() {
+            this.$emit("onUpdateHideSourceItems", this.localHideSourceItems);
+        },
     },
     methods: {
         l(str) {
@@ -130,11 +135,6 @@ export default {
         },
         _getName: function () {
             return this.collectionName;
-        },
-    },
-    watch: {
-        localHideSourceItems() {
-            this.$emit("onUpdateHideSourceItems", this.localHideSourceItems);
         },
     },
 };

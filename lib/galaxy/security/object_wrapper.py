@@ -45,19 +45,51 @@ log = logging.getLogger(__name__)
 # Define different behaviors for different types, see also: https://docs.python.org/2/library/types.html
 
 # Known Callable types
-__CALLABLE_TYPES__ = (FunctionType, MethodType, GeneratorType, CodeType, BuiltinFunctionType, BuiltinMethodType, )
+__CALLABLE_TYPES__ = (
+    FunctionType,
+    MethodType,
+    GeneratorType,
+    CodeType,
+    BuiltinFunctionType,
+    BuiltinMethodType,
+)
 
 # Always wrap these types without attempting to subclass
-__WRAP_NO_SUBCLASS__ = (ModuleType, XRangeType, SliceType, BufferType, TracebackType, FrameType, DictProxyType,
-                        GetSetDescriptorType, MemberDescriptorType) + __CALLABLE_TYPES__
+__WRAP_NO_SUBCLASS__ = (
+    ModuleType,
+    XRangeType,
+    SliceType,
+    BufferType,
+    TracebackType,
+    FrameType,
+    DictProxyType,
+    GetSetDescriptorType,
+    MemberDescriptorType,
+) + __CALLABLE_TYPES__
 
 # Don't wrap or sanitize.
-__DONT_SANITIZE_TYPES__ = (Number, bool, NoneType, NotImplementedType, EllipsisType, bytearray, )
+__DONT_SANITIZE_TYPES__ = (
+    Number,
+    bool,
+    NoneType,
+    NotImplementedType,
+    EllipsisType,
+    bytearray,
+)
 
 # Wrap contents, but not the container
-__WRAP_SEQUENCES__ = (tuple, list, )
-__WRAP_SETS__ = (set, frozenset, )
-__WRAP_MAPPINGS__ = (dict, UserDict, )
+__WRAP_SEQUENCES__ = (
+    tuple,
+    list,
+)
+__WRAP_SETS__ = (
+    set,
+    frozenset,
+)
+__WRAP_MAPPINGS__ = (
+    dict,
+    UserDict,
+)
 
 
 # Define the set of characters that are not sanitized, and define a set of mappings for those that are.
@@ -65,18 +97,20 @@ __WRAP_MAPPINGS__ = (dict, UserDict, )
 VALID_CHARACTERS = set(f"{string.ascii_letters + string.digits} -=_.()/+*^,:?!@")
 
 # characters that are allowed but need to be escaped
-CHARACTER_MAP = {'>': '__gt__',
-                 '<': '__lt__',
-                 "'": '__sq__',
-                 '"': '__dq__',
-                 '[': '__ob__',
-                 ']': '__cb__',
-                 '{': '__oc__',
-                 '}': '__cc__',
-                 '\n': '__cn__',
-                 '\r': '__cr__',
-                 '\t': '__tc__',
-                 '#': '__pd__'}
+CHARACTER_MAP = {
+    ">": "__gt__",
+    "<": "__lt__",
+    "'": "__sq__",
+    '"': "__dq__",
+    "[": "__ob__",
+    "]": "__cb__",
+    "{": "__oc__",
+    "}": "__cc__",
+    "\n": "__cn__",
+    "\r": "__cr__",
+    "\t": "__tc__",
+    "#": "__pd__",
+}
 
 INVALID_CHARACTER = "X"
 
@@ -91,8 +125,12 @@ def cmp(x, y):
     return (x > y) - (x < y)
 
 
-def sanitize_lists_to_string(values, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP, invalid_character=INVALID_CHARACTER):
-    return _sanitize_lists_to_string(values, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character)
+def sanitize_lists_to_string(
+    values, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP, invalid_character=INVALID_CHARACTER
+):
+    return _sanitize_lists_to_string(
+        values, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character
+    )
 
 
 def wrap_with_safe_string(value, no_wrap_classes=None):
@@ -140,11 +178,18 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
             do_wrap_func = global_dict.get(do_wrap_func_name, __do_wrap)
         else:
             try:
-                wrapped_class = type(wrapped_class_name, (safe_class, wrapped_class, ), {})
+                wrapped_class = type(
+                    wrapped_class_name,
+                    (
+                        safe_class,
+                        wrapped_class,
+                    ),
+                    {},
+                )
             except TypeError as e:
                 # Fail-safe for when a class cannot be dynamically subclassed.
                 log.warning(f"Unable to create dynamic subclass {wrapped_class_name} for {type(value)}, {value}: {e}")
-                wrapped_class = type(wrapped_class_name, (safe_class, ), {})
+                wrapped_class = type(wrapped_class_name, (safe_class,), {})
             if wrapped_class not in (SafeStringWrapper, CallableSafeStringWrapper):
                 # Save this wrapper for reuse and pickling/copying
                 global_dict[wrapped_class_name] = wrapped_class
@@ -152,7 +197,14 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
                 global_dict[do_wrap_func_name] = do_wrap_func
 
                 def pickle_safe_object(safe_object):
-                    return (wrapped_class, (safe_object.unsanitized, do_wrap_func, ))
+                    return (
+                        wrapped_class,
+                        (
+                            safe_object.unsanitized,
+                            do_wrap_func,
+                        ),
+                    )
+
                 # Set pickle and copy properties
                 copyreg.pickle(wrapped_class, pickle_safe_object, do_wrap_func)
         return wrapped_class(value, safe_string_wrapper_function=do_wrap_func)
@@ -186,14 +238,17 @@ class SafeStringWrapper:
     is of a type found in __DONT_SANITIZE_TYPES__ + __DONT_WRAP_TYPES__, where e.g. ~(strings
     will still be sanitized, but not wrapped), and e.g. integers will have neither.
     """
-    __UNSANITIZED_ATTRIBUTE_NAME__ = 'unsanitized'
-    __NO_WRAP_NAMES__ = ['__safe_string_wrapper_function__', '__class__', __UNSANITIZED_ATTRIBUTE_NAME__]
+
+    __UNSANITIZED_ATTRIBUTE_NAME__ = "unsanitized"
+    __NO_WRAP_NAMES__ = ["__safe_string_wrapper_function__", "__class__", __UNSANITIZED_ATTRIBUTE_NAME__]
 
     def __new__(cls, *arg, **kwd):
         # We need to define a __new__ since, we are subclassing from e.g. immutable str, which internally sets data
         # that will be used when other + this (this + other is handled by __add__)
         try:
-            sanitized_value = sanitize_lists_to_string(arg[0], valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP)
+            sanitized_value = sanitize_lists_to_string(
+                arg[0], valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP
+            )
             return super().__new__(cls, sanitized_value)
         except TypeError:
             # Class to be wrapped takes no parameters.
@@ -205,7 +260,9 @@ class SafeStringWrapper:
         self.__safe_string_wrapper_function__ = safe_string_wrapper_function
 
     def __str__(self):
-        return sanitize_lists_to_string(self.unsanitized, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP)
+        return sanitize_lists_to_string(
+            self.unsanitized, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP
+        )
 
     def __repr__(self):
         return f"{sanitize_lists_to_string(self.__class__.__name__, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP)} object at {id(self):x} on: {sanitize_lists_to_string(repr(self.unsanitized), valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP)}"
@@ -252,6 +309,7 @@ class SafeStringWrapper:
 
     def __bool__(self):
         return bool(self.unsanitized)
+
     __nonzero__ = __bool__
 
     # Do not implement __unicode__, we will rely on __str__
@@ -283,7 +341,7 @@ class SafeStringWrapper:
     def __getattribute__(self, name):
         if name in SafeStringWrapper.__NO_WRAP_NAMES__:
             return object.__getattribute__(self, name)
-        return self.__safe_string_wrapper_function__(getattr(object.__getattribute__(self, 'unsanitized'), name))
+        return self.__safe_string_wrapper_function__(getattr(object.__getattribute__(self, "unsanitized"), name))
 
     # Skip Descriptors
 
@@ -458,14 +516,13 @@ class SafeStringWrapper:
 
 
 class CallableSafeStringWrapper(SafeStringWrapper):
-
     def __call__(self, *args, **kwds):
         return self.__safe_string_wrapper_function__(self.unsanitized(*args, **kwds))
 
 
 # Enable pickling/deepcopy
 def pickle_SafeStringWrapper(safe_object):
-    args = (safe_object.unsanitized, )
+    args = (safe_object.unsanitized,)
     cls = SafeStringWrapper
     if isinstance(safe_object, CallableSafeStringWrapper):
         cls = CallableSafeStringWrapper

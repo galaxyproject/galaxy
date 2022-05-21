@@ -1,7 +1,7 @@
 <template>
     <div id="structured-history-view">
         <div v-if="errorMessages.length > 0">
-            <div :key="index" v-for="(error, index) in errorMessages">
+            <div v-for="(error, index) in errorMessages" :key="index">
                 <div class="alert alert-danger" role="alert">{{ error }}</div>
             </div>
         </div>
@@ -64,6 +64,9 @@ export default {
         const url = getAppRoot() + "history/view/" + this.id;
         this.ajaxCall(url);
     },
+    updated: function () {
+        this.makeHistoryView(this.historyData);
+    },
     methods: {
         ajaxCall: function (url) {
             axios
@@ -106,9 +109,6 @@ export default {
         reloadPage: function () {
             window.location.reload();
         },
-    },
-    updated: function () {
-        this.makeHistoryView(this.historyData);
     },
 };
 </script>

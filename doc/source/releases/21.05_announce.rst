@@ -9,8 +9,8 @@ Highlights
 ===========================================================
 
 **New development stack**
-  Galaxy release 21.09 will ship with a new web framework (`fastAPI <https://fastapi.tiangolo.com/>`__),
-  `Celery <https://docs.celeryproject.org/en/stable/index.html>`__ task queue and process management using `Circus <https://circus.readthedocs.io/en/latest/>`__. You can preview new stack now by running ``APP_WEBSERVER=dev ./run.sh``.
+  Galaxy release 21.09 will ship with a new web framework (`FastAPI <https://fastapi.tiangolo.com/>`__),
+  `Celery <https://docs.celeryq.dev/>`__ task queue and process management using `Circus <https://circus.readthedocs.io/en/latest/>`__. You can preview new stack now by running ``APP_WEBSERVER=dev ./run.sh``.
 
 **Celery for background tasks**
   Galaxy can now run certain tasks in the background. The Celery workers are

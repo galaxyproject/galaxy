@@ -1,7 +1,7 @@
 <template>
     <span v-if="link">
         <a :href="link" target="_blank" style="display: inline">
-            <font-awesome-icon v-b-tooltip.hover title="Link" icon="external-link-alt" v-show="show" />
+            <font-awesome-icon v-show="show" v-b-tooltip.hover title="Link" icon="external-link-alt" />
         </a>
     </span>
 </template>

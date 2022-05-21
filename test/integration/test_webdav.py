@@ -11,19 +11,14 @@ from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
-
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_JOB_CONF = os.path.join(SCRIPT_DIRECTORY, "file_sources_conf.yml")
 
-skip_if_no_webdav = pytest.mark.skipif(
-    not os.environ.get('GALAXY_TEST_WEBDAV'),
-    reason="GALAXY_TEST_WEBDAV not set"
-)
+skip_if_no_webdav = pytest.mark.skipif(not os.environ.get("GALAXY_TEST_WEBDAV"), reason="GALAXY_TEST_WEBDAV not set")
 
 
 @skip_if_no_webdav
 class WebDavIntegrationTestCase(integration_util.IntegrationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["file_sources_config_file"] = FILE_SOURCES_JOB_CONF

@@ -14,7 +14,7 @@ def compute_fasta_length(fasta_file, out_file, keep_first_char, keep_first_word=
     infile = fasta_file
     keep_first_char = int(keep_first_char)
 
-    fasta_title = ''
+    fasta_title = ""
     seq_len = 0
 
     # number of char to keep in the title
@@ -25,13 +25,13 @@ def compute_fasta_length(fasta_file, out_file, keep_first_char, keep_first_word=
 
     first_entry = True
 
-    with open(out_file, 'w') as out:
+    with open(out_file, "w") as out:
         with open(infile) as fh:
             for line in fh:
                 line = line.strip()
-                if not line or line.startswith('#'):
+                if not line or line.startswith("#"):
                     continue
-                if line[0] == '>':
+                if line[0] == ">":
                     if first_entry is False:
                         if keep_first_word:
                             fasta_title = fasta_title.split()[0]

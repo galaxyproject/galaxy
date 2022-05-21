@@ -2,16 +2,16 @@
     <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-center">
         <b-navbar-brand :href="brandLink" aria-label="homepage">
             <img alt="logo" class="navbar-brand-image" :src="brandImage" />
-            <img alt="logo" class="navbar-brand-image" :src="brandImageSecondary" v-if="brandImageSecondary" />
+            <img v-if="brandImageSecondary" alt="logo" class="navbar-brand-image" :src="brandImageSecondary" />
             <span class="navbar-brand-title">{{ brandTitle }}</span>
         </b-navbar-brand>
         <b-navbar-nav>
             <masthead-item
                 v-for="(tab, idx) in tabs"
-                :tab="tab"
-                :active-tab="activeTab"
+                v-show="!(tab.hidden === undefined ? false : tab.hidden)"
                 :key="`tab-${idx}`"
-                v-show="!(tab.hidden === undefined ? false : tab.hidden)">
+                :tab="tab"
+                :active-tab="activeTab">
             </masthead-item>
         </b-navbar-nav>
         <div ref="quota-meter-container" class="quota-meter-container" />
@@ -26,6 +26,12 @@ import { loadWebhookMenuItems } from "./_webhooks";
 
 export default {
     name: "Masthead",
+    components: {
+        BNavbar,
+        BNavbarBrand,
+        BNavbarNav,
+        MastheadItem,
+    },
     props: {
         displayGalaxyBrand: {
             type: Boolean,
@@ -58,39 +64,6 @@ export default {
         menuOptions: {
             type: Object,
             default: null,
-        },
-    },
-    components: {
-        BNavbar,
-        BNavbarBrand,
-        BNavbarNav,
-        MastheadItem,
-    },
-    methods: {
-        addItem(item) {
-            this.tabs.push(item);
-        },
-        highlight(activeTab) {
-            this.activeTab = activeTab;
-        },
-        _tabToJson(el) {
-            const defaults = {
-                visible: true,
-                target: "_parent",
-            };
-            let asJson;
-            if (el.toJSON instanceof Function) {
-                asJson = el.toJSON();
-            } else {
-                asJson = el;
-            }
-            return Object.assign({}, defaults, asJson);
-        },
-        _reflectScratchbookFrames() {
-            const frames = this.mastheadState.frame.getFrames();
-            const tab = this.mastheadState.frame.buttonLoad;
-            tab.toggle = frames.visible;
-            tab.icon = (frames.visible && "fa-eye") || "fa-eye-slash";
         },
     },
     data() {
@@ -133,6 +106,33 @@ export default {
             .on("show hide", () => {
                 this._reflectScratchbookFrames();
             });
+    },
+    methods: {
+        addItem(item) {
+            this.tabs.push(item);
+        },
+        highlight(activeTab) {
+            this.activeTab = activeTab;
+        },
+        _tabToJson(el) {
+            const defaults = {
+                visible: true,
+                target: "_parent",
+            };
+            let asJson;
+            if (el.toJSON instanceof Function) {
+                asJson = el.toJSON();
+            } else {
+                asJson = el;
+            }
+            return Object.assign({}, defaults, asJson);
+        },
+        _reflectScratchbookFrames() {
+            const frames = this.mastheadState.frame.getFrames();
+            const tab = this.mastheadState.frame.buttonLoad;
+            tab.toggle = frames.visible;
+            tab.icon = (frames.visible && "fa-eye") || "fa-eye-slash";
+        },
     },
 };
 </script>

@@ -7,12 +7,13 @@ from .path import safe_walk
 
 
 class ZipstreamWrapper:
-
     def __init__(self, archive_name=None, upstream_mod_zip=False, upstream_gzip=False):
         self.upstream_mod_zip = upstream_mod_zip
         self.archive_name = archive_name
         if not self.upstream_mod_zip:
-            self.archive = zipstream.ZipFile(allowZip64=True, compression=zipstream.ZIP_STORED if upstream_gzip else zipstream.ZIP_DEFLATED)
+            self.archive = zipstream.ZipFile(
+                allowZip64=True, compression=zipstream.ZIP_STORED if upstream_gzip else zipstream.ZIP_DEFLATED
+            )
         self.files = []
         self.size = 0
 
@@ -20,19 +21,16 @@ class ZipstreamWrapper:
         if self.upstream_mod_zip:
             yield "\n".join(self.files).encode()
         else:
-            yield iter(self.archive)
-
-    def get_iterator(self):
-        return iter(self.archive)
+            yield from iter(self.archive)
 
     def get_headers(self):
         headers = {}
         if self.archive_name:
-            headers['Content-Disposition'] = f'attachment; filename="{self.archive_name}.zip"'
+            headers["Content-Disposition"] = f'attachment; filename="{self.archive_name}.zip"'
         if self.upstream_mod_zip:
-            headers['X-Archive-Files'] = 'zip'
+            headers["X-Archive-Files"] = "zip"
         else:
-            headers['Content-Type'] = 'application/x-zip-compressed'
+            headers["Content-Type"] = "application/x-zip-compressed"
         return headers
 
     def add_path(self, path, archive_name):

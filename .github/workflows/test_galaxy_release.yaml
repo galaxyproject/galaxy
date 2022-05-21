@@ -2,23 +2,27 @@ name: Test Galaxy release script
 on:
   push:
     paths:
+      - '.github/workflows/test_galaxy_release.yaml'
+      - lib/galaxy/dependencies/**
       - lib/galaxy/version.py
       - scripts/release.sh
       - test/release.sh
   pull_request:
     paths:
+      - '.github/workflows/test_galaxy_release.yaml'
+      - lib/galaxy/dependencies/**
       - lib/galaxy/version.py
       - scripts/release.sh
       - test/release.sh
 concurrency:
-  group: test-galaxy-release-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Run tests

@@ -11,10 +11,10 @@
                 <div
                     v-for="(item, idx) in warningItems"
                     :key="idx"
+                    class="ml-2"
                     @mouseover="onMouseOver(item)"
-                    @mouseleave="onMouseLeave(item)"
-                    class="ml-2">
-                    <a href="#" @click="onClick(item)" class="scrolls">
+                    @mouseleave="onMouseLeave(item)">
+                    <a href="#" class="scrolls" @click="onClick(item)">
                         <font-awesome-icon v-if="item.autofix" icon="magic" class="mr-1" />
                         <font-awesome-icon v-else icon="search" class="mr-1" />
                         {{ item.stepLabel }}: {{ item.warningLabel }}

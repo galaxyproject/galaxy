@@ -1,6 +1,6 @@
 <template>
     <div class="form-row dataRow input-data-row" @mouseover="mouseOver" @mouseleave="mouseLeave">
-        <div :id="id" :input-name="input.name" ref="terminal" :class="terminalClass">
+        <div :id="id" ref="terminal" :input-name="input.name" :class="terminalClass">
             <div class="icon" />
         </div>
         <div v-if="showRemove" class="delete-terminal" @click="onRemove" />
@@ -37,6 +37,22 @@ export default {
             isMultiple: false,
         };
     },
+    computed: {
+        id() {
+            const node = this.getNode();
+            return `node-${node.id}-input-${this.input.name}`;
+        },
+        label() {
+            return this.input.label || this.input.name;
+        },
+        terminalClass() {
+            const cls = "terminal input-terminal";
+            if (this.isMultiple) {
+                return `${cls} multiple`;
+            }
+            return cls;
+        },
+    },
     watch: {
         input: function (newInput) {
             const oldTerminal = this.terminal;
@@ -56,24 +72,12 @@ export default {
             }
         },
     },
-    computed: {
-        id() {
-            const node = this.getNode();
-            return `node-${node.id}-input-${this.input.name}`;
-        },
-        label() {
-            return this.input.label || this.input.name;
-        },
-        terminalClass() {
-            const cls = "terminal input-terminal";
-            if (this.isMultiple) {
-                return `${cls} multiple`;
-            }
-            return cls;
-        },
-    },
     mounted() {
         this.terminal = this.createTerminal(this.input);
+    },
+    beforeDestroy() {
+        this.$emit("onRemove", this.input);
+        this.onRemove();
     },
     methods: {
         terminalClassForInput(input) {
@@ -117,10 +121,6 @@ export default {
         mouseLeave() {
             this.showRemove = false;
         },
-    },
-    beforeDestroy() {
-        this.$emit("onRemove", this.input);
-        this.onRemove();
     },
 };
 </script>

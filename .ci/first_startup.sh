@@ -4,6 +4,8 @@ case "$1" in
         SCRIPT=./run.sh
         PORT=8080
         LOGFILE=galaxy.log
+        GRAVITY_LOGFILE=database/gravity/log/gunicorn.log
+        SUPERVISORD_LOGFILE=database/gravity/supervisor/supervisord.log
         ;;
     reports)
         SCRIPT=./run_reports.sh
@@ -28,5 +30,16 @@ $SCRIPT --daemon && \
     done
 $SCRIPT --skip-wheels --stop-daemon
 echo "exit code:$EXIT_CODE, showing startup log:"
-cat "$LOGFILE"
+if [ -f "$LOGFILE" ]; then
+    cat "$LOGFILE"
+elif [ ! -f "$LOGFILE" -a -f "$GRAVITY_LOGFILE" ]; then
+    echo "Warning: $LOGFILE does not exist, showing gravity startup log instead"
+    cat "$GRAVITY_LOGFILE"
+elif [ ! -f "$LOGFILE" -a ! -f "$GRAVITY_LOGFILE" -a -f "$SUPERVISORD_LOGFILE" ]; then
+    echo "Warning: $LOGFILE and $GRAVITY_LOGFILE do not exist, showing supervisord startup log instead"
+    cat "$SUPERVISORD_LOGFILE"
+else
+    echo "ERROR: No log files found!"
+    ls -lR database/gravity
+fi
 exit $EXIT_CODE

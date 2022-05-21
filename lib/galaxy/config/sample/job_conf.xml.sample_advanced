@@ -113,7 +113,7 @@
                scratch directory available on compute). -->
           <!-- Specify a complete description of the Pulsar app
                to create. If this configuration defines more than
-               one manager - you can specify the manager name 
+               one manager - you can specify the manager name
                using the "manager" destination parameter. For more
                information on configuring a Pulsar app see:
 
@@ -208,7 +208,7 @@
             <!-- Comma separated list of Persistent Volume Claim (PVC) to container mount point mappings, in the format
                  PVC:mount point
 
-                 Typical mount paths are extra mounts that are expected to be mounted for all jobs, such as 
+                 Typical mount paths are extra mounts that are expected to be mounted for all jobs, such as
                  tool scripts, the CVMFS, and all library paths set in galaxy.yml (or equivalent general galaxy config file). -->
 
             <!-- <param id="k8s_namespace">default</param> -->
@@ -390,13 +390,12 @@
 
                - `assign_with` - How jobs should be assigned to handlers. The value can be a single method or a
                  comma-separated list that will be tried in order. The default depends on whether any handlers and a job
-                 handler "pool" (such as uWSGI mules in a `job-handlers` farm) are configured. Valid methods are
+                 handler "pool" are configured. Valid methods are
                  explained in detail in the documentation referenced above and have the values:
 
                    - `mem-self` - In-memory Self Assignment
                    - `db-self`- Database Self Assignment
                    - `db-preassign` - Database Preassignment
-                   - `uwsgi-mule-message` - uWSGI Mule Messaging
                    - `db-transaction-isolation` - Database Transaction Isolation
                    - `db-skip-locked` - Database SKIP LOCKED
 
@@ -550,7 +549,7 @@
                command.
           -->
           <!-- <param id="docker_auto_rm">true</param> -->
-          <!-- Override which user to launch Docker container as - defaults to 
+          <!-- Override which user to launch Docker container as - defaults to
                Galaxy's user id. For remote job execution (e.g. Pulsar) set to
                remote job user. Leave empty to not use the -u argument with
                Docker. -->
@@ -902,8 +901,8 @@
             <param id="job_memory">16000</param>
             <param id="job_cores">8</param>
             <param id="job_project">BigMem</param>
-            <!-- Exclude hosts in the LSF cluster from receiving the job. 
-                 Useful for avoiding nodes with temporal issues. 
+            <!-- Exclude hosts in the LSF cluster from receiving the job.
+                 Useful for avoiding nodes with temporal issues.
             -->
             <param id="job_excluded_hosts">/path/to/file/with/hosts/to/be/excluded/one_per_line.txt</param>
         </destination>
@@ -928,8 +927,8 @@
                     <container type="docker">bgruening/galaxy-stable</container>
                 </requirements>
 
-            Unless the job destination specifies an override 
-            with docker_container_id_override. If neither of 
+            Unless the job destination specifies an override
+            with docker_container_id_override. If neither of
             these is set a default container can be specified
             with docker_default_container_id. The resolved
             container ID will be passed along to condor as
@@ -963,7 +962,7 @@
              handler will be reused for the resubmitted job. The ``destination`` attriubte
              is optional, if not present the job's original destination will be reused for the
              re-submission. The ``delay`` attribute is optional, if present it will cause the job to
-             delay for that number of seconds before being re-submitted. 
+             delay for that number of seconds before being re-submitted.
         -->
         <destination id="short_fast" runner="slurm">
             <param id="nativeSpecification">--time=00:05:00 --nodes=1</param>
@@ -1091,12 +1090,12 @@
             <param id="docker_default_container_id">centos:latest</param>
             <!-- Specify the image on which the jobs have to be executed -->
             <param id="godocker_volumes"></param>
-            <!-- Mount the godocker volumes 
+            <!-- Mount the godocker volumes
                  volumes must be separated by commas.
                  eg: <param id="godocker_volumes">home,galaxy</param>
             -->
             <param id="virtualenv">false</param>
-            <!-- If a tool execution in container requires galaxy virtualenv, 
+            <!-- If a tool execution in container requires galaxy virtualenv,
                  then enable it by setting the value to true.
                  Disable venv by setting the value to false.
             -->

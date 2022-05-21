@@ -17,24 +17,26 @@ import os
 import sys
 from urllib.parse import urlencode
 
-import requests
-
 import parse_builds  # noqa: I100,I202
+import requests
 
 
 def getchrominfo(url, db):
     tableURL = "http://genome-test.gi.ucsc.edu/cgi-bin/hgTables?"
-    URL = tableURL + urlencode({
-        "clade": "",
-        "org": "",
-        "db": db,
-        "hgta_outputType": "primaryTable",
-        "hgta_group": "allTables",
-        "hgta_table": "chromInfo",
-        "hgta_track": db,
-        "hgta_regionType": "",
-        "position": "",
-        "hgta_doTopSubmit": "get info"})
+    URL = tableURL + urlencode(
+        {
+            "clade": "",
+            "org": "",
+            "db": db,
+            "hgta_outputType": "primaryTable",
+            "hgta_group": "allTables",
+            "hgta_table": "chromInfo",
+            "hgta_track": db,
+            "hgta_regionType": "",
+            "position": "",
+            "hgta_doTopSubmit": "get info",
+        }
+    )
     page = requests.get(URL).text
     for i, line in enumerate(page.splitlines()):
         line = line.rstrip("\r\n")

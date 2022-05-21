@@ -2,7 +2,7 @@
     <b-button v-if="wait" variant="info" disabled>
         <font-awesome-icon icon="spinner" class="mr-2" spin />Please wait...
     </b-button>
-    <b-button v-else variant="primary" v-b-tooltip.hover.bottom :title="tooltip" @click="$emit('onClick')">
+    <b-button v-else v-b-tooltip.hover.bottom variant="primary" :title="tooltip" @click="$emit('onClick')">
         <font-awesome-icon icon="check" class="mr-2" />{{ title }}
     </b-button>
 </template>

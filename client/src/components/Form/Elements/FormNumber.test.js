@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { getLocalVue } from "jest/helpers";
 import FormNumber from "./FormNumber";
-import flushPromises from "flush-promises";
 
 const localVue = getLocalVue();
 
@@ -49,31 +49,19 @@ describe("FormInput", () => {
 
     it("range should be respected", async () => {
         const checkOutOfRangeAlert = async (number) => {
+            const props = { value: 50, type: "float", min: 10, max: 100 };
             const wrapper = await mountFormNumber(props);
             const input = await getInput(wrapper);
-            input.setValue(number);
-            input.trigger("change");
-            await flushPromises();
+            await input.setValue(number);
+            await input.trigger("change");
             const alert = await getAlert(wrapper);
             expect(alert.exists()).toBeTruthy();
             expect(alert.text().includes(`${number} is out`)).toBeTruthy();
             wrapper.destroy();
         };
 
-        const numberWithinRange = 75;
         const numberBiggerThanRange = [110, Number.MAX_VALUE];
         const numberSmallerThanRange = [1, 0, -1, Number.MIN_VALUE];
-        const props = { value: 50, type: "float", min: 10, max: 100 };
-
-        // const wrapper = await mountFormNumber(props);
-        const wrapper = await mountFormNumber(props);
-
-        const input = await getInput(wrapper);
-
-        // both inputs should have the same value
-        input.setValue(numberWithinRange);
-        const inputRange = await getInputRange(wrapper);
-        expect(parseFloat(inputRange.element.value)).toBe(numberWithinRange);
 
         //alert should be shown
         for (const value of numberSmallerThanRange) {
@@ -105,6 +93,29 @@ describe("FormInput", () => {
 
         for (const key of keycodes) {
             await checkFractionsAlert(key);
+        }
+    });
+
+    it("should calculate the right step for floats", async () => {
+        const expectStep = async (value, expectedStep) => {
+            const props = { value: value, type: "float", min: 0, max: 1 };
+            const wrapper = await mountFormNumber(props);
+            expect(wrapper.vm.step).toBe(expectedStep);
+        };
+
+        //minimum step 0.1 - maximum step 0.001
+        const testValues = [
+            { value: undefined, step: 0.1 },
+            { value: "", step: 0.1 },
+            { value: 0, step: 0.1 },
+            { value: 0.5, step: 0.1 },
+            { value: 0.55, step: 0.01 },
+            { value: 0.555, step: 0.001 },
+            { value: 0.5555, step: 0.001 },
+            { value: 25e-100, step: 0.001 },
+        ];
+        for (let index = 0; index < testValues.length; index++) {
+            expectStep(testValues[index].value, testValues[index].step);
         }
     });
 });

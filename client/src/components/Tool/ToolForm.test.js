@@ -5,7 +5,7 @@ import { getLocalVue } from "jest/helpers";
 import ToolForm from "./ToolForm";
 import MockCurrentUser from "../providers/MockCurrentUser";
 import MockConfigProvider from "../providers/MockConfigProvider";
-import MockCurrentHistory from "components/providers/History/UserHistories/MockCurrentHistory";
+import MockCurrentHistory from "components/providers/MockCurrentHistory";
 import Vue from "vue";
 
 const localVue = getLocalVue();

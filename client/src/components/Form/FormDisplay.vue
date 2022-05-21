@@ -9,14 +9,14 @@
         :collapsed-enable-icon="collapsedEnableIcon"
         :collapsed-disable-text="collapsedDisableText"
         :collapsed-disable-icon="collapsedDisableIcon"
-        :errors="errors"
         :on-change="onChange"
         :on-change-form="onChangeForm" />
 </template>
 
 <script>
+import Vue from "vue";
 import FormInputs from "./FormInputs";
-import { visitInputs, validateInputs, matchErrors, getElementId } from "./utilities";
+import { visitInputs, validateInputs, matchErrors } from "./utilities";
 export default {
     components: {
         FormInputs,
@@ -71,15 +71,17 @@ export default {
             default: null,
         },
     },
-    created() {
-        this.onCloneInputs();
-    },
     data() {
         return {
             formData: {},
             formIndex: {},
             formInputs: [],
         };
+    },
+    computed: {
+        validation() {
+            return validateInputs(this.formIndex, this.formData);
+        },
     },
     watch: {
         id() {
@@ -108,7 +110,7 @@ export default {
         errors() {
             this.resetError();
             if (this.errors) {
-                const errorMessages = matchErrors(this.errors, this.formIndex);
+                const errorMessages = matchErrors(this.formIndex, this.errors);
                 for (const inputId in errorMessages) {
                     this.setError(inputId, errorMessages[inputId]);
                 }
@@ -118,10 +120,8 @@ export default {
             this.onReplaceParams();
         },
     },
-    computed: {
-        validation() {
-            return validateInputs(this.formIndex, this.formData);
-        },
+    created() {
+        this.onCloneInputs();
     },
     methods: {
         onReplaceParams() {
@@ -147,6 +147,9 @@ export default {
         },
         onCloneInputs() {
             this.formInputs = JSON.parse(JSON.stringify(this.inputs));
+            visitInputs(this.formInputs, (input) => {
+                Vue.set(input, "error", null);
+            });
             this.onCreateIndex();
         },
         onChange(refreshOnChange) {
@@ -175,10 +178,12 @@ export default {
                 const message = validation[1];
                 this.setError(inputId, message);
                 if (!silent && inputId) {
-                    const elementId = getElementId(inputId);
-                    const element = this.$el.querySelector(`#${elementId}`);
+                    const element = this.$el.querySelector(`[id='form-element-${inputId}']`);
                     if (element) {
-                        document.querySelector(".center-panel").scrollTo(0, this.getOffsetTop(element));
+                        const centerPanel = document.querySelector(".center-panel");
+                        if (centerPanel) {
+                            centerPanel.scrollTo(0, this.getOffsetTop(element));
+                        }
                     }
                 }
             }

@@ -6,7 +6,7 @@ from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
 class AnVILFilesSource(PyFilesystem2FilesSource):
-    plugin_type = 'anvil'
+    plugin_type = "anvil"
     required_module = AnVILFS
     required_package = "fs.anvilfs"
 
@@ -16,4 +16,4 @@ class AnVILFilesSource(PyFilesystem2FilesSource):
         return handle
 
 
-__all__ = ('AnVILFilesSource', )
+__all__ = ("AnVILFilesSource",)

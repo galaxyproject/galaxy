@@ -5,7 +5,7 @@ from typing import (
 )
 
 from galaxy import exceptions
-from galaxy.app import StructuredApp
+from galaxy.structured_app import StructuredApp
 from galaxy.tools.data import (
     TabularToolDataField,
     TabularToolDataTable,
@@ -37,7 +37,7 @@ class ToolDataManager:
     def show(self, table_name: str) -> ToolDataDetails:
         """Get details of a given data table"""
         data_table = self._data_table(table_name)
-        element_view = data_table.to_dict(view='element')
+        element_view = data_table.to_dict(view="element")
         return ToolDataDetails.parse_obj(element_view)
 
     def show_field(self, table_name: str, field_name: str) -> ToolDataField:
@@ -69,7 +69,9 @@ class ToolDataManager:
         split_values = values.split("\t")
 
         if len(split_values) != len(data_table.get_column_name_list()):
-            raise exceptions.RequestParameterInvalidException(f"Invalid data table item ( {values} ) specified. Wrong number of columns ({len(split_values)} given, {len(data_table.get_column_name_list())} required).")
+            raise exceptions.RequestParameterInvalidException(
+                f"Invalid data table item ( {values} ) specified. Wrong number of columns ({len(split_values)} given, {len(data_table.get_column_name_list())} required)."
+            )
 
         data_table.remove_entry(split_values)
         return self._reload_data_table(table_name)
@@ -87,9 +89,5 @@ class ToolDataManager:
         return out
 
     def _reload_data_table(self, name: str) -> ToolDataDetails:
-        self._app.queue_worker.send_control_task(
-            'reload_tool_data_tables',
-            noop_self=True,
-            kwargs={'table_name': name}
-        )
+        self._app.queue_worker.send_control_task("reload_tool_data_tables", noop_self=True, kwargs={"table_name": name})
         return self.show(name)

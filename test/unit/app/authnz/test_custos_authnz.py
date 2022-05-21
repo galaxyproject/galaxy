@@ -3,7 +3,11 @@ import json
 import os
 import unittest
 import uuid
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+)
+from unittest import SkipTest
 from urllib.parse import (
     parse_qs,
     quote,
@@ -15,7 +19,10 @@ import requests
 
 from galaxy.app_unittest_utils.galaxy_mock import MockTrans
 from galaxy.authnz import custos_authnz
-from galaxy.model import CustosAuthnzToken, User
+from galaxy.model import (
+    CustosAuthnzToken,
+    User,
+)
 from galaxy.util import unicodify
 
 
@@ -29,7 +36,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
     def _get_idp_url(self):
         # it would be ideal is we can use a URI as the following:
         # https://test_base_uri/auth
-        return 'https://iam.scigap.org/auth'
+        return "https://iam.scigap.org/auth"
 
     def _get_credential_url(self):
         return f"{self._get_idp_url()}/credentials"
@@ -78,7 +85,9 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.test_refresh_expires_in = 1800
         self.test_user_id = str(uuid.uuid4())
         self.test_alt_user_id = str(uuid.uuid4())
-        self.trans.request.url = f"https://localhost:8000/authnz/custos/oidc/callback?state={self.test_state}&code={self.test_code}"
+        self.trans.request.url = (
+            f"https://localhost:8000/authnz/custos/oidc/callback?state={self.test_state}&code={self.test_code}"
+        )
 
     def setupMocks(self):
         self.mock_fetch_token(self.custos_authnz)
@@ -102,6 +111,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
             self._create_oauth2_session_called = True
             assert state == self.test_state
             return orig_create_oauth2_session(state)
+
         custos_authnz._create_oauth2_session = create_oauth2_session
 
     def mock_fetch_token(self, custos_authnz):
@@ -112,9 +122,10 @@ class CustosAuthnzTestCase(unittest.TestCase):
                 "id_token": self.test_id_token,
                 "refresh_token": self.test_refresh_token,
                 "expires_in": self.test_expires_in,
-                "refresh_expires_in": self.test_refresh_expires_in
+                "refresh_expires_in": self.test_refresh_expires_in,
             }
             return self._raw_token
+
         custos_authnz._fetch_token = fetch_token
 
     def mock_get_userinfo(self, custos_authnz):
@@ -126,13 +137,14 @@ class CustosAuthnzTestCase(unittest.TestCase):
                 "sub": self.test_user_id,
                 "alt_username": self.test_alt_username,
                 "alt_email": self.test_alt_email,
-                "alt_id": self.test_alt_user_id
+                "alt_id": self.test_alt_user_id,
             }
+
         custos_authnz._get_userinfo = get_userinfo
 
     def mockRequest(self, request_dict):
         def get(x, **kwargs):
-            assert(x in request_dict)
+            assert x in request_dict
             return Response(request_dict[x])
 
         class Response:
@@ -145,7 +157,6 @@ class CustosAuthnzTestCase(unittest.TestCase):
         return get
 
     def mockTrans(self):
-
         class Request:
             url = None
 
@@ -206,7 +217,6 @@ class CustosAuthnzTestCase(unittest.TestCase):
                 return self._query
 
         class Trans(MockTrans):
-
             def __init__(self, app=None, user=None, history=None, **kwargs):
                 super().__init__(app, user, history, **kwargs)
                 self.cookies = {}
@@ -229,58 +239,74 @@ class CustosAuthnzTestCase(unittest.TestCase):
         requests.get = self.orig_requests_get
 
     def test_parse_config(self):
-        self.assertTrue(self.custos_authnz.config['verify_ssl'])
-        self.assertEqual(self.custos_authnz.config['client_id'], 'test-client-id')
-        self.assertEqual(self.custos_authnz.config['client_secret'], 'test-client-secret')
-        self.assertEqual(self.custos_authnz.config['redirect_uri'], 'https://test-redirect-uri')
-        self.assertEqual(self.custos_authnz.config['authorization_endpoint'], 'https://test-auth-endpoint')
-        self.assertEqual(self.custos_authnz.config['token_endpoint'], 'https://test-token-endpoint')
-        self.assertEqual(self.custos_authnz.config['userinfo_endpoint'], 'https://test-userinfo-endpoint')
+        self.assertTrue(self.custos_authnz.config["verify_ssl"])
+        self.assertEqual(self.custos_authnz.config["client_id"], "test-client-id")
+        self.assertEqual(self.custos_authnz.config["client_secret"], "test-client-secret")
+        self.assertEqual(self.custos_authnz.config["redirect_uri"], "https://test-redirect-uri")
+        self.assertEqual(self.custos_authnz.config["authorization_endpoint"], "https://test-auth-endpoint")
+        self.assertEqual(self.custos_authnz.config["token_endpoint"], "https://test-token-endpoint")
+        self.assertEqual(self.custos_authnz.config["userinfo_endpoint"], "https://test-userinfo-endpoint")
 
     def test_authenticate_set_state_cookie(self):
         """Verify that authenticate() sets a state cookie."""
         authorization_url = self.custos_authnz.authenticate(self.trans)
         parsed = urlparse(authorization_url)
-        state = parse_qs(parsed.query)['state'][0]
+        state = parse_qs(parsed.query)["state"][0]
         self.assertEqual(state, self.trans.cookies[custos_authnz.STATE_COOKIE_NAME])
 
     def test_authenticate_set_nonce_cookie(self):
         """Verify that authenticate() sets a nonce cookie."""
         authorization_url = self.custos_authnz.authenticate(self.trans)
         parsed = urlparse(authorization_url)
-        hashed_nonce_in_url = parse_qs(parsed.query)['nonce'][0]
+        hashed_nonce_in_url = parse_qs(parsed.query)["nonce"][0]
         nonce_in_cookie = self.trans.cookies[custos_authnz.NONCE_COOKIE_NAME]
         hashed_nonce = self.custos_authnz._hash_nonce(nonce_in_cookie)
         self.assertEqual(hashed_nonce, hashed_nonce_in_url)
+
+    def test_authenticate_set_pkce_verifier_cookie(self):
+        try:
+            import pkce  # noqa: F401
+        except ImportError:
+            raise SkipTest("pkce library is not available")
+        """Verify that authenticate() sets a code verifier cookie."""
+        self.custos_authnz.config["pkce_support"] = True
+        authorization_url = self.custos_authnz.authenticate(self.trans)
+        parsed = urlparse(authorization_url)
+        code_challenge_in_url = parse_qs(parsed.query)["code_challenge"][0]
+        verifier_in_cookie = self.trans.cookies[custos_authnz.VERIFIER_COOKIE_NAME]
+        code_challenge_from_verifier = pkce.get_code_challenge(verifier_in_cookie)
+        self.assertEqual(code_challenge_in_url, code_challenge_from_verifier)
 
     def test_authenticate_adds_extra_params(self):
         """Verify that authenticate() adds configured extra params."""
         authorization_url = self.custos_authnz.authenticate(self.trans)
         parsed = urlparse(authorization_url)
-        param1_value = parse_qs(parsed.query)['kc_idp_hint'][0]
-        self.assertEqual(param1_value, 'oidc')
+        param1_value = parse_qs(parsed.query)["kc_idp_hint"][0]
+        self.assertEqual(param1_value, "oidc")
 
     def test_authenticate_sets_env_var_when_localhost_redirect(self):
         """Verify that OAUTHLIB_INSECURE_TRANSPORT var is set with localhost redirect."""
-        self.custos_authnz = custos_authnz.CustosAuthnz('Custos', {
-            'VERIFY_SSL': True
-        }, {
-            'url': self._get_idp_url(),
-            'client_id': 'test-client-id',
-            'client_secret': 'test-client-secret',
-            'redirect_uri': 'http://localhost/auth/callback',
-            'realm': 'test-realm'
-        })
+        self.custos_authnz = custos_authnz.CustosAuthnz(
+            "Custos",
+            {"VERIFY_SSL": True},
+            {
+                "url": self._get_idp_url(),
+                "client_id": "test-client-id",
+                "client_secret": "test-client-secret",
+                "redirect_uri": "http://localhost/auth/callback",
+                "realm": "test-realm",
+            },
+        )
         self.setupMocks()
-        self.assertIsNone(os.environ.get('OAUTHLIB_INSECURE_TRANSPORT', None))
+        self.assertIsNone(os.environ.get("OAUTHLIB_INSECURE_TRANSPORT", None))
         self.custos_authnz.authenticate(self.trans)
-        self.assertEqual("1", os.environ['OAUTHLIB_INSECURE_TRANSPORT'])
+        self.assertEqual("1", os.environ["OAUTHLIB_INSECURE_TRANSPORT"])
 
     def test_authenticate_does_not_set_env_var_when_https_redirect(self):
-        self.assertTrue(self.custos_authnz.config['redirect_uri'].startswith("https:"))
-        self.assertIsNone(os.environ.get('OAUTHLIB_INSECURE_TRANSPORT', None))
+        self.assertTrue(self.custos_authnz.config["redirect_uri"].startswith("https:"))
+        self.assertIsNone(os.environ.get("OAUTHLIB_INSECURE_TRANSPORT", None))
         self.custos_authnz.authenticate(self.trans)
-        self.assertIsNone(os.environ.get('OAUTHLIB_INSECURE_TRANSPORT', None))
+        self.assertIsNone(os.environ.get("OAUTHLIB_INSECURE_TRANSPORT", None))
 
     def test_callback_verify_with_state_cookie(self):
         """Verify that state from cookie is passed to OAuth2Session constructor."""
@@ -294,7 +320,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         existing_custos_authnz_token = CustosAuthnzToken(
             user=User(email=self.test_email, username=self.test_username),
             external_user_id=self.test_user_id,
-            provider=self.custos_authnz.config['provider'],
+            provider=self.custos_authnz.config["provider"],
             access_token=old_access_token,
             id_token=old_id_token,
             refresh_token=old_refresh_token,
@@ -305,9 +331,8 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.trans.sa_session._query.custos_authnz_token = existing_custos_authnz_token
         self.assertIsNotNone(
             self.trans.sa_session.query(CustosAuthnzToken)
-                .filter_by(external_user_id=self.test_user_id,
-                           provider=self.custos_authnz.config['provider'])
-                .one_or_none()
+            .filter_by(external_user_id=self.test_user_id, provider=self.custos_authnz.config["provider"])
+            .one_or_none()
         )
         self.trans.sa_session._query.user = User(email=self.test_email, username=self.test_username)
 
@@ -317,9 +342,8 @@ class CustosAuthnzTestCase(unittest.TestCase):
         # Intentionally passing a bad state_token to make sure that code under
         # test uses the state cookie instead when creating the OAuth2Session
         login_redirect_url, user = self.custos_authnz.callback(
-            state_token="xxx",
-            authz_code=self.test_code, trans=self.trans,
-            login_redirect_url="http://localhost:8000/")
+            state_token="xxx", authz_code=self.test_code, trans=self.trans, login_redirect_url="http://localhost:8000/"
+        )
         self.assertTrue(self._create_oauth2_session_called)
         self.assertTrue(self._fetch_token_called)
         self.assertTrue(self._get_userinfo_called)
@@ -335,12 +359,12 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.test_nonce_hash = self.test_nonce_hash + "Z"
 
         # self.custos_authnz._fetch_token = fetch_token
-        with self.assertRaisesRegex(Exception, "^Nonce mismatch!$"):
+        with self.assertRaisesRegex(Exception, "^Nonce mismatch"):
             self.custos_authnz.callback(
                 state_token="xxx",
                 authz_code=self.test_code,
                 trans=self.trans,
-                login_redirect_url="http://localhost:8000/"
+                login_redirect_url="http://localhost:8000/",
             )
         self.assertTrue(self._fetch_token_called)
         self.assertFalse(self._get_userinfo_called)
@@ -351,15 +375,13 @@ class CustosAuthnzTestCase(unittest.TestCase):
 
         self.assertIsNone(
             self.trans.sa_session.query(CustosAuthnzToken)
-                .filter_by(external_user_id=self.test_user_id,
-                           provider=self.custos_authnz.config['provider'])
-                .one_or_none()
+            .filter_by(external_user_id=self.test_user_id, provider=self.custos_authnz.config["provider"])
+            .one_or_none()
         )
         self.assertEqual(0, len(self.trans.sa_session.items))
         login_redirect_url, user = self.custos_authnz.callback(
-            state_token="xxx",
-            authz_code=self.test_code, trans=self.trans,
-            login_redirect_url="http://localhost:8000/")
+            state_token="xxx", authz_code=self.test_code, trans=self.trans, login_redirect_url="http://localhost:8000/"
+        )
         self.assertIsNone(user)
         self.assertTrue("http://localhost:8000/root/login?confirm=true&custos_token=" in login_redirect_url)
         self.assertTrue(self._fetch_token_called)
@@ -367,9 +389,8 @@ class CustosAuthnzTestCase(unittest.TestCase):
     def test_create_user(self):
         self.assertIsNone(
             self.trans.sa_session.query(CustosAuthnzToken)
-                .filter_by(external_user_id=self.test_user_id,
-                           provider=self.custos_authnz.config['provider'])
-                .one_or_none()
+            .filter_by(external_user_id=self.test_user_id, provider=self.custos_authnz.config["provider"])
+            .one_or_none()
         )
         self.assertEqual(0, len(self.trans.sa_session.items))
 
@@ -392,12 +413,11 @@ class CustosAuthnzTestCase(unittest.TestCase):
             "id_token": test_id_token,
             "refresh_token": self.test_refresh_token,
             "expires_in": self.test_expires_in,
-            "refresh_expires_in": self.test_refresh_expires_in
+            "refresh_expires_in": self.test_refresh_expires_in,
         }
         login_redirect_url, user = self.custos_authnz.create_user(
-            token=json.dumps(self._raw_token),
-            trans=self.trans,
-            login_redirect_url="http://localhost:8000/")
+            token=json.dumps(self._raw_token), trans=self.trans, login_redirect_url="http://localhost:8000/"
+        )
         self.assertEqual(login_redirect_url, "http://localhost:8000/")
         self.trans.set_user(user)
         self.assertEqual(2, len(self.trans.sa_session.items), "Session has new User & new CustosAuthnzToken")
@@ -417,9 +437,11 @@ class CustosAuthnzTestCase(unittest.TestCase):
         expiration_timedelta = expected_expiration_time - added_custos_authnz_token.expiration_time
         self.assertTrue(expiration_timedelta.total_seconds() < 1)
         expected_refresh_expiration_time = datetime.now() + timedelta(seconds=self.test_refresh_expires_in)
-        refresh_expiration_timedelta = expected_refresh_expiration_time - added_custos_authnz_token.refresh_expiration_time
+        refresh_expiration_timedelta = (
+            expected_refresh_expiration_time - added_custos_authnz_token.refresh_expiration_time
+        )
         self.assertTrue(refresh_expiration_timedelta.total_seconds() < 1)
-        self.assertEqual(self.custos_authnz.config['provider'], added_custos_authnz_token.provider)
+        self.assertEqual(self.custos_authnz.config["provider"], added_custos_authnz_token.provider)
         self.assertTrue(self.trans.sa_session.flush_called)
 
     def test_callback_galaxy_user_not_created_when_user_logged_in_and_no_custos_authnz_token_exists(self):
@@ -433,15 +455,13 @@ class CustosAuthnzTestCase(unittest.TestCase):
 
         self.assertIsNone(
             self.trans.sa_session.query(CustosAuthnzToken)
-                .filter_by(external_user_id=self.test_user_id,
-                           provider=self.custos_authnz.config['provider'])
-                .one_or_none()
+            .filter_by(external_user_id=self.test_user_id, provider=self.custos_authnz.config["provider"])
+            .one_or_none()
         )
         self.assertEqual(0, len(self.trans.sa_session.items))
         login_redirect_url, user = self.custos_authnz.callback(
-            state_token="xxx",
-            authz_code=self.test_code, trans=self.trans,
-            login_redirect_url="http://localhost:8000/")
+            state_token="xxx", authz_code=self.test_code, trans=self.trans, login_redirect_url="http://localhost:8000/"
+        )
         self.assertTrue(self._fetch_token_called)
         self.assertTrue(self._get_userinfo_called)
         self.assertEqual(1, len(self.trans.sa_session.items), "Session has new CustosAuthnzToken")
@@ -463,7 +483,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         existing_custos_authnz_token = CustosAuthnzToken(
             user=User(email=self.test_email, username=self.test_username),
             external_user_id=self.test_user_id,
-            provider=self.custos_authnz.config['provider'],
+            provider=self.custos_authnz.config["provider"],
             access_token=old_access_token,
             id_token=old_id_token,
             refresh_token=old_refresh_token,
@@ -475,24 +495,24 @@ class CustosAuthnzTestCase(unittest.TestCase):
 
         self.assertIsNotNone(
             self.trans.sa_session.query(CustosAuthnzToken)
-                .filter_by(external_user_id=self.test_user_id,
-                           provider=self.custos_authnz.config['provider'])
-                .one_or_none()
+            .filter_by(external_user_id=self.test_user_id, provider=self.custos_authnz.config["provider"])
+            .one_or_none()
         )
         self.assertEqual(0, len(self.trans.sa_session.items))
         login_redirect_url, user = self.custos_authnz.callback(
-            state_token="xxx",
-            authz_code=self.test_code, trans=self.trans,
-            login_redirect_url="http://localhost:8000/")
+            state_token="xxx", authz_code=self.test_code, trans=self.trans, login_redirect_url="http://localhost:8000/"
+        )
         self.assertTrue(self._fetch_token_called)
         self.assertTrue(self._get_userinfo_called)
         # Make sure query was called with correct parameters
         self.assertEqual(self.test_user_id, self.trans.sa_session._query.external_user_id)
-        self.assertEqual(self.custos_authnz.config['provider'], self.trans.sa_session._query.provider)
+        self.assertEqual(self.custos_authnz.config["provider"], self.trans.sa_session._query.provider)
         self.assertEqual(1, len(self.trans.sa_session.items), "Session has updated CustosAuthnzToken")
         session_custos_authnz_token = self.trans.sa_session.items[0]
         self.assertIsInstance(session_custos_authnz_token, CustosAuthnzToken)
-        self.assertIs(existing_custos_authnz_token, session_custos_authnz_token, "existing CustosAuthnzToken should be updated")
+        self.assertIs(
+            existing_custos_authnz_token, session_custos_authnz_token, "existing CustosAuthnzToken should be updated"
+        )
         # Verify both that existing CustosAuthnzToken has the correct values and different values than before
         self.assertEqual(self.test_access_token, session_custos_authnz_token.access_token)
         self.assertNotEqual(old_access_token, session_custos_authnz_token.access_token)
@@ -505,7 +525,9 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.assertTrue(expiration_timedelta.total_seconds() < 1)
         self.assertNotEqual(old_expiration_time, session_custos_authnz_token.expiration_time)
         expected_refresh_expiration_time = datetime.now() + timedelta(seconds=self.test_refresh_expires_in)
-        refresh_expiration_timedelta = expected_refresh_expiration_time - session_custos_authnz_token.refresh_expiration_time
+        refresh_expiration_timedelta = (
+            expected_refresh_expiration_time - session_custos_authnz_token.refresh_expiration_time
+        )
         self.assertTrue(refresh_expiration_timedelta.total_seconds() < 1)
         self.assertNotEqual(old_refresh_expiration_time, session_custos_authnz_token.refresh_expiration_time)
         self.assertTrue(self.trans.sa_session.flush_called)
@@ -514,7 +536,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         custos_authnz_token = CustosAuthnzToken(
             user=User(email=self.test_email, username=self.test_username),
             external_user_id=self.test_user_id,
-            provider=self.custos_authnz.config['provider'],
+            provider=self.custos_authnz.config["provider"],
             access_token=self.test_access_token,
             id_token=self.test_id_token,
             refresh_token=self.test_refresh_token,
@@ -550,7 +572,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         custos_authnz_token1 = CustosAuthnzToken(
             user=self.trans.user,
             external_user_id=self.test_user_id + "1",
-            provider=self.custos_authnz.config['provider'],
+            provider=self.custos_authnz.config["provider"],
             access_token=self.test_access_token,
             id_token=self.test_id_token,
             refresh_token=self.test_refresh_token,
@@ -560,7 +582,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         custos_authnz_token2 = CustosAuthnzToken(
             user=self.trans.user,
             external_user_id=self.test_user_id + "2",
-            provider=self.custos_authnz.config['provider'],
+            provider=self.custos_authnz.config["provider"],
             access_token=self.test_access_token,
             id_token=self.test_id_token,
             refresh_token=self.test_refresh_token,

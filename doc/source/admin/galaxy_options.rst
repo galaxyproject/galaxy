@@ -592,6 +592,22 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``load_tool_shed_datatypes``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This option controls whether legacy datatypes are loaded from
+    installed tool shed repositories. We're are in the process of
+    disabling Tool Shed datatypes. This option with a default of true
+    will be added in 22.01, we will disable the datatypes on the big
+    public servers during that release. This option will be switched
+    to False by default in 22.05 and this broken functionality will be
+    removed all together during some future release.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~
 ``watch_tools``
 ~~~~~~~~~~~~~~~
@@ -648,6 +664,60 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``short_term_storage_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Location of files available for a short time as downloads (short
+    term storage). This directory is exclusively used for serving
+    dynamically generated downloadable content. Galaxy may uses the
+    new_file_path parameter as a general temporary directory and that
+    directory should be monitored by a tool such as tmpwatch in
+    production environments. short_term_storage_dir on the other hand
+    is monitored by Galaxy's task framework and should not require
+    such external tooling.
+    The value of this option will be resolved with respect to
+    <cache_dir>.
+:Default: ``short_term_web_storage``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``short_term_storage_default_duration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default duration before short term web storage files will be
+    cleaned up by Galaxy tasks (in seconds). The default duration is 1
+    day.
+:Default: ``86400``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``short_term_storage_maximum_duration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The maximum duration short term storage files can hosted before
+    they will be marked for clean up.  The default setting of 0
+    indicates no limit here.
+:Default: ``0``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``short_term_storage_cleanup_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    How many seconds between instances of short term storage being
+    cleaned up in default Celery task configuration.
+:Default: ``3600``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``file_sources_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -658,6 +728,16 @@
     <config_dir>.
 :Default: ``file_sources_conf.yml``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~
+``file_sources``
+~~~~~~~~~~~~~~~~
+
+:Description:
+    FileSource plugins described embedded into Galaxy's config.
+:Default: ``None``
+:Type: seq
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -944,22 +1024,6 @@
     dir.  To use an absolute path begin the path with '/'.  This is a
     comma-separated list.
 :Default: ``config/plugins/visualizations``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``interactive_environment_plugins_directory``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Interactive environment plugins root directory: where to look for
-    interactive environment plugins.  By default none will be loaded.
-    Set to config/plugins/interactive_environments to load Galaxy's
-    stock plugins. These will require Docker to be configured and have
-    security considerations, so proceed with caution. The path is
-    relative to the Galaxy root dir.  To use an absolute path begin
-    the path with '/'.  This is a comma-separated list.
-:Default: ``None``
 :Type: str
 
 
@@ -1274,6 +1338,17 @@
     <cache_dir>.
 :Default: ``mulled/locks``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``mulled_resolution_cache_expire``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Seconds until the beaker cache is considered old and a new value
+    is created.
+:Default: ``3600``
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1691,13 +1766,25 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_upstream_proxy``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to false to redirect users of Interactive tools directly
+    to the Interactive tools proxy. `interactivetools_upstream_proxy`
+    should only be set to false in development.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``interactivetools_proxy_host``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Proxy host - assumed to just be hosted on the same hostname and
-    port as Galaxy by default.
+    Hostname and port of Interactive tools proxy. It is assumed to be
+    hosted on the same hostname and port as Galaxy by default.
 :Default: ``None``
 :Type: str
 
@@ -1857,6 +1944,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~
+``use_legacy_history``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Server-wide default selection to use the legacy history during the
+    transition period, after which this option will disappear.  Users
+    will remain able to swap back and forth per their preference.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``user_preferences_extra_conf_path``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1902,13 +2001,12 @@
 
 :Description:
     URL (with schema http/https) of the Galaxy instance as accessible
-    within your local network - if specified used as a default by
-    pulsar file staging and Jupyter Docker container for communicating
+    within your local network. This URL is used as a default by pulsar
+    file staging and Interactive Tool containers for communicating
     back with Galaxy via the API.
-    If you are attempting to set up GIEs on Mac OS X with Docker
-    Desktop for Mac and your Galaxy instance runs on port 8080 this
-    should be 'http://host.docker.internal:8080'.  For more details
-    see https://docs.docker.com/docker-for-mac/networking/
+    If you plan to run Interactive Tools make sure the docker
+    container can reach this URL. For more details see
+    `job_conf.xml.interactivetools`.
 :Default: ``http://localhost:8080``
 :Type: str
 
@@ -1977,7 +2075,7 @@
 
 :Description:
     The URL linked by the "Galaxy Help" link in the "Help" menu.
-:Default: ``None``
+:Default: ``https://help.galaxyproject.org/``
 :Type: str
 
 
@@ -1986,7 +2084,7 @@
 ~~~~~~~~~~~~
 
 :Description:
-    The URL linked by the "Wiki" link in the "Help" menu.
+    The URL linked by the "Community Hub" link in the "Help" menu.
 :Default: ``https://galaxyproject.org/``
 :Type: str
 
@@ -2032,33 +2130,13 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~
-``search_url``
-~~~~~~~~~~~~~~
-
-:Description:
-    The URL linked by the "Search" link in the "Help" menu.
-:Default: ``https://galaxyproject.org/search/``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~
-``mailing_lists_url``
-~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    The URL linked by the "Mailing Lists" link in the "Help" menu.
-:Default: ``https://galaxyproject.org/mailing-lists/``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~
 ``screencasts_url``
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
     The URL linked by the "Videos" link in the "Help" menu.
-:Default: ``https://vimeo.com/galaxyproject``
+:Default: ``https://www.youtube.com/c/galaxyproject``
 :Type: str
 
 
@@ -2070,18 +2148,6 @@
     The URL linked by the "Terms and Conditions" link in the "Help"
     menu, as well as on the user registration and login forms and in
     the activation emails.
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~
-``qa_url``
-~~~~~~~~~~
-
-:Description:
-    The URL linked by the "Galaxy Q&A" link in the "Help" menu The
-    Galaxy Q&A site is under development; when the site is done, this
-    URL will be set and uncommented.
 :Default: ``None``
 :Type: str
 
@@ -2322,6 +2388,18 @@
     out upon job completion by remote job runners (i.e. Pulsar) that
     initiate staging operations on the remote end.  See the Galaxy
     nginx documentation for the corresponding nginx configuration.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``tus_upload_store``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The upload store is a temporary directory in which files uploaded
+    by the tus middleware or server will be placed. Defaults to
+    new_file_path if not set.
 :Default: ``None``
 :Type: str
 
@@ -2686,11 +2764,6 @@
     use_printdebug.  It also causes the files used by PBS/SGE
     (submission script, output, and error) to remain on disk after the
     job is complete.
-    In addition, this will set uWSGI's `honour-stdin` option to
-    `true`; thus, preventing uWSGI from remapping stdin to `/dev/null`
-    and enabling debugging with tools like pdb. To keep uWSGI's
-    default setting, set `honor-stdin` to `false` in the `uwsgi`
-    section of this configuration file.
 :Default: ``false``
 :Type: bool
 
@@ -2737,9 +2810,7 @@
     are responsible for preparing/submitting and collecting/finishing
     jobs, and which can cause job errors if not shut down cleanly. If
     using supervisord, consider also increasing the value of
-    `stopwaitsecs`. If using job handler mules, consider also setting
-    the `mule-reload-mercy` uWSGI option. See the Galaxy Admin
-    Documentation for more.
+    `stopwaitsecs`. See the Galaxy Admin Documentation for more.
 :Default: ``30``
 :Type: int
 
@@ -2763,8 +2834,7 @@
 :Description:
     Control the period (in seconds) between dumps. Use -1 to disable.
     Regardless of this setting, if use_heartbeat is enabled, you can
-    send a Galaxy process (unless running with uWSGI) SIGUSR1 (`kill
-    -USR1`) to force a dump.
+    send a Galaxy process SIGUSR1 (`kill -USR1`) to force a dump.
 :Default: ``20``
 :Type: int
 
@@ -3273,6 +3343,17 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
+``prefer_custos_login``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Controls the order of the login page to prefer Custos-based login
+    and registration.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
 ``allow_user_creation``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -3430,16 +3511,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_containers_interface``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable the new container interface for Interactive Environments
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_beta_workflow_modules``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3586,6 +3657,21 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``max_discovered_files``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to a positive integer value to limit the number of
+    datasets that can be discovered by a single job. This prevents
+    accidentally creating large numbers of datasets when running tools
+    that create a potentially unlimited number of output datasets,
+    such as tools that split a file into a collection of datasets for
+    each line in an input dataset.
+:Default: ``10000``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``history_local_serial_workflow_scheduling``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3670,28 +3756,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~
-``enable_openid``
-~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable access to post-authentication options via OpenID.
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``openid_consumer_cache_path``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If OpenID is enabled, consumer cache directory to use.
-    The value of this option will be resolved with respect to
-    <cache_dir>.
-:Default: ``openid_consumer_cache``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~
 ``enable_tool_tags``
 ~~~~~~~~~~~~~~~~~~~~
@@ -3744,8 +3808,13 @@
 :Description:
     When the simplified workflow run form is rendered, should the
     invocation outputs be sent to the 'current' history or a 'new'
-    history.
-:Default: ``current``
+    history. If the user should be presented and option between these
+    - set this to 'prefer_current' or 'prefer_new' to display a
+    runtime setting with the corresponding default. The default is to
+    provide the user this option and default it to the current history
+    (the traditional behavior of Galaxy for years) - this corresponds
+    to the setting 'prefer_current'.
+:Default: ``prefer_current``
 :Type: str
 
 
@@ -4614,7 +4683,7 @@
     the process that handled that particular request will tell all
     others to also reload, lock jobs, etc. For connection examples,
     see
-    http://docs.celeryproject.org/projects/kombu/en/latest/userguide/connections.html
+    https://docs.celeryq.dev/projects/kombu/en/stable/userguide/connections.html
     Without specifying anything here, galaxy will first attempt to use
     your specified database_connection above.  If that's not specified
     either, Galaxy will automatically create and use a separate sqlite
@@ -4634,6 +4703,26 @@
     see https://docs.galaxyproject.org/en/master/admin/production.html
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~
+``celery_broker``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Celery broker (if unset falls back to amqp_internal_connection).
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~
+``celery_backend``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If set, it will be the results backend for Celery.
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~
@@ -4755,20 +4844,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-``containers_config_file``
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Path to container interface configuration file. The containers
-    interface is only used if `enable_beta_containers_interface`
-    config option is set.
-    The value of this option will be resolved with respect to
-    <config_dir>.
-:Default: ``containers_conf.yml``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``tool_destinations_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4792,13 +4867,27 @@
 :Default: ``plugins/welcome_page/new_user/static/topics/``
 :Type: str
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+~~~~~~~~~~~~~~~~~~~~~
 ``vault_config_file``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Vault configuration
+    Vault config file.
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``vault_conf.yml``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``display_builtin_converters``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Display built-in converters in the tool panel.
+:Default: ``true``
+:Type: bool
+
+
+

@@ -10,7 +10,7 @@ export default Backbone.View.extend({
         var self = this;
         this.chart = app.chart;
         this.setElement("<div/>");
-        this.listenTo(this.chart, "load", function () {
+        this.listenTo(this.chart, "refresh", function () {
             self.render();
         });
     },
@@ -23,6 +23,8 @@ export default Backbone.View.extend({
                 var model_value = self.chart.settings.get(name);
                 if (model_value !== undefined && !input.hidden) {
                     input.value = model_value;
+                } else {
+                    self.chart.settings.set(name, input.value);
                 }
             });
             const instance = appendVueComponent(this.$el, FormDisplay, {
@@ -33,5 +35,6 @@ export default Backbone.View.extend({
                 this.chart.trigger("redraw");
             });
         }
+        this.chart.trigger("redraw");
     },
 });

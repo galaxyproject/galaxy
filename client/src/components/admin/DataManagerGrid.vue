@@ -7,8 +7,8 @@
                     <a
                         class="icon-btn"
                         href="javascript:void(0)"
-                        @click="handleReloadButtonClick"
                         :title="`Reload ${dataManagerTableName} tool data table`"
+                        @click="handleReloadButtonClick"
                         ><span class="fa fa-sync"></span
                     ></a>
                 </th>

@@ -10,8 +10,69 @@ import { eventHubPlugin } from "components/plugins/eventHub";
 import { iconPlugin } from "components/plugins/icons";
 import BootstrapVue from "bootstrap-vue";
 import Vuex from "vuex";
+import _l from "utils/localization";
 
 const defaultComparator = (a, b) => a == b;
+
+function testLocalize(text) {
+    if(text) {
+        return `test_localized<${text}>`;
+    } else {
+        return text;
+    }
+}
+
+function isTestLocalized(text) {
+    return text && text.indexOf("test_localized<") == 0
+}
+
+expect.extend({
+    toBeLocalizationOf(received) {
+        const pass = isTestLocalized(received);
+        if (pass) {
+            return {
+              message: () =>
+                `expected ${received} to be localized`,
+              pass: true,
+            };
+          } else {
+            return {
+              message: () =>
+                `expected ${received} to be localized`,
+              pass: false,
+            };
+          }
+    },
+    toBeLocalizationOf(received, str) {
+        let unlocalized
+        if(received.indexOf("test_localized<") == 0) {
+            unlocalized = received.substr("test_localized<".length);
+            unlocalized = unlocalized.substr(0, unlocalized.length - 1);
+        } else {
+            unlocalized = received;
+        }
+      const pass = testLocalize(str) == received;
+      if (pass) {
+        return {
+          message: () =>
+            `expected ${unlocalized} to be localization of ${str}`,
+          pass: true,
+        };
+      } else if (!isTestLocalized(received)) {
+        return {
+          message: () =>
+            `expected ${received} to be localized`,
+          pass: false,
+        };
+      } else {
+        return {
+          message: () =>
+            `expected ${unlocalized} to be localization of ${str}`,
+          pass: false,
+        };
+      }
+    },
+  });
 
 // Creates a watcher on the indicated vm/prop for use in testing
 export function watchForChange(cfg = {}) {
@@ -86,14 +147,15 @@ export const showAll = (vm) => {
 export const wait = (n) => timer(n).pipe(take(1)).toPromise();
 
 // Gets a localVue with custom directives
-export function getLocalVue() {
+export function getLocalVue(instrumentLocalization = false) {
     const localVue = createLocalVue();
     const mockedDirective = {
         bind() {},
     };
     localVue.use(Vuex);
     localVue.use(BootstrapVue);
-    localVue.use(localizationPlugin);
+    const l = instrumentLocalization ? testLocalize : _l;
+    localVue.use(localizationPlugin, l);
     localVue.use(vueRxShortcutPlugin);
     localVue.use(eventHubPlugin);
     localVue.use(iconPlugin);

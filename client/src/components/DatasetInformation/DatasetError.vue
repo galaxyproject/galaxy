@@ -4,11 +4,11 @@
             <h4 class="alert-heading">Failed to access Dataset details.</h4>
             {{ errorMessage }}
         </b-alert>
-        <DatasetProvider :id="datasetId" v-slot="{ item: dataset, loading: datasetLoading }">
+        <DatasetProvider :id="datasetId" v-slot="{ result: dataset, loading: datasetLoading }">
             <JobDetailsProvider
                 v-if="!datasetLoading"
-                :jobid="dataset.creating_job"
                 v-slot="{ result: jobDetails, loading }"
+                :jobid="dataset.creating_job"
                 @error="onError">
                 <div v-if="!loading">
                     <div class="page-container edit-attr">
@@ -24,7 +24,7 @@
                         :tool-stderr="jobDetails.tool_stderr"
                         :job-stderr="jobDetails.job_stderr"
                         :job-messages="jobDetails.job_messages" />
-                    <JobProblemProvider :jobid="dataset.creating_job" v-slot="{ result: jobProblems }" @error="onError">
+                    <JobProblemProvider v-slot="{ result: jobProblems }" :jobid="dataset.creating_job" @error="onError">
                         <div v-if="jobProblems && (jobProblems.has_duplicate_inputs || jobProblems.has_empty_inputs)">
                             <h3 class="common_problems mt-3">Detected Common Potential Problems</h3>
                             <p v-if="jobProblems.has_empty_inputs" id="dataset-error-has-empty-inputs">
@@ -58,23 +58,25 @@
                         show
                         >{{ resultMessage[0] }}</b-alert
                     >
-                    <FormElement
-                        v-if="!jobDetails.user_email"
-                        id="dataset-error-email"
-                        v-model="email"
-                        title="Please provide your email:" />
-                    <FormElement
-                        id="dataset-error-message"
-                        v-model="message"
-                        :area="true"
-                        title="Please provide detailed information on the activities leading to this issue:" />
-                    <b-button
-                        id="dataset-error-submit"
-                        variant="primary"
-                        @click="submit(dataset, jobDetails.user_email)"
-                        class="mt-3">
-                        <font-awesome-icon icon="bug" class="mr-1" />Report
-                    </b-button>
+                    <div v-if="showForm" id="fieldsAndButton">
+                        <FormElement
+                            v-if="!jobDetails.user_email"
+                            id="dataset-error-email"
+                            v-model="email"
+                            title="Please provide your email:" />
+                        <FormElement
+                            id="dataset-error-message"
+                            v-model="message"
+                            :area="true"
+                            title="Please provide detailed information on the activities leading to this issue:" />
+                        <b-button
+                            id="dataset-error-submit"
+                            variant="primary"
+                            class="mt-3"
+                            @click="submit(dataset, jobDetails.user_email)">
+                            <font-awesome-icon icon="bug" class="mr-1" />Report
+                        </b-button>
+                    </div>
                 </div>
             </JobDetailsProvider>
         </DatasetProvider>
@@ -115,6 +117,13 @@ export default {
             errorMessage: null,
             resultMessages: [],
         };
+    },
+    computed: {
+        showForm() {
+            const noResult = !this.resultMessages.length;
+            const hasError = this.resultMessages.some((msg) => msg[1] === "danger");
+            return noResult || hasError;
+        },
     },
     methods: {
         onError(err) {

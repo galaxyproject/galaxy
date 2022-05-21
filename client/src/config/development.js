@@ -7,4 +7,6 @@ export default {
         revs_limit: 1,
         pageSize: 50,
     },
+    /* global __buildTimestamp__ */
+    buildTimestamp: __buildTimestamp__,
 };

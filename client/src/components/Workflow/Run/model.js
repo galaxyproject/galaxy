@@ -25,6 +25,7 @@ export class WorkflowRunModel {
         let hasReplacementParametersInToolForm = false;
 
         _.each(runData.steps, (step, i) => {
+            const isParameterStep = step.step_type == "parameter_input";
             var title = `${parseInt(i + 1)}: ${step.step_label || step.step_name}`;
             if (step.annotation) {
                 title += ` - ${step.annotation}`;
@@ -36,7 +37,7 @@ export class WorkflowRunModel {
                 {
                     index: i,
                     fixed_title: _.escape(title),
-                    expanded: i == 0 || isDataStep(step),
+                    expanded: i == 0 || isDataStep(step) || isParameterStep,
                     errors: step.messages,
                 },
                 step
@@ -44,7 +45,7 @@ export class WorkflowRunModel {
             this.steps[i] = step;
             this.links[i] = [];
             this.parms[i] = {};
-            if (step.step_type == "parameter_input" && step.step_label) {
+            if (isParameterStep && step.step_label) {
                 this.parameterInputLabels.push(step.step_label);
             }
         });
@@ -135,7 +136,7 @@ export class WorkflowRunModel {
 
         // select fields are shown for dynamic fields if all putative data inputs are available,
         // or if an explicit reference is specified as data_ref and available
-        _.each(this.steps, (step, i) => {
+        _.each(this.steps, (step) => {
             if (step.step_type == "tool") {
                 var data_resolved = true;
                 visitInputs(step.inputs, (input, name, context) => {

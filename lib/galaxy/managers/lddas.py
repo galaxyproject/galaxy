@@ -12,6 +12,7 @@ class LDDAManager(DatasetAssociationManager):
     """
     A fairly sparse manager for LDDAs.
     """
+
     model_class = model.LibraryDatasetDatasetAssociation
 
     def __init__(self, app: MinimalManagerApp):
@@ -21,10 +22,9 @@ class LDDAManager(DatasetAssociationManager):
         super().__init__(app)
 
     def get(self, trans, id, check_accessible=True):
-        return manager_base.get_object(trans, id,
-                                       'LibraryDatasetDatasetAssociation',
-                                       check_ownership=False,
-                                       check_accessible=check_accessible)
+        return manager_base.get_object(
+            trans, id, "LibraryDatasetDatasetAssociation", check_ownership=False, check_accessible=check_accessible
+        )
 
     def _set_permissions(self, trans, library_dataset, role_ids_dict):
         # Check Git history for an older broken implementation, but it was broken

@@ -17,42 +17,44 @@ import decodeUriComponent from "decode-uri-component";
 import Router from "layout/router";
 import ToolForm from "components/Tool/ToolForm";
 import FormGeneric from "components/Form/FormGeneric";
-import Sharing from "components/Sharing/Sharing.vue";
-import UserPreferences from "components/User/UserPreferences.vue";
-import DatasetList from "components/Dataset/DatasetList.vue";
+import Sharing from "components/Sharing/Sharing";
+import UserPreferences from "components/User/UserPreferences";
+import DatasetList from "components/Dataset/DatasetList";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
-import CustomBuilds from "components/User/CustomBuilds.vue";
-import Tours from "mvc/tours";
+import CustomBuilds from "components/User/CustomBuilds";
+import { runTour } from "components/Tour/runTour";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
-import JobDetails from "components/JobInformation/JobDetails.vue";
-import WorkflowImport from "components/Workflow/WorkflowImport.vue";
-import TrsImport from "components/Workflow/TrsImport.vue";
-import TrsSearch from "components/Workflow/TrsSearch.vue";
-import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
-import WorkflowList from "components/Workflow/WorkflowList.vue";
-import CollectionEditView from "components/Collections/common/CollectionEditView.vue";
-import HistoryImport from "components/HistoryImport.vue";
+import JobDetails from "components/JobInformation/JobDetails";
+import WorkflowImport from "components/Workflow/WorkflowImport";
+import TrsImport from "components/Workflow/TrsImport";
+import TrsSearch from "components/Workflow/TrsSearch";
+import InteractiveTools from "components/InteractiveTools/InteractiveTools";
+import WorkflowList from "components/Workflow/WorkflowList";
+import CollectionEditView from "components/Collections/common/CollectionEditView";
+import HistoryImport from "components/HistoryImport";
 import { HistoryExport } from "components/HistoryExport/index";
-import HistoryView from "components/HistoryView.vue";
-import WorkflowInvocationReport from "components/Workflow/InvocationReport.vue";
-import WorkflowRun from "components/Workflow/Run/WorkflowRun.vue";
-import RecentInvocations from "components/User/RecentInvocations.vue";
-import ToolsView from "components/ToolsView/ToolsView.vue";
-import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson.vue";
+import HistoryView from "components/HistoryView";
+import WorkflowInvocationReport from "components/Workflow/InvocationReport";
+import WorkflowRun from "components/Workflow/Run/WorkflowRun";
+import UserInvocations from "components/Workflow/UserInvocations";
+import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
+import ToolsView from "components/ToolsView/ToolsView";
+import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
 import HistoryList from "mvc/history/history-list";
 import VisualizationsList from "components/Visualizations/Index";
 import QueryStringParsing from "utils/query-string-parsing";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
-import Citations from "components/Citation/Citations.vue";
-import DisplayStructure from "components/DisplayStructured.vue";
+import Citations from "components/Citation/Citations";
+import DisplayStructure from "components/DisplayStructured";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
-import Confirmation from "components/login/Confirmation.vue";
-import DatasetDetails from "components/Details/DatasetDetails.vue";
+import NewUserConfirmation from "components/login/NewUserConfirmation";
+import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import Libraries from "components/Libraries";
 import { mountVueComponent } from "utils/mountVueComponent";
+import { StorageDashboardRouter } from "components/User/DiskUsage";
 
 import { newUserDict } from "../../../../static/plugins/welcome_page/new_user/dist/static/topics/index";
 
@@ -83,11 +85,13 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)workflows/trs_import": "show_workflows_trs_import",
             "(/)workflows/trs_search": "show_workflows_trs_search",
             "(/)workflows/run(/)": "show_workflows_run",
+            "(/)workflows(/)sharing(/)": "show_workflows_sharing",
             "(/)workflows(/)list": "show_workflows",
             "(/)workflows/invocations": "show_workflow_invocations",
             "(/)workflows/invocations/report": "show_workflow_invocation_report",
             // "(/)workflows/invocations/view_bco": "show_invocation_bco",
             "(/)workflows/list_published(/)": "show_workflows_published",
+            "(/)workflows(/)(:stored_workflow_id)(/)/invocations": "show_invocations_for_stored_workflow",
             "(/)workflows/create(/)": "show_workflows_create",
             "(/)histories(/)citations(/)": "show_history_citations",
             "(/)histories(/)rename(/)": "show_histories_rename",
@@ -109,9 +113,17 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)datasets(/)(:dataset_id)/show_params": "show_dataset_details",
             "(/)interactivetool_entry_points(/)list": "show_interactivetool_list",
             "(/)libraries*path": "show_library_folder",
+            "(/)storage*path": "show_storage_dashboard",
         },
 
-        require_login: ["show_user", "show_user_form", "show_workflows", "show_cloud_auth", "show_external_ids"],
+        require_login: [
+            "show_user",
+            "show_user_form",
+            "show_workflows",
+            "show_cloud_auth",
+            "show_external_ids",
+            "show_storage_dashboard",
+        ],
 
         authenticate: function (args, name) {
             const Galaxy = getGalaxyInstance();
@@ -133,15 +145,14 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_tours: function (tour_id) {
+            this.home();
             if (tour_id) {
-                Tours.giveTourById(tour_id);
-            } else {
-                this.page.display(new Tours.ToursView());
+                runTour(tour_id);
             }
         },
 
         show_new_user_confirmation: function () {
-            this._display_vue_helper(Confirmation);
+            this._display_vue_helper(NewUserConfirmation);
         },
 
         show_user: function () {
@@ -165,6 +176,10 @@ export const getAnalysisRouter = (Galaxy) => {
             this.page.toolPanel?.component.hide(0);
             this.page.panels.right.hide();
             this._display_vue_helper(Libraries);
+        },
+
+        show_storage_dashboard: function () {
+            this._display_vue_helper(StorageDashboardRouter);
         },
 
         show_cloud_auth: function () {
@@ -232,7 +247,11 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_workflow_invocations: function () {
-            this._display_vue_helper(RecentInvocations, {});
+            this._display_vue_helper(UserInvocations, {});
+        },
+
+        show_invocations_for_stored_workflow: function (stored_workflow_id) {
+            this._display_vue_helper(StoredWorkflowInvocations, { storedWorkflowId: stored_workflow_id });
         },
 
         show_history_structure: function () {
@@ -335,6 +354,14 @@ export const getAnalysisRouter = (Galaxy) => {
             });
         },
 
+        show_workflows_sharing: function () {
+            this._display_vue_helper(Sharing, {
+                id: QueryStringParsing.get("id"),
+                pluralName: "Workflows",
+                modelClass: "Workflow",
+            });
+        },
+
         show_workflows: function () {
             this._display_vue_helper(WorkflowList);
         },
@@ -381,7 +408,8 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_custom_builds: function () {
-            const historyPanel = this.page.historyPanel.historyView;
+            const Galaxy = getGalaxyInstance();
+            const historyPanel = Galaxy.currHistoryPanel;
             if (!historyPanel || !historyPanel.model || !historyPanel.model.id) {
                 window.setTimeout(() => {
                     this.show_custom_builds();
@@ -415,7 +443,7 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         /**  */
-        home: function (params) {
+        home: function (params = {}) {
             // TODO: to router, remove Globals
             // load a tool by id (tool_id) or rerun a previous tool execution (job_id)
             if (params.tool_id || params.job_id) {
@@ -453,11 +481,14 @@ export const getAnalysisRouter = (Galaxy) => {
         /** load the center panel with a tool form described by the given params obj */
         _loadToolForm: function (params) {
             //TODO: load tool form code async
+            // If there's a + in tool_id or version param (the only valid
+            // character we use that is 'problematic' like this), then assume it
+            // is already decoded; avoid double decoding.
             if (params.tool_id) {
-                params.id = decodeUriComponent(params.tool_id);
+                params.id = params.tool_id.indexOf("+") >= 0 ? params.tool_id : decodeUriComponent(params.tool_id);
             }
             if (params.version) {
-                params.version = decodeUriComponent(params.version);
+                params.version = params.version.indexOf("+") >= 0 ? params.version : decodeUriComponent(params.version);
             }
             this._display_vue_helper(ToolForm, params);
         },

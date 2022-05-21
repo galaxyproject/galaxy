@@ -4,7 +4,6 @@ from .test_galaxy_mapping import BaseModelTestCase
 
 
 class CalculateUsageTestCase(BaseModelTestCase):
-
     def test_calculate_usage(self):
         u = model.User(email="calc_usage@example.com", password="password")
         self.persist(u)
@@ -12,7 +11,9 @@ class CalculateUsageTestCase(BaseModelTestCase):
         h = model.History(name="History for Usage", user=u)
         self.persist(h)
 
-        d1 = model.HistoryDatasetAssociation(extension="txt", history=h, create_dataset=True, sa_session=self.model.session)
+        d1 = model.HistoryDatasetAssociation(
+            extension="txt", history=h, create_dataset=True, sa_session=self.model.session
+        )
         d1.dataset.total_size = 10
         self.persist(d1)
 
@@ -35,7 +36,6 @@ class CalculateUsageTestCase(BaseModelTestCase):
 
 
 class QuotaTestCase(BaseModelTestCase):
-
     def setUp(self):
         super().setUp()
         model = self.model

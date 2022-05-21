@@ -14,7 +14,6 @@ from .base import BaseTestCase
 
 
 class BaseExportTestCase(BaseTestCase):
-
     def setUp(self):
         super().setUp()
         self.app.hda_manager = mock.MagicMock()
@@ -86,7 +85,6 @@ class BaseExportTestCase(BaseTestCase):
 
 
 class ToBasicMarkdownTestCase(BaseExportTestCase):
-
     def setUp(self):
         super().setUp()
         self.test_dataset_path = None
@@ -127,7 +125,7 @@ history_dataset_peek(history_dataset_id=1)
 """
         with self._expect_get_hda(hda):
             result = self._to_basic(example)
-        assert '\n    My Cool Peek\n\n' in result
+        assert "\n    My Cool Peek\n\n" in result
 
     def test_history_dataset_peek_empty(self):
         hda = self._new_hda()
@@ -138,7 +136,7 @@ history_dataset_peek(history_dataset_id=1)
 """
         with self._expect_get_hda(hda):
             result = self._to_basic(example)
-        assert '\n*No Dataset Peek Available*\n' in result
+        assert "\n*No Dataset Peek Available*\n" in result
 
     def test_history_link(self):
         history = self._new_history()
@@ -149,11 +147,11 @@ history_link(history_id=1)
 """
         with self._expect_get_history(history):
             result = self._to_basic(example)
-        assert '\n    New History\n\n' in result
+        assert "\n    New History\n\n" in result
 
     def test_history_display_binary(self):
         hda = self._new_hda()
-        hda.extension = 'ab1'
+        hda.extension = "ab1"
         example = """# Example
 ```galaxy
 history_dataset_display(history_dataset_id=1)
@@ -165,7 +163,7 @@ history_dataset_display(history_dataset_id=1)
 
     def test_history_display_text(self):
         hda = self._new_hda(contents="MooCow")
-        hda.extension = 'txt'
+        hda.extension = "txt"
         example = """# Example
 ```galaxy
 history_dataset_display(history_dataset_id=1)
@@ -186,12 +184,13 @@ history_dataset_display(history_dataset_id=1)
 ```
 """
         hda = self._new_hda(contents=gtf)
-        hda.extension = 'gtf'
+        hda.extension = "gtf"
         from galaxy.datatypes.tabular import Tabular
+
         assert isinstance(hda.datatype, Tabular)
         with self._expect_get_hda(hda):
             result = self._to_basic(example)
-        assert '<table' in result
+        assert "<table" in result
 
     def test_dataset_name(self):
         hda = self._new_hda()
@@ -203,7 +202,7 @@ history_dataset_name(history_dataset_id=1)
 """
         with self._expect_get_hda(hda):
             result = self._to_basic(example)
-        assert '\n    cool name' in result
+        assert "\n    cool name" in result
 
     def test_dataset_extension(self):
         hda = self._new_hda()
@@ -215,7 +214,7 @@ history_dataset_type(history_dataset_id=1)
 """
         with self._expect_get_hda(hda):
             result = self._to_basic(example)
-        assert '\n    gtf' in result
+        assert "\n    gtf" in result
 
     def test_history_collection_paired(self):
         hdca = model.HistoryDatasetCollectionAssociation()
@@ -297,7 +296,7 @@ job_parameters(job_id=1)
             {"text": "Input Dataset", "value": [{"src": "hda", "hid": 5, "name": "Cool Data"}], "depth": 1},
         ]
         response = {"parameters": parameters}
-        with mock.patch.object(JobManager, 'get_accessible_job', return_value=job):
+        with mock.patch.object(JobManager, "get_accessible_job", return_value=job):
             with mock.patch("galaxy.managers.markdown_util.summarize_job_parameters", return_value=response):
                 result = self._to_basic(example)
         assert "| Num Lines |" in result
@@ -318,7 +317,7 @@ job_metrics(job_id=1)
             {"plugin": "core", "title": "Job Start Time", "value": "2019-12-17 11:53:13"},
             {"plugin": "env", "title": "GALAXY_HOME", "value": "/path/to/home"},
         ]
-        with mock.patch.object(JobManager, 'get_accessible_job', return_value=job):
+        with mock.patch.object(JobManager, "get_accessible_job", return_value=job):
             with mock.patch("galaxy.managers.markdown_util.summarize_job_metrics", return_value=metrics):
                 result = self._to_basic(example)
         assert "**core**\n" in result
@@ -331,7 +330,6 @@ job_metrics(job_id=1)
 
 
 class ReadyExportTestCase(BaseExportTestCase):
-
     def test_ready_dataset_display(self):
         hda = self._new_hda()
         example = """
@@ -378,7 +376,8 @@ history_dataset_collection_display(history_dataset_collection_id=1)
 """
         # Patch out url_for since we haven't initialized an app.
         from galaxy.managers.hdcas import HDCASerializer
-        with mock.patch.object(HDCASerializer, 'url_for', return_value="http://google.com"):
+
+        with mock.patch.object(HDCASerializer, "url_for", return_value="http://google.com"):
             export, extra_data = self._ready_export(example)
         assert "history_dataset_collections" in extra_data
         assert len(extra_data.get("history_dataset_collections")) == 1

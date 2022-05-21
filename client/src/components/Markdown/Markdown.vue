@@ -3,23 +3,19 @@
         <LoadingSpan v-if="loading" />
         <div v-else>
             <div>
-                <b-button
+                <sts-download-button
                     v-if="effectiveExportLink"
-                    class="float-right"
-                    title="Download PDF"
-                    variant="link"
-                    role="button"
-                    v-b-tooltip.hover.bottom
-                    @click="onDownload">
-                    <font-awesome-icon icon="download" />
-                </b-button>
+                    class="float-right markdown-pdf-export"
+                    :fallback-url="exportLink"
+                    :download-endpoint="downloadEndpoint"
+                    title="Download PDF"></sts-download-button>
                 <b-button
                     v-if="!readOnly"
-                    class="float-right"
+                    v-b-tooltip.hover.bottom
+                    class="float-right markdown-edit"
                     title="Edit Markdown"
                     variant="link"
                     role="button"
-                    v-b-tooltip.hover.bottom
                     @click="$emit('onEdit')">
                     <font-awesome-icon icon="edit" />
                 </b-button>
@@ -43,7 +39,7 @@
                 </b-alert>
             </div>
             <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-components">
-                <p v-if="obj.name == 'default'" v-html="obj.content" class="text-justify m-2" />
+                <p v-if="obj.name == 'default'" class="text-justify m-2" v-html="obj.content" />
                 <div v-else-if="obj.name == 'generate_galaxy_version'" class="galaxy-version">
                     <pre><code>{{ getVersion }}</code></pre>
                 </div>
@@ -94,7 +90,6 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import store from "store";
-import { getGalaxyInstance } from "app";
 import MarkdownIt from "markdown-it";
 import markdownItRegexp from "markdown-it-regexp";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -115,6 +110,7 @@ import JobParameters from "./Elements/JobParameters";
 import ToolStd from "./Elements/ToolStd";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay";
 import Visualization from "./Elements/Visualization";
+import StsDownloadButton from "./StsDownloadButton";
 
 const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
 const FUNCTION_CALL = `\\s*[\\w\\|]+\\s*=` + FUNCTION_VALUE_REGEX;
@@ -150,10 +146,19 @@ export default {
         Visualization,
         InvocationTime,
         FontAwesomeIcon,
+        StsDownloadButton,
     },
     props: {
         markdownConfig: {
             type: Object,
+            default: null,
+        },
+        enable_beta_markdown_export: {
+            type: Boolean,
+            default: false,
+        },
+        downloadEndpoint: {
+            type: String,
             default: null,
         },
         readOnly: {
@@ -197,8 +202,7 @@ export default {
             return "unavailable";
         },
         effectiveExportLink() {
-            const Galaxy = getGalaxyInstance();
-            return Galaxy.config.enable_beta_markdown_export ? this.exportLink : null;
+            return this.enable_beta_markdown_export ? this.exportLink : null;
         },
     },
     watch: {

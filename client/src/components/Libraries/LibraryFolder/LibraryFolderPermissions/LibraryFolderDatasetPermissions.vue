@@ -32,25 +32,25 @@
                 Changes made below will affect <strong>every</strong> library item that was created from this dataset
                 and also every history this dataset is part of.
             </div>
-            <p class="text-center" v-if="is_unrestricted">
+            <p v-if="is_unrestricted" class="text-center">
                 You can
-                <strong @click="toggleDatasetPrivacy(true)" class="make-private">
+                <strong class="make-private" @click="toggleDatasetPrivacy(true)">
                     <a id="make-private" href="javascript:void(0)">make this dataset private</a>
                 </strong>
                 to you.
             </p>
-            <p class="text-center" v-else>
+            <p v-else class="text-center">
                 You can
-                <strong @click="toggleDatasetPrivacy(false)" class="remove-restrictions">
+                <strong class="remove-restrictions" @click="toggleDatasetPrivacy(false)">
                     <a href="javascript:void(0)">remove all access restrictions</a>
                 </strong>
                 on this dataset.
             </p>
 
             <PermissionsInputField
-                ref="access_field"
                 v-if="access_dataset_roles"
                 :id="dataset_id"
+                ref="access_field"
                 :permission_type="access_dataset_roles_type"
                 :initial_value="access_dataset_roles"
                 :api-root-url="apiRootUrl"
@@ -58,16 +58,6 @@
                 alert="User has to have <strong>all these roles</strong> in order to access this dataset.
                         Users without access permission <strong>cannot</strong> have other permissions on this dataset.
                         If there are no access roles set on the dataset it is considered <strong>unrestricted</strong>."
-                @input="setUserPermissionsPreferences" />
-            <PermissionsInputField
-                v-if="manage_dataset_roles"
-                :id="dataset_id"
-                :permission_type="manage_dataset_roles_type"
-                :initial_value="manage_dataset_roles"
-                :api-root-url="apiRootUrl"
-                title="Roles that can manage permissions on the dataset"
-                alert="User with <strong>any</strong> of these roles can manage permissions of this dataset.
-                        If you remove yourself you will lose the ability manage this dataset unless you are an admin."
                 @input="setUserPermissionsPreferences" />
             <b-button
                 data-toggle="tooltip"
@@ -105,6 +95,12 @@ Vue.use(BootstrapVue);
 initPermissionsIcons();
 
 export default {
+    components: {
+        PermissionsInputField,
+        FontAwesomeIcon,
+        LibraryBreadcrumb,
+        PermissionsHeader,
+    },
     props: {
         folder_id: {
             type: String,
@@ -115,12 +111,6 @@ export default {
             required: true,
         },
     },
-    components: {
-        PermissionsInputField,
-        FontAwesomeIcon,
-        LibraryBreadcrumb,
-        PermissionsHeader,
-    },
     data() {
         return {
             permissions: undefined,
@@ -128,12 +118,15 @@ export default {
             is_admin: undefined,
             access_dataset_roles: undefined,
             modify_item_roles: undefined,
-            manage_dataset_roles: undefined,
             access_dataset_roles_type: "access_dataset_roles",
             modify_item_roles_type: "modify_item_roles",
-            manage_dataset_roles_type: "manage_dataset_roles",
             apiRootUrl: `${getAppRoot()}api/libraries/datasets`,
         };
+    },
+    computed: {
+        is_unrestricted() {
+            return this.access_dataset_roles ? this.access_dataset_roles.length === 0 : false;
+        },
     },
     created() {
         const Galaxy = getGalaxyInstance();
@@ -147,16 +140,10 @@ export default {
             this.dataset = response;
         });
     },
-    computed: {
-        is_unrestricted() {
-            return this.access_dataset_roles ? this.access_dataset_roles.length === 0 : false;
-        },
-    },
     methods: {
         assignFetchedPermissions(fetched_permissions) {
             this.access_dataset_roles = extractRoles(fetched_permissions.access_dataset_roles);
             this.modify_item_roles = extractRoles(fetched_permissions.modify_item_roles);
-            this.manage_dataset_roles = extractRoles(fetched_permissions.manage_dataset_roles);
             console.log(this.access_dataset_roles);
         },
         toggleDatasetPrivacy(isMakePrivate) {
@@ -187,11 +174,7 @@ export default {
             this.services.setPermissions(
                 this.apiRootUrl,
                 this.dataset_id,
-                [
-                    { "access_ids[]": this.access_dataset_roles },
-                    { "modify_ids[]": this.modify_item_roles },
-                    { "manage_ids[]": this.manage_dataset_roles },
-                ],
+                [{ "access_ids[]": this.access_dataset_roles }, { "modify_ids[]": this.modify_item_roles }],
                 (fetched_permissions) => {
                     Toast.success("Permissions saved.");
                     this.assignFetchedPermissions(fetched_permissions);

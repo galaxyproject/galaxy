@@ -29,7 +29,6 @@ function buildWrapper(has_duplicate_inputs = true, has_empty_inputs = true, user
                 result: { has_duplicate_inputs: has_duplicate_inputs, has_empty_inputs: has_empty_inputs },
             }),
             DatasetProvider: MockProvider({
-                resultLabel: "item",
                 result: { id: "dataset_id", creating_job: "creating_job" },
             }),
             FontAwesomeIcon: false,
@@ -60,5 +59,25 @@ describe("DatasetError", () => {
         expect(wrapper.findAll("#dataset-error-has-empty-inputs").length).toBe(0);
         expect(wrapper.findAll("#dataset-error-has-duplicate-inputs").length).toBe(0);
         expect(wrapper.findAll("#dataset-error-email").length).toBe(0);
+    });
+
+    it("hides form fields and button on success", async () => {
+        const wrapper = buildWrapper();
+        const fieldsAndButton = "#fieldsAndButton";
+        expect(wrapper.find(fieldsAndButton).exists()).toBe(true);
+        await wrapper.setData({ resultMessages: [["message", "success"]] });
+        expect(wrapper.find(fieldsAndButton).exists()).toBe(false);
+    });
+
+    it("does not hide form fields and button on error", async () => {
+        const wrapper = buildWrapper();
+        const fieldsAndButton = "#fieldsAndButton";
+        expect(wrapper.find(fieldsAndButton).exists()).toBe(true);
+        const messages = [
+            ["message", "success"],
+            ["message", "danger"],
+        ]; // at least one has "danger"
+        await wrapper.setData({ resultMessages: messages });
+        expect(wrapper.find(fieldsAndButton).exists()).toBe(true);
     });
 });

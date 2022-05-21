@@ -18,15 +18,17 @@ def assert_has_h5_attribute(output_bytes, key, value):
     attribute"""
     _assert_h5py()
     output_temp = io.BytesIO(output_bytes)
-    local_attrs = h5py.File(output_temp, 'r').attrs
-    assert key in local_attrs and str(local_attrs[key]) == value, (
-        f"Not a HDF5 file or H5 attributes do not match:\n\t{local_attrs.items()}\n\n\t({key} : {value})")
+    local_attrs = h5py.File(output_temp, "r").attrs
+    assert (
+        key in local_attrs and str(local_attrs[key]) == value
+    ), f"Not a HDF5 file or H5 attributes do not match:\n\t{list(local_attrs.items())}\n\n\t({key} : {value})"
 
 
+# TODO the function actually queries groups. so the function and argument name are misleading
 def assert_has_h5_keys(output_bytes, keys):
-    """ Asserts the specified HDF5 output has the given keys."""
+    """Asserts the specified HDF5 output has the given keys."""
     _assert_h5py()
-    keys = [k.strip() for k in keys.strip().split(',')]
+    keys = [k.strip() for k in keys.strip().split(",")]
     h5_keys = sorted(keys)
     output_temp = io.BytesIO(output_bytes)
     local_keys = []
@@ -34,7 +36,8 @@ def assert_has_h5_keys(output_bytes, keys):
     def append_keys(key):
         local_keys.append(key)
         return None
-    h5py.File(output_temp, 'r').visit(append_keys)
+
+    h5py.File(output_temp, "r").visit(append_keys)
     missing = 0
     for key in h5_keys:
         if key not in local_keys:

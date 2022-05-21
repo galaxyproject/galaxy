@@ -18,8 +18,8 @@
                     :value="node.label"
                     title="Label"
                     help="Add a step label."
-                    @input="onLabel"
-                    :error="errorLabel" />
+                    :error="errorLabel"
+                    @input="onLabel" />
                 <FormElement
                     id="__annotation"
                     :value="node.annotation"
@@ -155,9 +155,16 @@ export default {
             const payload = Object.assign({}, this.mainValues, this.sectionValues);
             console.debug("FormTool - Posting changes.", payload);
             const options = this.node.config_form;
+            let toolId = options.id;
+            let toolVersion = options.version;
+            if (newVersion) {
+                toolId = toolId.replace(toolVersion, newVersion);
+                toolVersion = newVersion;
+                console.debug("FormTool - Tool version changed.", toolId, toolVersion);
+            }
             this.$emit("onSetData", this.node.id, {
-                tool_id: options.id,
-                tool_version: newVersion || options.version,
+                tool_id: toolId,
+                tool_version: toolVersion,
                 type: "tool",
                 inputs: payload,
             });

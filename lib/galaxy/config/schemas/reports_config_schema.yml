@@ -1,0 +1,93 @@
+type: map
+mapping:
+  reports:
+    type: map
+    required: true
+    desc: |
+      Galaxy Reports configuration options.
+    mapping:
+
+      log_level:
+        type: str
+        default: DEBUG
+        desc: |
+          Verbosity of console log messages.  Acceptable values can be found here:
+          https://docs.python.org/library/logging.html#logging-levels
+
+      database_connection:
+        type: str
+        default: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
+        desc: |
+          Database connection.
+          Galaxy Reports are intended for production Galaxy instances, so sqlite (and the default value
+          below) is not supported. An SQLAlchemy connection string should be used specify an external
+          database.
+
+      file_path:
+        type: str
+        default: database/objects
+        desc: |
+          Where dataset files are stored.
+
+      new_file_path:
+        type: str
+        default: database/tmp
+        desc: |
+          Where temporary files are stored.
+
+      template_cache_path:
+        type: str
+        default: database/compiled_templates/reports
+        desc: |
+          Mako templates are compiled as needed and cached for reuse, this directory is
+          used for the cache
+
+      debug:
+        type: bool
+        default: false
+        desc: |
+          Configuration for debugging middleware
+
+      use_lint:
+        type: bool
+        default: false
+        desc: |
+          Check for WSGI compliance.
+
+      use_heartbeat:
+        type: bool
+        default: true
+        desc: |
+          Write thread status periodically to 'heartbeat.log' (careful, uses disk space rapidly!)
+
+      use_profile:
+        type: bool
+        default: true
+        desc: |
+          Profiling middleware (cProfile based)
+
+      smtp_server:
+        type: str
+        default: yourserver@yourfacility.edu
+        desc: |
+          Mail
+
+      error_email_to:
+        type: str
+        default: your_bugs@bx.psu.edu
+        desc: |
+          Mail
+
+      enable_beta_gdpr:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables GDPR Compliance mode. This makes several changes to the way
+          Galaxy logs and exposes data externally such as removing
+          emails/usernames from logs and bug reports.
+
+          You are responsible for removing personal data from backups.
+
+          Please read the GDPR section under the special topics area of the
+          admin documentation.

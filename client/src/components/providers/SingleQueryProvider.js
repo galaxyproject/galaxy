@@ -1,4 +1,5 @@
 import hash from "object-hash";
+import { LastQueue } from "utils/promise-queue";
 
 /**
  * Builds a provider that gets its result from a single promise-based query function and
@@ -6,60 +7,94 @@ import hash from "object-hash";
  *
  * @param   {Function}  lookup  async function that loads the result, parameters will be an object
  *                              whose properties are the attributes assigned to the provider component
+ * @param   {Function}  stopRefresh function that will be called with result of lookup.
+ *                                  If function returns true refresh will be stopped.
  * @return  {VueComponentOptions} Vue component options definition
  */
-export const SingleQueryProvider = (lookup) => {
+export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => {
     const promiseCache = new Map();
-
     return {
         props: {
             useCache: {
                 type: Boolean,
-                default: true,
+                default: false,
+            },
+            autoRefresh: {
+                type: Boolean,
+                default: false,
+            },
+            autoTime: {
+                type: Number,
+                default: 3000,
             },
         },
         data() {
             return {
-                result: undefined,
-                error: undefined,
+                result: null,
+                error: null,
+                timeoutId: null,
             };
+        },
+        created() {
+            this.queue = new LastQueue(this.autoTime);
         },
         computed: {
             loading() {
-                return this.result === undefined;
+                return this.result === null;
             },
             cacheKey() {
                 return hash(this.$attrs || {});
             },
         },
         mounted() {
-            let lookupPromise;
-            if (this.useCache) {
-                lookupPromise = promiseCache.get(this.cacheKey);
-                if (!lookupPromise) {
-                    lookupPromise = lookup(this.$attrs);
-                    promiseCache.set(this.cacheKey, lookupPromise);
-                }
-            } else {
-                lookupPromise = lookup(this.$attrs);
+            this.doQuery();
+        },
+        destroyed() {
+            if (this.timeoutId) {
+                clearTimeout(this.timeoutId);
             }
-            lookupPromise.then(
-                (result) => {
-                    this.result = result;
-                },
-                (err) => {
-                    this.result = {};
-                    this.error = err;
-                    this.$emit("error", err);
-                }
-            );
         },
         render() {
-            return this.$scopedSlots.default({
-                loading: this.loading,
-                result: this.result,
-                error: this.error,
-            });
+            return (
+                this.$scopedSlots.default &&
+                this.$scopedSlots.default({
+                    loading: this.loading,
+                    result: this.result,
+                    error: this.error,
+                })
+            );
+        },
+        methods: {
+            doQuery() {
+                let lookupPromise;
+                if (this.useCache) {
+                    lookupPromise = promiseCache.get(this.cacheKey);
+                    if (!lookupPromise) {
+                        lookupPromise = lookup(this.$attrs);
+                        promiseCache.set(this.cacheKey, lookupPromise);
+                    }
+                } else {
+                    lookupPromise = this.queue.enqueue(lookup, this.$attrs);
+                }
+                lookupPromise.then(
+                    (result) => {
+                        this.result = result;
+                        this.$emit("update:result", result);
+                        this.error = null;
+                        if (this.autoRefresh && !stopRefresh(result)) {
+                            this.timeoutId = setTimeout(() => {
+                                this.doQuery();
+                            }, this.autoTime);
+                        }
+                    },
+                    (err) => {
+                        this.result = {};
+                        this.error = err;
+                        this.$emit("error", err);
+                        console.debug("Failed to fulfill promise.", err);
+                    }
+                );
+            },
         },
     };
 };

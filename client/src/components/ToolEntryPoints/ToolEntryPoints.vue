@@ -42,16 +42,16 @@ export default {
             entryPoints: [],
         };
     },
+    computed: {
+        interactiveToolsLink: function () {
+            return getAppRoot() + "interactivetool_entry_points/list";
+        },
+    },
     created: function () {
         this.pollEntryPoints();
     },
     beforeDestroy: function () {
         clearPolling();
-    },
-    computed: {
-        interactiveToolsLink: function () {
-            return getAppRoot() + "interactivetool_entry_points/list";
-        },
     },
     methods: {
         pollEntryPoints: function () {

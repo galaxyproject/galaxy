@@ -13,7 +13,6 @@ import time
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
-
 THIS_DIR = os.path.dirname(__file__)
 SOURCE_TOOL_DATA_DIRECTORY = os.path.join(THIS_DIR, os.pardir, "functional", "tool-data")
 

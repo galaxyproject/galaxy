@@ -1,6 +1,4 @@
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-)
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 
@@ -62,7 +60,7 @@ class QuotaIntegrationTestCase(integration_util.IntegrationTestCase):
 
         new_quota_name = "updated-quota-name"
         update_payload = {
-            'name': new_quota_name,
+            "name": new_quota_name,
         }
         put_response = self._put(f"quotas/{quota_id}", data=update_payload, json=True)
         put_response.raise_for_status()
@@ -158,19 +156,17 @@ class QuotaIntegrationTestCase(integration_util.IntegrationTestCase):
     def _build_quota_payload_with_name(self, quota_name: str, is_default: bool = False):
         default = "registered" if is_default else "no"
         return {
-            'name': quota_name,
-            'description': f'Quota {quota_name} description',
-            'amount': '100MB',
-            'operation': '=',
-            'default': default,
-            'in_users': [],
-            'in_groups': []
+            "name": quota_name,
+            "description": f"Quota {quota_name} description",
+            "amount": "100MB",
+            "operation": "=",
+            "default": default,
+            "in_users": [],
+            "in_groups": [],
         }
 
     def _delete_and_purge(self, quota_id):
-        data = {
-            'purge': 'true'
-        }
+        data = {"purge": "true"}
         return self._delete(f"quotas/{quota_id}", data=data, admin=True, json=True)
 
     def _assert_quota_is_deleted(self, quota_id: str):

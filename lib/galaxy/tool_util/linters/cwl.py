@@ -14,7 +14,7 @@ def lint_cwl_validation(tool_source, lint_ctx):
     except Exception as e:
         validation_exception = e
     if validation_exception:
-        lint_ctx.error("Failed to valdiate CWL artifact [%s]", validation_exception)
+        lint_ctx.error(f"Failed to valdiate CWL artifact: {validation_exception}")
     else:
         lint_ctx.info("CWL appears to be valid.")
 
@@ -28,7 +28,7 @@ def lint_new_draft(tool_source, lint_ctx):
     if cwl_version not in ["v1.0"]:
         lint_ctx.warn(f"CWL version [{cwl_version}] is unknown, we recommend the v1.0 the stable release.")
     else:
-        lint_ctx.info("Modern CWL version [%s]", cwl_version)
+        lint_ctx.info(f"Modern CWL version [{cwl_version}].")
 
 
 def lint_docker_image(tool_source, lint_ctx):

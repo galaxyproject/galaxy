@@ -19,6 +19,14 @@ class HasDriver:
     TimeoutException = TimeoutException
     driver: WebDriver
 
+    def re_get_with_query_params(self, params_str: str):
+        driver = self.driver
+        new_url = driver.current_url
+        if "?" not in new_url:
+            new_url += "?"
+        new_url += params_str
+        driver.get(new_url)
+
     def assert_xpath(self, xpath):
         assert self.driver.find_element_by_xpath(xpath)
 
@@ -57,17 +65,13 @@ class HasDriver:
 
     def wait_for_xpath(self, xpath, **kwds):
         element = self._wait_on(
-            ec.presence_of_element_located((By.XPATH, xpath)),
-            f"XPATH selector [{xpath}] to become present",
-            **kwds
+            ec.presence_of_element_located((By.XPATH, xpath)), f"XPATH selector [{xpath}] to become present", **kwds
         )
         return element
 
     def wait_for_xpath_visible(self, xpath, **kwds):
         element = self._wait_on(
-            ec.visibility_of_element_located((By.XPATH, xpath)),
-            f"XPATH selector [{xpath}] to become visible",
-            **kwds
+            ec.visibility_of_element_located((By.XPATH, xpath)), f"XPATH selector [{xpath}] to become visible", **kwds
         )
         return element
 
@@ -75,7 +79,7 @@ class HasDriver:
         element = self._wait_on(
             ec.presence_of_element_located((By.CSS_SELECTOR, selector)),
             f"CSS selector [{selector}] to become present",
-            **kwds
+            **kwds,
         )
         return element
 
@@ -83,7 +87,7 @@ class HasDriver:
         element = self._wait_on(
             ec.presence_of_element_located(selector_template.element_locator),
             f"{selector_template.description} to become present",
-            **kwds
+            **kwds,
         )
         return element
 
@@ -91,7 +95,7 @@ class HasDriver:
         element = self._wait_on(
             ec.visibility_of_element_located(selector_template.element_locator),
             f"{selector_template.description} to become visible",
-            **kwds
+            **kwds,
         )
         return element
 
@@ -99,7 +103,7 @@ class HasDriver:
         element = self._wait_on(
             ec.visibility_of_element_located((By.CSS_SELECTOR, selector)),
             f"CSS selector [{selector}] to become visible",
-            **kwds
+            **kwds,
         )
         return element
 
@@ -107,7 +111,7 @@ class HasDriver:
         element = self._wait_on(
             ec.element_to_be_clickable((By.CSS_SELECTOR, selector)),
             f"CSS selector [{selector}] to become clickable",
-            **kwds
+            **kwds,
         )
         return element
 
@@ -115,7 +119,7 @@ class HasDriver:
         element = self._wait_on(
             ec.element_to_be_clickable(selector_template.element_locator),
             f"{selector_template.description} to become clickable",
-            **kwds
+            **kwds,
         )
         return element
 
@@ -123,7 +127,7 @@ class HasDriver:
         element = self._wait_on(
             ec.invisibility_of_element_located((By.CSS_SELECTOR, selector)),
             f"CSS selector [{selector}] to become absent or hidden",
-            **kwds
+            **kwds,
         )
         return element
 
@@ -131,7 +135,15 @@ class HasDriver:
         element = self._wait_on(
             lambda driver: len(driver.find_elements_by_css_selector(selector)) == 0,
             f"CSS selector [{selector}] to become absent",
-            **kwds
+            **kwds,
+        )
+        return element
+
+    def wait_for_element_count_of_at_least(self, selector_template, n, **kwds):
+        element = self._wait_on(
+            lambda driver: len(driver.find_elements(*selector_template.element_locator)) >= n,
+            f"{selector_template.description} to become absent",
+            **kwds,
         )
         return element
 
@@ -139,7 +151,7 @@ class HasDriver:
         element = self._wait_on(
             lambda driver: len(driver.find_elements(*selector_template.element_locator)) == 0,
             f"{selector_template.description} to become absent",
-            **kwds
+            **kwds,
         )
         return element
 
@@ -147,16 +159,12 @@ class HasDriver:
         element = self._wait_on(
             ec.invisibility_of_element_located(selector_template.element_locator),
             f"{selector_template.description} to become absent or hidden",
-            **kwds
+            **kwds,
         )
         return element
 
     def wait_for_id(self, id, **kwds):
-        return self._wait_on(
-            ec.presence_of_element_located((By.ID, id)),
-            f"presence of DOM ID [{id}]",
-            **kwds
-        )
+        return self._wait_on(ec.presence_of_element_located((By.ID, id)), f"presence of DOM ID [{id}]", **kwds)
 
     def click(self, selector_template):
         element = self.driver.find_element(*selector_template.element_locator)
@@ -177,8 +185,11 @@ class HasDriver:
     def send_enter(self, element):
         element.send_keys(Keys.ENTER)
 
-    def send_escape(self, element):
-        element.send_keys(Keys.ESCAPE)
+    def send_escape(self, element=None):
+        if element is None:
+            self.action_chains().send_keys(Keys.ESCAPE)
+        else:
+            element.send_keys(Keys.ESCAPE)
 
     def send_backspace(self, element):
         element.send_keys(Keys.BACKSPACE)
@@ -224,6 +235,10 @@ class HasDriver:
         )
 
 
+def exception_indicates_click_intercepted(exception):
+    return "click intercepted" in str(exception)
+
+
 def exception_indicates_not_clickable(exception):
     return "not clickable" in str(exception)
 
@@ -233,6 +248,7 @@ def exception_indicates_stale_element(exception):
 
 
 __all__ = (
+    "exception_indicates_click_intercepted",
     "exception_indicates_not_clickable",
     "exception_indicates_stale_element",
     "HasDriver",

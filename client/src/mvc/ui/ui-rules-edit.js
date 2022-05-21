@@ -5,7 +5,7 @@ import _l from "utils/localization";
 import Ui from "mvc/ui/ui-misc";
 import Vue from "vue";
 import RuleBasedCollectionCreatorModal from "components/Collections/RuleBasedCollectionCreatorModal";
-import RulesDisplay from "components/RulesDisplay.vue";
+import { RulesDisplay } from "components/RulesDisplay";
 
 /**
  * Bridge rule based builder and the tool form.

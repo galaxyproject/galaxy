@@ -1,5 +1,5 @@
 <template>
-    <div v-show="!isHidden" :id="elementId" :class="['ui-form-element section-row', cls]" :tour_id="id">
+    <div v-show="!isHidden" :id="elementId" :class="['ui-form-element section-row', cls]">
         <div v-if="hasError" class="ui-form-error">
             <span class="fa fa-exclamation mr-1" />
             <span class="ui-form-error-text" v-html="error" />
@@ -21,26 +21,26 @@
             <span v-else class="ui-form-title-text">{{ title }}</span>
         </div>
         <div v-if="showField" class="ui-form-field" :data-label="title">
-            <FormBoolean v-if="type == 'boolean'" v-model="currentValue" :id="id" />
-            <FormHidden v-else-if="isHiddenType" v-model="currentValue" :id="id" :info="attrs['info']" />
+            <FormBoolean v-if="type == 'boolean'" :id="id" v-model="currentValue" />
+            <FormHidden v-else-if="isHiddenType" :id="id" v-model="currentValue" :info="attrs['info']" />
             <FormNumber
                 v-else-if="type == 'integer' || type == 'float'"
+                :id="id"
+                v-model="currentValue"
                 :max="attrs.max"
                 :min="attrs.min"
-                :type="type"
-                v-model="currentValue"
-                :id="id" />
-            <FormColor v-else-if="type == 'color'" v-model="currentValue" :id="id" />
+                :type="type" />
+            <FormColor v-else-if="type == 'color'" :id="id" v-model="currentValue" />
             <FormDirectory v-else-if="type == 'directory_uri'" v-model="currentValue" />
             <FormParameter
                 v-else-if="backbonejs"
-                v-model="currentValue"
                 :id="id"
+                ref="params"
+                v-model="currentValue"
                 :data-label="title"
                 :type="type"
-                :attributes="attrs"
-                ref="params" />
-            <FormInput v-else v-model="currentValue" :id="id" :area="attrs['area']" />
+                :attributes="attrs" />
+            <FormInput v-else :id="id" v-model="currentValue" :area="attrs['area']" />
         </div>
         <div v-if="showPreview" class="ui-form-preview" v-html="previewText" />
         <span v-if="!!helpText" class="ui-form-info form-text text-muted" v-html="helpText" />
@@ -49,7 +49,6 @@
 
 <script>
 import _ from "underscore";
-import { getElementId } from "./utilities";
 import FormBoolean from "./Elements/FormBoolean";
 import FormHidden from "./Elements/FormHidden";
 import FormInput from "./Elements/FormInput";
@@ -149,6 +148,9 @@ export default {
         };
     },
     computed: {
+        elementId() {
+            return `form-element-${this.id}`;
+        },
         argument() {
             return this.attrs["argument"];
         },
@@ -180,9 +182,6 @@ export default {
         },
         defaultValue() {
             return this.attrs["default_value"];
-        },
-        elementId() {
-            return getElementId(this.id);
         },
         hasError() {
             return !!this.error;
