@@ -1,10 +1,13 @@
 import hashlib
+import logging
+
 import os
 import re
+import shutil
 import subprocess
 from abc import abstractmethod
 from string import Template
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 from galaxy.util import (
     asbool,
@@ -13,6 +16,8 @@ from galaxy.util import (
     smart_str,
 )
 from galaxy.util.compression_utils import CompressedFile
+
+log = logging.getLogger(__name__)
 
 UPDATE_TEMPLATE = Template(
     "git --work-tree $dir --git-dir $dir/.git fetch && " "git --work-tree $dir --git-dir $dir/.git merge origin/master"
@@ -40,6 +45,7 @@ class TestDataResolver:
             self.resolvers = []
 
     def get_filename(self, name):
+        log.error(f"get_filename {name=}")
         for resolver in self.resolvers or []:
             if not resolver.exists(name):
                 continue
@@ -48,6 +54,7 @@ class TestDataResolver:
                 return os.path.abspath(filename)
 
     def get_filecontent(self, name):
+        log.error(f"get_filecontent {name=}")
         filename = self.get_filename(name=name)
         with open(filename, mode="rb") as f:
             return f.read()
@@ -137,13 +144,15 @@ class GitDataResolver(CachedFileDataResolver):
 class HttpDataResolver(CachedFileDataResolver):
 
     def __init__(self, uri, environ):
+        log.error(f"HttpDataResolver.__init__ {uri=}")
         uri, self.hash_type, self.hash_value = uri.split("$")
         super().__init__(uri, environ)
 
     def update(self):
+        log.error(f"HttpDataResolver.update {self.file_dir=}")
         self.updated = True
         if not os.path.exists(self.file_dir):
-            with NamedTemporaryFile() as tmp_fh:
+            with NamedTemporaryFile() as tmp_fh, TemporaryDirectory() as tmp_dh:
                 # download
                 download_to_file(self.uri, tmp_fh.name)
                 # check checksum
@@ -151,9 +160,18 @@ class HttpDataResolver(CachedFileDataResolver):
                 h = hashlib.new(self.hash_type)
                 h.update(tmp_fh.read())
                 if self.hash_value != h.hexdigest():
+                    log.error(f"hash did not match {self.hash_value} != {h.hexdigest}")
                     return
                 # extract
                 tmp_fh.seek(0)
-                os.makedirs(self.file_dir)
                 zip_fh = CompressedFile(tmp_fh.name)
-                zip_fh.extract(self.file_dir)
+                extract_path = zip_fh.extract(tmp_dh)
+                if os.path.isfile(extract_path):
+                    os.makedirs(self.file_dir)
+                    shutil.copy(extract_path, self.file_dir)
+                else:
+                    shutil.copytree(extract_path, self.file_dir)
+            log.error(f"HttpDataResolver.update FIN {os.listdir(self.file_dir)}")
+        else:
+            log.error(f"HttpDataResolver.update DIR ALREADY EXISTS {self.file_dir=}")
+
