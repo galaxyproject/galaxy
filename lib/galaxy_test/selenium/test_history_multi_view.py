@@ -12,9 +12,9 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
     def test_create_new_old_slides_next(self):
         history_id = self.current_history_id()
         input_collection = self.dataset_collection_populator.create_list_in_history(
-            history_id, contents=["0", "1", "0", "1"]
+            history_id, contents=["0", "1", "0", "1"], wait=True
         ).json()
-        input_hid = input_collection["hid"]
+        input_hid = input_collection["outputs"][0]["hid"]
 
         self.home()
 
@@ -28,7 +28,7 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
     @selenium_test
     def test_list_list_display(self):
         history_id = self.current_history_id()
-        method = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json
+        method = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True).json
         selector = self.prepare_multi_history_view(method)
         first_level_element_selector = selector.descendant(".dataset-collection-element")
         self.wait_for_and_click(first_level_element_selector)
@@ -150,6 +150,8 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
 
     def prepare_multi_history_view(self, collection_populator_method):
         collection = collection_populator_method()
+        if "outputs" in collection:
+            collection = self.dataset_collection_populator.wait_for_fetched_collection(collection)
         collection_hid = collection["hid"]
 
         self.home()

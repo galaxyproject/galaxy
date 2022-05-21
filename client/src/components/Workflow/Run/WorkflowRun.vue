@@ -1,6 +1,6 @@
 <template>
     <span>
-        <b-alert variant="danger" show v-if="error">
+        <b-alert v-if="error" variant="danger" show>
             <h5>Workflow cannot be executed. Please resolve the following issue:</h5>
             {{ error }}
         </b-alert>

@@ -581,13 +581,6 @@ class HDAExtended(HDADetailed):
     )
 
 
-class HDABeta(HDADetailed):  # TODO: change HDABeta name to a more appropriate one.
-    """History Dataset Association information used in the new Beta History."""
-
-    # Equivalent to `betawebclient` serialization view for HDAs
-    pass
-
-
 class DCSummary(Model):
     """Dataset Collection summary information."""
 
@@ -663,6 +656,76 @@ class DCDetailed(DCSummary):
     elements: List[DCESummary] = ElementsField
 
 
+class HDCJobStateSummary(Model):
+    """Overview of the job states working inside a dataset collection."""
+
+    all_jobs: int = Field(
+        0,
+        title="All jobs",
+        description="Total number of jobs associated with a dataset collection.",
+    )
+    new: int = Field(
+        0,
+        title="New jobs",
+        description="Number of jobs in the `new` state.",
+    )
+    waiting: int = Field(
+        0,
+        title="Waiting jobs",
+        description="Number of jobs in the `waiting` state.",
+    )
+    running: int = Field(
+        0,
+        title="Running jobs",
+        description="Number of jobs in the `running` state.",
+    )
+    error: int = Field(
+        0,
+        title="Jobs with errors",
+        description="Number of jobs in the `error` state.",
+    )
+    paused: int = Field(
+        0,
+        title="Paused jobs",
+        description="Number of jobs in the `paused` state.",
+    )
+    deleted_new: int = Field(
+        0,
+        title="Deleted new jobs",
+        description="Number of jobs in the `deleted_new` state.",
+    )
+    resubmitted: int = Field(
+        0,
+        title="Resubmitted jobs",
+        description="Number of jobs in the `resubmitted` state.",
+    )
+    queued: int = Field(
+        0,
+        title="Queued jobs",
+        description="Number of jobs in the `queued` state.",
+    )
+    ok: int = Field(
+        0,
+        title="OK jobs",
+        description="Number of jobs in the `ok` state.",
+    )
+    failed: int = Field(
+        0,
+        title="Failed jobs",
+        description="Number of jobs in the `failed` state.",
+    )
+    deleted: int = Field(
+        0,
+        title="Deleted jobs",
+        description="Number of jobs in the `deleted` state.",
+    )
+    upload: int = Field(
+        0,
+        title="Upload jobs",
+        description="Number of jobs in the `upload` state.",
+    )
+
+
 class HDCASummary(HistoryItemCommon):
     """History Dataset Collection Association summary information."""
 
@@ -689,7 +752,17 @@ class HDCASummary(HistoryItemCommon):
         title="Job Source Type",
         description="The type of job (model class) that produced this dataset collection. Used to track the state of the job.",
     )
+    job_state_summary: Optional[HDCJobStateSummary] = Field(
+        None,
+        title="Job State Summary",
+        description="Overview of the job states working inside the dataset collection.",
+    )
     contents_url: RelativeUrl = ContentsUrlField
+    collection_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Collection ID",
+        description="The encoded ID of the dataset collection associated with this HDCA.",
+    )
 
 
 class HDCADetailed(HDCASummary):
@@ -697,6 +770,9 @@ class HDCADetailed(HDCASummary):
 
     populated: bool = PopulatedField
     elements: List[DCESummary] = ElementsField
+    elements_datatypes: Set[str] = Field(
+        ..., description="A set containing all the different element datatypes in the collection."
+    )
 
 
 class HistoryBase(BaseModel):
@@ -707,8 +783,8 @@ class HistoryBase(BaseModel):
         extra = Extra.allow  # Allow any other extra fields
 
 
-class UpdateContentItem(HistoryBase):
-    """Used for updating a particular HDA. All fields are optional."""
+class HistoryContentItem(Model):
+    """Identifies a dataset or collection contained in a History."""
 
     history_content_type: HistoryContentType = Field(
         ...,
@@ -716,6 +792,14 @@ class UpdateContentItem(HistoryBase):
         description="The type of this item.",
     )
     id: EncodedDatabaseIdField = EncodedEntityIdField
+
+
+class UpdateContentItem(HistoryContentItem):
+    """Used for updating a particular history item. All fields are optional."""
+
+    class Config:
+        use_enum_values = True  # When using .dict()
+        extra = Extra.allow  # Allow any other extra fields
 
 
 class UpdateHistoryContentsBatchPayload(HistoryBase):
@@ -734,6 +818,29 @@ class UpdateHistoryContentsBatchPayload(HistoryBase):
                 "visible": False,
             }
         }
+
+
+class HistoryContentItemOperation(str, Enum):
+    hide = "hide"
+    unhide = "unhide"
+    delete = "delete"
+    undelete = "undelete"
+    purge = "purge"
+
+
+class HistoryContentBulkOperationPayload(Model):
+    operation: HistoryContentItemOperation
+    items: Optional[List[HistoryContentItem]]
+
+
+class BulkOperationItemError(Model):
+    item: HistoryContentItem
+    error: str
+
+
+class HistoryContentBulkOperationResult(Model):
+    success_count: int
+    errors: List[BulkOperationItemError]
 
 
 class UpdateHistoryContentsPayload(HistoryBase):
@@ -934,13 +1041,38 @@ class ExportHistoryArchivePayload(Model):
     )
 
 
-class SortByEnum(str, Enum):
+class WorkflowSortByEnum(str, Enum):
+    create_time = "create_time"
+    update_time = "update_time"
+    name = "name"
+    none = None
+
+
+class WorkflowIndexQueryPayload(Model):
+    show_deleted: bool = False
+    show_hidden: bool = False
+    show_published: Optional[bool] = None
+    show_shared: Optional[bool] = None
+    sort_by: Optional[WorkflowSortByEnum] = Field(title="Sort By", description="Sort workflows by this attribute")
+    sort_desc: Optional[bool] = Field(
+        title="Sort descending", description="Explicitly sort by descending if sort_by is specified."
+    )
+    limit: Optional[int] = Field(
+        default=None,
+        lt=1000,
+    )
+    offset: Optional[int] = Field(default=0, description="Number of workflows to skip")
+    search: Optional[str] = Field(default=None, title="Filter text", description="Freetext to search.")
+    skip_step_counts: bool = False
+
+
+class InvocationSortByEnum(str, Enum):
     create_time = "create_time"
     update_time = "update_time"
     none = None
 
 
-class InvocationIndexPayload(Model):
+class InvocationIndexQueryPayload(Model):
     workflow_id: Optional[DecodedDatabaseIdField] = Field(
         title="Workflow ID", description="Return only invocations for this Workflow ID"
     )
@@ -953,7 +1085,9 @@ class InvocationIndexPayload(Model):
     user_id: Optional[DecodedDatabaseIdField] = Field(
         title="User ID", description="Return invocations for this User ID"
     )
-    sort_by: Optional[SortByEnum] = Field(title="Sort By", description="Sort Workflow Invocations by this attribute")
+    sort_by: Optional[InvocationSortByEnum] = Field(
+        title="Sort By", description="Sort Workflow Invocations by this attribute"
+    )
     sort_desc: bool = Field(default=False, descritpion="Sort in descending order?")
     include_terminal: bool = Field(default=True, description="Set to false to only include terminal Invocations.")
     limit: Optional[int] = Field(
@@ -961,7 +1095,22 @@ class InvocationIndexPayload(Model):
         lt=1000,
     )
     offset: Optional[int] = Field(default=0, description="Number of invocations to skip")
-    instance: bool = Field(default=False, description="Is provided workflow id for Workflow instead of StoredWorkflow?")
+
+
+class PageSortByEnum(str, Enum):
+    create_time = "create_time"
+    update_time = "update_time"
+
+
+class PageIndexQueryPayload(Model):
+    deleted: bool = False
+    user_id: Optional[DecodedDatabaseIdField] = None
+    sort_by: PageSortByEnum = PageSortByEnum.update_time
+    sort_desc: bool = Field(default=True, descritpion="Sort in descending order?")
+    show_published: bool = True
+    show_shared: bool = False
+    limit: int = 500
+    offset: int = 0
 
 
 class CreateHistoryPayload(Model):
@@ -1161,97 +1310,6 @@ class JobIdResponse(BaseModel):
     )
 
 
-class HDCJobStateSummary(Model):
-    """Overview of the job states working inside a dataset collection."""
-
-    all_jobs: int = Field(
-        0,
-        title="All jobs",
-        description="Total number of jobs associated with a dataset collection.",
-    )
-    new: int = Field(
-        0,
-        title="New jobs",
-        description="Number of jobs in the `new` state.",
-    )
-    waiting: int = Field(
-        0,
-        title="Waiting jobs",
-        description="Number of jobs in the `waiting` state.",
-    )
-    running: int = Field(
-        0,
-        title="Running jobs",
-        description="Number of jobs in the `running` state.",
-    )
-    error: int = Field(
-        0,
-        title="Jobs with errors",
-        description="Number of jobs in the `error` state.",
-    )
-    paused: int = Field(
-        0,
-        title="Paused jobs",
-        description="Number of jobs in the `paused` state.",
-    )
-    deleted_new: int = Field(
-        0,
-        title="Deleted new jobs",
-        description="Number of jobs in the `deleted_new` state.",
-    )
-    resubmitted: int = Field(
-        0,
-        title="Resubmitted jobs",
-        description="Number of jobs in the `resubmitted` state.",
-    )
-    queued: int = Field(
-        0,
-        title="Queued jobs",
-        description="Number of jobs in the `queued` state.",
-    )
-    ok: int = Field(
-        0,
-        title="OK jobs",
-        description="Number of jobs in the `ok` state.",
-    )
-    failed: int = Field(
-        0,
-        title="Failed jobs",
-        description="Number of jobs in the `failed` state.",
-    )
-    deleted: int = Field(
-        0,
-        title="Deleted jobs",
-        description="Number of jobs in the `deleted` state.",
-    )
-    upload: int = Field(
-        0,
-        title="Upload jobs",
-        description="Number of jobs in the `upload` state.",
-    )
-
-
-class HDCABeta(HDCADetailed):  # TODO: change HDCABeta name to a more appropriate one.
-    """History Dataset Collection Association information used in the new Beta History."""
-
-    # Equivalent to `betawebclient` serialization view for HDCAs
-    collection_id: EncodedDatabaseIdField = Field(
-        # TODO: inconsistency? the equivalent counterpart for HDAs, `dataset_id`, is declared in `HDASummary` scope
-        # while in HDCAs it is only serialized in the new `betawebclient` view?
-        ...,
-        title="Collection ID",
-        description="The encoded ID of the dataset collection associated with this HDCA.",
-    )
-    job_state_summary: Optional[HDCJobStateSummary] = Field(
-        None,
-        title="Job State Summary",
-        description="Overview of the job states working inside the dataset collection.",
-    )
-    elements_datatypes: Set[str] = Field(
-        ..., description="A set containing all the different element datatypes in the collection."
-    )
-
-
 class JobBaseModel(Model):
     id: EncodedDatabaseIdField = EncodedEntityIdField
     model_class: str = ModelClassField(JOB_MODEL_CLASS_NAME)
@@ -1338,13 +1396,16 @@ class JobSummary(JobBaseModel):
     )
 
 
-class DatasetJobInfo(Model):
+class DatasetSourceId(Model):
     id: EncodedDatabaseIdField = EncodedEntityIdField
     src: DatasetSourceType = Field(
         ...,
         title="Source",
         description="The source of this dataset, either `hda` or `ldda` depending of its origin.",
     )
+
+
+class DatasetJobInfo(DatasetSourceId):
     uuid: UUID4 = UuidField
 
 
@@ -1992,6 +2053,25 @@ class GroupRoleListModel(BaseModel):
     __root__: List[GroupRoleModel]
 
 
+# Users -----------------------------------------------------------------
+
+UserIdField = Field(title="ID", description="Encoded ID of the user")
+UserEmailField = Field(title="Email", description="Email of the user")
+UserDescriptionField = Field(title="Description", description="Description of the user")
+
+# Group_Users -----------------------------------------------------------------
+
+
+class GroupUserModel(BaseModel):
+    id: EncodedDatabaseIdField = UserIdField
+    email: str = UserEmailField
+    url: RelativeUrl = RelativeUrlField
+
+
+class GroupUserListModel(BaseModel):
+    __root__: List[GroupUserModel]
+
+
 # Libraries -----------------------------------------------------------------
 
 
@@ -2407,8 +2487,8 @@ class CustomHistoryItem(Model):
         extra = Extra.allow
 
 
-AnyHDA = Union[HDABeta, HDADetailed, HDASummary]
-AnyHDCA = Union[HDCABeta, HDCADetailed, HDCASummary]
+AnyHDA = Union[HDADetailed, HDASummary]
+AnyHDCA = Union[HDCADetailed, HDCASummary]
 AnyHistoryContentItem = Union[
     AnyHDA,
     AnyHDCA,
@@ -2474,6 +2554,14 @@ class HistoryContentsArchiveDryRunResult(BaseModel):
     __root__: List[List[str]]  # List[Tuple[str, str]]
 
 
+class HistoryContentStats(BaseModel):
+    total_matches: int = Field(
+        ...,
+        title="Total Matches",
+        description=("The total number of items that match the search query without any pagination"),
+    )
+
+
 class ContentsNearStats(BaseModel):
     """Stats used by the `contents_near` endpoint."""
 
@@ -2500,11 +2588,31 @@ class ContentsNearStats(BaseModel):
 
 
 class HistoryContentsResult(Model):
-    """Collection of history content items.
+    """List of history content items.
     Can contain different views and kinds of items.
     """
 
     __root__: List[AnyHistoryContentItem]
+
+
+class HistoryContentsWithStatsResult(BaseModel):
+    """Includes stats with items counting"""
+
+    stats: HistoryContentStats = Field(
+        ...,
+        title="Stats",
+        description=("Contains counting stats for the query."),
+    )
+    contents: List[AnyHistoryContentItem] = Field(
+        ...,
+        title="Contents",
+        description=(
+            "The items matching the search query. Only the items fitting in the current page limit will be returned."
+        ),
+    )
+
+    # This field is ignored and contains the content type associated with this model
+    __accept_type__ = "application/vnd.galaxy.history.contents.stats+json"
 
 
 class ContentsNearResult(BaseModel):
@@ -2709,6 +2817,32 @@ class CreatePagePayload(PageSummaryBase):
     class Config:
         use_enum_values = True  # When using .dict()
         extra = Extra.allow  # Allow any other extra fields
+
+
+class AsyncTaskResultSummary(BaseModel):
+    id: str = Field(
+        ...,
+        title="ID",
+        description="Celery AsyncResult ID for this task",
+    )
+    ignored: bool = Field(
+        ...,
+        title="Ignored",
+        description="Indicated whether the Celery AsyncResult will be available for retrivial",
+    )
+    name: Optional[str] = Field(
+        None,
+        title="Name of task being done derived from Celery AsyncResult",
+    )
+    queue: Optional[str] = Field(
+        None,
+        title="Queue of task being done derived from Celery AsyncResult",
+    )
+
+
+class AsyncFile(BaseModel):
+    storage_request_id: str
+    task: AsyncTaskResultSummary
 
 
 class PageSummary(PageSummaryBase):

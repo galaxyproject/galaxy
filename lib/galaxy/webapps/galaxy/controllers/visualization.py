@@ -1,8 +1,6 @@
 import logging
-import os
 from json import loads
 
-import yaml
 from markupsafe import escape
 from paste.httpexceptions import (
     HTTPBadRequest,
@@ -16,7 +14,7 @@ from sqlalchemy import (
     true,
 )
 from sqlalchemy.orm import (
-    eagerload,
+    joinedload,
     undefer,
 )
 
@@ -290,7 +288,7 @@ class VisualizationAllPublishedGrid(grids.Grid):
         return (
             trans.sa_session.query(self.model_class)
             .join("user")
-            .options(eagerload("user").load_only("username"), eagerload("annotations"), undefer("average_rating"))
+            .options(joinedload("user").load_only("username"), joinedload("annotations"), undefer("average_rating"))
         )
 
     def apply_query_filter(self, trans, query, **kwargs):
@@ -949,42 +947,3 @@ class VisualizationController(
                 "saved_visualization": False,
             }
         return trans.fill_template_mako("visualization/phyloviz.mako", data=data, config=config)
-
-    @web.expose
-    @web.require_login("run Galaxy Interactive Environments")
-    def gie_list(self, trans, **kwargs):
-        if not hasattr(self, "gie_image_map"):
-            self.gie_image_map = {}
-
-            for gie_dir in self.app.config.gie_dirs:
-                gie_list = os.listdir(gie_dir)
-                for gie in gie_list:
-                    gie_path = os.path.join(gie_dir, gie)
-
-                    if not os.path.isdir(gie_path):
-                        continue
-
-                    if not os.path.exists(self._gie_config_dir(gie_path)):
-                        continue
-
-                    if os.path.exists(self._gie_config_dir(gie_path, "allowed_images.yml")):
-                        image_file = self._gie_config_dir(gie_path, "allowed_images.yml")
-                    elif os.path.exists(self._gie_config_dir(gie_path, "allowed_images.yml.sample")):
-                        image_file = self._gie_config_dir(gie_path, "allowed_images.yml.sample")
-                    else:
-                        continue
-
-                    with open(image_file) as handle:
-                        self.gie_image_map[gie] = yaml.safe_load(handle)
-
-        return trans.fill_template_mako(
-            "visualization/gie.mako",
-            gie_image_map=self.gie_image_map,
-            history=trans.get_history(),
-        )
-
-    def _gie_config_dir(self, gie_path, *args):
-        nargs = [gie_path, "config"]
-        if len(args) > 0:
-            nargs += args
-        return os.path.join(*nargs)

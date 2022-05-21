@@ -16,7 +16,7 @@ variables:
       paths:
         - ~/.cache/yarn
   install_tox: &install_tox
-    run: sudo pip install tox
+    run: pip install tox
   install_deb_reqs: &install_deb_reqs
     run: sudo apt-get update && sudo apt-get install ffmpeg nodejs -y
   set_workdir: &set_workdir
@@ -27,7 +27,7 @@ variables:
 jobs:
   get_code:
     docker:
-      - image: circleci/python:3.7
+      - image: cimg/python:3.7
     <<: *set_workdir
     steps:
       # Replace standard code checkout with shallow clone to speed things up.
@@ -85,7 +85,7 @@ jobs:
             - ~/repo
   validate_test_tools:
     docker:
-      - image: circleci/python:3.7
+      - image: cimg/python:3.7
     <<: *set_workdir
     steps:
       - *restore_repo_cache
@@ -95,7 +95,7 @@ jobs:
       - run: tox -e validate_test_tools
   test_galaxy_packages:
     docker:
-      - image: circleci/python:3.7
+      - image: cimg/python:3.7
     <<: *set_workdir
     steps:
       - *restore_repo_cache
@@ -111,7 +111,7 @@ jobs:
       - run: cd client && yarn install --frozen-lockfile
       - *save_yarn_cache
       - run: cd client && yarn run eslint
-      - run: cd client && yarn run prettier-check
+      - run: cd client && yarn run format-check
 workflows:
   version: 2
   get_code_and_test:

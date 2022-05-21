@@ -1,7 +1,5 @@
-from galaxy.selenium.navigates_galaxy import (
-    exception_indicates_not_clickable,
-    exception_seems_to_indicate_transition,
-)
+from galaxy.selenium.has_driver import exception_indicates_not_clickable
+from galaxy.selenium.navigates_galaxy import exception_seems_to_indicate_transition
 from .framework import (
     selenium_test,
     SeleniumTestCase,
@@ -17,13 +15,17 @@ class NavigatesGalaxySeleniumTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_click_error(self):
+        """Verify exception handling stuff by attempting to click on a disabled element in the UI."""
         self.home()
         self.upload_start_click()
         # Open the details, verify they are open and do a refresh.
         exception = None
+        if self.is_beta_history():
+            disabled_element_selector = ".show-history-content-selectors-btn"
+        else:
+            disabled_element_selector = ".history-refresh-button"
         try:
-            refresh_button = self.wait_for_selector(".history-refresh-button")
-            refresh_button.click()
+            self.wait_for_selector(disabled_element_selector).click()
         except Exception as e:
             exception = e
         assert exception is not None

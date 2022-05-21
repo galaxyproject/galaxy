@@ -72,7 +72,11 @@ def upload_datatype_helper(instance, test_data, temp_file, delete_cache_dir=Fals
         else:
             file_type = test_data.datatype.file_ext
         dataset = instance.dataset_populator.new_dataset(
-            instance.history_id, content=content, wait=False, file_type=file_type
+            instance.history_id,
+            content=content,
+            wait=False,
+            file_type=file_type,
+            auto_decompress=True,
         )
     dataset = instance.dataset_populator.get_history_dataset_details(
         instance.history_id, dataset=dataset, assert_ok=False

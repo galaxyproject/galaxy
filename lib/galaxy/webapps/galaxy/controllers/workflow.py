@@ -10,7 +10,6 @@ from sqlalchemy import (
     desc,
 )
 from sqlalchemy.orm import (
-    eagerload,
     joinedload,
     lazyload,
     undefer,
@@ -28,7 +27,6 @@ from galaxy.managers.workflows import (
     WorkflowUpdateOptions,
 )
 from galaxy.model.item_attrs import UsesItemRatings
-from galaxy.security.validate_user_input import validate_publicname
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util import (
     FILENAME_VALID_CHARS,
@@ -174,8 +172,8 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
             .join("user")
             .options(
                 lazyload("latest_workflow"),
-                eagerload("user").load_only("username"),
-                eagerload("annotations"),
+                joinedload("user").load_only("username"),
+                joinedload("annotations"),
                 undefer("average_rating"),
             )
         )
@@ -368,73 +366,20 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         )
 
     @web.expose
-    @web.require_login("Share or export Galaxy workflows")
-    def sharing(self, trans, id, **kwargs):
-        """Handle workflow sharing."""
+    @web.require_login("export Galaxy workflows")
+    def export(self, trans, id, **kwargs):
+        """Handle workflow export."""
         session = trans.sa_session
-        if "unshare_me" in kwargs:
-            # Remove self from shared associations with workflow.
-            stored = self.get_stored_workflow(trans, id, False, True)
-            association = (
-                session.query(model.StoredWorkflowUserShareAssociation)
-                .filter_by(user=trans.user, stored_workflow=stored)
-                .one()
-            )
-            session.delete(association)
-            session.flush()
-            return self.list(trans)
-        else:
-            # Get session and workflow.
-            stored = self.get_stored_workflow(trans, id)
-            session.add(stored)
+        # Get session and workflow.
+        stored = self.get_stored_workflow(trans, id)
+        session.add(stored)
 
-            # Do operation on workflow.
-            if "make_accessible_via_link" in kwargs:
-                self._make_item_accessible(trans.sa_session, stored)
-            elif "make_accessible_and_publish" in kwargs:
-                self._make_item_accessible(trans.sa_session, stored)
-                stored.published = True
-            elif "publish" in kwargs:
-                stored.published = True
-            elif "disable_link_access" in kwargs:
-                stored.importable = False
-            elif "unpublish" in kwargs:
-                stored.published = False
-            elif "disable_link_access_and_unpublish" in kwargs:
-                stored.importable = stored.published = False
-            elif "unshare_user" in kwargs:
-                user = session.query(model.User).get(trans.security.decode_id(kwargs["unshare_user"]))
-                if not user:
-                    error("User not found for provided id")
-                association = (
-                    session.query(model.StoredWorkflowUserShareAssociation)
-                    .filter_by(user=user, stored_workflow=stored)
-                    .one()
-                )
-                session.delete(association)
+        # Legacy issue: workflows made accessible before recent updates may not have a slug. Create slug for any workflows that need them.
+        if stored.importable and not stored.slug:
+            self._make_item_accessible(trans.sa_session, stored)
 
-            # Legacy issue: workflows made accessible before recent updates may not have a slug. Create slug for any workflows that need them.
-            if stored.importable and not stored.slug:
-                self._make_item_accessible(trans.sa_session, stored)
-
-            session.flush()
-            return trans.fill_template("/workflow/sharing.mako", use_panels=True, item=stored)
-
-    @web.expose
-    @web.require_login("share Galaxy items")
-    def set_public_username(self, trans, id, username, **kwargs):
-        """Set user's public username and delegate to sharing()"""
-        user = trans.get_user()
-        # message from validate_publicname does not contain input, no need
-        # to escape.
-        message = validate_publicname(trans, username, user)
-        if message:
-            return trans.fill_template(
-                "/workflow/sharing.mako", item=self.get_item(trans, id), message=message, status="error"
-            )
-        user.username = username
-        trans.sa_session.flush()
-        return self.sharing(trans, id, **kwargs)
+        session.flush()
+        return trans.fill_template("/workflow/sharing.mako", use_panels=True, item=stored)
 
     @web.expose
     @web.require_login("to import a workflow", use_panels=True)
@@ -484,7 +429,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         stored = self.get_stored_workflow(trans, id)
         if new_annotation:
             # Sanitize annotation before adding it.
-            new_annotation = sanitize_html(new_annotation or "")
+            new_annotation = sanitize_html(new_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), stored, new_annotation)
             trans.sa_session.flush()
             return new_annotation
@@ -503,22 +448,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         self.rate_item(trans.sa_session, trans.get_user(), stored, rating)
 
         return self.get_ave_item_rating_data(trans.sa_session, stored)
-
-    @web.expose
-    @web.require_login("use Galaxy workflows")
-    def set_accessible_async(self, trans, id=None, accessible=False):
-        """Set workflow's importable attribute and slug."""
-        stored = self.get_stored_workflow(trans, id)
-
-        # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
-        importable = accessible in ["True", "true", "t", "T"]
-        if stored and stored.importable != importable:
-            if importable:
-                self._make_item_accessible(trans.sa_session, stored)
-            else:
-                stored.importable = importable
-            trans.sa_session.flush()
-        return
 
     @web.expose
     def get_embed_html_async(self, trans, id):
@@ -639,7 +568,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             workflow.stored_workflow = stored_workflow
             stored_workflow.latest_workflow = workflow
             # Add annotation.
-            workflow_annotation = sanitize_html(workflow_annotation or "")
+            workflow_annotation = sanitize_html(workflow_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, workflow_annotation)
             # Persist
             session = trans.sa_session
@@ -668,7 +597,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             workflow.stored_workflow = stored_workflow
             stored_workflow.latest_workflow = workflow
             # Add annotation.
-            workflow_annotation = sanitize_html(workflow_annotation or "")
+            workflow_annotation = sanitize_html(workflow_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, workflow_annotation)
 
             # Persist
@@ -994,96 +923,3 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             )
         workflow_canvas.add_steps()
         return workflow_canvas.finish()
-
-
-def _build_workflow_on_str(instance_ds_names):
-    # Returns suffix for new histories based on multi input iteration
-    num_multi_inputs = len(instance_ds_names)
-    if num_multi_inputs == 0:
-        return ""
-    elif num_multi_inputs == 1:
-        return f" on {instance_ds_names[0]}"
-    else:
-        return f" on {', '.join(instance_ds_names[0:-1])} and {instance_ds_names[-1]}"
-
-
-def _expand_multiple_inputs(kwargs):
-    (single_inputs, matched_multi_inputs, multiplied_multi_inputs) = _split_inputs(kwargs)
-
-    # Build up every combination of inputs to be run together.
-    input_combos = _extend_with_matched_combos(single_inputs, matched_multi_inputs)
-    input_combos = _extend_with_multiplied_combos(input_combos, multiplied_multi_inputs)
-
-    # Input name that are multiply specified
-    multi_input_keys = list(matched_multi_inputs.keys()) + list(multiplied_multi_inputs.keys())
-
-    for input_combo in input_combos:
-        for key, value in input_combo.items():
-            kwargs[key] = value
-        yield (kwargs, multi_input_keys)
-
-
-def _extend_with_matched_combos(single_inputs, multi_inputs):
-    if len(multi_inputs) == 0:
-        return [single_inputs]
-
-    matched_multi_inputs = []
-
-    first_multi_input_key = next(iter(multi_inputs.keys()))
-    first_multi_value = multi_inputs.get(first_multi_input_key)
-
-    for value in first_multi_value:
-        new_inputs = _copy_and_extend_inputs(single_inputs, first_multi_input_key, value)
-        matched_multi_inputs.append(new_inputs)
-
-    for multi_input_key, multi_input_values in multi_inputs.items():
-        if multi_input_key == first_multi_input_key:
-            continue
-        if len(multi_input_values) != len(first_multi_value):
-            raise Exception(
-                "Failed to match up multi-select inputs, must select equal number of data files in each multiselect"
-            )
-        for index, value in enumerate(multi_input_values):
-            matched_multi_inputs[index][multi_input_key] = value
-    return matched_multi_inputs
-
-
-def _extend_with_multiplied_combos(input_combos, multi_inputs):
-    combos = input_combos
-
-    for multi_input_key, multi_input_value in multi_inputs.items():
-        iter_combos = []
-
-        for combo in combos:
-            for input_value in multi_input_value:
-                iter_combos.append(_copy_and_extend_inputs(combo, multi_input_key, input_value))
-
-        combos = iter_combos
-    return combos
-
-
-def _copy_and_extend_inputs(inputs, key, value):
-    new_inputs = dict(inputs)
-    new_inputs[key] = value
-    return new_inputs
-
-
-def _split_inputs(kwargs):
-    """ """
-    input_keys = [a for a in kwargs if a.endswith("|input")]
-    single_inputs = {}
-    matched_multi_inputs = {}
-    multiplied_multi_inputs = {}
-    for input_key in input_keys:
-        input_val = kwargs[input_key]
-        if isinstance(input_val, list):
-            input_base = input_key[: -len("|input")]
-            mode_key = f"{input_base}|multi_mode"
-            mode = kwargs.get(mode_key, "matched")
-            if mode == "matched":
-                matched_multi_inputs[input_key] = input_val
-            else:
-                multiplied_multi_inputs[input_key] = input_val
-        else:
-            single_inputs[input_key] = input_val
-    return (single_inputs, matched_multi_inputs, multiplied_multi_inputs)

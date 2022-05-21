@@ -6,12 +6,12 @@ import tempfile
 from galaxy.tool_shed.tools.tool_validator import ToolValidator as GalaxyToolValidator
 from galaxy.tools import Tool
 from galaxy.util import unicodify
+from galaxy.util.tool_shed.xml_util import parse_xml
 from tool_shed.util import (
     basic_util,
     hg_util,
     repository_util,
     tool_util,
-    xml_util,
 )
 
 log = logging.getLogger(__name__)
@@ -89,12 +89,9 @@ class ToolValidator(GalaxyToolValidator):
                         # 'ncbi_blastp_wrapper.xml' was moved to 'tools/ncbi_blast_plus/ncbi_blastp_wrapper.xml',
                         # so keep looking for the file until we find the new location.
                         continue
-                    fh = tempfile.NamedTemporaryFile("wb", prefix="tmp-toolshed-gltcrfrm")
-                    tmp_filename = fh.name
-                    fh.close()
-                    fh = open(tmp_filename, "wb")
-                    fh.write(fctx.data())
-                    fh.close()
+                    with tempfile.NamedTemporaryFile("wb", prefix="tmp-toolshed-gltcrfrm", delete=False) as fh:
+                        tmp_filename = fh.name
+                        fh.write(fctx.data())
                     return tmp_filename
         return None
 
@@ -234,7 +231,7 @@ class ToolValidator(GalaxyToolValidator):
         message = ""
         tmp_tool_config = hg_util.get_named_tmpfile_from_ctx(ctx, ctx_file, work_dir)
         if tmp_tool_config:
-            tool_element, error_message = xml_util.parse_xml(tmp_tool_config)
+            tool_element, error_message = parse_xml(tmp_tool_config)
             if tool_element is None:
                 return tool, message
             # Look for external files required by the tool config.

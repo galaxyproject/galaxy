@@ -194,6 +194,6 @@ class CollectionBuildersTestCase(SeleniumTestCase):
     def _show_hidden_content(self):
         """Switches the beta hidden filter toggle on"""
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.beta_history_element("content filter toggle").wait_for_and_click()
-        self.beta_history_element("show hidden filter toggle").wait_for_and_click()
+        filter_element = self.beta_history_element("filter text input").wait_for_and_click()
+        filter_element.send_keys("visible=false")
         self.sleep_for(self.wait_types.UX_RENDER)

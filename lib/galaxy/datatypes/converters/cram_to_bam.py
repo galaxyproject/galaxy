@@ -7,7 +7,7 @@ usage: %prog in_file out_file
 import optparse
 import os
 
-import pysam
+from pysam import sort  # type: ignore[attr-defined]
 
 
 def main():
@@ -16,7 +16,7 @@ def main():
     (options, args) = parser.parse_args()
     input_fname, output_fname = args
     slots = os.getenv("GALAXY_SLOTS", 1)
-    pysam.sort(f"-@{slots}", "-o", output_fname, "-O", "bam", "-T", ".", input_fname)
+    sort(f"-@{slots}", "-o", output_fname, "-O", "bam", "-T", ".", input_fname)
 
 
 if __name__ == "__main__":

@@ -1,21 +1,24 @@
 <template>
     <div class="unified-panel">
-        <div class="unified-panel-header" unselectable="on">
+        <div unselectable="on">
             <div class="unified-panel-header-inner">
-                <div class="panel-header-buttons">
-                    <panel-view-button
-                        :panel-views="panelViews"
-                        :current-panel-view="currentPanelView"
-                        @updatePanelView="updatePanelView"
-                        v-if="panelViews && Object.keys(panelViews).length > 1" />
-                </div>
-                <div class="panel-header-text">Tools</div>
+                <nav class="d-flex justify-content-between mx-3 my-2">
+                    <h4 v-localize class="m-1">Tools</h4>
+                    <div class="panel-header-buttons">
+                        <panel-view-button
+                            v-if="panelViews && Object.keys(panelViews).length > 1"
+                            :panel-views="panelViews"
+                            :current-panel-view="currentPanelView"
+                            @updatePanelView="updatePanelView" />
+                    </div>
+                </nav>
             </div>
         </div>
         <div class="unified-panel-controls">
             <tool-search
                 :current-panel-view="currentPanelView"
                 placeholder="search tools"
+                :query="query"
                 @onQuery="onQuery"
                 @onResults="onResults" />
         </div>
@@ -23,31 +26,31 @@
             <div class="toolMenuContainer">
                 <tool-section
                     v-for="category in moduleSections"
+                    :key="category.name"
                     :hide-name="true"
                     :category="category"
                     tool-key="name"
                     :section-name="category.name"
                     :query-filter="query"
                     :disable-filter="true"
-                    :key="category.name"
                     @onClick="onInsertModule" />
                 <tool-section
                     v-if="hasDataManagerSection"
-                    :category="dataManagerSection"
                     :key="dataManagerSection.id"
+                    :category="dataManagerSection"
                     :query-filter="query"
                     :disable-filter="true"
                     @onClick="onInsertTool" />
                 <tool-section
                     v-for="section in sections"
+                    :key="section.id"
                     :category="section"
                     :query-filter="query"
-                    :key="section.id"
                     @onClick="onInsertTool" />
                 <tool-section
                     v-if="hasWorkflowSection"
-                    :category="workflowSection"
                     :key="workflowSection.name"
+                    :category="workflowSection"
                     section-name="workflows"
                     operation-icon="fa fa-files-o"
                     operation-title="Insert individual steps."
@@ -74,12 +77,6 @@ export default {
         ToolSearch,
         PanelViewButton,
     },
-    data() {
-        return {
-            query: null,
-            results: null,
-        };
-    },
     props: {
         toolbox: {
             type: Array,
@@ -103,6 +100,12 @@ export default {
             type: Array,
             required: true,
         },
+    },
+    data() {
+        return {
+            query: null,
+            results: null,
+        };
     },
     computed: {
         hasWorkflowSection() {

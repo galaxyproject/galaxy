@@ -6,12 +6,12 @@ sentry-sdk
 pbs_python
 drmaa
 statsd
-docker
 azure-storage==0.32.0
-python-irodsclient==1.0.0
+python-irodsclient==1.1.3
 python-ldap==3.4.0
 python-pam
 galaxycloudrunner
+pkce
 
 # For file sources plugins
 fs.webdavfs>=0.4.2  # type: webdav

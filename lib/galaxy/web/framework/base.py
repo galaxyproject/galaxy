@@ -19,7 +19,7 @@ import routes
 import webob.compat
 import webob.cookies
 import webob.exc
-import webob.exc as httpexceptions  # noqa: F401
+import webob.exc as httpexceptions
 
 # We will use some very basic HTTP/wsgi utilities from the paste library
 from paste.response import HeaderDict
@@ -560,3 +560,13 @@ def walk_controller_modules(package_name):
             module_name = f"{package_name}.{name}"
             module = import_module(module_name)
             yield name, module
+
+
+__all__ = (
+    "DefaultWebTransaction",
+    "httpexceptions",
+    "lazy_property",
+    "routes",
+    "walk_controller_modules",
+    "WebApplication",
+)

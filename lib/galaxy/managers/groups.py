@@ -7,7 +7,6 @@ from typing import (
 from sqlalchemy import false
 
 from galaxy import model
-from galaxy.app import MinimalManagerApp
 from galaxy.exceptions import (
     Conflict,
     ObjectAttributeMissingException,
@@ -16,6 +15,7 @@ from galaxy.exceptions import (
 from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.web import url_for
 
 

@@ -52,9 +52,8 @@ describe("FormInput", () => {
             const props = { value: 50, type: "float", min: 10, max: 100 };
             const wrapper = await mountFormNumber(props);
             const input = await getInput(wrapper);
-            input.setValue(number);
-            input.trigger("change");
-            await flushPromises();
+            await input.setValue(number);
+            await input.trigger("change");
             const alert = await getAlert(wrapper);
             expect(alert.exists()).toBeTruthy();
             expect(alert.text().includes(`${number} is out`)).toBeTruthy();

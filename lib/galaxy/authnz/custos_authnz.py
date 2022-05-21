@@ -22,12 +22,23 @@ from galaxy.model import (
     CustosAuthnzToken,
     User,
 )
+from galaxy.model.orm.util import add_object_to_object_session
 from ..authnz import IdentityProvider
+
+try:
+    import pkce
+except ImportError:
+    pkce = None
 
 log = logging.getLogger(__name__)
 STATE_COOKIE_NAME = "galaxy-oidc-state"
 NONCE_COOKIE_NAME = "galaxy-oidc-nonce"
+VERIFIER_COOKIE_NAME = "galaxy-oidc-verifier"
 KEYCLOAK_BACKENDS = {"custos", "cilogon", "keycloak"}
+
+
+class InvalidAuthnzConfigException(Exception):
+    pass
 
 
 class CustosAuthnz(IdentityProvider):
@@ -40,6 +51,7 @@ class CustosAuthnz(IdentityProvider):
         self.config["client_secret"] = oidc_backend_config["client_secret"]
         self.config["redirect_uri"] = oidc_backend_config["redirect_uri"]
         self.config["ca_bundle"] = oidc_backend_config.get("ca_bundle", None)
+        self.config["pkce_support"] = oidc_backend_config.get("pkce_support", False)
         self.config["extra_params"] = {
             "kc_idp_hint": oidc_backend_config.get(
                 "idphint", "oidc" if self.config["provider"] in ["custos", "keycloak"] else "cilogon"
@@ -66,6 +78,16 @@ class CustosAuthnz(IdentityProvider):
         extra_params = {"nonce": nonce_hash}
         if idphint is not None:
             extra_params["idphint"] = idphint
+        if self.config["pkce_support"]:
+            if not pkce:
+                raise InvalidAuthnzConfigException(
+                    "The python 'pkce' library is not installed but Galaxy is configured to use it "
+                    "(see oidc_backends_config).  Make sure pkce is installed correctly to proceed."
+                )
+            code_verifier, code_challenge = pkce.generate_pkce_pair(96)
+            extra_params["code_challenge"] = code_challenge
+            extra_params["code_challenge_method"] = "S256"
+            trans.set_cookie(value=code_verifier, name=VERIFIER_COOKIE_NAME)
         if "extra_params" in self.config:
             extra_params.update(self.config["extra_params"])
         authorization_url, state = oauth2_session.authorization_url(base_authorize_url, **extra_params)
@@ -186,7 +208,6 @@ class CustosAuthnz(IdentityProvider):
             trans.app.user_manager.send_activation_email(trans, email, username)
 
         custos_authnz_token = CustosAuthnzToken(
-            user=user,
             external_user_id=user_id,
             provider=self.config["provider"],
             access_token=access_token,
@@ -195,6 +216,8 @@ class CustosAuthnz(IdentityProvider):
             expiration_time=expiration_time,
             refresh_expiration_time=refresh_expiration_time,
         )
+        add_object_to_object_session(custos_authnz_token, user)
+        custos_authnz_token.user = user
 
         trans.sa_session.add(user)
         trans.sa_session.add(custos_authnz_token)
@@ -249,15 +272,20 @@ class CustosAuthnz(IdentityProvider):
             client_secret = self.config["client_secret"]
         token_endpoint = self.config["token_endpoint"]
         clientIdAndSec = f"{self.config['client_id']}:{self.config['client_secret']}"  # for custos
-        return oauth2_session.fetch_token(
-            token_endpoint,
-            client_secret=client_secret,
-            authorization_response=trans.request.url,
-            headers={
+
+        params = {
+            "client_secret": client_secret,
+            "authorization_response": trans.request.url,
+            "headers": {
                 "Authorization": f"Basic {util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))}"
             },  # for custos
-            verify=self._get_verify_param(),
-        )
+            "verify": self._get_verify_param(),
+        }
+        if self.config["pkce_support"]:
+            code_verifier = trans.get_cookie(name=VERIFIER_COOKIE_NAME)
+            trans.set_cookie("", name=VERIFIER_COOKIE_NAME, age=-1)
+            params["code_verifier"] = code_verifier
+        return oauth2_session.fetch_token(token_endpoint, **params)
 
     def _get_userinfo(self, oauth2_session):
         userinfo_endpoint = self.config["userinfo_endpoint"]
@@ -275,7 +303,7 @@ class CustosAuthnz(IdentityProvider):
         trans.set_cookie("", name=NONCE_COOKIE_NAME, age=-1)
         nonce_cookie_hash = self._hash_nonce(nonce_cookie)
         if nonce_hash != nonce_cookie_hash:
-            raise Exception("Nonce mismatch!")
+            raise Exception("Nonce mismatch. Check that configured redirect_uri matches the URL you are using.")
 
     def _load_config_for_cilogon(self):
         # Set cilogon endpoints

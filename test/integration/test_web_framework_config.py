@@ -12,8 +12,6 @@ class BaseWebFrameworkTestCase(integration_util.IntegrationTestCase):
 
 
 class CorsDefaultIntegrationTestCase(BaseWebFrameworkTestCase):
-    use_uvicorn = True
-
     def test_options(self):
         headers = {
             "Access-Control-Request-Method": "GET",
@@ -35,8 +33,6 @@ class CorsDefaultIntegrationTestCase(BaseWebFrameworkTestCase):
 
 
 class AllowOriginIntegrationTestCase(BaseWebFrameworkTestCase):
-    use_uvicorn = True
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["allowed_origin_hostnames"] = "192.168.0.101,/.*.galaxyproject.org/"
@@ -73,11 +69,3 @@ class AllowOriginIntegrationTestCase(BaseWebFrameworkTestCase):
         }
         options_response = self._options(headers)
         assert options_response.status_code == 400
-
-
-class AllowOriginPasteIntegrationTestCase(AllowOriginIntegrationTestCase):
-    use_uvicorn = False
-
-
-class CorsDefaultPasteIntegrationTestCase(CorsDefaultIntegrationTestCase):
-    use_uvicorn = False

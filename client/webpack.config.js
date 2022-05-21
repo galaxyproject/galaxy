@@ -11,6 +11,19 @@ const testsBase = path.join(__dirname, "tests");
 const libsBase = path.join(scriptsBase, "libs");
 const styleBase = path.join(scriptsBase, "style");
 
+const modulesExcludedFromLibs = [
+    "jspdf",
+    "canvg",
+    "prismjs",
+    "html2canvas",
+    "handsontable",
+    "pikaday",
+    "moment",
+    "elkjs",
+    "@citation-js",
+    "citeproc",
+].join("|");
+
 module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
     const targetEnv = process.env.NODE_ENV == "production" || argv.mode == "production" ? "production" : "development";
@@ -43,8 +56,6 @@ module.exports = (env = {}, argv = {}) => {
                 jqueryVendor$: `${libsBase}/jquery/jquery.js`,
                 storemodern$: "store/dist/store.modern.js",
                 "popper.js": path.resolve(__dirname, "node_modules/popper.js/"),
-                moment: path.resolve(__dirname, "node_modules/moment"),
-                uuid: path.resolve(__dirname, "node_modules/uuid"),
                 underscore: path.resolve(__dirname, "node_modules/underscore"),
                 // client-side application config
                 config$: path.join(scriptsBase, "config", targetEnv) + ".js",
@@ -61,7 +72,7 @@ module.exports = (env = {}, argv = {}) => {
                     },
                     libs: {
                         name: "libs",
-                        test: /node_modules[\\/](?!(jspdf|canvg|html2canvas|handsontable|pikaday|moment|elkjs)[\\/])|galaxy\/scripts\/libs/,
+                        test: new RegExp(`node_modules[\\/](?!(${modulesExcludedFromLibs})[\\/])|galaxy/scripts/libs`),
                         chunks: "all",
                         priority: -10,
                     },
@@ -80,23 +91,6 @@ module.exports = (env = {}, argv = {}) => {
                     test: /\.mjs$/,
                     include: /node_modules/,
                     type: "javascript/auto",
-                },
-                {
-                    test: /\.js$/,
-                    /*
-                     * Babel transpile excludes for:
-                     * - all node_modules except for handsontable, bootstrap-vue
-                     * - statically included libs (like old jquery plugins, etc.)
-                     */
-                    exclude: [/(node_modules\/(?!(handsontable|bootstrap-vue)\/))/, libsBase],
-                    loader: "babel-loader",
-                    options: {
-                        cacheDirectory: true,
-                        cacheCompression: false,
-                        presets: [["@babel/preset-env", { modules: false }]],
-                        plugins: ["transform-vue-template", "@babel/plugin-syntax-dynamic-import"],
-                        ignore: ["i18n.js", "utils/localization.js", "nls/*"],
-                    },
                 },
                 {
                     test: `${libsBase}/jquery.custom.js`,
@@ -196,6 +190,10 @@ module.exports = (env = {}, argv = {}) => {
                 Galaxy: ["app", "monitor"],
                 Buffer: ["buffer", "Buffer"],
                 process: "process/browser",
+            }),
+            new webpack.DefinePlugin({
+                __targetEnv__: JSON.stringify(targetEnv),
+                __buildTimestamp__: JSON.stringify(new Date().toISOString()),
             }),
             new VueLoaderPlugin(),
             new MiniCssExtractPlugin({

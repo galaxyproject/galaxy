@@ -36,8 +36,8 @@ from galaxy.util import (
     sanitize_text,
     smart_str,
 )
-from galaxy.util.checkers import check_binary
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import form_builder
 from galaxy.web.framework.helpers import iff
 from galaxy.webapps.base.controller import (
@@ -215,6 +215,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         display_data, headers = data.datatype.display_data(
             trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd
         )
+        if isinstance(display_data, ZipstreamWrapper):
+            trans.response.headers.update(headers)
+            return display_data.response()
         trans.response.headers.update(headers)
         return display_data
 
@@ -429,8 +432,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     )
                 else:
                     path = data.dataset.file_name
-                    is_binary = check_binary(path)
-                    datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order, is_binary=is_binary)
+                    datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order)
                     trans.app.datatypes_registry.change_datatype(data, datatype)
                     trans.sa_session.flush()
                     job, *_ = trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(

@@ -16,6 +16,8 @@ class ResolutionCache(Bunch):
     one resolution at a time in a single thread.
     """
 
+    mulled_resolution_cache = None
+
 
 class ContainerResolver(Dictifiable, metaclass=ABCMeta):
     """Description of a technique for resolving container images for tool execution."""

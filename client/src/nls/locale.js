@@ -13,7 +13,6 @@ define({
         Visualization: false,
         "New Track Browser": false,
         "Saved Visualizations": false,
-        "Interactive Environments": false,
         Admin: false,
         Help: false,
         Support: false,

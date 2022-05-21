@@ -1,36 +1,40 @@
 <template>
     <div class="unified-panel">
-        <div class="unified-panel-header" unselectable="on">
+        <div unselectable="on">
             <div class="unified-panel-header-inner">
-                <div class="panel-header-buttons">
-                    <favorites-button :query="query" @onFavorites="onFavorites" v-if="isUser" />
-                    <panel-view-button
-                        :panel-views="panelViews"
-                        :current-panel-view="currentPanelView"
-                        @updatePanelView="updatePanelView"
-                        v-if="panelViews && Object.keys(panelViews).length > 1" />
-                </div>
-                <div class="panel-header-text" v-localize>Tools</div>
+                <nav class="d-flex justify-content-between mx-3 my-2">
+                    <h4 v-localize class="m-1">Tools</h4>
+                    <div class="panel-header-buttons">
+                        <b-button-group>
+                            <favorites-button v-if="isUser" :query="query" @onFavorites="onQuery" />
+                            <panel-view-button
+                                v-if="panelViews && Object.keys(panelViews).length > 1"
+                                :panel-views="panelViews"
+                                :current-panel-view="currentPanelView"
+                                @updatePanelView="updatePanelView" />
+                        </b-button-group>
+                    </div>
+                </nav>
             </div>
         </div>
         <div class="unified-panel-controls">
             <tool-search
                 :current-panel-view="currentPanelView"
-                :query="query"
                 :placeholder="titleSearchTools"
+                :query="query"
                 @onQuery="onQuery"
                 @onResults="onResults" />
             <upload-button />
-            <div class="py-2" v-if="hasResults">
-                <b-button @click="onToggle" size="sm" class="w-100">
+            <div v-if="hasResults" class="pb-2">
+                <b-button size="sm" class="w-100" @click="onToggle">
                     <span :class="buttonIcon" />
                     <span class="mr-1">{{ buttonText }}</span>
                 </b-button>
             </div>
-            <div class="py-2" v-else-if="queryTooShort">
+            <div v-else-if="queryTooShort" class="pb-2">
                 <b-badge class="alert-danger w-100">Search string too short!</b-badge>
             </div>
-            <div class="py-2" v-else-if="queryFinished">
+            <div v-else-if="queryFinished" class="pb-2">
                 <b-badge class="alert-danger w-100">No results found!</b-badge>
             </div>
         </div>
@@ -39,15 +43,15 @@
                 <div class="toolMenu">
                     <tool-section
                         v-for="(section, key) in sections"
+                        :key="key"
                         :category="section"
                         :query-filter="queryFilter"
-                        :key="key"
                         @onClick="onOpen" />
                 </div>
                 <tool-section :category="{ text: workflowTitle }" />
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
-                    <div class="toolTitle" v-for="wf in workflows" :key="wf.id">
+                    <div v-for="wf in workflows" :key="wf.id" class="toolTitle">
                         <a class="title-link" :href="wf.href">{{ wf.title }}</a>
                     </div>
                 </div>
@@ -75,18 +79,6 @@ export default {
         ToolSection,
         ToolSearch,
     },
-    data() {
-        return {
-            query: null,
-            results: null,
-            queryFilter: null,
-            queryPending: false,
-            showSections: false,
-            buttonText: "",
-            buttonIcon: "",
-            titleSearchTools: _l("search tools"),
-        };
-    },
     props: {
         toolbox: {
             type: Array,
@@ -106,6 +98,18 @@ export default {
             type: String,
             default: _l("Workflows"),
         },
+    },
+    data() {
+        return {
+            query: null,
+            results: null,
+            queryFilter: null,
+            queryPending: false,
+            showSections: false,
+            buttonText: "",
+            buttonIcon: "",
+            titleSearchTools: _l("search tools"),
+        };
     },
     computed: {
         queryTooShort() {
@@ -146,8 +150,8 @@ export default {
         },
     },
     methods: {
-        onQuery(query) {
-            this.query = query;
+        onQuery(q) {
+            this.query = q;
             this.queryPending = true;
         },
         onResults(results) {
@@ -155,9 +159,6 @@ export default {
             this.queryFilter = this.hasResults ? this.query : null;
             this.setButtonText();
             this.queryPending = false;
-        },
-        onFavorites(term) {
-            this.query = term;
         },
         onOpen(tool, evt) {
             if (tool.id === "upload1") {

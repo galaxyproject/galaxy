@@ -1,7 +1,7 @@
 <template>
     <div>
         <h3 v-if="title">{{ title }}</h3>
-        <table class="tabletip info_data_table" id="job-outputs">
+        <table id="job-outputs" class="tabletip info_data_table">
             <thead>
                 <tr>
                     <th>Tool Outputs</th>
@@ -14,7 +14,11 @@
                         {{ value[0].label || name }}
                     </td>
                     <td>
-                        <generic-history-content v-for="(item, index) in value" :key="index" :data_item="item.value" />
+                        <generic-history-item
+                            v-for="(item, index) in value"
+                            :key="index"
+                            :item-id="item.value.id"
+                            :item-src="item.value.src" />
                     </td>
                 </tr>
             </tbody>
@@ -23,11 +27,11 @@
 </template>
 
 <script>
-import GenericHistoryContent from "components/History/ContentItem/GenericContentItem/GenericHistoryContent";
+import GenericHistoryItem from "components/History/Content/GenericItem";
 
 export default {
     components: {
-        GenericHistoryContent,
+        GenericHistoryItem,
     },
     props: {
         jobOutputs: Object,

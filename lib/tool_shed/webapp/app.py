@@ -11,8 +11,12 @@ import tool_shed.repository_registry
 import tool_shed.repository_types.registry
 import tool_shed.webapp.model
 from galaxy import auth
-from galaxy.app import SentryClientMixin
+from galaxy.app import (
+    HaltableContainer,
+    SentryClientMixin,
+)
 from galaxy.config import configure_logging
+from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.users import UserManager
 from galaxy.model.base import SharedModelMapping
@@ -32,7 +36,7 @@ from . import config
 log = logging.getLogger(__name__)
 
 
-class UniverseApplication(BasicSharedApp, SentryClientMixin):
+class UniverseApplication(BasicSharedApp, SentryClientMixin, HaltableContainer):
     """Encapsulates the state of a Universe application"""
 
     def __init__(self, **kwd) -> None:
@@ -75,7 +79,8 @@ class UniverseApplication(BasicSharedApp, SentryClientMixin):
         self._register_singleton(SharedModelMapping, model)
         self._register_singleton(mapping.ToolShedModelMapping, model)
         self._register_singleton(scoped_session, self.model.context)
-        self._register_singleton(UserManager, UserManager)
+        self.user_manager = self._register_singleton(UserManager, UserManager)
+        self.api_keys_manager = self._register_singleton(ApiKeyManager)
         # initialize the Tool Shed tag handler.
         self.tag_handler = CommunityTagHandler(self)
         # Initialize the Tool Shed tool data tables.  Never pass a configuration file here
@@ -102,6 +107,3 @@ class UniverseApplication(BasicSharedApp, SentryClientMixin):
         #  used for cachebusting -- refactor this into a *SINGLE* UniverseApplication base.
         self.server_starttime = int(time.time())
         log.debug("Tool shed hgweb.config file is: %s", self.hgweb_config_manager.hgweb_config)
-
-    def shutdown(self):
-        pass

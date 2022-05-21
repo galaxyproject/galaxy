@@ -273,57 +273,6 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
 
         return rval
 
-    @expose_api
-    def sharing(self, trans, id, **kwd):
-        """
-        * GET /api/visualizations/{id}/sharing
-        """
-        return self.service.shareable_service.sharing(trans, id)
-
-    @expose_api
-    def enable_link_access(self, trans, id, **kwd):
-        """
-        * PUT /api/visualizations/{id}/enable_link_access
-        """
-        return self.service.shareable_service.enable_link_access(trans, id)
-
-    @expose_api
-    def disable_link_access(self, trans, id, **kwd):
-        """
-        * PUT /api/visualizations/{id}/disable_link_access
-        """
-        return self.service.shareable_service.disable_link_access(trans, id)
-
-    @expose_api
-    def publish(self, trans, id, **kwd):
-        """
-        * PUT /api/visualizations/{id}/publish
-        """
-        return self.service.shareable_service.publish(trans, id)
-
-    @expose_api
-    def unpublish(self, trans, id, **kwd):
-        """
-        * PUT /api/visualizations/{id}/unpublish
-        """
-        return self.service.shareable_service.unpublish(trans, id)
-
-    @expose_api
-    def share_with_users(self, trans, id, payload, **kwd):
-        """
-        * PUT /api/visualizations/{id}/share_with_users
-        """
-        payload = ShareWithPayload(**payload)
-        return self.service.shareable_service.share_with_users(trans, id, payload)
-
-    @expose_api
-    def set_slug(self, trans, id, payload, **kwd):
-        """
-        * PUT /api/visualizations/{id}/slug
-        """
-        payload = SetSlugPayload(**payload)
-        self.service.shareable_service.set_slug(trans, id, payload)
-
     def _validate_and_parse_payload(self, payload):
         """
         Validate and parse incomming data payload for a visualization.

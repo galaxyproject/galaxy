@@ -23,7 +23,6 @@ from pydantic.fields import Field
 from pydantic.main import BaseModel
 from starlette.responses import FileResponse
 
-from galaxy import util
 from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
@@ -32,10 +31,7 @@ from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
-from galaxy.schema.fields import (
-    EncodedDatabaseIdField,
-    OrderParamField,
-)
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHistoryView,
     CreateHistoryPayload,
@@ -50,21 +46,13 @@ from galaxy.schema.schema import (
     SharingStatus,
 )
 from galaxy.schema.types import LatestLiteral
-from galaxy.util import string_as_bool
-from galaxy.web import (
-    expose_api,
-    expose_api_anonymous,
-    expose_api_anonymous_and_sessionless,
-    expose_api_raw_anonymous_and_sessionless,
-)
 from galaxy.webapps.galaxy.api.common import (
-    parse_serialization_params,
+    get_filter_query_params,
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.histories import HistoriesService
 from . import (
     as_form,
-    BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
     Router,
@@ -89,13 +77,14 @@ JehaIDPathParam: Union[EncodedDatabaseIdField, LatestLiteral] = Path(
     example="latest",
 )
 
-
-class HistoryFilterQueryParams(FilterQueryParams):
-    order: Optional[str] = OrderParamField(default_order="create_time-dsc")
-
-
-class HistoryIndexParams(HistoryFilterQueryParams):
-    all: Optional[bool] = False
+AllHistoriesQueryParam = Query(
+    default=False,
+    title="All Histories",
+    description=(
+        "Whether all histories from other users in this Galaxy should be included. "
+        "Only admins are allowed to query all histories."
+    ),
+)
 
 
 class DeleteHistoryPayload(BaseModel):
@@ -120,16 +109,19 @@ class FastAPIHistories:
     def index(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        params: HistoryIndexParams = Depends(HistoryIndexParams),
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-        deleted: bool = Query(  # This is for backward compatibility but looks redundant
+        all: Optional[bool] = AllHistoriesQueryParam,
+        deleted: Optional[bool] = Query(  # This is for backward compatibility but looks redundant
             default=False,
             title="Deleted Only",
             description="Whether to return only deleted items.",
             deprecated=True,  # Marked as deprecated as it seems just like '/api/histories/deleted'
         ),
     ) -> List[AnyHistoryView]:
-        return self.service.index(trans, serialization_params, params, deleted_only=deleted, all_histories=params.all)
+        return self.service.index(
+            trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
+        )
 
     @router.get(
         "/api/histories/deleted",
@@ -138,10 +130,13 @@ class FastAPIHistories:
     def index_deleted(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        params: HistoryIndexParams = Depends(HistoryIndexParams),
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
+        all: Optional[bool] = AllHistoriesQueryParam,
     ) -> List[AnyHistoryView]:
-        return self.service.index(trans, serialization_params, params, deleted_only=True, all_histories=params.all)
+        return self.service.index(
+            trans, serialization_params, filter_query_params, deleted_only=True, all_histories=all
+        )
 
     @router.get(
         "/api/histories/published",
@@ -150,10 +145,10 @@ class FastAPIHistories:
     def published(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-        filter_params: HistoryFilterQueryParams = Depends(HistoryFilterQueryParams),
     ) -> List[AnyHistoryView]:
-        return self.service.published(trans, serialization_params, filter_params)
+        return self.service.published(trans, serialization_params, filter_query_params)
 
     @router.get(
         "/api/histories/shared_with_me",
@@ -162,10 +157,10 @@ class FastAPIHistories:
     def shared_with_me(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-        filter_params: HistoryFilterQueryParams = Depends(HistoryFilterQueryParams),
     ) -> List[AnyHistoryView]:
-        return self.service.shared_with_me(trans, serialization_params, filter_params)
+        return self.service.shared_with_me(trans, serialization_params, filter_query_params)
 
     @router.get(
         "/api/histories/most_recently_used",
@@ -442,388 +437,3 @@ class FastAPIHistories:
         """Sets a new slug to access this item by URL. The new slug must be unique."""
         self.service.shareable_service.set_slug(trans, id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-class HistoriesController(BaseGalaxyAPIController):
-    service: HistoriesService = depends(HistoriesService)
-
-    @expose_api_anonymous
-    def index(self, trans, deleted="False", **kwd):
-        """
-        GET /api/histories
-
-        return undeleted histories for the current user
-
-        GET /api/histories/deleted
-
-        return deleted histories for the current user
-
-        .. note:: Anonymous users are allowed to get their current history
-
-        :type   deleted: boolean
-        :param  deleted: if True, show only deleted histories, if False, non-deleted
-
-        :rtype:     list
-        :returns:   list of dictionaries containing summary history information
-
-        The following are optional parameters:
-
-            view:   string, one of ('summary','detailed'), defaults to 'summary'
-                    controls which set of properties to return
-            keys:   comma separated strings, unused by default
-                    keys/names of individual properties to return
-            all:    boolean, defaults to 'false', admin-only
-                    returns all histories, not just current user's
-
-        If neither keys or views are sent, the default view (set of keys) is returned.
-        If both a view and keys are sent, the key list and the view's keys are
-        combined.
-
-        If keys are send and no view, only those properties in keys are returned.
-
-        For which properties are available see
-
-            galaxy/managers/histories/HistorySerializer
-
-        The list returned can be filtered by using two optional parameters:
-
-            :q:
-
-                string, generally a property name to filter by followed
-                by an (often optional) hyphen and operator string.
-
-            :qv:
-
-                string, the value to filter by
-
-        ..example::
-
-            To filter the list to only those created after 2015-01-29,
-            the query string would look like:
-
-                '?q=create_time-gt&qv=2015-01-29'
-
-            Multiple filters can be sent in using multiple q/qv pairs:
-
-                '?q=create_time-gt&qv=2015-01-29&q=tag-has&qv=experiment-1'
-
-        The list returned can be paginated using two optional parameters:
-
-            limit:  integer, defaults to no value and no limit (return all)
-                    how many items to return
-            offset: integer, defaults to 0 and starts at the beginning
-                    skip the first ( offset - 1 ) items and begin returning
-                    at the Nth item
-
-        ..example:
-
-            limit and offset can be combined. Skip the first two and return five:
-                '?limit=5&offset=3'
-
-        The list returned can be ordered using the optional parameter:
-
-            order:  string containing one of the valid ordering attributes followed
-                    (optionally) by '-asc' or '-dsc' for ascending and descending
-                    order respectively. Orders can be stacked as a comma-
-                    separated list of values.
-
-        ..example:
-            To sort by name descending then create time descending:
-                '?order=name-dsc,create_time'
-
-        The ordering attributes and their default orders are:
-
-            create_time defaults to 'create_time-dsc'
-            update_time defaults to 'update_time-dsc'
-            name    defaults to 'name-asc'
-
-        'order' defaults to 'create_time-dsc'
-        """
-        deleted_only = util.string_as_bool(deleted)
-        all_histories = util.string_as_bool(kwd.get("all", False))
-        serialization_params = parse_serialization_params(**kwd)
-        filter_parameters = HistoryFilterQueryParams(**kwd)
-        return self.service.index(trans, serialization_params, filter_parameters, deleted_only, all_histories)
-
-    @expose_api_anonymous
-    def show(self, trans, id, deleted="False", **kwd):
-        """
-        show( trans, id, deleted='False' )
-        * GET /api/histories/{id}:
-            return the history with ``id``
-        * GET /api/histories/deleted/{id}:
-            return the deleted history with ``id``
-        * GET /api/histories/most_recently_used:
-            return the most recently used history
-
-        :type   id:      an encoded id string
-        :param  id:      the encoded id of the history to query or the string 'most_recently_used'
-        :type   deleted: boolean
-        :param  deleted: if True, allow information on a deleted history to be shown.
-
-        :param  keys: same as the use of `keys` in the `index` function above
-        :param  view: same as the use of `view` in the `index` function above
-
-        :rtype:     dictionary
-        :returns:   detailed history information
-        """
-        history_id = id
-        if history_id == "most_recently_used":
-            history_id = None  # Will default to the most recently used
-        serialization_params = parse_serialization_params(**kwd)
-        return self.service.show(trans, serialization_params, history_id)
-
-    @expose_api_anonymous
-    def citations(self, trans, history_id, **kwd):
-        """
-        GET /api/histories/{id}/citations
-        Return all the citations for the tools used to produce the datasets in
-        the history.
-        """
-        return self.service.citations(trans, history_id)
-
-    @expose_api_anonymous_and_sessionless
-    def published(self, trans, **kwd):
-        """
-        GET /api/histories/published
-
-        return all histories that are published
-
-        :rtype:     list
-        :returns:   list of dictionaries containing summary history information
-
-        Follows the same filtering logic as the index() method above.
-        """
-        serialization_params = parse_serialization_params(**kwd)
-        filter_parameters = HistoryFilterQueryParams(**kwd)
-        return self.service.published(trans, serialization_params, filter_parameters)
-
-    @expose_api
-    def shared_with_me(self, trans, **kwd):
-        """
-        shared_with_me( self, trans, **kwd )
-        * GET /api/histories/shared_with_me:
-            return all histories that are shared with the current user
-
-        :rtype:     list
-        :returns:   list of dictionaries containing summary history information
-
-        Follows the same filtering logic as the index() method above.
-        """
-        serialization_params = parse_serialization_params(**kwd)
-        filter_parameters = HistoryFilterQueryParams(**kwd)
-        return self.service.shared_with_me(trans, serialization_params, filter_parameters)
-
-    @expose_api_anonymous
-    def create(self, trans, payload, **kwd):
-        """
-        create( trans, payload )
-        * POST /api/histories:
-            create a new history
-
-        :type   payload: dict
-        :param  payload: (optional) dictionary structure containing:
-            * name:             the new history's name
-            * history_id:       the id of the history to copy
-            * all_datasets:     copy deleted hdas/hdcas? 'True' or 'False', defaults to True
-            * archive_source:   the url that will generate the archive to import
-            * archive_type:     'url' (default)
-
-        :param  keys: same as the use of `keys` in the `index` function above
-        :param  view: same as the use of `view` in the `index` function above
-
-        :rtype:     dict
-        :returns:   element view of new history
-        """
-        create_payload = CreateHistoryPayload(**payload)
-        serialization_params = parse_serialization_params(**kwd)
-        return self.service.create(trans, create_payload, serialization_params)
-
-    @expose_api
-    def delete(self, trans, id, **kwd):
-        """
-        DELETE /api/histories/{id}
-
-        delete the history with the given ``id``
-
-        .. note:: Stops all active jobs in the history if purge is set.
-
-        :type   id:     str
-        :param  id:     the encoded id of the history to delete
-        :type   kwd:    dict
-        :param  kwd:    (optional) dictionary structure containing extra parameters
-
-        You can purge a history, removing all it's datasets from disk (if unshared),
-        by passing in ``purge=True`` in the url.
-
-        :param  keys: same as the use of `keys` in the `index` function above
-        :param  view: same as the use of `view` in the `index` function above
-
-        :rtype:     dict
-        :returns:   the deleted or purged history
-        """
-        history_id = id
-        # a request body is optional here
-        purge = string_as_bool(kwd.get("purge", False))
-        # for backwards compat, keep the payload sub-dictionary
-        if kwd.get("payload", None):
-            purge = string_as_bool(kwd["payload"].get("purge", purge))
-
-        serialization_params = parse_serialization_params(**kwd)
-        return self.service.delete(trans, history_id, serialization_params, purge)
-
-    @expose_api
-    def undelete(self, trans, id, **kwd):
-        """
-        undelete( self, trans, id, **kwd )
-        * POST /api/histories/deleted/{id}/undelete:
-            undelete history (that hasn't been purged) with the given ``id``
-
-        :type   id:     str
-        :param  id:     the encoded id of the history to undelete
-
-        :param  keys: same as the use of `keys` in the `index` function above
-        :param  view: same as the use of `view` in the `index` function above
-
-        :rtype:     str
-        :returns:   'OK' if the history was undeleted
-        """
-        serialization_params = parse_serialization_params(**kwd)
-        return self.service.undelete(trans, id, serialization_params)
-
-    @expose_api
-    def update(self, trans, id, payload, **kwd):
-        """
-        update( self, trans, id, payload, **kwd )
-        * PUT /api/histories/{id}
-            updates the values for the history with the given ``id``
-
-        :type   id:      str
-        :param  id:      the encoded id of the history to update
-        :type   payload: dict
-        :param  payload: a dictionary containing any or all the
-            fields in :func:`galaxy.model.History.to_dict` and/or the following:
-
-            * annotation: an annotation for the history
-
-        :param  keys: same as the use of `keys` in the `index` function above
-        :param  view: same as the use of `view` in the `index` function above
-
-        :rtype:     dict
-        :returns:   an error object if an error occurred or a dictionary containing
-            any values that were different from the original and, therefore, updated
-        """
-        # TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
-        serialization_params = parse_serialization_params(**kwd)
-        return self.service.update(trans, id, payload, serialization_params)
-
-    @expose_api
-    def index_exports(self, trans, id):
-        """
-        GET /api/histories/{id}/exports
-
-        Get previous history exports (to links). Effectively returns serialized
-        JEHA objects.
-        """
-        return self.service.index_exports(trans, id)
-
-    @expose_api
-    def archive_export(self, trans, id, payload=None, **kwds):
-        """
-        PUT /api/histories/{id}/exports
-
-        start job (if needed) to create history export for corresponding
-        history.
-
-        :type   id:     str
-        :param  id:     the encoded id of the history to export
-
-        :rtype:     dict
-        :returns:   object containing url to fetch export from.
-        """
-        # PUT instead of POST because multiple requests should just result
-        # in one object being created.
-        payload = payload or {}
-        payload.update(kwds or {})
-        export_payload = ExportHistoryArchivePayload(**payload)
-        export_result, ready = self.service.archive_export(trans, id, export_payload)
-        if not ready:
-            trans.response.status = 202
-        return export_result
-
-    @expose_api_raw_anonymous_and_sessionless
-    def archive_download(self, trans, id, jeha_id, **kwds):
-        """
-        GET /api/histories/{id}/exports/{jeha_id}
-
-        If ready and available, return raw contents of exported history.
-        Use/poll ``PUT /api/histories/{id}/exports`` to initiate the creation
-        of such an export - when ready that route will return 200 status
-        code (instead of 202) with a JSON dictionary containing a
-        ``download_url``.
-        """
-        # TODO: remove the HistoriesService.legacy_archive_download function when
-        # removing this endpoint
-        return self.service.legacy_archive_download(trans, id, jeha_id)
-
-    @expose_api
-    def get_custom_builds_metadata(self, trans, id, payload=None, **kwd):
-        """
-        GET /api/histories/{id}/custom_builds_metadata
-        Returns meta data for custom builds.
-
-        :param id: the encoded history id
-        :type  id: str
-        """
-        return self.service.get_custom_builds_metadata(trans, id)
-
-    @expose_api
-    def sharing(self, trans, id, **kwd):
-        """
-        * GET /api/histories/{id}/sharing
-        """
-        return self.service.shareable_service.sharing(trans, id)
-
-    @expose_api
-    def enable_link_access(self, trans, id, **kwd):
-        """
-        * PUT /api/histories/{id}/enable_link_access
-        """
-        return self.service.shareable_service.enable_link_access(trans, id)
-
-    @expose_api
-    def disable_link_access(self, trans, id, **kwd):
-        """
-        * PUT /api/histories/{id}/disable_link_access
-        """
-        return self.service.shareable_service.disable_link_access(trans, id)
-
-    @expose_api
-    def publish(self, trans, id, **kwd):
-        """
-        * PUT /api/histories/{id}/publish
-        """
-        return self.service.shareable_service.publish(trans, id)
-
-    @expose_api
-    def unpublish(self, trans, id, **kwd):
-        """
-        * PUT /api/histories/{id}/unpublish
-        """
-        return self.service.shareable_service.unpublish(trans, id)
-
-    @expose_api
-    def share_with_users(self, trans, id, payload, **kwd):
-        """
-        * PUT /api/histories/{id}/share_with_users
-        """
-        payload = ShareWithPayload(**payload)
-        return self.service.shareable_service.share_with_users(trans, id, payload)
-
-    @expose_api
-    def set_slug(self, trans, id, payload, **kwd):
-        """
-        * PUT /api/histories/{id}/slug
-        """
-        payload = SetSlugPayload(**payload)
-        self.service.shareable_service.set_slug(trans, id, payload)

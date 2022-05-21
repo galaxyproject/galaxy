@@ -9,9 +9,9 @@
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-resolver-type">Using resolvers of type</label>
                     <b-form-select
-                        class="mb-2 mr-sm-2 mb-sm-0"
                         id="manage-resolver-type"
                         v-model="resolverType"
+                        class="mb-2 mr-sm-2 mb-sm-0"
                         :options="resolverTypeOptions"></b-form-select>
                 </b-form>
             </b-row>
@@ -20,9 +20,9 @@
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
                     <b-form-select
-                        class="mb-2 mr-sm-2 mb-sm-0"
                         id="manage-filter-resolution"
-                        v-model="filterResolution">
+                        v-model="filterResolution"
+                        class="mb-2 mr-sm-2 mb-sm-0">
                         <option :value="null">*any*</option>
                         <option value="unresolved">Unresolved</option>
                         <option value="resolved">Resolved</option>
@@ -69,11 +69,11 @@
                     <!-- v-bind:disabled="!hasSelection"  -->
                     Uninstall
                 </b-button>
-                <b-button class="m-1" @click="setExpandToolIds(true)" v-if="!expandToolIds">
+                <b-button v-if="!expandToolIds" class="m-1" @click="setExpandToolIds(true)">
                     <span class="fa fa-chevron-down" />
                     Expand Tools
                 </b-button>
-                <b-button class="m-1" @click="setExpandToolIds(false)" v-if="expandToolIds">
+                <b-button v-if="expandToolIds" class="m-1" @click="setExpandToolIds(false)">
                     <span class="fa fa-chevron-up" />
                     Group by Requirements
                 </b-button>
@@ -105,8 +105,8 @@ const RESOLVER_TYPE_OPTIONS = _.keys(RESOLVER_DESCRIPTIONS).map((resolverType) =
 RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {
-    mixins: [DependencyIndexMixin],
     components: { ResolutionDetails },
+    mixins: [DependencyIndexMixin],
     data() {
         return {
             toggleState: false,
@@ -119,11 +119,6 @@ export default {
             filterResolution: null,
             requirements: [],
         };
-    },
-    watch: {
-        resolverType: function (val) {
-            this.load();
-        },
     },
     computed: {
         fields: function () {
@@ -184,6 +179,11 @@ export default {
                 }
             }
             return toolIds;
+        },
+    },
+    watch: {
+        resolverType: function (val) {
+            this.load();
         },
     },
     methods: {

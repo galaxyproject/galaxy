@@ -89,9 +89,14 @@ def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
     return parse_obj_as(DatatypeConverterList, converters)
 
 
-def view_edam_formats(datatypes_registry: Registry) -> Dict[str, str]:
-    return datatypes_registry.edam_formats
-
-
-def view_edam_data(datatypes_registry: Registry) -> Dict[str, str]:
-    return datatypes_registry.edam_data
+__all__ = (
+    "DatatypeConverterList",
+    "DatatypeDetails",
+    "DatatypesCombinedMap",
+    "DatatypesMap",
+    "view_index",
+    "view_mapping",
+    "view_types_and_mapping",
+    "view_sniffers",
+    "view_converters",
+)

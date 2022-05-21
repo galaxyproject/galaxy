@@ -9,7 +9,7 @@ on:
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
 concurrency:
-  group: osx-first-startup-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   test:
@@ -19,7 +19,7 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         path: 'galaxy root'
     - name: Get full Python version
@@ -27,14 +27,14 @@ jobs:
       shell: bash
       run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
     - name: Cache pip dir
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       id: pip-cache
       with:
         path: ~/Library/Caches/pip
         # scripts/common_startup.sh creates a conda env for Galaxy containing Python 3.7
         key: pip-cache-3.7-${{ hashFiles('galaxy root/requirements.txt') }}
     - name: Cache tox env
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: .tox
         key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-osx

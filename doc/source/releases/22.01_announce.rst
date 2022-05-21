@@ -1,0 +1,125 @@
+
+===========================================================
+January 2022 Galaxy Release (v 22.01)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Galaxy starts as FastAPI application by default**
+  Starting Galaxy via ``run.sh`` will use the new `gravity process manager
+  <https://github.com/galaxyproject/gravity>`__.
+  The new configuration uses `gunicorn <https://gunicorn.org/>`__ and `FastAPI <https://fastapi.tiangolo.com/>`__ to drive Galaxy's web process and starts job handler and `Celery <https://docs.celeryq.dev/>`__ processes automatically.
+  For more details and instructions please consult the `Migrating to Gunicorn documentation <https://docs.galaxyproject.org/en/latest/admin/migrating_to_gunicorn.html>`__.
+  (`Pull Request 13224`_).
+
+**User Preferences can be encrypted in Galaxy Vault**
+  Galaxy can now be configured to store secrets in an external vault, which is useful for secure handling and centralization of secrets management.
+  In particular, information fields in the "Manage information" section of the user profile, such as dropbox keys, can be configured to be encrypted
+  at rest in a vault (Hashicorp, Custos or database) instead of being stored as plain text in the user preferences table. For detailed information on
+  configuration, refer to the `vault section <https://docs.galaxyproject.org/en/release_22.01/admin/special_topics/vault.html>`__ of the admin documentation.
+  (`Pull Request 12940`_).
+
+**Resumable uploads via tus.io, improved upload provenance**
+  Galaxy now supports chunked and resumable uploads via the `tus protocol <https://tus.io/>`__.
+  This is more performant and easier to setup than the current nginx-based
+  solutions. For detailed configuration instructions, see the `documentation <https://docs.galaxyproject.org/en/release_22.01/admin/nginx.html#receiving-files-via-the-tus-protocol>`__.
+  Galaxy now displays all manipulations that were performed during an upload,
+  such as newline conversions, converting spaces to tabs or dataset grooming.
+  (`Pull Request 12656`_, `Pull Request 12861`_, `Pull Request 13313`_, `Pull Request 12912`_).
+
+Also check out the `22.01 user release notes <22.01_announce_user.html>`__
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_22.01 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_22.01 && git pull --ff-only origin release_22.01
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
+
+Deprecation Notices
+===========================================================
+PostgreSQL 9.x is now EOL and is no longer supported.  Please upgrade to PostgreSQL 10 or higher.
+Python 3.6 is officially EOL and Galaxy no longer tests or maintains compatibility.
+This release will be the last Galaxy release that can run under Paste or uWSGI.
+Please consult the `Migrating to Gunicorn documentation <https://docs.galaxyproject.org/en/latest/admin/migrating_to_gunicorn.html>`__ for .
+instructions on how to upgrade.
+
+Configuration Changes
+=====================
+
+Added
+-----
+
+The following configuration options are new
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.enable_tool_source_display
+-  mapping.galaxy.mapping.galaxy_url_prefix
+-  mapping.galaxy.mapping.load_tool_shed_datatypes
+-  mapping.galaxy.mapping.max_discovered_files
+-  mapping.galaxy.mapping.maximum_upload_file_size
+-  mapping.galaxy.mapping.tool_evaluation_strategy
+-  mapping.galaxy.mapping.tus_upload_store
+-  mapping.galaxy.mapping.vault_config_file
+
+
+Changed
+-------
+
+The following configuration options have been changed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.reports.mapping.file_path.default has changed from
+
+   ::
+
+    database/files
+
+   to
+
+   ::
+
+    database/objects
+
+
+
+
+Removed
+-------
+
+The following configuration options have been completely removed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.check_migrate_tools
+-  mapping.galaxy.mapping.enable_openid
+-  mapping.galaxy.mapping.force_beta_workflow_scheduled_for_collections
+-  mapping.galaxy.mapping.force_beta_workflow_scheduled_min_steps
+-  mapping.galaxy.mapping.openid_consumer_cache_path
+
+
+Release Notes
+===========================================================
+
+.. include:: 22.01.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

@@ -16,6 +16,7 @@ from json import loads
 from typing import (
     Any,
     Dict,
+    Iterable,
     List,
     TYPE_CHECKING,
 )
@@ -41,7 +42,7 @@ from galaxy.job_execution.output_collect import (
     collect_extra_files,
     collect_shrinked_content_from_path,
 )
-from galaxy.job_execution.setup import (  # noqa: F401; This is read by certain misbehaving tool wrappers that import Galaxy internals
+from galaxy.job_execution.setup import (
     create_working_directory_for_job,
     ensure_configs_directory,
     JobIO,
@@ -795,7 +796,7 @@ class JobConfiguration(ConfiguresHandlers):
             id_or_tag = self.default_destination_id
         return copy.deepcopy(self._get_single_item(self.destinations[id_or_tag]))
 
-    def get_destinations(self, id_or_tag):
+    def get_destinations(self, id_or_tag) -> Iterable[JobDestination]:
         """Given a destination ID or tag, return all JobDestinations matching the provided ID or tag
 
         :param id_or_tag: A destination ID or tag.
@@ -806,7 +807,7 @@ class JobConfiguration(ConfiguresHandlers):
         Destinations are not deepcopied, so they should not be passed to
         anything which might modify them.
         """
-        return self.destinations.get(id_or_tag, None)
+        return self.destinations.get(id_or_tag, [])
 
     def get_job_runner_plugins(self, handler_id):
         """Load all configured job runner plugins
@@ -1845,7 +1846,16 @@ class JobWrapper(HasResourceParameters):
 
         if not extended_metadata:
             # importing metadata will discover outputs if extended metadata
+            try:
+                self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
+            except MaxDiscoveredFilesExceededError as e:
+                final_job_state = job.states.ERROR
+                job.job_messages = [str(e)]
+
             for dataset_assoc in output_dataset_associations:
+                if getattr(dataset_assoc.dataset, "discovered", False):
+                    # skip outputs that have been discovered
+                    continue
                 context = self.get_dataset_finish_context(job_context, dataset_assoc)
                 # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
                 # lets not allow this to occur
@@ -1858,13 +1868,12 @@ class JobWrapper(HasResourceParameters):
 
                     # Handles retry internally on error for instance...
                     self._finish_dataset(output_name, dataset, job, context, final_job_state, remote_metadata_directory)
-                if not final_job_state == job.states.ERROR:
+                if (
+                    not final_job_state == job.states.ERROR
+                    and not dataset_assoc.dataset.dataset.state == job.states.ERROR
+                ):
+                    # We don't set datsets in error state to OK because discover_outputs may have already set the state to error
                     dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
-            try:
-                self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
-            except MaxDiscoveredFilesExceededError as e:
-                final_job_state = job.states.ERROR
-                job.job_messages = [str(e)]
 
         if job.states.ERROR == final_job_state:
             for dataset_assoc in output_dataset_associations:
@@ -2620,3 +2629,14 @@ class NoopQueue:
 
     def shutdown(self):
         return
+
+
+__all__ = (
+    "JobDestination",
+    "NoopQueue",
+    "JobToolConfiguration",
+    "JobConfiguration",
+    "JobWrapper",
+    "TaskWrapper",
+    "TOOL_PROVIDED_JOB_METADATA_FILE",
+)

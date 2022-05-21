@@ -26,6 +26,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
 )
 from galaxy.util import (
+    asbool,
     directory_hash_id,
     force_symlink,
     parse_xml,
@@ -850,6 +851,7 @@ class DistributedObjectStore(NestedObjectStore):
         self.original_weighted_backend_ids = []
         self.max_percent_full = {}
         self.global_max_percent_full = config_dict.get("global_max_percent_full", 0)
+        self.search_for_missing = config_dict.get("search_for_missing", True)
         random.seed()
 
         for backend_def in config_dict["backends"]:
@@ -887,6 +889,7 @@ class DistributedObjectStore(NestedObjectStore):
 
         backends: List[Dict[str, Any]] = []
         config_dict = {
+            "search_for_missing": asbool(backends_root.get("search_for_missing", True)),
             "global_max_percent_full": float(backends_root.get("maxpctfull", 0)),
             "backends": backends,
         }
@@ -933,6 +936,7 @@ class DistributedObjectStore(NestedObjectStore):
     def to_dict(self) -> Dict[str, Any]:
         as_dict = super().to_dict()
         as_dict["global_max_percent_full"] = self.global_max_percent_full
+        as_dict["search_for_missing"] = self.search_for_missing
         backends: List[Dict[str, Any]] = []
         for backend_id, backend in self.backends.items():
             backend_as_dict = backend.to_dict()
@@ -1003,17 +1007,17 @@ class DistributedObjectStore(NestedObjectStore):
                     "The backend object store ID (%s) for %s object with ID %s is invalid"
                     % (obj.object_store_id, obj.__class__.__name__, obj.id)
                 )
-        # if this instance has been switched from a non-distributed to a
-        # distributed object store, or if the object's store id is invalid,
-        # try to locate the object
-        for id, store in self.backends.items():
-            if store.exists(obj, **kwargs):
-                log.warning(
-                    "%s object with ID %s found in backend object store with ID %s"
-                    % (obj.__class__.__name__, obj.id, id)
-                )
-                obj.object_store_id = id
-                return id
+        elif self.search_for_missing:
+            # if this instance has been switched from a non-distributed to a
+            # distributed object store, or if the object's store id is invalid,
+            # try to locate the object
+            for id, store in self.backends.items():
+                if store.exists(obj, **kwargs):
+                    log.warning(
+                        f"{obj.__class__.__name__} object with ID {obj.id} found in backend object store with ID {id}"
+                    )
+                    obj.object_store_id = id
+                    return id
         return None
 
 
@@ -1041,10 +1045,10 @@ class HierarchicalObjectStore(NestedObjectStore):
     @classmethod
     def parse_xml(clazz, config_xml):
         backends_list = []
-        for b in sorted(config_xml.find("backends"), key=lambda b: int(b.get("order"))):
-            store_type = b.get("type")
+        for backend in sorted(config_xml.find("backends"), key=lambda b: int(b.get("order"))):
+            store_type = backend.get("type")
             objectstore_class, _ = type_to_object_store_class(store_type)
-            backend_config_dict = objectstore_class.parse_xml(b)
+            backend_config_dict = objectstore_class.parse_xml(backend)
             backend_config_dict["type"] = store_type
             backends_list.append(backend_config_dict)
 

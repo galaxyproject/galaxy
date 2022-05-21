@@ -2,11 +2,15 @@
 This module *does not* contain API routes. It exclusively contains dependencies to be used in FastAPI routes
 """
 import inspect
+from enum import Enum
+from string import Template
 from typing import (
     Any,
     AsyncGenerator,
     cast,
+    NamedTuple,
     Optional,
+    Tuple,
     Type,
     TypeVar,
 )
@@ -20,11 +24,19 @@ from fastapi import (
     Request,
     Response,
 )
+from fastapi.exceptions import RequestValidationError
 from fastapi.params import Depends
+from fastapi.routing import APIRoute
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
+from pydantic import ValidationError
 from pydantic.main import BaseModel
-from starlette.routing import NoMatchFound
+from starlette.datastructures import Headers
+from starlette.routing import (
+    Match,
+    NoMatchFound,
+)
+from starlette.types import Scope
 
 try:
     from starlette_context import context as request_context
@@ -84,11 +96,11 @@ class GalaxyTypeDepends(Depends):
         self.galaxy_type_depends = dep_type
 
 
-def depends(dep_type: Type[T]) -> Any:
+def depends(dep_type: Type[T]) -> T:
     def _do_resolve(request: Request):
         return get_app().resolve(dep_type)
 
-    return GalaxyTypeDepends(_do_resolve, dep_type)
+    return cast(T, GalaxyTypeDepends(_do_resolve, dep_type))
 
 
 def get_session_manager(app: StructuredApp = DependsOnApp) -> GalaxySessionManager:
@@ -186,7 +198,9 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
 
     @property
     def host(self) -> str:
-        return str(self.__request.client.host)
+        client = self.__request.client
+        assert client is not None
+        return str(client.host)
 
 
 class GalaxyASGIResponse(GalaxyAbstractResponse):
@@ -250,24 +264,74 @@ class BaseGalaxyAPIController(BaseAPIController):
         super().__init__(app)
 
 
+class RestVerb(str, Enum):
+    get = "GET"
+    post = "POST"
+    put = "PUT"
+    patch = "PATCH"
+    delete = "DELETE"
+    options = "OPTIONS"
+
+
 class Router(InferringRouter):
     """A FastAPI Inferring Router tailored to Galaxy."""
 
+    def wrap_with_alias(self, verb: RestVerb, *args, alias: Optional[str] = None, **kwd):
+        """
+        Wraps FastAPI methods with additional alias keyword and require_admin handling.
+
+        @router.get("/api/thing", alias="/api/deprecated_thing") will then create
+        routes for /api/thing and /api/deprecated_thing.
+        """
+        kwd = self._handle_galaxy_kwd(kwd)
+
+        def decorate_route(route):
+
+            # Decorator solely exists to allow passing `route_class_override` to add_api_route
+            def decorated_route(func):
+                self.add_api_route(
+                    route,
+                    endpoint=func,
+                    methods=[verb],
+                    **kwd,
+                )
+                return func
+
+            return decorated_route
+
+        route = decorate_route(args[0])
+
+        if alias:
+            redecorated_route = decorate_route(alias)
+
+            def dec(f):
+                return route(redecorated_route(f))
+
+            return dec
+        return route
+
     def get(self, *args, **kwd):
         """Extend FastAPI.get to accept a require_admin Galaxy flag."""
-        return super().get(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(RestVerb.get, *args, **kwd)
+
+    def patch(self, *args, **kwd):
+        """Extend FastAPI.patch to accept a require_admin Galaxy flag."""
+        return self.wrap_with_alias(RestVerb.patch, *args, **kwd)
 
     def put(self, *args, **kwd):
         """Extend FastAPI.put to accept a require_admin Galaxy flag."""
-        return super().put(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(RestVerb.put, *args, **kwd)
 
     def post(self, *args, **kwd):
         """Extend FastAPI.post to accept a require_admin Galaxy flag."""
-        return super().post(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(RestVerb.post, *args, **kwd)
 
     def delete(self, *args, **kwd):
         """Extend FastAPI.delete to accept a require_admin Galaxy flag."""
-        return super().delete(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(RestVerb.delete, *args, **kwd)
+
+    def options(self, *args, **kwd):
+        return self.wrap_with_alias(RestVerb.options, *args, **kwd)
 
     def _handle_galaxy_kwd(self, kwd):
         require_admin = kwd.pop("require_admin", False)
@@ -276,6 +340,7 @@ class Router(InferringRouter):
                 kwd["dependencies"].append(AdminUserRequired)
             else:
                 kwd["dependencies"] = [AdminUserRequired]
+
         return kwd
 
     @property
@@ -286,6 +351,32 @@ class Router(InferringRouter):
         https://fastapi-utils.davidmontague.xyz/user-guide/class-based-views/
         """
         return cbv(self)
+
+
+class APIContentTypeRoute(APIRoute):
+    """
+    Determines endpoint to match using content-type.
+    """
+
+    match_content_type: str
+
+    def accept_matches(self, scope: Scope) -> Tuple[Match, Scope]:
+        content_type_header = Headers(scope=scope).get("content-type", None)
+        if not content_type_header:
+            return Match.PARTIAL, scope
+        if self.match_content_type not in content_type_header:
+            return Match.NONE, scope
+        return Match.FULL, scope
+
+    def matches(self, scope: Scope) -> Tuple[Match, Scope]:
+        accept_match, accept_scope = self.accept_matches(scope)
+        if accept_match == Match.NONE:
+            return accept_match, accept_scope
+        match, child_scope = super().matches(accept_scope)
+        return (
+            match if match.value < accept_match.value else accept_match,
+            child_scope,
+        )
 
 
 def as_form(cls: Type[BaseModel]):
@@ -305,7 +396,10 @@ def as_form(cls: Type[BaseModel]):
     ]
 
     async def _as_form(**data):
-        return cls(**data)
+        try:
+            return cls(**data)
+        except ValidationError as e:
+            raise RequestValidationError(e.raw_errors)
 
     sig = inspect.signature(_as_form)
     sig = sig.replace(parameters=new_params)
@@ -320,3 +414,58 @@ async def try_get_request_body_as_json(request: Request) -> Optional[Any]:
         body = await request.json()
         return body
     return None
+
+
+search_description_template = Template(
+    """A mix of free text and GitHub-style tags used to filter the index operation.
+
+## Query Structure
+
+GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+`<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+*generally* (but not exclusively) corresponds to the name of an attribute on the model
+being indexed (i.e. a column in the database).
+
+If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+generally a partial match will be used to filter the query (i.e. in terms of the implementation
+this means the database operation `ILIKE` will typically be used).
+
+Once the tagged filters are extracted from the search query, the remaing text is just
+used to search various documented attributes of the object.
+
+## GitHub-style Tags Available
+
+${tags}
+
+## Free Text
+
+Free text search terms will be searched against the following attributes of the
+${model_name}s: ${freetext}.
+
+"""
+)
+
+
+class IndexQueryTag(NamedTuple):
+    tag: str
+    description: str
+    alias: Optional[str] = None
+
+    def as_markdown(self):
+        desc = self.description
+        alias = self.alias
+        if alias:
+            desc += f" (The tag `{alias}` can be used a short hand alias for this tag to filter on this attribute.)"
+        return f"`{self.tag}`\n: {desc}"
+
+
+def search_query_param(model_name: str, tags: list, free_text_fields: list) -> Optional[str]:
+    tags_markdown_str = "\n\n".join([t.as_markdown() for t in tags])
+    description = search_description_template.safe_substitute(
+        model_name=model_name, tags=tags_markdown_str, freetext=", ".join([f"`{t}`" for t in free_text_fields])
+    )
+    return Query(
+        default=None,
+        title="Search query.",
+        description=description,
+    )

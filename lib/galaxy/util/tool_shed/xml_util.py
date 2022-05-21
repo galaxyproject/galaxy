@@ -79,3 +79,10 @@ def parse_xml(file_name, check_exists=True):
         log.exception(error_message)
         return None, error_message
     return tree, error_message
+
+
+__all__ = (
+    "create_and_write_tmp_file",
+    "create_element",
+    "parse_xml",
+)

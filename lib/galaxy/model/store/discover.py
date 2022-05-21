@@ -8,7 +8,6 @@ corresponding to files in other contexts.
 import abc
 import logging
 import os
-from collections import namedtuple
 from typing import (
     Any,
     Callable,
@@ -16,7 +15,6 @@ from typing import (
     List,
     NamedTuple,
     Optional,
-    TYPE_CHECKING,
     Union,
 )
 
@@ -34,13 +32,6 @@ from galaxy.util import (
 )
 from galaxy.util.hash_util import HASH_NAME_MAP
 
-if TYPE_CHECKING:
-    from galaxy.job_execution.output_collect import (
-        JobContext,
-        SessionlessJobContext,
-    )
-
-
 log = logging.getLogger(__name__)
 
 UNSET = object()
@@ -51,6 +42,9 @@ class MaxDiscoveredFilesExceededError(ValueError):
     pass
 
 
+CollectorT = Any  # TODO: setup an interface for these file collectors data classes.
+
+
 class ModelPersistenceContext(metaclass=abc.ABCMeta):
     """Class for creating datasets while finding files.
 
@@ -58,6 +52,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     required for datasets and other potential model objects.
     """
 
+    job_working_directory: str  # TODO: rename
     max_discovered_files = float("inf")
     discovered_file_count: int
 
@@ -162,8 +157,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             primary_data.created_from_basename = created_from_basename
 
         if tag_list:
-            # TODO: handle tag list without a session here...
-            self.tag_handler.add_tags_from_list(self.user, primary_data, tag_list, flush=False)
+            job = getattr(self, "job", None)
+            self.tag_handler.add_tags_from_list(job and job.user, primary_data, tag_list, flush=False)
 
         # If match specified a name use otherwise generate one from
         # designation.
@@ -532,7 +527,6 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         self._flush_per_n_datasets = None
         self.discovered_file_count = 0
         self.max_discovered_files = float("inf")
-
         self.job_working_directory = working_directory  # TODO: rename...
 
     @property
@@ -601,7 +595,7 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         return nested_folder
 
     def persist_library_folder(self, library_folder):
-        self.export_store.export_library(library_folder)
+        self.export_store.export_library_folder(library_folder)
 
     def add_datasets_to_history(self, datasets, for_output_dataset=None):
         # Consider copying these datasets to for_output_dataset copied histories
@@ -689,7 +683,7 @@ def persist_target_to_export_store(target_dict, export_store, object_store, work
 
 
 def persist_elements_to_hdca(
-    model_persistence_context: Union["JobContext", "SessionlessJobContext", SessionlessModelPersistenceContext],
+    model_persistence_context: ModelPersistenceContext,
     elements,
     hdca,
     collector=None,
@@ -734,7 +728,6 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
             visible = fields_match.visible
             ext = fields_match.ext
             dbkey = fields_match.dbkey
-            info = element.get("info", None)
             link_data = discovered_file.match.link_data
 
             # Create new primary dataset
@@ -743,10 +736,7 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
             sources = fields_match.sources
             hashes = fields_match.hashes
             created_from_basename = fields_match.created_from_basename
-            state = "ok"
-            if hasattr(discovered_file, "error_message"):
-                info = discovered_file.error_message
-                state = "error"
+            info, state = discovered_file.discovered_state(element)
             model_persistence_context.create_dataset(
                 ext=ext,
                 designation=designation,
@@ -779,13 +769,14 @@ def persist_hdas(elements, model_persistence_context, final_job_state="ok"):
                 designation = fields_match.designation
                 ext = fields_match.ext
                 dbkey = fields_match.dbkey
-                info = element.get("info", None)
+                tag_list = element.get("tags")
                 link_data = discovered_file.match.link_data
 
                 # Create new primary dataset
                 name = fields_match.name or designation
 
                 hda_id = discovered_file.match.object_id
+
                 primary_dataset = None
                 if hda_id:
                     sa_session = (
@@ -797,10 +788,8 @@ def persist_hdas(elements, model_persistence_context, final_job_state="ok"):
                 hashes = fields_match.hashes
                 created_from_basename = fields_match.created_from_basename
                 extra_files = fields_match.extra_files
-                state = final_job_state
-                if hasattr(discovered_file, "error_message"):
-                    state = "error"
-                    info = discovered_file.error_message
+
+                info, state = discovered_file.discovered_state(element, final_job_state)
                 dataset = model_persistence_context.create_dataset(
                     ext=ext,
                     designation=designation,
@@ -810,6 +799,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state="ok"):
                     filename=discovered_file.path,
                     extra_files=extra_files,
                     info=info,
+                    tag_list=tag_list,
                     link_data=link_data,
                     primary_data=primary_dataset,
                     sources=sources,
@@ -818,6 +808,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state="ok"):
                     final_job_state=state,
                     storage_callbacks=storage_callbacks,
                 )
+                dataset.discovered = True
                 if not hda_id:
                     datasets.append(dataset)
 
@@ -882,15 +873,30 @@ def replace_request_syntax_sugar(obj):
             obj["hashes"].extend(new_hashes)
 
 
-DiscoveredFile = namedtuple("DiscoveredFile", ["path", "collector", "match"])
+class DiscoveredFile(NamedTuple):
+    path: str
+    collector: Optional[CollectorT]
+    match: "JsonCollectedDatasetMatch"
+
+    def discovered_state(self, element: Dict[str, Any], final_job_state="ok") -> "DiscoveredResultState":
+        info = element.get("info", None)
+        return DiscoveredResultState(info, final_job_state)
+
+
+class DiscoveredResultState(NamedTuple):
+    info: Optional[str]
+    state: str
+
+
+DiscoveredResult = Union[DiscoveredFile, "DiscoveredFileError"]
 
 
 def discovered_file_for_element(
     dataset,
-    model_persistence_context: Union["JobContext", "SessionlessJobContext", SessionlessModelPersistenceContext],
+    model_persistence_context: ModelPersistenceContext,
     parent_identifiers=None,
     collector=None,
-):
+) -> DiscoveredResult:
     model_persistence_context.increment_discovered_file_count()
     parent_identifiers = parent_identifiers or []
     target_directory = discover_target_directory(
@@ -935,7 +941,7 @@ def discover_target_directory(dir_name, job_working_directory):
 
 
 class JsonCollectedDatasetMatch:
-    def __init__(self, as_dict, collector, filename, path=None, parent_identifiers=None):
+    def __init__(self, as_dict, collector: Optional[CollectorT], filename, path=None, parent_identifiers=None):
         parent_identifiers = parent_identifiers or []
         self.as_dict = as_dict
         self.collector = collector
@@ -1025,12 +1031,16 @@ class JsonCollectedDatasetMatch:
 
 
 class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):
-    def __init__(self, re_match, collector, filename, path=None):
+    def __init__(self, re_match, collector: Optional[CollectorT], filename, path=None):
         super().__init__(re_match.groupdict(), collector, filename, path=path)
 
 
 class DiscoveredFileError(NamedTuple):
     error_message: str
-    collector: Any  # TODO: setup interface for this
+    collector: Optional[CollectorT]
     match: JsonCollectedDatasetMatch
     path: Optional[str] = None
+
+    def discovered_state(self, element: Dict[str, Any], final_job_state="ok") -> DiscoveredResultState:
+        info = self.error_message
+        return DiscoveredResultState(info, "error")

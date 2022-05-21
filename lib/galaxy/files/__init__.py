@@ -4,7 +4,13 @@ from collections import (
     defaultdict,
     namedtuple,
 )
-from typing import Set
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Set,
+)
 
 from galaxy import exceptions
 from galaxy.util import plugin_config
@@ -158,7 +164,9 @@ class ConfiguredFileSources:
             schemes.add(file_source.get_scheme())
         return schemes
 
-    def plugins_to_dict(self, for_serialization=False, user_context=None):
+    def plugins_to_dict(
+        self, for_serialization: bool = False, user_context: Optional["FileSourceDictifiable"] = None
+    ) -> List[Dict[str, Any]]:
         rval = []
         for file_source in self._file_sources:
             if not file_source.user_has_access(user_context):
@@ -167,7 +175,9 @@ class ConfiguredFileSources:
             rval.append(el)
         return rval
 
-    def to_dict(self, for_serialization=False, user_context=None):
+    def to_dict(
+        self, for_serialization: bool = False, user_context: Optional["FileSourceDictifiable"] = None
+    ) -> Dict[str, Any]:
         return {
             "file_sources": self.plugins_to_dict(for_serialization=for_serialization, user_context=user_context),
             "config": self._file_sources_config.to_dict(),
@@ -176,10 +186,14 @@ class ConfiguredFileSources:
     @staticmethod
     def from_app_config(config):
         config_file = config.file_sources_config_file
-        if not os.path.exists(config_file):
+        config_dict = None
+        if not config_file or not os.path.exists(config_file):
             config_file = None
+            config_dict = config.file_sources
         file_sources_config = ConfiguredFileSourcesConfig.from_app_config(config)
-        return ConfiguredFileSources(file_sources_config, config_file, load_stock_plugins=True)
+        return ConfiguredFileSources(
+            file_sources_config, conf_file=config_file, conf_dict=config_dict, load_stock_plugins=True
+        )
 
     @staticmethod
     def from_dict(as_dict):

@@ -315,9 +315,7 @@ class Interval(Tabular):
                 "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at"
                 % (base_url, app.url_for(controller="root"), dataset.id, type)
             )
-            redirect_url = quote_plus(
-                "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop)
-            )
+            redirect_url = quote_plus(f"{site_url}db={dataset.dbkey}&position={chrom}:{start}-{stop}&hgt.customText=%s")
             link = f"{internal_url}?redirect_url={redirect_url}&display_url={display_url}"
             ret_val.append((site_name, link))
         return ret_val
@@ -884,7 +882,7 @@ class Gff(Tabular, _RemoteCallMixin):
                                     stop = int(elems[1].split("..")[1])
                                     break  # use location declared in file
                                 else:
-                                    log.debug(f"line ({str(line)}) uses an unsupported ##sequence-region definition.")
+                                    log.debug(f"line ({line}) uses an unsupported ##sequence-region definition.")
                                     # break #no break, if bad definition, we try another line
                             elif line.startswith("browser position"):
                                 # Allow UCSC style browser and track info in the GFF file
@@ -933,7 +931,7 @@ class Gff(Tabular, _RemoteCallMixin):
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build("ucsc", dataset.dbkey):
                 if site_name in app.datatypes_registry.get_display_sites("ucsc"):
                     redirect_url = quote_plus(
-                        "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, seqid, start, stop)
+                        f"{site_url}db={dataset.dbkey}&position={seqid}:{start}-{stop}&hgt.customText=%s"
                     )
                     link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url)
                     ret_val.append((site_name, link))

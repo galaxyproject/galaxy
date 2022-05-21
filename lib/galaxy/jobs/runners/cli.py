@@ -104,7 +104,8 @@ class ShellJobRunner(AsynchronousJobRunner):
             return
         # Some job runners return something like 'Submitted batch job XXXX'
         # Strip and split to get job ID.
-        external_job_id = stdout.strip().split()[-1]
+        submit_stdout = stdout.strip()
+        external_job_id = submit_stdout and submit_stdout.split()[-1]
         if not external_job_id:
             log.error(f"({galaxy_id_tag}) submission did not return a job identifier, failing job")
             job_wrapper.fail("failure submitting job")

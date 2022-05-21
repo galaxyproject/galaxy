@@ -314,8 +314,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         data_object_name = p.stem + p.suffix
         subcollection_name = p.parent
 
-        collection_path = f"{self.home}/{str(subcollection_name)}"
-        data_object_path = f"{collection_path}/{str(data_object_name)}"
+        collection_path = f"{self.home}/{subcollection_name}"
+        data_object_path = f"{collection_path}/{data_object_name}"
         options = {kw.DEST_RESC_NAME_KW: self.resource}
 
         try:
@@ -334,8 +334,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         data_object_name = p.stem + p.suffix
         subcollection_name = p.parent
 
-        collection_path = f"{self.home}/{str(subcollection_name)}"
-        data_object_path = f"{collection_path}/{str(data_object_name)}"
+        collection_path = f"{self.home}/{subcollection_name}"
+        data_object_path = f"{collection_path}/{data_object_name}"
         options = {kw.DEST_RESC_NAME_KW: self.resource}
 
         try:
@@ -357,7 +357,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
         rel_path_dir = os.path.dirname(rel_path)
         if not os.path.exists(self._get_cache_path(rel_path_dir)):
-            os.makedirs(self._get_cache_path(rel_path_dir))
+            os.makedirs(self._get_cache_path(rel_path_dir), exist_ok=True)
         # Now pull in the file
         file_ok = self._download(rel_path)
         self._fix_permissions(self._get_cache_path(rel_path_dir))
@@ -372,8 +372,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         data_object_name = p.stem + p.suffix
         subcollection_name = p.parent
 
-        collection_path = f"{self.home}/{str(subcollection_name)}"
-        data_object_path = f"{collection_path}/{str(data_object_name)}"
+        collection_path = f"{self.home}/{subcollection_name}"
+        data_object_path = f"{collection_path}/{data_object_name}"
         options = {kw.DEST_RESC_NAME_KW: self.resource}
 
         try:
@@ -411,8 +411,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             return False
 
         # Check if the data object exists in iRODS
-        collection_path = f"{self.home}/{str(subcollection_name)}"
-        data_object_path = f"{collection_path}/{str(data_object_name)}"
+        collection_path = f"{self.home}/{subcollection_name}"
+        data_object_path = f"{collection_path}/{data_object_name}"
         exists = False
 
         try:
@@ -502,7 +502,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if dir_only and base_dir:
             # for JOB_WORK directory
             if not os.path.exists(rel_path):
-                os.makedirs(rel_path)
+                os.makedirs(rel_path, exist_ok=True)
             log.debug("irods_pt _exists: %s", ipt_timer)
             return True
         log.debug("irods_pt _exists: %s", ipt_timer)
@@ -530,7 +530,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             # Create given directory in cache
             cache_dir = os.path.join(self.staging_path, rel_path)
             if not os.path.exists(cache_dir):
-                os.makedirs(cache_dir)
+                os.makedirs(cache_dir, exist_ok=True)
 
             if not dir_only:
                 rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
@@ -542,7 +542,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if self._exists(obj, **kwargs):
             return bool(self._size(obj, **kwargs) > 0)
         else:
-            raise ObjectNotFound("objectstore.empty, object does not exist: %s, kwargs: %s" % (str(obj), str(kwargs)))
+            raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
 
     def _size(self, obj, **kwargs):
         ipt_timer = ExecutionTimer()
@@ -584,7 +584,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             if entire_dir and extra_dir:
                 shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
 
-                col_path = f"{self.home}/{str(rel_path)}"
+                col_path = f"{self.home}/{rel_path}"
                 col = None
                 try:
                     col = self.session.collections.get(col_path)
@@ -612,8 +612,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 data_object_name = p.stem + p.suffix
                 subcollection_name = p.parent
 
-                collection_path = f"{self.home}/{str(subcollection_name)}"
-                data_object_path = f"{collection_path}/{str(data_object_name)}"
+                collection_path = f"{self.home}/{subcollection_name}"
+                data_object_path = f"{collection_path}/{data_object_name}"
 
                 try:
                     data_obj = self.session.data_objects.get(data_object_path, **options)
@@ -682,7 +682,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         # if dir_only:
         #     return cache_path
         log.debug("irods_pt _get_filename: %s", ipt_timer)
-        raise ObjectNotFound("objectstore.get_filename, no cache_path: %s, kwargs: %s" % (str(obj), str(kwargs)))
+        raise ObjectNotFound(f"objectstore.get_filename, no cache_path: {obj}, kwargs: {kwargs}")
         # return cache_path # Until the upload tool does not explicitly create the dataset, return expected path
 
     def _update_from_file(self, obj, file_name=None, create=False, **kwargs):
@@ -709,9 +709,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             self._push_to_irods(rel_path, source_file)
         else:
             log.debug("irods_pt _update_from_file: %s", ipt_timer)
-            raise ObjectNotFound(
-                "objectstore.update_from_file, object does not exist: %s, kwargs: %s" % (str(obj), str(kwargs))
-            )
+            raise ObjectNotFound(f"objectstore.update_from_file, object does not exist: {obj}, kwargs: {kwargs}")
         log.debug("irods_pt _update_from_file: %s", ipt_timer)
 
     # Unlike S3, url is not really applicable to iRODS
@@ -723,8 +721,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             data_object_name = p.stem + p.suffix
             subcollection_name = p.parent
 
-            collection_path = f"{self.home}/{str(subcollection_name)}"
-            data_object_path = f"{collection_path}/{str(data_object_name)}"
+            collection_path = f"{self.home}/{subcollection_name}"
+            data_object_path = f"{collection_path}/{data_object_name}"
 
             return data_object_path
 

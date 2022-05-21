@@ -61,7 +61,7 @@ as ``test_path``.  A few examples are shown below.
 Run all API tests:
     ./run_tests.sh -api
 
-The same test as above can be run using nosetests directly as follows:
+The same test as above can be run using pytest directly as follows:
     pytest lib/galaxy_test/api
 
 However when using pytest directly output options defined in this
@@ -503,7 +503,7 @@ do
       -u|-unit|--unit)
           report_file="run_unit_tests.html"
           test_script="pytest"
-          unit_extra='--doctest-modules --ignore lib/galaxy/web/proxy/js/node_modules/ --ignore lib/tool_shed/webapp/controllers --ignore lib/galaxy/jobs/runners/chronos.py --ignore lib/tool_shed/webapp/model/migrate --ignore lib/galaxy/tools/bundled --ignore lib/galaxy_test --ignore lib/tool_shed/test'
+          unit_extra='--doctest-modules --ignore lib/galaxy/web/proxy/js/node_modules/ --ignore lib/tool_shed/webapp/controllers --ignore lib/galaxy/jobs/runners/chronos.py --ignore lib/tool_shed/webapp/model/migrate --ignore lib/galaxy/tools/bundled --ignore lib/galaxy_test --ignore lib/tool_shed/test --ignore lib/galaxy/model/migrations/alembic'
           if [ $# -gt 1 ]; then
               unit_extra="$unit_extra $2"
               shift 2
@@ -574,7 +574,7 @@ do
             shift
           fi
           # Maybe we shouldn't break here but for now to pass more than one argument to the
-          # underlying test driver (scripts/nosetests.py) use -- instead.
+          # underlying test driver use -- instead.
           break
           ;;
     esac

@@ -200,10 +200,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                                 review_to_copy = review_util.get_review(trans.app, previous_review_id)
                                 self.copy_review(trans, review_to_copy, review)
                             review_id = trans.security.encode_id(review.id)
-                            message = "Begin your review of revision <b>%s</b> of repository <b>%s</b>." % (
-                                changeset_revision,
-                                repository.name,
-                            )
+                            message = f"Begin your review of revision <b>{changeset_revision}</b> of repository <b>{repository.name}</b>."
                             status = "done"
                             trans.response.send_redirect(
                                 web.url_for(

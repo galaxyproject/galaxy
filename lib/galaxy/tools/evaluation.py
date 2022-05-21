@@ -18,6 +18,10 @@ from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
+from galaxy.structured_app import (
+    BasicSharedApp,
+    MinimalToolApp,
+)
 from galaxy.tools.parameters import (
     visit_input_values,
     wrapped_json,
@@ -85,12 +89,15 @@ class ToolEvaluator:
     tool inputs in an isolated, testable manner.
     """
 
-    def __init__(self, app, tool, job, local_working_directory):
+    app: MinimalToolApp
+    job: model.Job
+
+    def __init__(self, app: MinimalToolApp, tool, job, local_working_directory):
         self.app = app
         self.job = job
         self.tool = tool
         self.local_working_directory = local_working_directory
-        self.file_sources_dict = {}
+        self.file_sources_dict: Dict[str, Any] = {}
         self.param_dict: Dict[str, Any] = {}
         self.extra_filenames: List[str] = []
         self.environment_variables: List[Dict[str, str]] = []
@@ -265,8 +272,6 @@ class ToolEvaluator:
             self.__walk_inputs(self.tool.inputs, param_dict, wrap_input)
 
     def __populate_input_dataset_wrappers(self, param_dict, input_datasets):
-        # TODO: Update this method for dataset collections? Need to test. -John.
-
         # FIXME: when self.check_values==True, input datasets are being wrapped
         #        twice (above and below, creating 2 separate
         #        DatasetFilenameWrapper objects - first is overwritten by
@@ -317,8 +322,7 @@ class ToolEvaluator:
             wrapper = DatasetCollectionWrapper(job_working_directory, out_collection, **wrapper_kwds)
             param_dict[name] = wrapper
             # TODO: Handle nested collections...
-            output_def = tool.output_collections[name]
-            for element_identifier, output_def in output_def.outputs.items():
+            for element_identifier, output_def in tool.output_collections[name].outputs.items():
                 if not output_def.implicit:
                     dataset_wrapper = wrapper[element_identifier]
                     param_dict[output_def.name] = dataset_wrapper
@@ -509,13 +513,13 @@ class ToolEvaluator:
             config_text, is_template = self.__build_config_file_text(content)
             # If a particular filename was forced by the config use it
             directory = ensure_configs_directory(self.local_working_directory)
+            with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
+                config_filename = temp.name
             if filename is not None:
-                # Explicit filename was requested, needs to be placed in tool working directory
+                # Explicit filename was requested, this is implemented as symbolic link
+                # to the actual config file that is placed in tool working directory
                 directory = os.path.join(self.local_working_directory, "working")
-                config_filename = os.path.join(directory, filename)
-            else:
-                with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
-                    config_filename = temp.name
+                os.link(config_filename, os.path.join(directory, filename))
             self.__write_workdir_file(config_filename, config_text, param_dict, is_template=is_template)
             self.__register_extra_file(name, config_filename)
             config_filenames.append(config_filename)
@@ -530,7 +534,7 @@ class ToolEvaluator:
             environment_variable_template = environment_variable_def["template"]
             inject = environment_variable_def.get("inject")
             if inject == "api_key":
-                if self._user:
+                if self._user and isinstance(self.app, BasicSharedApp):
                     from galaxy.managers import api_keys
 
                     environment_variable_template = api_keys.ApiKeyManager(self.app).get_or_create_api_key(self._user)

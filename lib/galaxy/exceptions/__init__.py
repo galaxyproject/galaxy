@@ -59,6 +59,11 @@ class ObjectInvalid(Exception):
 # Please keep the exceptions ordered by status code
 
 
+class NoContentException(MessageException):
+    status_code = 204
+    err_code = error_codes_by_name["NO_CONTENT_GENERIC"]
+
+
 class ActionInputError(MessageException):
     status_code = 400
     err_code = error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"]
@@ -253,40 +258,6 @@ class ServerNotConfiguredForRequest(MessageException):
     # request being "forbidden". It just isn't configured.
     status_code = 501
     err_code = error_codes_by_name["SERVER_NOT_CONFIGURED_FOR_REQUEST"]
-
-
-# non-web exceptions
-
-
-class ContainerCLIError(Exception):
-    def __init__(
-        self, msg=None, stdout=None, stderr=None, returncode=None, command=None, subprocess_command=None, **kwargs
-    ):
-        super().__init__(msg)
-        self.stdout = stdout
-        self.stderr = stderr
-        self.returncode = returncode
-        self.command = command
-        self.subprocess_command = subprocess_command
-
-
-class ContainerNotFound(Exception):
-    def __init__(self, msg=None, container_id=None, **kwargs):
-        super().__init__(msg)
-        self.container_id = container_id
-
-
-class ContainerImageNotFound(Exception):
-    def __init__(self, msg=None, image=None, **kwargs):
-        super().__init__(msg)
-        self.image = image
-
-
-class ContainerRunError(Exception):
-    def __init__(self, msg=None, image=None, command=None, **kwargs):
-        super().__init__(msg)
-        self.image = image
-        self.command = command
 
 
 class HandlerAssignmentError(Exception):

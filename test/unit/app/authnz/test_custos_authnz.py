@@ -7,6 +7,7 @@ from datetime import (
     datetime,
     timedelta,
 )
+from unittest import SkipTest
 from urllib.parse import (
     parse_qs,
     quote,
@@ -262,6 +263,20 @@ class CustosAuthnzTestCase(unittest.TestCase):
         hashed_nonce = self.custos_authnz._hash_nonce(nonce_in_cookie)
         self.assertEqual(hashed_nonce, hashed_nonce_in_url)
 
+    def test_authenticate_set_pkce_verifier_cookie(self):
+        try:
+            import pkce  # noqa: F401
+        except ImportError:
+            raise SkipTest("pkce library is not available")
+        """Verify that authenticate() sets a code verifier cookie."""
+        self.custos_authnz.config["pkce_support"] = True
+        authorization_url = self.custos_authnz.authenticate(self.trans)
+        parsed = urlparse(authorization_url)
+        code_challenge_in_url = parse_qs(parsed.query)["code_challenge"][0]
+        verifier_in_cookie = self.trans.cookies[custos_authnz.VERIFIER_COOKIE_NAME]
+        code_challenge_from_verifier = pkce.get_code_challenge(verifier_in_cookie)
+        self.assertEqual(code_challenge_in_url, code_challenge_from_verifier)
+
     def test_authenticate_adds_extra_params(self):
         """Verify that authenticate() adds configured extra params."""
         authorization_url = self.custos_authnz.authenticate(self.trans)
@@ -344,7 +359,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.test_nonce_hash = self.test_nonce_hash + "Z"
 
         # self.custos_authnz._fetch_token = fetch_token
-        with self.assertRaisesRegex(Exception, "^Nonce mismatch!$"):
+        with self.assertRaisesRegex(Exception, "^Nonce mismatch"):
             self.custos_authnz.callback(
                 state_token="xxx",
                 authz_code=self.test_code,

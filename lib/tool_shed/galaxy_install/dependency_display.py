@@ -76,7 +76,7 @@ class DependencyDisplayer:
                             repository_dependency_tup, contains_error=True
                         )
                         if error:
-                            message += f"{str(error)}  "
+                            message += f"{error}  "
             else:
                 # The complete dependency hierarchy could not be determined for a repository being installed into
                 # Galaxy.  This is likely due to invalid repository dependency definitions, so we'll get them from
@@ -110,13 +110,7 @@ class DependencyDisplayer:
                                 pir_str = "True"
                             else:
                                 pir_str = ""
-                            message += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" % (
-                                tool_shed,
-                                name,
-                                owner,
-                                changeset_revision,
-                                pir_str,
-                            )
+                            message += f"<tr><td>{tool_shed}</td><td>{name}</td><td>{owner}</td><td>{changeset_revision}</td><td>{pir_str}</td></tr>"
                         message += "</table>"
         return message
 
@@ -134,7 +128,7 @@ class DependencyDisplayer:
                 for requirement_dict in invalid_tool_dependencies.values():
                     error = requirement_dict.get("error", None)
                     if error:
-                        message = f"{str(error)}  "
+                        message = f"{error}  "
         return message
 
     def generate_message_for_orphan_tool_dependencies(self, repository, metadata_dict):
@@ -177,10 +171,7 @@ class DependencyDisplayer:
                             if self.tool_dependency_is_orphan(type, name, None, tools):
                                 if not has_orphan_set_environment_dependencies:
                                     has_orphan_set_environment_dependencies = True
-                                set_environment_orphans_str += "<b>* name:</b> %s, <b>type:</b> %s<br/>" % (
-                                    str(name),
-                                    str(type),
-                                )
+                                set_environment_orphans_str += f"<b>* name:</b> {name}, <b>type:</b> {type}<br/>"
                     else:
                         # "R/2.15.1": {"name": "R", "readme": "some string", "type": "package", "version": "2.15.1"}
                         name = requirements_dict["name"]
@@ -189,10 +180,8 @@ class DependencyDisplayer:
                         if self.tool_dependency_is_orphan(type, name, version, tools):
                             if not has_orphan_package_dependencies:
                                 has_orphan_package_dependencies = True
-                            package_orphans_str += "<b>* name:</b> %s, <b>type:</b> %s, <b>version:</b> %s<br/>" % (
-                                str(name),
-                                str(type),
-                                str(version),
+                            package_orphans_str += (
+                                f"<b>* name:</b> {name}, <b>type:</b> {type}, <b>version:</b> {version}<br/>"
                             )
         if has_orphan_package_dependencies:
             message += "The settings for <b>name</b>, <b>version</b> and <b>type</b> from a "
@@ -358,7 +347,7 @@ class DependencyDisplayer:
                     tool_dependencies_root_folder.folders.append(tool_dependencies_folder)
                     new_containers_dict["tool_dependencies"] = tool_dependencies_root_folder
             except Exception as e:
-                log.debug(f"Exception in merge_containers_dicts_for_new_install: {str(e)}")
+                log.debug(f"Exception in merge_containers_dicts_for_new_install: {e}")
             finally:
                 lock.release()
         return new_containers_dict

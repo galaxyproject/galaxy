@@ -154,7 +154,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.send_enter(filter_input)
 
     def unset_filter(self, filter_key, filter_value):
-        close_link_selector = 'a[filter_key="%s"][filter_val="%s"]' % (filter_key, filter_value)
+        close_link_selector = f'a[filter_key="{filter_key}"][filter_val="{filter_value}"]'
         self.wait_for_and_click_selector(close_link_selector)
         self.sleep_for(self.wait_types.UX_RENDER)
 
@@ -196,7 +196,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.history_panel_create_new_with_name(name)
 
     def publish_current_history(self):
-        self.click_history_option("Share or Publish")
+        self.click_history_option_sharing()
         self.make_accessible_and_publishable()
 
     def navigate_to_published_histories_page(self):

@@ -5,8 +5,8 @@
             <b-input-group class="mb-3">
                 <b-input
                     id="toolshed-repo-search"
-                    placeholder="Search Repositories"
                     v-model="queryInput"
+                    placeholder="Search Repositories"
                     @input="delayQuery"
                     @change="setQuery"
                     @keydown.esc="setQuery()" />
@@ -16,7 +16,7 @@
                     </b-btn>
                 </b-input-group-append>
             </b-input-group>
-            <b-form-radio-group class="mb-3" v-model="tabValue" :options="tabOptions" />
+            <b-form-radio-group v-model="tabValue" class="mb-3" :options="tabOptions" />
             <div v-if="tabValue">
                 <SearchList :query="query" :scrolled="scrolled" @onQuery="setQuery" @onError="setError" />
             </div>
@@ -55,14 +55,14 @@ export default {
             titleClearSearch: _l("clear search (esc)"),
         };
     },
-    watch: {
-        tabValue() {
-            this.setQuery("");
-        },
-    },
     computed: {
         queryEmpty() {
             return !this.query || this.query.length < this.queryLength;
+        },
+    },
+    watch: {
+        tabValue() {
+            this.setQuery("");
         },
     },
     methods: {

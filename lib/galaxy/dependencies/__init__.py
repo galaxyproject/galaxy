@@ -13,7 +13,6 @@ from os.path import (
 import pkg_resources
 import yaml
 
-from galaxy.containers import parse_containers_config
 from galaxy.util import (
     asbool,
     etree,
@@ -122,12 +121,18 @@ class ConditionalDependencies:
         except OSError:
             pass
 
-        # Parse containers config
-        containers_conf_yml = self.config.get(
-            "containers_config_file", join(dirname(self.config_file), "containers_conf.yml")
+        # Parse oidc_backends_config_file specifically for PKCE support.
+        self.pkce_support = False
+        oidc_backend_conf_xml = self.config.get(
+            "oidc_backends_config_file", join(dirname(self.config_file), "oidc_backends_config.xml")
         )
-        containers_conf = parse_containers_config(containers_conf_yml)
-        self.container_interface_types = [c.get("type", None) for c in containers_conf.values()]
+        try:
+            for pkce_support_element in parse_xml(oidc_backend_conf_xml).iterfind("./provider/pkce_support"):
+                if pkce_support_element.text == "true":
+                    self.pkce_support = True
+                    break
+        except OSError:
+            pass
 
         # Parse error report config
         error_report_yml = self.config.get("error_report_file", join(dirname(self.config_file), "error_report.yml"))
@@ -256,11 +261,6 @@ class ConditionalDependencies:
         install_set = {"auto", "True", "true", "polling", True}
         return self.config["watch_tools"] in install_set or self.config["watch_tool_data_dir"] in install_set
 
-    def check_docker(self):
-        return self.config.get("enable_beta_containers_interface", False) and (
-            "docker" in self.container_interface_types or "docker_swarm" in self.container_interface_types
-        )
-
     def check_python_gitlab(self):
         return "gitlab" in self.error_report_modules
 
@@ -285,6 +285,9 @@ class ConditionalDependencies:
 
     def check_hvac(self):
         return "hashicorp" == self.vault_type
+
+    def check_pkce(self):
+        return self.pkce_support
 
 
 def optional(config_file=None):

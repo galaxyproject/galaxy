@@ -5,6 +5,7 @@ galaxy-tool-util
 galaxy-util
 galaxy-web-framework
 a2wsgi
+apispec
 Babel
 Cheetah3
 fastapi>=0.68.2,!=0.69.0,!=0.70.0,!=0.70.1

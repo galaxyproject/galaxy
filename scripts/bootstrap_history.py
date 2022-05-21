@@ -5,7 +5,6 @@
 import calendar
 import datetime
 import json
-import logging
 import os
 import re
 import string
@@ -14,16 +13,8 @@ import textwrap
 from collections import OrderedDict
 from urllib.parse import urljoin
 
-try:
-    import requests
-except ImportError:
-    requests = None
-try:
-    from github import Github
-except ImportError:
-    Github = None
-
-log = logging.getLogger(__name__)
+import requests
+from github import Github
 
 PROJECT_DIRECTORY = os.path.join(os.path.dirname(__file__), os.pardir)
 GALAXY_VERSION_FILE = os.path.join(PROJECT_DIRECTORY, "lib", "galaxy", "version.py")
@@ -33,29 +24,6 @@ PROJECT_URL = f"https://github.com/{PROJECT_OWNER}/{PROJECT_NAME}"
 PROJECT_API = f"https://api.github.com/repos/{PROJECT_OWNER}/{PROJECT_NAME}/"
 RELEASES_PATH = os.path.join(PROJECT_DIRECTORY, "doc", "source", "releases")
 RELEASE_DELTA_MONTHS = 4  # Number of months between releases.
-
-# Uncredit pull requestors... kind of arbitrary at this point.
-DEVTEAM = [
-    "afgane",
-    "dannon",
-    "blankenberg",
-    "davebx",
-    "martenson",
-    "jmchilton",
-    "tnabtaf",
-    "natefoo",
-    "jgoecks",
-    "guerler",
-    "jennaj",
-    "nekrut",
-    "jxtx",
-    "VJalili",
-    "WilliamHolden",
-    "Nerdinacan",
-    "ic4f",
-    "mvdbeek",
-    "galaxyproject",
-]
 
 TEMPLATE = """
 .. to_doc
@@ -357,7 +325,7 @@ def release_issue(argv):
     github = _github_client()
     repo = github.get_repo(f"{PROJECT_OWNER}/{PROJECT_NAME}")
     repo.create_issue(
-        title="Publication of Galaxy Release v %s" % release_name,
+        title=f"Publication of Galaxy Release v {release_name}",
         body=release_issue_contents,
     )
     return release_issue
@@ -366,11 +334,11 @@ def release_issue(argv):
 def do_release(argv):
     release_name = argv[2]
     release_file = _release_file(release_name + ".rst")
-    enhancement_targets = "\n\n".join(".. enhancement_tag_%s" % a for a in GROUPPED_TAGS.values())
-    bug_targets = "\n\n".join(".. bug_tag_%s" % a for a in GROUPPED_TAGS.values())
+    enhancement_targets = "\n\n".join(f".. enhancement_tag_{a}" for a in GROUPPED_TAGS.values())
+    bug_targets = "\n\n".join(f".. bug_tag_{a}" for a in GROUPPED_TAGS.values())
     template = TEMPLATE
-    template = template.replace(".. enhancement", "%s\n\n.. enhancement" % enhancement_targets)
-    template = template.replace(".. bug", "%s\n\n.. bug" % bug_targets)
+    template = template.replace(".. enhancement", f"{enhancement_targets}\n\n.. enhancement")
+    template = template.replace(".. bug", f"{bug_targets}\n\n.. bug")
     release_info = string.Template(template).safe_substitute(release=release_name)
     _write_file(release_file, release_info, skip_if_exists=True)
     month = int(release_name.split(".")[1])
@@ -416,7 +384,7 @@ def do_release(argv):
             "labels": _pr_to_labels(pr),
         }
         main(
-            [argv[0], "--release_file", "%s.rst" % release_name, "--request", as_dict, "pr" + str(pr.number)],
+            [argv[0], "--release_file", f"{release_name}.rst", "--request", as_dict, "pr" + str(pr.number)],
             seen_prs=seen_prs,
         )
 
@@ -431,7 +399,7 @@ def check_blocking_prs(argv):
     release_name = argv[2]
     block = 0
     for pr in _get_prs(release_name, state="open"):
-        print("WARN: Blocking PR| %s" % _pr_to_str(pr))
+        print(f"WARN: Blocking PR| {_pr_to_str(pr)}")
         block = 1
 
     sys.exit(block)
@@ -441,15 +409,16 @@ def check_blocking_issues(argv):
     release_name = argv[2]
     block = 0
     github = _github_client()
-    repo = github.get_repo("galaxyproject/galaxy")
+    repo = github.get_repo(f"{PROJECT_OWNER}/{PROJECT_NAME}")
     issues = repo.get_issues(state="open")
     for issue in issues:
+        # issue can also be a pull request, which could be filtered out with `not issue.pull_request`
         if (
             issue.milestone
             and issue.milestone.title == release_name
             and "Publication of Galaxy Release" not in issue.title
         ):
-            print("WARN: Blocking issue| %s" % _issue_to_str(issue))
+            print(f"WARN: Blocking issue| {_issue_to_str(issue)}")
             block = 1
 
     sys.exit(block)
@@ -561,7 +530,7 @@ def main(argv, seen_prs=None):
     prs_content = _read_file(prs_path)
 
     def extend_target(target, line, source=history):
-        from_str = ".. %s\n" % target
+        from_str = f".. {target}\n"
         if target not in source:
             raise Exception(f"Failed to find target [{target}] in source [{source}]")
         return source.replace(from_str, from_str + line + "\n")
@@ -570,11 +539,10 @@ def main(argv, seen_prs=None):
 
     if requests is None:
         raise Exception("Requests library not found, please pip install requests")
-    message = ""
     if len(argv) > 2:
         message = argv[2]
     elif not (ident.startswith("pr") or ident.startswith("issue")):
-        api_url = urljoin(PROJECT_API, "commits/%s" % ident)
+        api_url = urljoin(PROJECT_API, f"commits/{ident}")
         if req is None:
             req = requests.get(api_url).json()
         commit = req["commit"]
@@ -582,13 +550,13 @@ def main(argv, seen_prs=None):
         message = get_first_sentence(message)
     elif ident.startswith("pr"):
         pull_request = ident[len("pr") :]
-        api_url = urljoin(PROJECT_API, "pulls/%s" % pull_request)
+        api_url = urljoin(PROJECT_API, f"pulls/{pull_request}")
         if req is None:
             req = requests.get(api_url).json()
         message = req["title"]
     elif ident.startswith("issue"):
         issue = ident[len("issue") :]
-        api_url = urljoin(PROJECT_API, "issues/%s" % issue)
+        api_url = urljoin(PROJECT_API, f"issues/{issue}")
         if req is None:
             req = requests.get(api_url).json()
         message = req["title"]
@@ -602,19 +570,16 @@ def main(argv, seen_prs=None):
     if ident.startswith("pr"):
         pull_request = ident[len("pr") :]
         if pull_request in seen_prs:
-            to_doc = None
+            to_doc = ""
         else:
             user = req["head"].user
             owner = user.login
-            if owner in DEVTEAM:
-                owner = None
             text = ".. _Pull Request {0}: {1}/pull/{0}".format(pull_request, PROJECT_URL)
             prs_content = extend_target("github_links", text, prs_content)
-            if owner:
-                to_doc += "\n(thanks to `@{} <https://github.com/{}>`__).".format(
-                    owner,
-                    owner,
-                )
+            to_doc += "\n(thanks to `@{} <https://github.com/{}>`__).".format(
+                owner,
+                owner,
+            )
             to_doc += f"\n`Pull Request {pull_request}`_"
             labels = None
             if req and "labels" in req:
@@ -631,7 +596,7 @@ def main(argv, seen_prs=None):
         prs_content = extend_target("github_links", text, prs_content)
         to_doc += f"{short_rev}_"
 
-    if to_doc is not None:
+    if to_doc:
         to_doc = wrap(to_doc)
         if text_target is not None:
             history = extend_target(text_target, to_doc, history)
@@ -661,7 +626,6 @@ def _write_file(path, contents, skip_if_exists=False):
 
 
 def _text_target(pull_request, labels=None):
-    pr_number = None
     if isinstance(pull_request, str):
         pr_number = pull_request
     else:
@@ -677,7 +641,7 @@ def _text_target(pull_request, labels=None):
             print(e)
     is_bug = is_enhancement = is_feature = is_minor = is_major = is_merge = is_small_enhancement = False
     if len(labels) == 0:
-        print("No labels found for %s" % pr_number)
+        print(f"No labels found for {pr_number}")
         return None
     for label_name in labels:
         if label_name == "minor":
@@ -701,7 +665,7 @@ def _text_target(pull_request, labels=None):
     is_some_kind_of_enhancement = is_enhancement or is_feature or is_small_enhancement
 
     if not (is_bug or is_some_kind_of_enhancement or is_minor or is_merge):
-        print("No 'kind/*' or 'minor' or 'merge' or 'procedures' label found for %s" % _pr_to_str(pull_request))
+        print(f"No 'kind/*' or 'minor' or 'merge' or 'procedures' label found for {_pr_to_str(pull_request)}")
         text_target = None
 
     if is_minor or is_merge:
@@ -712,9 +676,9 @@ def _text_target(pull_request, labels=None):
     elif is_feature:
         text_target = "feature"
     elif is_enhancement:
-        for group_name in GROUPPED_TAGS.keys():
-            if group_name in labels:
-                text_target = "enhancement_tag_%s" % GROUPPED_TAGS[group_name]
+        for label, tag in GROUPPED_TAGS.items():
+            if label in labels:
+                text_target = f"enhancement_tag_{tag}"
                 break
         else:
             text_target = "enhancement"
@@ -723,14 +687,14 @@ def _text_target(pull_request, labels=None):
     elif is_major:
         text_target = "major_bug"
     elif is_bug:
-        for group_name in GROUPPED_TAGS.keys():
-            if group_name in labels:
-                text_target = "bug_tag_%s" % GROUPPED_TAGS[group_name]
+        for label, tag in GROUPPED_TAGS.items():
+            if label in labels:
+                text_target = f"bug_tag_{tag}"
                 break
         else:
             text_target = "bug"
     else:
-        print("Logic problem, cannot determine section for %s" % _pr_to_str(pull_request))
+        print(f"Logic problem, cannot determine section for {_pr_to_str(pull_request)}")
         text_target = None
     if text_target:
         text_target += "\n"
@@ -761,15 +725,10 @@ def _releases():
 
 
 def _github_client():
-    try:
-        github_json_path = os.path.expanduser("~/.github.json")
-        with open(github_json_path) as fh:
-            github_json_dict = json.load(fh)
-        github = Github(**github_json_dict)
-    except Exception:
-        log.exception()
-        github = None
-    return github
+    github_json_path = os.path.expanduser("~/.github.json")
+    with open(github_json_path) as fh:
+        github_json_dict = json.load(fh)
+    return Github(**github_json_dict)
 
 
 def _release_file(release):
@@ -790,7 +749,7 @@ def process_sentence(message):
     message = re.sub(r"^\s*\[.*\]\s*", r"", message)
     # Link issues and pull requests...
     issue_url = f"https://github.com/{PROJECT_OWNER}/{PROJECT_NAME}/issues"
-    message = re.sub(r"#(\d+)", r"`#\1 <%s/\1>`__" % issue_url, message)
+    message = re.sub(r"#(\d+)", rf"`#\1 <{issue_url}/\1>`__", message)
     return message
 
 

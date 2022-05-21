@@ -20,7 +20,10 @@ from galaxy.util import (
 )
 from galaxy.util.commands import shell
 from ..container_classes import CONTAINER_CLASSES
-from ..container_resolvers import ContainerResolver
+from ..container_resolvers import (
+    ContainerResolver,
+    ResolutionCache,
+)
 from ..docker_util import build_docker_images_command
 from ..mulled.mulled_build import (
     DEFAULT_CHANNELS,
@@ -30,6 +33,7 @@ from ..mulled.mulled_build import (
 )
 from ..mulled.mulled_build_tool import requirements_to_mulled_targets
 from ..mulled.util import (
+    default_mulled_conda_channels_from_env,
     mulled_tags_for,
     split_tag,
     v1_image_name,
@@ -319,7 +323,9 @@ def singularity_cached_container_description(targets, cache_directory, hash_func
     return container
 
 
-def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None, session=None):
+def targets_to_mulled_name(
+    targets, hash_func, namespace, resolution_cache: Optional[ResolutionCache] = None, session=None
+):
     unresolved_cache_key = "galaxy.tool_util.deps.container_resolvers.mulled:unresolved"
     if resolution_cache is not None:
         if unresolved_cache_key not in resolution_cache:
@@ -329,15 +335,17 @@ def targets_to_mulled_name(targets, hash_func, namespace, resolution_cache=None,
         unresolved_cache = set()
 
     mulled_resolution_cache = None
-    if resolution_cache and hasattr(resolution_cache, "mulled_resolution_cache"):
+    if resolution_cache and resolution_cache.mulled_resolution_cache:
         mulled_resolution_cache = resolution_cache.mulled_resolution_cache
 
     name = None
 
     def cached_name(cache_key):
         if mulled_resolution_cache:
-            if cache_key in mulled_resolution_cache:
+            try:
                 return resolution_cache.get(cache_key)
+            except KeyError:
+                return None
         return None
 
     if len(targets) == 1:
@@ -647,10 +655,12 @@ class BuildMulledDockerContainerResolver(CliContainerResolver):
         self.auto_install = string_as_bool(auto_install)
         self._mulled_kwds = {
             "namespace": namespace,
-            "channels": self._get_config_option("mulled_channels", DEFAULT_CHANNELS),
             "hash_func": self.hash_func,
             "command": "build-and-test",
         }
+        self._mulled_kwds["channels"] = default_mulled_conda_channels_from_env() or self._get_config_option(
+            "mulled_channels", DEFAULT_CHANNELS
+        )
         self.auto_init = self._get_config_option("involucro_auto_init", True)
 
     def resolve(self, enabled_container_types, tool_info, install=False, **kwds):

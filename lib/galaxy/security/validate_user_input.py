@@ -16,7 +16,6 @@ VALID_EMAIL_RE = re.compile(r"[^@]+@[^@]+\.[^@]+")
 EMAIL_MAX_LEN = 255
 
 # Public name validity parameters
-PUBLICNAME_MIN_LEN = 3
 PUBLICNAME_MAX_LEN = 255
 VALID_PUBLICNAME_RE = re.compile(r"^[a-z0-9._\-]+$")
 VALID_PUBLICNAME_SUB = re.compile(r"[^a-z0-9._\-]")
@@ -45,8 +44,8 @@ def validate_password_str(password):
 
 def validate_publicname_str(publicname):
     """Validates a string containing a public username."""
-    if len(publicname) < PUBLICNAME_MIN_LEN:
-        return "Public name must be at least %d characters in length." % (PUBLICNAME_MIN_LEN)
+    if not publicname:
+        return "Public name cannot be empty"
     if len(publicname) > PUBLICNAME_MAX_LEN:
         return "Public name cannot be more than %d characters in length." % (PUBLICNAME_MAX_LEN)
     if not (VALID_PUBLICNAME_RE.match(publicname)):
@@ -113,10 +112,11 @@ def transform_publicname(publicname):
     FILL_CHAR is used to extend or replace characters.
     """
     # TODO: Enhance to allow generation of semi-random publicnnames e.g., when valid but taken
-    if publicname not in ["None", None, ""]:
-        publicname = publicname.lower()
-        publicname = re.sub(VALID_PUBLICNAME_SUB, FILL_CHAR, publicname)
-        publicname = publicname.ljust(PUBLICNAME_MIN_LEN + 1, FILL_CHAR)[:PUBLICNAME_MAX_LEN]
+    if not publicname:
+        raise ValueError("Public name cannot be empty")
+    publicname = publicname.lower()
+    publicname = re.sub(VALID_PUBLICNAME_SUB, FILL_CHAR, publicname)
+    publicname = publicname[:PUBLICNAME_MAX_LEN]
     return publicname
 
 

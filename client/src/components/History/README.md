@@ -3,67 +3,48 @@ This is not intended to be a complete listing, but a general idea of how the com
 to interact with each other.
 
 ```html static
-<CurrentHistoryPanel>
-    <HistoryPanel :history="history">
-        
-        <!-- for the right-hand side history we show some
-        optional nav elements, can be ommitted for histories
-        shown in multi-history view -->
-        <slot:nav>
-            <HistorySelector />
-            <HistoryMenu />
-        </slot:nav>
+<Index :history="history">
 
+    <!-- if main history selected -->
+    <CurrentHistory :history="history">
 
-        <!-- if main history selected -->
-        <History :history="history">
+        <!-- Data providers do the heavy-lifting of mixing params, history, and 
+        scroll position to deliver the content for the scroller -->
+        <StoreProvider>
+            <HistoryNavigation />
+            <HistoryDetails />
+            <HistoryMessages />
+            <HistoryOperations />
 
-            <!-- Data providers do the heavy-lifting of mixing params, history, and 
-            scroll position to deliver the content for the scroller -->
+            <!-- Uses a virtual scroller plugin to render all ContentItems and throttles the scrolling pace by limiting
+            the frequency and magnitude of offset changes. -->
+            <Listing>
 
-            <UrlDataProvider>
-                <HistoryDetails />
-                <HistoryMessages />
-                <ContentOperations />
-                <HistoryListing>
+                <!-- The ContentItem renders a row in the list, showing the title, some attributes,
+                and basic operation buttons such as display and edit for either a dataset or a collection.
+                This component needs to be very efficient since it is re-rendered by the virtual scroller plugin. -->
+                (<ContentItem />)
 
-                    <!-- HistoryContentItem is a dynamic component that becomes 
-                    either Dataset or DatasetCollection depending
-                    on the props passed to it -->
+                    <!-- Is shown for datasets upon expansion, can be inefficent in comparison to the ContentItem component. -->
+                    <DatasetDetails />
+            </Listing>
+        </StoreProvider>
+    </CurrentHistory>
 
-                    (<HistoryContentItem />)
-                        <Dataset />
-                        <!-- or -->
-                        <DatasetCollection />
+    <!-- When a collection is selected for viewing, send in a 
+    breadcrumbs list of collections the user has selected -->
+    <CurrentCollection :selected-collections="breadcrumbs">
+        <StoreProvider>
+            <CollectionNavigation />
+            <CollectionDetails />
+            <CollectionOperations />
 
-                </HistoryListing>
-            </UrlDataProvider>
-
-        </History>
-
-
-        <!-- When a collection is selected for viewing, send in a 
-        breadcrumbs list of collections the user has selected -->
-
-        <CurrentCollection :selected-collections="breadcrumbs">
-            <UrlDataProvider>
-                <CollectionNav />
-                <Details />
-                <HistoryListing>
-
-                    <!-- Subdataset and Subcollection are similar to the Dataset 
-                    and DatasetCollection ContentItem components, but mostly 
-                    read-only since they are part of the collection-->
-
-                    (<CollectionContentItem />)
-                        <Subdataset />
-                        <!-- or -->
-                        <Subcollection />
-
-                </HistoryListing>
-            </UrlDataProvider>
-        </CurrentCollection>
-
-    </HistoryPanel>
-</CurrentHistoryPanel>
+            <!-- As above, the same virtual scroller and ContentItem component is being used to render the elements. -->
+            <Listing>
+                (<ContentItem />)
+                    <DatasetDetails />
+            </Listing>
+        </StoreProvider>
+    </CurrentCollection>
+</Index>
 ```

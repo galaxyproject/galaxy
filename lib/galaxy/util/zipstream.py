@@ -21,10 +21,7 @@ class ZipstreamWrapper:
         if self.upstream_mod_zip:
             yield "\n".join(self.files).encode()
         else:
-            yield iter(self.archive)
-
-    def get_iterator(self):
-        return iter(self.archive)
+            yield from iter(self.archive)
 
     def get_headers(self):
         headers = {}

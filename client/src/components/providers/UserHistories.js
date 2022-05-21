@@ -13,47 +13,42 @@
  */
 
 import { mapActions, mapGetters } from "vuex";
-import { History } from "components/History/model/History";
 
 export default {
     props: {
         user: { type: Object, required: true },
     },
     computed: {
-        ...mapGetters("betaHistory", ["currentHistoryId", "currentHistory", "histories"]),
+        ...mapGetters("history", ["currentHistoryId", "currentHistory", "histories", "historiesLoading"]),
 
         currentHistoryModel() {
             if (this.currentHistory !== null) {
-                return new History(this.currentHistory);
+                return Object.assign({}, this.currentHistory);
             }
             return null;
         },
         historyModels() {
-            return this.histories.map((h) => new History(h));
+            return this.histories.map((h) => Object.assign({}, h));
         },
     },
     methods: {
-        ...mapActions("betaHistory", [
+        ...mapActions("history", [
             "loadHistoryById",
             "createNewHistory",
             "updateHistory",
             "deleteHistory",
             "setCurrentHistoryId",
             "setHistory",
-            "loadUserHistories",
+            "loadHistories",
             "secureHistory",
         ]),
-
-        updateCurrentHistory(updates) {
-            this.updateHistory({ ...updates, id: this.currentHistory.id });
-        },
     },
     watch: {
         // when user changes reload histories
         user: {
             immediate: true,
             handler() {
-                this.loadUserHistories();
+                this.loadHistories();
             },
         },
 
@@ -70,6 +65,7 @@ export default {
             // currently selected history object, should be a full object not just a summary
             currentHistory: this.currentHistoryModel,
             currentHistoryId: this.currentHistoryId,
+            historiesLoading: this.historiesLoading,
 
             handlers: {
                 // Updates the history in the store without a trip to the server, in the event that a
@@ -85,11 +81,6 @@ export default {
                 // save new history params should be an object with an id property and any additional
                 // properties that are to be updated on the server. A full history object is not required
                 updateHistory: this.updateHistory,
-                updateCurrentHistory: this.updateCurrentHistory,
-
-                // also conform to .sync event name format
-                "update:history": this.updateHistory,
-                "update:currentHistory": this.updateCurrentHistory,
 
                 // delete history then clear currentHistoryId
                 deleteHistory: (history) => this.deleteHistory({ history }),

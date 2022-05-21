@@ -14,7 +14,7 @@ The key to scaling Galaxy is the ability to run *multiple* Galaxy servers which 
 
 ## Terminology
 
-* **web worker** - Galaxy server process responsible for servicing web requests for the UI/API 
+* **web worker** - Galaxy server process responsible for servicing web requests for the UI/API
 * **job handler** - Galaxy server process responsible for setting up, starting, and monitoring jobs, submitting jobs to
   a cluster (if configured), for setting metadata (if not set on the cluster), and cleaning up after jobs
   * **tags** - Handlers can be grouped in to a "pool" of handlers using *tags*, after which, individual tools may be
@@ -26,14 +26,19 @@ The key to scaling Galaxy is the ability to run *multiple* Galaxy servers which 
 ## Application Servers
 
 It is possible to run the Galaxy server in many different ways, including under different web application frameworks, or
-as a standalone server with no web stack. Prior to the 18.01 release, Galaxy (by default)
-used the [Python Paste][paste] web stack, and ran in a single process. Between the 18.01 release and the 22.01 release
-[uWSGI](https://uwsgi-docs.readthedocs.io/) was used as the default application server. Starting with the 22.01 release the default application server is
-[Gunicorn][Gunicorn]. For information about uWSGI in the Galaxy context please consult the version of this document that is
-appropriate to your Galaxy release.
+as a standalone server with no web stack.
 
-Gunicorn is able to serve ASGI applications. Galaxy can act as an ASGI web application since release 21.01,
-and we will drop support for being run as a WSGI application via uWSGI in Galaxy release 22.05.
+Starting with the 22.01 release the default application server is [Gunicorn][Gunicorn].
+Gunicorn serves Galaxy as an ASGI web application.
+
+### Historical note
+
+Prior to the 18.01 release, Galaxy (by default) used the [Python Paste][paste] web stack, and ran in a single process.
+Between the 18.01 release and the 22.01 release, [uWSGI](https://uwsgi-docs.readthedocs.io/) was used as the default
+application server.
+In release 22.05 we dropped support for running Galaxy as a WSGI application via uWSGI or paste.
+For more information about this, please consult the version of this document that is
+appropriate to your Galaxy release.
 
 [Gunicorn]: https://gunicorn.org/
 [paste]: https://paste.readthedocs.io/
@@ -73,14 +78,6 @@ Referred to in this documentation as the **Gunicorn + Webless** strategy.
 
 By default, handler assignment will occur using the **Database Transaction Isolation** or **Database SKIP LOCKED**
 methods (see below).
-
-### uWSGI for web serving with Mules as job handlers
-
-This strategy is deprecated and will be removed in Galaxy release 22.05.
-You can consult the documentation for older versions of Galaxy for details.
-
-If you're upgrading Galaxy to release 22.01 or newer we recommend you set up the
-**Gunicorn + Webless** strategy above.
 
 ## Job Handler Assignment Methods
 
@@ -126,7 +123,7 @@ assignment method.
 
 ### Choosing an Assignment Method
 
-Prior to Galaxy 19.01, the most common deployment strategies (e.g. **uWSGI + Webless**) assigned handlers using what is
+Prior to Galaxy 19.01, the most common deployment strategies assigned handlers using what is
 now (since 19.01) referred to as *Database Preassignment*.  Although still a fallback option when the database
 does not support *Database SKIP LOCKED* or *Database Transaction Isolation*, preassignment has a few drawbacks:
 
@@ -185,7 +182,7 @@ gravity:
     # performance options
     workers: 1
     # Other options that will be passed to gunicorn
-    gunicorn_extra_args:
+    extra_args:
 
 ```
 
@@ -194,7 +191,7 @@ Some of these options deserve explanation:
 * `workers`: Controls the number of Galaxy application processes Gunicorn will spawn. Increased web performance can be
   attained by increasing this value. If Gunicorn is the only application on the server, a good starting value is the number of CPUs * 2 + 1.
 4-12 workers should be able to handle hundreds if not thousands of requests per second.
-* `gunicorn_extra_args`: You can specify additional arguments to pass to gunicorn here.
+* `extra_args`: You can specify additional arguments to pass to gunicorn here.
 
 Note that the performance option values given above are just examples and should be tuned per your specific needs.
 However, as given, they are a good place to start.
@@ -211,7 +208,7 @@ gravity:
   gunicorn:
     # listening options
     bind: 'unix:/srv/galaxy/var/gunicorn.sock'
-    gunicorn_extra_args: '--forwarded-allow-ips="*"'
+    extra_args: '--forwarded-allow-ips="*"'
 ```
 
 Here we've used a UNIX domain socket because there's less overhead than a TCP socket and it can be secured by filesystem
@@ -239,7 +236,7 @@ for help with the proxy-side configuration.
 
 By setting the `bind` option to a socket, `run.sh` will no longer automatically serve Galaxy via HTTP (since it is assumed that
 you are setting a socket to serve Galaxy via a proxy server). If you wish to continue serving HTTP directly with Gunicorn
-while using a socket, you can add an additional `--bind` argument via the `gunicorn_extra_args` option:
+while using a socket, you can add an additional `--bind` argument via the `extra_args` option:
 
 ```yaml
 gravity:
@@ -247,7 +244,7 @@ gravity:
   gunicorn:
     # listening options
     bind: 'unix:/srv/galaxy/var/gunicorn.sock'
-    gunicorn_extra_args: '--forwarded-allow-ips="*" --bind 127.0.0.1:8080'
+    extra_args: '--forwarded-allow-ips="*" --bind 127.0.0.1:8080'
 ```
 
 Note that this should only be used for debugging purposes due to `--forwarded-allow-ips="*"`.

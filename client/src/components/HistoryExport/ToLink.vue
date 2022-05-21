@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-alert show variant="danger" v-if="errorMessage" dismissible @dismissed="errorMessage = null">
+        <b-alert v-if="errorMessage" show variant="danger" dismissible @dismissed="errorMessage = null">
             {{ errorMessage }}
             <JobError
                 v-if="jobError"
@@ -77,12 +77,6 @@ export default {
             jobError: null,
         };
     },
-    created() {
-        if (!this.exportsInitialized) {
-            this.exportsInitialized = true;
-            this.loadExports();
-        }
-    },
     computed: {
         hasExports() {
             return this.exports !== null && this.exports.length > 0;
@@ -112,6 +106,12 @@ export default {
                 return `previous history export archival likely failed`;
             }
         },
+    },
+    created() {
+        if (!this.exportsInitialized) {
+            this.exportsInitialized = true;
+            this.loadExports();
+        }
     },
     methods: {
         loadExports() {

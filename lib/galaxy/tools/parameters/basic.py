@@ -30,6 +30,7 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
 )
+from galaxy.schema.fetch_data import FilesPayload
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
     dbkeys,
@@ -333,7 +334,11 @@ class SimpleTextToolParameter(ToolParameter):
 
     def to_json(self, value, app, use_security):
         """Convert a value to a string representation suitable for persisting"""
-        return unicodify(value)
+        if value is None:
+            rval = "" if not self.optional else None
+        else:
+            rval = unicodify(value)
+        return rval
 
     def get_initial_value(self, trans, other_values):
         return self.value
@@ -611,6 +616,9 @@ class FileToolParameter(ToolParameter):
     def from_json(self, value, trans=None, other_values=None):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
+        if isinstance(value, FilesPayload):
+            # multi-part upload handled and persisted in service layer
+            return value.dict()
         if type(value) == dict:
             if "session_id" in value:
                 # handle api upload
@@ -1370,13 +1378,13 @@ class ColumnListParameter(SelectToolParameter):
         Generate a select list containing the columns of the associated
         dataset (if found).
         """
-        # Get the value of the associated data reference (a dataset)
-        dataset = other_values.get(self.data_ref)
+        # Get the value of the associated data reference (one or more datasets)
+        datasets = other_values.get(self.data_ref)
         # Check if a dataset is selected
-        if not dataset:
+        if not datasets:
             return []
         column_list = None
-        for dataset in util.listify(dataset):
+        for dataset in util.listify(datasets):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()

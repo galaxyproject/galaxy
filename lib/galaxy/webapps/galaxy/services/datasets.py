@@ -47,6 +47,7 @@ from galaxy.schema.schema import (
     AnyHDA,
     AnyHistoryContentItem,
     DatasetAssociationRoles,
+    DatasetSourceId,
     DatasetSourceType,
     Model,
     UpdateDatasetPermissionsPayload,
@@ -169,6 +170,41 @@ class BamDataResult(DataResult):
     max_high: int
 
 
+class DeleteDatasetBatchPayload(BaseModel):
+    datasets: List[DatasetSourceId] = Field(
+        description="The list of datasets IDs with their sources to be deleted/purged.",
+    )
+    purge: Optional[bool] = Field(
+        default=False,
+        description=(
+            "Whether to permanently delete from disk the specified datasets. "
+            "*Warning*: this is a destructive operation."
+        ),
+    )
+
+
+class DatasetErrorMessage(BaseModel):
+    dataset: DatasetSourceId = Field(
+        description="The encoded ID of the dataset and its source.",
+    )
+    error_message: str = Field(
+        description="The error message returned while processing this dataset.",
+    )
+
+
+class DeleteDatasetBatchResult(BaseModel):
+    success_count: int = Field(
+        description="The number of datasets successfully processed.",
+    )
+    errors: Optional[List[DatasetErrorMessage]] = Field(
+        default=None,
+        description=(
+            "A list of dataset IDs and the corresponding error message if something "
+            "went wrong while processing the dataset."
+        ),
+    )
+
+
 class DatasetsService(ServiceBase, UsesVisualizationMixin):
     def __init__(
         self,
@@ -213,7 +249,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         """
         user = self.get_authenticated_user(trans)
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
-        view = serialization_params.view or "summary"
+        serialization_params.default_view = "summary"
         order_by = self.build_order_by(self.history_contents_manager, filter_query_params.order or "create_time-dsc")
         container = None
         if history_id:
@@ -228,7 +264,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         )
         return [
             self.serializer_by_type[content.history_content_type].serialize_to_view(
-                content, user=user, trans=trans, view=view
+                content, user=user, trans=trans, **serialization_params.dict()
             )
             for content in contents
         ]
@@ -375,7 +411,6 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self,
         trans: ProvidesHistoryContext,
         history_content_id: EncodedDatabaseIdField,
-        history_id: EncodedDatabaseIdField,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -407,9 +442,6 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         except galaxy_exceptions.MessageException:
             raise
         except Exception as e:
-            log.exception(
-                "Server error getting display data for dataset (%s) from history (%s)", history_content_id, history_id
-            )
             raise galaxy_exceptions.InternalServerError(f"Could not get display data for dataset: {util.unicodify(e)}")
         return rval, headers
 
@@ -492,6 +524,36 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         decoded_id = self.decode_id(dataset_id)
         hda = self.hda_manager.get_accessible(decoded_id, trans.user)
         return self.hda_serializer.serialize_converted_datasets(hda, "converted")
+
+    def delete_batch(
+        self,
+        trans: ProvidesHistoryContext,
+        payload: DeleteDatasetBatchPayload,
+    ) -> DeleteDatasetBatchResult:
+        """
+        Deletes or purges a batch of datasets.
+        Warning: only the ownership of the dataset and upload state for HDAs is checked, no other checks or restrictions are made.
+        """
+        success_count = 0
+        errors = []
+        for dataset in payload.datasets:
+            try:
+                decoded_dataset_id = self.decode_id(dataset.id)
+                manager = self.dataset_manager_by_type[dataset.src]
+                dataset_instance = manager.get_owned(decoded_dataset_id, trans.user)
+                if dataset.src == DatasetSourceType.hda:
+                    self.hda_manager.error_if_uploading(dataset_instance)
+                if payload.purge:
+                    manager.purge(dataset_instance, flush=False)
+                else:
+                    manager.delete(dataset_instance, flush=False)
+                success_count += 1
+            except galaxy_exceptions.MessageException as e:
+                errors.append(DatasetErrorMessage.construct(dataset=dataset, error_message=str(e)))
+
+        if success_count:
+            trans.sa_session.flush()
+        return DeleteDatasetBatchResult.construct(success_count=success_count, errors=errors)
 
     def _get_or_create_converted(self, trans, original: model.DatasetInstance, target_ext: str):
         try:

@@ -53,7 +53,8 @@ from galaxy import (
     model,
 )
 from galaxy.model import tool_shed_install
-from galaxy.schema import FilterQueryParams
+from galaxy.schema import ValueFilterQueryParams
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import (
     BasicSharedApp,
@@ -141,7 +142,10 @@ def get_class(class_name):
 def decode_id(app: BasicSharedApp, id: Any):
     # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
     #   resulting in error for valid id
-    return decode_with_security(app.security, id)
+    if isinstance(id, DecodedDatabaseIdField):
+        return int(id)
+    else:
+        return decode_with_security(app.security, id)
 
 
 def decode_with_security(security: IdEncodingHelper, id: Any):
@@ -173,12 +177,10 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
         security_check(trans, item, check_ownership, check_accessible)
     if deleted is True and not item.deleted:
         raise exceptions.ItemDeletionException(
-            '%s "%s" is not deleted' % (class_name, getattr(item, "name", id)), type="warning"
+            f'{class_name} "{getattr(item, "name", id)}" is not deleted', type="warning"
         )
     elif deleted is False and item.deleted:
-        raise exceptions.ItemDeletionException(
-            '%s "%s" is deleted' % (class_name, getattr(item, "name", id)), type="warning"
-        )
+        raise exceptions.ItemDeletionException(f'{class_name} "{getattr(item, "name", id)}" is deleted', type="warning")
     return item
 
 
@@ -764,7 +766,7 @@ class ModelSerializer(HasAModelManager[T]):
         else:
             if keys:
                 all_keys = keys
-            elif default_view:
+            else:
                 all_keys = self._view_to_keys(default_view)
 
         return self.serialize(item, all_keys, **context)
@@ -773,12 +775,14 @@ class ModelSerializer(HasAModelManager[T]):
         """
         Converts a known view into a list of keys.
 
-        :raises ModelSerializingError: if the view is not listed in `self.views`.
+        :raises RequestParameterInvalidException: if the view is not listed in `self.views`.
         """
         if view is None:
             view = self.default_view
         if view not in self.views:
-            raise ModelSerializingError("unknown view", view=view, available_views=self.views)
+            raise exceptions.RequestParameterInvalidException(
+                f"unknown view - {view}", view=view, available_views=self.views
+            )
         return self.views[view][:]
 
 
@@ -797,7 +801,7 @@ class ModelValidator:
         :raises exceptions.RequestParameterInvalidException: if not an instance.
         """
         if not isinstance(val, types):
-            msg = f"must be a type: {str(types)}"
+            msg = f"must be a type: {types}"
             raise exceptions.RequestParameterInvalidException(msg, key=key, val=val)
         return val
 
@@ -1028,7 +1032,7 @@ class ModelFilterParser(HasAModelManager):
 
     def build_filter_params(
         self,
-        query_params: FilterQueryParams,
+        query_params: ValueFilterQueryParams,
         filter_attr_key: str = "q",
         filter_value_key: str = "qv",
         attr_op_split_char: str = "-",
@@ -1064,8 +1068,8 @@ class ModelFilterParser(HasAModelManager):
         #   (instead of relying on zip to shorten)
         return list(zip(attrs, ops, values))
 
-    def parse_query_filters(self, query_filters: FilterQueryParams):
-        """Convenience function to parse a FilterQueryParams object into a collection of filtering criteria."""
+    def parse_query_filters(self, query_filters: ValueFilterQueryParams):
+        """Convenience function to parse a ValueFilterQueryParams object into a collection of filtering criteria."""
         filter_params = self.build_filter_params(query_filters)
         return self.parse_filters(filter_params)
 
@@ -1246,17 +1250,21 @@ class ModelFilterParser(HasAModelManager):
             return date_string
         raise ValueError("datetime strings must be in the ISO 8601 format and in the UTC")
 
+    def contains_non_orm_filter(self, filters: List[ParsedFilter]) -> bool:
+        """Whether the list of filters contains any non-orm filter."""
+        return any(filter.filter_type == "function" for filter in filters)
+
 
 def parse_bool(bool_string: Union[str, bool]) -> bool:
     """
     Parse a boolean from a string.
     """
     # Be strict here to remove complexity of options (but allow already parsed).
-    if bool_string in ("True", True):
+    if bool_string in ("True", "true", True):
         return True
-    if bool_string in ("False", False):
+    if bool_string in ("False", "false", False):
         return False
-    raise ValueError(f"invalid boolean: {str(bool_string)}")
+    raise ValueError(f"invalid boolean: {bool_string}")
 
 
 def raise_filter_err(attr, op, val, msg):

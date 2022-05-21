@@ -1,7 +1,8 @@
 """Integration tests for the Pulsar embedded runner."""
-import json
-
-from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    LibraryPopulator,
+)
 from galaxy_test.driver import integration_util
 
 TEST_TOOL_IDS = [
@@ -45,6 +46,7 @@ class ExtendedMetadataIntegrationTestCase(integration_util.IntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.library_populator = LibraryPopulator(self.galaxy_interactor)
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -53,14 +55,14 @@ class ExtendedMetadataIntegrationTestCase(integration_util.IntegrationTestCase):
         config["object_store_store_by"] = "uuid"
         config["retry_metadata_internally"] = False
 
-    def test_fetch_data(self):
+    def test_fetch_data_hda(self):
         history_id = self.dataset_populator.new_history()
         element = dict(src="files")
         target = {
             "destination": {"type": "hdas"},
             "elements": [element],
         }
-        targets = json.dumps([target])
+        targets = [target]
         upload_content = "abcdef"
         payload = {"history_id": history_id, "targets": targets, "__files": {"files_0|file_data": upload_content}}
         new_dataset = self.dataset_populator.fetch(payload, assert_ok=True).json()["outputs"][0]
@@ -70,6 +72,23 @@ class ExtendedMetadataIntegrationTestCase(integration_util.IntegrationTestCase):
             dataset_id=new_dataset["id"],
         )
         assert content == upload_content
+
+    def test_fetch_data_library(self):
+        history_id, library, destination = self.library_populator.setup_fetch_to_folder("extended_metadata")
+        items = [{"src": "files", "dbkey": "hg19", "info": "my cool bed", "created_from_basename": "4.bed"}]
+        targets = [{"destination": destination, "items": items}]
+        payload = {
+            "history_id": history_id,  # TODO: Shouldn't be needed :(
+            "targets": targets,
+            "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
+        }
+        self.dataset_populator.fetch(payload, wait=True)
+        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
+        assert dataset["file_size"] == 61, dataset
+        assert dataset["genome_build"] == "hg19", dataset
+        assert dataset["misc_info"] == "my cool bed", dataset
+        assert dataset["file_ext"] == "bed", dataset
+        assert dataset["created_from_basename"] == "4.bed"
 
 
 class ExtendedMetadataIntegrationInstance(integration_util.IntegrationInstance):

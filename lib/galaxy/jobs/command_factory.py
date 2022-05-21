@@ -6,10 +6,12 @@ from os.path import (
 )
 
 from galaxy import util
+from galaxy.job_execution.output_collect import default_exit_code_file
 from galaxy.jobs.runners.util.job_script import (
     INTEGRITY_INJECTION,
     write_script,
 )
+from galaxy.tool_util.deps.container_classes import TRAP_KILL_CONTAINER
 
 log = getLogger(__name__)
 
@@ -37,8 +39,6 @@ def build_command(
     create_tool_working_directory=True,
     remote_command_params=None,
     remote_job_directory=None,
-    stdout_file=None,
-    stderr_file=None,
 ):
     """
     Compose the sequence of commands necessary to execute a job. This will
@@ -92,6 +92,10 @@ def build_command(
         else:
             commands_builder = CommandsBuilder(externalized_commands)
 
+    for_pulsar = "script_directory" in remote_command_params
+    if not for_pulsar:
+        commands_builder.capture_stdout_stderr("../outputs/tool_stdout", "../outputs/tool_stderr")
+
     # Don't need to create a separate tool working directory for Pulsar
     # jobs - that is handled by Pulsar.
     if create_tool_working_directory:
@@ -102,22 +106,19 @@ def build_command(
         # xref https://github.com/galaxyproject/galaxy/issues/3289
         commands_builder.prepend_command(PREPARE_DIRS)
 
-    for_pulsar = "script_directory" in remote_command_params
     __handle_remote_command_line_building(commands_builder, job_wrapper, for_pulsar=for_pulsar)
 
     container_monitor_command = job_wrapper.container_monitor_command(container)
     if container_monitor_command:
         commands_builder.prepend_command(container_monitor_command)
 
+    working_directory = remote_job_directory or job_wrapper.working_directory
+    commands_builder.capture_return_code(default_exit_code_file(working_directory, job_wrapper.job_id))
+
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
 
-    if stdout_file and stderr_file:
-        commands_builder.capture_stdout_stderr(stdout_file, stderr_file)
-    commands_builder.capture_return_code()
-
     if include_metadata and job_wrapper.requires_setting_metadata:
-        working_directory = remote_job_directory or job_wrapper.working_directory
         commands_builder.append_command(f"cd '{working_directory}'")
         __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params)
 
@@ -167,8 +168,6 @@ def __externalize_commands(
     for_pulsar = "script_directory" in remote_command_params
     if for_pulsar:
         commands = f"{shell} {join(remote_command_params['script_directory'], script_name)}"
-    else:
-        commands += " > ../outputs/tool_stdout 2> ../outputs/tool_stderr"
     log.info(f"Built script [{local_container_script}] for tool command [{tool_commands}]")
     return commands
 
@@ -204,7 +203,6 @@ def __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_comm
         work_dir_outputs_kwds["job_working_directory"] = remote_command_params["working_directory"]
     work_dir_outputs = runner.get_work_dir_outputs(job_wrapper, **work_dir_outputs_kwds)
     if work_dir_outputs:
-        commands_builder.capture_return_code()
         copy_commands = map(__copy_if_exists_command, work_dir_outputs)
         commands_builder.append_commands(copy_commands)
 
@@ -243,7 +241,6 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     if metadata_command:
         # Place Galaxy and its dependencies in environment for metadata regardless of tool.
         metadata_command = f"{SETUP_GALAXY_FOR_METADATA}{metadata_command}"
-        commands_builder.capture_return_code()
         commands_builder.append_command(metadata_command)
 
 
@@ -285,20 +282,25 @@ class CommandsBuilder:
         self.append_command("; ".join(c for c in commands if c))
 
     def capture_stdout_stderr(self, stdout_file, stderr_file):
+        trap_command = """trap 'rm "$__out" "$__err"' EXIT"""
+        if TRAP_KILL_CONTAINER in self.commands:
+            # We need to replace the container kill trap with one that removes the named pipes and kills the container
+            self.commands = self.commands.replace(TRAP_KILL_CONTAINER, "")
+            trap_command = """trap 'rm "$__out" "$__err" 2> /dev/null || true; _on_exit' EXIT"""
         self.prepend_command(
-            """out="${TMPDIR:-/tmp}/out.$$" err="${TMPDIR:-/tmp}/err.$$"
-mkfifo "$out" "$err"
-trap 'rm "$out" "$err"' EXIT
-tee -a stdout.log < "$out" &
-tee -a stderr.log < "$err" >&2 &""",
+            f"""__out="${{TMPDIR:-.}}/out.$$" __err="${{TMPDIR:-.}}/err.$$"
+mkfifo "$__out" "$__err"
+{trap_command}
+tee -a '{stdout_file}' < "$__out" &
+tee -a '{stderr_file}' < "$__err" >&2 &""",
             sep="",
         )
-        self.append_command(f"> '{stdout_file}' 2> '{stderr_file}'", sep="")
+        self.append_command('> "$__out" 2> "$__err"', sep="")
 
-    def capture_return_code(self):
-        if not self.return_code_captured:
-            self.return_code_captured = True
-            self.append_command(CAPTURE_RETURN_CODE)
+    def capture_return_code(self, exit_code_path):
+        self.append_command(CAPTURE_RETURN_CODE)
+        self.append_command(f"echo $return_code > {exit_code_path}")
+        self.return_code_captured = True
 
     def build(self):
         if self.return_code_captured:

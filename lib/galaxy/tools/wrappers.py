@@ -47,11 +47,11 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-# Fields in .log files corresponding to paths, must have one of the following
-# field names and all such fields are assumed to be paths. This is to allow
-# remote ComputeEnvironments (such as one used by Pulsar) determine what values to
-# rewrite or transfer...
-PATH_ATTRIBUTES = ["path"]
+# Fields in tool config files corresponding to paths (e.g .loc or .len)
+# must have one of the following field names, and all such fields are
+# assumed to be paths. This is to allow remote ComputeEnvironments (such
+# as one used by Pulsar) to determine what values to rewrite or transfer.
+PATH_ATTRIBUTES = ["len_path", "path"]
 
 
 class ToolParameterValueWrapper:

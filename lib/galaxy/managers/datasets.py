@@ -7,6 +7,7 @@ import os
 from typing import (
     Dict,
     List,
+    Optional,
     Type,
     TypeVar,
 )
@@ -24,7 +25,6 @@ from galaxy.managers import (
     users,
 )
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.util.checkers import check_binary
 
 log = logging.getLogger(__name__)
 
@@ -236,7 +236,9 @@ class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.Purgable
 
 
 # ============================================================================= AKA DatasetInstanceManager
-class DatasetAssociationManager(base.ModelManager, secured.AccessibleManagerMixin, deletable.PurgableManagerMixin):
+class DatasetAssociationManager(
+    base.ModelManager, secured.AccessibleManagerMixin, secured.OwnableManagerMixin, deletable.PurgableManagerMixin
+):
     """
     DatasetAssociation/DatasetInstances are intended to be working
     proxies to a Dataset, associated with either a library or a
@@ -377,8 +379,7 @@ class DatasetAssociationManager(base.ModelManager, secured.AccessibleManagerMixi
                 )
             else:
                 path = data.dataset.file_name
-                is_binary = check_binary(path)
-                datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order, is_binary=is_binary)
+                datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order)
                 trans.app.datatypes_registry.change_datatype(data, datatype)
                 trans.sa_session.flush()
                 self.set_metadata(trans, dataset_assoc)
@@ -526,7 +527,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
         # because of that: we need to add a few keys that will use the default serializer
         self.serializable_keyset.update(["name", "state", "tool_version", "extension", "visible", "dbkey"])
 
-    def _proxy_to_dataset(self, serializer: base.Serializer = None, proxy_key=None):
+    def _proxy_to_dataset(self, serializer: Optional[base.Serializer] = None, proxy_key: Optional[str] = None):
         # dataset associations are (rough) proxies to datasets - access their serializer using this remapping fn
         # remapping done by either kwarg key: IOW dataset attr key (e.g. uuid)
         # or by kwarg serializer: a function that's passed in (e.g. permissions)

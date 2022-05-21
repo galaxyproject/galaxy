@@ -143,7 +143,7 @@ def job_config(jobs_directory):
         </destination>
     </destinations>
     <tools>
-        <tool id="upload1" destination="local_dest"/>
+        <tool id="__DATA_FETCH__" destination="local_dest"/>
         <tool id="create_2" destination="k8s_destination_walltime_short"/>
         <tool id="galaxy_slots_and_memory" destination="k8s_destination_no_cleanup"/>
     </tools>
@@ -306,20 +306,34 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
 
     @skip_without_tool("job_properties")
     def test_exit_code_127(self):
-        inputs = {"failbool": True}
+        inputs = {
+            "failbool": True,
+            "sleepsecs": 20,
+        }
         running_response = self.dataset_populator.run_tool_raw(
             "job_properties",
             inputs,
             self.history_id,
         )
+        time.sleep(10)
+        # check that logs are also available in job logs
+        app = self._app
+        sa_session = app.model.context.current
+        job = sa_session.query(app.model.Job).get(app.security.decode_id(running_response.json()["jobs"][0]["id"]))
+        external_id = job.job_runner_external_id
+        output = unicodify(subprocess.check_output(["kubectl", "logs", "-l" f"job-name={external_id}"]))
+        EXPECTED_STDOUT = "The bool is not true"
+        EXPECTED_STDERR = "The bool is very not true"
+        assert EXPECTED_STDOUT in output
+        assert EXPECTED_STDERR in output
+        # Wait for job to finish, then fetch details via Galaxy API
         result = self.dataset_populator.wait_for_tool_run(
             run_response=running_response, history_id=self.history_id, assert_ok=False
         ).json()
         details = self.dataset_populator.get_job_details(result["jobs"][0]["id"], full=True).json()
-
         assert details["state"] == "error", details
-        assert details["stdout"].strip() == "The bool is not true", details
-        assert details["stderr"].strip() == "The bool is very not true", details
+        assert details["stdout"].strip() == EXPECTED_STDOUT, details
+        assert details["stderr"].strip() == EXPECTED_STDERR, details
         assert details["exit_code"] == 127, details
 
     @skip_without_tool("Count1")

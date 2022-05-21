@@ -30,8 +30,6 @@ import packaging.version
 import webob.exc
 from lxml import etree
 from mako.template import Template
-from pkg_resources import resource_string
-from webob.compat import cgi_FieldStorage
 
 from galaxy import (
     exceptions,
@@ -48,6 +46,10 @@ from galaxy.tool_util.loader import (
     imported_macro_paths,
     raw_tool_xml_tree,
     template_macro_params,
+)
+from galaxy.tool_util.ontologies.ontology_data import (
+    biotools_reference,
+    expand_ontology_data,
 )
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.tool_util.parser import (
@@ -216,15 +218,6 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "substitutions1": packaging.version.parse("1.0.1"),
     "winSplitter": packaging.version.parse("1.0.1"),
 }
-
-BIOTOOLS_MAPPING_CONTENT = resource_string(__name__, "biotools_mappings.tsv").decode("UTF-8")
-BIOTOOLS_MAPPING: Dict[str, str] = dict(
-    [
-        cast(Tuple[str, str], tuple(x.split("\t")))
-        for x in BIOTOOLS_MAPPING_CONTENT.splitlines()
-        if not x.startswith("#")
-    ]
-)
 
 REQUIRE_FULL_DIRECTORY = {
     "includes": [{"path": "**", "path_type": "glob"}],
@@ -1053,31 +1046,14 @@ class Tool(Dictifiable):
         self.required_files = required_files
 
         self.citations = self._parse_citations(tool_source)
-        xrefs = tool_source.parse_xrefs()
-        has_biotools_reference = any(x["reftype"] == "bio.tools" for x in xrefs)
-        if not has_biotools_reference:
-            legacy_biotools_ref = self.legacy_biotools_external_reference
-            if legacy_biotools_ref is not None:
-                xrefs.append({"value": legacy_biotools_ref, "reftype": "bio.tools"})
-        self.xrefs = xrefs
-
-        edam_operations = tool_source.parse_edam_operations()
-        edam_topics = tool_source.parse_edam_topics()
-        has_missing_data = len(edam_operations) == 0 or len(edam_topics) == 0
-        if has_missing_data:
-            biotools_reference = self.biotools_reference
-            metadata_source = self.app.biotools_metadata_source
-            if biotools_reference and metadata_source:
-                biotools_entry = metadata_source.get_biotools_metadata(biotools_reference)
-                if biotools_entry:
-                    edam_info = biotools_entry.edam_info
-                    if len(edam_operations) == 0:
-                        edam_operations = edam_info.edam_operations
-                    if len(edam_topics) == 0:
-                        edam_topics = edam_info.edam_topics
-
-        self.edam_operations = edam_operations
-        self.edam_topics = edam_topics
+        ontology_data = expand_ontology_data(
+            tool_source,
+            self.all_ids,
+            self.app.biotools_metadata_source,
+        )
+        self.xrefs = ontology_data.xrefs
+        self.edam_operations = ontology_data.edam_operations
+        self.edam_topics = ontology_data.edam_topics
 
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
@@ -1554,23 +1530,12 @@ class Tool(Dictifiable):
             )
 
     @property
-    def legacy_biotools_external_reference(self) -> Optional[str]:
-        """Return a bio.tools ID if any of tool's IDs are BIOTOOLS_MAPPING."""
-        for tool_id in self.all_ids:
-            if tool_id in BIOTOOLS_MAPPING:
-                return BIOTOOLS_MAPPING[tool_id]
-        return None
-
-    @property
     def biotools_reference(self) -> Optional[str]:
         """Return a bio.tools ID if external reference to it is found.
 
         If multiple bio.tools references are found, return just the first one.
         """
-        for xref in self.xrefs:
-            if xref["reftype"] == "bio.tools":
-                return xref["value"]
-        return None
+        return biotools_reference(self.xrefs)
 
     @property
     def help(self):
@@ -1924,14 +1889,6 @@ class Tool(Dictifiable):
             else:
                 message = f"Failure executing tool with id '{self.id}' (invalid data returned from tool execution)"
             return False, message
-
-    def find_fieldstorage(self, x):
-        if isinstance(x, cgi_FieldStorage):
-            raise InterruptedUpload(None)
-        elif isinstance(x, dict):
-            [self.find_fieldstorage(y) for y in x.values()]
-        elif isinstance(x, list):
-            [self.find_fieldstorage(y) for y in x]
 
     @property
     def params_with_missing_data_table_entry(self):

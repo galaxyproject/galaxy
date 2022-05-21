@@ -18,6 +18,8 @@ try:
     from custos.clients.utils.exceptions.CustosExceptions import KeyDoesNotExist
     from custos.transport.settings import CustosServerClientSettings
 
+    logging.getLogger("custos.clients.resource_secret_management_client").setLevel(logging.CRITICAL)
+
     custos_sdk_available = True
 except ImportError:
     custos_sdk_available = False
@@ -260,7 +262,7 @@ class VaultKeyPrefixWrapper(Vault):
         raise NotImplementedError()
 
 
-class VaultFactory(object):
+class VaultFactory:
     @staticmethod
     def load_vault_config(vault_conf_yml: str) -> Optional[dict]:
         if os.path.exists(vault_conf_yml):

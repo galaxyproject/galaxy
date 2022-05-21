@@ -49,8 +49,8 @@ Members
 - Martin Čech (@martenson)
 - John Chilton (@jmchilton)
 - Nate Coraor (@natefoo)
+- John Davis (@jdavcs)
 - Jeremy Goecks (@jgoecks)
-- Sergey Golitsynskiy (@ic4f)
 - Nuwan Goonasekera (@nuwang)
 - Björn Grüning (@bgruening)
 - Aysam Guerler (@guerler)
@@ -77,23 +77,24 @@ to the *committers* group. Such individuals must have demonstrated:
 - Significant contributions to the project.
 - Willingness to dedicate some time to improving Galaxy.
 
-The above list of people is the canonical source used to determine
-membership to the *committers* group - as such new members may be added to
-this group by opening a pull request adding a qualified person to this list.
-Pull requests modifying the membership of this list are subject to the normal
-rules for pull requests that modify governance procedures outlined below, with
-one exception: a *committer* may not vote
-against their own removal from the group (for obvious reasons).
+The above list of people is the canonical source used to determine membership to
+the *committers* group - as such new members may be added to this group by
+opening a pull request adding a qualified person to this list. Pull requests
+modifying the membership of this list are subject to the normal rules for pull
+requests that modify governance procedures outlined below, with one exception: a
+*committer* may not vote against their own removal from the group (for obvious
+reasons).
 
 Given the responsibilities and power invested in this group, it is important
-that individuals not actively working on Galaxy anymore are removed from
-the group. If individuals in this group intend to change jobs or reallocate
-volunteer activities and will no longer be active in the Galaxy community,
-they should withdraw from membership of this group. Periodically, active
-members may review this group and request that inactive members are removed - this
-should not be interpreted as a condemnation of these inactive members but
-merely as a reflection of the desire to keep this group focused enough to remain
-effective.
+that individuals not actively working on Galaxy anymore are removed from the
+group. If individuals in this group intend to change jobs or reallocate
+volunteer activities and will no longer be active in the Galaxy community, they
+should withdraw from membership of this group. Periodically, active members may
+review this group and request that inactive members are removed - this should
+not be interpreted as a condemnation of these inactive members but merely as a
+reflection of the desire to keep this group focused enough to remain effective.
+
+
 
 Direct Commit Access
 --------------------
@@ -153,6 +154,9 @@ Pull requests changing or clarifying the *Procedure Documents* (listed above):
   contain code modifications.
 - If the pull request adds or removes *committers*, there must be a separate
   pull request for each person added or removed.
+- Members of the *committers* group may submit PRs updating their own name or
+  username in the ``members`` section of this file.  This type of change is not
+  subject to the 192 hour nor 25% rule, and can be merged by any other member.
 
 Any other pull request requires at least 1 *+1* binding vote from someone other
 than the author of the pull request. A member of the *committers* group merging

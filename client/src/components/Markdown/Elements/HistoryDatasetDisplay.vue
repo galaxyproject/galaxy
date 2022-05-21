@@ -3,47 +3,47 @@
         <b-card-header v-if="!embedded">
             <span class="float-right">
                 <b-button
+                    v-b-tooltip.hover
                     :href="downloadUrl"
                     variant="link"
                     size="sm"
                     role="button"
                     title="Download Dataset"
                     type="button"
-                    class="py-0 px-1"
-                    v-b-tooltip.hover>
+                    class="py-0 px-1">
                     <span class="fa fa-download" />
                 </b-button>
                 <b-button
+                    v-b-tooltip.hover
                     :href="importUrl"
                     role="button"
                     variant="link"
                     title="Import Dataset"
                     type="button"
-                    class="py-0 px-1"
-                    v-b-tooltip.hover>
+                    class="py-0 px-1">
                     <span class="fa fa-file-import" />
                 </b-button>
                 <b-button
                     v-if="expanded"
+                    v-b-tooltip.hover
                     href="#"
                     role="button"
                     variant="link"
                     title="Collapse"
                     type="button"
                     class="py-0 px-1"
-                    v-b-tooltip.hover
                     @click="onExpand">
                     <span class="fa fa-angle-double-up" />
                 </b-button>
                 <b-button
                     v-else
+                    v-b-tooltip.hover
                     href="#"
                     role="button"
                     variant="link"
                     title="Expand"
                     type="button"
                     class="py-0 px-1"
-                    v-b-tooltip.hover
                     @click="onExpand">
                     <span class="fa fa-angle-double-down" />
                 </b-button>
@@ -54,8 +54,8 @@
             </span>
         </b-card-header>
         <b-card-body>
-            <UrlDataProvider :url="itemUrl" v-slot="{ result: itemContent, loading, error }">
-                <UrlDataProvider :url="datatypesUrl" v-slot="{ result: datatypesModel, loading: datatypesLoading }">
+            <UrlDataProvider v-slot="{ result: itemContent, loading, error }" :url="itemUrl">
+                <UrlDataProvider v-slot="{ result: datatypesModel, loading: datatypesLoading }" :url="datatypesUrl">
                     <LoadingSpan v-if="loading" message="Loading Dataset" />
                     <LoadingSpan v-else-if="datatypesLoading" message="Loading Datatypes" />
                     <div v-else-if="error">{{ error }}</div>
@@ -68,8 +68,8 @@
                         <div v-else-if="itemContent.item_data">
                             <div v-if="isSubTypeOfAny(datasetType, ['tabular'], datatypesModel)">
                                 <UrlDataProvider
-                                    :url="metaUrl"
-                                    v-slot="{ result: metaData, loading: metaLoading, error: metaError }">
+                                    v-slot="{ result: metaData, loading: metaLoading, error: metaError }"
+                                    :url="metaUrl">
                                     <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
                                     <div v-else-if="metaError">{{ metaError }}</div>
                                     <b-table

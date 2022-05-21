@@ -245,6 +245,7 @@ class MockTrans:
         self.sa_session = self.app.model.context
         self.model = app.model
         self._user_is_active = True
+        self.user_is_admin = False
 
     def get_user_is_active(self):
         # NOTE: the real user_is_active also checks whether activation is enabled in the config

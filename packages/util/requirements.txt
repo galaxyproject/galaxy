@@ -1,6 +1,7 @@
 bleach
 boltons
 docutils
+importlib_resources
 MarkupSafe
 packaging
 pycryptodome

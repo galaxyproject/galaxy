@@ -87,7 +87,7 @@ def _report_dict(title, subheading, data, mapper):
 def _indent(s, by=4):
     whitespace = " " * by
     s = s if isinstance(s, list) else s.splitlines()
-    return "\n".join((f"{whitespace}{line}" for line in s))
+    return "\n".join(f"{whitespace}{line}" for line in s)
 
 
 def report_diff(added, changed, removed, new_files):
@@ -135,8 +135,6 @@ def main(old_revision, new_revision=None):
     globs = (
         "config/*.yml.sample",
         "lib/galaxy/config/schemas/*schema.yml",
-        "lib/galaxy/webapps/reports/config_schema.yml",
-        "lib/tool_shed/webapp/config_schema.yml",
     )
     files_to_diff = [f for g in globs for f in glob.glob(g)]
     added = {}
@@ -148,8 +146,6 @@ def main(old_revision, new_revision=None):
         filename = file
         if "config_schema.yml" in file:
             filename = "config/galaxy.yml.sample:galaxy"
-        elif "uwsgi_schema.yml" in file:
-            filename = "config/galaxy.yml.sample:uwsgi"
 
         real_path = Path(file).resolve().relative_to(Path.cwd())
         try:

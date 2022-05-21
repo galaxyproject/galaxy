@@ -141,7 +141,7 @@ http {
             expires 24h;
         }
 
-        # serve visualization and interactive environment plugin static content
+        # serve visualization and plugin static content
         location ~ ^/plugins/(?<plug_type>.+?)/(?<vis_name>.+?)/static/(?<static_file>.*?)$ {
             alias $galaxy_root/config/plugins/$plug_type/$vis_name/static/$static_file;
             expires 24;
@@ -217,7 +217,7 @@ previous section:
       gunicorn:
         # ...
         bind: /srv/galaxy/var/gunicorn.sock
-        gunicorn_extra_args: '--forwarded-allow-ips="*"'
+        extra_args: '--forwarded-allow-ips="*"'
         # ...
     galaxy:
         # ...

@@ -1,6 +1,8 @@
 (function () {
     var gtnWebhookLoaded = false;
     var lastUpdate = 0;
+    var urlParams = new URLSearchParams(document.location.search);
+    var autoLoadTutorial = urlParams.get('autoload_gtn_tutorial') === null ? "" : urlParams.get('autoload_gtn_tutorial');
 
     function removeOverlay() {
         const container = document.getElementById("gtn-container");
@@ -58,7 +60,7 @@
             .then((response) => {
                 if (!response.ok) {
                     url =
-                        "https://training.galaxyproject.org/training-material/?utm_source=webhook&utm_medium=noproxy&utm_campaign=gxy";
+                        `https://training.galaxyproject.org/training-material/${autoLoadTutorial}?utm_source=webhook&utm_medium=noproxy&utm_campaign=gxy`;
                     message = `
                         <span>
                             <a href="https://docs.galaxyproject.org/en/master/admin/special_topics/gtn.html">Click to run</a> unavailable.
@@ -75,7 +77,7 @@
                         onloadscroll = storedLocation.split(" ")[0];
                         url = storedLocation.split(" ")[1];
                     } else {
-                        url = "/training-material/?utm_source=webhook&utm_medium=proxy&utm_campaign=gxy";
+                        url = `/training-material/${autoLoadTutorial}?utm_source=webhook&utm_medium=proxy&utm_campaign=gxy`;
                     }
                     message = "";
                 }
@@ -181,6 +183,9 @@
                 showOverlay();
             }
         });
+        if(autoLoadTutorial){
+            clean.click();
+        }
     });
 
     // Remove the overlay on escape button click
