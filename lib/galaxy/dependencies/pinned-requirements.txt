@@ -9,7 +9,7 @@ anyio==3.6.1; python_version >= "3.7" and python_full_version >= "3.6.2"
 apispec==5.2.2; python_version >= "3.7"
 appdirs==1.4.4
 argcomplete==2.0.0; python_version >= "3.6" and python_version < "4"
-asgiref==3.5.1; python_version >= "3.7"
+asgiref==3.5.2; python_version >= "3.7"
 attmap==0.13.2
 attrs==21.4.0; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7"
 babel==2.10.1; python_version >= "3.6"
@@ -27,7 +27,7 @@ bx-python==0.8.13; python_version >= "3.7"
 cachecontrol==0.12.11; python_version >= "3.7" and python_version < "4"
 cached-property==1.5.2; python_version < "3.8" and python_version >= "3.7"
 celery==5.2.6; python_version >= "3.7"
-certifi==2021.10.8; python_version >= "3.7" and python_full_version < "3.0.0" and python_version < "4" or python_full_version >= "3.6.0" and python_version < "4" and python_version >= "3.7"
+certifi==2022.5.18.1; python_version >= "3.7" and python_full_version < "3.0.0" and python_version < "4" or python_full_version >= "3.6.0" and python_version < "4" and python_version >= "3.7"
 cffi==1.15.0; implementation_name == "pypy" and python_version >= "3.6"
 charset-normalizer==2.0.12; python_full_version >= "3.6.0" and python_version >= "3.7" and python_version < "4"
 cheetah3==3.2.6.post1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
@@ -53,7 +53,7 @@ ecdsa==0.17.0; python_version >= "2.6" and python_full_version < "3.0.0" or pyth
 edam-ontology==1.25.2
 fabric3==1.14.post1
 fastapi-utils==0.2.1; python_version >= "3.6" and python_version < "4.0"
-fastapi==0.77.1; python_full_version >= "3.6.1"
+fastapi==0.78.0; python_full_version >= "3.6.1"
 fs==2.4.16
 funcsigs==1.0.2
 future==0.18.2; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0")
@@ -91,20 +91,20 @@ numpy==1.21.6; python_version >= "3.7" and python_version < "3.11"
 oauthlib==3.2.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 oyaml==1.0
 packaging==21.3; python_version >= "3.6"
-paramiko==2.10.4
+paramiko==2.11.0
 parsley==1.3
 paste==3.5.0
 pastedeploy==2.1.1
 pbr==5.9.0; python_version >= "2.6"
 prompt-toolkit==3.0.29; python_full_version >= "3.6.2" and python_version >= "3.7"
 prov==1.5.1; python_version >= "3.6" and python_version < "4"
-psutil==5.9.0; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
+psutil==5.9.1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
 pulsar-galaxy-lib==0.14.13
 py==1.11.0; python_version >= "3.6" and python_full_version < "3.0.0" and implementation_name == "pypy" or implementation_name == "pypy" and python_version >= "3.6" and python_full_version >= "3.5.0"
 pyasn1==0.4.8; python_version >= "3.6" and python_version < "4"
 pycparser==2.21; python_version >= "3.6" and python_full_version < "3.0.0" and implementation_name == "pypy" or implementation_name == "pypy" and python_version >= "3.6" and python_full_version >= "3.4.0"
 pycryptodome==3.14.1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
-pydantic==1.9.0; python_full_version >= "3.6.1"
+pydantic==1.9.1; python_full_version >= "3.6.1"
 pydot==1.4.2; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4" or python_version >= "3.6" and python_version < "4" and python_full_version >= "3.4.0"
 pyeventsystem==0.1.0
 pyfaidx==0.6.4
@@ -125,7 +125,7 @@ python-multipart==0.0.5
 python3-openid==3.2.0; python_version >= "3.0"
 pytz==2022.1; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4" and python_version >= "3.7"
 pyyaml==6.0; python_version >= "3.6"
-pyzmq==22.3.0; python_version >= "3.6"
+pyzmq==23.0.0; python_version >= "3.6"
 rdflib==6.0.2; python_version >= "3.7" and python_version < "4"
 refgenconf==0.12.2
 repoze.lru==0.7
@@ -137,7 +137,7 @@ routes==2.5.1
 rsa==4.8; python_version >= "3.6" and python_version < "4"
 ruamel.yaml.clib==0.2.6; platform_python_implementation == "CPython" and python_version < "3.10" and python_version >= "3.6"
 ruamel.yaml==0.17.17; python_version >= "3.7" and python_version < "4"
-schema-salad==8.2.20220204150214; python_version >= "3.7" and python_version < "4"
+schema-salad==8.3.20220518163624; python_version >= "3.7" and python_version < "4"
 setuptools-scm==5.0.2; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4"
 shellescape==3.8.1; python_version >= "3.6" and python_version < "4"
 six==1.16.0; python_version >= "3.7" and python_full_version < "3.0.0" and python_version < "4" or python_full_version >= "3.3.0" and python_version >= "3.7" and python_version < "4"
