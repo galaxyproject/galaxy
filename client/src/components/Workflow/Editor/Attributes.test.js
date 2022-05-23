@@ -1,7 +1,6 @@
 import { mount, createLocalVue } from "@vue/test-utils";
 import Attributes from "./Attributes";
 import { UntypedParameters } from "./modules/parameters";
-import { isDate } from "date-fns";
 
 jest.mock("app");
 
