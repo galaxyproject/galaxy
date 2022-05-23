@@ -1,5 +1,5 @@
 import $ from "jquery";
-import Scratchbook from "layout/scratchbook";
+import { MultiView } from "layout/scratchbook";
 import QuotaMeter from "mvc/user/user-quotameter";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
@@ -13,7 +13,7 @@ export class MastheadState {
 
     constructor(Galaxy = null) {
         Galaxy = Galaxy || getGalaxyInstance();
-        Galaxy.frame = this.frame = new Scratchbook();
+        Galaxy.frame = this.frame = new MultiView();
 
         // set up the quota meter (And fetch the current user data from trans)
         // add quota meter to masthead

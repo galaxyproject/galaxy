@@ -82,7 +82,7 @@ export default {
             return brandTitle;
         },
         tabs() {
-            const scratchbookTabs = [this.mastheadState.frame.buttonActive, this.mastheadState.frame.buttonLoad];
+            const scratchbookTabs = [this.mastheadState.frame.buttonActive];
             const tabs = [].concat(this.baseTabs, this.extensionTabs, scratchbookTabs);
             return tabs.map(this._tabToJson);
         },
@@ -95,17 +95,6 @@ export default {
     mounted() {
         this.mastheadState.quotaMeter.setElement(this.$refs["quota-meter-container"]);
         this.mastheadState.quotaMeter.render();
-        const frames = this.mastheadState.frame.getFrames();
-        frames
-            .on("add remove", () => {
-                const tab = this.mastheadState.frame.buttonLoad;
-                tab.note = String(frames.counter);
-                tab.visible = frames.counter > 0;
-                tab.show_note = frames.counter > 0;
-            })
-            .on("show hide", () => {
-                this._reflectScratchbookFrames();
-            });
     },
     methods: {
         addItem(item) {
@@ -126,12 +115,6 @@ export default {
                 asJson = el;
             }
             return Object.assign({}, defaults, asJson);
-        },
-        _reflectScratchbookFrames() {
-            const frames = this.mastheadState.frame;
-            const tab = this.mastheadState.frame.buttonLoad;
-            tab.toggle = frames.visible;
-            tab.icon = (frames.visible && "fa-eye") || "fa-eye-slash";
         },
     },
 };
