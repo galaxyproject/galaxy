@@ -13,7 +13,6 @@ from typing import (
     Optional,
 )
 
-import requests
 from fastapi import (
     Body,
     Path,
@@ -28,6 +27,10 @@ from galaxy import (
     exceptions,
     model,
     util,
+)
+from galaxy.files.uris import (
+    stream_url_to_str,
+    validate_uri_access,
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import (
@@ -305,9 +308,8 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             archive_file = payload.get("archive_file")
             archive_data = None
             if archive_source:
+                validate_uri_access(archive_source, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
                 if archive_source.startswith("file://"):
-                    if not trans.user_is_admin:
-                        raise exceptions.AdminRequiredException()
                     workflow_src = {"src": "from_path", "path": archive_source[len("file://") :]}
                     payload["workflow"] = workflow_src
                     return self.__api_import_new_workflow(trans, payload, **kwd)
@@ -319,7 +321,9 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                     archive_data = self.app.trs_proxy.get_version_descriptor(trs_server, trs_tool_id, trs_version_id)
                 else:
                     try:
-                        archive_data = requests.get(archive_source, timeout=util.DEFAULT_SOCKET_TIMEOUT).text
+                        archive_data = stream_url_to_str(
+                            archive_source, trans.app.file_sources, prefix="gx_workflow_download"
+                        )
                         import_source = "URL"
                     except Exception:
                         raise exceptions.MessageException(f"Failed to open URL '{escape(archive_source)}'.")

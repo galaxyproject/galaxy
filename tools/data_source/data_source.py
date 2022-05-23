@@ -19,6 +19,7 @@ from galaxy.jobs import TOOL_PROVIDED_JOB_METADATA_FILE
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     get_charset_from_http_headers,
+    stream_to_open_named_file,
 )
 
 GALAXY_PARAM_PREFIX = "GALAXY"
@@ -107,7 +108,7 @@ def __main__():
                     % (file_size, max_file_size)
                 )
         try:
-            cur_filename = sniff.stream_to_open_named_file(
+            cur_filename = stream_to_open_named_file(
                 page,
                 os.open(cur_filename, os.O_WRONLY | os.O_CREAT),
                 cur_filename,

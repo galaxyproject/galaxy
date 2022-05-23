@@ -21,6 +21,7 @@ from sqlalchemy import (
 
 from galaxy import exceptions as glx_exceptions
 from galaxy import model
+from galaxy.files.uris import validate_uri_access
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.histories import (
@@ -194,6 +195,9 @@ class HistoriesService(ServiceBase):
                     archive_source = self._save_upload_file_tmp(archive_file)
             else:
                 raise glx_exceptions.MessageException("Please provide a url or file.")
+            if archive_type == HistoryImportArchiveSourceType.url:
+                assert archive_source
+                validate_uri_access(archive_source, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
             job = self.manager.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
             job_dict = job.to_dict()
             job_dict[

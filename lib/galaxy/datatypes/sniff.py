@@ -12,8 +12,8 @@ import shutil
 import struct
 import sys
 import tempfile
-import urllib.request
 import zipfile
+from functools import partial
 from typing import (
     Dict,
     IO,
@@ -25,12 +25,11 @@ from typing import (
 from typing_extensions import Protocol
 
 from galaxy import util
-from galaxy.files import ConfiguredFileSources
+from galaxy.files.uris import stream_url_to_file as files_stream_url_to_file
 from galaxy.util import (
     compression_utils,
     file_reader,
     is_binary,
-    stream_to_open_named_file,
 )
 from galaxy.util.checkers import (
     check_html,
@@ -63,28 +62,7 @@ def sniff_with_cls(cls, fname):
         return False
 
 
-def stream_url_to_file(path: str, file_sources: Optional[ConfiguredFileSources] = None):
-    prefix = "url_paste"
-    if file_sources and file_sources.looks_like_uri(path):
-        file_source_path = file_sources.get_file_source_path(path)
-        with tempfile.NamedTemporaryFile(prefix=prefix, delete=False) as temp:
-            temp_name = temp.name
-        file_source_path.file_source.realize_to(file_source_path.path, temp_name)
-        return temp_name
-    else:
-        page = urllib.request.urlopen(
-            path, timeout=util.DEFAULT_SOCKET_TIMEOUT
-        )  # page will be .close()ed in stream_to_file
-        temp_name = stream_to_file(
-            page, prefix=prefix, source_encoding=util.get_charset_from_http_headers(page.headers)
-        )
-        return temp_name
-
-
-def stream_to_file(stream, suffix="", prefix="", dir=None, text=False, **kwd):
-    """Writes a stream to a temporary file, returns the temporary file's name"""
-    fd, temp_name = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=dir, text=text)
-    return stream_to_open_named_file(stream, fd, temp_name, **kwd)
+stream_url_to_file = partial(files_stream_url_to_file, prefix="gx_url_paste")
 
 
 def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts):

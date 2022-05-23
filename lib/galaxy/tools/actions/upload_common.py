@@ -1,7 +1,5 @@
-import ipaddress
 import logging
 import os
-import socket
 import tempfile
 from dataclasses import dataclass
 from io import StringIO
@@ -14,16 +12,15 @@ from typing import (
     List,
     Optional,
 )
-from urllib.parse import urlparse
 
 from sqlalchemy.orm import joinedload
 from webob.compat import cgi_FieldStorage
 
 from galaxy import util
-from galaxy.datatypes.sniff import stream_to_file
-from galaxy.exceptions import (
-    ConfigDoesNotAllowException,
-    RequestParameterInvalidException,
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.files.uris import (
+    stream_to_file,
+    validate_non_local,
 )
 from galaxy.model import (
     FormDefinition,
@@ -32,10 +29,7 @@ from galaxy.model import (
     Role,
     tags,
 )
-from galaxy.util import (
-    is_url,
-    unicodify,
-)
+from galaxy.util import is_url
 from galaxy.util.path import external_chown
 
 log = logging.getLogger(__name__)
@@ -44,90 +38,6 @@ log = logging.getLogger(__name__)
 def validate_datatype_extension(datatypes_registry, ext):
     if ext and ext not in ("auto", "data") and not datatypes_registry.get_datatype_by_extension(ext):
         raise RequestParameterInvalidException(f"Requested extension '{ext}' unknown, cannot upload dataset.")
-
-
-def validate_url(url, ip_allowlist):
-    # If it doesn't look like a URL, ignore it.
-    if not (url.lstrip().startswith("http://") or url.lstrip().startswith("https://")):
-        return url
-
-    # Strip leading whitespace before passing url to urlparse()
-    url = url.lstrip()
-    # Extract hostname component
-    parsed_url = urlparse(url).netloc
-    # If credentials are in this URL, we need to strip those.
-    if parsed_url.count("@") > 0:
-        # credentials.
-        parsed_url = parsed_url[parsed_url.rindex("@") + 1 :]
-    # Percent encoded colons and other characters will not be resolved as such
-    # so we don't have to either.
-
-    # Sometimes the netloc will contain the port which is not desired, so we
-    # need to extract that.
-    port = None
-    # However, it could ALSO be an IPv6 address they've supplied.
-    if ":" in parsed_url:
-        # IPv6 addresses have colons in them already (it seems like always more than two)
-        if parsed_url.count(":") >= 2:
-            # Since IPv6 already use colons extensively, they wrap it in
-            # brackets when there is a port, e.g. http://[2001:db8:1f70::999:de8:7648:6e8]:100/
-            # However if it ends with a ']' then there is no port after it and
-            # they've wrapped it in brackets just for fun.
-            if "]" in parsed_url and not parsed_url.endswith("]"):
-                # If this +1 throws a range error, we don't care, their url
-                # shouldn't end with a colon.
-                idx = parsed_url.rindex(":")
-                # We parse as an int and let this fail ungracefully if parsing
-                # fails because we desire to fail closed rather than open.
-                port = int(parsed_url[idx + 1 :])
-                parsed_url = parsed_url[:idx]
-            else:
-                # Plain ipv6 without port
-                pass
-        else:
-            # This should finally be ipv4 with port. It cannot be IPv6 as that
-            # was caught by earlier cases, and it cannot be due to credentials.
-            idx = parsed_url.rindex(":")
-            port = int(parsed_url[idx + 1 :])
-            parsed_url = parsed_url[:idx]
-
-    # safe to log out, no credentials/request path, just an IP + port
-    log.debug("parsed url, port: %s : %s", parsed_url, port)
-    # Call getaddrinfo to resolve hostname into tuples containing IPs.
-    addrinfo = socket.getaddrinfo(parsed_url, port)
-    # Get the IP addresses that this entry resolves to (uniquely)
-    # We drop:
-    #   AF_* family: It will resolve to AF_INET or AF_INET6, getaddrinfo(3) doesn't even mention AF_UNIX,
-    #   socktype: We don't care if a stream/dgram/raw protocol
-    #   protocol: we don't care if it is tcp or udp.
-    addrinfo_results = {info[4][0] for info in addrinfo}
-    # There may be multiple (e.g. IPv4 + IPv6 or DNS round robin). Any one of these
-    # could resolve to a local addresses (and could be returned by chance),
-    # therefore we must check them all.
-    for raw_ip in addrinfo_results:
-        # Convert to an IP object so we can tell if it is in private space.
-        ip = ipaddress.ip_address(unicodify(raw_ip))
-        # If this is a private address
-        if ip.is_private:
-            results = []
-            # If this IP is not anywhere in the allowlist
-            for allowlisted in ip_allowlist:
-                # If it's an IP address range (rather than a single one...)
-                if hasattr(allowlisted, "subnets"):
-                    results.append(ip in allowlisted)
-                else:
-                    results.append(ip == allowlisted)
-
-            if any(results):
-                # If we had any True, then THIS (and ONLY THIS) IP address that
-                # that specific DNS entry resolved to is in allowlisted and
-                # safe to access. But we cannot exit here, we must ensure that
-                # all IPs that that DNS entry resolves to are likewise safe.
-                pass
-            else:
-                # Otherwise, we deny access.
-                raise ConfigDoesNotAllowException("Access to this address in not permitted by server configuration")
-    return url
 
 
 def persist_uploads(params, trans):
@@ -152,7 +62,7 @@ def persist_uploads(params, trans):
                 and upload_dataset["url_paste"].strip() != ""
             ):
                 upload_dataset["url_paste"] = stream_to_file(
-                    StringIO(validate_url(upload_dataset["url_paste"], trans.app.config.fetch_url_allowlist_ips)),
+                    StringIO(validate_non_local(upload_dataset["url_paste"], trans.app.config.fetch_url_allowlist_ips)),
                     prefix="strio_url_paste_",
                 )
             else:
