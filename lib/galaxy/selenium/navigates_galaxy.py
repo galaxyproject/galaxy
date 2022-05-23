@@ -1116,6 +1116,11 @@ class NavigatesGalaxy(HasDriver):
         self.click_masthead_shared_data()
         self.components.masthead.published_histories.wait_for_and_click()
 
+    def navigate_to_published_pages(self):
+        self.home()
+        self.click_masthead_shared_data()
+        self.components.masthead.published_pages.wait_for_and_click()
+
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 

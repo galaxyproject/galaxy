@@ -68,6 +68,7 @@ masthead:
     # Shared data
     libraries: 'Data Libraries'
     published_histories: 'Histories'
+    published_pages: 'Pages'
 
 preferences:
   selectors:
@@ -426,6 +427,8 @@ pages:
     create: '.manage-table-actions .action-button'
     submit: '#submit'
     export: '.markdown-pdf-export'
+    dropdown: '[data-page-dropdown*="${id}"]'
+
   editor:
     selectors:
       wym_iframe: 'div.wym_iframe iframe'

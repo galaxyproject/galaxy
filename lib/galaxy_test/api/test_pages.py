@@ -442,9 +442,7 @@ steps:
         return response
 
     def _make_public(self, page_id: str) -> dict:
-        sharing_response = self._put(f"pages/{page_id}/publish")
-        assert sharing_response.status_code == 200
-        return sharing_response.json()
+        return self.dataset_populator.make_page_public(page_id)
 
     def _share_with_user(self, page_id: str, user_id_or_email: str):
         data = {"user_ids": [user_id_or_email]}

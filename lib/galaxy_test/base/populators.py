@@ -1353,6 +1353,11 @@ class BaseDatasetPopulator(BasePopulator):
         )
         return request
 
+    def make_page_public(self, page_id: str) -> Dict[str, Any]:
+        sharing_response = self._put(f"pages/{page_id}/publish")
+        assert sharing_response.status_code == 200
+        return sharing_response.json()
+
 
 class GalaxyInteractorHttpMixin:
     galaxy_interactor: ApiTestInteractor
