@@ -64,7 +64,7 @@ class PagesService(ServiceBase):
         :returns:   dictionaries containing summary or detailed Page information
         """
         if not trans.user_is_admin:
-            user_id = trans.user.id
+            user_id = trans.user and trans.user.id
             if payload.user_id and payload.user_id != user_id:
                 raise exceptions.AdminRequiredException("Only admins can index the pages of others")
 
