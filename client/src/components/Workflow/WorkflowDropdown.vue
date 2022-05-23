@@ -6,6 +6,7 @@
             data-toggle="dropdown"
             :title="getWorkflowTooltip(sourceType, workflow)"
             aria-haspopup="true"
+            :data-workflow-dropdown="workflow.id"
             aria-expanded="false">
             <font-awesome-icon icon="caret-down" />
             <span class="workflow-dropdown-name">{{ workflow.name }}</span>
