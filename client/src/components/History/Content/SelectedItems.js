@@ -70,12 +70,15 @@ export default {
         reset() {
             this.items = new Map();
             this.allSelected = false;
+        },
+        cancelSelection() {
             this.showSelection = false;
         },
     },
     watch: {
         scopeKey(newKey, oldKey) {
             if (newKey !== oldKey) {
+                this.cancelSelection();
                 this.reset();
             }
         },

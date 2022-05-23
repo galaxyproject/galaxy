@@ -64,6 +64,17 @@ describe("History SelectedItems", () => {
         expectSelectionDisabled();
     });
 
+    it("should discard (but not disable) the current selection on `reset`", async () => {
+        const numberOfExpectedItems = 3;
+        await selectSomeItemsManually(numberOfExpectedItems);
+        expect(slotProps.selectionSize).toBe(numberOfExpectedItems);
+
+        await resetSelection();
+
+        expect(slotProps.selectionSize).toBe(0);
+        expectSelectionEnabled();
+    });
+
     describe("Query Selection Mode", () => {
         it("is considered a query selection when we select `all items` and the query contains more items than we have currently loaded", async () => {
             const expectedTotalItemsInQuery = 100;
@@ -169,6 +180,12 @@ describe("History SelectedItems", () => {
         const { setSelected } = slotProps;
         expect(setSelected).toBeInstanceOf(Function);
         await setSelected(item, false);
+    }
+
+    async function resetSelection() {
+        const { resetSelection } = slotProps;
+        expect(resetSelection).toBeInstanceOf(Function);
+        resetSelection();
     }
 
     async function selectAllItemsInCurrentQuery(loadedItems) {
