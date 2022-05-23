@@ -1111,6 +1111,11 @@ class NavigatesGalaxy(HasDriver):
         self.click_masthead_user()
         self.components.masthead.pages.wait_for_and_click()
 
+    def navigate_to_published_histories_page(self):
+        self.home()
+        self.click_masthead_shared_data()
+        self.components.masthead.published_histories.wait_for_and_click()
+
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 

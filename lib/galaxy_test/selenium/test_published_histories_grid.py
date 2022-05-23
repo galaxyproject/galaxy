@@ -7,7 +7,7 @@ from .framework import (
 )
 
 
-class HistoryGridTestCase(SharedStateSeleniumTestCase):
+class PublishedHistoryGridTestCase(SharedStateSeleniumTestCase):
     @selenium_test
     def test_history_grid_histories(self):
         self.navigate_to_published_histories_page()
@@ -165,17 +165,17 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         tag2 = self._get_random_name(len=5)
         tag3 = self._get_random_name(len=5)
 
-        HistoryGridTestCase.user1_email = self._get_random_email("test1")
-        HistoryGridTestCase.user2_email = self._get_random_email("test2")
-        HistoryGridTestCase.history1_name = self._get_random_name()
-        HistoryGridTestCase.history2_name = self._get_random_name()
-        HistoryGridTestCase.history3_name = self._get_random_name()
-        HistoryGridTestCase.history4_name = self._get_random_name()
-        HistoryGridTestCase.history1_tags = [tag1, tag2]
-        HistoryGridTestCase.history2_tags = [tag3]
-        HistoryGridTestCase.history3_tags = [tag1]
-        HistoryGridTestCase.history3_annot = self._get_random_name()
-        HistoryGridTestCase.all_histories = [self.history1_name, self.history2_name, self.history3_name]
+        PublishedHistoryGridTestCase.user1_email = self._get_random_email("test1")
+        PublishedHistoryGridTestCase.user2_email = self._get_random_email("test2")
+        PublishedHistoryGridTestCase.history1_name = self._get_random_name()
+        PublishedHistoryGridTestCase.history2_name = self._get_random_name()
+        PublishedHistoryGridTestCase.history3_name = self._get_random_name()
+        PublishedHistoryGridTestCase.history4_name = self._get_random_name()
+        PublishedHistoryGridTestCase.history1_tags = [tag1, tag2]
+        PublishedHistoryGridTestCase.history2_tags = [tag3]
+        PublishedHistoryGridTestCase.history3_tags = [tag1]
+        PublishedHistoryGridTestCase.history3_annot = self._get_random_name()
+        PublishedHistoryGridTestCase.all_histories = [self.history1_name, self.history2_name, self.history3_name]
 
         self.register(self.user1_email)
         self.create_history(self.history1_name)
@@ -200,8 +200,3 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
     def publish_current_history(self):
         self.click_history_option_sharing()
         self.make_accessible_and_publishable()
-
-    def navigate_to_published_histories_page(self):
-        self.home()
-        self.click_masthead_shared_data()
-        self.components.masthead.published_histories.wait_for_and_click()
