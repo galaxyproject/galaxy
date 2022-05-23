@@ -30,10 +30,19 @@ function toLowerNoQuotes(value) {
     return toLower(value).replaceAll("'", "");
 }
 
+/** Converts name tags starting with '#' to 'name:' */
+function expandNameTag(value) {
+    if (value && typeof value === "string" && value.startsWith("#")) {
+        value = value.replace("#", "name:");
+    }
+    return toLower(value);
+}
+
 /**
  * Checks if a query value is equal to the item value
  * @param {*} attribute of the content item
  * @param {*} query parameter if the attribute does not match the server query key
+ * @param {*} converter if item attribute value has to be transformed e.g. to a date.
  */
 function equals(attribute, query = null, converter = null) {
     return {
@@ -49,12 +58,19 @@ function equals(attribute, query = null, converter = null) {
 /**
  * Checks if a query value is part of the item value
  * @param {*} attribute of the content item
+ * @param {*} query parameter if the attribute does not match the server query key
+ * @param {*} converter if item attribute value has to be transformed e.g. to a date.
  */
-function contains(attribute, query = null) {
+function contains(attribute, query = null, converter = null) {
     return {
         attribute,
+        converter,
         query: query || `${attribute}-contains`,
         handler: (v, q) => {
+            if (converter) {
+                v = converter(v);
+                q = converter(q);
+            }
             return toLower(v).includes(toLower(q));
         },
     };
@@ -107,7 +123,7 @@ const validFilters = {
     visible: equals("visible", "visible", toBool),
     name: contains("name"),
     state: equals("state"),
-    tag: contains("tags", "tag"),
+    tag: contains("tags", "tag-contains", expandNameTag),
     update_time: compare("update_time", "le", toDate),
     update_time_ge: compare("update_time", "ge", toDate),
     update_time_gt: compare("update_time", "gt", toDate),
