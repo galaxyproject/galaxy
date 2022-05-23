@@ -67,6 +67,7 @@ masthead:
 
     # Shared data
     libraries: 'Data Libraries'
+    published_workflows: 'Workflows'
     published_histories: 'Histories'
     published_pages: 'Pages'
 
@@ -487,6 +488,7 @@ workflows:
     pager_page_last: '.gx-workflows-grid-pager .gx-grid-pager-last button'
     pager_page_previous: '.gx-workflows-grid-pager .gx-grid-pager-prev button'
     pager_page_active: '.gx-workflows-grid-pager .gx-grid-pager-page.active button'
+    dropdown: '[data-workflow-dropdown*="${id}"]'
     run_button: '[data-workflow-run*="${id}"]'
     bookmark_link: '.workflow-bookmark-link'
     workflow_with_name:
