@@ -29,7 +29,7 @@ export class WindowManager {
         } else if (options.target == "_top" || options.target == "_parent" || options.target == "_self") {
             window.location = options.url;
         } else if (!this.active) {
-            const $galaxy_main = $(window.parent.document).find("#galaxy_main");
+            const $galaxy_main = window.parent.document.getElementById("galaxy_main");
             if (options.target == "galaxy_main" || options.target == "center") {
                 if ($galaxy_main.length === 0) {
                     window.location = this._build_url(options.url, { use_panels: true });
