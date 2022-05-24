@@ -9,7 +9,7 @@ export class WindowManager {
         this.counter = 0;
         this.active = false;
         this.buttonActive = {
-            id: "enable-scratchbook",
+            id: "enable-window-manager",
             icon: "fa-th",
             tooltip: _l("Enable/Disable Window Manager"),
             toggle: false,
@@ -28,7 +28,7 @@ export class WindowManager {
             window.open(options.url);
         } else if (options.target == "_top" || options.target == "_parent" || options.target == "_self") {
             window.location = options.url;
-        } else if (!this.active || options.noscratchbook) {
+        } else if (!this.active) {
             const $galaxy_main = $(window.parent.document).find("#galaxy_main");
             if (options.target == "galaxy_main" || options.target == "center") {
                 if ($galaxy_main.length === 0) {

@@ -239,7 +239,6 @@ export function fetchMenu(options = {}) {
                 cls: "loggedout-only",
                 tooltip: _l("Login"),
                 url: "login",
-                noscratchbook: true,
             };
         }
     } else {
