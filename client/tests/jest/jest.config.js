@@ -3,7 +3,7 @@ const path = require("path");
 // For a detailed explanation regarding each configuration property, visit:
 // https://jestjs.io/docs/en/configuration.html
 
-const modulesToTransform = ["bootstrap-vue", "rxjs", "@hirez_io"].join("|");
+const modulesToTransform = ["bootstrap-vue", "rxjs", "@hirez_io", "winbox"].join("|");
 
 module.exports = {
     // All imported modules in your tests should be mocked automatically
@@ -81,7 +81,8 @@ module.exports = {
         "^config$": "<rootDir>/tests/jest/__mocks__/config.js",
         "utils/localization$": "<rootDir>/tests/jest/__mocks__/localization.js",
         "viz/trackster$": "<rootDir>/tests/jest/__mocks__/trackster.js",
-        "rxjs/internal/scheduler/AsyncScheduler": "<rootDir>/node_modules/rxjs/dist/esm/internal/scheduler/AsyncScheduler.js"
+        "rxjs/internal/scheduler/AsyncScheduler":
+            "<rootDir>/node_modules/rxjs/dist/esm/internal/scheduler/AsyncScheduler.js",
     },
 
     // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
