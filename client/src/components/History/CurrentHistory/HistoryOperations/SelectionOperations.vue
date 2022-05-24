@@ -42,6 +42,9 @@
                 @click="buildCollectionFromRules">
                 <span v-localize>Build Collection from Rules</span>
             </b-dropdown-item>
+            <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change reference gnome">
+                <span v-localize>Change reference Gnome</span>
+            </b-dropdown-item>
         </b-dropdown>
 
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
@@ -60,6 +63,21 @@
             <p v-localize>Permanently delete {{ numSelected }} content items?</p>
             <p><strong v-localize class="text-danger">Warning, this operation cannot be undone.</strong></p>
         </b-modal>
+        <b-modal
+            id="change-dbkey-of-selected-content"
+            title="Change reference gnome?"
+            title-tag="h2"
+            @ok="changeDbkeyOfSelected">
+            <p v-localize>Select a new reference genome for {{ numSelected }} items:</p>
+            <GenomeProvider v-slot="{ item: genomes, loading: loadingGenomes }">
+                <SingleItemSelector
+                    collection-name="Genomes"
+                    :loading="loadingGenomes"
+                    :items="genomes"
+                    current-item-id="?"
+                    @update:selected-item="onSelectedGenome" />
+            </GenomeProvider>
+        </b-modal>
     </section>
 </template>
 
@@ -70,12 +88,19 @@ import {
     deleteSelectedContent,
     undeleteSelectedContent,
     purgeSelectedContent,
+    changeDbkeyOfSelectedContent,
 } from "components/History/model/crud";
 import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
 import { checkFilter, getQueryDict } from "store/historyStore/model/filtering";
+import { GenomeProvider } from "components/providers";
+import SingleItemSelector from "components/SingleItemSelector";
 
 export default {
+    components: {
+        GenomeProvider,
+        SingleItemSelector,
+    },
     props: {
         history: { type: Object, required: true },
         filterText: { type: String, required: true },
@@ -134,14 +159,17 @@ export default {
         purgeSelected() {
             this.runOnSelection(purgeSelectedContent);
         },
-        async runOnSelection(operation) {
+        changeDbkeyOfSelected() {
+            this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedGnomeId });
+        },
+        async runOnSelection(operation, extraParams = null) {
             this.$emit("update:operation-running", this.history.update_time);
             const items = this.getExplicitlySelectedItems();
             const filters = getQueryDict(this.filterText);
             this.$emit("update:show-selection", false);
             let expectHistoryUpdate = false;
             try {
-                const result = await operation(this.history, filters, items);
+                const result = await operation(this.history, filters, items, extraParams);
                 expectHistoryUpdate = result.success_count > 0;
                 if (result.errors.length) {
                     this.handleOperationError(null, result);
@@ -164,6 +192,9 @@ export default {
         },
         handleOperationError(errorMessage, result) {
             this.$emit("operation-error", { errorMessage, result });
+        },
+        onSelectedGenome(genome) {
+            this.selectedGnomeId = genome.id;
         },
 
         // collection creation, fires up a modal

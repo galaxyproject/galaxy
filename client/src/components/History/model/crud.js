@@ -38,3 +38,9 @@ export function purgeAllDeletedContent(history) {
     const filters = { deleted: true };
     return purgeSelectedContent(history, filters);
 }
+
+export function changeDbkeyOfSelectedContent(history, filters, items, extraParams) {
+    const operationType = "change_dbkey";
+    const params = { type: operationType, dbkey: extraParams.dbkey };
+    return bulkUpdate(history, operationType, filters, items, params);
+}
