@@ -98,6 +98,7 @@
                                         :is-dataset="isDataset(item)"
                                         :selected="isSelected(item)"
                                         :selectable="showSelection"
+                                        @tag-click="onTagClick"
                                         @update:expand-dataset="setExpanded(item, $event)"
                                         @update:selected="setSelected(item, $event)"
                                         @view-collection="$emit('view-collection', item)"
@@ -229,6 +230,13 @@ export default {
         },
         setInvisible(item) {
             Vue.set(this.invisible, item.hid, true);
+        },
+        onTagClick(tag) {
+            if (this.filterText == "tag=" + tag) {
+                this.filterText = "";
+            } else {
+                this.filterText = "tag=" + tag;
+            }
         },
         onOperationError(error) {
             console.debug("OPERATION ERROR", error);

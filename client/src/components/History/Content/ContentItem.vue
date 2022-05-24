@@ -34,9 +34,6 @@
                         :collection-type="item.collection_type"
                         :element-count="item.element_count"
                         :elements-datatypes="item.elements_datatypes" />
-                    <div v-if="item.tags && item.tags.length > 0" class="nametags">
-                        <Nametag v-for="tag in item.tags" :key="tag" :tag="tag" />
-                    </div>
                 </span>
                 <ContentOptions
                     :is-dataset="isDataset"
@@ -52,6 +49,14 @@
                     @unhide="$emit('unhide')" />
             </div>
         </div>
+        <div class="p-1 alltags">
+            <StatelessTags
+                v-model="tags"
+                :use-toggle-link="false"
+                :disabled="!expandDataset || !isHistoryItem"
+                @tag-click="onTagClick"
+                @input="onTags" />
+        </div>
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <div class="detail-animation-wrapper" :class="expandDataset ? '' : 'collapsed'">
             <DatasetDetails v-if="expandDataset" :dataset="item" @edit="onEdit" />
@@ -61,18 +66,19 @@
 
 <script>
 import { backboneRoute, useGalaxy, iframeRedirect } from "components/plugins/legacyNavigation";
-import { Nametag } from "components/Nametags";
+import { StatelessTags } from "components/Tags";
 import { STATES } from "./model/states";
 import CollectionDescription from "./Collection/CollectionDescription";
 import ContentOptions from "./ContentOptions";
 import DatasetDetails from "./Dataset/DatasetDetails";
+import { updateContentFields } from "components/History/model/queries";
 
 export default {
     components: {
         CollectionDescription,
         ContentOptions,
         DatasetDetails,
-        Nametag,
+        StatelessTags,
     },
     props: {
         expandDataset: { type: Boolean, required: true },
@@ -116,6 +122,9 @@ export default {
                 return this.item.state;
             }
         },
+        tags() {
+            return this.item.tags;
+        },
     },
     methods: {
         onClick() {
@@ -146,6 +155,12 @@ export default {
             } else {
                 backboneRoute("datasets/edit", { dataset_id: this.item.id });
             }
+        },
+        onTags(newTags) {
+            updateContentFields(this.item, { tags: newTags });
+        },
+        onTagClick(tag) {
+            this.$emit("tag-click", tag.label);
         },
     },
 };

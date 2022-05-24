@@ -149,7 +149,7 @@ history_panel:
       info_button: '${_} .icon-btn.params-btn'
       tool_help_button: '${_} .fa.fa-question'
       rerun_button: '${_} .icon-btn.rerun-btn'
-      nametags: '${_} .nametags .badge-tags'
+      alltags: '${_} .alltags .ti-tags'
 
   # beta content item
   content_item:
@@ -177,7 +177,7 @@ history_panel:
       # Action buttons...
       download_button: '${_} .download-btn'
       info_button: '${_} .params-btn'
-      nametags: '${_} .nametags .badge-tags'
+      alltags: '${_} .alltags .ti-tags'
 
       dataset_operations_dropdown: '${_}  .dataset-actions'
 

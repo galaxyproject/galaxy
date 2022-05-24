@@ -32,11 +32,13 @@ describe("ContentItem", () => {
     it("check basics", async () => {
         expect(wrapper.attributes("data-hid")).toBe("1");
         expect(wrapper.find(".content-title").text()).toBe("name");
-        const tags = wrapper.find(".nametags").findAll(".badge");
+        const tags = wrapper.find(".alltags").findAll(".ti-tag");
         // verify tags
         expect(tags.length).toBe(3);
         for (let i = 0; i < 3; i++) {
             expect(tags.at(i).text()).toBe(`tag${i + 1}`);
+            await tags.at(i).find(".tag-name").trigger("click");
+            expect(wrapper.emitted()["tag-click"][i][0]).toBe(`tag${i + 1}`);
         }
         // expansion button
         const $el = wrapper.find(".cursor-pointer");
