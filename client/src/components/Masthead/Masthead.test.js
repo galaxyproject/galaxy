@@ -1,7 +1,7 @@
 import { default as Masthead } from "./Masthead.vue";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
-import WindowManager from "layout/window-manager";
+import { WindowManager } from "layout/window-manager";
 import { fetchMenu } from "layout/menu";
 import { loadWebhookMenuItems } from "./_webhooks";
 
@@ -79,7 +79,7 @@ describe("Masthead.vue", () => {
         windowManager = new WindowManager({});
         const mastheadState = {
             quotaMeter,
-            frame: windowManager,
+            windowManager,
         };
 
         wrapper = mount(Masthead, {
@@ -105,7 +105,7 @@ describe("Masthead.vue", () => {
     });
 
     it("should render simple tab item links", () => {
-        expect(wrapper.findAll("li.nav-item").length).toBe(6);
+        expect(wrapper.findAll("li.nav-item").length).toBe(5);
         // Ensure specified link title respected.
         expect(wrapper.find("#analysis a").text()).toBe("Analyze");
         expect(wrapper.find("#analysis a").attributes("href")).toBe("/root");

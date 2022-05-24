@@ -22,7 +22,7 @@ export class WindowManager {
         };
     }
 
-    /** Add and display a new frame/window based on options. */
+    /** Add and display a new window based on options. */
     add(options) {
         if (options.target == "_blank") {
             window.open(options.url);

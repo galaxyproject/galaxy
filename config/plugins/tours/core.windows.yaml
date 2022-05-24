@@ -65,7 +65,7 @@ steps:
       postclick:
         - "#current-history-panel div.content-item button[title='Display']"
 
-    - element: "#frame-0"
+    - element: "#winbox-1"
       intro: "However while using the Window Manager, the dataset will be shown as resizable window."
 
     - title: "Done."

@@ -1,7 +1,7 @@
 .winbox {
     border-radius: $border-radius-base;
-    @extend .m-1;
-    margin-top: 4rem !important;
+    margin-top: 4rem;
+    margin-left: 1rem;
 }
 
 .winbox.min {
