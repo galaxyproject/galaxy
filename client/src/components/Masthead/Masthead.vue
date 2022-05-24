@@ -82,8 +82,8 @@ export default {
             return brandTitle;
         },
         tabs() {
-            const scratchbookTabs = [this.mastheadState.frame.buttonActive];
-            const tabs = [].concat(this.baseTabs, this.extensionTabs, scratchbookTabs);
+            const windowTabs = [this.mastheadState.frame.buttonActive];
+            const tabs = [].concat(this.baseTabs, this.extensionTabs, windowTabs);
             return tabs.map(this._tabToJson);
         },
     },

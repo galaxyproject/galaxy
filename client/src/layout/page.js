@@ -62,7 +62,6 @@ const View = Backbone.View.extend({
             this.masthead = mountMasthead(this.$masthead[0], this.config, mastheadState);
         }
         this.$center.append(this.center.$el);
-        this.$el.append(mastheadState.frame.$el);
         this.$el.append(this.modal.$el);
 
         // build panels

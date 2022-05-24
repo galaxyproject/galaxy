@@ -1,13 +1,11 @@
 /** Adds window manager masthead icon and functionality **/
-import _ from "underscore";
 import _l from "utils/localization";
 import WinBox from "winbox/src/js/winbox.js";
 import "winbox/dist/css/winbox.min.css";
 
-export class MultiView {
+export class WindowManager {
     constructor(options) {
         options = options || {};
-        this.$el = "<div/>";
         this.counter = 0;
         this.active = false;
         this.buttonActive = {
@@ -51,8 +49,15 @@ export class MultiView {
                 window.location = options.url;
             }
         } else {
-            options.url = this._build_url(options.url, { hide_panels: true, hide_masthead: true });
-            WinBox.new(options);
+            this.counter++;
+            const url = this._build_url(options.url, { hide_panels: true, hide_masthead: true });
+            WinBox.new({
+                title: options.title || "Window",
+                url: url,
+                onclose: () => {
+                    this.counter--;
+                },
+            });
         }
     }
 
