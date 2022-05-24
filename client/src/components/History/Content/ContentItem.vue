@@ -128,10 +128,11 @@ export default {
         onDisplay() {
             const id = this.item.id;
             useGalaxy((Galaxy) => {
+                const url = `datasets/${id}/display/?preview=True`;
                 if (Galaxy.frame && Galaxy.frame.active) {
                     Galaxy.frame.add({
                         title: this.name,
-                        url: `datasets/${id}/display/?preview=True`,
+                        url: url,
                     });
                 } else {
                     iframeRedirect(url);
