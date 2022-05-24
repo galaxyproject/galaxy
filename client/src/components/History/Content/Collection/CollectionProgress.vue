@@ -32,12 +32,14 @@ export default {
             return this.summary.get("running");
         },
         errorJobs() {
-            const { failed = 0, error = 0 } = this.summary;
+            const failed = this.summary.get("failed") ? this.summary.get("failed") : 0;
+            const error = this.summary.get("error") ? this.summary.get("error") : 0;
             return failed + error;
         },
         waitingJobs() {
-            const { waiting = 0, queued = 0 } = this.summary;
-            return waiting + queued;
+            const queued = this.summary.get("queued") ? this.summary.get("queued") : 0;
+            const waiting = this.summary.get("waiting") ? this.summary.get("waiting") : 0;
+            return queued + waiting;
         },
     },
 };
