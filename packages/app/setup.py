@@ -68,8 +68,6 @@ PACKAGES = [
     "galaxy.tool_shed.galaxy_install.datatypes",
     "galaxy.tool_shed.galaxy_install.metadata",
     "galaxy.tool_shed.galaxy_install.repository_dependencies",
-    "galaxy.tool_shed.galaxy_install.tool_dependencies",
-    "galaxy.tool_shed.galaxy_install.tool_dependencies.recipe",
     "galaxy.tool_shed.galaxy_install.tools",
     "galaxy.tool_shed.util",
     "galaxy.tool_shed.metadata",

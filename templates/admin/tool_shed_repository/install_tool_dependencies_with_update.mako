@@ -28,21 +28,6 @@ ${render_galaxy_repository_actions( repository )}
             <input type="hidden" name="encoded_relative_install_dir" value="${encoded_relative_install_dir|h}"/>
             <input type="hidden" name="encoded_tool_dependencies_dict" value="${encoded_tool_dependencies_dict|h}"/>
             %if tool_dependencies_dict:
-                %if install_tool_dependencies_check_box is not None:
-                    <div class="form-row">
-                        <label>Handle tool dependencies?</label>
-                        <% disabled = trans.app.tool_dependency_dir is None %>
-                        ${render_checkbox(install_tool_dependencies_check_box, disabled=disabled)}
-                        <div class="toolParamHelp" style="clear: both;">
-                            %if disabled:
-                                Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.
-                            %else:
-                                Un-check to skip automatic handling of these tool dependencies.
-                            %endif
-                        </div>
-                    </div>
-                    <div style="clear: both"></div>
-                %endif
                 <div class="form-row">
                     <table class="grid">
                         <tr><td colspan="4" bgcolor="#D8D8D8"><b>New tool dependencies included in update</b></td></tr>

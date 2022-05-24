@@ -5,8 +5,6 @@ import shutil
 from sqlalchemy import and_
 
 from galaxy import util
-from galaxy.tool_shed.util.hg_util import get_config_from_disk
-from galaxy.util.tool_shed.xml_util import parse_xml
 from galaxy.web.form_builder import SelectField
 
 log = logging.getLogger(__name__)
@@ -65,58 +63,6 @@ def create_or_update_tool_dependency(app, tool_shed_repository, name, version, t
         context.add(tool_dependency)
         context.flush()
     return tool_dependency
-
-
-def create_tool_dependency_objects(app, tool_shed_repository, relative_install_dir, set_status=True):
-    """
-    Create or update a ToolDependency for each entry in tool_dependencies_config.  This method is called when
-    installing a new tool_shed_repository.
-    """
-    tool_dependency_objects = []
-    shed_config_dict = tool_shed_repository.get_shed_config_dict(app)
-    if shed_config_dict.get("tool_path"):
-        relative_install_dir = os.path.join(shed_config_dict.get("tool_path"), relative_install_dir)
-    # Get the tool_dependencies.xml file from the repository.
-    tool_dependencies_config = get_config_from_disk("tool_dependencies.xml", relative_install_dir)
-    tree, error_message = parse_xml(tool_dependencies_config)
-    if tree is None:
-        return tool_dependency_objects
-    root = tree.getroot()
-    for elem in root:
-        tool_dependency_type = elem.tag
-        if tool_dependency_type == "package":
-            name = elem.get("name", None)
-            version = elem.get("version", None)
-            if name and version:
-                status = app.install_model.ToolDependency.installation_status.NEVER_INSTALLED
-                tool_dependency = create_or_update_tool_dependency(
-                    app,
-                    tool_shed_repository,
-                    name=name,
-                    version=version,
-                    type=tool_dependency_type,
-                    status=status,
-                    set_status=set_status,
-                )
-                tool_dependency_objects.append(tool_dependency)
-        elif tool_dependency_type == "set_environment":
-            for env_elem in elem:
-                # <environment_variable name="R_SCRIPT_PATH" action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
-                name = env_elem.get("name", None)
-                action = env_elem.get("action", None)
-                if name and action:
-                    status = app.install_model.ToolDependency.installation_status.NEVER_INSTALLED
-                    tool_dependency = create_or_update_tool_dependency(
-                        app,
-                        tool_shed_repository,
-                        name=name,
-                        version=None,
-                        type=tool_dependency_type,
-                        status=status,
-                        set_status=set_status,
-                    )
-                    tool_dependency_objects.append(tool_dependency)
-    return tool_dependency_objects
 
 
 def get_download_url_for_platform(url_templates, platform_info_dict):

@@ -161,10 +161,6 @@ class ToolWithToolDependencies(ShedTwillTestCase):
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
         strings_displayed.extend(["Installed tool shed repository", "Valid tools", "FreeBayes"])
         self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)
-        strings_displayed = ["freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18"]
-        self.check_installed_repository_tool_dependencies(
-            installed_repository, strings_displayed=strings_displayed, dependencies_installed=False
-        )
         self.verify_tool_metadata_for_installed_repository(installed_repository)
 
     def test_0020_verify_installed_repository_metadata(self):
