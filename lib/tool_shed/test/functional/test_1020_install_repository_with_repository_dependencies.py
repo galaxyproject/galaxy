@@ -137,10 +137,6 @@ class ToolWithRepositoryDependencies(ShedTwillTestCase):
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
         strings_displayed.extend(["Installed tool shed repository", "Valid tools", "antigenic"])
         self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)
-        strings_displayed = ["emboss", "5.0.0", "package"]
-        self.check_installed_repository_tool_dependencies(
-            installed_repository, strings_displayed=strings_displayed, dependencies_installed=False
-        )
         self.verify_tool_metadata_for_installed_repository(installed_repository)
         current_datatypes = int(self.get_datatypes_count())
         assert (
