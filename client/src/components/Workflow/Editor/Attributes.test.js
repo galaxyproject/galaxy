@@ -1,14 +1,15 @@
 import { mount, createLocalVue } from "@vue/test-utils";
 import Attributes from "./Attributes";
 import { UntypedParameters } from "./modules/parameters";
+import { isDate } from "date-fns";
 
 jest.mock("app");
 
 const TEST_ANNOTATION = "my cool annotation";
 const TEST_NAME = "workflow_name";
 const TEST_VERSIONS = [
-    { versions: 0, update_time: "2022-01-01", steps: 10 },
-    { versions: 1, update_time: "2022-01-02", steps: 20 },
+    { version: 0, update_time: "2022-01-02", steps: 10 },
+    { version: 1, update_time: "2022-03-04", steps: 20 },
 ];
 
 describe("Attributes", () => {
@@ -39,6 +40,15 @@ describe("Attributes", () => {
         expect(name.element.value).toBe(TEST_NAME);
         await wrapper.setProps({ name: "new_workflow_name" });
         expect(name.element.value).toBe("new_workflow_name");
+
+        const version = wrapper.findAllComponents(`#workflow-version-area > select > option`);
+        expect(version).toHaveLength(TEST_VERSIONS.length);
+        for (const [i,v] in TEST_VERSIONS) {
+            const versionLabel = version.at(i).text();
+            const versionDate = (versionLabel).substring(versionLabel.indexOf(":") + 1, (versionLabel).indexOf(",")).trim();
+            expect(isDate(new Date(versionDate))).toBe(true);
+        }
+
         const parameters = wrapper.findAll(".list-group-item");
         expect(parameters.length).toBe(2);
         expect(parameters.at(0).text()).toBe("1: workflow_parameter_0");
