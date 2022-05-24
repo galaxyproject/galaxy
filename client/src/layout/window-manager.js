@@ -22,15 +22,6 @@ export class WindowManager {
         };
     }
 
-    /** Called before closing all windows. */
-    beforeUnload() {
-        let confirmText = "";
-        if (this.counter > 0) {
-            confirmText = `You opened ${this.counter} window(s) which will be lost.`;
-        }
-        return confirmText;
-    }
-
     /** Add and display a new frame/window based on options. */
     add(options) {
         if (options.target == "_blank") {
@@ -59,6 +50,15 @@ export class WindowManager {
                 },
             });
         }
+    }
+
+    /** Called before closing all windows. */
+    beforeUnload() {
+        let confirmText = "";
+        if (this.counter > 0) {
+            confirmText = `You opened ${this.counter} window(s) which will be lost.`;
+        }
+        return confirmText;
     }
 
     /** Url helper */

@@ -82,7 +82,7 @@ export default {
             return brandTitle;
         },
         tabs() {
-            const windowTabs = [this.mastheadState.frame.buttonActive];
+            const windowTabs = [this.mastheadState.windowManager.buttonActive];
             const tabs = [].concat(this.baseTabs, this.extensionTabs, windowTabs);
             return tabs.map(this._tabToJson);
         },
