@@ -45,6 +45,9 @@
             <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change reference gnome">
                 <span v-localize>Change reference Gnome</span>
             </b-dropdown-item>
+            <b-dropdown-item v-b-modal:add-tags-to-selected-content data-description="add tags">
+                <span v-localize>Add tags</span>
+            </b-dropdown-item>
         </b-dropdown>
 
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
@@ -78,6 +81,10 @@
                     @update:selected-item="onSelectedGenome" />
             </GenomeProvider>
         </b-modal>
+        <b-modal id="add-tags-to-selected-content" title="Add tag?" title-tag="h2" @ok="addTagToSelected">
+            <p v-localize>Apply same tags to {{ numSelected }} items:</p>
+            <StatelessTags v-model="selectedTags" class="tags" />
+        </b-modal>
     </section>
 </template>
 
@@ -89,17 +96,20 @@ import {
     undeleteSelectedContent,
     purgeSelectedContent,
     changeDbkeyOfSelectedContent,
+    addTagsToSelectedContent,
 } from "components/History/model/crud";
 import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
 import { checkFilter, getQueryDict } from "store/historyStore/model/filtering";
 import { GenomeProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
+import { StatelessTags } from "components/Tags";
 
 export default {
     components: {
         GenomeProvider,
         SingleItemSelector,
+        StatelessTags,
     },
     props: {
         history: { type: Object, required: true },
@@ -108,6 +118,12 @@ export default {
         selectionSize: { type: Number, required: true },
         isQuerySelection: { type: Boolean, required: true },
         totalItemsInQuery: { type: Number, default: 0 },
+    },
+    data: function () {
+        return {
+            selectedGnomeId: null,
+            selectedTags: [],
+        };
     },
     computed: {
         /** @returns {Boolean} */
@@ -161,6 +177,9 @@ export default {
         },
         changeDbkeyOfSelected() {
             this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedGnomeId });
+        },
+        addTagToSelected() {
+            this.runOnSelection(addTagsToSelectedContent, { tags: this.selectedTags });
         },
         async runOnSelection(operation, extraParams = null) {
             this.$emit("update:operation-running", this.history.update_time);

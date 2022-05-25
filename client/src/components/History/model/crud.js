@@ -44,3 +44,9 @@ export function changeDbkeyOfSelectedContent(history, filters, items, extraParam
     const params = { type: operationType, dbkey: extraParams.dbkey };
     return bulkUpdate(history, operationType, filters, items, params);
 }
+
+export function addTagsToSelectedContent(history, filters, items, extraParams) {
+    const operationType = "add_tags";
+    const params = { type: operationType, tags: extraParams.tags };
+    return bulkUpdate(history, operationType, filters, items, params);
+}
