@@ -798,6 +798,15 @@
             <!-- Pick next available server and resubmit if an unknown error occurs -->
             <resubmit condition="unknown_error and attempt &lt;= 3" destination="galaxycloudrunner" />
         </destination>
+        <destination id="vortex_dispatcher" runner="dynamic">
+            <!-- Demonstrates how to use total-perspective-vortex, which enables dynamic destination
+            selection for entities (Tools, Users, Groups) based on a configurable yaml file.
+            See: https://total-perspective-vortex.readthedocs.io/ for documentation. -->
+            <param id="type">python</param>
+            <param id="function">map_tool_to_destination</param>
+            <param id="rules_module">vortex.rules</param>
+            <param id="vortex_config_files">https://raw.githubusercontent.com/galaxyproject/total-perspective-vortex/main/tests/fixtures/mapping-sample.yml</param>
+        </destination>
         <destination id="docker_dispatch" runner="dynamic">
             <!-- Follow dynamic destination type will send all tool's that
             support docker to static destination defined by

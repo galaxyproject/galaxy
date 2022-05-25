@@ -748,6 +748,17 @@ execution:
       fallback_destination: local
       # Pick next available server and resubmit if an unknown error occurs
       # resubmit: {condition: 'unknown_error and attempt <= 3', environment: galaxycloudrunner}
+    vortex_dispatcher:
+      runner: dynamic
+      # Demonstrates how to use total-perspective-vortex, which enables dynamic destination
+      # selection for entities (Tools, Users, Groups) based on a configurable yaml file.
+      # See: https://total-perspective-vortex.readthedocs.io/ for documentation.
+      type: python
+      function: map_tool_to_destination
+      rules_module: vortex.rules
+      vortex_config_files:
+        - https://raw.githubusercontent.com/galaxyproject/total-perspective-vortex/main/tests/fixtures/mapping-sample.yml
+        # - config/vortex_rules_local.yml
 
     docker_dispatch:
       runner: dynamic
