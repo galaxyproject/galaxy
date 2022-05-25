@@ -1180,21 +1180,16 @@ class XYZ(GenericMolFile):
         >>> fname = get_test_fname('Si.cif')
         >>> XYZ().sniff(fname)
         False
+        >>> fname = get_test_fname('not_a_xyz_file.txt')
+        >>> XYZ().sniff(fname)
+        False
         """
 
         try:
             self.read_blocks(list(file_prefix.line_iterator()))
-            return True  # blocks read successfully
-        except (TypeError, ValueError):
+            return True
+        except (TypeError, ValueError, IndexError):
             return False
-        except IndexError as e:
-            if "pop from empty list" in str(e):
-                # file_prefix ran out mid block with no other errors
-                # assume the whole file is ok
-                return True
-            else:
-                # some other IndexError - invalid input
-                return False
 
     def read_blocks(self, lines):
         """
@@ -1213,23 +1208,27 @@ class XYZ(GenericMolFile):
             n_atoms = None
             comment = None
             atoms = []
+            try:
+                n_atoms = int(lines.pop(0))
+                comment = lines.pop(0)
+                for _ in range(n_atoms):
+                    atom = lines.pop(0)
+                    atom = atom.split()
+                    symbol = atom[0].lower().capitalize()
+                    if symbol not in self.element_symbols:
+                        raise ValueError(f"{atom[0]} is not a valid element symbol")
 
-            n_atoms = int(lines.pop(0))
-            comment = lines.pop(0)
-            for _ in range(n_atoms):
-                atom = lines.pop(0)
-                atom = atom.split()
-                symbol = atom[0].lower().capitalize()
-                if symbol not in self.element_symbols:
-                    raise ValueError(f"{atom[0]} is not a valid element symbol")
+                    # raises ValueError if not valid XYZ format
+                    position = [float(i) for i in atom[1:4]]
 
-                # raises ValueError if not valid XYZ format
-                position = [float(i) for i in atom[1:4]]
-
-                atoms.append(symbol + str(position))
-
-            blocks.append({"number_of_atoms": n_atoms, "comment": comment, "atom_data": atoms})
-
+                    atoms.append(symbol + str(position))
+                blocks.append({"number_of_atoms": n_atoms, "comment": comment, "atom_data": atoms})
+            except IndexError as e:
+                if "pop from empty list" in str(e) and blocks:
+                    # we'll require at least one valid block
+                    pass
+                else:
+                    raise
         return blocks
 
     def set_meta(self, dataset, **kwd):

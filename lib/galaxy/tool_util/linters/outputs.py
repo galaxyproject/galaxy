@@ -84,6 +84,8 @@ def __check_format(node, lint_ctx, allow_ext=False):
         )
     if "format_source" in node.attrib:
         return True
+    if node.find(".//action[@type='format']") is not None:
+        return True
     # if allowed (e.g. for discover_datasets), ext takes precedence over format
     fmt = None
     if allow_ext:

@@ -35,6 +35,7 @@ IRODS_IMPORT_MESSAGE = "The Python irods package is required to use this feature
 # 1 MB
 CHUNK_SIZE = 2**20
 log = logging.getLogger(__name__)
+logging.getLogger("irods.connection").setLevel(logging.INFO)  # irods logging generates gigabytes of logs
 
 
 def _config_xml_error(tag):

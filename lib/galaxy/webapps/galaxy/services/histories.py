@@ -198,15 +198,14 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         """Create a new history from scratch, by copying an existing one or by importing
         from URL or File depending on the provided parameters in the payload.
         """
-        if trans.anonymous:
+        copy_this_history_id = payload.history_id
+        if trans.anonymous and not copy_this_history_id:  # Copying/Importing histories is allowed for anonymous users
             raise glx_exceptions.AuthenticationRequired("You need to be logged in to create histories.")
         if trans.user and trans.user.bootstrap_admin_user:
             raise glx_exceptions.RealUserRequiredException("Only real users can create histories.")
         hist_name = None
         if payload.name is not None:
             hist_name = restore_text(payload.name)
-        copy_this_history_id = payload.history_id
-        all_datasets = payload.all_datasets
 
         if payload.archive_source is not None or hasattr(payload.archive_file, "file"):
             archive_source = payload.archive_source
@@ -237,7 +236,9 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             decoded_id = self.decode_id(copy_this_history_id)
             original_history = self.manager.get_accessible(decoded_id, trans.user, current_history=trans.history)
             hist_name = hist_name or (f"Copy of '{original_history.name}'")
-            new_history = original_history.copy(name=hist_name, target_user=trans.user, all_datasets=all_datasets)
+            new_history = original_history.copy(
+                name=hist_name, target_user=trans.user, all_datasets=payload.all_datasets
+            )
 
         # otherwise, create a new empty history
         else:

@@ -74,7 +74,7 @@ export default {
         },
         type: {
             type: String,
-            default: "text",
+            default: "",
         },
         value: {
             default: null,

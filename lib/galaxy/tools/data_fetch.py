@@ -568,6 +568,11 @@ class UploadConfig:
         if purge_source:
             try:
                 shutil.move(path, new_path)
+                # Drop .info file if it exists
+                try:
+                    os.remove(f"{path}.info")
+                except FileNotFoundError:
+                    pass
             except OSError as e:
                 # We may not have permission to remove converted_path
                 if e.errno != errno.EACCES:

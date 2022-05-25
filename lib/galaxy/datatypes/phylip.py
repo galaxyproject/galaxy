@@ -109,6 +109,11 @@ class Phylip(Text):
             if any(str.isdigit(c) for c in seq):
                 # Could tighten up further by requiring IUPAC strings chars
                 return False
+        line = alignment_prefix.readline()
+        if line.strip():
+            # There should be a newline separating alignments.
+            # If we got more content this is probably not a phylip file
+            return False
         # There may be more lines with the remaining parts of the sequences
         return True
 
@@ -124,6 +129,9 @@ class Phylip(Text):
         >>> fname = get_test_fname('test_relaxed_interleaved.phylip')
         >>> Phylip().sniff(fname)
         True
+        >>> fname = get_test_fname("not_a_phylip_file.tabular")
+        >>> Phylip().sniff(fname)
+        False
         """
         f = file_prefix.string_io()
         # Get number of sequences and sequence length from first line

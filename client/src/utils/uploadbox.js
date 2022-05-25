@@ -19,6 +19,14 @@ function submitPayload(payload, cnf) {
         });
 }
 
+function buildFingerprint(cnf) {
+    async function customFingerprint(file, options) {
+        return ["tus-br", file.name, file.type, file.size, file.lastModified, cnf.data.history_id].join("-");
+    }
+
+    return customFingerprint;
+}
+
 function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
     // uploadables must be an array of files or blobs with a name property
     const startTime = performance.now();
@@ -32,6 +40,7 @@ function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
     console.debug(`Starting chunked upload for ${uploadable.name} [chunkSize=${chunkSize}].`);
     const upload = new tus.Upload(uploadable, {
         endpoint: tusEndpoint,
+        fingerprint: buildFingerprint(cnf),
         chunkSize: chunkSize,
         metadata: data.payload,
         onError: function (error) {

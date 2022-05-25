@@ -287,6 +287,21 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         assert response["name"] == TEST_HISTORY_NAME
         self._assert_history_length(response["id"], 1)
 
+    def test_anonymous_can_import_published(self):
+        history_name = f"for_importing_by_anonymous_{uuid4()}"
+        history_id = self.dataset_populator.new_history(name=history_name)
+        self.dataset_collection_populator.create_list_of_pairs_in_history(history_id)
+        self.dataset_populator.make_public(history_id)
+
+        with self._different_user(anon=True):
+            imported_history_name = f"imported_by_anonymous_{uuid4()}"
+            import_data = {
+                "archive_type": "url",
+                "history_id": history_id,
+                "name": imported_history_name,
+            }
+            self.dataset_populator.import_history(import_data)
+
 
 class ImportExportTests(BaseHistories):
     task_based: ClassVar[bool]
