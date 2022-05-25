@@ -31,13 +31,10 @@
                     <b-form-group
                         id="cutoff"
                         label="Cutoff time period"
-                        :disabled="showAllRunning"
+                        v-show="!showAllRunning"
                         description="in minutes">
                         <b-input-group>
                             <b-form-input id="cutoff" v-model="cutoffMin" type="number"> </b-form-input>
-                            <b-input-group-append>
-                                <b-btn type="submit">Refresh</b-btn>
-                            </b-input-group-append>
                         </b-input-group>
                     </b-form-group>
                 </b-form>
@@ -47,9 +44,6 @@
                     description="by strings or regular expressions">
                     <b-input-group id="filter-regex">
                         <b-form-input v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
-                        <b-input-group-append>
-                            <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
-                        </b-input-group-append>
                     </b-input-group>
                 </b-form-group>
             </b-col>
@@ -115,6 +109,7 @@ import JobLock from "./JobLock";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import { commonJobFields } from "./JobFields";
 import { errorMessageAsString } from "utils/simple-error";
+import { jobsProvider } from "components/providers/JobProvider";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;
@@ -169,6 +164,12 @@ export default {
         },
     },
     watch: {
+        filter(newVal) {
+            this.update();
+        },
+        cutoffMin(newVal) {
+            this.update();
+        },
         selectedStopJobIds(newVal) {
             if (newVal.length === 0) {
                 this.indeterminate = false;
@@ -199,31 +200,31 @@ export default {
         this.update();
     },
     methods: {
-        update() {
+        async update() {
             this.busy = true;
-            let params = [];
-            params.push("view=admin_job_list");
+            const params = { view: "admin_job_list" };
             if (this.showAllRunning) {
-                params.push("state=running");
+                params.state = "running";
             } else {
                 const cutoff = Math.floor(this.cutoffMin);
                 const dateRangeMin = new Date(Date.now() - cutoff * 60 * 1000).toISOString();
-                params.push(`date_range_min=${dateRangeMin}`);
+                params.date_range_min = `${dateRangeMin}`;
             }
-            params = params.join("&");
-            axios
-                .get(`${getAppRoot()}api/jobs?${params}`)
-                .then((response) => {
-                    this.jobs = response.data;
-                    this.loading = false;
-                    this.busy = false;
-                    this.status = "info";
-                })
-                .catch((error) => {
-                    this.message = errorMessageAsString(error);
-                    this.status = "danger";
-                    console.log(error.response);
-                });
+            const ctx = {
+                root: getAppRoot(),
+                ...params,
+            };
+            try {
+                const jobs = await jobsProvider(ctx);
+                this.jobs = jobs;
+                this.loading = false;
+                this.busy = false;
+                this.status = "info";
+            } catch (error) {
+                console.log(error);
+                this.message = errorMessageAsString(error);
+                this.status = "danger";
+            }
         },
         onRefresh() {
             this.update();

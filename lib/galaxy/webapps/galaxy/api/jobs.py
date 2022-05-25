@@ -5,7 +5,6 @@ API operations on a jobs.
 """
 
 import logging
-from enum import Enum
 from typing import (
     Any,
     Dict,
@@ -14,7 +13,6 @@ from typing import (
 )
 
 from fastapi import Query
-from sqlalchemy import or_
 
 from galaxy import (
     exceptions,
@@ -32,9 +30,9 @@ from galaxy.managers.jobs import (
     summarize_destination_params,
     summarize_job_metrics,
     summarize_job_parameters,
-    view_show_job,
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import JobIndexSortByEnum
 from galaxy.util import listify
 from galaxy.web import (
     expose_api,
@@ -42,27 +40,24 @@ from galaxy.web import (
     require_admin,
 )
 from galaxy.webapps.base.controller import UsesVisualizationMixin
+from galaxy.webapps.galaxy.services.jobs import (
+    JobIndexPayload,
+    JobIndexViewEnum,
+    JobsService,
+)
 from galaxy.work.context import WorkRequestContext
 from . import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    IndexQueryTag,
     Router,
+    search_query_param,
 )
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["jobs"])
-
-
-class JobIndexViewEnum(str, Enum):
-    collection = "collection"
-    admin_job_list = "admin_job_list"
-
-
-class JobIndexSortByEnum(str, Enum):
-    create_time = "create_time"
-    update_time = "update_time"
 
 
 StateQueryParam: Optional[str] = Query(
@@ -74,10 +69,10 @@ StateQueryParam: Optional[str] = Query(
 UserDetailsQueryParam: bool = Query(
     default=False,
     title="Include user details",
-    description="If true, and requestor is an admin, will return external job id and user email.",
+    description="If true, and requestor is an admin, will return external job id and user email. This is only available to admins.",
 )
 
-UserIdQueryParam: Optional[str] = Query(
+UserIdQueryParam: Optional[EncodedDatabaseIdField] = Query(
     default=None,
     title="User ID",
     description="an encoded user id to restrict query to, must be own id if not admin user",
@@ -115,19 +110,19 @@ DateRangeMaxQueryParam: Optional[str] = Query(
     description="Limit listing of jobs to those that are updated before specified date (e.g. '2014-01-01')",
 )
 
-HistoryIdQueryParam: Optional[str] = Query(
+HistoryIdQueryParam: Optional[EncodedDatabaseIdField] = Query(
     default=None,
     title="History ID",
     description="Limit listing of jobs to those that match the history_id. If none, jobs from any history may be returned.",
 )
 
-WorkflowIdQueryParam: Optional[str] = Query(
+WorkflowIdQueryParam: Optional[EncodedDatabaseIdField] = Query(
     default=None,
     title="Workflow ID",
     description="Limit listing of jobs to those that match the specified workflow ID. If none, jobs from any workflow (or from no workflows) may be returned.",
 )
 
-InvocationIdQueryParam: Optional[str] = Query(
+InvocationIdQueryParam: Optional[EncodedDatabaseIdField] = Query(
     default=None,
     title="Invocation ID",
     description="Limit listing of jobs to those that match the specified workflow invocation ID. If none, jobs from any workflow invocation (or from no workflows) may be returned.",
@@ -147,12 +142,23 @@ OffsetQueryParam: int = Query(
     description="Return jobs starting from this specified position. For example, if ``limit`` is set to 100 and ``offset`` to 200, jobs 200-299 will be returned.",
 )
 
+query_tags = [
+    IndexQueryTag("user", "The user email of the user that executed the Job.", "u"),
+    IndexQueryTag("tool_id", "The tool ID corresponding to the job.", "t"),
+    IndexQueryTag("runner", "The job runner name used to execte the job.", "r", admin_only=True),
+    IndexQueryTag("handler", "The job handler name used to execute the job.", "h", admin_only=True),
+]
+
+SearchQueryParam: Optional[str] = search_query_param(
+    model_name="Job",
+    tags=query_tags,
+    free_text_fields=["user", "tool", "handler", "runner"],
+)
+
 
 @router.cbv
 class FastAPIJobs:
-    job_manager: JobManager = depends(JobManager)
-    job_search: JobSearch = depends(JobSearch)
-    hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
+    service: JobsService = depends(JobsService)
 
     @router.get("/api/jobs/{id}")
     def show(
@@ -168,9 +174,7 @@ class FastAPIJobs:
         - id: ID of job to return
         - full: Return extra information ?
         """
-        id = trans.app.security.decode_id(id)
-        job = self.job_manager.get_accessible_job(trans, id)
-        return view_show_job(trans, job, bool(full))
+        return self.service.show(trans, id, bool(full))
 
     @router.get("/api/jobs")
     def index(
@@ -178,21 +182,20 @@ class FastAPIJobs:
         trans: ProvidesUserContext = DependsOnTrans,
         state: Optional[str] = StateQueryParam,
         user_details: bool = UserDetailsQueryParam,
-        user_id: Optional[str] = UserIdQueryParam,
+        user_id: Optional[EncodedDatabaseIdField] = UserIdQueryParam,
         view: JobIndexViewEnum = ViewQueryParam,
         tool_id: Optional[str] = ToolIdQueryParam,
         tool_id_like: Optional[str] = ToolIdLikeQueryParam,
         date_range_min: Optional[str] = DateRangeMinQueryParam,
         date_range_max: Optional[str] = DateRangeMaxQueryParam,
-        history_id: Optional[str] = HistoryIdQueryParam,
-        workflow_id: Optional[str] = WorkflowIdQueryParam,
-        invocation_id: Optional[str] = InvocationIdQueryParam,
+        history_id: Optional[EncodedDatabaseIdField] = HistoryIdQueryParam,
+        workflow_id: Optional[EncodedDatabaseIdField] = WorkflowIdQueryParam,
+        invocation_id: Optional[EncodedDatabaseIdField] = InvocationIdQueryParam,
         order_by: JobIndexSortByEnum = SortByQueryParam,
+        search: Optional[str] = SearchQueryParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
     ) -> List[Dict[str, Any]]:
-        security = trans.security
-
         def optional_list(input: Optional[str]) -> Optional[List[str]]:
             if input is None:
                 return None
@@ -201,92 +204,26 @@ class FastAPIJobs:
 
         states = optional_list(state)
         tool_ids = optional_list(tool_id)
-        tool_id_likes = optional_list(tool_id_like)
-        is_admin = trans.user_is_admin
-        if view == JobIndexViewEnum.admin_job_list and not is_admin:
-            raise exceptions.AdminRequiredException("Only admins can use the admin_job_list view")
-        if user_id:
-            decoded_user_id = security.decode_id(user_id)
-        else:
-            decoded_user_id = None
+        tool_ids_like = optional_list(tool_id_like)
 
-        if is_admin:
-            if decoded_user_id is not None:
-                query = trans.sa_session.query(model.Job).filter(model.Job.user_id == decoded_user_id)
-            else:
-                query = trans.sa_session.query(model.Job)
-        else:
-            if decoded_user_id is not None and decoded_user_id != trans.user.id:
-                raise exceptions.AdminRequiredException("Only admins can index the jobs of others")
-            query = trans.sa_session.query(model.Job).filter(model.Job.user_id == trans.user.id)
-
-        def build_and_apply_filters(query, objects, filter_func):
-            if objects is not None:
-                if isinstance(objects, str):
-                    query = query.filter(filter_func(objects))
-                elif isinstance(objects, list):
-                    t = []
-                    for obj in objects:
-                        t.append(filter_func(obj))
-                    query = query.filter(or_(*t))
-            return query
-
-        query = build_and_apply_filters(query, states, lambda s: model.Job.state == s)
-        query = build_and_apply_filters(query, tool_ids, lambda t: model.Job.tool_id == t)
-        query = build_and_apply_filters(query, tool_id_likes, lambda t: model.Job.tool_id.like(t))
-        query = build_and_apply_filters(query, date_range_min, lambda dmin: model.Job.update_time >= dmin)
-        query = build_and_apply_filters(query, date_range_max, lambda dmax: model.Job.update_time <= dmax)
-
-        if history_id is not None:
-            decoded_history_id = security.decode_id(history_id)
-            query = query.filter(model.Job.history_id == decoded_history_id)
-        if workflow_id or invocation_id:
-            if workflow_id is not None:
-                decoded_workflow_id = security.decode_id(workflow_id)
-                wfi_step = (
-                    trans.sa_session.query(model.WorkflowInvocationStep)
-                    .join(model.WorkflowInvocation)
-                    .join(model.Workflow)
-                    .filter(
-                        model.Workflow.stored_workflow_id == decoded_workflow_id,
-                    )
-                    .subquery()
-                )
-            elif invocation_id is not None:
-                decoded_invocation_id = security.decode_id(invocation_id)
-                wfi_step = (
-                    trans.sa_session.query(model.WorkflowInvocationStep)
-                    .filter(model.WorkflowInvocationStep.workflow_invocation_id == decoded_invocation_id)
-                    .subquery()
-                )
-            query1 = query.join(wfi_step)
-            query2 = query.join(model.ImplicitCollectionJobsJobAssociation).join(
-                wfi_step,
-                model.ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id
-                == wfi_step.c.implicit_collection_jobs_id,
-            )
-            query = query1.union(query2)
-
-        if order_by == JobIndexSortByEnum.create_time:
-            order_by = model.Job.create_time.desc()
-        else:
-            order_by = model.Job.update_time.desc()
-        query = query.order_by(order_by)
-
-        query = query.offset(offset)
-        query = query.limit(limit)
-
-        out = []
-        for job in query.yield_per(model.YIELD_PER_ROWS):
-            job_dict = job.to_dict(view, system_details=is_admin)
-            j = security.encode_all_ids(job_dict, True)
-            if view == JobIndexViewEnum.admin_job_list:
-                j["decoded_job_id"] = job.id
-            if user_details:
-                j["user_email"] = job.get_user_email()
-            out.append(j)
-
-        return out
+        payload = JobIndexPayload(
+            states=states,
+            user_details=user_details,
+            user_id=user_id,
+            view=view,
+            tool_ids=tool_ids,
+            tool_ids_like=tool_ids_like,
+            date_range_min=date_range_min,
+            date_range_max=date_range_max,
+            history_id=history_id,
+            workflow_id=workflow_id,
+            invocation_id=invocation_id,
+            order_by=order_by,
+            search=search,
+            limit=limit,
+            offset=offset,
+        )
+        return self.service.index(trans, payload)
 
 
 class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):

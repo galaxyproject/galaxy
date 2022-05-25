@@ -110,6 +110,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
             assert len(jobs) == 0
 
     @uses_test_history(require_new=True)
+    @skip_without_tool("cat1")
     def test_index_workflow_and_invocation_filter(self, history_id):
         workflow_simple = """
 class: GalaxyWorkflow
@@ -183,7 +184,37 @@ steps:
         assert len(jobs) == 0
 
     @uses_test_history(require_new=True)
-    def test_index_user_filter(self, history_id):
+    def test_index_search_filter_tool_id(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs = self.__jobs_index(data={"history_id": history_id})
+        assert len(jobs) > 0
+        length = len(jobs)
+        jobs = self.__jobs_index(data={"history_id": history_id, "search": "emptyresult"})
+        assert len(jobs) == 0
+        jobs = self.__jobs_index(data={"history_id": history_id, "search": "FETCH"})
+        assert len(jobs) == length
+        jobs = self.__jobs_index(data={"history_id": history_id, "search": "tool:'FETCH'"})
+        assert len(jobs) == 0
+
+    @uses_test_history(require_new=True)
+    def test_index_search_filter_email(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs = self.__jobs_index(data={"history_id": history_id, "search": "FETCH"})
+        user_email = self.dataset_populator.user_email()
+        jobs = self.__jobs_index(data={"history_id": history_id, "search": user_email})
+        assert len(jobs) == 0
+        # we can search on email...
+        jobs = self.__jobs_index(
+            data={"history_id": history_id, "search": user_email, "user_details": True}, admin=True
+        )
+        assert len(jobs) == 1
+        # but only if user details are joined in.
+        jobs = self.__jobs_index(
+            data={"history_id": history_id, "search": user_email, "user_details": False}, admin=True
+        )
+        assert len(jobs) == 0
+
+    def test_index_user_filter(self):
         test_user_email = "user_for_jobs_index_test@bx.psu.edu"
         user = self._setup_user(test_user_email)
         with self._different_user(email=test_user_email):
@@ -197,6 +228,51 @@ steps:
         jobs_response = self._get("jobs", data={"user_id": user["id"]})
         self._assert_status_code_is(jobs_response, 403)
         assert jobs_response.json() == {"err_msg": "Only admins can index the jobs of others", "err_code": 403006}
+
+    @uses_test_history(require_new=True)
+    def test_index_handler_runner_filters(self, history_id):
+        self.__history_with_new_dataset(history_id)
+
+        jobs = self._get(f"jobs?view=admin_job_list&history_id={history_id}", admin=True).json()
+        job = jobs[0]
+        handler = job["handler"]
+        assert handler
+        runner = job["job_runner_name"]
+        assert runner
+
+        # Free text search includes handler and runner for admin list view.
+        jobs = self._get(f"jobs?view=admin_job_list&history_id={history_id}&search={handler}", admin=True).json()
+        assert jobs
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search={handler}suffixnotfound", admin=True
+        ).json()
+        assert not jobs
+        jobs = self._get(f"jobs?view=admin_job_list&history_id={history_id}&search={runner}", admin=True).json()
+        assert jobs
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search={runner}suffixnotfound", admin=True
+        ).json()
+        assert not jobs
+
+        # Test tags for runner and handler specifically.
+        assert runner != handler
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search=handler:%27{handler}%27", admin=True
+        ).json()
+        assert jobs
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search=runner:%27{handler}%27", admin=True
+        ).json()
+        assert not jobs
+
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search=runner:%27{runner}%27", admin=True
+        ).json()
+        assert jobs
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search=handler:%27{runner}%27", admin=True
+        ).json()
+        assert not jobs
 
     @uses_test_history(require_new=True)
     def test_index_multiple_states_filter(self, history_id):
