@@ -81,6 +81,7 @@
                     :loading="loadingGenomes"
                     :items="genomes"
                     :current-item-id="selectedGnomeId"
+                    class="mb-5 pb-5"
                     @update:selected-item="onSelectedGenome" />
             </GenomeProvider>
         </b-modal>
