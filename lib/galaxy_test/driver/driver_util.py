@@ -773,7 +773,8 @@ class GravityServerWrapper(ServerWrapper):
     def get_logs(self):
         gunicorn_logs = (self.state_dir / "log" / "gunicorn.log").read_text()
         gxit_logs = (self.state_dir / "log" / "gx-it-proxy.log").read_text()
-        return f"Gunicorn logs:{os.linesep}{gunicorn_logs}{os.linesep}gx-it-proxy logs:{os.linesep}{gxit_logs}"
+        celery_logs = (self.state_dir / "log" / "celery.log").read_text()
+        return f"Gunicorn logs:{os.linesep}{gunicorn_logs}{os.linesep}gx-it-proxy logs:{os.linesep}{gxit_logs}celery logs:{os.linesep}{celery_logs}"
 
     def stop(self):
         log.info("Gravity logs:\n%s", self.get_logs())
@@ -786,6 +787,8 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
         gxit_port = attempt_ports(set_galaxy_web_port=False)
     if "interactivetools_proxy_host" not in galaxy_config:
         galaxy_config["interactivetools_proxy_host"] = f"localhost:{gxit_port}"
+    # Can't use in-memory celery broker, just fall back to sqlalchemy
+    galaxy_config.pop("celery_broker", None)
     config = {
         "gravity": {
             "gunicorn": {"bind": f"localhost:{port}", "preload": "false"},
