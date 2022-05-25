@@ -757,8 +757,8 @@ execution:
       function: map_tool_to_destination
       rules_module: vortex.rules
       vortex_config_files:
-        - https://github.com/galaxyproject/total-perspective-vortex/blob/bf8ec46c672ed5a7ba2471d9b514cef15995bf3f/tests/fixtures/mapping-rules.yml
-        - config/vortex_rules_local.yml
+        - https://raw.githubusercontent.com/galaxyproject/total-perspective-vortex/main/tests/fixtures/mapping-sample.yml
+        # - config/vortex_rules_local.yml
 
     docker_dispatch:
       runner: dynamic

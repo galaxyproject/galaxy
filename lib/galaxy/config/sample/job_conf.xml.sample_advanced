@@ -805,7 +805,7 @@
             <param id="type">python</param>
             <param id="function">map_tool_to_destination</param>
             <param id="rules_module">vortex.rules</param>
-            <param id="vortex_config_files">https://github.com/galaxyproject/total-perspective-vortex/blob/bf8ec46c672ed5a7ba2471d9b514cef15995bf3f/tests/fixtures/mapping-rules.yml</param>
+            <param id="vortex_config_files">https://raw.githubusercontent.com/galaxyproject/total-perspective-vortex/main/tests/fixtures/mapping-sample.yml</param>
         </destination>
         <destination id="docker_dispatch" runner="dynamic">
             <!-- Follow dynamic destination type will send all tool's that
