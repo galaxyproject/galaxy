@@ -376,6 +376,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         value = dataset_attrs.get(attribute)
                         if attribute == "metadata":
                             value = replace_metadata_file(value, dataset_instance, self.sa_session)
+                            attribute = "metadata_"
                         setattr(dataset_instance, attribute, value)
 
                 handle_dataset_object_edit(dataset_instance)
