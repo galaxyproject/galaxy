@@ -80,7 +80,7 @@
                     collection-name="Genomes"
                     :loading="loadingGenomes"
                     :items="genomes"
-                    current-item-id="?"
+                    :current-item-id="selectedGnomeId"
                     @update:selected-item="onSelectedGenome" />
             </GenomeProvider>
         </b-modal>
@@ -133,7 +133,7 @@ export default {
     },
     data: function () {
         return {
-            selectedGnomeId: null,
+            selectedGnomeId: "?",
             selectedTags: [],
         };
     },
@@ -189,7 +189,7 @@ export default {
         },
         changeDbkeyOfSelected() {
             this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedGnomeId });
-            this.selectedGnomeId = null;
+            this.selectedGnomeId = "?";
         },
         addTagsToSelected() {
             this.runOnSelection(addTagsToSelectedContent, { tags: this.selectedTags });
