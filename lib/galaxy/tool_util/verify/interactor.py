@@ -194,7 +194,7 @@ class GalaxyInteractorApi:
         outfile = output_testdef.outfile
         attributes = output_testdef.attributes
         name = output_testdef.name
-
+        expected_count = attributes.get("count")
         self.wait_for_jobs(history_id, jobs, maxseconds)
         hid = self.__output_id(output_data)
         # TODO: Twill version verifies dataset is 'ok' in here.
@@ -211,10 +211,16 @@ class GalaxyInteractorApi:
             raise AssertionError(f"Output {name}: {str(e)}")
 
         primary_datasets = attributes.get("primary_datasets", {})
-        if primary_datasets:
-            job_id = self._dataset_provenance(history_id, hid)["job_id"]
-            outputs = self._get(f"jobs/{job_id}/outputs").json()
-
+        job_id = self._dataset_provenance(history_id, hid)["job_id"]
+        outputs = self._get(f"jobs/{job_id}/outputs").json()
+        found_datasets = 0
+        for output in outputs:
+            if output["name"] == name or output["name"].startswith(f"__new_primary_file_{name}|"):
+                found_datasets += 1
+        if expected_count is not None and expected_count != found_datasets:
+            raise AssertionError(
+                f"Output '{name}': expected to have '{expected_count}' datasets, but it had '{found_datasets}'"
+            )
         for designation, (primary_outfile, primary_attributes) in primary_datasets.items():
             primary_output = None
             for output in outputs:
@@ -978,13 +984,13 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
 
     def verify_elements(element_objects, element_tests):
         expected_sort_order = {}
-
         eo_ids = [_["element_identifier"] for _ in element_objects]
         for element_identifier, element_test in element_tests.items():
             if isinstance(element_test, dict):
                 element_outfile, element_attrib = None, element_test
             else:
                 element_outfile, element_attrib = element_test
+            expected_count = element_attrib.get("count")
             if "expected_sort_order" in element_attrib:
                 expected_sort_order[element_attrib["expected_sort_order"]] = element_identifier
 
@@ -995,10 +1001,16 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
 
             element_type = element["element_type"]
             if element_type != "dataset_collection":
+                element_count = 1
                 verify_dataset(element, element_attrib, element_outfile)
             else:
                 elements = element["object"]["elements"]
+                element_count = len(elements)
                 verify_elements(elements, element_attrib.get("elements", {}))
+            if expected_count is not None and expected_count != element_count:
+                raise AssertionError(
+                    f"Element '{element_identifier}': expected to have {expected_count} elements, but it had {element_count}"
+                )
 
         if len(expected_sort_order) > 0:
             generated_sort_order = [_["element_identifier"] for _ in element_objects]
@@ -1315,6 +1327,14 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
             found_exceptions.append(e)
 
     job_stdio = galaxy_interactor.get_job_stdio(job["id"])
+
+    if testdef.num_outputs is not None:
+        expected = testdef.num_outputs
+        actual = len(data_list) + len(data_collection_list)
+        if expected != actual:
+            message = f"Incorrect number of outputs - expected {expected}, found {actual}: datasets {data_list.keys()} collections {data_collection_list.keys()}"
+            error = AssertionError(message)
+            register_exception(error)
 
     if testdef.num_outputs is not None:
         expected = testdef.num_outputs

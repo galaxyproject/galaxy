@@ -623,7 +623,6 @@ def __parse_output_elem(output_elem):
     name = attrib.pop("name", None)
     if name is None:
         raise Exception("Test output does not have a 'name'")
-
     file, attributes = __parse_test_attributes(output_elem, attrib, parse_discovered_datasets=True)
     return name, file, attributes
 
@@ -688,6 +687,10 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
     attributes["delta_frac"] = float(attrib["delta_frac"]) if "delta_frac" in attrib else DEFAULT_DELTA_FRAC
     attributes["sort"] = string_as_bool(attrib.pop("sort", False))
     attributes["decompress"] = string_as_bool(attrib.pop("decompress", False))
+    try:
+        attributes["count"] = int(attrib.pop("count"))
+    except KeyError:
+        attributes["count"] = None
     extra_files = []
     if "ftype" in attrib:
         attributes["ftype"] = attrib["ftype"]

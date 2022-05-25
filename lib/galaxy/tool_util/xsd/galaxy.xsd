@@ -1095,8 +1095,16 @@ specified and instead a series of assertions is made about the output.
     </xs:attribute>
     <xs:attribute name="expect_num_outputs" type="xs:integer">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Assert the number of outputs this test
-should produce, this is useful to ensure ``filter`` directives are implemented correctly.</xs:documentation>
+        <xs:documentation xml:lang="en">Assert the number of statically defined items (datasets and collections) this test
+should produce. Each `data` or `collection` tag that is listed in the
+outputs section is a statically defined output and adds one to this count.  For
+instance a statically defined pair adds a count of 3; 1 for the collection and 1 for each
+of the two datasets.  Dynamically defined output datasets (using ``discover_datasets`` tag)
+are not counted here, but note that the ``collection`` or ``data`` tag that
+includes the ``discover_datasets`` still adds a count of one.  This is useful to
+ensure ``filter`` directives are implemented correctly.  See
+[here](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/expect_num_outputs.xml)
+for examples.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="expect_failure" type="PermissiveBoolean" default="false">
@@ -1669,13 +1677,18 @@ When this attribute is true and ``compare`` is set to ``diff``, try to decompres
         <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the maximum allowed relative size difference between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. A value of 0.1 means that the file that is generated in the test can differ by at most 10% of the file in ``test-data``. The default is not to check for  relative size difference. Can be combined with ``delta``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="count" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Number or datasets for this output. Should be used for outputs with ``discover_datasets``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:group name="TestOutputElement">
     <xs:choice>
       <xs:element name="element" type="TestOutput"/>
-      <!-- TODO: This would be more percise if this was only allowed at the top-level. -->
+      <!-- TODO: This would be more precise if this was only allowed at the top-level. -->
       <xs:element name="discovered_dataset" type="TestDiscoveredDataset"/>
-      <!-- TODO: To be more percise only one assert_contents is allowed - this should not be in here. -->
+      <!-- TODO: To be more precise only one assert_contents is allowed - this should not be in here. -->
       <xs:element name="assert_contents" type="TestAssertions">
         <xs:annotation>
           <xs:documentation xml:lang="en"><![CDATA[

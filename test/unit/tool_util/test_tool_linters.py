@@ -622,6 +622,57 @@ TESTS_VALID = """
     </tests>
 </tool>
 """
+TESTS_OUTPUT_TYPE_MISMATCH = """
+<tool>
+    <outputs>
+        <data name="data_name"/>
+        <collection name="collection_name" type="list:list"/>
+    </outputs>
+    <tests>
+        <test>
+            <output_collection name="data_name"/>
+            <output name="collection_name"/>
+        </test>
+    </tests>
+</tool>
+"""
+TESTS_DISCOVER_OUTPUTS = """
+<tool>
+    <outputs>
+        <data name="data_name">
+            <discover_datasets/>
+        </data>
+        <collection name="collection_name" type="list:list">
+            <discover_datasets/>
+        </collection>
+    </outputs>
+    <tests>
+        <!-- this should be fine -->
+        <test>
+            <output name="data_name" count="2">
+                <discovered_data/>
+            </output>
+            <output_collection name="collection_name">
+                <element count="2">
+                    <element/>
+                </element>
+            </output_collection>
+        </test>
+        <!-- no count or discovered_dataset/element  -->
+        <test>
+            <output name="data_name"/>
+            <output_collection name="collection_name"/>
+        </test>
+        <!-- no nested element and count at element -->
+        <test>
+            <output name="data_name" count="1"/>
+            <output_collection name="collection_name" count="1">
+                <element/>
+            </output_collection>
+        </test>
+    </tests>
+</tool>
+"""
 
 # tool xml for xml_order linter
 XML_ORDER = """
@@ -1288,12 +1339,12 @@ def test_tests_param_output_names(lint_ctx):
     assert "Test 1: Test param non_existent_test_name not found in the inputs" in lint_ctx.error_messages
     assert "Test 1: Found output tag without a name defined." in lint_ctx.error_messages
     assert (
-        "Test 1: Found output tag with unknown name [nonexistent_output], valid names [['existent_output']]"
+        "Test 1: Found output tag with unknown name [nonexistent_output], valid names ['existent_output', 'existent_collection']"
         in lint_ctx.error_messages
     )
     assert "Test 1: Found output_collection tag without a name defined." in lint_ctx.error_messages
     assert (
-        "Test 1: Found output_collection tag with unknown name [nonexistent_collection], valid names [['existent_collection']]"
+        "Test 1: Found output_collection tag with unknown name [nonexistent_collection], valid names ['existent_output', 'existent_collection']"
         in lint_ctx.error_messages
     )
     assert not lint_ctx.info_messages
@@ -1353,6 +1404,44 @@ def test_tests_asserts(lint_ctx):
     assert "Test 1: 'has_n_lines' needs to specify 'n', 'min', or 'max'" in lint_ctx.error_messages
     assert not lint_ctx.warn_messages
     assert len(lint_ctx.error_messages) == 9
+
+
+def test_tests_output_type_mismatch(lint_ctx):
+    tool_source = get_xml_tool_source(TESTS_OUTPUT_TYPE_MISMATCH)
+    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    assert (
+        "Test 1: test output collection_name does not correspond to a 'data' output, but a 'collection'"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 1: test collection output 'data_name' does not correspond to a 'output_collection' output, but a 'data'"
+        in lint_ctx.error_messages
+    )
+    assert not lint_ctx.warn_messages
+    assert len(lint_ctx.error_messages) == 2
+
+
+def test_tests_discover_outputs(lint_ctx):
+    tool_source = get_xml_tool_source(TESTS_DISCOVER_OUTPUTS)
+    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    assert (
+        "Test 2: test output 'data_name' must have a 'count' attribute and/or 'discovered_datasets' children"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 2: test collection 'collection_name' must have a 'count' attribute or 'element' children"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 2: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 3: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute"
+        in lint_ctx.error_messages
+    )
+    assert not lint_ctx.warn_messages
+    assert len(lint_ctx.error_messages) == 4
 
 
 def test_xml_order(lint_ctx):
