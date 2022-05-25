@@ -1116,8 +1116,8 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
             history_contents = self._get_history_contents(history_id)
             self._assert_bulk_success(bulk_operation_result, expected_purged_count)
             purged_dataset = self._get_dataset_with_id_from_history_contents(history_contents, datasets_ids[0])
+            self.dataset_populator.wait_for_purge(history_id=history_id, content_id=purged_dataset["id"])
             assert purged_dataset["deleted"] is True
-            assert purged_dataset["purged"] is True
             purged_collection = self._get_collection_with_id_from_history_contents(history_contents, collection_ids[0])
             # collections don't have a `purged` attribute but they should be marked deleted on purge
             assert purged_collection["deleted"] is True
@@ -1152,7 +1152,7 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
             for item in history_contents:
                 assert item["deleted"] is True
                 if item["history_content_type"] == "dataset":
-                    assert item["purged"] is True
+                    self.dataset_populator.wait_for_purge(history_id=history_id, content_id=item["id"])
 
     def test_only_owner_can_apply_bulk_operations(self):
         with self.dataset_populator.test_history() as history_id:
