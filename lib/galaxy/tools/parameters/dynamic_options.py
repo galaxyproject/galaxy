@@ -286,6 +286,9 @@ class ParamValueFilter(Filter):
         ref_values = []
         for r in ref:
             for ref_attribute in self.ref_attribute:
+                # TODO: this is a temporary hack; need better solution.
+                if ref_attribute == "metadata":
+                    ref_attribute = "metadata_"
                 # ref does not have attribute, so we cannot filter,
                 # but other refs might have it
                 if not hasattr(r, ref_attribute):
