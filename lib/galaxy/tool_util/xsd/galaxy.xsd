@@ -3241,6 +3241,12 @@ $attribute_list:force_select,numerical,use_header_name:5
 
 #### ``drill_down``
 
+Allows to select values from a hierarchy. The default (``hierarchy="exact"``) is
+that only exactly the selected options are used. With ``hierarchy="recurse"``
+all leaf nodes in the subtree are used.
+
+See [drill_down.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/drill_down.xml)
+
 $attribute_list:hierarchy:5
 
 #### ``data_collection``
@@ -3560,7 +3566,7 @@ allow access to Python code to generate options for a select list. See
         </xs:annotation>
       </xs:element>
       <xs:element name="conversion" type="ParamConversion" />
-      <xs:element name="option" type="ParamOption" />
+      <xs:element name="option" type="ParamSelectOption" />
       <xs:element name="options" type="ParamOptions"/>
       <xs:element name="validator" type="Validator" />
       <xs:element name="sanitizer" type="Sanitizer"/>
@@ -3839,7 +3845,7 @@ of "type" specified for this expression block.
     </xs:restriction>
   </xs:simpleType>
 
-  <xs:complexType name="ParamOption">
+  <xs:complexType name="ParamSelectOption">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
@@ -3901,6 +3907,27 @@ if the corresponding option is selected by default (the default is ``false``).
     </xs:simpleContent>
   </xs:complexType>
 
+  <xs:complexType name="ParamDrillDownOption">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+See [drill_down.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/drill_down.xml)
+      ]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="option" type="ParamDrillDownOption" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Name of the ``drill_down`` option.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Value of the ``drill_down`` option.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
   <xs:complexType name="ParamConversion">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -3926,7 +3953,6 @@ dataset for the contained input of the type specified using the ``type`` tag.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
 
   <xs:complexType name="ParamOptions">
     <xs:annotation>
@@ -4149,6 +4175,7 @@ used to generate dynamic options.
           <xs:documentation xml:lang="en">Documentation for file</xs:documentation>
         </xs:annotation>
       </xs:element>
+      <xs:element name="option" type="ParamDrillDownOption" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:group>
   <xs:complexType name="Column">

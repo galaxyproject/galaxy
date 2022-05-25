@@ -53,6 +53,7 @@
   <tool file="filter_static_regexp.xml" />
   <tool file="select_from_dataset.xml" />
   <tool file="select_from_dataset_optional.xml" />
+  <tool file="drill_down.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
   <tool file="dbkey_filter_collection.xml" />

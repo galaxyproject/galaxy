@@ -400,6 +400,24 @@ INPUTS_VALIDATOR_CORRECT = """
 </tool>
 """
 
+INPUTS_TYPE_CHILD_COMBINATIONS = """
+<tool>
+    <inputs>
+        <param name="text_param" type="text">
+            <options/>
+        </param>
+        <param name="select_param" type="select">
+            <options from_data_table="data_table">
+                <option name="x" value="y"/>
+            </options>
+        </param>
+        <param name="data_param" type="data" format="tabular">
+            <column/>
+        </param>
+    </inputs>
+</tool>
+"""
+
 
 # test tool xml for outputs linter
 OUTPUTS_MISSING = """
@@ -1144,6 +1162,27 @@ def test_inputs_validator_correct(lint_ctx):
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
+
+
+def test_inputs_type_child_combinations(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_TYPE_CHILD_COMBINATIONS)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
+    assert (
+        "Parameter [text_param] './options' tags are only allowed for parameters of type ['select', 'drill_down']"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Parameter [select_param] './options/option' tags are only allowed for parameters of type ['drill_down']"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Parameter [data_param] './column' tags are only allowed for parameters of type ['data_column']"
+        in lint_ctx.error_messages
+    )
+    assert len(lint_ctx.error_messages) == 3
 
 
 def test_inputs_repeats(lint_ctx):

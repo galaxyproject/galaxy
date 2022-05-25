@@ -1687,7 +1687,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                         recurse_option(option_list, opt)
 
             rval: List[str] = []
-            recurse_option(rval, get_base_option(value, self.get_options(other_values=other_values)))
+            base_option = get_base_option(value, self.get_options(other_values=other_values))
+            recurse_option(rval, base_option)
             return rval or [value]
 
         if value is None:
@@ -1699,6 +1700,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
             for val in value:
                 options = get_options_list(val)
                 rval.extend(options)
+            rval = list(dict.fromkeys(rval))
         if len(rval) > 1 and not self.multiple:
             raise ParameterValueError(
                 "multiple values provided but parameter is not expecting multiple values", self.name
