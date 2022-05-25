@@ -70,7 +70,9 @@ export default {
             };
         },
         tagModels() {
-            return this.value.map(createTag);
+            const sortedValue = [...this.value];
+            sortedValue.sort((a, b) => b.indexOf("name:") - a.indexOf("name:"));
+            return sortedValue.map(createTag);
         },
         autocompleteTags() {
             return this.autocompleteItems.map(createTag);
@@ -184,6 +186,9 @@ export default {
             border-radius: 4px;
             font-size: 0.8rem;
             font-weight: 400;
+        }
+        .ti-tag:hover {
+            filter: brightness(115%) !important;
         }
         &.tag-area {
             background-color: transparent;

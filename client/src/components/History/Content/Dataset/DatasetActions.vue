@@ -54,45 +54,20 @@
                     <span class="fa fa-question" />
                 </b-button>
             </div>
-            <div class="btn-group float-right">
-                <b-button
-                    class="px-1"
-                    title="Edit Tags"
-                    size="sm"
-                    variant="link"
-                    :pressed="showTags"
-                    @click="onToggleTags">
-                    <span class="fa fa-tags" />
-                </b-button>
-            </div>
-        </div>
-        <div v-if="showTags" class="mb-2">
-            <StatelessTags v-model="tags" class="tags" @input="onTags" />
         </div>
     </div>
 </template>
 
 <script>
-import { StatelessTags } from "components/Tags";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { prependPath } from "utils/redirect";
 import { copy as sendToClipboard } from "utils/clipboard";
 import { absPath } from "utils/redirect";
-import { updateContentFields } from "components/History/model/queries";
 
 export default {
-    components: {
-        StatelessTags,
-    },
     mixins: [legacyNavigationMixin],
     props: {
         item: { type: Object, required: true },
-    },
-    data() {
-        return {
-            showTags: false,
-            tags: this.item.tags,
-        };
     },
     computed: {
         downloadUrl() {
@@ -136,12 +111,6 @@ export default {
         },
         onRerun() {
             this.backboneRoute(`root?job_id=${this.item.creating_job}`);
-        },
-        onTags() {
-            updateContentFields(this.item, { tags: this.tags });
-        },
-        onToggleTags() {
-            this.showTags = !this.showTags;
         },
         onVisualize() {
             const path = `visualizations?dataset_id=${this.item.id}`;
