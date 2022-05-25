@@ -54,7 +54,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Services } from "components/Workflow/services";
 import Tags from "components/Common/Tags";
 import LicenseSelector from "components/License/LicenseSelector";
@@ -135,7 +135,10 @@ export default {
                 const current_wf = this.versions[i];
                 let update_time;
                 if (current_wf.update_time) {
-                    update_time = `${format(Date.parse(current_wf.update_time), "MMM do yyyy")}, `;
+                    update_time = `${format(
+                        parseISO(current_wf.update_time, "yyyy-MM-dd", new Date()),
+                        "MMM do yyyy"
+                    )}`;
                 } else {
                     update_time = "";
                 }
