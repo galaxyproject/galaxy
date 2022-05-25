@@ -48,6 +48,9 @@
             <b-dropdown-item v-b-modal:add-tags-to-selected-content data-description="add tags">
                 <span v-localize>Add tags</span>
             </b-dropdown-item>
+            <b-dropdown-item v-b-modal:remove-tags-from-selected-content data-description="remove tags">
+                <span v-localize>Remove tags</span>
+            </b-dropdown-item>
         </b-dropdown>
 
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
@@ -81,8 +84,16 @@
                     @update:selected-item="onSelectedGenome" />
             </GenomeProvider>
         </b-modal>
-        <b-modal id="add-tags-to-selected-content" title="Add tag?" title-tag="h2" @ok="addTagToSelected">
-            <p v-localize>Apply same tags to {{ numSelected }} items:</p>
+        <b-modal id="add-tags-to-selected-content" title="Add tags?" title-tag="h2" @ok="addTagsToSelected">
+            <p v-localize>Apply the following tags to {{ numSelected }} items:</p>
+            <StatelessTags v-model="selectedTags" class="tags" />
+        </b-modal>
+        <b-modal
+            id="remove-tags-from-selected-content"
+            title="Remove tags?"
+            title-tag="h2"
+            @ok="removeTagsFromSelected">
+            <p v-localize>Remove the following tags from {{ numSelected }} items:</p>
             <StatelessTags v-model="selectedTags" class="tags" />
         </b-modal>
     </section>
@@ -97,6 +108,7 @@ import {
     purgeSelectedContent,
     changeDbkeyOfSelectedContent,
     addTagsToSelectedContent,
+    removeTagsFromSelectedContent,
 } from "components/History/model/crud";
 import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
@@ -177,9 +189,15 @@ export default {
         },
         changeDbkeyOfSelected() {
             this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedGnomeId });
+            this.selectedGnomeId = null;
         },
-        addTagToSelected() {
+        addTagsToSelected() {
             this.runOnSelection(addTagsToSelectedContent, { tags: this.selectedTags });
+            this.selectedTags = [];
+        },
+        removeTagsFromSelected() {
+            this.runOnSelection(removeTagsFromSelectedContent, { tags: this.selectedTags });
+            this.selectedTags = [];
         },
         async runOnSelection(operation, extraParams = null) {
             this.$emit("update:operation-running", this.history.update_time);

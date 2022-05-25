@@ -50,3 +50,9 @@ export function addTagsToSelectedContent(history, filters, items, extraParams) {
     const params = { type: operationType, tags: extraParams.tags };
     return bulkUpdate(history, operationType, filters, items, params);
 }
+
+export function removeTagsFromSelectedContent(history, filters, items, extraParams) {
+    const operationType = "remove_tags";
+    const params = { type: operationType, tags: extraParams.tags };
+    return bulkUpdate(history, operationType, filters, items, params);
+}
