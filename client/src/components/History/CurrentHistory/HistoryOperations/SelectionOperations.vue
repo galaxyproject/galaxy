@@ -27,6 +27,7 @@
             <b-dropdown-item v-if="!showDeleted" v-b-modal:purge-selected-content data-description="purge option">
                 <span v-localize>Delete (permanently)</span>
             </b-dropdown-item>
+            <b-dropdown-divider />
             <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
                 <span v-localize>Build Dataset List</span>
             </b-dropdown-item>
@@ -42,6 +43,7 @@
                 @click="buildCollectionFromRules">
                 <span v-localize>Build Collection from Rules</span>
             </b-dropdown-item>
+            <b-dropdown-divider />
             <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change reference gnome">
                 <span v-localize>Change reference Gnome</span>
             </b-dropdown-item>
