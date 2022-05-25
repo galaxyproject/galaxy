@@ -84,7 +84,12 @@
                     @update:selected-item="onSelectedGenome" />
             </GenomeProvider>
         </b-modal>
-        <b-modal id="add-tags-to-selected-content" title="Add tags?" title-tag="h2" @ok="addTagsToSelected">
+        <b-modal
+            id="add-tags-to-selected-content"
+            title="Add tags?"
+            title-tag="h2"
+            :ok-disabled="noTagsSelected"
+            @ok="addTagsToSelected">
             <p v-localize>Apply the following tags to {{ numSelected }} items:</p>
             <StatelessTags v-model="selectedTags" class="tags" />
         </b-modal>
@@ -92,6 +97,7 @@
             id="remove-tags-from-selected-content"
             title="Remove tags?"
             title-tag="h2"
+            :ok-disabled="noTagsSelected"
             @ok="removeTagsFromSelected">
             <p v-localize>Remove the following tags from {{ numSelected }} items:</p>
             <StatelessTags v-model="selectedTags" class="tags" />
@@ -161,6 +167,9 @@ export default {
         /** @returns {Boolean} */
         selectionMatchesQuery() {
             return this.totalItemsInQuery === this.selectionSize;
+        },
+        noTagsSelected() {
+            return this.selectedTags.length === 0;
         },
     },
     watch: {
