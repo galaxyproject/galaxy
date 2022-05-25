@@ -38,7 +38,9 @@ from galaxy.schema.schema import (
     AnyHistoryContentItem,
     AnyJobStateSummary,
     AsyncFile,
+    AsyncTaskResultSummary,
     DatasetAssociationRoles,
+    DatasetSourceType,
     DeleteHistoryContentPayload,
     DeleteHistoryContentResult,
     HistoryContentBulkOperationPayload,
@@ -47,9 +49,13 @@ from galaxy.schema.schema import (
     HistoryContentsResult,
     HistoryContentsWithStatsResult,
     HistoryContentType,
+    MaterializeDatasetInstanceAPIRequest,
+    MaterializeDatasetInstanceRequest,
+    StoreExportPayload,
     UpdateDatasetPermissionsPayload,
     UpdateHistoryContentsBatchPayload,
     UpdateHistoryContentsPayload,
+    WriteStoreToPayload,
 )
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
@@ -58,6 +64,7 @@ from galaxy.webapps.galaxy.api.common import (
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.history_contents import (
+    CreateHistoryContentFromStore,
     CreateHistoryContentPayload,
     DatasetDetailsType,
     DirectionOptions,
@@ -436,6 +443,44 @@ class FastAPIHistoryContents:
             fuzzy_count=fuzzy_count,
         )
 
+    @router.post(
+        "/api/histories/{history_id}/contents/{type}s/{id}/prepare_store_download",
+        summary="Prepare a dataset or dataset collection for export-style download.",
+    )
+    def prepare_store_download(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+        type: HistoryContentType = ContentTypeQueryParam,
+        payload: StoreExportPayload = Body(...),
+    ) -> AsyncFile:
+        return self.service.prepare_store_download(
+            trans,
+            id,
+            contents_type=type,
+            payload=payload,
+        )
+
+    @router.post(
+        "/api/histories/{history_id}/contents/{type}s/{id}/write_store",
+        summary="Prepare a dataset or dataset collection for export-style download and write to supplied URI.",
+    )
+    def write_store(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+        type: HistoryContentType = ContentTypeQueryParam,
+        payload: WriteStoreToPayload = Body(...),
+    ) -> AsyncTaskResultSummary:
+        return self.service.write_store(
+            trans,
+            id,
+            contents_type=type,
+            payload=payload,
+        )
+
     @router.get(
         "/api/histories/{history_id}/jobs_summary",
         summary="Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.",
@@ -710,6 +755,22 @@ class FastAPIHistoryContents:
             return archive
         return StreamingResponse(archive.response(), headers=archive.get_headers())
 
+    @router.post("/api/histories/{history_id}/contents_from_store", summary="Create contents from store.")
+    def create_from_store(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        create_payload: CreateHistoryContentFromStore = Body(...),
+    ) -> List[AnyHistoryContentItem]:
+        """
+        Create history contents from model store.
+        Input can be a tarfile created with build_objects script distributed
+        with galaxy-data, from an exported history with files stripped out,
+        or hand-crafted JSON dictionary.
+        """
+        return self.service.create_from_store(trans, history_id, create_payload, serialization_params)
+
     @router.get(
         "/api/histories/{history_id}/contents/{direction}/{hid}/{limit}",
         summary="Get content items around a particular `HID`.",
@@ -795,3 +856,37 @@ class FastAPIHistoryContents:
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         response.headers.update(result.stats.to_headers())
         return result.contents
+
+    @router.post(
+        "/api/histories/{history_id}/contents/datasets/{id}/materialize",
+        summary="Materialize a deferred dataset into real, usable dataset.",
+    )
+    def materialize_dataset(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+    ) -> AsyncTaskResultSummary:
+        materializae_request = MaterializeDatasetInstanceRequest(
+            history_id=history_id,
+            source=DatasetSourceType.hda,
+            content=id,
+        )
+        rval = self.service.materialize(trans, materializae_request)
+        return rval
+
+    @router.post(
+        "/api/histories/{history_id}/materialize",
+        summary="Materialize a deferred library or HDA dataset into real, usable dataset in specified history.",
+    )
+    def materialize_to_history(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        materialize_api_payload: MaterializeDatasetInstanceAPIRequest = Body(...),
+    ) -> AsyncTaskResultSummary:
+        materializae_request: MaterializeDatasetInstanceRequest = MaterializeDatasetInstanceRequest(
+            history_id=history_id, **materialize_api_payload.dict()
+        )
+        rval = self.service.materialize(trans, materializae_request)
+        return rval

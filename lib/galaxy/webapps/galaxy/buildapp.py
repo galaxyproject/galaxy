@@ -582,6 +582,7 @@ def populate_api_routes(webapp, app):
         "/api/workflows/{id}/refactor", action="refactor", controller="workflows", conditions=dict(method=["PUT"])
     )
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
+
     webapp.mapper.resource("search", "search", path_prefix="/api")
 
     # ---- visualizations registry ---- generic template renderer
@@ -689,6 +690,14 @@ def populate_api_routes(webapp, app):
         controller="workflows",
         action="index_invocations",
         conditions=dict(method=["GET"]),
+    )
+
+    webapp.mapper.connect(
+        "create_invovactions_from_store",
+        "/api/invocations/from_store",
+        controller="workflows",
+        action="create_invocations_from_store",
+        conditions=dict(method=["POST"]),
     )
 
     # API refers to usages and invocations - these mean the same thing but the

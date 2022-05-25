@@ -109,6 +109,7 @@ class BaseDataElement(FetchBaseModel):
     ext: str = Field("auto")
     space_to_tab: bool = False
     to_posix_lines: bool = False
+    deferred: bool = False
     tags: Optional[List[str]]
     created_from_basename: Optional[str]
     extra_files: Optional[ExtraFiles]

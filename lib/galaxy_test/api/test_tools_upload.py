@@ -936,3 +936,11 @@ class ToolsUploadTestCase(ApiTestCase):
             assert hda["name"] == "1.fastqsanger.gz"
             assert hda["file_ext"] == "fastqsanger.gz"
             assert hda["state"] == "ok"
+
+    @uses_test_history(require_new=False)
+    def test_upload_deferred(self, history_id):
+        details = self.dataset_populator.create_deferred_hda(
+            history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam", ext="bam"
+        )
+        assert details["state"] == "deferred"
+        assert details["file_ext"] == "bam"

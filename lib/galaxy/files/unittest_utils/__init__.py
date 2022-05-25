@@ -14,6 +14,18 @@ class TestConfiguredFileSources(ConfiguredFileSources):
         self.test_root = test_root
 
 
+class TestPosixConfiguredFileSources(TestConfiguredFileSources):
+    """A posix file source at test1 rooted on supplied root."""
+
+    def __init__(self, root: str):
+        plugin = {
+            "type": "posix",
+            "root": root,
+        }
+        file_sources_config = ConfiguredFileSourcesConfig({})
+        super().__init__(file_sources_config, {"test1": plugin}, root)
+
+
 def setup_root():
     tmp = os.path.realpath(tempfile.mkdtemp())
     root = os.path.join(tmp, "root")

@@ -62,6 +62,16 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.assert_item_dbkey_displayed_as(1, "hg18")
 
     @selenium_test
+    def test_upload_deferred(self):
+        self.perform_upload_of_pasted_content(
+            "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed", deferred=True
+        )
+        hid = 1
+        self.history_panel_wait_for_hid_deferred(hid)
+        self.history_panel_click_item_title(hid=hid, wait=True)
+        self.screenshot("history_panel_dataset_deferred")
+
+    @selenium_test
     def test_upload_list(self):
         self.upload_list([self.get_filename("1.tabular")], name="Test List")
         self.history_panel_wait_for_hid_ok(2)
@@ -333,6 +343,87 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_example_6_6_multiple_identifiers")
         self.rule_builder_set_collection_name("PRJNA355367")
         self.screenshot("rules_example_6_7_named")
+
+    @selenium_test
+    @pytest.mark.local
+    def test_rules_deferred_datasets(self):
+        # Test case generated for:
+        #   https://www.ebi.ac.uk/ena/data/view/PRJDA60709
+        self.home()
+        self.upload_rule_start()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot("rules_deferred_datasets_1_rules_landing")
+        self.components.upload.rule_source_content.wait_for_and_send_keys(
+            """study_accession sample_accession    experiment_accession    fastq_ftp
+PRJDA60709  SAMD00016379    DRX000475   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000770/DRR000770.fastq.gz
+PRJDA60709  SAMD00016383    DRX000476   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000771/DRR000771.fastq.gz
+PRJDA60709  SAMD00016380    DRX000477   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000772/DRR000772.fastq.gz
+PRJDA60709  SAMD00016378    DRX000478   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000773/DRR000773.fastq.gz
+PRJDA60709  SAMD00016381    DRX000479   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000774/DRR000774.fastq.gz
+PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000775/DRR000775.fastq.gz"""
+        )
+        self._wait_for_upload_modal()
+        self.screenshot("rules_deferred_datasets_2_paste")
+        self.upload_rule_build()
+        rule_builder = self.components.rule_builder
+        rule_builder._.wait_for_and_click()
+        self.screenshot("rules_deferred_datasets_3_initial_rules")
+        rule_builder.menu_button_filter.wait_for_and_click()
+        self.screenshot("rule_builder_filters")
+        rule_builder.menu_item_rule_type(rule_type="add-filter-count").wait_for_and_click()
+        filter_editor = rule_builder.rule_editor(rule_type="add-filter-count")
+        filter_editor_element = filter_editor.wait_for_visible()
+        filter_input = filter_editor_element.find_element_by_css_selector("input[type='number']")
+        filter_input.clear()
+        filter_input.send_keys("1")
+        self.screenshot("rules_deferred_datasets_4_filter_header")
+        rule_builder.rule_editor_ok.wait_for_and_click()
+        self.rule_builder_set_mapping("url-deferred", "D")
+        self.rule_builder_set_mapping("name", "C", screenshot_name="rules_deferred_datasets_5_mapping_edit")
+        self.screenshot("rules_deferred_datasets_6_mapping_set")
+        self.rule_builder_set_extension("fastqsanger.gz")
+        self.screenshot("rules_deferred_datasets_7_extension_set")
+        rule_builder.main_button_ok.wait_for_and_click()
+        self.history_panel_wait_for_hid_deferred(6)
+        self.screenshot("rules_deferred_datasets_8_download_complete")
+
+    @selenium_test
+    @pytest.mark.local
+    def test_rules_deferred_list(self):
+        self.home()
+        self.perform_upload(self.get_filename("rules/PRJNA355367.tsv"))
+        self.history_panel_wait_for_hid_ok(1)
+        self.upload_rule_start()
+        self.upload_rule_set_data_type("Collection")
+        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_set_dataset(1)
+
+        self._wait_for_upload_modal()
+        self.screenshot("rules_deferred_list_1_paste")
+        self.upload_rule_build()
+
+        rule_builder = self.components.rule_builder
+        rule_builder._.wait_for_and_click()
+        self.screenshot("rules_deferred_list_2_rules_landing")
+
+        self.rule_builder_filter_count(1)
+
+        self.rule_builder_set_mapping("url-deferred", "J")
+        self.rule_builder_set_extension("sra")
+        self._scroll_to_end_of_table()
+        self.screenshot("rules_deferred_list_3_end_of_table")
+        self.rule_builder_add_regex_groups("L", 1, r"([^\d]+)\d+", screenshot_name="rules_deferred_list_4_regex")
+        self.rule_builder_set_mapping(
+            "list-identifiers", ["M", "A"], screenshot_name="rules_deferred_list_5_multiple_identifiers_edit"
+        )
+        self._scroll_to_end_of_table()
+        self.screenshot("rules_deferred_list_6_multiple_identifiers")
+        self.rule_builder_set_collection_name("PRJNA355367")
+        self.screenshot("rules_deferred_list_7_named")
+        rule_builder.main_button_ok.wait_for_and_click()
+        hid = 2
+        self.history_panel_wait_for_hid_ok(hid)
+        self.screenshot("rules_deferred_list_7_download_complete")
 
     def _read_rules_test_data_file(self, name):
         with open(self.test_data_resolver.get_filename(os.path.join("rules", name))) as f:

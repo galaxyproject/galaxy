@@ -15,6 +15,10 @@ export default Backbone.View.extend({
                 id: "to_posix_lines",
                 title: "Use POSIX standard",
             },
+            {
+                id: "deferred",
+                title: "Defer dataset resolution",
+            },
         ],
     },
 

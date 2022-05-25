@@ -43,7 +43,10 @@ from typing import (
     Optional,
 )
 
-from galaxy.exceptions import UserActivationRequiredException
+from galaxy.exceptions import (
+    AuthenticationRequired,
+    UserActivationRequiredException,
+)
 from galaxy.model import (
     Dataset,
     History,
@@ -52,6 +55,7 @@ from galaxy.model import (
 )
 from galaxy.model.base import ModelMapping
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.tasks import RequestUser
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import UserVaultWrapper
 from galaxy.structured_app import MinimalManagerApp
@@ -196,6 +200,12 @@ class ProvidesUserContext(ProvidesAppContext):
     Mixed in class must provide `user` and `app`
     properties.
     """
+
+    @property
+    def async_request_user(self) -> RequestUser:
+        if self.user is None:
+            raise AuthenticationRequired("The async task requires user authentication.")
+        return RequestUser(user_id=self.user.id)
 
     @abc.abstractproperty
     def user(self):

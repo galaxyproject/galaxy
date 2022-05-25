@@ -59,6 +59,7 @@ PACKAGES = [
 ENTRY_POINTS = """
         [console_scripts]
         galaxy-build-objects=galaxy.model.store.build_objects:main
+        galaxy-load-objects=galaxy.model.store.load_objects:main
         galaxy-manage-db=galaxy.model.orm.scripts:manage_db
 """
 PACKAGE_DATA = {

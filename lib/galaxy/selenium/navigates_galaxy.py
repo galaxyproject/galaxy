@@ -417,6 +417,9 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_wait_for_hid_ok(self, hid, allowed_force_refreshes=0):
         return self.history_panel_wait_for_hid_state(hid, "ok", allowed_force_refreshes=allowed_force_refreshes)
 
+    def history_panel_wait_for_hid_deferred(self, hid, allowed_force_refreshes=0):
+        return self.history_panel_wait_for_hid_state(hid, "deferred", allowed_force_refreshes=allowed_force_refreshes)
+
     def history_panel_item_component(self, history_item=None, hid=None, multi_history_panel=False):
         if self.is_beta_history():
             assert hid
@@ -701,7 +704,9 @@ class NavigatesGalaxy(HasDriver):
     def perform_upload_of_pasted_content(self, paste_data, **kwd):
         self._perform_upload(paste_data=paste_data, **kwd)
 
-    def _perform_upload(self, test_path=None, paste_data=None, ext=None, genome=None, ext_all=None, genome_all=None):
+    def _perform_upload(
+        self, test_path=None, paste_data=None, ext=None, genome=None, ext_all=None, genome_all=None, deferred=None
+    ):
         self.home()
         self.upload_start_click()
 
@@ -721,6 +726,17 @@ class NavigatesGalaxy(HasDriver):
         if genome is not None:
             self.wait_for_selector_visible(".upload-genome")
             self.select2_set_value(".upload-genome", genome)
+
+        if deferred is not None:
+            upload = self.components.upload
+            upload.settings_button(n=0).wait_for_and_click()
+            upload.settings.wait_for_visible()
+            setting = upload.setting_deferred.wait_for_visible()
+            classes = setting.get_attribute("class").split(" ")
+            if deferred is True and "fa-check-square-o" not in classes:
+                setting.click()
+            elif deferred is False and "fa-check-square-o" in classes:
+                setting.click()
 
         self.upload_start()
 

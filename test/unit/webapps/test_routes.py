@@ -42,7 +42,9 @@ def test_galaxy_routes():
     test_webapp.assert_maps("/api/dependency_resolvers", controller="tool_dependencies", action="index")
 
     test_webapp.assert_maps(
-        "/api/dependency_resolvers/dependency", controller="tool_dependencies", action="manager_dependency"
+        "/api/dependency_resolvers/dependency",
+        controller="tool_dependencies",
+        action="manager_dependency",
     )
 
     test_webapp.assert_maps("/api/dependency_resolvers/0", controller="tool_dependencies", action="show")

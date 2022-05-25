@@ -7,19 +7,38 @@ from tempfile import (
     mkdtemp,
     NamedTemporaryFile,
 )
+from typing import (
+    Any,
+    Dict,
+    NamedTuple,
+)
 
 import pytest
+from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy import model
 from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.unittest_utils import GalaxyDataTestApp
+from galaxy.model.unittest_utils.store_fixtures import (
+    deferred_hda_model_store_dict,
+    one_hda_model_store_dict,
+    one_ld_library_model_store_dict,
+    TEST_HASH_FUNCTION,
+    TEST_HASH_VALUE,
+    TEST_SOURCE_URI,
+)
 from galaxy.objectstore.unittest_utils import Config as TestConfig
 from galaxy.util.compression_utils import CompressedFile
+from ..test_galaxy_mapping import (
+    _invocation_for_workflow,
+    _workflow_from_steps,
+)
 
 TESTCASE_DIRECTORY = pathlib.Path(__file__).parent
 TEST_PATH_1 = TESTCASE_DIRECTORY / "1.txt"
 TEST_PATH_2 = TESTCASE_DIRECTORY / "2.bed"
+DEFAULT_OBJECT_STORE_BY = "id"
 
 
 def test_import_export_history():
@@ -68,6 +87,34 @@ def test_import_export_history_hidden_true_with_hidden_dataset():
     assert d2.dataset.get_size() == imported_history.datasets[1].get_size()
 
 
+def test_import_export_history_allow_discarded_data():
+    """Test an export and import without exporting dataset file data.
+
+    Experimental state that should result in 'discarded' datasets that are not
+    deleted.
+    """
+    app = _mock_app()
+
+    u, h, d1, d2, j = _setup_simple_cat_job(app)
+
+    import_options = store.ImportOptions(
+        discarded_data=store.ImportDiscardedDataType.ALLOW,
+    )
+    imported_history = _import_export_history(app, h, export_files=None, import_options=import_options)
+    assert imported_history.name == "imported from archive: Test History"
+
+    datasets = imported_history.datasets
+    assert len(datasets) == 2
+    assert datasets[0].state == datasets[1].state == model.Dataset.states.DISCARDED
+    assert datasets[0].deleted is False
+
+    imported_job = datasets[1].creating_job
+    assert imported_job
+    assert imported_job.state == "ok"
+    assert imported_job.output_datasets
+    assert imported_job.output_datasets[0].dataset == datasets[1]
+
+
 def test_import_export_bag_archive():
     """Test a simple job import/export using a BagIt archive."""
     dest_parent = mkdtemp()
@@ -105,6 +152,83 @@ def test_import_export_datasets():
 
     assert imported_job.input_datasets
     assert imported_job.input_datasets[0].dataset == datasets[0]
+
+
+def test_import_from_dict():
+    fixture_context = setup_fixture_context_with_history()
+    import_dict = one_hda_model_store_dict()
+    perform_import_from_store_dict(fixture_context, import_dict)
+    import_history = fixture_context.history
+
+    datasets = import_history.datasets
+    assert len(datasets) == 1
+    imported_hda = datasets[0]
+    assert imported_hda.name == "my cool name"
+    assert imported_hda.hid == 1
+    # it wasn't deleted going in but we delete discarded datasets by default
+    assert imported_hda.state == "deferred"
+    assert not imported_hda.deleted
+
+    assert len(imported_hda.dataset.hashes) == 1
+    assert len(imported_hda.dataset.sources) == 1
+    assert imported_hda.dataset.created_from_basename == "dataset.txt"
+    imported_dataset_hash = imported_hda.dataset.hashes[0]
+    imported_dataset_source = imported_hda.dataset.sources[0]
+    assert imported_dataset_hash.hash_function == TEST_HASH_FUNCTION
+    assert imported_dataset_hash.hash_value == TEST_HASH_VALUE
+    assert imported_dataset_source.source_uri == TEST_SOURCE_URI
+
+
+def test_import_library_from_dict():
+    fixture_context = setup_fixture_context_with_history()
+    import_dict = one_ld_library_model_store_dict()
+    import_options = store.ImportOptions()
+    import_options.allow_library_creation = True
+    perform_import_from_store_dict(fixture_context, import_dict, import_options=import_options)
+
+    sa_session = fixture_context.sa_session
+    all_libraries = sa_session.query(model.Library).all()
+    assert len(all_libraries) == 1, len(all_libraries)
+    all_lddas = sa_session.query(model.LibraryDatasetDatasetAssociation).all()
+    assert len(all_lddas) == 1, len(all_lddas)
+
+
+def test_import_allow_discarded():
+    fixture_context = setup_fixture_context_with_history()
+    import_dict = one_hda_model_store_dict(include_source=False)
+    import_options = store.ImportOptions(
+        discarded_data=store.ImportDiscardedDataType.ALLOW,
+    )
+    perform_import_from_store_dict(fixture_context, import_dict, import_options=import_options)
+    import_history = fixture_context.history
+    datasets = import_history.datasets
+    assert len(datasets) == 1
+    imported_hda = datasets[0]
+    assert imported_hda.name == "my cool name"
+    assert imported_hda.hid == 1
+    # it wasn't deleted going in but we delete discarded datasets by default
+    assert imported_hda.state == "discarded"
+    assert not imported_hda.deleted
+    assert not imported_hda.metadata_deferred
+
+
+def test_import_deferred_metadata():
+    fixture_context = setup_fixture_context_with_history()
+    import_dict = deferred_hda_model_store_dict(metadata_deferred=True)
+    import_options = store.ImportOptions(
+        discarded_data=store.ImportDiscardedDataType.ALLOW,
+    )
+    perform_import_from_store_dict(fixture_context, import_dict, import_options=import_options)
+    import_history = fixture_context.history
+    datasets = import_history.datasets
+    assert len(datasets) == 1
+    imported_hda = datasets[0]
+    assert imported_hda.name == "my cool name"
+    assert imported_hda.hid == 1
+    # it wasn't deleted going in but we delete discarded datasets by default
+    assert imported_hda.state == "deferred"
+    assert not imported_hda.deleted
+    assert imported_hda.metadata_deferred
 
 
 def test_import_library_require_permissions():
@@ -189,6 +313,25 @@ def test_import_export_library():
 
     assert len(new_root.folders) == 1
     assert len(new_root.datasets) == 1
+
+
+def test_import_export_invocation():
+    app = _mock_app()
+    workflow_invocation = _setup_invocation(app)
+
+    temp_directory = mkdtemp()
+    with store.DirectoryModelExportStore(temp_directory, app=app) as export_store:
+        export_store.export_workflow_invocation(workflow_invocation)
+
+    sa_session = app.model.context
+    h2 = model.History(user=workflow_invocation.user)
+    sa_session.add(h2)
+    sa_session.flush()
+
+    import_model_store = store.get_import_model_store_for_directory(
+        temp_directory, app=app, user=workflow_invocation.user, import_options=store.ImportOptions()
+    )
+    import_model_store.perform_import(history=h2)
 
 
 def test_finalize_job_state():
@@ -512,7 +655,32 @@ def _setup_simple_cat_job(app, state="ok"):
     return u, h, d1, d2, j
 
 
-def _import_export_history(app, h, dest_export=None, export_files=None, include_hidden=False):
+def _setup_invocation(app):
+    sa_session = app.model.context
+
+    u, h, d1, d2, j = _setup_simple_cat_job(app)
+
+    workflow_step_1 = model.WorkflowStep()
+    workflow_step_1.order_index = 0
+    workflow_step_1.type = "data_input"
+    sa_session.add(workflow_step_1)
+    workflow_1 = _workflow_from_steps(u, [workflow_step_1])
+    sa_session.add(workflow_1)
+    workflow_invocation = _invocation_for_workflow(u, workflow_1)
+    invocation_step = model.WorkflowInvocationStep()
+    invocation_step.workflow_step = workflow_step_1
+    sa_session.add(invocation_step)
+    output_assoc = model.WorkflowInvocationStepOutputDatasetAssociation()
+    output_assoc.dataset = d2
+    invocation_step.output_datasets = [output_assoc]
+    workflow_invocation.steps = [invocation_step]
+    workflow_invocation.user = u
+    sa_session.add(workflow_invocation)
+    sa_session.flush()
+    return workflow_invocation
+
+
+def _import_export_history(app, h, dest_export=None, export_files=None, import_options=None, include_hidden=False):
     if dest_export is None:
         dest_parent = mkdtemp()
         dest_export = os.path.join(dest_parent, "moo.tgz")
@@ -520,7 +688,7 @@ def _import_export_history(app, h, dest_export=None, export_files=None, include_
     with store.TarModelExportStore(dest_export, app=app, export_files=export_files) as export_store:
         export_store.export_history(h, include_hidden=include_hidden)
 
-    imported_history = import_archive(dest_export, app, h.user)
+    imported_history = import_archive(dest_export, app, h.user, import_options=import_options)
     assert imported_history
     return imported_history
 
@@ -542,12 +710,83 @@ def _create_datasets(sa_session, history, n, extension="txt"):
     ]
 
 
-def _mock_app(store_by="id"):
-    app = GalaxyDataTestApp()
+class MockWorkflowContentsManager:
+    def store_workflow_artifacts(self, directory, workflow_key, workflow, **kwd):
+        path = os.path.join(directory, f"{workflow_key}.gxwf.yml")
+        with open(path, "w") as f:
+            f.write("MY COOL WORKFLOW!!!")
+        path = os.path.join(directory, f"{workflow_key}.abstract.cwl")
+        with open(path, "w") as f:
+            f.write("MY COOL WORKFLOW as CWL!!!")
+
+    def read_workflow_from_path(self, app, user, path, allow_in_directory=None):
+        stored_workflow = model.StoredWorkflow()
+        stored_workflow.user = user
+        workflow_step_1 = model.WorkflowStep()
+        workflow_step_1.order_index = 0
+        workflow_step_1.type = "data_input"
+        workflow = model.Workflow()
+        workflow.steps = [workflow_step_1]
+        stored_workflow.latest_workflow = workflow
+        sa_session = app.model.context
+        sa_session.add_all((stored_workflow, workflow))
+        sa_session.flush()
+        return workflow
+
+
+class TestApp(GalaxyDataTestApp):
+    workflow_contents_manager = MockWorkflowContentsManager()
+
+
+def _mock_app(store_by=DEFAULT_OBJECT_STORE_BY):
+    app = TestApp()
     test_object_store_config = TestConfig(store_by=store_by)
     app.object_store = test_object_store_config.object_store
     app.model.Dataset.object_store = app.object_store
     return app
+
+
+class StoreFixtureContextWithUser(NamedTuple):
+    app: TestApp
+    sa_session: scoped_session
+    user: model.User
+
+
+def setup_fixture_context_with_user(
+    user_email="test@example.com", store_by=DEFAULT_OBJECT_STORE_BY
+) -> StoreFixtureContextWithUser:
+    app = _mock_app(store_by=store_by)
+    sa_session = app.model.context
+    user = model.User(email=user_email, password="password")
+    return StoreFixtureContextWithUser(app=app, sa_session=sa_session, user=user)
+
+
+class StoreFixtureContextWithHistory(NamedTuple):
+    app: TestApp
+    sa_session: scoped_session
+    user: model.User
+    history: model.History
+
+
+def setup_fixture_context_with_history(
+    history_name="Test History for Model Store", **kwd
+) -> StoreFixtureContextWithHistory:
+    app, sa_session, user = setup_fixture_context_with_user(**kwd)
+    history = model.History(name=history_name, user=user)
+    sa_session.add(history)
+    sa_session.flush()
+    return StoreFixtureContextWithHistory(app, sa_session, user, history)
+
+
+def perform_import_from_store_dict(
+    fixture_context: StoreFixtureContextWithHistory, import_dict: Dict[str, Any], import_options=None
+):
+    import_options = import_options or store.ImportOptions()
+    import_model_store = store.get_import_model_store_for_dict(
+        import_dict, app=fixture_context.app, user=fixture_context.user, import_options=import_options
+    )
+    with import_model_store.target_history(default_history=fixture_context.history):
+        import_model_store.perform_import(fixture_context.history)
 
 
 class Options:
@@ -556,12 +795,18 @@ class Options:
     is_b64encoded = False
 
 
-def import_archive(archive_path, app, user):
+def import_archive(archive_path, app, user, import_options=None):
     dest_parent = mkdtemp()
     dest_dir = CompressedFile(archive_path).extract(dest_parent)
 
+    import_options = import_options or store.ImportOptions()
     new_history = None
-    model_store = store.get_import_model_store_for_directory(dest_dir, app=app, user=user)
+    model_store = store.get_import_model_store_for_directory(
+        dest_dir,
+        app=app,
+        user=user,
+        import_options=import_options,
+    )
     with model_store.target_history(default_history=None) as new_history:
         model_store.perform_import(new_history)
 

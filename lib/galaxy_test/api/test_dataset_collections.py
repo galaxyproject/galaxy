@@ -294,6 +294,34 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert element0["element_identifier"] == "4.bed"
         assert element0["object"]["file_size"] == 61
 
+    def test_upload_collection_deferred(self):
+        elements = [
+            {
+                "src": "url",
+                "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                "info": "my cool bed",
+                "deferred": True,
+            }
+        ]
+        targets = [
+            {
+                "destination": {"type": "hdca"},
+                "elements": elements,
+                "collection_type": "list",
+            }
+        ]
+        payload = {
+            "history_id": self.history_id,
+            "targets": targets,
+        }
+        self.dataset_populator.fetch(payload)
+        hdca = self._assert_one_collection_created_in_history()
+        assert len(hdca["elements"]) == 1, hdca
+        element0 = hdca["elements"][0]
+        assert element0["element_identifier"] == "4.bed"
+        object0 = element0["object"]
+        assert object0["state"] == "deferred"
+
     @skip_if_github_down
     def test_upload_collection_failed_expansion_url(self):
         targets = [

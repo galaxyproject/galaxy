@@ -15,6 +15,10 @@ from galaxy import (
     objectstore,
 )
 from galaxy.datatypes import registry
+from galaxy.files import (
+    ConfiguredFileSources,
+    NullConfiguredFileSources,
+)
 from galaxy.model.mapping import (
     GalaxyModelMapping,
     init,
@@ -76,6 +80,7 @@ class GalaxyDataTestApp:
     security: IdEncodingHelper
     model: GalaxyModelMapping
     security_agent: GalaxyRBACAgent
+    file_sources: ConfiguredFileSources = NullConfiguredFileSources()
 
     def __init__(self, config: Optional[GalaxyDataTestConfig] = None, **kwd):
         config = config or GalaxyDataTestConfig(**kwd)

@@ -207,6 +207,13 @@ class ConfiguredFileSources:
         return ConfiguredFileSources(file_sources_config, conf_dict=sources_as_dict)
 
 
+class NullConfiguredFileSources(ConfiguredFileSources):
+    def __init__(
+        self,
+    ):
+        super().__init__(ConfiguredFileSourcesConfig())
+
+
 class ConfiguredFileSourcesConfig:
     def __init__(
         self,

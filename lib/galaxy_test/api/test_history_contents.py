@@ -17,6 +17,10 @@ from galaxy_test.base.populators import (
 )
 from ._framework import ApiTestCase
 
+TEST_SOURCE_URI = "http://google.com/dataset.txt"
+TEST_HASH_FUNCTION = "MD5"
+TEST_HASH_VALUE = "moocowpretendthisisahas"
+
 
 # TODO: Test anonymous access.
 class HistoryContentsApiTestCase(ApiTestCase):

@@ -8,9 +8,17 @@ from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.tasks import (
+    GenerateHistoryContentDownload,
+    GenerateHistoryDownload,
+    GenerateInvocationDownload,
     GeneratePdfDownload,
+    ImportModelStoreTaskRequest,
+    MaterializeDatasetInstanceTaskRequest,
     PrepareDatasetCollectionDownload,
     SetupHistoryExportJob,
+    WriteHistoryContentTo,
+    WriteHistoryTo,
+    WriteInvocationTo,
 )
 from galaxy.util.custom_logging import get_logger
 from galaxy.web.short_term_storage import ShortTermStorageMonitor
@@ -35,6 +43,15 @@ def recalculate_user_disk_usage(session: galaxy_scoped_session, user_id=None):
 def purge_hda(hda_manager: HDAManager, hda_id):
     hda = hda_manager.by_id(hda_id)
     hda_manager._purge(hda)
+
+
+@galaxy_task(ignore_result=True, action="materializing dataset instance")
+def materialize(
+    hda_manager: HDAManager,
+    request: MaterializeDatasetInstanceTaskRequest,
+):
+    """Materialize datasets using HDAManager."""
+    hda_manager.materialize(request)
 
 
 @galaxy_task(action="set dataset association metadata")
@@ -71,6 +88,62 @@ def prepare_pdf_download(
 ):
     """Create a short term storage file tracked and available for download of target PDF for Galaxy Markdown."""
     generate_branded_pdf(request, config, short_term_storage_monitor)
+
+
+@galaxy_task(action="generate and stage a history model store for download")
+def prepare_history_download(
+    model_store_manager: ModelStoreManager,
+    request: GenerateHistoryDownload,
+):
+    model_store_manager.prepare_history_download(request)
+
+
+@galaxy_task(action="generate and stage a history content model store for download")
+def prepare_history_content_download(
+    model_store_manager: ModelStoreManager,
+    request: GenerateHistoryContentDownload,
+):
+    model_store_manager.prepare_history_content_download(request)
+
+
+@galaxy_task(action="generate and stage a workflow invocation store for download")
+def prepare_invocation_download(
+    model_store_manager: ModelStoreManager,
+    request: GenerateInvocationDownload,
+):
+    model_store_manager.prepare_invocation_download(request)
+
+
+@galaxy_task(action="generate and stage a workflow invocation store to file source URI")
+def write_invocation_to(
+    model_store_manager: ModelStoreManager,
+    request: WriteInvocationTo,
+):
+    model_store_manager.write_invocation_to(request)
+
+
+@galaxy_task(action="generate and stage a history store to file source URI")
+def write_history_to(
+    model_store_manager: ModelStoreManager,
+    request: WriteHistoryTo,
+):
+    model_store_manager.write_history_to(request)
+
+
+@galaxy_task(action="generate and stage a history content model store to file source URI")
+def write_history_content_to(
+    model_store_manager: ModelStoreManager,
+    request: WriteHistoryContentTo,
+):
+    model_store_manager.write_history_content_to(request)
+
+
+@galaxy_task(action="import objects from a target model store")
+def import_model_store(
+    model_store_manager: ModelStoreManager,
+    request: ImportModelStoreTaskRequest,
+):
+    model_store_manager.import_model_store(request)
 
 
 @galaxy_task(action="pruning history audit table")

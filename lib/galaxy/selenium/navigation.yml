@@ -113,6 +113,7 @@ dataset_details:
     _: 'table#dataset-details'
     tool_parameters: 'table#tool-parameters'
     transform_action: '[data-transform-action="${action}"]'
+    deferred_source_uri: '.deferred-dataset-source-uri'
 
 history_panel:
   menu:
@@ -871,6 +872,9 @@ upload:
     ftp_items: '.upload-ftp-row'
     ftp_close: '.popover-header .popover-close'
     row: '#upload-row-${n}'
+    settings_button: '#upload-row-${n} .upload-settings'
+    settings: '.upload-settings-table'
+    setting_deferred: '.upload-deferred'
     start: '.upload-button'
     rule_source_content: 'textarea.upload-rule-source-content'
     rule_select_data_type: '.rule-data-type'

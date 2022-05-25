@@ -1243,6 +1243,56 @@ class CreateNewCollectionPayload(Model):
     )
 
 
+class ModelStoreFormat(str, Enum):
+    """Available types of model stores for export."""
+
+    TGZ = "tgz"
+    TAR = "tar"
+    TAR_DOT_GZ = "tar.gz"
+    BAG_DOT_ZIP = "bag.zip"
+    BAG_DOT_TAR = "bag.tar"
+    BAG_DOT_TGZ = "bag.tgz"
+
+
+class StoreContentSource(Model):
+    store_content_uri: Optional[str]
+    store_dict: Optional[Dict[str, Any]]
+    model_store_format: Optional["ModelStoreFormat"] = None
+
+
+class CreateHistoryFromStore(StoreContentSource):
+    pass
+
+
+class StoreExportPayload(Model):
+    model_store_format: ModelStoreFormat = Field(
+        default=ModelStoreFormat.TAR_DOT_GZ,
+        description="format of model store to export",
+    )
+    include_files: bool = Field(
+        default=True,
+        description="include materialized files in export when available",
+    )
+    include_deleted: bool = Field(
+        default=False,
+        title="Include deleted",
+        description="Include file contents for deleted datasets (if include_files is True).",
+    )
+    include_hidden: bool = Field(
+        default=False,
+        title="Include hidden",
+        description="Include file contents for hidden datasets (if include_files is True).",
+    )
+
+
+class WriteStoreToPayload(StoreExportPayload):
+    target_uri: str = Field(
+        ...,
+        title="Target URI",
+        description="Galaxy Files URI to write mode store content to.",
+    )
+
+
 class JobExportHistoryArchiveModel(Model):
     id: EncodedDatabaseIdField = Field(
         ...,
@@ -2195,6 +2245,10 @@ class CreateLibraryPayload(BaseModel):
     )
 
 
+class CreateLibrariesFromStore(StoreContentSource):
+    pass
+
+
 class UpdateLibraryPayload(BaseModel):
     name: Optional[str] = Field(
         None,
@@ -2820,6 +2874,27 @@ class PageSummaryBase(BaseModel):
         description="The title slug for the page URL, must be unique.",
         regex=r"^[a-z0-9\-]+$",
     )
+
+
+class MaterializeDatasetInstanceAPIRequest(Model):
+    source: DatasetSourceType = Field(
+        None,
+        title="Source",
+        description="The source of the content. Can be other history element to be copied or library elements.",
+    )
+    content: EncodedDatabaseIdField = Field(
+        None,
+        title="Content",
+        description=(
+            "Depending on the `source` it can be:\n"
+            "- The encoded id of the source library dataset\n"
+            "- The encoded id of the the HDA\n"
+        ),
+    )
+
+
+class MaterializeDatasetInstanceRequest(MaterializeDatasetInstanceAPIRequest):
+    history_id: EncodedDatabaseIdField
 
 
 class CreatePagePayload(PageSummaryBase):

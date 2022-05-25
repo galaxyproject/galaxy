@@ -525,7 +525,21 @@ DatasetListItemView.prototype.templates = (() => {
         "dataset"
     );
     summaryTemplates[STATES.DISCARDED] = BASE_MVC.wrapTemplate(
-        ["<div>", _l("The job creating this dataset was cancelled before completion"), "</div>"],
+        [
+            "<div>",
+            _l(
+                "This dataset is discarded - the job creating it may have been cancelled or it may have been imported with file data"
+            ),
+            "</div>",
+        ],
+        "dataset"
+    );
+    summaryTemplates[STATES.DEFERRED] = BASE_MVC.wrapTemplate(
+        [
+            "<div>",
+            _l("This dataset is remote, has not be ingested by Galaxy, and full metadata may not be available"),
+            "</div>",
+        ],
         "dataset"
     );
     summaryTemplates[STATES.QUEUED] = BASE_MVC.wrapTemplate(

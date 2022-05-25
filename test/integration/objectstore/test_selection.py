@@ -3,6 +3,11 @@
 import os
 import string
 
+from galaxy.model import Dataset
+from galaxy.model.unittest_utils.store_fixtures import (
+    deferred_hda_model_store_dict,
+    one_hda_model_store_dict,
+)
 from ._base import (
     BaseObjectStoreIntegrationTestCase,
     files_count,
@@ -78,7 +83,7 @@ class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase
 
     def _assert_no_external_filename(self):
         # Should maybe be its own test case ...
-        for external_filename_tuple in self._app.model.session.query(self._app.model.Dataset.external_filename).all():
+        for external_filename_tuple in self._app.model.session.query(Dataset.external_filename).all():
             assert external_filename_tuple[0] is None
 
     def test_tool_simple_constructs(self):
@@ -126,3 +131,27 @@ class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase
             _run_tool("create_10", create_10_inputs_2)
             self._assert_file_counts(1, 2, 10, 10)
             self._assert_no_external_filename()
+            assert self._latest_dataset.object_store_id == "dynamic_s3"
+
+            # assure discarded datsets don't have an object store ID populated
+            # and don't create files in the object store.
+            self.dataset_populator.create_contents_from_store(
+                history_id,
+                store_dict=one_hda_model_store_dict(),
+            )
+            self._assert_file_counts(1, 2, 10, 10)
+            assert self._latest_dataset.object_store_id is None
+
+            # assure deferred datsets don't have an object store ID populated
+            # and don't create files in the object store.
+            self.dataset_populator.create_contents_from_store(
+                history_id,
+                store_dict=deferred_hda_model_store_dict(),
+            )
+            self._assert_file_counts(1, 2, 10, 10)
+            assert self._latest_dataset.object_store_id is None
+
+    @property
+    def _latest_dataset(self):
+        latest_dataset = self._app.model.session.query(Dataset).order_by(Dataset.table.c.id.desc()).first()
+        return latest_dataset

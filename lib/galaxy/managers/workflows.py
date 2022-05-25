@@ -18,6 +18,9 @@ from gxformat2 import (
     ImportOptions,
     python_to_workflow,
 )
+from gxformat2.abstract import from_dict
+from gxformat2.cytoscape import to_cytoscape
+from gxformat2.yaml import ordered_dump
 from pydantic import BaseModel
 from sqlalchemy import (
     and_,
@@ -71,6 +74,7 @@ from galaxy.util.search import (
     RawTextTerm,
 )
 from galaxy.web import url_for
+from galaxy.work.context import WorkRequestContext
 from galaxy.workflow.modules import (
     is_tool_module_type,
     module_factory,
@@ -513,6 +517,21 @@ class WorkflowContentsManager(UsesAnnotations):
             dict_or_raw_description = RawWorkflowDescription(dict_or_raw_description)
         return dict_or_raw_description
 
+    def read_workflow_from_path(self, app, user, path, allow_in_directory=None):
+        trans = WorkRequestContext(app=self.app, user=user)
+
+        as_dict = {"src": "from_path", "path": path}
+        workflow_class, as_dict, object_id = artifact_class(trans, as_dict, allow_in_directory=allow_in_directory)
+        assert workflow_class == "GalaxyWorkflow"
+        # Format 2 Galaxy workflow.
+        galaxy_interface = Format2ConverterGalaxyInterface()
+        import_options = ImportOptions()
+        import_options.deduplicate_subworkflows = True
+        as_dict = python_to_workflow(as_dict, galaxy_interface, workflow_directory=None, import_options=import_options)
+        raw_description = RawWorkflowDescription(as_dict, path)
+        created_workflow = self.build_workflow_from_raw_description(trans, raw_description, WorkflowCreateOptions())
+        return created_workflow.workflow
+
     def normalize_workflow_format(self, trans, as_dict):
         """Process incoming workflow descriptions for consumption by other methods.
 
@@ -788,11 +807,35 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def _sync_stored_workflow(self, trans, stored_workflow):
         workflow_path = stored_workflow.from_path
+        self.store_workflow_to_path(workflow_path, stored_workflow, stored_workflow.latest_workflow, trans=trans)
+
+    def store_workflow_artifacts(self, directory, filename_base, workflow, **kwd):
+        modern_workflow_path = os.path.join(directory, f"{filename_base}.gxwf.yml")
+        legacy_workflow_path = os.path.join(directory, f"{filename_base}.ga")
+        abstract_cwl_workflow_path = os.path.join(directory, f"{filename_base}.abstract.cwl")
+        for path in [legacy_workflow_path, modern_workflow_path, abstract_cwl_workflow_path]:
+            self.app.workflow_contents_manager.store_workflow_to_path(path, workflow.stored_workflow, workflow, **kwd)
+        try:
+            cytoscape_path = os.path.join(directory, f"{filename_base}.html")
+            to_cytoscape(modern_workflow_path, cytoscape_path)
+        except Exception:
+            # completely optional and currently broken so ignore...
+            pass
+
+    def store_workflow_to_path(self, workflow_path, stored_workflow, workflow, **kwd):
+        trans = kwd.get("trans")
+        if trans is None:
+            trans = WorkRequestContext(app=self.app, user=kwd.get("user"), history=kwd.get("history"))
+
         workflow = stored_workflow.latest_workflow
         with open(workflow_path, "w") as f:
             if workflow_path.endswith(".ga"):
                 wf_dict = self._workflow_to_dict_export(trans, stored_workflow, workflow=workflow)
                 json.dump(wf_dict, f, indent=4)
+            elif workflow_path.endswith(".abstract.cwl"):
+                wf_dict = self._workflow_to_dict_export(trans, stored_workflow, workflow=workflow)
+                abstract_dict = from_dict(wf_dict)
+                ordered_dump(abstract_dict, f)
             else:
                 wf_dict = self._workflow_to_dict_export(trans, stored_workflow, workflow=workflow)
                 wf_dict = from_galaxy_native(wf_dict, None, json_wrapper=True)
