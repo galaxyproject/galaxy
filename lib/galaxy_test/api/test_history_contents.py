@@ -1167,13 +1167,13 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
         with self.dataset_populator.test_history() as history_id:
             _, collection_ids, history_contents = self._create_test_history_contents(history_id)
 
-            expected_tag = "cool_tag"
+            expected_tags = ["cool_tag", "tag01"]
             # Add same tag to all items
             payload = {
-                "operation": "add_tag",
+                "operation": "add_tags",
                 "params": {
-                    "type": "add_tag",
-                    "tag_name": expected_tag,
+                    "type": "add_tags",
+                    "tags": expected_tags,
                 },
             }
             expected_success_count = len(history_contents)
@@ -1181,14 +1181,15 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
             self._assert_bulk_success(bulk_operation_result, expected_success_count)
             history_contents = self._get_history_contents(history_id)
             for item in history_contents:
-                assert expected_tag in item["tags"]
+                for expected_tag in expected_tags:
+                    assert expected_tag in item["tags"]
 
             # Remove tag from all collections
             payload = {
-                "operation": "remove_tag",
+                "operation": "remove_tags",
                 "params": {
-                    "type": "remove_tag",
-                    "tag_name": expected_tag,
+                    "type": "remove_tags",
+                    "tags": expected_tags,
                 },
             }
             query = "q=history_content_type-eq&qv=dataset_collection"
@@ -1200,7 +1201,8 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
                 if item["history_content_type"] == "dataset_collection":
                     assert not item["tags"]
                 else:
-                    assert expected_tag in item["tags"]
+                    for expected_tag in expected_tags:
+                        assert expected_tag in item["tags"]
 
     def test_bulk_dbkey_change(self):
         with self.dataset_populator.test_history() as history_id:

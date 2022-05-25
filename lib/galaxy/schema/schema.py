@@ -829,8 +829,8 @@ class HistoryContentItemOperation(str, Enum):
     purge = "purge"
     change_datatype = "change_datatype"
     change_dbkey = "change_dbkey"
-    add_tag = "add_tag"
-    remove_tag = "remove_tag"
+    add_tags = "add_tags"
+    remove_tags = "remove_tags"
 
 
 class BulkOperationParams(Model):
@@ -848,8 +848,8 @@ class ChangeDbkeyOperationParams(BulkOperationParams):
 
 
 class TagOperationParams(BulkOperationParams):
-    type: Union[Literal["add_tag"], Literal["remove_tag"]]
-    tag_name: str
+    type: Union[Literal["add_tags"], Literal["remove_tags"]]
+    tags: List[str]
 
 
 AnyBulkOperationParams = Union[
