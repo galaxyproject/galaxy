@@ -43,7 +43,7 @@ describe("Attributes", () => {
 
         const version = wrapper.findAllComponents(`#workflow-version-area > select > option`);
         expect(version).toHaveLength(TEST_VERSIONS.length);
-        for (const [i, v] in TEST_VERSIONS) {
+        for (let i = 0; i < version.length; i++) {
             const versionLabel = version.at(i).text();
             const versionDate = versionLabel.substring(versionLabel.indexOf(":") + 1, versionLabel.indexOf(",")).trim();
             expect(isDate(new Date(versionDate))).toBe(true);
