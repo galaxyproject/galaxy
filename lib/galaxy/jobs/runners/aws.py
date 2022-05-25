@@ -35,27 +35,13 @@ except ImportError as e:
 
 
 __all__ = ("AWSBatchJobRunner",)
-LOGGER = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 STOP_SIGNAL = object()
 
 
 class AWSBatchRunnerException(Exception):
     pass
-
-
-def handle_exception_call(func):
-    # Catch boto3 exceptions.
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            LOGGER.error(unicodify(e))
-            raise
-
-    return wrapper
 
 
 def to_dict(segments, v):
@@ -194,11 +180,10 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         )
         self._batch_client = session.client("batch")
 
-    @handle_exception_call
     def queue_job(self, job_wrapper):
-        LOGGER.debug(f"Starting queue_job for job {job_wrapper.get_id_tag()}")
+        log.debug(f"Starting queue_job for job {job_wrapper.get_id_tag()}")
         if not self.prepare_job(job_wrapper, include_metadata=False, modify_command_for_container=False):
-            LOGGER.debug(f"Not ready {job_wrapper.get_id_tag()}")
+            log.debug(f"Not ready {job_wrapper.get_id_tag()}")
             return
 
         job_destination = job_wrapper.job_destination
@@ -231,7 +216,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             jd_arn = self._register_job_definition(jd_name, container_image, destination_params)
         else:
             jd_arn = res["jobDefinitions"][0]["jobDefinitionArn"]
-            LOGGER.debug(f"Found existing job definition: {jd_name}.")
+            log.debug(f"Found existing job definition: {jd_name}.")
 
         return jd_arn
 
@@ -279,7 +264,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         return volumes, mount_points
 
     def _register_job_definition(self, jd_name, container_image, destination_params):
-        LOGGER.debug(f"Registering a new job definition: {jd_name}.")
+        log.debug(f"Registering a new job definition: {jd_name}.")
         platform = destination_params.get("platform")
         volumes, mount_points = self._get_mount_volumes(destination_params)
 
@@ -324,7 +309,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         job_name = self.JOB_NAME_PREFIX + job_wrapper.get_id_tag()
         command_script_path = self.write_command(job_wrapper)
 
-        LOGGER.info(f"Submitting job {job_name} to AWS Batch.")
+        log.info(f"Submitting job {job_name} to AWS Batch.")
         res = self._batch_client.submit_job(
             jobName=job_name,
             jobQueue=destination_params.get("job_queue"),
@@ -340,7 +325,6 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         assert res["ResponseMetadata"]["HTTPStatusCode"] == 200
         return job_name, res["jobId"]
 
-    @handle_exception_call
     def stop_job(self, job_wrapper):
         job = job_wrapper.get_job()
         external_id = job.get_job_runner_external_id()
@@ -348,7 +332,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
         self._batch_client.terminate_job(jobId=external_id, reason="Terminated by Galaxy!")
         msg = "Job {name!r} is terminated"
-        LOGGER.debug(msg.format(name=job_name))
+        log.debug(msg.format(name=job_name))
 
     def recover(self, job, job_wrapper):
         msg = "(name!r/runner!r) is still in {state!s} state, adding to" " the runner monitor queue"
@@ -360,12 +344,12 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
-            LOGGER.debug(msg.format(name=job.id, runner=job.job_runner_name, state=job.state))
+            log.debug(msg.format(name=job.id, runner=job.job_runner_name, state=job.state))
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.state == model.Job.states.QUEUED:
-            LOGGER.debug(msg.format(name=job.id, runner=job.job_runner_name, state="queued"))
+            log.debug(msg.format(name=job.id, runner=job.job_runner_name, state="queued"))
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
             self.monitor_queue.put(ajs)
@@ -402,11 +386,10 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             try:
                 self.check_watched_items()
             except Exception:
-                LOGGER.exception("Unhandled exception checking active jobs")
+                log.exception("Unhandled exception checking active jobs")
             # Sleep a bit before the next state check
             time.sleep(max(self.app.config.job_runner_monitor_sleep, self.MIN_QUERY_INTERVAL))
 
-    @handle_exception_call
     def check_watched_items(self):
         done = []           # type: ignore
         self.check_watched_items_by_batch(0, len(self.watched), done)
