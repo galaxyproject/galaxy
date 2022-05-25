@@ -389,7 +389,6 @@ def copy_database_template(source, db_path):
 def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
     """Find (and populate if needed) Galaxy database connection."""
     database_auto_migrate = False
-    check_migrate_databases = True
     dburi_var = f"{prefix}_TEST_DBURI"
     template_name = None
     if dburi_var in os.environ:
@@ -407,7 +406,6 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
                 create_database(database_connection)
                 mapping.init("/tmp", database_connection, create_tables=True, map_install_models=True)
                 toolshed_mapping.init(database_connection, create_tables=True)
-                check_migrate_databases = False
     else:
         default_db_filename = f"{prefix.lower()}.sqlite"
         template_var = f"{prefix}_TEST_DB_TEMPLATE"
@@ -422,7 +420,6 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
             database_auto_migrate = True
         database_connection = f"sqlite:///{db_path}"
     config = {
-        "check_migrate_databases": check_migrate_databases,
         "database_connection": database_connection,
         "database_auto_migrate": database_auto_migrate,
     }
