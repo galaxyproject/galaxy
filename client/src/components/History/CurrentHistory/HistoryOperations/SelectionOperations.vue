@@ -44,8 +44,8 @@
                 <span v-localize>Build Collection from Rules</span>
             </b-dropdown-item>
             <b-dropdown-divider />
-            <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change reference gnome">
-                <span v-localize>Change reference Gnome</span>
+            <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change database build">
+                <span v-localize>Change Database/Build</span>
             </b-dropdown-item>
             <!-- <b-dropdown-item v-b-modal:change-datatype-of-selected-content data-description="change data type">
                 <span v-localize>Change data type</span>
@@ -76,18 +76,18 @@
         </b-modal>
         <b-modal
             id="change-dbkey-of-selected-content"
-            title="Change reference gnome?"
+            title="Change Database/Build?"
             title-tag="h2"
             @ok="changeDbkeyOfSelected">
-            <p v-localize>Select a new reference genome for {{ numSelected }} items:</p>
-            <GenomeProvider v-slot="{ item: genomes, loading: loadingGenomes }">
+            <p v-localize>Select a new Database/Build for {{ numSelected }} items:</p>
+            <GenomeProvider v-slot="{ item: dbkeys, loading: loadingDbKeys }">
                 <SingleItemSelector
-                    collection-name="Genomes"
-                    :loading="loadingGenomes"
-                    :items="genomes"
-                    :current-item-id="selectedGnomeId"
+                    collection-name="Database/Builds"
+                    :loading="loadingDbKeys"
+                    :items="dbkeys"
+                    :current-item-id="selectedDbKey"
                     class="mb-5 pb-5"
-                    @update:selected-item="onSelectedGenome" />
+                    @update:selected-item="onSelectedDbKey" />
             </GenomeProvider>
         </b-modal>
         <b-modal
@@ -164,7 +164,7 @@ export default {
     },
     data: function () {
         return {
-            selectedGnomeId: "?",
+            selectedDbKey: "?",
             selectedDatatype: "auto",
             selectedTags: [],
         };
@@ -223,8 +223,8 @@ export default {
             this.runOnSelection(purgeSelectedContent);
         },
         changeDbkeyOfSelected() {
-            this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedGnomeId });
-            this.selectedGnomeId = "?";
+            this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedDbKey });
+            this.selectedDbKey = "?";
         },
         changeDatatypeOfSelected() {
             this.runOnSelection(changeDatatypeOfSelectedContent, { datatype: this.selectedDatatype });
@@ -269,8 +269,8 @@ export default {
         handleOperationError(errorMessage, result) {
             this.$emit("operation-error", { errorMessage, result });
         },
-        onSelectedGenome(genome) {
-            this.selectedGnomeId = genome.id;
+        onSelectedDbKey(dbkey) {
+            this.selectedDbKey = dbkey.id;
         },
         onSelectedDatatype(datatype) {
             this.selectedDatatype = datatype.id;
