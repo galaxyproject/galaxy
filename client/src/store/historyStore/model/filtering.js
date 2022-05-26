@@ -50,6 +50,10 @@ function equals(attribute, query = null, converter = null) {
         converter,
         query: query || `${attribute}-eq`,
         handler: (v, q) => {
+            if (converter) {
+                v = converter(v);
+                q = converter(q);
+            }
             return toLower(v) == toLower(q);
         },
     };
@@ -132,7 +136,7 @@ const validFilters = {
 };
 
 /** Default filters are set, unless explicitly specified by the user. */
-const defaultFilters = {
+export const defaultFilters = {
     deleted: false,
     visible: true,
 };
@@ -154,8 +158,8 @@ export function checkFilter(filterText, filterName, filterValue) {
 /** Parses single text input into a dict of field->value pairs. */
 export function getFilters(filterText) {
     const pairSplitRE = /[^\s']+(?:'[^']*'[^\s']*)*|(?:'[^']*'[^\s']*)+/g;
-    const result = {};
     const matches = filterText.match(pairSplitRE);
+    let result = {};
     let hasMatches = false;
     if (matches) {
         matches.forEach((pair) => {
@@ -182,14 +186,22 @@ export function getFilters(filterText) {
             }
         });
     }
+    // assume name matching if no filter key has been matched
     if (!hasMatches && filterText.length > 0) {
         result["name"] = filterText;
     }
-    Object.entries(defaultFilters).forEach(([key, value]) => {
-        if (!result[key]) {
-            result[key] = value;
+    // check if any default filter keys have been used
+    let hasDefaults = false;
+    for (const defaultKey in defaultFilters) {
+        if (result[defaultKey]) {
+            hasDefaults = true;
+            break;
         }
-    });
+    }
+    // use default filters if none of the default filters has been explicitly specified
+    if (!hasDefaults) {
+        result = { ...result, ...defaultFilters };
+    }
     return Object.entries(result);
 }
 

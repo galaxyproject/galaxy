@@ -1,17 +1,20 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import HistoryFilters from "./HistoryFilters";
+import { getQueryDict } from "store/historyStore/model/filtering";
 const localVue = getLocalVue();
 
 describe("HistoryFilters", () => {
     async function expectCorrectEmits(wrapper, showAdvanced, filterText) {
         // count how many times filterText and toggles are emitted
-        const filterEmits = wrapper.emitted()["update:filter-text"].length;
-        const toggleEmits = wrapper.emitted()["update:show-advanced"].length;
-
-        expect(wrapper.emitted()["update:show-advanced"][toggleEmits - 1][0]).toEqual(showAdvanced);
-        await wrapper.setProps({ showAdvanced: wrapper.emitted()["update:show-advanced"][toggleEmits - 1][0] });
-        expect(wrapper.emitted()["update:filter-text"][filterEmits - 1][0]).toEqual(filterText);
+        const filterEmit = wrapper.emitted()["update:filter-text"].length - 1;
+        const toggleEmit = wrapper.emitted()["update:show-advanced"].length - 1;
+        expect(wrapper.emitted()["update:show-advanced"][toggleEmit][0]).toEqual(showAdvanced);
+        await wrapper.setProps({ showAdvanced: wrapper.emitted()["update:show-advanced"][toggleEmit][0] });
+        const receivedText = wrapper.emitted()["update:filter-text"][filterEmit][0];
+        const receivedDict = getQueryDict(receivedText);
+        const parsedDict = getQueryDict(filterText);
+        expect(receivedDict).toEqual(parsedDict);
     }
 
     it("test history filter panel", async () => {
@@ -22,7 +25,7 @@ describe("HistoryFilters", () => {
             },
             localVue,
             stubs: {
-                icon: { template: "<div></div> " },
+                icon: { template: "<div></div>" },
             },
         });
         expect(wrapper.find("[description='advanced filters']").exists()).toBe(false);
@@ -47,19 +50,16 @@ describe("HistoryFilters", () => {
 
         // Test: keyup.enter search (should toggle the view out)
         await filterName.trigger("keyup.enter");
-
         await expectCorrectEmits(wrapper, false, "name=name-filter");
 
         // Test: clearing the filterText
         const clearButton = wrapper.find("[data-description='show deleted filter toggle']");
         await clearButton.trigger("click");
-
         await expectCorrectEmits(wrapper, false, "");
 
         // Test: toggling view back in
         const toggleButton = wrapper.find("[data-description='show advanced filter toggle']");
         await toggleButton.trigger("click");
-
         await expectCorrectEmits(wrapper, true, "");
 
         // Now add filters in all input fields in the advanced menu
@@ -85,9 +85,9 @@ describe("HistoryFilters", () => {
 
         // clear the filterText
         await clearButton.trigger("click");
+
         // toggle view back in
         await toggleButton.trigger("click");
-
         await expectCorrectEmits(wrapper, true, "");
 
         // find name field again (could be destroyed beacause of toggling out)
@@ -98,7 +98,6 @@ describe("HistoryFilters", () => {
 
         // press esc key from name field (should not change emitted filterText unlike enter key)
         await filterName.trigger("keyup.esc");
-
         await expectCorrectEmits(wrapper, false, "");
     });
 });

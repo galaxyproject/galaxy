@@ -9,7 +9,7 @@
                     :placeholder="'search datasets' | localize"
                     data-description="filter text input"
                     @input="input"
-                    @keyup.esc="onReset" />
+                    @keyup.esc="updateFilter('')" />
             </DebouncedInput>
             <b-input-group-append>
                 <b-button
@@ -21,7 +21,7 @@
                     <icon v-if="showAdvanced" icon="angle-double-up" />
                     <icon v-else icon="angle-double-down" />
                 </b-button>
-                <b-button size="sm" data-description="show deleted filter toggle" @click="onReset">
+                <b-button size="sm" data-description="show deleted filter toggle" @click="updateFilter('')">
                     <icon icon="times" />
                 </b-button>
             </b-input-group-append>
@@ -69,10 +69,7 @@
                     </b-input-group-append>
                 </b-input-group>
             </b-form-group>
-            <small>Show deleted:</small>
-            <b-form-checkbox v-model="filterSettings['deleted=']" size="sm" switch description="filter deleted" />
-            <small>Show visible:</small>
-            <b-form-checkbox v-model="filterSettings['visible=']" size="sm" switch description="filter visible" />
+            <history-filters-default :settings="filterSettings" @change="onOption" />
             <div class="mt-3">
                 <b-button class="mr-1" size="sm" variant="primary" description="apply filters" @click="onSearch">
                     <icon icon="search" />
@@ -88,38 +85,25 @@
 </template>
 
 <script>
-import DebouncedInput from "components/DebouncedInput";
 import { getFilters, toAlias } from "store/historyStore/model/filtering";
-import { STATES } from "../Content/model/states";
-
-// available filter keys with operator and default setting
-const filterDefaults = {
-    "create_time>": "",
-    "create_time<": "",
-    "deleted=": false,
-    "extension=": "",
-    "hid>": "",
-    "hid<": "",
-    "name=": "",
-    "state=": "",
-    "tag=": "",
-    "visible=": true,
-};
+import DebouncedInput from "components/DebouncedInput";
+import { STATES } from "components/History/Content/model/states";
+import { getFilterText } from "./filterConversion";
+import HistoryFiltersDefault from "./HistoryFiltersDefault";
 
 export default {
     components: {
         DebouncedInput,
+        HistoryFiltersDefault,
     },
     props: {
         filterText: { type: String, default: null },
         showAdvanced: { type: Boolean, default: false },
     },
-    data() {
-        return {
-            filterSettings: { ...filterDefaults },
-        };
-    },
     computed: {
+        filterSettings() {
+            return toAlias(getFilters(this.filterText));
+        },
         localFilter: {
             get() {
                 return this.filterText;
@@ -134,35 +118,13 @@ export default {
             return Object.keys(STATES);
         },
     },
-    watch: {
-        localFilter(newFilterText) {
-            // get dict in form of converted aliases
-            const newFilterSettings = toAlias(getFilters(newFilterText));
-            // reset filterSettings when filterText changes
-            this.filterSettings = { ...filterDefaults };
-            // update filterSettings
-            Object.assign(this.filterSettings, newFilterSettings);
-        },
-    },
     methods: {
-        onReset() {
-            this.updateFilter("");
+        onOption(name, value) {
+            this.filterSettings[name] = value;
         },
         onSearch() {
-            let newFilterText = "";
-            Object.entries(this.filterSettings).filter(([key, value]) => {
-                if (value !== filterDefaults[key]) {
-                    if (newFilterText) {
-                        newFilterText += " ";
-                    }
-                    if (String(value).includes(" ")) {
-                        value = `'${value}'`;
-                    }
-                    newFilterText += `${key}${value}`;
-                }
-            });
             this.onToggle();
-            this.updateFilter(newFilterText);
+            this.updateFilter(getFilterText(this.filterSettings));
         },
         onToggle() {
             this.$emit("update:show-advanced", !this.showAdvanced);
