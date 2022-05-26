@@ -1,12 +1,12 @@
 /**
  * This module handles the filtering for content items. User specified filters are applied on the data available in the store and
- * are additionally parsed as query parameters to the API endpoint. User can engage filters by specifying a query QUERY=VALUE pair
- * e.g. hid=61 in the history search field. Each query key has a default suffix defined e.g. hid=61 is equivalent to hid-eq=61.
+ * are additionally parsed as query parameters to the API endpoint. User can engage filters by specifying a query QUERY:VALUE pair
+ * e.g. hid:61 in the history search field. Each query key has a default suffix defined e.g. hid:61 is equivalent to hid-eq:61.
  * Additionally, underscores and dashes in the QUERY are interchangeable. Quotation marks (') are only allowed in the VALUE.
- * Comparison aliases are allowed converting e.g. ">" to "-gt=" and "<" to "-lt". The following query pairs are equivalent:
- * create_time='March 12, 2022', create-time-lt='March 12, 2022'.
+ * Comparison aliases are allowed converting e.g. ">" to "-gt:" and "<" to "-lt". The following query pairs are equivalent:
+ * create_time:'March 12, 2022', create-time-lt:'March 12, 2022'.
  *
- * The format is: `QUERY[=, < or >]VALUE`. QUERYs may only contain characters and, interchangeably, underscores (_) and dashes (-).
+ * The format is: `QUERY[:, < or >]VALUE`. QUERYs may only contain characters and, interchangeably, underscores (_) and dashes (-).
  * Use quotations (') around values containing spaces.
  */
 
