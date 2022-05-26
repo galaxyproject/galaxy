@@ -71,8 +71,6 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         self.tool_data_path = os.environ.get("GALAXY_TEST_TOOL_DATA_PATH")
         self.shed_tool_conf = os.environ.get("GALAXY_TEST_SHED_TOOL_CONF")
         self.test_db_util = test_db_util
-        # TODO: Figure out a way to alter these attributes during tests.
-        self.galaxy_tool_dependency_dir = os.environ.get("GALAXY_TEST_TOOL_DEPENDENCY_DIR")
 
     def check_for_strings(self, strings_displayed=None, strings_not_displayed=None):
         strings_displayed = strings_displayed or []
