@@ -2761,9 +2761,10 @@ mapping:
           Optional list of email addresses of API users who can make calls on behalf of
           other users.
 
-      master_api_key:
+      bootstrap_admin_api_key:
         type: str
         required: false
+        deprecated_alias: master_api_key
         desc: |
           API key that allows performing some admin actions without actually
           having a real admin user in the database and config.
