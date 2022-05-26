@@ -201,6 +201,11 @@ export function fetchMenu(options = {}) {
                 target: "_blank",
             },
             {
+                title: _l("Interactive Tours"),
+                url: "tours/list",
+                target: "__use_router__",
+            },
+            {
                 title: _l("Introduction to Galaxy"),
                 url: "welcome/new",
             },
