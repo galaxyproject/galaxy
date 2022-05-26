@@ -149,7 +149,7 @@ const validAlias = [
 
 /** Check the value of a particular filter. */
 export function checkFilter(filterText, filterName, filterValue) {
-    const re = new RegExp(`${filterName}=(\\S+)`);
+    const re = new RegExp(`${filterName}:(\\S+)`);
     const reMatch = re.exec(filterText);
     const testValue = reMatch ? reMatch[1] : defaultFilters[filterName];
     return toLowerNoQuotes(testValue) == toLowerNoQuotes(filterValue);
@@ -163,7 +163,7 @@ export function getFilters(filterText) {
     let hasMatches = false;
     if (matches) {
         matches.forEach((pair) => {
-            const elgRE = /(\S+)([=><])(.+)/g;
+            const elgRE = /(\S+)([:><])(.+)/g;
             const elgMatch = elgRE.exec(pair);
             if (elgMatch) {
                 let field = elgMatch[1];
@@ -251,7 +251,7 @@ export function toAlias(filters) {
             }
         }
         if (!hasAlias) {
-            result[`${key}=`] = value;
+            result[`${key}:`] = value;
         }
     }
     return result;

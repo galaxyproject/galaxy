@@ -44,6 +44,6 @@ describe("watchHistory", () => {
         expect(store.getters["history/currentHistoryId"]).toBe("history-id");
         expect(store.getters["getHistoryItems"]({ historyId: "history-id", filterText: "" }).length).toBe(2);
         expect(store.getters["getHistoryItems"]({ historyId: "history-id", filterText: "second" })[0].hid).toBe(2);
-        expect(store.getters["getHistoryItems"]({ historyId: "history-id", filterText: "state=ok" })[0].hid).toBe(1);
+        expect(store.getters["getHistoryItems"]({ historyId: "history-id", filterText: "state:ok" })[0].hid).toBe(1);
     });
 });

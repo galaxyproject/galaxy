@@ -19,7 +19,7 @@ export function containsDefaults(filterSettings) {
 export function getDefaults() {
     const normalized = {};
     Object.entries(defaultFilters).forEach(([key, value]) => {
-        normalized[`${key}=`] = value;
+        normalized[`${key}:`] = value;
     });
     return normalized;
 }

@@ -1,21 +1,21 @@
 import { checkFilter, getFilters, toAlias, getQueryDict, testFilters } from "./filtering";
 
 const filterTexts = [
-    "name='name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state=success extension=ext tag=first deleted=False visible='TRUE'",
-    "name='name of item' hid_gt=10 hid-lt=100 create_time-gt='2021-01-01' update_time-lt='2022-01-01' state=sUccEss extension=EXT tag=FirsT deleted=false visible=true",
+    "name:'name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state:success extension:ext tag:first deleted:False visible:'TRUE'",
+    "name:'name of item' hid_gt:10 hid-lt:100 create_time-gt:'2021-01-01' update_time-lt:'2022-01-01' state:sUccEss extension:EXT tag:FirsT deleted:false visible:true",
 ];
 describe("filtering", () => {
     test("parse default filter", () => {
         let queryDict = getQueryDict("");
         expect(queryDict["deleted"]).toBe(false);
         expect(queryDict["visible"]).toBe(true);
-        queryDict = getQueryDict("deleted=true");
+        queryDict = getQueryDict("deleted:true");
         expect(queryDict["deleted"]).toBe(true);
         expect(queryDict["visible"]).toBeUndefined();
-        queryDict = getQueryDict("visible=false");
+        queryDict = getQueryDict("visible:false");
         expect(queryDict["deleted"]).toBeUndefined;
         expect(queryDict["visible"]).toBe(false);
-        queryDict = getQueryDict("extension=ext");
+        queryDict = getQueryDict("extension:ext");
         expect(queryDict["extension-eq"]).toBe("ext");
         expect(queryDict["deleted"]).toBe(false);
         expect(queryDict["visible"]).toBe(true);
@@ -106,16 +106,16 @@ describe("filtering", () => {
     test("Parsing & sync of filter settings", () => {
         // Expected parsed settings
         const parsedFilterSettings = {
-            "name=": "name of item",
+            "name:": "name of item",
             "hid>": "10",
             "hid<": "100",
             "create_time>": "2021-01-01",
             "update_time<": "2022-01-01",
-            "state=": "success",
-            "extension=": "ext",
-            "tag=": "first",
-            "deleted=": "false",
-            "visible=": "true",
+            "state:": "success",
+            "extension:": "ext",
+            "tag:": "first",
+            "deleted:": "false",
+            "visible:": "true",
         };
         // iterate through filterTexts and compare with parsedFilterSettings
         filterTexts.forEach((filterText) => {
@@ -123,10 +123,10 @@ describe("filtering", () => {
         });
     });
     test("named tag (hash) conversion", () => {
-        const filters = getFilters("tag=#test");
+        const filters = getFilters("tag:#test");
         expect(filters[0][0]).toBe("tag");
         expect(filters[0][1]).toBe("#test");
-        const queryDict = getQueryDict("tag=#test");
+        const queryDict = getQueryDict("tag:#test");
         expect(queryDict["tag-contains"]).toBe("name:test");
     });
 });
