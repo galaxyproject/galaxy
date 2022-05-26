@@ -1,4 +1,5 @@
-import functools
+""" Galaxy job runners to use Amazon AWS native compute resources, such as AWS Batch.
+"""
 import hashlib
 import json
 import logging
@@ -77,6 +78,16 @@ def _add_resource_requirements(destination_params):
 
 
 class AWSBatchJobRunner(AsynchronousJobRunner):
+    """
+    This runner uses container only. It requires that an AWS EFS is mounted as a local drive
+    and all Galaxy job-related paths, such as objects, job_directory, tool_directory and so
+    on, are placed in the EFS drive. Via this runner, Galaxy jobs are dispatched to AWS Batch
+    for compute using the docker image specified by a Galaxy tool. As AWS EFS is designed to
+    be able to mount at multiple places with read and write capabilities, Galaxy and Batch
+    containers share the same EFS drive as a local device. Sample configurations can be found
+    in `config/job_conf.xml.sample_advanced`.
+    """
+
     runner_name = "AWSBatchRunner"
     RUNNER_PARAM_SPEC_KEY = "runner_param_specs"
     JOB_NAME_PREFIX = "galaxy-"
