@@ -109,10 +109,15 @@ def set_metadata(
     dataset.datatype.set_meta(dataset)
 
 
-@galaxy_task
-def setup_fetch_data(job_id: int, raw_tool_source: str, app: MinimalManagerApp, sa_session: galaxy_scoped_session):
+@galaxy_task(bind=True)
+def setup_fetch_data(
+    self, job_id: int, raw_tool_source: str, app: MinimalManagerApp, sa_session: galaxy_scoped_session
+):
     tool = cached_create_tool_from_representation(app=app, raw_tool_source=raw_tool_source)
     job = sa_session.query(model.Job).get(job_id)
+    # self.request.hostname is the actual worker name given by the `-n` argument, not the hostname as you might think.
+    job.handler = self.request.hostname
+    job.job_runner_name = "celery"
     # TODO: assert state
     mini_job_wrapper = MinimalJobWrapper(job=job, app=app, tool=tool)
     mini_job_wrapper.change_state(model.Job.states.QUEUED, flush=False, job=job)

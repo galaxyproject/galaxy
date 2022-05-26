@@ -34,7 +34,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         # Create HDA to ensure at least one job exists...
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index()
-        assert "upload1" in map(itemgetter("tool_id"), jobs)
+        assert "__DATA_FETCH__" in map(itemgetter("tool_id"), jobs)
 
     @uses_test_history(require_new=True)
     def test_system_details_admin_only(self, history_id):
