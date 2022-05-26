@@ -39,17 +39,16 @@
                     <WorkflowRunToolStep
                         v-if="step.step_type == 'tool'"
                         :model="step"
-                        :step-data="stepData"
+                        :replace-params="getReplaceParams(step.inputs)"
                         :validation-scroll-to="getValidationScrollTo(step.index)"
-                        :wp-data="wpData"
                         :history-id="currentHistoryId"
                         @onChange="onToolStepInputs"
                         @onValidation="onValidation" />
                     <WorkflowRunDefaultStep
                         v-else
                         :model="step"
+                        :replace-params="getReplaceParams(step.inputs)"
                         :validation-scroll-to="getValidationScrollTo(step.index)"
-                        :wp-data="wpData"
                         @onChange="onDefaultStepInputs"
                         @onValidation="onValidation" />
                 </div>
@@ -67,8 +66,9 @@ import FormElement from "components/Form/FormElement";
 import UserHistories from "components/providers/UserHistories";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunToolStep from "./WorkflowRunToolStep";
-import { invokeWorkflow } from "./services";
 import { allowCachedJobs } from "components/Tool/utilities";
+import { invokeWorkflow } from "./services";
+import { getReplacements } from "./model";
 
 export default {
     components: {
@@ -145,6 +145,9 @@ export default {
     methods: {
         reuseAllowed(user) {
             return allowCachedJobs(user.preferences);
+        },
+        getReplaceParams(inputs) {
+            return getReplacements(inputs, this.wpData, this.stepData);
         },
         getValidationScrollTo(stepId) {
             if (this.stepScrollTo.stepId == stepId) {

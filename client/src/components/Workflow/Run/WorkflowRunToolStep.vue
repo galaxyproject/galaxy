@@ -41,11 +41,7 @@ export default {
             type: Object,
             required: true,
         },
-        wpData: {
-            type: Object,
-            default: null,
-        },
-        stepData: {
+        replaceParams: {
             type: Object,
             default: null,
         },
@@ -64,16 +60,9 @@ export default {
             errorText: null,
             modelIndex: {},
             modelInputs: this.model.inputs,
-            replaceParams: {},
         };
     },
     watch: {
-        stepData() {
-            this.onReplaceParams();
-        },
-        wpData() {
-            this.onReplaceParams();
-        },
         validationScrollTo() {
             if (this.validationScrollTo.length > 0) {
                 this.expanded = true;
@@ -86,9 +75,6 @@ export default {
             visitInputs(this.modelInputs, (input, name) => {
                 this.modelIndex[name] = input;
             });
-        },
-        onReplaceParams() {
-            this.replaceParams = getReplacements(this.model.inputs, this.wpData, this.stepData);
         },
         onChange(data, refreshRequest) {
             if (refreshRequest) {

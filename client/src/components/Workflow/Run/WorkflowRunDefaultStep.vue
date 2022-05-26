@@ -19,7 +19,6 @@
 import WorkflowIcons from "components/Workflow/icons";
 import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
-import { getReplacements } from "./model";
 
 export default {
     components: {
@@ -31,7 +30,7 @@ export default {
             type: Object,
             required: true,
         },
-        wpData: {
+        replaceParams: {
             type: Object,
             default: null,
         },
@@ -43,7 +42,6 @@ export default {
     data() {
         return {
             expanded: this.model.expanded,
-            replaceParams: {},
         };
     },
     computed: {
@@ -75,9 +73,6 @@ export default {
             if (this.validationScrollTo.length > 0) {
                 this.expanded = true;
             }
-        },
-        wpData() {
-            this.replaceParams = getReplacements(this.model.inputs, this.wpData);
         },
     },
     methods: {
