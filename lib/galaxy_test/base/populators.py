@@ -601,8 +601,10 @@ class BaseDatasetPopulator(BasePopulator):
         dataset_url = f"histories/{history_id}/contents/{content_id}"
 
         def _wait_for_purge():
-            dataset = self._get(dataset_url).json()
-            return dataset["purged"] or None
+            dataset_response = self._get(dataset_url)
+            dataset_response.raise_for_status()
+            dataset = dataset_response.json()
+            return dataset.get("purged") or None
 
         wait_on(_wait_for_purge, "dataset to become purged", timeout=2)
         return self._get(dataset_url)
