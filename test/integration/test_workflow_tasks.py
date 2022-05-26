@@ -27,6 +27,11 @@ class WorkflowTasksIntegrationTestCase(
 
     framework_tool_and_types = True
 
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        PosixFileSourceSetup.handle_galaxy_config_kwds(config, cls)
+        UsesCeleryTasks.handle_galaxy_config_kwds(config)
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
