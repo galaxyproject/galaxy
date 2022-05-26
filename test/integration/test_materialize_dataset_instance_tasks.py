@@ -7,24 +7,19 @@ from galaxy.model.unittest_utils.store_fixtures import (
     TEST_LIBRARY_NAME,
 )
 from galaxy.util import galaxy_directory
+from galaxy_test.base.api import UsesCeleryTasks
 from galaxy_test.base.populators import (
     DatasetPopulator,
     LibraryPopulator,
     uses_test_history,
 )
-from galaxy_test.driver.integration_util import (
-    IntegrationTestCase,
-    setup_celery_includes,
-    UsesCeleryTasks,
-)
-
-celery_includes = setup_celery_includes()
+from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
 class MaterializeDatasetInstanceTasaksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        cls.setup_celery_config(config)
+        super().handle_galaxy_config_kwds(config)
         test_data_root = os.path.join(galaxy_directory(), "test-data")
         config["file_sources"] = [
             {
