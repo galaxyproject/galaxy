@@ -50,10 +50,11 @@
             </div>
         </div>
         <StatelessTags
+            v-if="!tagsDisabled || tags.length > 0"
             v-model="tags"
-            :class="tagsCls"
+            class="alltags p-1"
             :use-toggle-link="false"
-            :disabled="!expandDataset || !isHistoryItem"
+            :disabled="tagsDisabled"
             @tag-click="onTagClick"
             @input="onTags" />
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
@@ -125,8 +126,8 @@ export default {
         tags() {
             return this.item.tags;
         },
-        tagsCls() {
-            return { "p-1 alltags": this.item.tags.length > 0 };
+        tagsDisabled() {
+            return !this.expandDataset || !this.isHistoryItem;
         },
     },
     methods: {
