@@ -49,6 +49,7 @@
                         v-else
                         :model="step"
                         :validation-scroll-to="getValidationScrollTo(step.index)"
+                        :wp-data="wpData"
                         @onChange="onDefaultStepInputs"
                         @onValidation="onValidation" />
                 </div>
