@@ -8,7 +8,7 @@ jobs:
     if: github.repository_owner == 'galaxyproject'
     runs-on: ubuntu-latest
     env:
-      MILESTONE_NUMBER: 22
+      MILESTONE_NUMBER: 23
     steps:
       - name: Get latest pull request labels
         id: get_pr_labels
