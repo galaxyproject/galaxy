@@ -32,13 +32,13 @@ export default {
             return this.summary.get("running");
         },
         errorJobs() {
-            const failed = this.summary.get("failed") ? this.summary.get("failed") : 0;
-            const error = this.summary.get("error") ? this.summary.get("error") : 0;
+            const failed = this.summary.get("failed") || 0;
+            const error = this.summary.get("error") || 0;
             return failed + error;
         },
         waitingJobs() {
-            const queued = this.summary.get("queued") ? this.summary.get("queued") : 0;
-            const waiting = this.summary.get("waiting") ? this.summary.get("waiting") : 0;
+            const queued = this.summary.get("queued") || 0;
+            const waiting = this.summary.get("waiting") || 0;
             return queued + waiting;
         },
     },
