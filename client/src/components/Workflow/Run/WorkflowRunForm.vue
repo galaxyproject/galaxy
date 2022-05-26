@@ -47,7 +47,6 @@
                     <WorkflowRunDefaultStep
                         v-else
                         :model="step"
-                        :replace-params="getReplaceParams(step.inputs)"
                         :validation-scroll-to="getValidationScrollTo(step.index)"
                         @onChange="onDefaultStepInputs"
                         @onValidation="onValidation" />

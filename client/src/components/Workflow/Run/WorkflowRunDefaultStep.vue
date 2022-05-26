@@ -5,7 +5,6 @@
                 <FormDisplay
                     v-if="hasInputs"
                     :inputs="inputs"
-                    :replace-params="replaceParams"
                     :validation-scroll-to="validationScrollTo"
                     @onChange="onChange"
                     @onValidation="onValidation" />
@@ -29,10 +28,6 @@ export default {
         model: {
             type: Object,
             required: true,
-        },
-        replaceParams: {
-            type: Object,
-            default: null,
         },
         validationScrollTo: {
             type: Array,
