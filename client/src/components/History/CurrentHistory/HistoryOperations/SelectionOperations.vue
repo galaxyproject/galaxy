@@ -47,6 +47,9 @@
             <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change reference gnome">
                 <span v-localize>Change reference Gnome</span>
             </b-dropdown-item>
+            <b-dropdown-item v-b-modal:change-datatype-of-selected-content data-description="change data type">
+                <span v-localize>Change data type</span>
+            </b-dropdown-item>
             <b-dropdown-item v-b-modal:add-tags-to-selected-content data-description="add tags">
                 <span v-localize>Add tags</span>
             </b-dropdown-item>
@@ -88,6 +91,23 @@
             </GenomeProvider>
         </b-modal>
         <b-modal
+            id="change-datatype-of-selected-content"
+            title="Change data type?"
+            title-tag="h2"
+            :ok-disabled="selectedDatatype == null"
+            @ok="changeDatatypeOfSelected">
+            <p v-localize>Select a new data type for {{ numSelected }} items:</p>
+            <DatatypesProvider v-slot="{ item: datatypes, loading: loadingDatatypes }">
+                <SingleItemSelector
+                    collection-name="Data Types"
+                    :loading="loadingDatatypes"
+                    :items="datatypes"
+                    :current-item-id="selectedDatatype"
+                    class="mb-5 pb-5"
+                    @update:selected-item="onSelectedDatatype" />
+            </DatatypesProvider>
+        </b-modal>
+        <b-modal
             id="add-tags-to-selected-content"
             title="Add tags?"
             title-tag="h2"
@@ -116,19 +136,21 @@ import {
     undeleteSelectedContent,
     purgeSelectedContent,
     changeDbkeyOfSelectedContent,
+    changeDatatypeOfSelectedContent,
     addTagsToSelectedContent,
     removeTagsFromSelectedContent,
 } from "components/History/model/crud";
 import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
 import { checkFilter, getQueryDict } from "store/historyStore/model/filtering";
-import { GenomeProvider } from "components/providers";
+import { GenomeProvider, DatatypesProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
 
 export default {
     components: {
         GenomeProvider,
+        DatatypesProvider,
         SingleItemSelector,
         StatelessTags,
     },
@@ -143,6 +165,7 @@ export default {
     data: function () {
         return {
             selectedGnomeId: "?",
+            selectedDatatype: "auto",
             selectedTags: [],
         };
     },
@@ -203,6 +226,10 @@ export default {
             this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedGnomeId });
             this.selectedGnomeId = "?";
         },
+        changeDatatypeOfSelected() {
+            this.runOnSelection(changeDatatypeOfSelectedContent, { datatype: this.selectedDatatype });
+            this.selectedDatatype = "auto";
+        },
         addTagsToSelected() {
             this.runOnSelection(addTagsToSelectedContent, { tags: this.selectedTags });
             this.selectedTags = [];
@@ -244,6 +271,9 @@ export default {
         },
         onSelectedGenome(genome) {
             this.selectedGnomeId = genome.id;
+        },
+        onSelectedDatatype(datatype) {
+            this.selectedDatatype = datatype.id;
         },
 
         // collection creation, fires up a modal
