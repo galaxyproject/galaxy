@@ -60,5 +60,7 @@ describe("ContentItem", () => {
         expect(wrapper.emitted()["update:selected"][1][0]).toBe(false);
         expect(wrapper.classes()).toEqual(expect.arrayContaining(["alert-info"]));
         expect(selector.attributes("data-icon")).toBe("check-square");
+        await wrapper.setProps({ item: { tags: [] } });
+        expect(wrapper.find(".alltags").exists()).toBe(false);
     });
 });

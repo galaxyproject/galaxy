@@ -126,7 +126,7 @@ export default {
             return this.item.tags;
         },
         tagsCls() {
-            return { "p-1 alltags" : this.item.tags.length > 0 };
+            return { "p-1 alltags": this.item.tags.length > 0 };
         },
     },
     methods: {
