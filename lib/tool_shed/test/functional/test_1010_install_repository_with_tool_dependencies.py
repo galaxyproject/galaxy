@@ -136,8 +136,6 @@ class ToolWithToolDependencies(ShedTwillTestCase):
         strings_displayed = [
             "Never installed",
             "install all needed dependencies",
-            "install Tool Shed managed",
-            "tool dependencies",
         ]
         strings_displayed.extend(["freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18"])
         self.install_repository(

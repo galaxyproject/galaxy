@@ -153,7 +153,6 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
         self.display_installed_repository_manage_page(installed_filtering_repository)
         self.deactivate_repository(installed_filtering_repository)
         self.test_db_util.ga_refresh(installed_filtering_repository)
-        self.check_galaxy_repository_tool_panel_section(installed_filtering_repository, "Get Data")
         strings_displayed = [
             "Missing repository",
             "filtering",
@@ -191,7 +190,6 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
         self.display_installed_repository_manage_page(installed_filtering_repository)
         self.deactivate_repository(installed_freebayes_repository)
         self.test_db_util.ga_refresh(installed_freebayes_repository)
-        self.check_galaxy_repository_tool_panel_section(installed_freebayes_repository, "Get Data")
         strings_displayed = [
             "Missing repository",
             "freebayes",

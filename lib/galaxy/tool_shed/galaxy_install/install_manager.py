@@ -667,7 +667,6 @@ class InstallRepositoryManager:
         original_metadata_dict = repository.metadata_
         original_repository_dependencies_dict = original_metadata_dict.get("repository_dependencies", {})
         original_repository_dependencies = original_repository_dependencies_dict.get("repository_dependencies", [])
-        original_tool_dependencies_dict = original_metadata_dict.get("tool_dependencies", {})
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir(
             self.app, repository
         )
@@ -740,7 +739,6 @@ class InstallRepositoryManager:
         if "repository_dependencies" in irmm_metadata_dict or "tool_dependencies" in irmm_metadata_dict:
             new_repository_dependencies_dict = irmm_metadata_dict.get("repository_dependencies", {})
             new_repository_dependencies = new_repository_dependencies_dict.get("repository_dependencies", [])
-            new_tool_dependencies_dict = irmm_metadata_dict.get("tool_dependencies", {})
             if new_repository_dependencies:
                 # [[http://localhost:9009', package_picard_1_56_0', devteam', 910b0b056666', False', False']]
                 if new_repository_dependencies == original_repository_dependencies:
@@ -792,16 +790,6 @@ class InstallRepositoryManager:
                                 self.install(
                                     tool_shed_url, new_name, new_owner, new_changeset_revision, install_options
                                 )
-            # Updates received did not include any newly defined repository dependencies but did include
-            # newly defined tool dependencies.  If the newly defined tool dependencies are not the same
-            # as the originally defined tool dependencies, we need to install them.
-            if not install_new_dependencies:
-                for new_key, new_val in new_tool_dependencies_dict.items():
-                    if new_key not in original_tool_dependencies_dict:
-                        return ("tool", irmm_metadata_dict)
-                    original_val = original_tool_dependencies_dict[new_key]
-                    if new_val != original_val:
-                        return ("tool", irmm_metadata_dict)
         # Updates received did not include any newly defined repository dependencies or newly defined
         # tool dependencies that need to be installed.
         repository = self.app.update_repository_manager.update_repository_record(

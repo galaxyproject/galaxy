@@ -117,14 +117,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
     def test_0010_install_freebayes_repository(self):
         """Install the freebayes repository into the Galaxy instance."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        strings_displayed = [
-            "install Tool Shed managed",
-            "tool dependencies",
-            "freebayes",
-            "0.9.4_9696d0ce8a9",
-            "samtools",
-            "0.1.18",
-        ]
+        strings_displayed = []
         self.install_repository(
             "freebayes_0010",
             common.test_user_1_name,
