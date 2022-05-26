@@ -67,8 +67,8 @@ import UserHistories from "components/providers/UserHistories";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunToolStep from "./WorkflowRunToolStep";
 import { allowCachedJobs } from "components/Tool/utilities";
-import { invokeWorkflow } from "./services";
 import { getReplacements } from "./model";
+import { invokeWorkflow } from "./services";
 
 export default {
     components: {
@@ -147,7 +147,7 @@ export default {
             return allowCachedJobs(user.preferences);
         },
         getReplaceParams(inputs) {
-            return getReplacements(inputs, this.wpData, this.stepData);
+            return getReplacements(inputs, this.stepData, this.wpData);
         },
         getValidationScrollTo(stepId) {
             if (this.stepScrollTo.stepId == stepId) {
