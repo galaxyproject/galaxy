@@ -21,13 +21,10 @@
 </template>
 
 <script>
-import _ from "underscore";
 import FormDisplay from "components/Form/FormDisplay";
 import FormMessage from "components/Form/FormMessage";
 import FormCard from "components/Form/FormCard";
 import { visitInputs } from "components/Form/utilities";
-import { isDataStep } from "components/Workflow/Run/model";
-import { getReplacements } from "./model";
 import { getTool } from "./services";
 
 export default {
