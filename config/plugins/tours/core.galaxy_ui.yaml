@@ -134,37 +134,37 @@ steps:
       postclick:
         - "#left > div.unified-panel-footer > div.panel-collapse.left"
 
-    - title: 'Top panel'
+    - title: "Top panel"
       element: "#masthead"
       intro: "The top panel will give you access to a lot of useful things."
 
-    - title: 'Analyze data'
+    - title: "Analyze data"
       element: "#analysis"
       intro: "This is the current view. Start your <b>Analysis</b> from here."
 
-    - title: 'Workflow'
+    - title: "Workflow"
       element: "#workflow"
       intro: "Create, manage, import, export and share your <b>Workflows</b>."
 
-    - title: 'Shared data'
+    - title: "Shared data"
       element: "#shared"
       intro: "Get access to all <b>Workflows</b>, <b>Histories</b>, <b>Pages</b>, <b>Visualizations</b> and your <b>Data Library</b> that are shared with you."
 
-    - title: 'Visualization'
+    - title: "Visualization"
       element: "#visualization"
       intro: "Galaxy offers a lot of visualizations to review your data!"
 
-    - title: 'Help'
+    - title: "Help"
       element: "#help"
       intro: "Here you get more help from the Galaxy <b>Community</b> with Videos, a QA board and more tours."
 
-    - title: 'User Preferences'
+    - title: "User Preferences"
       element: "#user"
       intro: "Login and start your analysis!"
 
-    - title: 'Scratchbook'
-      element: "#enable-scratchbook"
-      intro: "Scratchbook offers you multiple visualizations next to each other. Have a look at our Scratchbook tour to learn more about it."
+    - title: "Window Manager"
+      element: "#enable-window-manager"
+      intro: "Window Manager offers you multiple visualizations next to each other. Have a look at our Window Manager tour to learn more about it."
 
     - title: "Enjoy Galaxy"
       intro: "Thanks for taking this tour! Happy research with Galaxy!"

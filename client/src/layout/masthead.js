@@ -1,5 +1,5 @@
 import $ from "jquery";
-import Scratchbook from "layout/scratchbook";
+import { WindowManager } from "layout/window-manager";
 import QuotaMeter from "mvc/user/user-quotameter";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
@@ -13,7 +13,7 @@ export class MastheadState {
 
     constructor(Galaxy = null) {
         Galaxy = Galaxy || getGalaxyInstance();
-        Galaxy.frame = this.frame = new Scratchbook();
+        Galaxy.frame = this.windowManager = new WindowManager();
 
         // set up the quota meter (And fetch the current user data from trans)
         // add quota meter to masthead
@@ -35,7 +35,7 @@ export class MastheadState {
                 }
             })
             .on("beforeunload", () => {
-                const text = this.frame.beforeUnload();
+                const text = this.windowManager.beforeUnload();
                 if (text) {
                     return text;
                 }

@@ -1,16 +1,16 @@
-name: Scratchbook - Introduction
+name: Window Manager - Introduction
 description: "An introduction on how to display multiple datasets and visualizations next to each other."
-title_default: "Scratchbook Introduction"
+title_default: "Window Manager Introduction"
 tags:
   - "core"
   - "UI"
   - "visualization"
 
 steps:
-    - content: "This short tour will walk you through <b>Galaxy's Scratchbook</b> feature"
+    - content: "This short tour will walk you through <b>Galaxy's Window Manager</b> feature"
 
     - element: "#tool-panel-upload-button"
-      intro: "Before using the Scratchbook, we will upload some tabular data."
+      intro: "Before using the Window Manager, we will upload some tabular data."
       postclick:
         - "#tool-panel-upload-button"
 
@@ -52,10 +52,10 @@ steps:
       postclick:
         - "#btn-close"
 
-    - element: "#enable-scratchbook > .nav-link"
-      intro: "Clicking this button will enable Galaxy's Scratchbook mode."
+    - element: "#enable-window-manager > .nav-link"
+      intro: "Clicking this button will enable Galaxy's Window Manager mode."
       postclick:
-        - "#enable-scratchbook > .nav-link"
+        - "#enable-window-manager > .nav-link"
 
     - element: "#right"
       intro: "This is your history. It contains all datasets you are currently working with including our uploaded table."
@@ -65,8 +65,8 @@ steps:
       postclick:
         - "#current-history-panel div.content-item button[title='Display']"
 
-    - element: "#frame-0"
-      intro: "However while in Scratchbook mode, the dataset will be shown as resizable window."
+    - element: "#winbox-1"
+      intro: "However while using the Window Manager, the dataset will be shown as resizable window."
 
     - title: "Done."
-      intro: "You have created a Scratchbook view. Click on the background and select more datasets."
+      intro: "You have created a Window. Click on the background and select more datasets."

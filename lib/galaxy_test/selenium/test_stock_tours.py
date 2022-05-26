@@ -21,9 +21,9 @@ class TestStockToursTestCase(SeleniumTestCase):
         self.run_tour(os.path.join(STOCK_TOURS_DIRECTORY, "core.galaxy_ui.yaml"), sleep_on_steps=sleep_on_steps)
 
     @selenium_test
-    def test_core_scratchbook(self):
+    def test_core_windows(self):
         self.run_tour(
-            os.path.join(STOCK_TOURS_DIRECTORY, "core.scratchbook.yaml"),
+            os.path.join(STOCK_TOURS_DIRECTORY, "core.windows.yaml"),
         )
 
     @selenium_test

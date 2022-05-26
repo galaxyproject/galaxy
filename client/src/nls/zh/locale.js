@@ -239,9 +239,9 @@ define({
     "Local data": false,
     "Form Definitions": false,
 
-    // ---------------------------------------------------------------------------- Scratchbook
-    "Enable/Disable Scratchbook": "启用/禁用 Scratchbook",
-    "Show/Hide Scratchbook": "显示/隐藏 Scratchbook",
+    // ---------------------------------------------------------------------------- Window Manager
+    "Enable/Disable Window Manager": "启用/禁用 Window Manager",
+    "Show/Hide Window Manager": "显示/隐藏 Window Manager",
 
     // ---------------------------------------------------------------------------- misc. MVC
     Tags: "标签",
@@ -451,7 +451,7 @@ define({
     "Create new Build": "创建新的构建集",
     "Delete custom build.": "删除自定义的构建集。",
     "Provide the data source.": "提供数据源。",
-    // ---------------------------------------------------------------------------- scratchbook
+    // ---------------------------------------------------------------------------- Window Manager
     "Next in History": "下一个历史记录",
     "Previous in History": "上一个历史记录",
     // ---------------------------------------------------------------------------- generic-nav-view

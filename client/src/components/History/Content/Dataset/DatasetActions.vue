@@ -113,10 +113,12 @@ export default {
             this.backboneRoute(`root?job_id=${this.item.creating_job}`);
         },
         onVisualize() {
+            const name = this.item.name || "";
+            const title = `Visualization of ${name}`;
             const path = `visualizations?dataset_id=${this.item.id}`;
             const redirectParams = {
                 path: path,
-                title: "Dataset details",
+                title: title,
                 tryIframe: false,
             };
             if (!this.iframeAdd(redirectParams)) {

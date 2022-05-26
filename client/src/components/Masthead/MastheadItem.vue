@@ -148,9 +148,6 @@ export default {
         propogateClick(tab, event) {
             event.preventDefault();
             tab.onclick();
-            if (tab.id === "enable-scratchbook") {
-                this.$emit("updateScratchbookTab", tab);
-            }
         },
         formatUrl(url) {
             if (typeof url === "string" && url.indexOf("//") === -1 && url.charAt(0) != "/") {

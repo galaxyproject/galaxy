@@ -65,6 +65,7 @@
 </template>
 
 <script>
+import { getAppRoot } from "onload";
 import { backboneRoute, useGalaxy, iframeRedirect } from "components/plugins/legacyNavigation";
 import { StatelessTags } from "components/Tags";
 import { STATES } from "./model/states";
@@ -137,10 +138,14 @@ export default {
         onDisplay() {
             const id = this.item.id;
             useGalaxy((Galaxy) => {
+                const url = `${getAppRoot()}datasets/${id}/display/?preview=True`;
                 if (Galaxy.frame && Galaxy.frame.active) {
-                    Galaxy.frame.addDataset(id);
+                    Galaxy.frame.add({
+                        title: this.name,
+                        url: url,
+                    });
                 } else {
-                    iframeRedirect(`datasets/${id}/display/?preview=True`);
+                    iframeRedirect(url);
                 }
             });
         },

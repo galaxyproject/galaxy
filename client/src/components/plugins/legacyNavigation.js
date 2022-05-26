@@ -17,13 +17,13 @@ export function backboneRoute(path, ...args) {
     }
 }
 
-// wrapper for scratchbook/multiview feature
+// wrapper for window manager
 export function iframeAdd({ path, title = "Galaxy", tryIframe = true }) {
     const Galaxy = getGalaxyInstance();
     if (Galaxy.frame && Galaxy.frame.active) {
         Galaxy.frame.add({
-            url: prependPath(path),
             title: _l(title),
+            url: prependPath(path),
         });
         return true;
     } else if (tryIframe) {
