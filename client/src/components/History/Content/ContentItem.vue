@@ -50,7 +50,7 @@
             </div>
         </div>
         <StatelessTags
-            v-if="!tagsDisabled || tags.length > 0"
+            v-if="!tagsDisabled || hasTags"
             v-model="tags"
             class="alltags p-1"
             :use-toggle-link="false"
@@ -107,6 +107,9 @@ export default {
         },
         contentState() {
             return STATES[this.state] && STATES[this.state];
+        },
+        hasTags() {
+            return this.tags && this.tags.length > 0;
         },
         hasStateIcon() {
             return this.contentState && this.contentState.icon;
