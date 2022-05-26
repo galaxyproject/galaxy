@@ -49,14 +49,13 @@
                     @unhide="$emit('unhide')" />
             </div>
         </div>
-        <div class="p-1 alltags">
-            <StatelessTags
-                v-model="tags"
-                :use-toggle-link="false"
-                :disabled="!expandDataset || !isHistoryItem"
-                @tag-click="onTagClick"
-                @input="onTags" />
-        </div>
+        <StatelessTags
+            v-model="tags"
+            :class="tagsCls"
+            :use-toggle-link="false"
+            :disabled="!expandDataset || !isHistoryItem"
+            @tag-click="onTagClick"
+            @input="onTags" />
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <div class="detail-animation-wrapper" :class="expandDataset ? '' : 'collapsed'">
             <DatasetDetails v-if="expandDataset" :dataset="item" @edit="onEdit" />
@@ -125,6 +124,9 @@ export default {
         },
         tags() {
             return this.item.tags;
+        },
+        tagsCls() {
+            return { "p-1 alltags" : this.item.tags.length > 0 };
         },
     },
     methods: {
