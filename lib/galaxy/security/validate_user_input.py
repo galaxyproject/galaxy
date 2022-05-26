@@ -73,7 +73,13 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False, v
         domain = extract_domain(email)
         message = validate_domain(domain)
 
-    if not message and check_dup and trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == email.lower()).first():
+    if (
+        not message
+        and check_dup
+        and trans.sa_session.query(trans.app.model.User)
+        .filter(func.lower(trans.app.model.User.table.c.email) == email.lower())
+        .first()
+    ):
         message = f"User with email '{email}' already exists."
 
     if not message:
@@ -101,7 +107,7 @@ def validate_domain(domain):
 
 
 def extract_domain(email, base_only=False):
-    domain = email.rsplit('@', 1)[-1]
+    domain = email.rsplit("@", 1)[-1]
     parts = domain.split(".")
     if len(parts) > 2 and base_only:
         return (".").join(parts[-2:])

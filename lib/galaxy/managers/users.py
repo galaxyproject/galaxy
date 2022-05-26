@@ -87,9 +87,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         username = util.restore_text(username).strip()
         # We could add a separate option here for enabling or disabling domain validation (DNS resolution test)
         validate_domain = trans.app.config.user_activation_on
-        message = "\n".join((validate_email(trans, email, validate_domain=validate_domain),
-                             validate_password(trans, password, confirm),
-                             validate_publicname(trans, username))).rstrip()
+        message = "\n".join(
+            (
+                validate_email(trans, email, validate_domain=validate_domain),
+                validate_password(trans, password, confirm),
+                validate_publicname(trans, username),
+            )
+        ).rstrip()
 
         if message:
             return None, message
