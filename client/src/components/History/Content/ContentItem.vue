@@ -51,8 +51,8 @@
         </div>
         <StatelessTags
             v-if="!tagsDisabled || hasTags"
-            v-model="tags"
             class="alltags p-1"
+            :value="tags"
             :use-toggle-link="false"
             :disabled="tagsDisabled"
             @tag-click="onTagClick"
@@ -168,6 +168,7 @@ export default {
             }
         },
         onTags(newTags) {
+            this.$emit("tag-change", this.item, newTags);
             updateContentFields(this.item, { tags: newTags });
         },
         onTagClick(tag) {

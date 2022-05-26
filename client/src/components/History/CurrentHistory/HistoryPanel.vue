@@ -99,6 +99,7 @@
                                         :selected="isSelected(item)"
                                         :selectable="showSelection"
                                         @tag-click="onTagClick"
+                                        @tag-change="onTagChange"
                                         @update:expand-dataset="setExpanded(item, $event)"
                                         @update:selected="setSelected(item, $event)"
                                         @view-collection="$emit('view-collection', item)"
@@ -230,6 +231,9 @@ export default {
         },
         setInvisible(item) {
             Vue.set(this.invisible, item.hid, true);
+        },
+        onTagChange(item, newTags) {
+            item.tags = newTags;
         },
         onTagClick(tag) {
             if (this.filterText == "tag=" + tag) {
