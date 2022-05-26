@@ -1,8 +1,14 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import ContentItem from "./ContentItem";
+import { updateContentFields } from "components/History/model/queries";
+
+jest.mock("components/History/model/queries");
 
 const localVue = getLocalVue();
+
+// mock queries
+updateContentFields.mockImplementation(async () => {});
 
 describe("ContentItem", () => {
     let wrapper;
@@ -10,7 +16,7 @@ describe("ContentItem", () => {
     beforeEach(() => {
         wrapper = mount(ContentItem, {
             propsData: {
-                expandDataset: false,
+                expandDataset: true,
                 item: {
                     id: "item_id",
                     some_data: "some_data",
@@ -20,12 +26,16 @@ describe("ContentItem", () => {
                 },
                 id: 1,
                 isDataset: true,
-                isHistoryItem: false,
+                isHistoryItem: true,
                 name: "name",
                 selected: false,
                 selectable: false,
             },
             localVue,
+            stubs: {
+                DatasetDetails: true,
+                vueTagsInput: false,
+            },
         });
     });
 
@@ -40,6 +50,14 @@ describe("ContentItem", () => {
             await tags.at(i).find(".tag-name").trigger("click");
             expect(wrapper.emitted()["tag-click"][i][0]).toBe(`tag${i + 1}`);
         }
+        // close all tags
+        for (let i = 0; i < 3; i++) {
+            const tagRemover = wrapper.find(".ti-icon-close");
+            await tagRemover.trigger("click");
+            expect(wrapper.emitted()["tag-change"][i][1]).not.toContain(`tag${i + 1}`);
+        }
+        await wrapper.setProps({ isHistoryItem: false, item: { tags: [] } });
+        expect(wrapper.find(".alltags").exists()).toBe(false);
         // expansion button
         const $el = wrapper.find(".cursor-pointer");
         $el.trigger("click");
@@ -60,7 +78,5 @@ describe("ContentItem", () => {
         expect(wrapper.emitted()["update:selected"][1][0]).toBe(false);
         expect(wrapper.classes()).toEqual(expect.arrayContaining(["alert-info"]));
         expect(selector.attributes("data-icon")).toBe("check-square");
-        await wrapper.setProps({ item: { tags: [] } });
-        expect(wrapper.find(".alltags").exists()).toBe(false);
     });
 });
