@@ -65,8 +65,7 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload";
-import { backboneRoute, useGalaxy, iframeRedirect } from "components/plugins/legacyNavigation";
+import { backboneRoute, iframeAdd } from "components/plugins/legacyNavigation";
 import { StatelessTags } from "components/Tags";
 import { STATES } from "./model/states";
 import CollectionDescription from "./Collection/CollectionDescription";
@@ -142,18 +141,8 @@ export default {
             }
         },
         onDisplay() {
-            const id = this.item.id;
-            useGalaxy((Galaxy) => {
-                const url = `${getAppRoot()}datasets/${id}/display/?preview=True`;
-                if (Galaxy.frame && Galaxy.frame.active) {
-                    Galaxy.frame.add({
-                        title: this.name,
-                        url: url,
-                    });
-                } else {
-                    iframeRedirect(url);
-                }
-            });
+            const url = `datasets/${this.item.id}/display/?preview=True`;
+            iframeAdd({ path: url, title: this.name });
         },
         onDragStart(evt) {
             evt.dataTransfer.dropEffect = "move";
