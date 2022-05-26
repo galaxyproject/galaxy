@@ -1555,9 +1555,9 @@ class HistoryItemOperator:
             HistoryContentItemOperation.delete: lambda item, params, trans: self._delete(item),
             HistoryContentItemOperation.undelete: lambda item, params, trans: self._undelete(item),
             HistoryContentItemOperation.purge: lambda item, params, trans: self._purge(item, trans),
-            HistoryContentItemOperation.change_datatype: lambda item, params, trans: self._change_datatype(
-                item, params
-            ),
+            # HistoryContentItemOperation.change_datatype: lambda item, params, trans: self._change_datatype(
+            #     item, params
+            # ),
             HistoryContentItemOperation.change_dbkey: lambda item, params, trans: self._change_dbkey(item, params),
             HistoryContentItemOperation.add_tags: lambda item, params, trans: self._add_tags(item, trans.user, params),
             HistoryContentItemOperation.remove_tags: lambda item, params, trans: self._remove_tags(

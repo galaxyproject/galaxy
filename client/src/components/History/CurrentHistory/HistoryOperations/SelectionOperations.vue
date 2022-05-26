@@ -47,9 +47,9 @@
             <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change reference gnome">
                 <span v-localize>Change reference Gnome</span>
             </b-dropdown-item>
-            <b-dropdown-item v-b-modal:change-datatype-of-selected-content data-description="change data type">
+            <!-- <b-dropdown-item v-b-modal:change-datatype-of-selected-content data-description="change data type">
                 <span v-localize>Change data type</span>
-            </b-dropdown-item>
+            </b-dropdown-item> -->
             <b-dropdown-item v-b-modal:add-tags-to-selected-content data-description="add tags">
                 <span v-localize>Add tags</span>
             </b-dropdown-item>
