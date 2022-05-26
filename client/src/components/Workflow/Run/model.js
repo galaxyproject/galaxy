@@ -193,3 +193,51 @@ export function isDataStep(steps) {
     }
     return true;
 }
+
+/** Produces a dictionary of parameter replacements to be consumed by the form components */
+export function getReplacements(inputs, wpData, stepData = null) {
+    const params = {};
+    visitInputs(inputs, (input, name) => {
+        params[name] = input;
+    });
+    const replaceParams = {};
+    _.each(params, (input, name) => {
+        if (input.wp_linked || input.step_linked) {
+            let newValue = null;
+            if (input.step_linked && stepData) {
+                _.each(input.step_linked, (sourceStep) => {
+                    if (isDataStep(sourceStep)) {
+                        const sourceData = stepData[sourceStep.index];
+                        const value = sourceData && sourceData.input;
+                        if (value) {
+                            newValue = { values: [] };
+                            _.each(value.values, (v) => {
+                                newValue.values.push(v);
+                            });
+                        }
+                    }
+                });
+                if (!input.multiple && newValue && newValue.values.length > 0) {
+                    newValue = {
+                        values: [newValue.values[0]],
+                    };
+                }
+            }
+            if (input.wp_linked) {
+                newValue = input.value;
+                const re = /\$\{(.+?)\}/g;
+                let match;
+                while ((match = re.exec(input.value))) {
+                    const wpValue = wpData[match[1]];
+                    if (wpValue) {
+                        newValue = newValue.split(match[0]).join(wpValue);
+                    }
+                }
+            }
+            if (newValue !== undefined) {
+                replaceParams[name] = newValue;
+            }
+        }
+    });
+    return replaceParams;
+}

@@ -27,6 +27,7 @@ import FormMessage from "components/Form/FormMessage";
 import FormCard from "components/Form/FormCard";
 import { visitInputs } from "components/Form/utilities";
 import { isDataStep } from "components/Workflow/Run/model";
+import { getReplacements } from "./model";
 import { getTool } from "./services";
 
 export default {
@@ -87,49 +88,7 @@ export default {
             });
         },
         onReplaceParams() {
-            const params = {};
-            visitInputs(this.model.inputs, (input, name) => {
-                params[name] = input;
-            });
-            this.replaceParams = {};
-            _.each(params, (input, name) => {
-                if (input.wp_linked || input.step_linked) {
-                    let newValue = null;
-                    if (input.step_linked) {
-                        _.each(input.step_linked, (sourceStep) => {
-                            if (isDataStep(sourceStep)) {
-                                const sourceData = this.stepData[sourceStep.index];
-                                const value = sourceData && sourceData.input;
-                                if (value) {
-                                    newValue = { values: [] };
-                                    _.each(value.values, (v) => {
-                                        newValue.values.push(v);
-                                    });
-                                }
-                            }
-                        });
-                        if (!input.multiple && newValue && newValue.values.length > 0) {
-                            newValue = {
-                                values: [newValue.values[0]],
-                            };
-                        }
-                    }
-                    if (input.wp_linked) {
-                        newValue = input.value;
-                        const re = /\$\{(.+?)\}/g;
-                        let match;
-                        while ((match = re.exec(input.value))) {
-                            const wpValue = this.wpData[match[1]];
-                            if (wpValue) {
-                                newValue = newValue.split(match[0]).join(wpValue);
-                            }
-                        }
-                    }
-                    if (newValue !== undefined) {
-                        this.replaceParams[name] = newValue;
-                    }
-                }
-            });
+            this.replaceParams = getReplacements(this.model.inputs, this.wpData, this.stepData);
         },
         onChange(data, refreshRequest) {
             if (refreshRequest) {
