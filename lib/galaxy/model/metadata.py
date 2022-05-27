@@ -691,7 +691,8 @@ class MetadataTempFile:
 
     def __init__(self, metadata_tmp_files_dir=None, **kwds):
         self.kwds = kwds
-        self.tmp_dir = metadata_tmp_files_dir
+        if metadata_tmp_files_dir:
+            self.tmp_dir = metadata_tmp_files_dir
         self._filename = None
 
     @property
