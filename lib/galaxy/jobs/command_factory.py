@@ -278,11 +278,11 @@ class CommandsBuilder:
         self.append_command("; ".join(c for c in commands if c))
 
     def capture_stdout_stderr(self, stdout_file, stderr_file):
-        trap_command = """trap 'rm "$__out" "$__err"' EXIT"""
+        trap_command = """trap 'rm -f "$__out" "$__err"' EXIT"""
         if TRAP_KILL_CONTAINER in self.commands:
             # We need to replace the container kill trap with one that removes the named pipes and kills the container
             self.commands = self.commands.replace(TRAP_KILL_CONTAINER, "")
-            trap_command = """trap 'rm "$__out" "$__err" 2> /dev/null || true; _on_exit' EXIT"""
+            trap_command = """trap 'rm -f "$__out" "$__err"; _on_exit' EXIT"""
         self.prepend_command(
             f"""__out="${{TMPDIR:-.}}/out.$$" __err="${{TMPDIR:-.}}/err.$$"
 mkfifo "$__out" "$__err"

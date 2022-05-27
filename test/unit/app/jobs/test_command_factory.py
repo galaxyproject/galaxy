@@ -22,7 +22,7 @@ CAPTURE_AND_REDIRECT = f"{TEE_REDIRECT}{RETURN_CODE_CAPTURE}"
 CP_WORK_DIR_OUTPUTS = '; \nif [ -f "foo" ] ; then cp "foo" "bar" ; fi'
 TEE_LOG = """__out="${TMPDIR:-.}/out.$$" __err="${TMPDIR:-.}/err.$$"
 mkfifo "$__out" "$__err"
-trap 'rm "$__out" "$__err"' EXIT
+trap 'rm -f "$__out" "$__err"' EXIT
 tee -a '../outputs/tool_stdout' < "$__out" &
 tee -a '../outputs/tool_stderr' < "$__err" >&2 & """
 
@@ -53,8 +53,8 @@ class TestCommandFactory(TestCase):
         self.include_work_dir_outputs = False
         self.job_wrapper.command_line = f"{TRAP_KILL_CONTAINER}{MOCK_COMMAND_LINE}"
         expected_command_line = self._surround_command(MOCK_COMMAND_LINE).replace(
-            """trap 'rm "$__out" "$__err"' EXIT""",
-            """trap 'rm "$__out" "$__err" 2> /dev/null || true; _on_exit' EXIT"""
+            """trap 'rm -f "$__out" "$__err"' EXIT""",
+            """trap 'rm -f "$__out" "$__err"; _on_exit' EXIT"""
         )
         self.__assert_command_is(expected_command_line)
 
