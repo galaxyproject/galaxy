@@ -120,21 +120,21 @@ def job_config(jobs_directory):
     <destinations default="k8s_destination">
         <destination id="k8s_destination" runner="k8s">
             <param id="limits_cpu">1.1</param>
-            <param id="limits_memory">10M</param>
+            <param id="limits_memory">100M</param>
             <param id="docker_enabled">true</param>
             <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
             <env id="SOME_ENV_VAR">42</env>
         </destination>
         <destination id="k8s_destination_walltime_short" runner="k8s_walltime_short">
             <param id="limits_cpu">1.1</param>
-            <param id="limits_memory">10M</param>
+            <param id="limits_memory">100M</param>
             <param id="docker_enabled">true</param>
             <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
             <env id="SOME_ENV_VAR">42</env>
         </destination>
         <destination id="k8s_destination_no_cleanup" runner="k8s_no_cleanup">
             <param id="limits_cpu">1.1</param>
-            <param id="limits_memory">10M</param>
+            <param id="limits_memory">100M</param>
             <param id="docker_enabled">true</param>
             <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
             <env id="SOME_ENV_VAR">42</env>
@@ -355,8 +355,8 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         )
         dataset_content = self.dataset_populator.get_history_dataset_content(self.history_id, hid=1).strip()
         CPU = "2"
-        MEM = "10"
-        MEM_PER_SLOT = "5"
+        MEM = "100"
+        MEM_PER_SLOT = "50"
         assert [CPU, MEM, MEM_PER_SLOT] == dataset_content.split("\n"), dataset_content
 
         # Tool is mapped to destination without cleanup, make sure job still exists in kubernetes API
