@@ -113,6 +113,12 @@ class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
         cls._test_driver.tear_down()
         cls._app_available = False
 
+    def tearDown(self):
+        logs = self._test_driver.get_logs()
+        if logs:
+            print(logs)
+        return super().tearDown()
+
     def setUp(self):
         self.test_data_resolver = TestDataResolver()
         self._configure_interactor()

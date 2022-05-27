@@ -14,7 +14,10 @@ import tempfile
 import threading
 import time
 from pathlib import Path
-from typing import Optional
+from typing import (
+    List,
+    Optional,
+)
 from urllib.parse import urlparse
 
 import nose.config
@@ -705,6 +708,10 @@ class ServerWrapper:
         self.port = port
         self.prefix = prefix
 
+    def get_logs(self) -> Optional[str]:
+        # Subclasses can implement a way to return relevant logs
+        pass
+
     @property
     def app(self):
         raise NotImplementedError("Test can be run against target - requires a Galaxy app object.")
@@ -777,7 +784,6 @@ class GravityServerWrapper(ServerWrapper):
         return f"Gunicorn logs:{os.linesep}{gunicorn_logs}{os.linesep}gx-it-proxy logs:{os.linesep}{gxit_logs}celery logs:{os.linesep}{celery_logs}"
 
     def stop(self):
-        log.info("Gravity logs:\n%s", self.get_logs())
         self.stop_command()
 
 
@@ -933,6 +939,7 @@ class TestDriver:
 class GalaxyTestDriver(TestDriver):
     """Instantial a Galaxy-style nose TestDriver for testing Galaxy."""
 
+    server_wrappers: List[ServerWrapper]
     testing_shed_tools = False
 
     def _configure(self, config_object=None):
@@ -970,6 +977,11 @@ class GalaxyTestDriver(TestDriver):
         self._saved_galaxy_config = None
         self._configure(config_object)
         self._register_and_run_servers(config_object)
+
+    def get_logs(self):
+        if self.server_wrappers:
+            server_wrapper = self.server_wrappers[0]
+            return server_wrapper.get_logs()
 
     def restart(self, config_object=None, handle_config=None):
         self.stop_servers()
