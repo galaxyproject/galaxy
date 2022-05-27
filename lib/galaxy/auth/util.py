@@ -90,7 +90,7 @@ def parse_auth_results(trans, auth_results, options):
             auto_username = test_name
             break
         else:
-            log.error(f"Invalid username '{auto_username}': {validate_result}")
+            log.debug(f"Invalid username '{auto_username}': {validate_result}")
         try_number += 1
     else:
         raise Conflict("Cannot make unique username")
