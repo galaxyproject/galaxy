@@ -57,28 +57,28 @@ describe("History Selection Operations", () => {
         it("should display 'hide' option only on visible items", async () => {
             const option = '[data-description="hide option"]';
             expect(wrapper.find(option).exists()).toBe(true);
-            await wrapper.setProps({ filterText: "visible=false" });
+            await wrapper.setProps({ filterText: "visible:false" });
             expect(wrapper.find(option).exists()).toBe(false);
         });
 
         it("should display 'unhide' option only on hidden items", async () => {
             const option = '[data-description="unhide option"]';
             expect(wrapper.find(option).exists()).toBe(false);
-            await wrapper.setProps({ filterText: "visible=false" });
+            await wrapper.setProps({ filterText: "visible:false" });
             expect(wrapper.find(option).exists()).toBe(true);
         });
 
         it("should display 'delete' option only on non-deleted items", async () => {
             const option = '[data-description="delete option"]';
             expect(wrapper.find(option).exists()).toBe(true);
-            await wrapper.setProps({ filterText: "deleted=true" });
+            await wrapper.setProps({ filterText: "deleted:true" });
             expect(wrapper.find(option).exists()).toBe(false);
         });
 
         it("should display 'undelete' option only on deleted items", async () => {
             const option = '[data-description="undelete option"]';
             expect(wrapper.find(option).exists()).toBe(false);
-            await wrapper.setProps({ filterText: "deleted=true" });
+            await wrapper.setProps({ filterText: "deleted:true" });
             expect(wrapper.find(option).exists()).toBe(true);
         });
 
@@ -89,11 +89,11 @@ describe("History Selection Operations", () => {
             expect(wrapper.find(buildListOption).exists()).toBe(true);
             expect(wrapper.find(buildPairOption).exists()).toBe(true);
             expect(wrapper.find(buildListOfPairsOption).exists()).toBe(true);
-            await wrapper.setProps({ filterText: "visible=false" });
+            await wrapper.setProps({ filterText: "visible:false" });
             expect(wrapper.find(buildListOption).exists()).toBe(false);
             expect(wrapper.find(buildPairOption).exists()).toBe(false);
             expect(wrapper.find(buildListOfPairsOption).exists()).toBe(false);
-            await wrapper.setProps({ filterText: "deleted=true" });
+            await wrapper.setProps({ filterText: "deleted:true" });
             expect(wrapper.find(buildListOption).exists()).toBe(false);
             expect(wrapper.find(buildPairOption).exists()).toBe(false);
             expect(wrapper.find(buildListOfPairsOption).exists()).toBe(false);

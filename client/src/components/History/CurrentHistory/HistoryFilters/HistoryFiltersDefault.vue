@@ -45,12 +45,12 @@ export default {
     },
     methods: {
         getValue(name) {
-            const value = this.settings[`${name}=`];
+            const value = this.settings[`${name}:`];
             return value !== undefined ? value : null;
         },
         onChange(name, value) {
             value = value !== null ? value : undefined;
-            this.$emit("change", `${name}=`, value);
+            this.$emit("change", `${name}:`, value);
         },
     },
 };

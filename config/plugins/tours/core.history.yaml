@@ -85,7 +85,7 @@ steps:
     - element: "#current-history-panel input[data-description='filter text input']"
       title: "Filter your datasets"
       intro: "By default your history will hide all deleted datasets from you. You can visualize them by filtering."
-      textinsert: "deleted=true"
+      textinsert: "deleted:true"
 
     - element: "#current-history-panel div.content-item button[title='Undelete']"
       title: "Undeleting a dataset"

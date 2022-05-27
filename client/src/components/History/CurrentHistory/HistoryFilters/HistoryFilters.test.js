@@ -50,7 +50,7 @@ describe("HistoryFilters", () => {
 
         // Test: keyup.enter search (should toggle the view out)
         await filterName.trigger("keyup.enter");
-        await expectCorrectEmits(wrapper, false, "name=name-filter");
+        await expectCorrectEmits(wrapper, false, "name:name-filter");
 
         // Test: clearing the filterText
         const clearButton = wrapper.find("[data-description='show deleted filter toggle']");
@@ -77,7 +77,7 @@ describe("HistoryFilters", () => {
         await expectCorrectEmits(
             wrapper,
             false,
-            "create_time>'January 1, 2022' create_time<'January 1, 2023' extension=ext-filter hid>hid-greater hid<hid-lower name=name-filter state=state-filter tag='tag filter'"
+            "create_time>'January 1, 2022' create_time<'January 1, 2023' extension:ext-filter hid>hid-greater hid<hid-lower name:name-filter state:state-filter tag:'tag filter'"
         );
 
         // -------- Test esc key:  ---------

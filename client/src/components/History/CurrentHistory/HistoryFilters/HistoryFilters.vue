@@ -33,13 +33,13 @@
             @keyup.enter="onSearch"
             @keyup.esc="onToggle">
             <small>Filter by name:</small>
-            <b-form-input v-model="filterSettings['name=']" size="sm" placeholder="any name" />
+            <b-form-input v-model="filterSettings['name:']" size="sm" placeholder="any name" />
             <small class="mt-1">Filter by extension:</small>
-            <b-form-input v-model="filterSettings['extension=']" size="sm" placeholder="any extension" />
+            <b-form-input v-model="filterSettings['extension:']" size="sm" placeholder="any extension" />
             <small class="mt-1">Filter by tag:</small>
-            <b-form-input v-model="filterSettings['tag=']" size="sm" placeholder="any tag" />
+            <b-form-input v-model="filterSettings['tag:']" size="sm" placeholder="any tag" />
             <small class="mt-1">Filter by state:</small>
-            <b-form-input v-model="filterSettings['state=']" size="sm" placeholder="any state" list="stateSelect" />
+            <b-form-input v-model="filterSettings['state:']" size="sm" placeholder="any state" list="stateSelect" />
             <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
             <small class="mt-1">Filter by item index:</small>
             <b-form-group class="m-0">

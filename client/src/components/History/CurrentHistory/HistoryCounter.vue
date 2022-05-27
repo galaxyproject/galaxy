@@ -25,7 +25,7 @@
                 variant="link"
                 size="sm"
                 class="rounded-0 text-decoration-none"
-                @click="setFilter('deleted=true')">
+                @click="setFilter('deleted:true')">
                 <icon icon="trash" />
                 <span>{{ history.contents_active.deleted }}</span>
             </b-button>
@@ -35,7 +35,7 @@
                 variant="link"
                 size="sm"
                 class="rounded-0 text-decoration-none"
-                @click="setFilter('visible=false')">
+                @click="setFilter('visible:false')">
                 <icon icon="lock" />
                 <span>{{ history.contents_active.hidden }}</span>
             </b-button>

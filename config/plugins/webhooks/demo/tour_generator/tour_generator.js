@@ -36,7 +36,7 @@ window.TourGenerator = Backbone.View.extend({
         _.each(obj.data.hids, (hid) => {
             Galaxy.currHistoryPanel.collection.each((dataset) => {
                 datasets.push(dataset);
-            }, `hid=${hid} state=ok`);
+            }, `hid:${hid} state:ok`);
         });
         if (datasets.length === obj.data.hids.length) {
             this._generateTour(obj.data.tour);
