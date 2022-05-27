@@ -22,49 +22,61 @@ Remember to first backup your database(s).
 
 #### manage_db.sh:
 
-Example 1: upgrade "galaxy" database to version "abc123" using default configuration:
+Upgrade "galaxy" database to version "abc123" using default configuration:
+
 `sh manage_db.sh upgrade --version=abc123`
 
-Example 2: downgrade "install" database to version "xyz789" passing configuration file "mygalaxy.yml":
+Downgrade "install" database to version "xyz789" passing configuration file "mygalaxy.yml":
+
 `sh manage_db.sh downgrade --version=xyz789 -c mygalaxy.yml install`
 
-Example 3: upgrade "galaxy" database to latest version using default configuration:
+Upgrade "galaxy" database to latest version using default configuration:
+
 `sh manage_db.sh upgrade`
 
 #### run_alembic.sh:
 
-##### upgrading
+##### Upgrading
 
-upgrade gxy to head revision
+Upgrade gxy to head revision:
+
 `sh run_alembic.sh upgrade gxy@head`
 
-upgrade gxy to 1 revision above current
+Upgrade gxy to 1 revision above current:
+
 `sh run_alembic.sh upgrade gxy@+1`
 
-upgrade branch to a specific revision
+Upgrade branch to a specific revision:
+
 `sh run_alembic.sh upgrade [revision identifier]`
 
-upgrade branch to 1 revision above specific revision
+Upgrade branch to 1 revision above specific revision:
+
 `sh run_alembic.sh upgrade [revision identifier]+1`
 
-upgrade gxy and tsi to head revisions
+Upgrade gxy and tsi to head revisions:
+
 `sh run_alembic.sh upgrade heads`
  
-###### downgrading
+##### Downgrading
 
-downgrade gxy to base (empty db with empty alembic table)
+Downgrade gxy to base (empty db with empty alembic table):
+
 `sh run_alembic.sh downgrade gxy@base`
 
-downgrade gxy to 1 revision below current
+Downgrade gxy to 1 revision below current:
+
 `sh run_alembic.sh downgrade gxy@-1`
 
-downgrade branch to a specific revision
+Downgrade branch to a specific revision:
+
 `sh run_alembic.sh downgrade [revision identifier]`
 
-downgrade branch to 1 revision below specific revision
+Downgrade branch to 1 revision below specific revision:
+
 `sh run_alembic.sh downgrade [revision identifier]-1 `
  
-Check Alembic documentation for more examples.
+Check [Alembic's documentation](https://alembic.sqlalchemy.org) for more examples.
 Note: relative upgrades and downgrades without a revision identifier are not supported - i.e., you cannot upgrade +1 or downgrade -1 without providing a revision identifier. However, you can upgrade both branches to their latest versions (head revisions) without providing a branch label: upgrade heads.
 
 ### Upgrading from SQLAlchemy Migrate
@@ -77,17 +89,19 @@ Galaxy no longer supports SQLAlchemy Migrate. To upgrade to Alembic, follow thes
 
 3. If your database is not current, before upgrading to the 22.05 release, run `manage_db.sh upgrade` to upgrade your database. Once your database has the latest SQLAlchemy Migrate version, you can check out the new code base (22.05 release or the current dev branch) and proceed to migrating to Alembic.
 
-4. If you want Alembic to upgrade your database automatically, you can set the [`database_auto_migrate`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/webapps/galaxy/config_schema.yml#L170) configuration option and simply start Galaxy. Otherwise, use the `manage_db.sh` script.
+4. If you want Alembic to upgrade your database automatically, you can set the [`database_auto_migrate`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/webapps/galaxy/config_schema.yml#L170) configuration option and simply start Galaxy. Otherwise, run `sh manage_db.sh upgrade`.
 
 ## Developing Galaxy: creating new revisions
 
-When creating new revisions, as with upgrading/downgrading, you need to indicate the target branch. You use the `run_alembic.sh` script.
+When creating new revisions, as with upgrading/downgrading, you need to indicate the target branch. Use the `run_alembic.sh` script.
 
 To create a revision for the galaxy model:
-```./run_alembic.sh revision --head=gxy@head -m "your description"```
+
+`./run_alembic.sh revision --head=gxy@head -m "your description"`
 
 To create a revision for the install model:
-```./run_alembic.sh revision --head=tsi@head -m "your description"```
+
+`./run_alembic.sh revision --head=tsi@head -m "your description"`
 
 Alembic will generate a revision script in the appropriate version directory (the location of the version directories is specified in the `alembic.ini` file). You'll need to fill out the `upgrade()` and `downgrade` functions. Use Alembic documentation for examples:
 - [https://alembic.sqlalchemy.org/en/latest/tutorial.html#create-a-migration-script](https://alembic.sqlalchemy.org/en/latest/tutorial.html#create-a-migration-script)
@@ -95,8 +109,17 @@ Alembic will generate a revision script in the appropriate version directory (th
 
 We encourage you to use Galaxy-specific utility functions (`galaxy/model/migrations/util.py`) when appropriate. Don't forget to provide tests for any modifications you make to the model (most likely, you will need to add them to the appropriate `test/unit/data/model/mapping/test_*model_mapping.py` module.
  
-After that, you may run the upgrade script: `manage_sb.sh` upgrade (or `run_alembic.sh` upgrade heads). And you're done! (NOTE: This step should be taken after updating the model and adding appropriate tests.)
+After that, you may run the upgrade script: `manage_sb.sh upgrade` (or `run_alembic.sh upgrade heads`). And you're done! (NOTE: This step should be taken after updating the model and adding appropriate tests.)
 
 ## Troubleshooting
 
-[todo]
+### How to handle migrations.IncorrectVersionError
+
+If you see this error, you'll need to upgrade or downgrade your database *before* upgrading to
+Alembic. Whether you need to upgrade or downgrade depends on what version number is stored in 
+the `migrate_version` table in your database. Alembic expects version 180, so you will need to
+upgrade if your version is less than that or, in very rare circumstances, downgrade if your version
+is 181. Please see [this issue](https://github.com/galaxyproject/galaxy/issues/13528) for more details.
+
+#### Please help us improve this page:
+If you encounter any migration-related errors or issues, please [open an issue](https://github.com/galaxyproject/galaxy/issues/new?assignees=&labels=&template=bug_report.md&title=), and we will add the solution with any relevant context to this page.
