@@ -49,14 +49,14 @@
                     @unhide="$emit('unhide')" />
             </div>
         </div>
-        <div class="p-1 alltags">
-            <StatelessTags
-                v-model="tags"
-                :use-toggle-link="false"
-                :disabled="!expandDataset || !isHistoryItem"
-                @tag-click="onTagClick"
-                @input="onTags" />
-        </div>
+        <StatelessTags
+            v-if="!tagsDisabled || hasTags"
+            class="alltags p-1"
+            :value="tags"
+            :use-toggle-link="false"
+            :disabled="tagsDisabled"
+            @tag-click="onTagClick"
+            @input="onTags" />
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <div class="detail-animation-wrapper" :class="expandDataset ? '' : 'collapsed'">
             <DatasetDetails v-if="expandDataset" :dataset="item" @edit="onEdit" />
@@ -65,8 +65,7 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload";
-import { backboneRoute, useGalaxy, iframeRedirect } from "components/plugins/legacyNavigation";
+import { backboneRoute, iframeAdd } from "components/plugins/legacyNavigation";
 import { StatelessTags } from "components/Tags";
 import { STATES } from "./model/states";
 import CollectionDescription from "./Collection/CollectionDescription";
@@ -108,6 +107,9 @@ export default {
         contentState() {
             return STATES[this.state] && STATES[this.state];
         },
+        hasTags() {
+            return this.tags && this.tags.length > 0;
+        },
         hasStateIcon() {
             return this.contentState && this.contentState.icon;
         },
@@ -126,6 +128,9 @@ export default {
         tags() {
             return this.item.tags;
         },
+        tagsDisabled() {
+            return !this.expandDataset || !this.isHistoryItem;
+        },
     },
     methods: {
         onClick() {
@@ -136,18 +141,8 @@ export default {
             }
         },
         onDisplay() {
-            const id = this.item.id;
-            useGalaxy((Galaxy) => {
-                const url = `${getAppRoot()}datasets/${id}/display/?preview=True`;
-                if (Galaxy.frame && Galaxy.frame.active) {
-                    Galaxy.frame.add({
-                        title: this.name,
-                        url: url,
-                    });
-                } else {
-                    iframeRedirect(url);
-                }
-            });
+            const url = `datasets/${this.item.id}/display/?preview=True`;
+            iframeAdd({ path: url, title: this.name });
         },
         onDragStart(evt) {
             evt.dataTransfer.dropEffect = "move";
@@ -162,6 +157,7 @@ export default {
             }
         },
         onTags(newTags) {
+            this.$emit("tag-change", this.item, newTags);
             updateContentFields(this.item, { tags: newTags });
         },
         onTagClick(tag) {
