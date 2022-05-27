@@ -363,6 +363,8 @@ Also for Galaxy releases > 17.05: In order to allow `external_chown_script.py` t
 
 It is also a good idea to make sure that only trusted users, e.g. root, have write access to all three scripts.
 
+Another important change is to set the `max-retries` option to `0` in `auth_conf.xml`.
+
 Some maintenance and support of this code will be provided via the usual [Support](https://galaxyproject.org/support/) channels, but improvements and fixes would be greatly welcomed, as this is a complex feature which is not used by the Galaxy Development Team.
 
 ## Special environment variables for job resources
