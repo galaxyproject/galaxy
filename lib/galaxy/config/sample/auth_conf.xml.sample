@@ -26,7 +26,7 @@
             <!-- How often Galaxy should retry to validate a user-name: 
                  If a username is invalid (already taken, too short, too long, non-alphanumeric + '_-')
                  Galaxy tries again with username+"-i" for i<= max-retries. -->
-<!--        <max-retries>True</max-retries>
+<!--        <max-retries>10</max-retries>
 -->
             <!-- Whether users are allowed to change their password. Default is
                  False. -->
