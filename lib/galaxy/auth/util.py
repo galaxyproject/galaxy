@@ -78,7 +78,7 @@ def parse_auth_results(trans, auth_results, options):
     auth_result, auto_email, auto_username = auth_results[:3]
     auto_username = str(auto_username).lower()
     # make username unique
-    max_retries = int(options.get('max-retries', "10"))
+    max_retries = int(options.get("max-retries", "10"))
     try_number = 0
     while try_number <= max_retries:
         if try_number == 0:
@@ -86,7 +86,7 @@ def parse_auth_results(trans, auth_results, options):
         else:
             test_name = f"{auto_username}-{try_number}"
         validate_result = validate_publicname(trans, test_name)
-        if validate_result == '':
+        if validate_result == "":
             auto_username = test_name
             break
         else:
