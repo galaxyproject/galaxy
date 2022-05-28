@@ -13,6 +13,7 @@ addInitialization((Galaxy, { options = {} }) => {
         router: router,
         store: store,
     });
+    router.push("workflows/edit");
 });
 
 window.addEventListener("load", () => standardInit("app"));
