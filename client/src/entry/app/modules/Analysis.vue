@@ -1,12 +1,8 @@
 <template>
     <div id="columns">
-        <div id="left" class="unified-panel">
-            <SidePanel side="left" :currentPanel="getToolBox()" :currentPanelProperties="ToolBoxProperties" />
-        </div>
+        <SidePanel side="left" :currentPanel="getToolBox()" :currentPanelProperties="ToolBoxProperties" />
         <div id="center" />
-        <div id="right" class="unified-panel">
-            <HistoryIndex />
-        </div>
+        <SidePanel side="right" :currentPanel="getHistoryIndex()" :currentPanelProperties="{}" />
     </div>
 </template>
 <script>
@@ -35,6 +31,9 @@ export default {
         },
     },
     methods: {
+        getHistoryIndex() {
+            return HistoryIndex;
+        },
         getToolBox() {
             return ToolBox;
         },
