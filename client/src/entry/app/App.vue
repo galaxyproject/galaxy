@@ -1,17 +1,16 @@
 <template>
-    <div>
+    <body scroll="no" class="full-content">
         <div id="everything">
             <div id="background"/>
-            <div id="masthead">
-                <Masthead
-                    :mastheadState="getState()"
-                    :displayGalaxyBrand="options.display_galaxy_brand"
-                    :brand="options.brand"
-                    :brandLink="staticUrlToPrefixed(options.logo_url)"
-                    :brandImage="staticUrlToPrefixed(options.logo_src)"
-                    :brandImageSecondary="staticUrlToPrefixed(options.logo_src_secondary)"
-                    :menuOptions="options"/>
-            </div>
+            <Masthead
+                id="masthead"
+                :mastheadState="getState()"
+                :displayGalaxyBrand="options.display_galaxy_brand"
+                :brand="options.brand"
+                :brandLink="staticUrlToPrefixed(options.logo_url)"
+                :brandImage="staticUrlToPrefixed(options.logo_src)"
+                :brandImageSecondary="staticUrlToPrefixed(options.logo_src_secondary)"
+                :menuOptions="options"/>
             <small id="messagebox"/>
             <small id="inactivebox" class="alert rounded-0 m-0 p-2 alert-warning" />
             <div id="columns">
@@ -21,7 +20,7 @@
             </div>
         </div>
         <div id="dd-helper" />
-    </div>
+    </body>
 </template>
 <script>
 import { MastheadState } from "layout/masthead";
