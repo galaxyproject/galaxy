@@ -33,6 +33,7 @@ module.exports = (env = {}, argv = {}) => {
         entry: {
             login: ["polyfills", "bundleEntries", "entry/login"],
             analysis: ["polyfills", "bundleEntries", "entry/analysis"],
+            app: ["polyfills", "bundleEntries", "entry/app"],
             admin: ["polyfills", "bundleEntries", "entry/admin"],
             generic: ["polyfills", "bundleEntries", "entry/generic"],
         },
