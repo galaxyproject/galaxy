@@ -30,7 +30,7 @@
                     <a class="ml-1" :href="resendUrl">Resend Verification</a>
                 </span>
             </alert>
-            <WorkflowEditor1 />
+            <WorkflowEditorModule />
         </div>
         <div id="dd-helper" />
     </body>
@@ -38,13 +38,13 @@
 <script>
 import { MastheadState } from "layout/masthead";
 import Masthead from "components/Masthead/Masthead.vue";
-import WorkflowEditor1 from "entry/app/modules/WorkflowEditor.vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
+import WorkflowEditorModule from "entry/app/modules/WorkflowEditor.vue";
 export default {
     components: {
         Masthead,
-        WorkflowEditor1,
+        WorkflowEditorModule,
     },
     data() {
         return {

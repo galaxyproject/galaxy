@@ -9,6 +9,7 @@
         :workflows="editorConfig.workflows" />
 </template>
 <script>
+import store from "store";
 import { urlData } from "utils/url";
 import Query from "utils/query-string-parsing";
 import Editor from "components/Workflow/Editor/Index.vue";
