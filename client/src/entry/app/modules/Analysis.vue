@@ -1,11 +1,26 @@
 <template>
     <div id="columns">
-        <SidePanel side="left" :currentPanel="getToolBox()" :currentPanelProperties="ToolBoxProperties" />
-        <div id="center" />
+        <SidePanel side="left" :currentPanel="getToolBox()" :currentPanelProperties="toolBoxProperties" />
+        <div id="center">
+            <div class="center-container">
+                <iframe
+                    v-if="src"
+                    id="galaxy_main"
+                    name="galaxy_main"
+                    frameborder="0"
+                    class="center-frame"
+                    title="galaxy main frame"
+                    :src="srcWithRoot" />
+                <div class="center-panel" style="display: block;">
+                    <router-view />
+                </div>
+            </div>
+        </div>
         <SidePanel side="right" :currentPanel="getHistoryIndex()" :currentPanelProperties="{}" />
     </div>
 </template>
 <script>
+import { getAppRoot } from "onload";
 import store from "store";
 import { urlData } from "utils/url";
 import Query from "utils/query-string-parsing";
@@ -19,15 +34,24 @@ export default {
         HistoryIndex,
         SidePanel,
     },
+    props: {
+        src: {
+            type: String,
+            default: null,
+        },
+    },
     data() {
         return {};
     },
     computed: {
-        ToolBoxProperties() {
+        toolBoxProperties() {
             const Galaxy = getGalaxyInstance();
             return {
                 storedWorkflowMenuEntries: Galaxy.config.stored_workflow_menu_entries,
             };
+        },
+        srcWithRoot() {
+            return `${getAppRoot()}${this.src}`;
         },
     },
     methods: {

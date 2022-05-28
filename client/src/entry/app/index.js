@@ -5,7 +5,7 @@ import App from "./App.vue";
 import router from "./router";
 import store from "store";
 
-addInitialization((Galaxy, { options = {} }) => {
+addInitialization(() => {
     console.log("App setup");
     new Vue({
         el: "body",
@@ -13,7 +13,6 @@ addInitialization((Galaxy, { options = {} }) => {
         router: router,
         store: store,
     });
-    router.push("/home");
 });
 
 window.addEventListener("load", () => standardInit("app"));
