@@ -1,23 +1,36 @@
 <template>
     <body scroll="no" class="full-content">
         <div id="everything">
-            <div id="background"/>
+            <div id="background" />
             <Masthead
                 id="masthead"
-                :mastheadState="getState()"
-                :displayGalaxyBrand="options.display_galaxy_brand"
-                :brand="options.brand"
-                :brandLink="staticUrlToPrefixed(options.logo_url)"
-                :brandImage="staticUrlToPrefixed(options.logo_src)"
-                :brandImageSecondary="staticUrlToPrefixed(options.logo_src_secondary)"
-                :menuOptions="options"/>
-            <small id="messagebox"/>
-            <small id="inactivebox" class="alert rounded-0 m-0 p-2 alert-warning" />
-            <div id="columns">
-                <div id="left" class="unified-panel"/>
-                <div id="center" />
-                <div id="right" class="unified-panel" />
-            </div>
+                :masthead-state="getState()"
+                :display-galaxy-brand="config.display_galaxy_brand"
+                :brand="config.brand"
+                :brand-link="staticUrlToPrefixed(config.logo_url)"
+                :brand-image="staticUrlToPrefixed(config.logo_src)"
+                :brand-image-secondary="staticUrlToPrefixed(config.logo_src_secondary)"
+                :menu-options="config" />
+            <alert
+                v-if="config.message_box_visible && config.message_box_content"
+                id="messagebox"
+                class="rounded-0 m-0 p-2"
+                :variant="config.message_box_class || 'info'">
+                <span class="fa fa-fw mr-1 fa-exclamation" />
+                <span>{{ config.message_box_content }}</span>
+            </alert>
+            <alert
+                v-if="config.show_inactivity_warning && config.inactivity_box_content"
+                id="inactivebox"
+                class="rounded-0 m-0 p-2"
+                variant="alert-warning">
+                <span class="fa fa-fw mr-1 fa-exclamation-triangle" />
+                <span>{{ config.inactivity_box_content }}</span>
+                <span>
+                    <a class="ml-1" :href="resendUrl">Resend Verification</a>
+                </span>
+            </alert>
+            <WorkflowEditor1 />
         </div>
         <div id="dd-helper" />
     </body>
@@ -25,17 +38,19 @@
 <script>
 import { MastheadState } from "layout/masthead";
 import Masthead from "components/Masthead/Masthead.vue";
+import WorkflowEditor1 from "entry/app/modules/WorkflowEditor.vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
-
 export default {
     components: {
         Masthead,
+        WorkflowEditor1,
     },
-    computed: {
-        options() {
-            return getGalaxyInstance().config;
-        },
+    data() {
+        return {
+            config: getGalaxyInstance().config,
+            resendUrl: `${getAppRoot()}user/resend_verification`,
+        };
     },
     methods: {
         getState() {
@@ -45,5 +60,5 @@ export default {
             return url?.startsWith("/") ? `${getAppRoot()}${url.substring(1)}` : url;
         },
     },
-}
+};
 </script>

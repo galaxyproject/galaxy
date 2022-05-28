@@ -649,6 +649,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return trans.response.send_redirect(f"{url_for('/')}workflow?status=done&message={escape(message)}")
 
     @web.expose
+    @web.json
     @web.require_login("edit workflows")
     def editor(self, trans, id=None, workflow_id=None, version=None):
         """
@@ -740,7 +741,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         }
 
         # parse to mako
-        return trans.fill_template("workflow/editor.mako", editor_config=editor_config)
+        return editor_config
 
     @web.json
     def load_workflow(self, trans, id, version=None):
