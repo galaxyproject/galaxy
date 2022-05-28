@@ -1,25 +1,33 @@
 <template>
-<div>
-    {{ editorConfig }}
-</div>
+    <Editor
+        v-if="editorConfig"
+        :id="workflowId"
+        :data-managers="editorConfig.workflows"
+        :initial-version="editorConfig.initialVersion"
+        :module-sections="editorConfig.moduleSections"
+        :tags="editorConfig.tags"
+        :workflows="editorConfig.workflows" />
 </template>
 <script>
 import { urlData } from "utils/url";
 import Query from "utils/query-string-parsing";
-import Index from "components/Workflow/Editor/Index.vue";
+import Editor from "components/Workflow/Editor/Index.vue";
 export default {
+    components: {
+        Editor,
+    },
     data() {
         return {
-            editorConfig: {},
-        }
+            workflowId: Query.get("id"),
+            editorConfig: null,
+        };
     },
     created() {
         this.getState();
     },
     methods: {
         async getState() {
-            const workflowId = Query.get("id");
-            this.editorConfig = await urlData({ url: `workflow/editor?id=${workflowId}` });
+            this.editorConfig = await urlData({ url: `workflow/editor?id=${this.workflowId}` });
         },
     },
 };
