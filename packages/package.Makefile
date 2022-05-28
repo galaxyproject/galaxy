@@ -93,4 +93,5 @@ push-release:
 release: release-local push-release
 
 mypy:
-	mypy $(SOURCE_DIR) $(TEST_DIR)
+	test -f $(TEST_DIR) && mypy $(SOURCE_DIR) $(TEST_DIR)
+	test -f $(TEST_DIR) || mypy $(SOURCE_DIR)

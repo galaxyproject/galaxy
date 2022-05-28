@@ -32,6 +32,7 @@ PACKAGE_DIRS=(
     web_framework
     app
     webapps
+    test_base
 )
 for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     printf "\n========= TESTING PACKAGE ${PACKAGE_DIRS[$i]} =========\n\n"
@@ -52,7 +53,10 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
 
     # Prevent execution of alembic/env.py at test collection stage (alembic.context not set)
     unit_extra='--doctest-modules --ignore galaxy/model/migrations/alembic'
-    pytest $unit_extra galaxy tests
+    if [ -e tests ];
+    then
+        pytest $unit_extra galaxy tests
+    fi
     make mypy
     cd ..
 done
