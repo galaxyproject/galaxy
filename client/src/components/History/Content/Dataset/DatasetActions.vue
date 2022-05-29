@@ -110,6 +110,7 @@ export default {
             this.backboneRoute("datasets/error", { dataset_id: this.item.id });
         },
         onInfo() {
+            //this.backboneRoute(`/datasets/${this.item.id}/details`);
             this.$router.push(`/datasets/${this.item.id}/details`);
         },
         onRerun() {

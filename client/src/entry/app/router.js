@@ -12,6 +12,19 @@ import WorkflowEditorModule from "entry/app/modules/WorkflowEditor";
 
 Vue.use(VueRouter);
 
+// patches $router.push() to trigger an event and hide duplication warnings
+const originalPush = VueRouter.prototype.push;
+VueRouter.prototype.push = function push(location) {
+    return originalPush.call(this, location).catch((err) => {
+        // avoid console warning when user clicks to revisit same route
+        if (err.name !== "NavigationDuplicated") {
+            throw err;
+        }
+        // emit event when route pushed even if route is duplicate
+        this.app.$emit("route-pushed");
+    });
+};
+
 const router = new VueRouter({
     routes: [
         {

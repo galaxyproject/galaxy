@@ -40,17 +40,19 @@ export default {
             showCenter: true,
         };
     },
+    created() {
+        // Using a custom event here which, in contrast to watching $route,
+        // always fires when a route is pushed.
+        this.$router.app.$on("route-pushed", () => {
+            this.showCenter = false;
+        });
+    },
     computed: {
         toolBoxProperties() {
             const Galaxy = getGalaxyInstance();
             return {
                 storedWorkflowMenuEntries: Galaxy.config.stored_workflow_menu_entries,
             };
-        },
-    },
-    watch: {
-        $route() {
-            this.showCenter = this.$route.fullPath == "/";
         },
     },
     methods: {
