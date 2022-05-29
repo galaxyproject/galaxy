@@ -298,6 +298,34 @@ class DatasetsApiTestCase(ApiTestCase):
         )
         self._assert_status_code_is(invalidly_updated_hda_response, 400)
 
+    @skip_without_tool("cat_data_and_sleep")
+    def test_delete_cancels_job(self):
+        with self.dataset_populator.test_history() as history_id:
+            hda_id = self.dataset_populator.new_dataset(history_id)["id"]
+            self.dataset_populator.wait_for_history_jobs(history_id)
+            active_jobs = self.dataset_populator.active_history_jobs(history_id)
+            assert not active_jobs
+
+            inputs = {
+                "input1": {"src": "hda", "id": hda_id},
+                "sleep_time": 10,
+            }
+            run_response = self.dataset_populator.run_tool_raw(
+                "cat_data_and_sleep",
+                inputs,
+                history_id,
+            ).json()
+            queued_id = run_response["outputs"][0]["id"]
+            active_jobs = self.dataset_populator.active_history_jobs(history_id)
+            assert active_jobs
+
+            delete_response = self.dataset_populator.delete_dataset(history_id, queued_id)
+            self._assert_status_code_is_ok(delete_response)
+
+            # The job should be cancelled
+            active_jobs = self.dataset_populator.active_history_jobs(history_id)
+            assert not active_jobs, "Job was not cancelled"
+
     def test_delete_batch(self):
         num_datasets = 4
         dataset_map: Dict[int, str] = {}
