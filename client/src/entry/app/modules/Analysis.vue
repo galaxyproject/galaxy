@@ -12,7 +12,7 @@
                     title="galaxy main frame"
                     :src="srcWithRoot" />
                 <div class="center-panel" style="display: block;">
-                    <router-view />
+                    <router-view :key="$route.fullPath" />
                 </div>
             </div>
         </div>
