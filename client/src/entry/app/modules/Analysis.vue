@@ -3,15 +3,8 @@
         <SidePanel side="left" :currentPanel="getToolBox()" :currentPanelProperties="toolBoxProperties" />
         <div id="center">
             <div class="center-container">
-                <iframe
-                    v-if="src"
-                    id="galaxy_main"
-                    name="galaxy_main"
-                    frameborder="0"
-                    class="center-frame"
-                    title="galaxy main frame"
-                    :src="srcWithRoot" />
-                <div class="center-panel" style="display: block;">
+                <CenterPanel v-show="showCenter" :src="src" @load="onLoad" />
+                <div v-show="!showCenter" class="center-panel" style="display: block">
                     <router-view :key="$route.fullPath" />
                 </div>
             </div>
@@ -28,20 +21,24 @@ import { getGalaxyInstance } from "app";
 import HistoryIndex from "components/History/Index";
 import ToolBox from "components/Panels/ProviderAwareToolBox";
 import SidePanel from "components/Panels/SidePanel";
+import CenterPanel from "./CenterPanel";
 
 export default {
     components: {
+        CenterPanel,
         HistoryIndex,
         SidePanel,
     },
     props: {
         src: {
             type: String,
-            default: null,
+            default: "welcome",
         },
     },
     data() {
-        return {};
+        return {
+            showCenter: true,
+        };
     },
     computed: {
         toolBoxProperties() {
@@ -50,8 +47,10 @@ export default {
                 storedWorkflowMenuEntries: Galaxy.config.stored_workflow_menu_entries,
             };
         },
-        srcWithRoot() {
-            return `${getAppRoot()}${this.src}`;
+    },
+    watch: {
+        $route() {
+            this.showCenter = this.$route.fullPath == "/";
         },
     },
     methods: {
@@ -60,6 +59,9 @@ export default {
         },
         getToolBox() {
             return ToolBox;
+        },
+        onLoad() {
+            this.showCenter = true;
         },
     },
 };
