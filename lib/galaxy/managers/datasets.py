@@ -263,6 +263,14 @@ class DatasetAssociationManager(
         # defer to the dataset
         return self.dataset_manager.is_accessible(dataset_assoc.dataset, user, **kwargs)
 
+    def delete(self, item, flush=True, **kwargs):
+        """
+        Marks this dataset association as deleted.
+        """
+        super().delete(item, flush=flush)
+        self.stop_creating_job(item)
+        return item
+
     def purge(self, dataset_assoc, flush=True):
         """
         Purge this DatasetInstance and the dataset underlying it.
