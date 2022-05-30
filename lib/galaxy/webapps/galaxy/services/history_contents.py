@@ -729,11 +729,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     ) -> DeleteHistoryContentResult:
         """
         Delete the history content with the given ``id`` and specified type (defaults to dataset)
-
-        .. note:: Currently does not stop any active jobs for which this dataset is an output.
         """
         if contents_type == HistoryContentType.dataset:
-            return self.__delete_dataset(trans, id, payload.purge, serialization_params)
+            return self.__delete_dataset(trans, id, payload.purge, payload.stop_job, serialization_params)
         elif contents_type == HistoryContentType.dataset_collection:
             self.dataset_collection_manager.delete(
                 trans, "history", id, recursive=payload.recursive, purge=payload.purge
@@ -1029,7 +1027,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         return min_hid, max_hid
 
     def __delete_dataset(
-        self, trans, id: EncodedDatabaseIdField, purge: bool, serialization_params: SerializationParams
+        self, trans, id: EncodedDatabaseIdField, purge: bool, stop_job: bool, serialization_params: SerializationParams
     ):
         hda = self.hda_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
         self.hda_manager.error_if_uploading(hda)
@@ -1037,7 +1035,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         if purge:
             self.hda_manager.purge(hda)
         else:
-            self.hda_manager.delete(hda)
+            self.hda_manager.delete(hda, stop_job=stop_job)
         serialization_params.default_view = "detailed"
         return self.hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, **serialization_params.dict())
 

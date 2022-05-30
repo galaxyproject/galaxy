@@ -319,7 +319,8 @@ class DatasetsApiTestCase(ApiTestCase):
             active_jobs = self.dataset_populator.active_history_jobs(history_id)
             assert active_jobs
 
-            delete_response = self.dataset_populator.delete_dataset(history_id, queued_id)
+            # Use stop_job to cancel the creating job
+            delete_response = self.dataset_populator.delete_dataset(history_id, queued_id, stop_job=True)
             self._assert_status_code_is_ok(delete_response)
 
             # The job should be cancelled

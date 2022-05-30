@@ -2592,6 +2592,11 @@ class DeleteHistoryContentPayload(BaseModel):
         title="Recursive",
         description="When deleting a dataset collection, whether to also delete containing datasets.",
     )
+    stop_job: bool = Field(
+        default=False,
+        title="Stop Job",
+        description="Whether to stop the creating job if all the job's outputs are deleted.",
+    )
 
 
 class DeleteHistoryContentResult(CustomHistoryItem):

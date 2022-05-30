@@ -263,12 +263,14 @@ class DatasetAssociationManager(
         # defer to the dataset
         return self.dataset_manager.is_accessible(dataset_assoc.dataset, user, **kwargs)
 
-    def delete(self, item, flush=True, **kwargs):
+    def delete(self, item, flush: bool = True, stop_job: bool = False, **kwargs):
         """
         Marks this dataset association as deleted.
+        If `stop_job` is True, will stop the creating job if all other outputs are deleted.
         """
         super().delete(item, flush=flush)
-        self.stop_creating_job(item)
+        if stop_job:
+            self.stop_creating_job(item)
         return item
 
     def purge(self, dataset_assoc, flush=True):
