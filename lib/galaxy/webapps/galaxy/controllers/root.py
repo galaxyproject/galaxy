@@ -40,7 +40,9 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         raise HTTPNotFound("This link may not be followed from within Galaxy.")
 
     @web.expose
-    def index(self, trans, tool_id=None, workflow_id=None, history_id=None, m_c=None, m_a=None, app_name="analysis", **kwd):
+    def index(
+        self, trans, tool_id=None, workflow_id=None, history_id=None, m_c=None, m_a=None, app_name="analysis", **kwd
+    ):
         """
         Root and entry point for client-side web app.
 

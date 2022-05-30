@@ -40,9 +40,9 @@ export default {
             showCenter: true,
         };
     },
-    created() {
+    mounted() {
         // Using a custom event here which, in contrast to watching $route,
-        // always fires when a route is pushed.
+        // always fires when a route is pushed instead of validating it first.
         this.$router.app.$on("router-push", () => {
             this.showCenter = false;
         });
