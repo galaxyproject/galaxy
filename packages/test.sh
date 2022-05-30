@@ -52,11 +52,9 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     pip install -r test-requirements.txt
 
     # Prevent execution of alembic/env.py at test collection stage (alembic.context not set)
-    unit_extra='--doctest-modules --ignore galaxy/model/migrations/alembic'
-    if [ -e tests ];
-    then
-        pytest $unit_extra galaxy tests
-    fi
+    # Also ignore ToolShed functional tests.
+    unit_extra='--doctest-modules --ignore galaxy/model/migrations/alembic/ --ignore=tool_shed/test/'
+    pytest $unit_extra .
     make mypy
     cd ..
 done
