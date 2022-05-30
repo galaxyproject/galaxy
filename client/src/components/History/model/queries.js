@@ -45,7 +45,7 @@ function buildQueryStringFrom(filters) {
  * @param {Boolean} recursive Scorch the earth?
  */
 export async function deleteContent(content, deleteParams = {}) {
-    const defaults = { purge: false, recursive: false };
+    const defaults = { purge: false, recursive: false, stop_job: true };
     const params = Object.assign({}, defaults, deleteParams);
     const { history_id, history_content_type, id } = content;
     const url = `api/histories/${history_id}/contents/${history_content_type}s/${id}`;
