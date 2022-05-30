@@ -3,7 +3,7 @@
         <SidePanel side="left" :currentPanel="getToolBox()" :currentPanelProperties="toolBoxProperties" />
         <div id="center">
             <div class="center-container">
-                <CenterPanel v-show="showCenter" :src="src" @load="onLoad" />
+                <CenterPanel v-show="showCenter" @load="onLoad" />
                 <div v-show="!showCenter" class="center-panel" style="display: block">
                     <router-view :key="$route.fullPath" />
                 </div>
@@ -29,15 +29,9 @@ export default {
         HistoryIndex,
         SidePanel,
     },
-    props: {
-        src: {
-            type: String,
-            default: "welcome",
-        },
-    },
     data() {
         return {
-            showCenter: true,
+            showCenter: false,
         };
     },
     mounted() {

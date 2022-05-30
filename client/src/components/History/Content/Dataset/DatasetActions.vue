@@ -107,7 +107,11 @@ export default {
             window.location.href = resource;
         },
         onError() {
-            this.backboneRoute("datasets/error", { dataset_id: this.item.id });
+            if (this.$router) {
+                this.$router.push(`/datasets/${this.item.id}/error`);
+            } else {
+                this.backboneRoute("datasets/error", { dataset_id: this.item.id });
+            }
         },
         onInfo() {
             if (this.$router) {

@@ -3,12 +3,14 @@ import VueRouter from "vue-router";
 
 import Analysis from "entry/app/modules/Analysis";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
+import DatasetError from "components/DatasetInformation/DatasetError";
 import HistoryImport from "components/HistoryImport";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import NewUserConfirmation from "components/login/NewUserConfirmation";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
 import ToolsView from "components/ToolsView/ToolsView";
 import WorkflowEditorModule from "entry/app/modules/WorkflowEditor";
+import CenterPanel from "entry/app/modules/CenterPanel";
 
 Vue.use(VueRouter);
 
@@ -31,6 +33,16 @@ const router = new VueRouter({
             path: "/",
             component: Analysis,
             children: [
+                {
+                    path: "",
+                    component: CenterPanel,
+                    props: { src: "welcome" },
+                },
+                {
+                    path: "datasets/:datasetId/error",
+                    component: DatasetError,
+                    props: true,
+                },
                 {
                     path: "datasets/:datasetId/details",
                     component: DatasetDetails,
