@@ -16,7 +16,7 @@ warnings.filterwarnings("ignore", message=r"[\n.]DEPRECATION: Python 2", module=
 try:
     from cwltool import expression
 except ImportError:
-    expression = None
+    expression = None  # type: ignore[assignment]
 
 from galaxy.tools.expressions import evaluate
 

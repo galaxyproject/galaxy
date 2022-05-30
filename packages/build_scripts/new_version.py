@@ -24,13 +24,16 @@ def main(argv):
         new_version = ".".join(map(str, new_version_tuple))
         new_dev_version = 0
     else:
-        dev_version = re.compile(r"dev([\d]+)").search(version).group(1)
+        dev_match = re.compile(r"dev([\d]+)").search(version)
+        assert dev_match
+        dev_version = dev_match.group(1)
         new_dev_version = int(dev_version) + 1
         new_version = version.replace(f"dev{dev_version}", f"dev{new_dev_version}")
 
     history_path = os.path.join(PROJECT_DIRECTORY, "HISTORY.rst")
     if not DEV_RELEASE:
-        history = open(history_path).read()
+        with open(history_path) as f:
+            history = f.read()
 
         def extend(from_str, line):
             from_str += "\n"
@@ -45,15 +48,18 @@ def main(argv):
 
 """,
         )
-        open(history_path, "w").write(history)
+        with open(history_path, "w") as f:
+            f.write(history)
 
     mod_path = os.path.join(PROJECT_DIRECTORY, source_dir, PROJECT_MODULE_FILENAME)
-    mod = open(mod_path).read()
+    with open(mod_path) as f:
+        mod = f.read()
     if not DEV_RELEASE:
         mod = re.sub(r"__version__ = '[\d\.]+'", f"__version__ = '{new_version}.dev0'", mod, 1)
     else:
         mod = re.sub(f"dev{dev_version}", f"dev{new_dev_version}", mod, 1)
-    mod = open(mod_path, "w").write(mod)
+    with open(mod_path, "w") as f:
+        f.write(mod)
     shell(["git", "commit", "-m", f"Starting work on {PROJECT_NAME} {new_version}", "HISTORY.rst", mod_path])
 
 
