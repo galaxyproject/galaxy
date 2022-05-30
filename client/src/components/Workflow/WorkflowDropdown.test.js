@@ -1,6 +1,9 @@
 import WorkflowDropdown from "./WorkflowDropdown";
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
+import flushPromises from "flush-promises";
 
 const localVue = getLocalVue(true);
 
@@ -84,6 +87,54 @@ describe("WorkflowDropdown.vue", () => {
             expect(workflowOptions().at(0).text()).toBeLocalizationOf("Copy");
             expect(workflowOptions().at(1).text()).toBeLocalizationOf("Download");
             expect(workflowOptions().at(2).text()).toBeLocalizationOf("View");
+        });
+    });
+
+    describe("workflow clicking workflow deletion", () => {
+        let axiosMock;
+        let confirmRequest;
+
+        async function mountAndDelete() {
+            const workflow = {
+                name: TEST_WORKFLOW_NAME,
+                id: "workflowid123",
+                description: TEST_WORKFLOW_DESCRIPTION,
+                owner: "test",
+            };
+            initWrapperForWorkflow(workflow);
+            await wrapper.vm.onDelete();
+            await flushPromises();
+        }
+
+        beforeEach(async () => {
+            axiosMock = new MockAdapter(axios);
+            confirmRequest = true;
+            global.confirm = jest.fn(() => confirmRequest);
+            axiosMock.onDelete("/api/workflows/workflowid123").reply(202, "deleted...");
+        });
+
+        afterEach(() => {
+            axiosMock.restore();
+        });
+
+        it("should confirm with localized deletion message", async () => {
+            await mountAndDelete();
+            expect(global.confirm).toHaveBeenCalledWith(expect.toBeLocalized());
+        });
+
+        it("should fire deletion API request upon confirmation", async () => {
+            await mountAndDelete();
+            const emitted = wrapper.emitted();
+            expect(emitted["onRemove"][0][0]).toEqual("workflowid123");
+            expect(emitted["onSuccess"][0][0]).toEqual("deleted...");
+        });
+
+        it("should not fire deletion API request if not confirmed", async () => {
+            confirmRequest = false;
+            await mountAndDelete();
+            const emitted = wrapper.emitted();
+            expect(emitted["onRemove"]).toBeFalsy();
+            expect(emitted["onSuccess"]).toBeFalsy();
         });
     });
 });
