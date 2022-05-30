@@ -43,7 +43,7 @@ export default {
     created() {
         // Using a custom event here which, in contrast to watching $route,
         // always fires when a route is pushed.
-        this.$router.app.$on("route-pushed", () => {
+        this.$router.app.$on("router-push", () => {
             this.showCenter = false;
         });
     },

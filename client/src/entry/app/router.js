@@ -16,12 +16,12 @@ Vue.use(VueRouter);
 const originalPush = VueRouter.prototype.push;
 VueRouter.prototype.push = function push(location) {
     return originalPush.call(this, location).catch((err) => {
+        // always emit event when a route is pushed
+        this.app.$emit("router-push");
         // avoid console warning when user clicks to revisit same route
         if (err.name !== "NavigationDuplicated") {
             throw err;
         }
-        // emit event when route pushed even if route is duplicate
-        this.app.$emit("route-pushed");
     });
 };
 
