@@ -13,10 +13,6 @@
     </div>
 </template>
 <script>
-import { getAppRoot } from "onload";
-import store from "store";
-import { urlData } from "utils/url";
-import Query from "utils/query-string-parsing";
 import { getGalaxyInstance } from "app";
 import HistoryIndex from "components/History/Index";
 import ToolBox from "components/Panels/ProviderAwareToolBox";
@@ -26,7 +22,6 @@ import CenterPanel from "./CenterPanel";
 export default {
     components: {
         CenterPanel,
-        HistoryIndex,
         SidePanel,
     },
     data() {

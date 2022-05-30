@@ -11,6 +11,7 @@ import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
 import ToolsView from "components/ToolsView/ToolsView";
 import WorkflowEditorModule from "entry/app/modules/WorkflowEditor";
 import CenterPanel from "entry/app/modules/CenterPanel";
+import { StorageDashboardRouter } from "components/User/DiskUsage";
 
 Vue.use(VueRouter);
 
@@ -39,18 +40,30 @@ const router = new VueRouter({
                     props: { src: "welcome" },
                 },
                 {
-                    path: "datasets/:datasetId/error",
-                    component: DatasetError,
-                    props: true,
-                },
-                {
                     path: "datasets/:datasetId/details",
                     component: DatasetDetails,
                     props: true,
                 },
                 {
+                    path: "datasets/:datasetId/error",
+                    component: DatasetError,
+                    props: true,
+                },
+                {
+                    path: "histories/import",
+                    component: HistoryImport,
+                },
+                {
+                    path: "interactivetool_entry_points/list",
+                    component: InteractiveTools,
+                },
+                {
                     path: "login/confirm",
                     component: NewUserConfirmation,
+                },
+                {
+                    path: "storage",
+                    component: StorageDashboardRouter,
                 },
                 {
                     path: "tools/view",
@@ -59,14 +72,6 @@ const router = new VueRouter({
                 {
                     path: "tools/json",
                     component: ToolsJson,
-                },
-                {
-                    path: "interactivetool_entry_points/list",
-                    component: InteractiveTools,
-                },
-                {
-                    path: "histories/import",
-                    component: HistoryImport,
                 },
             ],
         },
