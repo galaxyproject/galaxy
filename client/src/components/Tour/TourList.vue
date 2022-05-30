@@ -29,8 +29,7 @@
 
 <script>
 import _l from "utils/localization";
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
+import { urlData } from "utils/url";
 import DelayedInput from "components/Common/DelayedInput";
 
 export default {
@@ -46,16 +45,9 @@ export default {
         };
     },
     created() {
-        this.root = getAppRoot();
-        const api = `${this.root}api/tours`;
-        axios
-            .get(api)
-            .then((response) => {
-                this.tours = response.data;
-            })
-            .catch((e) => {
-                this.error = this._errorMessage(e);
-            });
+        urlData({ url: `api/tours` }).then((response) => {
+            this.tours = response;
+        });
     },
     methods: {
         onSearch(newValue) {
