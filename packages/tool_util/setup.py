@@ -110,8 +110,6 @@ setup(
             "cwltool==3.1.20211107152837",
         ],
         "mulled": [
-            "conda",
-            "cytoolz",  # cytoolz is an undeclared dependency of the conda package on PyPI
             "jinja2",
             "Whoosh",
         ],
