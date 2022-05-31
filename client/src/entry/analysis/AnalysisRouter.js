@@ -107,7 +107,7 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)datasets(/)list(/)": "show_datasets",
             "(/)jobs(/)(:job_id)(/)view": "show_job",
             "(/)custom_builds": "show_custom_builds",
-            "(/)datasets/edit": "show_dataset_edit_attributes",
+            "(/)datasets/edit(/)(:dataset_id)": "show_dataset_edit_attributes",
             "(/)collection(/)edit(/)(:collection_id)": "show_collection_edit_attributes",
             "(/)datasets/error": "show_dataset_error",
             "(/)datasets(/)(:dataset_id)/details": "show_dataset_details",
@@ -424,8 +424,7 @@ export const getAnalysisRouter = (Galaxy) => {
             this._display_vue_helper(CustomBuilds);
         },
 
-        show_dataset_edit_attributes: function (params) {
-            const datasetId = params.dataset_id;
+        show_dataset_edit_attributes: function (datasetId) {
             if (datasetId) {
                 this._display_vue_helper(DatasetAttributes, { datasetId: datasetId });
             } else {

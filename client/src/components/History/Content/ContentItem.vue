@@ -183,7 +183,7 @@ export default {
             if (this.item.collection_type) {
                 backboneRoute(`collection/edit/${this.item.id}`);
             } else {
-                backboneRoute("datasets/edit", { dataset_id: this.item.id });
+                backboneRoute(`datasets/edit/${this.item.id}`);
             }
         },
         onTags(newTags) {
