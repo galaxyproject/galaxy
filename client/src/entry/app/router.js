@@ -12,6 +12,7 @@ import NewUserConfirmation from "components/login/NewUserConfirmation";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
 import ToolsView from "components/ToolsView/ToolsView";
 import UserPreferences from "components/User/UserPreferences";
+import UserPreferencesForm from "components/User/UserPreferencesForm";
 import WorkflowEditorModule from "entry/app/modules/WorkflowEditor";
 import CenterPanel from "entry/app/modules/CenterPanel";
 import { StorageDashboardRouter } from "components/User/DiskUsage";
@@ -93,6 +94,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "user/external_ids",
                         component: ExternalIdentities,
+                    },
+                    {
+                        path: "user/:formId",
+                        component: UserPreferencesForm,
+                        props: true,
                     },
                 ],
             },
