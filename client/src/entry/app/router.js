@@ -2,8 +2,10 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 
 import Analysis from "entry/app/modules/Analysis";
+import { CloudAuth } from "components/User/CloudAuth";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
+import { ExternalIdentities } from "components/User/ExternalIdentities";
 import HistoryImport from "components/HistoryImport";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import NewUserConfirmation from "components/login/NewUserConfirmation";
@@ -83,6 +85,14 @@ export function getRouter(Galaxy) {
                             enableQuotas: Galaxy.config.enable_quotas,
                             userId: Galaxy.user.id,
                         },
+                    },
+                    {
+                        path: "user/cloud_auth",
+                        component: CloudAuth,
+                    },
+                    {
+                        path: "user/external_ids",
+                        component: ExternalIdentities,
                     },
                 ],
             },
