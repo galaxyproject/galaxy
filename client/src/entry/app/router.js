@@ -22,11 +22,12 @@ import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
 import Libraries from "components/Libraries";
 import NewUserConfirmation from "components/login/NewUserConfirmation";
-import NewUserWelcome from "components/login/components/NewUserWelcome/NewUserWelcome";
+import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
 import Sharing from "components/Sharing/Sharing";
 import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
 import ToolsView from "components/ToolsView/ToolsView";
+import TourRunner from "components/Tour/TourRunner";
 import TrsImport from "components/Workflow/TrsImport";
 import TrsSearch from "components/Workflow/TrsSearch";
 import UserInvocations from "components/Workflow/UserInvocations";
@@ -230,6 +231,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "storage",
                         component: StorageDashboardRouter,
+                    },
+                    {
+                        path: "tour/:tourId",
+                        component: TourRunner,
+                        props: true,
                     },
                     {
                         path: "tools/view",
