@@ -12,6 +12,7 @@
     </div>
 </template>
 <script>
+import { newUserDict } from "../../../../static/plugins/welcome_page/new_user/dist/static/topics/index";
 import { BCard, BCardGroup, BTabs, BTab, BCarousel, BCarouselSlide, BButton, BRow, BCol } from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import Topics from "components/NewUserWelcome/components/Topics";
@@ -35,9 +36,6 @@ export default {
         Slides,
         ConfigProvider,
     },
-    props: {
-        newUserDict: { type: Object, required: true },
-    },
     data() {
         return {
             position: [],
@@ -50,7 +48,7 @@ export default {
         currentNode() {
             return this.position.reduce((node, i) => {
                 return node.topics[i];
-            }, this.newUserDict);
+            }, newUserDict);
         },
         viewElement() {
             let element;

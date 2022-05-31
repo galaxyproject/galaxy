@@ -14,6 +14,7 @@ import DisplayStructured from "components/DisplayStructured";
 import FormGeneric from "components/Form/FormGeneric";
 import Grid from "components/Grid/Grid";
 import GridShared from "components/Grid/GridShared";
+import GridHistory from "components/Grid/GridHistory";
 import HistoryImport from "components/HistoryImport";
 import HistoryView from "components/HistoryView";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
@@ -21,6 +22,7 @@ import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
 import Libraries from "components/Libraries";
 import NewUserConfirmation from "components/login/NewUserConfirmation";
+import NewUserWelcome from "components/login/components/NewUserWelcome/NewUserWelcome";
 import Sharing from "components/Sharing/Sharing";
 import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
@@ -102,6 +104,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "datasets/:datasetId/error",
                         component: DatasetError,
+                        props: true,
+                    },
+                    {
+                        path: "histories/:actionId",
+                        component: GridHistory,
                         props: true,
                     },
                     {
@@ -286,6 +293,10 @@ export function getRouter(Galaxy) {
                             item: "visualization",
                             plural: "Visualizations",
                         }),
+                    },
+                    {
+                        path: "welcome/new",
+                        component: NewUserWelcome,
                     },
                     {
                         path: "workflows/import",
