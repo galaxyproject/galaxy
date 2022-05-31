@@ -2,10 +2,13 @@
 
 #######
 # Use this script to manage Galaxy and Tool Shed Install migrations.
-# (Use the legacy manage_db.sh script to manage Tool Shed migrations.)
+# (Use the manage_db.sh script to manage Tool Shed migrations.)
 #
-# NOTE: If your database is empty OR is not under Alembic version control,
-# use create_db.sh instead.
+# This script provides access to Alembic's command line options and is
+# intended for advanced use scenarios. For regular database management tasks,
+# we encourage you to use the manage_db.sh script.
+#
+# NOTE: If your database is empty, use create_db.sh instead.
 #
 # We use branch labels to distinguish between the galaxy and the tool_shed_install models,
 # so in most cases you'll need to identify the branch to which your command should be applied.
