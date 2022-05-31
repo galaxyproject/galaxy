@@ -9,6 +9,7 @@ import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import NewUserConfirmation from "components/login/NewUserConfirmation";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
 import ToolsView from "components/ToolsView/ToolsView";
+import UserPreferences from "components/User/UserPreferences";
 import WorkflowEditorModule from "entry/app/modules/WorkflowEditor";
 import CenterPanel from "entry/app/modules/CenterPanel";
 import { StorageDashboardRouter } from "components/User/DiskUsage";
@@ -28,55 +29,64 @@ VueRouter.prototype.push = function push(location) {
     });
 };
 
-const router = new VueRouter({
-    routes: [
-        {
-            path: "/",
-            component: Analysis,
-            children: [
-                {
-                    path: "",
-                    component: CenterPanel,
-                    props: { src: "welcome" },
-                },
-                {
-                    path: "datasets/:datasetId/details",
-                    component: DatasetDetails,
-                    props: true,
-                },
-                {
-                    path: "datasets/:datasetId/error",
-                    component: DatasetError,
-                    props: true,
-                },
-                {
-                    path: "histories/import",
-                    component: HistoryImport,
-                },
-                {
-                    path: "interactivetool_entry_points/list",
-                    component: InteractiveTools,
-                },
-                {
-                    path: "login/confirm",
-                    component: NewUserConfirmation,
-                },
-                {
-                    path: "storage",
-                    component: StorageDashboardRouter,
-                },
-                {
-                    path: "tools/view",
-                    component: ToolsView,
-                },
-                {
-                    path: "tools/json",
-                    component: ToolsJson,
-                },
-            ],
-        },
-        { path: "/workflows/edit", component: WorkflowEditorModule },
-    ],
-});
-
-export default router;
+// produces the client router
+export function getRouter(Galaxy) {
+    return new VueRouter({
+        routes: [
+            {
+                path: "/",
+                component: Analysis,
+                children: [
+                    {
+                        path: "",
+                        component: CenterPanel,
+                        props: { src: "welcome" },
+                    },
+                    {
+                        path: "datasets/:datasetId/details",
+                        component: DatasetDetails,
+                        props: true,
+                    },
+                    {
+                        path: "datasets/:datasetId/error",
+                        component: DatasetError,
+                        props: true,
+                    },
+                    {
+                        path: "histories/import",
+                        component: HistoryImport,
+                    },
+                    {
+                        path: "interactivetool_entry_points/list",
+                        component: InteractiveTools,
+                    },
+                    {
+                        path: "login/confirm",
+                        component: NewUserConfirmation,
+                    },
+                    {
+                        path: "storage",
+                        component: StorageDashboardRouter,
+                    },
+                    {
+                        path: "tools/view",
+                        component: ToolsView,
+                    },
+                    {
+                        path: "tools/json",
+                        component: ToolsJson,
+                    },
+                    {
+                        path: "user",
+                        component: UserPreferences,
+                        props: {
+                            enableQuotas: Galaxy.config.enable_quotas,
+                            userId: Galaxy.user.id,
+                        },
+                    },
+                ],
+            },
+            { path: "/workflows/edit", component: WorkflowEditorModule },
+        ],
+    });
+}
