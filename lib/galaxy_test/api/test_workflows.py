@@ -3058,7 +3058,7 @@ steps:
             assert datasets[DELETED]["deleted"]
             state = "error" if purge else "paused"
             assert datasets[PAUSED_1]["state"] == state
-            assert datasets[PAUSED_2]["state"] == "paused"
+            wait_on(lambda: datasets[PAUSED_2]["state"] == "paused" or None, "for paused input")
 
     def test_run_with_implicit_connection(self):
         with self.dataset_populator.test_history() as history_id:
