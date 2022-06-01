@@ -1,6 +1,10 @@
 <template>
     <div id="columns">
-        <SidePanel side="left" :currentPanel="getToolBox()" :currentPanelProperties="toolBoxProperties" />
+        <SidePanel
+            v-if="showPanels"
+            side="left"
+            :currentPanel="getToolBox()"
+            :currentPanelProperties="toolBoxProperties" />
         <div id="center">
             <div class="center-container">
                 <CenterPanel v-show="showCenter" id="galaxy_main" @load="onLoad" />
@@ -9,7 +13,7 @@
                 </div>
             </div>
         </div>
-        <SidePanel side="right" :currentPanel="getHistoryIndex()" :currentPanelProperties="{}" />
+        <SidePanel v-if="showPanels" side="right" :currentPanel="getHistoryIndex()" :currentPanelProperties="{}" />
     </div>
 </template>
 <script>
@@ -37,6 +41,13 @@ export default {
         });
     },
     computed: {
+        showPanels() {
+            const panels = this.$route.query.hide_panels;
+            if (panels !== undefined) {
+                return panels.toLowerCase() != "true";
+            }
+            return true;
+        },
         toolBoxProperties() {
             const Galaxy = getGalaxyInstance();
             return {

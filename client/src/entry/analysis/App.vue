@@ -3,6 +3,7 @@
         <div id="everything">
             <div id="background" />
             <Masthead
+                v-if="showMasthead"
                 id="masthead"
                 :masthead-state="getState()"
                 :display-galaxy-brand="config.display_galaxy_brand"
@@ -57,6 +58,15 @@ export default {
             config: getGalaxyInstance().config,
             resendUrl: `${getAppRoot()}user/resend_verification`,
         };
+    },
+    computed: {
+        showMasthead() {
+            const masthead = this.$route.query.hide_masthead;
+            if (masthead !== undefined) {
+                return masthead.toLowerCase() != "true";
+            }
+            return true;
+        },
     },
     methods: {
         getState() {
