@@ -2805,16 +2805,13 @@ class TestJobStateHistory(BaseTest):
     def test_columns(self, session, cls_, job):
         state, info = job.state, job.info
         create_time = now()
-        update_time = create_time + timedelta(hours=1)
         obj = cls_(job)
         obj.create_time = create_time
-        obj.update_time = update_time
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.id == obj_id
             assert stored_obj.create_time == create_time
-            assert stored_obj.update_time == update_time
             assert stored_obj.job_id == job.id
             assert stored_obj.state == state
             assert stored_obj.info == info
