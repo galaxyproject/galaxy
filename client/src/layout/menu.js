@@ -202,7 +202,7 @@ export function fetchMenu(options = {}) {
             },
             {
                 title: _l("Interactive Tours"),
-                url: "tours/list",
+                url: "tours",
                 target: "__use_router__",
             },
             {
