@@ -20,7 +20,7 @@ down_revision = "e7b6dcb09efd"
 branch_labels = None
 depends_on = None
 
-# database object names user in this revision
+# database object names used in this revision
 table_name = "workflow"
 column_name = "source_metadata"
 
