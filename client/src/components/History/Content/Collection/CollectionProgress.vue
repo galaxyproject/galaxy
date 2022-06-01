@@ -44,3 +44,15 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.progress-bar {
+    border: 1px solid black;
+}
+.progress > .bg-success {
+    color: black
+}
+.progress > .bg-danger {
+    color: black
+}
+</style>
