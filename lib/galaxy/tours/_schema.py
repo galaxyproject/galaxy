@@ -1,6 +1,7 @@
 from typing import (
     List,
     Optional,
+    Union,
 )
 
 from pydantic import (
@@ -32,18 +33,14 @@ class TourStep(BaseModel):
     placement: Optional[str] = Field(
         title="Placement", description="Placement of the text box relative to the selected element"
     )
-    preclick: Optional[list] = Field(
+    preclick: Optional[Union[bool, List[str]]] = Field(
         title="Pre-click", description="Elements that receive a click() event before the step is shown"
     )
-    postclick: Optional[list] = Field(
+    postclick: Optional[Union[bool, List[str]]] = Field(
         title="Post-click", description="Elements that receive a click() event after the step is shown"
     )
     textinsert: Optional[str] = Field(
         title="Text-insert", description="Text to insert if element is a text box (e.g. tool search or upload)"
-    )
-    backdrop: Optional[bool] = Field(
-        title="Backdrop",
-        description=("Show a dark backdrop behind the popover and its element," "highlighting the current step"),
     )
 
 

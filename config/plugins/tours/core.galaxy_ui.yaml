@@ -1,6 +1,6 @@
 name: Galaxy UI
 description: A gentle introduction to the Galaxy User Interface
-title_default: "Welcome to Galaxy"
+title_default: Welcome to Galaxy
 tags:
   - "core"
   - "UI"
@@ -9,12 +9,9 @@ tags:
 steps:
     # 'title's will be displayed in the header of each step-container
     # If you don't specify any title, a default title is used, defined above.
-    - title: "Welcome to Galaxy"
+    - title: Welcome to Galaxy
       # 'content' is the actual text that is shown to the user
       content: "This short tour will guide you through Galaxy's user interface. You can leave the tour at any time by pressing escape."
-      # backdrop is just one of many properties you can attach to one step-container,
-      # a full reference can be found at http://bootstraptour.com/api/
-      backdrop: true
 
     # 'element' is the JQuery Selector (http://api.jquery.com/category/selectors/) of the element you want to describe
     # In this case we want to highlight the Upload button with the `.upload-button` selector
@@ -22,8 +19,7 @@ steps:
       element: ".upload-button"
       intro: "Galaxy supports many ways to get in your data. Use this button to upload your data."
       # You can trigger click() events on arbitrary elements before (preclick) or after (postclick) the element is shown
-      postclick:
-        - ".upload-button"
+      postclick: true
 
     - title: "Upload your data"
       element: "#btn-local"
@@ -46,14 +42,12 @@ steps:
     - title: "Start the upload"
       element: "#btn-start"
       intro: "Upload the data into your Galaxy history."
-      postclick:
-        - "#btn-start"
+      postclick: true
 
     - title: "Close upload/download manager"
       element: "#btn-close"
       intro: "Close the upload manager with this button or with a click outside of the manager window."
-      postclick:
-        - "#btn-close"
+      postclick: true
 
     - title: "Tools"
       element: "#left"
@@ -91,8 +85,7 @@ steps:
       element: '#execute'
       intro: "Click on 'Execute' to run your tool and send it to the compute cluster.
               Don't be afraid to test different settings in parallel. Galaxy can handle multiple runs of the same tool."
-      postclick:
-        - '#execute'
+      postclick: true
 
     - title: "History"
       element: "#right"
@@ -111,8 +104,7 @@ steps:
     - title: "Dataset information"
       element: "div.content-item .content-title"
       intro: "This is your dataset. You can get more informations and options like different visualizations by clicking on it."
-      postclick:
-        - "div.content-item .content-title"
+      postclick: true
   
     - title: "Remove dataset"
       element: "#current-history-panel div.content-item button[title='Delete']"
@@ -121,8 +113,7 @@ steps:
     - title: "Dataset information"
       element: "#current-history-panel div.content-item button[title='Dataset Details']"
       intro: "Clicking on your dataset provides you with more information regarding your dataset (e.g. filetype or size)."
-      preclick:
-        - "#current-history-panel div.content-item button[title='Dataset Details']"
+      preclick: true
 
     - title: "Re-run tool"
       element: "#current-history-panel div.content-item button[title='Run Job Again']"
@@ -131,8 +122,7 @@ steps:
     - title: "Panel collapse"
       element: "#left > div.unified-panel-footer > div.panel-collapse.left"
       intro: "To extend the view for your main Galaxy page in the middle, you can collapse the tool panel on the left hand side. Clicking the panel arrow on the right hand side, collapses the history."
-      postclick:
-        - "#left > div.unified-panel-footer > div.panel-collapse.left"
+      postclick: true
 
     - title: "Top panel"
       element: "#masthead"

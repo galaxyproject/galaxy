@@ -103,13 +103,21 @@ export async function runTour(tourId, tourData = null) {
                     waitForElement(step.element, resolve, reject, attempts);
                 }).then(() => {
                     // pre-actions
-                    doClick(step.preclick);
+                    let preclick = step.preclick;
+                    if (preclick === true) {
+                        preclick = [step.element];
+                    }
+                    doClick(preclick);
                     doInsert(step.element, step.textinsert);
                 });
             },
             onNext: () => {
                 // post-actions
-                doClick(step.postclick);
+                let postclick = step.postclick;
+                if (postclick === true) {
+                    postclick = [step.element];
+                }
+                doClick(postclick);
             },
         });
     });

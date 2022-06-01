@@ -13,8 +13,7 @@ steps:
       intro: |
             At first we upload some data into your Galaxy history.<br>
             Use this button to upload your data.
-      postclick:
-        - ".upload-button"
+      postclick: true
 
     - title: "Upload your data"
       element: "#btn-local"
@@ -47,8 +46,7 @@ steps:
     - title: "Dataset information"
       element: "div.content-item .content-title"
       intro: "This is one of your uploaded datasets. You can get more informations and options like different visualizations by clicking on it."
-      postclick:
-        - "div.content-item .content-title"
+      postclick: true
 
     - title: "Metadata"
       element: "#current-history-panel div.content-item span.datatype"
@@ -61,26 +59,22 @@ steps:
     - element: "#current-history-panel div.content-item button[title='Dataset Details']"
       title: "Even more information"
       intro: "Get an overview of all metadata associated with your dataset by using the Information symbol."
-      preclick:
-        - "#current-history-panel div.content-item button[title='Dataset Details']"
+      preclick: true
 
     - element: "#current-history-panel div.content-item button[title='Display']"
       title: "Inspect your data"
       intro: "The eye symbol can be used to look at your data."
-      preclick:
-        - "#current-history-panel div.content-item button[title='Display']"
+      preclick: true
 
     - element: "#current-history-panel div.content-item button[title='Edit attributes']"
       title: "Edit metadata"
       intro: "With the pencil button you can edit metadata attributes of your dataset, like the associated filetype or the dataset name."
-      preclick:
-        - "#current-history-panel div.content-item button[title='Edit attributes']"
+      preclick: true
 
     - element: "#current-history-panel div.content-item button[title='Delete']"
       title: "Remove datasets"
       intro: "You can remove a dataset from the history with the cross symbol."
-      postclick:
-        - "#current-history-panel div.content-item button[title='Delete']"
+      postclick: true
 
     - element: "#current-history-panel input[data-description='filter text input']"
       title: "Filter your datasets"
@@ -92,8 +86,7 @@ steps:
       intro: |
             Galaxy datasets are only marked as deleted and can be recovered by clicking this link.
             Please note that datasets marked as deleted can be purged by your administrator at any time.
-      postclick:
-        - "#current-history-panel div.content-item button[title='Undelete']"
+      postclick: true
 
     - element: "#current-history-panel [data-description='filter text input']"
       title: "Search your History"
@@ -103,8 +96,7 @@ steps:
     - element: "#current-history-panel [title='Show history options']"
       title: "History Options"
       intro: "In the History menu you will find a lot more useful History options."
-      postclick:
-        - "#current-history-panel [title='Show history options']"
+      postclick: true
 
     - title: "Enjoy your Galaxy Histories"
       intro: "Thanks for taking this tour! Happy research with Galaxy!"

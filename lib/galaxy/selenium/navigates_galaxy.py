@@ -1905,7 +1905,12 @@ class NavigatesGalaxy(HasDriver):
         self.components._.messages.error.assert_absent_or_hidden()
 
     def run_tour_step(self, step, step_index, tour_callback):
+        element_str = step.get("element", None)
+
         preclick = step.get("preclick", [])
+        if preclick is True:
+            preclick = [element_str]
+
         for preclick_selector in preclick:
             print(f"(Pre)Clicking {preclick_selector}")
             self._tour_wait_for_and_click_element(preclick_selector)
@@ -1923,6 +1928,8 @@ class NavigatesGalaxy(HasDriver):
         tour_callback.handle_step(step, step_index)
 
         postclick = step.get("postclick", [])
+        if postclick is True:
+            postclick = [element_str]
         for postclick_selector in postclick:
             print(f"(Post)Clicking {postclick_selector}")
             self._tour_wait_for_and_click_element(postclick_selector)
