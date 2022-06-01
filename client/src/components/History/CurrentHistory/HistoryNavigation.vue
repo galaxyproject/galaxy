@@ -88,7 +88,7 @@
 
                         <b-dropdown-item
                             data-description="share or publish"
-                            @click="$router.push('/histories/sharing', { id: history.id })">
+                            @click="$router.push(`/histories/sharing?id=${history.id}`)">
                             <Icon fixed-width icon="share-alt" class="mr-1" />
                             <span v-localize>Share or Publish</span>
                         </b-dropdown-item>

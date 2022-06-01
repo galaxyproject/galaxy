@@ -108,11 +108,6 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
-                        path: "histories/:actionId",
-                        component: GridHistory,
-                        props: true,
-                    },
-                    {
                         path: "histories/import",
                         component: HistoryImport,
                     },
@@ -142,11 +137,6 @@ export function getRouter(Galaxy) {
                         }),
                     },
                     {
-                        path: "histories/:historyId/export",
-                        component: HistoryExport,
-                        props: true,
-                    },
-                    {
                         path: "histories/permissions",
                         component: FormGeneric,
                         props: (route) => ({
@@ -167,6 +157,16 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             id: route.query.id,
                         }),
+                    },
+                    {
+                        path: "histories/:historyId/export",
+                        component: HistoryExport,
+                        props: true,
+                    },
+                    {
+                        path: "histories/:actionId",
+                        component: GridHistory,
+                        props: true,
                     },
                     {
                         path: "interactivetool_entry_points/list",
@@ -305,43 +305,20 @@ export function getRouter(Galaxy) {
                         component: NewUserWelcome,
                     },
                     {
+                        path: "workflows/create",
+                        component: FormGeneric,
+                        props: {
+                            url: "workflow/create",
+                            redirect: "workflow/editor",
+                            active_tab: "workflow",
+                            submitTitle: "Create",
+                            submitIcon: "fa-check",
+                            cancelRedirect: "workflows/list",
+                        },
+                    },
+                    {
                         path: "workflows/import",
                         component: WorkflowImport,
-                    },
-                    {
-                        path: "workflows/trs_import",
-                        component: TrsImport,
-                        props: (route) => ({
-                            queryTrsServer: route.query.trs_server,
-                            queryTrsId: route.query.trs_id,
-                            queryTrsVersionId: route.query.trs_version,
-                            isRun: route.query.run_form == "true",
-                        }),
-                    },
-                    {
-                        path: "workflows/trs_search",
-                        component: TrsSearch,
-                    },
-                    {
-                        path: "workflows/run",
-                        component: Home,
-                        props: (route) => ({
-                            config: Galaxy.config,
-                            query: { workflow_id: route.query.id },
-                        }),
-                    },
-                    {
-                        path: "workflows/sharing",
-                        component: Sharing,
-                        props: (route) => ({
-                            id: route.query.id,
-                            pluralName: "Workflows",
-                            modelClass: "Workflow",
-                        }),
-                    },
-                    {
-                        path: "workflows/list",
-                        component: WorkflowList,
                     },
                     {
                         path: "workflows/invocations",
@@ -363,21 +340,44 @@ export function getRouter(Galaxy) {
                         }),
                     },
                     {
+                        path: "workflows/list",
+                        component: WorkflowList,
+                    },
+                    {
+                        path: "workflows/run",
+                        component: Home,
+                        props: (route) => ({
+                            config: Galaxy.config,
+                            query: { workflow_id: route.query.id },
+                        }),
+                    },
+                    {
+                        path: "workflows/sharing",
+                        component: Sharing,
+                        props: (route) => ({
+                            id: route.query.id,
+                            pluralName: "Workflows",
+                            modelClass: "Workflow",
+                        }),
+                    },
+                    {
+                        path: "workflows/trs_import",
+                        component: TrsImport,
+                        props: (route) => ({
+                            queryTrsServer: route.query.trs_server,
+                            queryTrsId: route.query.trs_id,
+                            queryTrsVersionId: route.query.trs_version,
+                            isRun: route.query.run_form == "true",
+                        }),
+                    },
+                    {
+                        path: "workflows/trs_search",
+                        component: TrsSearch,
+                    },
+                    {
                         path: "workflows/:storedWorkflowId/invocations",
                         component: StoredWorkflowInvocations,
                         props: true,
-                    },
-                    {
-                        path: "workflows/create",
-                        component: FormGeneric,
-                        props: {
-                            url: "workflow/create",
-                            redirect: "workflow/editor",
-                            active_tab: "workflow",
-                            submitTitle: "Create",
-                            submitIcon: "fa-check",
-                            cancelRedirect: "workflows/list",
-                        },
                     },
                 ],
             },
