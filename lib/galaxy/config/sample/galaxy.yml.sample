@@ -46,6 +46,9 @@ gravity:
   # Configuration for Gunicorn.
   gunicorn:
 
+    # Enable Galaxy gunicorn server.
+    # enable: true
+
     # The socket to bind. A string of the form: ``HOST``, ``HOST:PORT``, ``unix:PATH``, ``fd://FD``. An IP is a valid HOST.
     # bind: localhost:8080
 
@@ -69,6 +72,12 @@ gravity:
 
   # Configuration for Celery Processes.
   celery:
+
+    # Enable Celery distributed task queue.
+    # enable: true
+
+    # Enable Celery Beat periodic task runner.
+    # enable_beat: true
 
     # Number of Celery Workers to start.
     # concurrency: 2
