@@ -36,11 +36,7 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
-import Vue from "vue";
-import DisplayStructure from "components/DisplayStructured.vue";
-import QueryStringParsing from "utils/query-string-parsing";
 import HistoryView from "mvc/history/history-view";
-import { getGalaxyInstance } from "app";
 
 export default {
     props: {

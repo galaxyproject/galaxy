@@ -134,7 +134,9 @@ export default {
             } else if (!tab.menu) {
                 event.preventDefault();
                 const galaxy = getGalaxyInstance();
-                if (tab.target === "__use_router__" && typeof galaxy.page !== "undefined") {
+                if (tab.target === "__use_router__" && this.$router) {
+                    this.$router.push(`/${tab.url}`);
+                } else if (tab.target === "__use_router__" && typeof galaxy.page !== "undefined") {
                     galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
                 } else {
                     try {
