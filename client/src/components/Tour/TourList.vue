@@ -45,9 +45,13 @@ export default {
         };
     },
     created() {
-        urlData({ url: `api/tours` }).then((response) => {
-            this.tours = response;
-        });
+        urlData({ url: `api/tours` })
+            .then((response) => {
+                this.tours = response;
+            })
+            .catch((error) => {
+                this.error = this._errorMessage(error);
+            });
     },
     methods: {
         onSearch(newValue) {
