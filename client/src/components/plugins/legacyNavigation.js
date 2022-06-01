@@ -7,16 +7,6 @@ import { getGalaxyInstance } from "app";
 import { redirectToUrl, prependPath } from "utils/redirect";
 import _l from "utils/localization";
 
-// wrapper for backbone router
-export function backboneRoute(path, ...args) {
-    try {
-        getGalaxyInstance().router.push(path, ...args);
-    } catch (err) {
-        console.warn("Failed galaxy route change", err, ...arguments);
-        throw err;
-    }
-}
-
 // wrapper for window manager
 export function iframeAdd({ path, title = "Galaxy", tryIframe = true }) {
     const Galaxy = getGalaxyInstance();
@@ -65,7 +55,6 @@ export const legacyNavigationMixin = {
         redirect,
         iframeAdd,
         iframeRedirect,
-        backboneRoute,
         useGalaxy,
         prependPath,
     },

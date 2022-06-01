@@ -5,8 +5,6 @@
 import Backbone from "backbone";
 import store from "store";
 import { getGalaxyInstance } from "app";
-import { mountVueComponent } from "utils/mountVueComponent";
-import HistoryIndex from "components/History/Index";
 import { buildCollectionModal } from "./buildCollectionModal";
 import { createDatasetCollection } from "components/History/model/queries";
 import { watchHistory } from "store/historyStore/model/watchHistory";
@@ -87,16 +85,5 @@ export class HistoryPanelProxy {
             console.debug("Submitting collection build request.", modalResult);
             await createDatasetCollection({ id: this.model.id }, modalResult);
         }
-    }
-    render() {
-        const container = document.createElement("div");
-        document.querySelector("#right > .unified-panel-header").remove();
-        document.querySelector("#right > .unified-panel-controls").remove();
-        document.querySelector("#right > .unified-panel-body").remove();
-        const parent = document.querySelector("#right");
-        parent.classList.add("beta");
-        parent.prepend(container);
-        const mountFn = mountVueComponent(HistoryIndex);
-        mountFn({}, container);
     }
 }

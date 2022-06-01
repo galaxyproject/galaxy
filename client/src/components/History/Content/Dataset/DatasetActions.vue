@@ -107,33 +107,25 @@ export default {
             window.location.href = resource;
         },
         onError() {
-            if (this.$router) {
-                this.$router.push(`/datasets/${this.item.id}/error`);
-            } else {
-                this.backboneRoute("datasets/error", { dataset_id: this.item.id });
-            }
+            this.$router.push(`/datasets/${this.item.id}/error`);
         },
         onInfo() {
-            if (this.$router) {
-                this.$router.push(`/datasets/${this.item.id}/details`);
-            } else {
-                this.backboneRoute(`datasets/${this.item.id}/details`);
-            }
+            this.$router.push(`/datasets/${this.item.id}/details`);
         },
         onRerun() {
-            this.backboneRoute(`root?job_id=${this.item.creating_job}`);
+            this.$router.push(`/root?job_id=${this.item.creating_job}`);
         },
         onVisualize() {
             const name = this.item.name || "";
             const title = `Visualization of ${name}`;
-            const path = `visualizations?dataset_id=${this.item.id}`;
+            const path = `/visualizations?dataset_id=${this.item.id}`;
             const redirectParams = {
                 path: path,
                 title: title,
                 tryIframe: false,
             };
             if (!this.iframeAdd(redirectParams)) {
-                this.backboneRoute(path);
+                this.$router.push(`${path}`);
             }
         },
         onHighlight() {

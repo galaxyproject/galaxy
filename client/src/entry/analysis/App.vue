@@ -40,9 +40,14 @@ import { MastheadState } from "layout/masthead";
 import Masthead from "components/Masthead/Masthead.vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
+import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy";
+
 export default {
     components: {
         Masthead,
+    },
+    created() {
+        new HistoryPanelProxy();
     },
     data() {
         return {

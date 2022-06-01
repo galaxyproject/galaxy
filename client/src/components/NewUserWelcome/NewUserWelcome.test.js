@@ -10,7 +10,7 @@ import MockConfigProvider from "../providers/MockConfigProvider";
 jest.mock("./getResource");
 
 // mock resource connector
-getResource.mockImplementation(() => (null));
+getResource.mockImplementation(() => null);
 
 describe("New user first view", () => {
     let wrapper;
