@@ -47,13 +47,12 @@ export default {
     },
     created() {
         this.root = getAppRoot();
-
         urlData({ url: `api/tours` })
             .then((response) => {
                 this.tours = response;
             })
             .catch((error) => {
-                this.error = this._errorMessage(error);
+                this.error = error;
             });
     },
     methods: {
@@ -69,10 +68,6 @@ export default {
                 (tour.description && tour.description.toLowerCase().includes(query)) ||
                 (tour.tags && tour.tags.join().toLowerCase().includes(query))
             );
-        },
-        _errorMessage(e) {
-            const message = e && e.response && e.response.data && e.response.data.err_msg;
-            return message || "Request failed for an unknown reason.";
         },
     },
 };
