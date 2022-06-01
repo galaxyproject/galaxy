@@ -234,6 +234,13 @@ class HasDriver:
             stacktrace=timeout_exception.stacktrace,
         )
 
+    def accept_alert(self):
+        try:
+            alert = self.driver.switch_to.alert
+            alert.accept()
+        finally:
+            self.driver.switch_to.default_content()
+
 
 def exception_indicates_click_intercepted(exception):
     return "click intercepted" in str(exception)
