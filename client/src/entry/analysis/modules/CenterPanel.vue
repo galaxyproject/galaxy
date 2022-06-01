@@ -1,10 +1,10 @@
 <template>
     <iframe
-        id="galaxy_main"
-        name="galaxy_main"
         frameborder="0"
         class="center-frame"
-        title="galaxy main frame"
+        title="galaxy frame"
+        :id="id"
+        :name="id"
         :src="srcWithRoot"
         @load="onLoad" />
 </template>
@@ -12,6 +12,10 @@
 import { getAppRoot } from "onload";
 export default {
     props: {
+        id: {
+            type: String,
+            default: "frame",
+        },
         src: {
             type: String,
             default: "",
@@ -19,7 +23,10 @@ export default {
     },
     computed: {
         srcWithRoot() {
-            return `${getAppRoot()}${this.src}`;
+            if (this.src) {
+                return `${getAppRoot()}${this.src}`;
+            }
+            return undefined;
         },
     },
     methods: {

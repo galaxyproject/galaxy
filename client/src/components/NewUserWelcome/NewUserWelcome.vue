@@ -36,16 +36,16 @@ export default {
         Slides,
         ConfigProvider,
     },
-    data() {
-        return {
-            position: [],
-        };
-    },
     props: {
         newUser: {
             type: Object,
             required: true,
         },
+    },
+    data() {
+        return {
+            position: [],
+        };
     },
     computed: {
         depth() {

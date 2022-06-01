@@ -3,7 +3,7 @@
         <SidePanel side="left" :currentPanel="getToolBox()" :currentPanelProperties="toolBoxProperties" />
         <div id="center">
             <div class="center-container">
-                <CenterPanel v-show="showCenter" @load="onLoad" />
+                <CenterPanel v-show="showCenter" id="galaxy_main" @load="onLoad" />
                 <div v-show="!showCenter" class="center-panel" style="display: block">
                     <router-view :key="$route.fullPath" />
                 </div>
