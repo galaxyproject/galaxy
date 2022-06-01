@@ -377,22 +377,22 @@ gravity:
     handler:
       processes: 3
       pools:
-        - job-handler
-        - workflow-scheduler
+        - job-handlers
+        - workflow-schedulers
     special:
       pools:
-        - job-handler.special
+        - job-handlers.special
 ```
 
 In this example 4 processes will be started in total:
-3 processes will act as job handler and workflow scheduler, and one process will be dedicated to handling jobs for the `special` tag only. With the `job_conf.xml` configuration above these would be jobs created by the `test1` tool.
+3 processes will act as job handlers and workflow schedulers, and one process will be dedicated to handling jobs for the `special` tag only. With the `job_conf.xml` configuration above these would be jobs created by the `test1` tool.
 You can omit the `pools` argument, this will then default to:
 
 ```yaml
         ...
         pools:
-          - job-handler
-          - workflow-scheduler
+          - job-handlers
+          - workflow-schedulers
         ...
 ```
 
