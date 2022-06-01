@@ -25,7 +25,7 @@ export default {
             action_id: this.actionId,
             plural: this.plural,
             item: this.item,
-            active_tab: this.activeTab,
+            active_tab: activeTab,
         }).$el.appendTo(this.$refs.target);
     },
 };

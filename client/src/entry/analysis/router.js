@@ -1,7 +1,7 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
 
-import Analysis from "entry/app/modules/Analysis";
+import Analysis from "entry/analysis/modules/Analysis";
 import Citations from "components/Citation/Citations";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
 import CustomBuilds from "components/User/CustomBuilds";
@@ -16,7 +16,7 @@ import GridShared from "components/Grid/GridShared";
 import GridHistory from "components/Grid/GridHistory";
 import HistoryImport from "components/HistoryImport";
 import HistoryView from "components/HistoryView";
-import Home from "entry/app/modules/Home";
+import Home from "entry/analysis/modules/Home";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
@@ -34,7 +34,7 @@ import UserInvocations from "components/Workflow/UserInvocations";
 import UserPreferences from "components/User/UserPreferences";
 import UserPreferencesForm from "components/User/UserPreferencesForm";
 import VisualizationsList from "components/Visualizations/Index";
-import WorkflowEditorModule from "entry/app/modules/WorkflowEditor";
+import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
 import WorkflowImport from "components/Workflow/WorkflowImport";
 import WorkflowList from "components/Workflow/WorkflowList";
 
@@ -61,6 +61,7 @@ VueRouter.prototype.push = function push(location) {
 // produces the client router
 export function getRouter(Galaxy) {
     return new VueRouter({
+        mode: "history",
         routes: [
             {
                 path: "/",

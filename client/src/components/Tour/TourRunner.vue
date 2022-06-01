@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import CenterPanel from "entry/app/modules/CenterPanel";
+import CenterPanel from "entry/analysis/modules/CenterPanel";
 import { runTour } from "./runTour";
 
 export default {

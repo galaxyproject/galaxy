@@ -40,9 +40,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         raise HTTPNotFound("This link may not be followed from within Galaxy.")
 
     @web.expose
-    def index(
-        self, trans, tool_id=None, workflow_id=None, history_id=None, m_c=None, m_a=None, app_name="analysis", **kwd
-    ):
+    def index(self, trans, tool_id=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd):
         """
         Root and entry point for client-side web app.
 
@@ -69,7 +67,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             unencoded_id = trans.security.decode_id(history_id)
             history = self.history_manager.get_owned(unencoded_id, trans.user)
             trans.set_history(history)
-        return self._bootstrapped_client(trans, app_name=app_name)
+        return self._bootstrapped_client(trans)
 
     @web.expose
     def login(self, trans, redirect=None, is_logout_redirect=False, **kwd):
