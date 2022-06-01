@@ -164,7 +164,8 @@ export default {
         onDelete: function () {
             const id = this.workflow.id;
             const name = this.workflow.name;
-            if (window.confirm(`Are you sure you want to delete workflow '${name}'?`)) {
+            const confirmationMessage = this.l(`Are you sure you want to delete workflow '${name}'?`);
+            if (window.confirm(confirmationMessage)) {
                 this.services
                     .deleteWorkflow(id)
                     .then((message) => {

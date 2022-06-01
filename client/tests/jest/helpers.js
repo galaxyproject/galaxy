@@ -27,7 +27,7 @@ function isTestLocalized(text) {
 }
 
 expect.extend({
-    toBeLocalizationOf(received) {
+    toBeLocalized(received) {
         const pass = isTestLocalized(received);
         if (pass) {
             return {
