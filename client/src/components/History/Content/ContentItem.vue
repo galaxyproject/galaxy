@@ -31,7 +31,7 @@
                     <span class="content-title name">{{ name }}</span>
                     <CollectionDescription
                         v-if="!isDataset"
-                        :collection="item"
+                        :job-state-summary="jobState"
                         :collection-type="item.collection_type"
                         :element-count="item.element_count"
                         :elements-datatypes="item.elements_datatypes" />
@@ -73,6 +73,7 @@ import CollectionDescription from "./Collection/CollectionDescription";
 import ContentOptions from "./ContentOptions";
 import DatasetDetails from "./Dataset/DatasetDetails";
 import { updateContentFields } from "components/History/model/queries";
+import { JobStateSummary } from "./Collection/JobStateSummary";
 
 export default {
     components: {
@@ -92,6 +93,9 @@ export default {
         selectable: { type: Boolean, default: false },
     },
     computed: {
+        jobState() {
+            return new JobStateSummary(this.item);
+        },
         contentId() {
             return `dataset-${this.item.id}`;
         },
