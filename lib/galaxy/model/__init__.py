@@ -106,7 +106,6 @@ from typing_extensions import Protocol
 
 import galaxy.exceptions
 import galaxy.model.metadata
-import galaxy.model.orm.now
 import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
