@@ -4,6 +4,7 @@ import { getLocalVue } from "jest/helpers";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
+import { ROOT_COMPONENT } from "utils/navigation";
 
 const localVue = getLocalVue(true);
 
@@ -41,8 +42,8 @@ describe("WorkflowDropdown.vue", () => {
         });
 
         it("should not display source metadata if not present", async () => {
-            expect(wrapper.find(".workflow-trs-icon").exists()).toBeFalsy();
-            expect(wrapper.find(".workflow-external-link").exists()).toBeFalsy();
+            expect(wrapper.find(ROOT_COMPONENT.workflows.trs_icon.selector).exists()).toBeFalsy();
+            expect(wrapper.find(ROOT_COMPONENT.workflows.external_link.selector).exists()).toBeFalsy();
         });
 
         it("should display name and description", async () => {
