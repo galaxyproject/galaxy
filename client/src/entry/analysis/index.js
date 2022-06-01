@@ -7,13 +7,14 @@ import { getRouter } from "./router";
 
 addInitialization((Galaxy) => {
     console.log("App setup");
-    const instance = new Vue({
+    const router = getRouter(Galaxy);
+    new Vue({
         el: "body",
         render: (h) => h(App),
-        router: getRouter(Galaxy),
+        router: router,
         store: store,
     });
-    Galaxy.router = instance.$router;
+    Galaxy.router = router;
 });
 
 window.addEventListener("load", () => standardInit("app"));

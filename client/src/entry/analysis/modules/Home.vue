@@ -9,17 +9,14 @@
 
 <script>
 import decodeUriComponent from "decode-uri-component";
-import { getAppRoot } from "onload";
 import CenterPanel from "entry/analysis/modules/CenterPanel";
 import ToolForm from "components/Tool/ToolForm";
-import UploadModal from "components/Upload/UploadModal";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun";
 
 export default {
     components: {
         CenterPanel,
         ToolForm,
-        UploadModal,
         WorkflowRun,
     },
     props: {

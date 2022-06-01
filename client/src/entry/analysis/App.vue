@@ -37,6 +37,7 @@
 </template>
 <script>
 import { MastheadState } from "layout/masthead";
+import Modal from "mvc/ui/ui-modal";
 import Masthead from "components/Masthead/Masthead.vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
@@ -46,8 +47,10 @@ export default {
     components: {
         Masthead,
     },
-    created() {
-        new HistoryPanelProxy();
+    mounted() {
+        const Galaxy = getGalaxyInstance();
+        Galaxy.currHistoryPanel = new HistoryPanelProxy();
+        Galaxy.modal = new Modal.View();
     },
     data() {
         return {

@@ -233,7 +233,7 @@ export function getRouter(Galaxy) {
                         component: StorageDashboardRouter,
                     },
                     {
-                        path: "tour/:tourId",
+                        path: "tours/:tourId",
                         component: TourRunner,
                         props: true,
                     },

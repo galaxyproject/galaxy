@@ -83,7 +83,7 @@ export default {
     },
     methods: {
         onDashboard() {
-            this.$route.push("/storage");
+            this.$router.push("/storage");
         },
         setFilter(newFilterText) {
             this.$emit("update:filter-text", newFilterText);

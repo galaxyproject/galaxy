@@ -183,7 +183,7 @@ export default {
             if (this.item.collection_type) {
                 this.$router.push(`/collection/edit/${this.item.id}`);
             } else {
-                this.$router.push(`datasets/edit/${this.item.id}`);
+                this.$router.push(`/datasets/edit/${this.item.id}`);
             }
         },
         onTags(newTags) {

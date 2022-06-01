@@ -4,7 +4,6 @@
  */
 import Backbone from "backbone";
 import store from "store";
-import { getGalaxyInstance } from "app";
 import { buildCollectionModal } from "./buildCollectionModal";
 import { createDatasetCollection } from "components/History/model/queries";
 import { watchHistory } from "store/historyStore/model/watchHistory";
@@ -12,8 +11,6 @@ import { watchHistory } from "store/historyStore/model/watchHistory";
 // extend existing current history panel
 export class HistoryPanelProxy {
     constructor() {
-        const Galaxy = getGalaxyInstance();
-        Galaxy.currHistoryPanel = this;
         const model = (this.model = new Backbone.Model({}));
         this.collection = {
             each(callback, filterText = "") {
