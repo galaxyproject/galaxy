@@ -2,7 +2,6 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 
 import Analysis from "entry/app/modules/Analysis";
-import CenterPanel from "entry/app/modules/CenterPanel";
 import Citations from "components/Citation/Citations";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
 import CustomBuilds from "components/User/CustomBuilds";
@@ -17,6 +16,7 @@ import GridShared from "components/Grid/GridShared";
 import GridHistory from "components/Grid/GridHistory";
 import HistoryImport from "components/HistoryImport";
 import HistoryView from "components/HistoryView";
+import Home from "entry/app/modules/Home";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
@@ -37,7 +37,6 @@ import VisualizationsList from "components/Visualizations/Index";
 import WorkflowEditorModule from "entry/app/modules/WorkflowEditor";
 import WorkflowImport from "components/Workflow/WorkflowImport";
 import WorkflowList from "components/Workflow/WorkflowList";
-import WorkflowRun from "components/Workflow/Run/WorkflowRun";
 
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
@@ -70,8 +69,8 @@ export function getRouter(Galaxy) {
                     {
                         path: "",
                         alias: "root",
-                        component: CenterPanel,
-                        props: { src: "welcome" },
+                        component: Home,
+                        props: (route) => ({ config: Galaxy.config, query: route.query }),
                     },
                     {
                         path: "custom_builds",
@@ -324,23 +323,11 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "workflows/run",
-                        component: WorkflowRun,
-                        props: (route) => {
-                            const workflowId = route.query.id;
-                            let preferSimpleForm = Galaxy.config.simplified_workflow_run_ui == "prefer";
-                            const preferSimpleFormOverride = route.query.simplified_workflow_run_ui;
-                            if (preferSimpleFormOverride == "prefer") {
-                                preferSimpleForm = true;
-                            }
-                            const simpleFormTargetHistory = Galaxy.config.simplified_workflow_run_ui_target_history;
-                            const simpleFormUseJobCache = Galaxy.config.simplified_workflow_run_ui_job_cache == "on";
-                            return {
-                                workflowId,
-                                preferSimpleForm,
-                                simpleFormTargetHistory,
-                                simpleFormUseJobCache,
-                            };
-                        },
+                        component: Home,
+                        props: (route) => ({
+                            config: Galaxy.config,
+                            query: { workflow_id: route.query.id },
+                        }),
                     },
                     {
                         path: "workflows/sharing",
