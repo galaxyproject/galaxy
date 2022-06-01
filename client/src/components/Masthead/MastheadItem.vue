@@ -68,9 +68,15 @@ export default {
     props: {
         tab: {
             type: Object,
+            default: null,
+        },
+        toggle: {
+            type: Boolean,
+            default: false,
         },
         activeTab: {
             type: String,
+            default: null,
         },
     },
     computed: {
@@ -90,7 +96,7 @@ export default {
         linkClasses() {
             return {
                 "nav-icon": this.tab.icon,
-                toggle: this.tab.toggle,
+                toggle: this.toggle,
             };
         },
         iconClasses() {
@@ -122,9 +128,9 @@ export default {
         },
         open(tab, event) {
             if (tab.onclick) {
-                return this.propogateClick(tab, event);
-            }
-            if (tab.disabled) {
+                event.preventDefault();
+                this.$emit("click", tab, tab.onclick());
+            } else if (tab.disabled) {
                 event.preventDefault();
                 this.$root.$emit("bv::hide::tooltip");
                 this.$root.$emit("bv::show::popover", tab.id);
@@ -146,10 +152,6 @@ export default {
                     }
                 }
             }
-        },
-        propogateClick(tab, event) {
-            event.preventDefault();
-            tab.onclick();
         },
         formatUrl(url) {
             if (typeof url === "string" && url.indexOf("//") === -1 && url.charAt(0) != "/") {

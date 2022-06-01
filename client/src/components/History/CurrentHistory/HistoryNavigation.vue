@@ -110,7 +110,9 @@
                         <span v-localize>Export Tool Citations</span>
                     </b-dropdown-item>
 
-                    <b-dropdown-item data-description="export to file" @click="$router.push(exportLink)">
+                    <b-dropdown-item
+                        data-description="export to file"
+                        @click="$router.push(`/histories/${this.history.id}/export`)">
                         <Icon fixed-width icon="file-archive" class="mr-1" />
                         <span v-localize>Export History to File</span>
                     </b-dropdown-item>
@@ -182,9 +184,6 @@ export default {
     },
     computed: {
         ...mapGetters("user", ["currentUser"]),
-        exportLink() {
-            return `histories/${this.history.id}/export`;
-        },
     },
     methods: {
         switchToLegacyHistoryPanel,

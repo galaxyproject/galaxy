@@ -8,16 +8,17 @@ export class WindowManager {
         options = options || {};
         this.counter = 0;
         this.active = false;
-        this.buttonActive = {
+    }
+
+    /** Return window masthead tab props */
+    getTab() {
+        return {
             id: "enable-window-manager",
             icon: "fa-th",
             tooltip: _l("Enable/Disable Window Manager"),
-            toggle: false,
+            visible: true,
             onclick: () => {
                 this.active = !this.active;
-                this.buttonActive.toggle = this.active;
-                this.buttonActive.show_note = this.active;
-                this.buttonActive.note_cls = this.active && "fa fa-check";
             },
         };
     }
