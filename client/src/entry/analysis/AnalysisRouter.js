@@ -68,6 +68,7 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)login/confirm": "show_new_user_confirmation",
             "(/)tools/view": "show_tools_view",
             "(/)tools/json": "show_tools_json",
+            "(/)tours": "show_tours_default",
             "(/)tours(/)(:tour_id)": "show_tours",
             "(/)user(/)": "show_user",
             "(/)user(/)cloud_auth": "show_cloud_auth",
@@ -147,11 +148,17 @@ export const getAnalysisRouter = (Galaxy) => {
 
         show_tours: function (tour_id) {
             this.home();
-            if (tour_id === "list" || !tour_id) {
+
+            if (tour_id === "list") {
                 this._display_vue_helper(TourList);
             } else {
                 runTour(tour_id);
             }
+        },
+
+        show_tours_default: function () {
+            this.home();
+            this._display_vue_helper(TourList);
         },
 
         show_new_user_confirmation: function () {

@@ -29,6 +29,7 @@
 
 <script>
 import _l from "utils/localization";
+import { getAppRoot } from "onload/loadConfig";
 import { urlData } from "utils/url";
 import DelayedInput from "components/Common/DelayedInput";
 
@@ -45,6 +46,8 @@ export default {
         };
     },
     created() {
+        this.root = getAppRoot();
+
         urlData({ url: `api/tours` })
             .then((response) => {
                 this.tours = response;
