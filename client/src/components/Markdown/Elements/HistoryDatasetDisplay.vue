@@ -59,7 +59,7 @@
                     <LoadingSpan v-if="loading" message="Loading Dataset" />
                     <LoadingSpan v-else-if="datatypesLoading" message="Loading Datatypes" />
                     <div v-else-if="error">{{ error }}</div>
-                    <div v-else class="embedded-dataset content-height">
+                    <div v-else :class="contentClass">
                         <b-embed
                             v-if="isSubTypeOfAny(datasetType, ['pdf', 'html'], datatypesModel)"
                             type="iframe"
