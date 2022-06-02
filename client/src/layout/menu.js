@@ -73,7 +73,9 @@ export function fetchMenu(options = {}) {
         url: "",
         tooltip: _l("Tools and Current History"),
         icon: "fa-home",
+        target: "__use_router__",
     });
+
     //
     // Workflow tab.
     //
