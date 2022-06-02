@@ -69,7 +69,7 @@ describe("filtering", () => {
             expect(queryDict["update_time-lt"]).toBe(1640995200);
             expect(queryDict["state-eq"]).toBe("success");
             expect(queryDict["extension-eq"]).toBe("ext");
-            expect(queryDict["tag-contains"]).toBe("first");
+            expect(queryDict["tag"]).toBe("first");
             expect(queryDict["deleted"]).toBe(false);
             expect(queryDict["visible"]).toBe(true);
         });
@@ -127,6 +127,6 @@ describe("filtering", () => {
         expect(filters[0][0]).toBe("tag");
         expect(filters[0][1]).toBe("#test");
         const queryDict = getQueryDict("tag:#test");
-        expect(queryDict["tag-contains"]).toBe("name:test");
+        expect(queryDict["tag"]).toBe("name:test");
     });
 });

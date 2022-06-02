@@ -236,10 +236,10 @@ export default {
             item.tags = newTags;
         },
         onTagClick(tag) {
-            if (this.filterText == "tag=" + tag) {
+            if (this.filterText == "tag:" + tag) {
                 this.filterText = "";
             } else {
-                this.filterText = "tag=" + tag;
+                this.filterText = "tag:" + tag;
             }
         },
         onOperationError(error) {

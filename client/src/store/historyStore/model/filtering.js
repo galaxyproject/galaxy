@@ -127,7 +127,7 @@ const validFilters = {
     visible: equals("visible", "visible", toBool),
     name: contains("name"),
     state: equals("state"),
-    tag: contains("tags", "tag-contains", expandNameTag),
+    tag: contains("tags", "tag", expandNameTag),
     update_time: compare("update_time", "le", toDate),
     update_time_ge: compare("update_time", "ge", toDate),
     update_time_gt: compare("update_time", "gt", toDate),
