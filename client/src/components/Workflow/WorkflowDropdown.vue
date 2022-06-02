@@ -23,7 +23,7 @@
             icon="link" />
         <p v-if="workflow.description" class="workflow-dropdown-description">{{ workflow.description }}</p>
         <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
-            <a v-if="!readOnly" class="dropdown-item" :href="urlEdit">
+            <a v-if="!readOnly" class="dropdown-item" @click.prevent="$router.push(urlEdit)">
                 <span class="fa fa-edit fa-fw mr-1" />
                 <span v-localize>Edit</span>
             </a>
@@ -31,7 +31,7 @@
                 <span class="fa fa-copy fa-fw mr-1" />
                 <span v-localize>Copy</span>
             </a>
-            <a v-if="!readOnly" class="dropdown-item" :href="urlInvocations">
+            <a v-if="!readOnly" class="dropdown-item" @click.prevent="$router.push(urlInvocations)">
                 <span class="fa fa-list fa-fw mr-1" />
                 <span v-localize>Invocations</span>
             </a>
@@ -43,7 +43,7 @@
                 <span class="fa fa-signature fa-fw mr-1" />
                 <span v-localize>Rename</span>
             </a>
-            <a v-if="!readOnly" class="dropdown-item" :href="urlShare">
+            <a v-if="!readOnly" class="dropdown-item" @click.prevent="$router.push(urlShare)">
                 <span class="fa fa-share-alt fa-fw mr-1" />
                 <span v-localize>Share</span>
             </a>
@@ -83,13 +83,13 @@ export default {
     props: ["workflow"],
     computed: {
         urlEdit() {
-            return `${getAppRoot()}workflows/edit?id=${this.workflow.id}`;
+            return `/workflows/edit?id=${this.workflow.id}`;
         },
         urlDownload() {
             return `${getAppRoot()}api/workflows/${this.workflow.id}/download?format=json-download`;
         },
         urlShare() {
-            return `${getAppRoot()}workflows/sharing?id=${this.workflow.id}`;
+            return `/workflows/sharing?id=${this.workflow.id}`;
         },
         urlExport() {
             return `${getAppRoot()}workflow/export?id=${this.workflow.id}`;
@@ -98,7 +98,7 @@ export default {
             return `${getAppRoot()}workflow/display_by_id?id=${this.workflow.id}`;
         },
         urlInvocations() {
-            return `${getAppRoot()}workflows/${this.workflow.id}/invocations`;
+            return `/workflows/${this.workflow.id}/invocations`;
         },
         urlViewShared() {
             return `${getAppRoot()}workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${
