@@ -8,6 +8,7 @@ import tempfile
 from io import StringIO
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
@@ -351,6 +352,7 @@ def _fetch_target(upload_config: "UploadConfig", target):
 
             # TODO:
             # in galaxy json add 'extra_files' and point at target derived from extra_files:
+            path = cast(str, path)  # type hint to accommodate mypy
 
             needs_grooming = not link_data_only and datatype and datatype.dataset_content_needs_grooming(path)
             if needs_grooming:

@@ -7,7 +7,11 @@ import tempfile
 from inspect import isclass
 from typing import (
     Any,
+    cast,
     Dict,
+    Generator,
+    IO,
+    Iterable,
     List,
     Optional,
     Tuple,
@@ -46,6 +50,8 @@ from . import (
 
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance
+    from galaxy.tools import Tool
+    from galaxy.webapps.galaxy.base import GalaxyWebTransaction
 
 XSS_VULNERABLE_MIME_TYPES = [
     "image/svg+xml",  # Unfiltered by Galaxy and may contain JS that would be executed by some browsers.
@@ -71,7 +77,7 @@ class DatatypeConverterNotFoundException(Exception):
 
 
 class DatatypeValidation:
-    def __init__(self, state, message):
+    def __init__(self, state: str, message: str) -> None:
         self.state = state
         self.message = message
 
@@ -80,18 +86,18 @@ class DatatypeValidation:
         return DatatypeValidation("ok", "Dataset validated by datatype validator.")
 
     @staticmethod
-    def invalid(message):
+    def invalid(message: str):
         return DatatypeValidation("invalid", message)
 
     @staticmethod
     def unvalidated():
         return DatatypeValidation("unknown", "Dataset validation unimplemented for this datatype.")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"DatatypeValidation[state={self.state},message={self.message}]"
 
 
-def validate(dataset_instance):
+def validate(dataset_instance: "DatasetInstance") -> DatatypeValidation:
     try:
         datatype_validation = dataset_instance.datatype.validate(dataset_instance)
     except Exception as e:
@@ -99,7 +105,7 @@ def validate(dataset_instance):
     return datatype_validation
 
 
-def get_params_and_input_name(converter, deps, target_context=None):
+def get_params_and_input_name(converter: "Tool", deps: Dict, target_context: Optional[Dict] = None) -> Tuple[Dict, str]:
     # Generate parameter dictionary
     params = {}
     # determine input parameter name and add to params
@@ -190,14 +196,14 @@ class Data(metaclass=DataMeta):
 
     dataproviders: Dict[str, Any]
 
-    def __init__(self, **kwd):
+    def __init__(self, **kwd) -> None:
         """Initialize the datatype"""
         self.supported_display_apps = self.supported_display_apps.copy()
         self.composite_files = self.composite_files.copy()
-        self.display_applications = {}
+        self.display_applications: Dict = {}
 
     @classmethod
-    def is_datatype_change_allowed(cls):
+    def is_datatype_change_allowed(cls) -> bool:
         """
         Returns the value of the `allow_datatype_change` class attribute if set
         in a subclass, or True iff the datatype is not composite.
@@ -206,14 +212,14 @@ class Data(metaclass=DataMeta):
             return cls.allow_datatype_change
         return cls.composite_type is None
 
-    def dataset_content_needs_grooming(self, file_name):
+    def dataset_content_needs_grooming(self, file_name: str) -> bool:
         """This function is called on an output dataset file after the content is initially generated."""
         return False
 
-    def groom_dataset_content(self, file_name):
-        """This function is called on an output dataset file if dataset_content_needs_grooming returns True."""
+    def groom_dataset_content(self, file_name: str) -> None:
+        """This function is called on an output dataset file if dataset_content_needs_grooming."""
 
-    def init_meta(self, dataset, copy_from=None):
+    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         # Metadata should be left mostly uninitialized.  Dataset will
         # handle returning default values when metadata is not set.
         # copy_from allows metadata to be passed in that will be
@@ -223,11 +229,13 @@ class Data(metaclass=DataMeta):
         if copy_from:
             dataset.metadata = copy_from.metadata
 
-    def set_meta(self, dataset: Any, overwrite=True, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> bool:
         """Unimplemented method, allows guessing of metadata from contents of file"""
         return True
 
-    def missing_meta(self, dataset, check=None, skip=None):
+    def missing_meta(
+        self, dataset: "DatasetInstance", check: Optional[List] = None, skip: Optional[List] = None
+    ) -> bool:
         """
         Checks for empty metadata values.
         Returns False if no non-optional metadata is missing and the missing metadata key otherwise.
@@ -254,14 +262,14 @@ class Data(metaclass=DataMeta):
                 return key
         return False
 
-    def set_max_optional_metadata_filesize(self, max_value):
+    def set_max_optional_metadata_filesize(self, max_value: Union[float, str]) -> None:
         try:
             max_value = int(max_value)
         except (TypeError, ValueError):
             return
         self.__class__._max_optional_metadata_filesize = max_value
 
-    def get_max_optional_metadata_filesize(self):
+    def get_max_optional_metadata_filesize(self) -> int:
         rval = self.__class__._max_optional_metadata_filesize
         if rval is None:
             return -1
@@ -269,7 +277,7 @@ class Data(metaclass=DataMeta):
 
     max_optional_metadata_filesize = property(get_max_optional_metadata_filesize, set_max_optional_metadata_filesize)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         """
         Set the peek and blurb text
         """
@@ -280,7 +288,7 @@ class Data(metaclass=DataMeta):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
@@ -298,7 +306,9 @@ class Data(metaclass=DataMeta):
         except Exception as exc:
             return f"Can't create peek: {unicodify(exc)}"
 
-    def _archive_main_file(self, archive, display_name, data_filename):
+    def _archive_main_file(
+        self, archive: ZipstreamWrapper, display_name: str, data_filename: str
+    ) -> Tuple[bool, str, str]:
         """Called from _archive_composite_dataset to add central file to archive.
 
         Unless subclassed, this will add the main dataset file (argument data_filename)
@@ -318,7 +328,9 @@ class Data(metaclass=DataMeta):
             messagetype = "error"
         return error, msg, messagetype
 
-    def _archive_composite_dataset(self, trans, data, headers: Headers, do_action="zip"):
+    def _archive_composite_dataset(
+        self, trans: "GalaxyWebTransaction", data: "DatasetInstance", headers: Headers, do_action: str = "zip"
+    ) -> Tuple[Union[ZipstreamWrapper, str], Headers]:
         # save a composite object into a compressed archive for downloading
         outfname = data.name[0:150]
         outfname = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in outfname)
@@ -354,7 +366,7 @@ class Data(metaclass=DataMeta):
             return archive, headers
         return trans.show_error_message(msg), headers
 
-    def __archive_extra_files_path(self, extra_files_path):
+    def __archive_extra_files_path(self, extra_files_path: str) -> Generator[Tuple[str, str], None, None]:
         """Yield filepaths and relative filepaths for files in extra_files_path"""
         for root, _, files in os.walk(extra_files_path):
             for fname in files:
@@ -362,7 +374,7 @@ class Data(metaclass=DataMeta):
                 rpath = os.path.relpath(fpath, extra_files_path)
                 yield fpath, rpath
 
-    def _serve_raw(self, dataset, to_ext, headers: Headers, **kwd):
+    def _serve_raw(self, dataset: "DatasetInstance", to_ext: str, headers: Headers, **kwd) -> Tuple[IO, Headers]:
         headers["Content-Length"] = str(os.stat(dataset.file_name).st_size)
         headers[
             "content-type"
@@ -377,7 +389,7 @@ class Data(metaclass=DataMeta):
         headers["Content-Disposition"] = f'attachment; filename="{filename}"'
         return open(dataset.file_name, mode="rb"), headers
 
-    def to_archive(self, dataset, name=""):
+    def to_archive(self, dataset: "DatasetInstance", name: str = "") -> Iterable:
         """
         Collect archive paths and file handles that need to be exported when archiving `dataset`.
 
@@ -399,7 +411,15 @@ class Data(metaclass=DataMeta):
             file_paths.append(dataset.file_name)
         return zip(file_paths, rel_paths)
 
-    def display_data(self, trans, data, preview=False, filename=None, to_ext=None, **kwd):
+    def display_data(
+        self,
+        trans: "GalaxyWebTransaction",
+        data: "DatasetInstance",
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        **kwd,
+    ):
         """
         Displays data in central pane if preview is `True`, else handles download.
 
@@ -416,7 +436,7 @@ class Data(metaclass=DataMeta):
         # Prevent IE8 from sniffing content type since we're explicit about it.  This prevents intentionally text/plain
         # content from being rendered in the browser
         headers["X-Content-Type-Options"] = "nosniff"
-        if isinstance(data, str):
+        if isinstance(data, str):  # TODO: if this is possible, the type hint for `data` is incorrect.
             return smart_str(data), headers
         if filename and filename != "index":
             # For files in extra_files_path
@@ -491,7 +511,9 @@ class Data(metaclass=DataMeta):
         max_peek_size = DEFAULT_MAX_PEEK_SIZE  # 1 MB
         if isinstance(data.datatype, text.Html):
             max_peek_size = 10000000  # 10 MB for html
-        preview = util.string_as_bool(preview)
+        preview = util.string_as_bool(
+            cast(str, preview)
+        )  # TODO string_as_bool should not be neccesarry: preview is a bool.
         if not preview or isinstance(data.datatype, images.Image) or os.stat(data.file_name).st_size < max_peek_size:
             return self._yield_user_file_content(trans, data, data.file_name, headers), headers
         else:
@@ -503,7 +525,7 @@ class Data(metaclass=DataMeta):
                 headers,
             )
 
-    def display_as_markdown(self, dataset_instance, markdown_format_helpers):
+    def display_as_markdown(self, dataset_instance: "DatasetInstance", markdown_format_helpers):
         """Prepare for embedding dataset into a basic Markdown document.
 
         This is a somewhat experimental interface and should not be implemented

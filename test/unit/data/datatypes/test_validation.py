@@ -1,8 +1,10 @@
 import tempfile
+from typing import cast
 
 from galaxy.datatypes.data import validate
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
 from galaxy.datatypes.sniff import get_test_fname
+from galaxy.model import DatasetInstance
 
 datatypes_registry = example_datatype_registry_for_sample()
 
@@ -51,7 +53,8 @@ def _assert_valid(extension, file_name):
 
 def _run_validation(extension, file_name):
     datatype = datatypes_registry.datatypes_by_extension[extension]
-    validation = validate(MockDataset(get_test_fname(file_name), datatype))
+    dataset = MockDataset(get_test_fname(file_name), datatype)
+    validation = validate(cast(DatasetInstance, dataset))
     return validation
 
 
