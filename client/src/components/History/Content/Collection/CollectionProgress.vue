@@ -50,9 +50,9 @@ export default {
     border: 1px solid black;
 }
 .progress > .bg-success {
-    color: black
+    color: black;
 }
 .progress > .bg-danger {
-    color: black
+    color: black;
 }
 </style>
