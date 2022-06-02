@@ -112,7 +112,7 @@
 
                     <b-dropdown-item
                         data-description="export to file"
-                        @click="$router.push(`/histories/${this.history.id}/export`)">
+                        @click="$router.push(`/histories/${history.id}/export`)">
                         <Icon fixed-width icon="file-archive" class="mr-1" />
                         <span v-localize>Export History to File</span>
                     </b-dropdown-item>

@@ -129,7 +129,8 @@ export default {
         open(tab, event) {
             if (tab.onclick) {
                 event.preventDefault();
-                this.$emit("click", tab, tab.onclick());
+                tab.onclick();
+                this.$emit("click");
             } else if (tab.disabled) {
                 event.preventDefault();
                 this.$root.$emit("bv::hide::tooltip");
@@ -139,14 +140,14 @@ export default {
                 }, 3000);
             } else if (!tab.menu) {
                 event.preventDefault();
-                const galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
                 if (tab.target === "__use_router__" && this.$router) {
                     this.$router.push(`/${tab.url}`);
-                } else if (tab.target === "__use_router__" && typeof galaxy.page !== "undefined") {
-                    galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
+                } else if (tab.target === "__use_router__" && typeof Galaxy.page !== "undefined") {
+                    Galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
                 } else {
                     try {
-                        galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });
+                        Galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });
                     } catch (err) {
                         console.warn("Missing frame element on galaxy instance", err);
                     }

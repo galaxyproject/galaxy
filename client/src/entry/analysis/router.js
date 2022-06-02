@@ -329,7 +329,7 @@ export function getRouter(Galaxy) {
                         component: UserInvocations,
                     },
                     {
-                        path: "workflows/invocations",
+                        path: "workflows/invocations/report",
                         component: InvocationReport,
                         props: (route) => ({
                             invocationId: route.query.id,

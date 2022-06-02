@@ -8,7 +8,7 @@ import { redirectToUrl, prependPath } from "utils/redirect";
 import _l from "utils/localization";
 
 // wrapper for window manager
-export function iframeAdd({ path, title = "Galaxy", tryIframe = true }) {
+export function iframeAdd({ path, title = "Galaxy", $router = null }) {
     const Galaxy = getGalaxyInstance();
     if (Galaxy.frame && Galaxy.frame.active) {
         Galaxy.frame.add({
@@ -16,10 +16,11 @@ export function iframeAdd({ path, title = "Galaxy", tryIframe = true }) {
             url: prependPath(path),
         });
         return true;
-    } else if (tryIframe) {
-        return iframeRedirect(path);
+    } else if ($router) {
+        $router.push(path);
+        return true;
     } else {
-        return false;
+        return iframeRedirect(path);
     }
 }
 
