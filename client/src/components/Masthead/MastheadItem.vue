@@ -14,7 +14,7 @@
         @click="open(tab, $event)">
         <template v-if="tab.icon">
             <span :class="iconClasses" />
-            <span v-if="tab.show_note" :class="['nav-note', tab.note_cls]">{{ tab.note }}</span>
+            <span v-if="toggle" class="nav-note fa fa-check" />
         </template>
         <template v-else>
             {{ tab.title }}
