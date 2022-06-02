@@ -3,6 +3,10 @@ This module manages loading/etc of Galaxy interactive tours.
 """
 import logging
 import os
+from typing import (
+    List,
+    Union,
+)
 
 import yaml
 from pydantic import parse_obj_as
@@ -12,6 +16,8 @@ from ._interface import ToursRegistry
 from ._schema import TourList
 
 log = logging.getLogger(__name__)
+
+TOUR_EXTENSIONS = (".yml", ".yaml")
 
 
 def build_tours_registry(tour_directories: str):
@@ -32,11 +38,40 @@ def load_tour_steps(contents_dict):
             step["title"] = title_default
 
 
+def get_tour_id_from_path(tour_path: Union[str, os.PathLike]) -> str:
+    filename = os.path.basename(tour_path)
+    return os.path.splitext(filename)[0]
+
+
+def load_tour_from_path(tour_path: Union[str, os.PathLike]) -> dict:
+    with open(tour_path) as f:
+        tour = yaml.safe_load(f)
+        load_tour_steps(tour)
+    return tour
+
+
+def is_yaml(filename: str) -> bool:
+    for ext in TOUR_EXTENSIONS:
+        if filename.endswith(ext):
+            return True
+    return False
+
+
+def tour_paths(target_path: Union[str, os.PathLike]) -> List[str]:
+    paths = []
+    if os.path.isdir(target_path):
+        for filename in os.listdir(target_path):
+            if is_yaml(filename):
+                paths.append(str(os.path.join(target_path, filename)))
+    else:
+        paths.append(str(target_path))
+    return paths
+
+
 @ToursRegistry.register
 class ToursRegistryImpl:
     def __init__(self, tour_directories):
         self.tour_directories = config_directories_from_setting(tour_directories)
-        self._extensions = (".yml", ".yaml")
         self._load_tours()
 
     def get_tours(self):
@@ -68,30 +103,21 @@ class ToursRegistryImpl:
         """Reload tour."""
         # We may safely assume that the path is within the tour directory
         filename = os.path.basename(path)
-        if self._is_yaml(filename):
+        if is_yaml(filename):
             self._load_tour_from_path(path)
 
     def _load_tours(self):
         self.tours = {}
         for tour_dir in self.tour_directories:
-            for filename in os.listdir(tour_dir):
-                if self._is_yaml(filename):
-                    tour_path = os.path.join(tour_dir, filename)
-                    self._load_tour_from_path(tour_path)
-
-    def _is_yaml(self, filename):
-        for ext in self._extensions:
-            if filename.endswith(ext):
-                return True
+            for tour_path in tour_paths(tour_dir):
+                self._load_tour_from_path(tour_path)
 
     def _load_tour_from_path(self, tour_path):
-        tour_id = self._get_tour_id_from_path(tour_path)
+        tour_id = get_tour_id_from_path(tour_path)
         try:
-            with open(tour_path) as f:
-                tour = yaml.safe_load(f)
-                load_tour_steps(tour)
-                self.tours[tour_id] = tour
-                log.info(f"Loaded tour '{tour_id}'")
+            tour = load_tour_from_path(tour_path)
+            self.tours[tour_id] = tour
+            log.info(f"Loaded tour '{tour_id}'")
         except OSError:
             log.exception(f"Tour '{tour_id}' could not be loaded, error reading file.")
         except yaml.error.YAMLError:
@@ -104,13 +130,9 @@ class ToursRegistryImpl:
                 " Possibly spacing related. Please check your yaml syntax." % tour_id
             )
 
-    def _get_tour_id_from_path(self, tour_path):
-        filename = os.path.basename(tour_path)
-        return os.path.splitext(filename)[0]
-
     def _get_path_from_tour_id(self, tour_id):
         for tour_dir in self.tour_directories:
-            for ext in self._extensions:
+            for ext in TOUR_EXTENSIONS:
                 tour_path = os.path.join(tour_dir, tour_id + ext)
                 if os.path.exists(tour_path):
                     return tour_path
