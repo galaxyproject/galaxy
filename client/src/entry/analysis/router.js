@@ -33,6 +33,7 @@ import Sharing from "components/Sharing/Sharing";
 import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
 import ToolsView from "components/ToolsView/ToolsView";
+import TourList from "components/Tour/TourList";
 import TourRunner from "components/Tour/TourRunner";
 import TrsImport from "components/Workflow/TrsImport";
 import TrsSearch from "components/Workflow/TrsSearch";
@@ -246,6 +247,10 @@ export function getRouter(Galaxy) {
                         path: "storage",
                         component: StorageDashboardRouter,
                         redirect: redirectAnon(),
+                    },
+                    {
+                        path: "tours",
+                        component: TourList,
                     },
                     {
                         path: "tours/:tourId",
