@@ -23,6 +23,7 @@ import DatasetList from "components/Dataset/DatasetList";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import CustomBuilds from "components/User/CustomBuilds";
 import { runTour } from "components/Tour/runTour";
+import TourList from "components/Tour/TourList";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
 import JobDetails from "components/JobInformation/JobDetails";
@@ -67,6 +68,7 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)login/confirm": "show_new_user_confirmation",
             "(/)tools/view": "show_tools_view",
             "(/)tools/json": "show_tools_json",
+            "(/)tours": "show_tours_list",
             "(/)tours(/)(:tour_id)": "show_tours",
             "(/)user(/)": "show_user",
             "(/)user(/)cloud_auth": "show_cloud_auth",
@@ -146,9 +148,12 @@ export const getAnalysisRouter = (Galaxy) => {
 
         show_tours: function (tour_id) {
             this.home();
-            if (tour_id) {
-                runTour(tour_id);
-            }
+            runTour(tour_id);
+        },
+
+        show_tours_list: function () {
+            this.home();
+            this._display_vue_helper(TourList);
         },
 
         show_new_user_confirmation: function () {
