@@ -1358,15 +1358,14 @@ class NavigatesGalaxy(HasDriver):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.click_button_new_workflow()
         self.sleep_for(self.wait_types.UX_RENDER)
-        form_element = self.driver.find_element_by_id("submit")
         name = self._get_random_name()
-        annotation = annotation or self._get_random_name()
-        inputs = self.driver.find_elements_by_class_name("ui-input")
+        name_component = self.components.workflows.create.name
         if clear_placeholder:
-            inputs[0].clear()
-        inputs[0].send_keys(name)
-        inputs[1].send_keys(annotation)
-        form_element.click()
+            name_component.wait_for_visible().clear()
+        name_component.wait_for_and_send_keys(name)
+        annotation = annotation or self._get_random_name()
+        self.components.workflows.create.annotation.wait_for_and_send_keys(annotation)
+        self.components.workflows.create.submit.wait_for_and_click()
         return name
 
     def invocation_index_table_elements(self):

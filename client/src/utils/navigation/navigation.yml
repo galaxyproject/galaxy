@@ -507,6 +507,12 @@ workflows:
     pager_page_active: '.gx-workflows-grid-pager .gx-grid-pager-page.active button'
     run_button: '[data-workflow-run*="${id}"]'
 
+  create:
+    selectors:
+      name: '#workflow_name'
+      annotation: '#workflow_annotation'
+      submit: '#submit'
+
 trs_search:
   selectors:
     search: "#trs-search-query"
