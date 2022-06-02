@@ -17,7 +17,7 @@ import os.path
 import struct
 import sys
 import tempfile
-from collections import Mapping
+from collections.abc import Mapping
 from math import isnan
 
 import bx.wiggle
