@@ -1,0 +1,40 @@
+name: Test Galaxy packages
+on:
+  push:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+  pull_request:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.7', '3.10']
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: 'galaxy root'
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip dir
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get -y install ffmpeg
+      - name: Install tox
+        run: pip install tox
+      - name: Run tests
+        run: tox -e test_galaxy_packages
+        working-directory: 'galaxy root'
