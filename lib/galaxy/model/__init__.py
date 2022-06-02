@@ -106,7 +106,6 @@ from typing_extensions import Protocol
 
 import galaxy.exceptions
 import galaxy.model.metadata
-import galaxy.model.orm.now
 import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
@@ -2037,7 +2036,6 @@ class JobStateHistory(Base, RepresentById):
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
     job_id = Column(Integer, ForeignKey("job.id"), index=True)
     state = Column(String(64), index=True)
     info = Column(TrimmedString(255))
