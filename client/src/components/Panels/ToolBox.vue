@@ -168,9 +168,9 @@ export default {
                 evt.preventDefault();
                 const Galaxy = getGalaxyInstance();
                 // encode spaces in tool.id
-                const toolId = tool.id.replace(/ /g, "%20");
+                const toolId = tool.id;
                 const toolVersion = tool.version;
-                Galaxy.router.push(`/?tool_id=${toolId}&version=${toolVersion}`);
+                Galaxy.router.push(`/?tool_id=${encodeURIComponent(toolId)}&version=${toolVersion}`);
             }
         },
         onToggle() {

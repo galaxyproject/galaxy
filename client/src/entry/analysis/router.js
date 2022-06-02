@@ -1,6 +1,7 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 
 // modules
 import Analysis from "entry/analysis/modules/Analysis";
@@ -61,6 +62,14 @@ VueRouter.prototype.push = function push(location) {
     });
 };
 
+// redirect anon users
+function redirectAnon() {
+    const Galaxy = getGalaxyInstance();
+    if (!Galaxy.user || !Galaxy.user.id) {
+        return "/";
+    }
+}
+
 // produces the client router
 export function getRouter(Galaxy) {
     return new VueRouter({
@@ -80,6 +89,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "custom_builds",
                         component: CustomBuilds,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "collection/edit/:collection_id",
@@ -235,6 +245,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "storage",
                         component: StorageDashboardRouter,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "tours/:tourId",
@@ -256,19 +267,23 @@ export function getRouter(Galaxy) {
                             enableQuotas: Galaxy.config.enable_quotas,
                             userId: Galaxy.user.id,
                         },
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "user/cloud_auth",
                         component: CloudAuth,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "user/external_ids",
                         component: ExternalIdentities,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "user/:formId",
                         component: UserPreferencesForm,
                         props: true,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "visualizations",
@@ -346,6 +361,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/list",
                         component: WorkflowList,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "workflows/run",
