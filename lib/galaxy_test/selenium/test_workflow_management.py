@@ -150,6 +150,19 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkfl
         self.screenshot("workflow_manage_search_name_alias")
 
     @selenium_test
+    def test_workflow_delete(self):
+        self.workflow_index_open()
+        self._workflow_import_from_url()
+        self.workflow_index_rename("fordelete")
+        self._assert_showing_n_workflows(1)
+        self.workflow_index_click_option("Delete")
+        self.accept_alert()
+        self._assert_showing_n_workflows(0)
+
+        self.workflow_index_open()
+        self._assert_showing_n_workflows(0)
+
+    @selenium_test
     def test_pagination(self):
         self.workflow_index_open()
         self._workflow_import_from_url()
