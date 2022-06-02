@@ -427,7 +427,7 @@ export default {
             this.showInPanel = "attributes";
         },
         onEditSubworkflow(contentId) {
-            const editUrl = `${getAppRoot()}workflow/editor?workflow_id=${contentId}`;
+            const editUrl = `${getAppRoot()}workflows/edit?id=${contentId}`;
             this.onNavigate(editUrl);
         },
         async onClone(node) {

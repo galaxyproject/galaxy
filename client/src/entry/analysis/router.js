@@ -328,7 +328,7 @@ export function getRouter(Galaxy) {
                         component: FormGeneric,
                         props: {
                             url: "workflow/create",
-                            redirect: "workflow/editor",
+                            redirect: "workflows/edit",
                             active_tab: "workflow",
                             submitTitle: "Create",
                             submitIcon: "fa-check",

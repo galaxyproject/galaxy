@@ -83,7 +83,7 @@ export default {
     props: ["workflow"],
     computed: {
         urlEdit() {
-            return `${getAppRoot()}workflow/editor?id=${this.workflow.id}`;
+            return `${getAppRoot()}workflows/edit?id=${this.workflow.id}`;
         },
         urlDownload() {
             return `${getAppRoot()}api/workflows/${this.workflow.id}/download?format=json-download`;

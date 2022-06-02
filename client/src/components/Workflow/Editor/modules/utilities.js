@@ -79,7 +79,7 @@ export function saveAs(workflow) {
                 },
             })
                 .done((id) => {
-                    workflow.onNavigate(`${getAppRoot()}workflow/editor?id=${id}`, true);
+                    workflow.onNavigate(`${getAppRoot()}workflows/edit?id=${id}`, true);
                 })
                 .fail((err) => {
                     console.debug(err);
