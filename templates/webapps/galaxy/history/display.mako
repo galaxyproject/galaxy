@@ -21,13 +21,13 @@
 %>
     %if not user_is_owner:
         <a href="javascript:void(0)" class="history-copy-link btn btn-secondary float-right" title="Import this history">
-             Import 
             <span class="fa fa-plus"></span>
+            Import
         </a>
     %else:
         <a href="${switch_url}" class="btn btn-secondary float-right" title="${_('Switch to this history')}">
-             Switch 
             <span class="fa fa-exchange"></span>
+            Switch
         </a>
     %endif
 </%def>
