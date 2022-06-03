@@ -5,7 +5,7 @@
             <Masthead
                 v-if="showMasthead"
                 id="masthead"
-                :masthead-state="getState()"
+                :masthead-state="mastheadState"
                 :display-galaxy-brand="config.display_galaxy_brand"
                 :brand="config.brand"
                 :brand-link="staticUrlToPrefixed(config.logo_url)"
@@ -57,21 +57,22 @@ export default {
         return {
             config: getGalaxyInstance().config,
             confirmation: null,
+            mastheadState: new MastheadState(),
             resendUrl: `${getAppRoot()}user/resend_verification`,
         };
     },
     watch: {
         confirmation() {
-            console.debug("App - Confirmation before route change requested with: ", this.confirmation);
+            console.debug("App - Confirmation before route change: ", this.confirmation);
             this.$router.confirmation = this.confirmation;
-            if (this.confirmation) {
-                window.onbeforeunload = () => {
-                    return "There are unsaved changes to your workflow which will be lost.";
-                };
-            } else {
-                window.onbeforeunload = undefined;
-            }
         },
+    },
+    created() {
+        window.onbeforeunload = () => {
+            if (this.confirmation || this.mastheadState.windowManager.beforeUnload()) {
+                return "Are you sure you want to leave the page?";
+            }
+        };
     },
     computed: {
         showMasthead() {
@@ -83,9 +84,6 @@ export default {
         },
     },
     methods: {
-        getState() {
-            return new MastheadState();
-        },
         staticUrlToPrefixed(url) {
             return url?.startsWith("/") ? `${getAppRoot()}${url.substring(1)}` : url;
         },

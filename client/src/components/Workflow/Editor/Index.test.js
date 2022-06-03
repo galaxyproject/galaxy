@@ -78,7 +78,7 @@ describe("Index", () => {
 
     it("tracks changes to annotations", async () => {
         mountAndWaitForCreated();
-        expect(wrapper.hasChanges).toBeFalsy();
+        expect(wrapper.vm.hasChanges).toBeFalsy();
         await wrapper.setData({ annotation: "original annotation" });
         expect(wrapper.vm.hasChanges).toBeTruthy();
 
@@ -115,8 +115,9 @@ describe("Index", () => {
 
     it("prevents navigation only if hasChanges", async () => {
         mountAndWaitForCreated();
-        //expect(window.onbeforeunload()).toBeFalsy();
-        wrapper.vm.onChange();
-        //expect(window.onbeforeunload()).toBeTruthy();
+        expect(wrapper.vm.hasChanges).toBeFalsy();
+        await wrapper.vm.onChange();
+        const confirmationRequired = wrapper.emitted()["update:confirmation"][0][0];
+        expect(confirmationRequired).toBeTruthy();
     });
 });

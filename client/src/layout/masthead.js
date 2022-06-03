@@ -40,12 +40,6 @@ export class MastheadState {
                     $("iframe[id=download]").attr("src", $download_link.attr("href"));
                     e.preventDefault();
                 }
-            })
-            .on("beforeunload", () => {
-                const text = this.windowManager.beforeUnload();
-                if (text) {
-                    return text;
-                }
             });
     }
 }

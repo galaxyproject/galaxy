@@ -55,11 +55,7 @@ export class WindowManager {
 
     /** Called before closing all windows. */
     beforeUnload() {
-        let confirmText = "";
-        if (this.counter > 0) {
-            confirmText = `You opened ${this.counter} window(s) which will be lost.`;
-        }
-        return confirmText;
+        return this.counter > 0;
     }
 
     /** Url helper */

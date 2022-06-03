@@ -299,20 +299,20 @@ export default {
         },
     },
     watch: {
-        annotation: function (newAnnotation, oldAnnotation) {
+        annotation(newAnnotation, oldAnnotation) {
             if (newAnnotation != oldAnnotation) {
                 this.hasChanges = true;
             }
         },
-        name: function (newName, oldName) {
+        name(newName, oldName) {
             if (newName != oldName) {
                 this.hasChanges = true;
             }
         },
-        steps: function (newSteps, oldSteps) {
+        steps(newSteps, oldSteps) {
             this.hasChanges = true;
         },
-        nodes: function (newNodes, oldNodes) {
+        nodes(newNodes, oldNodes) {
             this.hasChanges = true;
         },
         hasChanges() {
@@ -601,13 +601,14 @@ export default {
             await Vue.nextTick();
             this.canvasManager.drawOverview();
             this.canvasManager.scrollToNodes();
-            await Vue.nextTick();
             this.hasChanges = has_changes;
         },
         _loadCurrent(id, version) {
             this.onWorkflowMessage("Loading workflow...", "progress");
-            loadWorkflow(this, id, version)
+            this.lastQueue
+                .enqueue(loadWorkflow, { id, version, workflow: this })
                 .then((data) => {
+                    console.debug("Editor - Loading workflow:", id);
                     this._loadEditorData(data);
                 })
                 .catch((response) => {

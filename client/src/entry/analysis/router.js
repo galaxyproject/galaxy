@@ -57,7 +57,7 @@ VueRouter.prototype.push = function push(location) {
     console.debug("VueRouter - push: ", location);
     if (this.confirmation) {
         if (confirm("There are unsaved changes which will be lost.")) {
-            this.confirmation = false;
+            this.confirmation = undefined;
         } else {
             return;
         }
