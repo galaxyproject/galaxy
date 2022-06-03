@@ -40,7 +40,7 @@ def start_minio(container_name):
         "--rm",
         "minio/minio:latest",
         "server",
-        "/tmp/data",
+        "/data",
     ]
     subprocess.check_call(minio_start_args)
 
