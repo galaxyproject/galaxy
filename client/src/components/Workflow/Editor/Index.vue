@@ -601,6 +601,7 @@ export default {
             await Vue.nextTick();
             this.canvasManager.drawOverview();
             this.canvasManager.scrollToNodes();
+            await Vue.nextTick();
             this.hasChanges = has_changes;
         },
         _loadCurrent(id, version) {

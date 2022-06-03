@@ -66,16 +66,6 @@ describe("Index", () => {
         expect(wrapper.canvasManager).not.toBeNull();
     });
 
-    it("routes to run to URL and respects Galaxy prefix", async () => {
-        mountAndWaitForCreated();
-        Object.defineProperty(window, "location", {
-            value: "original",
-            writable: true,
-        });
-        wrapper.vm.onRun();
-        expect(window.location).toBe("prefix/workflows/run?id=workflow_id");
-    });
-
     it("routes to run to download URL and respects Galaxy prefix", async () => {
         mountAndWaitForCreated();
         Object.defineProperty(window, "location", {
