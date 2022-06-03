@@ -53,6 +53,15 @@ Vue.use(VueRouter);
 // patches $router.push() to trigger an event and hide duplication warnings
 const originalPush = VueRouter.prototype.push;
 VueRouter.prototype.push = function push(location) {
+    // verify if confirmation is required
+    console.debug("VueRouter - push: ", location);
+    if (this.confirmation) {
+        if (confirm("There are unsaved changes which will be lost.")) {
+            this.confirmation = false;
+        } else {
+            return;
+        }
+    }
     // always emit event when a route is pushed
     this.app.$emit("router-push");
     // avoid console warning when user clicks to revisit same route

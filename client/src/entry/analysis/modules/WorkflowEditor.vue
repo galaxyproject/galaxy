@@ -6,12 +6,13 @@
         :initial-version="editorConfig.initialVersion"
         :module-sections="editorConfig.moduleSections"
         :tags="editorConfig.tags"
-        :workflows="editorConfig.workflows" />
+        :workflows="editorConfig.workflows"
+        @update:confirmation="$emit('update:confirmation', $event)" />
 </template>
 <script>
 import { urlData } from "utils/url";
 import Query from "utils/query-string-parsing";
-import Editor from "components/Workflow/Editor/Index.vue";
+import Editor from "components/Workflow/Editor/Index";
 export default {
     components: {
         Editor,

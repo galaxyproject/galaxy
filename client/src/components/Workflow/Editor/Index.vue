@@ -315,6 +315,9 @@ export default {
         nodes: function (newNodes, oldNodes) {
             this.hasChanges = true;
         },
+        hasChanges() {
+            this.$emit("update:confirmation", this.hasChanges);
+        },
     },
     created() {
         this.lastQueue = new LastQueue();
@@ -326,13 +329,6 @@ export default {
             this.canvasManager = new WorkflowCanvas(this, this.$refs.canvas);
             this._loadCurrent(this.id, this.version);
         });
-
-        // Notify user if workflow has not been saved yet
-        /*window.onbeforeunload = () => {
-            if (this.hasChanges) {
-                return "There are unsaved changes to your workflow which will be lost.";
-            }
-        };*/
         hide_modal();
     },
     methods: {

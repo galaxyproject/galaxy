@@ -31,7 +31,7 @@
                     <a class="ml-1" :href="resendUrl">Resend Verification</a>
                 </span>
             </alert>
-            <router-view />
+            <router-view @update:confirmation="confirmation = $event" />
         </div>
         <div id="dd-helper" />
     </body>
@@ -56,8 +56,22 @@ export default {
     data() {
         return {
             config: getGalaxyInstance().config,
+            confirmation: null,
             resendUrl: `${getAppRoot()}user/resend_verification`,
         };
+    },
+    watch: {
+        confirmation() {
+            console.debug("App - Confirmation before route change requested with: ", this.confirmation);
+            this.$router.confirmation = this.confirmation;
+            if (this.confirmation) {
+                window.onbeforeunload = () => {
+                    return "There are unsaved changes to your workflow which will be lost.";
+                };
+            } else {
+                window.onbeforeunload = undefined;
+            }
+        },
     },
     computed: {
         showMasthead() {
