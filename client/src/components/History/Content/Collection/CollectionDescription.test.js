@@ -1,6 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import CollectionDescription from "./CollectionDescription";
+import { JobStateSummary } from "./JobStateSummary";
 
 const localVue = getLocalVue();
 
@@ -8,9 +9,11 @@ describe("CollectionDescription", () => {
     let wrapper;
 
     beforeEach(() => {
+        const jss = new JobStateSummary();
         wrapper = mount(CollectionDescription, {
             propsData: {
                 collectionType: "list",
+                jobStateSummary: jss,
             },
             localVue,
         });
