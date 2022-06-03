@@ -34,6 +34,7 @@ from galaxy.tool_util.verify.interactor import (
     GalaxyInteractorApi,
     verify_tool,
 )
+from galaxy.tools import ToolBox
 from galaxy.util import (
     asbool,
     download_to_file,
@@ -530,10 +531,14 @@ def attempt_port(port):
 
 
 def attempt_ports(port=None, set_galaxy_web_port=True):
+    """
+    >>> port = int(attempt_ports())
+    >>> assert port >= 8000 and port <= 10000
+    """
     if port is not None:
+        if not attempt_port(port):
+            raise Exception(f"An existing process seems bound to specified test server port [{port}]")
         return port
-
-        raise Exception(f"An existing process seems bound to specified test server port [{port}]")
     else:
         random.seed()
         for _ in range(0, 9):
@@ -608,9 +613,7 @@ def setup_shed_tools_for_test(app, tmpdir, testing_migrated_tools, testing_insta
             tool_configs.remove(relative_migrated_tool_panel_config)
         for installed_tool_panel_config in INSTALLED_TOOL_PANEL_CONFIGS:
             tool_configs.append(installed_tool_panel_config)
-        from galaxy import tools  # delay import because this brings in so many modules for small tests # noqa: E402
-
-        app.toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
+        app.toolbox = ToolBox(tool_configs, app.config.tool_path, app)
 
 
 def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:

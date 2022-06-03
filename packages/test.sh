@@ -33,6 +33,7 @@ PACKAGE_DIRS=(
     app
     webapps
     test_base
+    test_driver
 )
 for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     printf "\n========= TESTING PACKAGE ${PACKAGE_DIRS[$i]} =========\n\n"
