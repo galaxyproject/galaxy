@@ -67,7 +67,7 @@ from typing import (
     Union,
 )
 
-import cwltest
+import cwltest.utils
 import requests
 import yaml
 from bioblend.galaxy import GalaxyClient
@@ -2107,7 +2107,7 @@ class CwlPopulator:
         try:
             for key, value in expected_outputs.items():
                 actual_output = run.get_output_as_object(key)
-                cwltest.compare(value, actual_output)
+                cwltest.utils.compare(value, actual_output)
         except Exception:
             self.dataset_populator._summarize_history(run.history_id)
             raise

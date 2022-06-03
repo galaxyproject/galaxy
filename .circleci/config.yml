@@ -17,8 +17,6 @@ variables:
         - ~/.cache/yarn
   install_tox: &install_tox
     run: pip install tox
-  install_deb_reqs: &install_deb_reqs
-    run: sudo apt-get update && sudo apt-get install ffmpeg nodejs -y
   set_workdir: &set_workdir
     working_directory: ~/repo
   requires_get_code: &requires_get_code
@@ -93,15 +91,6 @@ jobs:
       - run: sudo apt-get install -y libxml2-utils
       - *install_tox
       - run: tox -e validate_test_tools
-  test_galaxy_packages:
-    docker:
-      - image: cimg/python:3.7
-    <<: *set_workdir
-    steps:
-      - *restore_repo_cache
-      - *install_tox
-      - *install_deb_reqs
-      - run: tox -e test_galaxy_packages
   js_lint:
     docker:
       - image: cimg/node:16.13.2
@@ -117,8 +106,6 @@ workflows:
   get_code_and_test:
     jobs:
       - get_code
-      - test_galaxy_packages:
-          <<: *requires_get_code
       - validate_test_tools:
           <<: *requires_get_code
       - js_lint:

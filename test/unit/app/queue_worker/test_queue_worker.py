@@ -1,11 +1,6 @@
 import datetime
 import time
-
-try:
-    from math import inf
-except ImportError:
-    # python 2 doesn't have math.inf, but can use float('inf')
-    inf = float("inf")
+from math import inf
 
 import pytest
 

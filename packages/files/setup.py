@@ -3,6 +3,10 @@
 import ast
 import os
 import re
+from typing import (
+    Dict,
+    List,
+)
 
 try:
     from setuptools import setup
@@ -20,8 +24,9 @@ with open(f"{SOURCE_DIR}/project_galaxy_{project_short_name}.py") as f:
 
 def get_var(var_name):
     pattern = re.compile(rf"{var_name}\s+=\s+(.*)")
-    match = pattern.search(init_contents).group(1)
-    return str(ast.literal_eval(match))
+    match = pattern.search(init_contents)
+    assert match
+    return str(ast.literal_eval(match.group(1)))
 
 
 version = get_var("__version__")
@@ -41,7 +46,7 @@ PACKAGES = [
 ENTRY_POINTS = """
         [console_scripts]
 """
-PACKAGE_DATA = {
+PACKAGE_DATA: Dict[str, List[str]] = {
     # Be sure to update MANIFEST.in for source dist.
     "galaxy": [],
 }

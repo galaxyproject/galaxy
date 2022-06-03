@@ -32,6 +32,7 @@ PACKAGE_DIRS=(
     web_framework
     app
     webapps
+    test_base
 )
 for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     printf "\n========= TESTING PACKAGE ${PACKAGE_DIRS[$i]} =========\n\n"
@@ -51,8 +52,9 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     pip install -r test-requirements.txt
 
     # Prevent execution of alembic/env.py at test collection stage (alembic.context not set)
-    unit_extra='--doctest-modules --ignore galaxy/model/migrations/alembic'
-    pytest $unit_extra galaxy tests
+    # Also ignore ToolShed functional tests.
+    unit_extra='--doctest-modules --ignore galaxy/model/migrations/alembic/ --ignore=tool_shed/test/'
+    pytest $unit_extra .
     make mypy
     cd ..
 done

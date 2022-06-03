@@ -15,6 +15,7 @@ gxformat2
 importlib_resources
 Mako
 MarkupSafe
+mercurial
 Paste
 pydantic
 PyJWT
@@ -24,6 +25,7 @@ PyYAML
 requests
 Routes
 SQLAlchemy>=1.4.25,<2
+sqlalchemy-migrate
 starlette
 starlette-context
 tuswsgi

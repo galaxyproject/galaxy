@@ -1,4 +1,11 @@
+galaxy-app
 galaxy-data
+galaxy-tool-util
+galaxy-util
+bioblend
+cwltest
+gxformat2
 nose
 pytest
-
+requests
+PyYAML
