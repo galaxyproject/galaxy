@@ -59,18 +59,18 @@ class Connector {
     }
     redraw() {
         // Identify handles
+        const canvasContainer = $("#canvas-container");
         const outputHandle = this.outputHandle;
         const inputHandle = this.inputHandle;
-        if (!outputHandle || !inputHandle) {
+        if (!canvasContainer.length || !outputHandle || !inputHandle) {
             return;
         }
-        const canvas_container = $("#canvas-container");
         const canvasZoom = this.manager.canvasZoom;
         if (this.dragging) {
             this.canvas.style.zIndex = zIndex;
         }
-        const relativeLeft = (e) => ($(e).offset().left - canvas_container.offset().left) / canvasZoom;
-        const relativeTop = (e) => ($(e).offset().top - canvas_container.offset().top) / canvasZoom;
+        const relativeLeft = (e) => ($(e).offset().left - canvasContainer.offset().left) / canvasZoom;
+        const relativeTop = (e) => ($(e).offset().top - canvasContainer.offset().top) / canvasZoom;
         if (!outputHandle || !inputHandle) {
             return;
         }
