@@ -423,7 +423,7 @@ export default {
             this.showInPanel = "attributes";
         },
         onEditSubworkflow(contentId) {
-            const editUrl = `${getAppRoot()}workflows/edit?id=${contentId}`;
+            const editUrl = `/workflows/edit?id=${contentId}`;
             this.onNavigate(editUrl);
         },
         async onClone(node) {
@@ -524,21 +524,14 @@ export default {
             this.markdownText = markdown;
         },
         onRun() {
-            const runUrl = `${getAppRoot()}workflows/run?id=${this.id}`;
+            const runUrl = `/workflows/run?id=${this.id}`;
             this.onNavigate(runUrl);
         },
-        onNavigate(url, force = false) {
-            if (!force && this.hasChanges) {
-                this.onSave(true).then(() => {
-                    window.location = url;
-                });
-            } else {
-                if (this.hasChanges) {
-                    window.onbeforeunload = false;
-                    this.hideModal();
-                }
-                window.location = url;
-            }
+        onNavigate(url) {
+            this.onSave(true).then(() => {
+                this.hasChanges = false;
+                this.$router.push(url);
+            });
         },
         onZoom(zoomLevel) {
             this.zoomLevel = this.canvasManager.setZoom(zoomLevel);
