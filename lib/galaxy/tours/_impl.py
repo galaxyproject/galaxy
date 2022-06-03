@@ -24,13 +24,19 @@ def build_tours_registry(tour_directories: str):
     return ToursRegistryImpl(tour_directories)
 
 
-def load_tour_steps(contents_dict):
+def noop_warn(str):
+    pass
+
+
+def load_tour_steps(contents_dict, warn=None):
+    warn = warn or noop_warn
     #  Some of this can be done on the clientside.  Maybe even should?
     title_default = contents_dict.get("title_default")
     for step in contents_dict["steps"]:
         # Remove attributes no longer used, so they are attempted to be
         # validated.
         if "backdrop" in step:
+            warn(f"Deprecated and dropped property backdrop found in step {step}")
             step.pop("backdrop")
 
         if "intro" in step:
@@ -48,10 +54,10 @@ def get_tour_id_from_path(tour_path: Union[str, os.PathLike]) -> str:
     return os.path.splitext(filename)[0]
 
 
-def load_tour_from_path(tour_path: Union[str, os.PathLike]) -> dict:
+def load_tour_from_path(tour_path: Union[str, os.PathLike], warn=None) -> dict:
     with open(tour_path) as f:
         tour = yaml.safe_load(f)
-        load_tour_steps(tour)
+        load_tour_steps(tour, warn=warn)
     return tour
 
 
