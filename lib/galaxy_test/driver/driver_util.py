@@ -530,10 +530,14 @@ def attempt_port(port):
 
 
 def attempt_ports(port=None, set_galaxy_web_port=True):
+    """
+    >>> port = int(attempt_ports())
+    >>> assert port >= 8000 and port <= 10000
+    """
     if port is not None:
+        if not attempt_port(port):
+            raise Exception(f"An existing process seems bound to specified test server port [{port}]")
         return port
-
-        raise Exception(f"An existing process seems bound to specified test server port [{port}]")
     else:
         random.seed()
         for _ in range(0, 9):
