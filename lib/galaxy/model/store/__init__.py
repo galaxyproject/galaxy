@@ -1351,7 +1351,8 @@ class BaseDirectoryImportModelStore(ModelImportStore):
         raw_state = job_attrs.get("state")
         if force_terminal and raw_state and raw_state not in model.Job.terminal_states:
             raw_state = model.Job.states.ERROR
-        imported_job.set_state(raw_state)
+        if raw_state:
+            imported_job.set_state(raw_state)
 
     def _read_list_if_exists(self, file_name, required=False):
         file_name = os.path.join(self.archive_dir, file_name)
