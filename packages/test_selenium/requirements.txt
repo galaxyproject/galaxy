@@ -1,3 +1,2 @@
+galaxy-selenium
 galaxy-test-base
-
-
