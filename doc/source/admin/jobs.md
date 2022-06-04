@@ -366,7 +366,7 @@ With these if place, the following `default_runner` rule function will route all
 ```python
 def default_runner(tool_id):
     if 'mothur' in tool_id:
-       return 'long_pbs'
+        return 'long_pbs'
     else:
        return 'short_pbs'
 ```
