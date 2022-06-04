@@ -368,7 +368,7 @@ def default_runner(tool_id):
     if 'mothur' in tool_id:
         return 'long_pbs'
     else:
-       return 'short_pbs'
+        return 'short_pbs'
 ```
 
 
