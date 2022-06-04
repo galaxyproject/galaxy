@@ -123,7 +123,7 @@
           <!-- <param id="pulsar_config">path/to/pulsar/app.yml</param> -->
         </plugin>
         <plugin id="k8s" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
-            <!-- The Kubernetes (k8s) plugin allows to send jobs to a k8s cluster which shares filesystem with Galaxy.
+            <!-- The Kubernetes (k8s) plugin allows Galaxy to send jobs to a k8s cluster which it shares a filesystem with.
 
                  The shared file system needs to be exposed to k8s through a Persistent Volume (rw) and a Persistent
                  Volume Claim. An example of a Persistent Volume could be, in yaml (access modes, reclaim policy and
@@ -148,7 +148,7 @@
                  The path (nfs:path: in the example) set needs to be a parent directory of the directories used for
                  variables “file_path” and “new_file_path” on the galaxy.yml files. Clearly, for this particular example
                  to work, there needs to be a NFS server serving that directory on that ip. Please make sure that you
-                 use reasonable storage size for your set up (possibly larger that the 10Gi written).
+                 use a reasonable storage size for your setup (possibly larger that the 10Gi written).
                  An example of the volume claim should be (this needs to be followed more closely) (pv_claim.yaml):
 
                     kind: PersistentVolumeClaim
@@ -164,7 +164,7 @@
                           storage: 2Gi
 
                  The volume claim needs to reference the name of the volume in spec:volumeName. The name of the claim
-                 (metadat:name) is referenced in the plugin definition (see below), through param
+                 (metadata:name) is referenced in the plugin definition (see below), through param
                  "k8s_persistent_volume_claim_name". These two k8s object need to be created before galaxy can use them:
 
                  kubectl create -f <path/to/persistent_volume.yaml>
@@ -182,7 +182,7 @@
             <!-- Sets the pull policy to be used for all containers invoked for jobs by the Kubernetes cluster. Can take
                  any value among the possible Kubernetes container image pull policies: Always, IfNotPresent or Never
                  (respecting capitalization). Any other value, such as "Default", will not change the setting on k8s and
-                 leave for the containers to run with the default pull policy specified at the cluster (this is normally
+                 leave for the containers to run with the default pull policy of the cluster (this is normally
                  IfNotPresent). Container images using latest are by default always pulled, so you need to use defined
                  versions for offline cases to work (and images need to be previously pulled). -->
 
@@ -968,7 +968,7 @@
                - "seconds_running" (the number of seconds the job was in a running state within Galaxy)
 
              The ``handler`` attribute is optional, if not present, the job's original
-             handler will be reused for the resubmitted job. The ``destination`` attriubte
+             handler will be reused for the resubmitted job. The ``destination`` attribute
              is optional, if not present the job's original destination will be reused for the
              re-submission. The ``delay`` attribute is optional, if present it will cause the job to
              delay for that number of seconds before being re-submitted.
