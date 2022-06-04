@@ -75,7 +75,7 @@ describe("History Text Dataset Display", () => {
 
     it("should render header with embedded true", async () => {
         expect(wrapper.find(".card-header").exists()).toBe(true);
-        await wrapper.setData({ embedded: true });
+        await wrapper.setProps({ embedded: true });
         expect(wrapper.find(".card-header").exists()).toBe(false);
     });
 
