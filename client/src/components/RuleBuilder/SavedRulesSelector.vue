@@ -10,7 +10,7 @@
         <div class="dropdown-menu" role="menu">
             <a
                 v-for="(session, index) in sortSavedRules"
-                :key="session.dateTime"
+                :key="index"
                 v-b-tooltip.hover.right
                 class="rule-link dropdown-item saved-rule-item"
                 :title="formatPreview(session.rule, index)"
