@@ -162,7 +162,23 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         "privileged": {
             "default": False,
             "map": lambda x: str(x).lower() == "true",
-        }
+        },
+        "retry_attempts": {
+            "default": 1,
+            "map": int,
+        },
+        "retry_on_exit_statusReason": {
+            "default": "",
+            "map": str,
+        },
+        "retry_on_exit_reason": {
+            "default": "",
+            "map": str,
+        },
+        "retry_on_exit_exitCode": {
+            "default": "",
+            "map": str,
+        },
     }
 
     FARGATE_VCPUS = [0.25, 0.5, 1, 2, 4]
@@ -274,6 +290,30 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
                 )
         return volumes, mount_points
 
+    def _get_retry_strategy(self, destination_params):
+        """ Make a simple one-condition retry strategy
+        """
+        # TODO make multiple-condition retry strategies
+        attemps = destination_params.get("retry_attempts")
+        status_reason = destination_params.get("retry_on_exit_statusReason")
+        reason = destination_params.get("retry_on_exit_reason")
+        exit_code = destination_params.get("retry_on_exit_exitCode")
+
+        if attemps <= 1:
+            return
+
+        strategy = {
+            "attempts": attemps,
+            "evaluateOnExit": [{"action": "RETRY"}],
+        }
+        if status_reason:
+            strategy["evaluateOnExit"][0]["onStatusReason"] = status_reason
+        if reason:
+            strategy["evaluateOnExit"][0]["onReason"] = reason
+        if exit_code:
+            strategy["evaluateOnExit"][0]["onExitCode"] = exit_code
+        return strategy
+
     def _register_job_definition(self, jd_name, container_image, destination_params):
         log.debug(f"Registering a new job definition: {jd_name}.")
         platform = destination_params.get("platform")
@@ -305,12 +345,17 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
                     "logConfiguration": {"logDriver": "awslogs"},
                 }
             )
+        other_kwargs = {}
+        retry_strategy = self._get_retry_strategy(destination_params)
+        if retry_strategy:
+            other_kwargs["retryStrategy"] = retry_strategy
 
         res = self._batch_client.register_job_definition(
             jobDefinitionName=jd_name,
             type="container",
             platformCapabilities=[platform],
             containerProperties=containerProperties,
+            **other_kwargs,
         )
 
         assert res["ResponseMetadata"]["HTTPStatusCode"] == 200

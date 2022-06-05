@@ -1151,6 +1151,13 @@
             <param id="fargate_version">1.4.0</param>
             <!-- `fargate_version` is required to use Fargate compute resources -->
             <param id="auto_platform">true</param>
+            <!-- To let AWS Batch retry on failed jobs, set the number of attempts to 2-10 and `on_exit` conditions -->
+            <!-- 
+            <param id="retry_attempts">2</param>
+            <param id="retry_on_exit_statusReason">...</param>
+            <param id="retry_on_exit_reason">...</param>
+            <param id="retry_on_exit_exitCode">...</param>
+            -->
         </destination>
         <destination id="aws_batch_gpu" runner="aws_batch">
             <param id="docker_enabled">true</param>
