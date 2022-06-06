@@ -4,10 +4,10 @@ import ast
 import os
 import re
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import (
+    find_packages,
+    setup,
+)
 
 SOURCE_DIR = "galaxy"
 
@@ -33,30 +33,7 @@ PROJECT_EMAIL = get_var("PROJECT_EMAIL")
 PROJECT_DESCRIPTION = get_var("PROJECT_DESCRIPTION")
 
 TEST_DIR = "tests"
-PACKAGES = [
-    'galaxy',
-    'galaxy.datatypes',
-    'galaxy.datatypes.converters',
-    'galaxy.datatypes.dataproviders',
-    'galaxy.datatypes.display_applications',
-    'galaxy.datatypes.util',
-    'galaxy.datatypes.test',
-    'galaxy.model',
-    'galaxy.model.dataset_collections',
-    'galaxy.model.dataset_collections.types',
-    'galaxy.model.migrations',
-    'galaxy.model.migrations.alembic',
-    'galaxy.model.migrations.alembic.versions_gxy',
-    'galaxy.model.migrations.alembic.versions_tsi',
-    'galaxy.model.orm',
-    'galaxy.model.store',
-    'galaxy.model.tool_shed_install',
-    'galaxy.model.triggers',
-    'galaxy.model.unittest_utils',
-    'galaxy.model.view',
-    'galaxy.quota',
-    'galaxy.security',
-]
+PACKAGES = find_packages(where=".", exclude=["tests*"])
 ENTRY_POINTS = """
         [console_scripts]
         galaxy-build-objects=galaxy.model.store.build_objects:main

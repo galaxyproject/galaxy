@@ -4,10 +4,10 @@ import ast
 import os
 import re
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import (
+    find_packages,
+    setup,
+)
 
 SOURCE_DIR = "galaxy"
 
@@ -33,11 +33,7 @@ PROJECT_EMAIL = get_var("PROJECT_EMAIL")
 PROJECT_DESCRIPTION = get_var("PROJECT_DESCRIPTION")
 
 TEST_DIR = "tests"
-PACKAGES = [
-    "galaxy",
-    "galaxy.selenium",
-    "galaxy.selenium.scripts",
-]
+PACKAGES = find_packages(where=".", exclude=["tests*"])
 ENTRY_POINTS = """
         [console_scripts]
         gx-dump-tour=galaxy.selenium.scripts.dump_tour:main

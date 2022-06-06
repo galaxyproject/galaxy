@@ -8,10 +8,10 @@ from typing import (
     List,
 )
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import (
+    find_packages,
+    setup,
+)
 
 SOURCE_DIR = "galaxy"
 
@@ -37,39 +37,7 @@ PROJECT_EMAIL = get_var("PROJECT_EMAIL")
 PROJECT_DESCRIPTION = get_var("PROJECT_DESCRIPTION")
 
 TEST_DIR = "tests"
-PACKAGES = [
-    "galaxy",
-    "galaxy.webapps",
-    "galaxy.webapps.base",
-    "galaxy.webapps.galaxy",
-    "galaxy.webapps.galaxy.api",
-    "galaxy.webapps.galaxy.controllers",
-    "galaxy.webapps.reports",
-    "galaxy.webapps.reports.controllers",
-    "tool_shed",
-    "tool_shed.dependencies.repository",
-    "tool_shed.dependencies.tool",
-    "tool_shed.galaxy_install.grids",
-    "tool_shed.galaxy_install.utility_containers",
-    "tool_shed.grids",
-    "tool_shed.managers",
-    "tool_shed.metadata",
-    "tool_shed.repository_types",
-    "tool_shed.tools",
-    "tool_shed.util",
-    "tool_shed.utility_containers",
-    "tool_shed.webapp",
-    "tool_shed.webapp.api",
-    "tool_shed.webapp.controllers",
-    "tool_shed.webapp.framework",
-    "tool_shed.webapp.framework.middleware",
-    "tool_shed.webapp.model",
-    "tool_shed.webapp.model.migrate",
-    "tool_shed.webapp.model.migrate.versions",
-    "tool_shed.webapp.search",
-    "tool_shed.webapp.security",
-    "tool_shed.webapp.util",
-]
+PACKAGES = find_packages(where=".", exclude=["tests*", "tool_shed.test*"])
 ENTRY_POINTS = """
         [console_scripts]
 """

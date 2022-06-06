@@ -4,10 +4,10 @@ import ast
 import os
 import re
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import (
+    find_packages,
+    setup,
+)
 
 SOURCE_DIR = "galaxy"
 
@@ -33,27 +33,7 @@ PROJECT_EMAIL = get_var("PROJECT_EMAIL")
 PROJECT_DESCRIPTION = get_var("PROJECT_DESCRIPTION")
 
 TEST_DIR = "tests"
-PACKAGES = [
-    "galaxy",
-    "galaxy.tool_util",
-    "galaxy.tool_util.biotools",
-    "galaxy.tool_util.client",
-    "galaxy.tool_util.cwl",
-    "galaxy.tool_util.deps",
-    "galaxy.tool_util.deps.container_resolvers",
-    "galaxy.tool_util.deps.mulled",
-    "galaxy.tool_util.deps.resolvers",
-    "galaxy.tool_util.linters",
-    "galaxy.tool_util.locations",
-    "galaxy.tool_util.ontologies",
-    "galaxy.tool_util.parser",
-    "galaxy.tool_util.toolbox",
-    "galaxy.tool_util.toolbox.filters",
-    "galaxy.tool_util.toolbox.lineages",
-    "galaxy.tool_util.toolbox.views",
-    "galaxy.tool_util.verify",
-    "galaxy.tool_util.verify.asserts",
-]
+PACKAGES = find_packages(where=".", exclude=["tests*"])
 ENTRY_POINTS = """
         [console_scripts]
         galaxy-tool-test=galaxy.tool_util.verify.script:main
