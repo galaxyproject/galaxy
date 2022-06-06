@@ -19,3 +19,4 @@ refgenconf>=0.7.0,<0.10.0 # https://github.com/galaxyproject/galaxy/issues/11601
 Fabric3
 lagom
 fs
+Whoosh
