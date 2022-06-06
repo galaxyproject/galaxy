@@ -310,7 +310,7 @@ Most options available to `qsub(1b)` and `pbs_submit(3b)` are supported.  Except
 
 ## AWS Batch
 
-Runs jobs via the [AWS Batch](https://aws.amazon.com/batch/). Built on top of AWS Elastic Container Service (ECS), AWS Batch enables users to run hundreds of thousands of jobs with simple configuration.
+Runs jobs via [AWS Batch](https://aws.amazon.com/batch/). Built on top of AWS Elastic Container Service (ECS), AWS Batch enables users to run hundreds of thousands of jobs with little configuration.
 
 #### Dependencies
 
