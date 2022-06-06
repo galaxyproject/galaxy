@@ -315,12 +315,12 @@ Runs jobs via [AWS Batch](https://aws.amazon.com/batch/). Built on top of AWS El
 #### Dependencies
 
 AWS Batch job runner requirs AWS Elastic File System (EFS) being mounted as a shared file system that enables Galaxy and job containers to read and write files. In the best pratice, Galaxy is installed an AWS EC2 instance and an EFS is mounted to the EC2 as a local drive. Job-related paths, such as objects, jobs_directory, tool_directory and so on, need to be placed on the EFS drive.
-In addition, Galaxy admin needs to configure Batch compute environment, Batch job queue and proper AWS IAM roles, and provision them as destination parameters.
-AWS Batch job runner requires [boto3](https://pypi.org/project/boto3/) installed in Galaxy environment.
+In addition, a Galaxy admin needs to configure a Batch compute environment, a Batch job queue and proper AWS IAM roles, and specify them as destination parameters.
+AWS Batch job runner requires [boto3](https://pypi.org/project/boto3/) to be installed in Galaxy's environment.
 
 #### Parameters and Configuration
 
-AWS Batch job runner sends jobs to Batch compute environment that is composed of either Fargate or EC2. While Fargate provides a series of lightweigt compute resources (up to 4 vcpu and 30 GB memeory), the EC2 offers more abroad choices. With `auto_platform` enabled, this runner supports mapping to the best fit type of resources based on the provisioned `vcpu` and `memory`, i.e., Fargate is preferred over EC2 when `vcpu` and `memory` don't go beyond the limits (4 and 30 gb, respectively). If the power of `GPU` is needed for a destination, a job queue built on top of GPU-enabled compute environment must be provisoned.
+AWS Batch job runner sends jobs to Batch compute environment that is composed of either Fargate or EC2. While Fargate provides a series of lightweight compute resources (up to 4 vcpu and 30 GB memory), EC2 offers broader choices. With `auto_platform` enabled, this runner supports mapping to the best fit type of resources based on the requested `vcpu` and `memory`, i.e., Fargate is preferred over EC2 when `vcpu` and `memory` are below the limits (4 and 30 gb, respectively). If `GPU` computing is needed for a destination, a job queue built on top of a GPU-enabled compute environment must be provisioned.
 
 ```xml
 <plugins>
