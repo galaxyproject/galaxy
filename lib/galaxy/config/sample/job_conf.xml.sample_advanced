@@ -1141,7 +1141,7 @@
             <param id="docker_enabled">true</param>
             <!-- `docker_enabled = true` is always required -->
             <param id="job_queue">arn_for_Fargate_job_queue, arn_for_EC2_job_queue</param>
-            <!-- Fargete and non-GPU EC2 -->
+            <!-- Fargate and non-GPU EC2 -->
             <param id="job_role_arn">arn:aws:iam::xxxxxxxxxxxxxxxxxx</param>
             <param id="vcpu">1</param>
             <param id="memory">2048</param>
