@@ -36,6 +36,7 @@ from galaxy.datatypes.sniff import (
 )
 from galaxy.model import DatasetInstance
 from galaxy.util import compression_utils
+from galaxy.util.markdown import MarkdownFormatHelpers
 from . import dataproviders
 
 log = logging.getLogger(__name__)
@@ -171,13 +172,13 @@ class TabularData(data.Text):
                 headers,
             )
 
-    def display_as_markdown(self, dataset_instance, markdown_format_helpers):
+    def display_as_markdown(self, dataset_instance):
         with open(dataset_instance.file_name) as f:
             contents = f.read(data.DEFAULT_MAX_PEEK_SIZE)
         markdown = self.make_html_table(dataset_instance, peek=contents)
         if len(contents) == data.DEFAULT_MAX_PEEK_SIZE:
-            markdown += markdown_format_helpers.indicate_data_truncated()
-        return markdown_format_helpers.pre_formatted_contents(markdown)
+            markdown += MarkdownFormatHelpers.indicate_data_truncated()
+        return MarkdownFormatHelpers.pre_formatted_contents(markdown)
 
     def make_html_table(self, dataset, **kwargs):
         """Create HTML table, used for displaying peek"""

@@ -41,6 +41,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.markdown import MarkdownFormatHelpers
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.zipstream import ZipstreamWrapper
 from . import (
@@ -525,7 +526,7 @@ class Data(metaclass=DataMeta):
                 headers,
             )
 
-    def display_as_markdown(self, dataset_instance: "DatasetInstance", markdown_format_helpers):
+    def display_as_markdown(self, dataset_instance: "DatasetInstance"):
         """Prepare for embedding dataset into a basic Markdown document.
 
         This is a somewhat experimental interface and should not be implemented
@@ -548,9 +549,9 @@ class Data(metaclass=DataMeta):
         else:
             with open(dataset_instance.file_name) as f:
                 contents = f.read(DEFAULT_MAX_PEEK_SIZE)
-            result = markdown_format_helpers.literal_via_fence(contents)
+            result = MarkdownFormatHelpers.literal_via_fence(contents)
             if len(contents) == DEFAULT_MAX_PEEK_SIZE:
-                result += markdown_format_helpers.indicate_data_truncated()
+                result += MarkdownFormatHelpers.indicate_data_truncated()
         return result
 
     def _yield_user_file_content(self, trans, from_dataset, filename, headers: Headers):
