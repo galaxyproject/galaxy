@@ -58,6 +58,7 @@ PACKAGES = [
     "tool_shed.tools",
     "tool_shed.util",
     "tool_shed.utility_containers",
+    "tool_shed.webapp",
     "tool_shed.webapp.api",
     "tool_shed.webapp.controllers",
     "tool_shed.webapp.framework",
