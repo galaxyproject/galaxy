@@ -61,7 +61,6 @@ docopt==0.6.2
 docutils==0.16; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
 ecdsa==0.17.0; python_version >= "2.6" and python_full_version < "3.0.0" or python_full_version >= "3.3.0"
 edam-ontology==1.25.2
-fabric3==1.14.post1
 fastapi-utils==0.2.1; python_version >= "3.6" and python_version < "4.0"
 fastapi==0.78.0; python_full_version >= "3.6.1"
 fluent-logger==0.10.0; python_version >= "3.5"
