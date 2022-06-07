@@ -69,8 +69,8 @@
             </template>
         </b-table>
         <b-pagination
-            v-model="currentPage"
             v-show="rows >= perPage"
+            v-model="currentPage"
             class="gx-invocations-grid-pager"
             v-bind="paginationAttrs"></b-pagination>
     </div>

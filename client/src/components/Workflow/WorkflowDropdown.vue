@@ -21,7 +21,7 @@
             :title="`Imported from ${workflow.source_metadata.url}`"
             class="workflow-external-link"
             icon="link" />
-        <p class="workflow-dropdown-description" v-if="workflow.description">{{ workflow.description }}</p>
+        <p v-if="workflow.description" class="workflow-dropdown-description">{{ workflow.description }}</p>
         <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
             <a v-if="!readOnly" class="dropdown-item" :href="urlEdit">
                 <span class="fa fa-edit fa-fw mr-1" />

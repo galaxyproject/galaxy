@@ -1,7 +1,7 @@
 <template>
-    <b-link @click="onClick" v-b-tooltip.hover :title="title">
-        <font-awesome-icon :icon="['fas', 'star']" v-if="checked" />
-        <font-awesome-icon :icon="['far', 'star']" v-else />
+    <b-link v-b-tooltip.hover :title="title" @click="onClick">
+        <font-awesome-icon v-if="checked" :icon="['fas', 'star']" />
+        <font-awesome-icon v-else :icon="['far', 'star']" />
     </b-link>
 </template>
 
@@ -22,18 +22,18 @@ const UNCHECKED_DESCRIPTION =
 const BOOKMARKS_DESCRIPTION = "Workflows that are bookmarked will appear in your Galaxy tool panel for quick access.";
 
 export default {
-    props: {
-        checked: {
-            type: Boolean,
-            required: true,
-        },
-    },
     components: {
         BLink,
         FontAwesomeIcon,
     },
     directives: {
         VBTooltip,
+    },
+    props: {
+        checked: {
+            type: Boolean,
+            required: true,
+        },
     },
     computed: {
         title() {
