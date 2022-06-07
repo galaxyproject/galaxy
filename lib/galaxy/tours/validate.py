@@ -23,10 +23,14 @@ def main(argv=None):
     validated = True
     for tour_path in tour_paths(target):
         tour_id = get_tour_id_from_path(tour_path)
+
+        def warn(msg):
+            print(f"Tour '{tour_id}' warning: {msg}")
+
         message = None
         tour = None
         try:
-            tour = load_tour_from_path(tour_path)
+            tour = load_tour_from_path(tour_path, warn=warn)
         except OSError:
             message = f"Tour '{tour_id}' could not be loaded, error reading file."
         except yaml.error.YAMLError:

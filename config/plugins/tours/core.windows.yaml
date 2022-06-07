@@ -11,13 +11,11 @@ steps:
 
     - element: "#tool-panel-upload-button"
       intro: "Before using the Window Manager, we will upload some tabular data."
-      postclick:
-        - "#tool-panel-upload-button"
+      postclick: true
 
     - element: "#btn-new"
       intro: "We will be using the paste feature to create a new dataset."
-      postclick:
-        - "#btn-new"
+      postclick: true
 
     - element: ".upload-text-content"
       intro: "...and paste content into the text area field."
@@ -33,8 +31,7 @@ steps:
 
     - element: ".upload-settings"
       intro: "Now, we may further configure the upload content."
-      postclick:
-        - ".upload-settings"
+      postclick: true
 
     - element: ".upload-space_to_tab"
       intro: "...by specifying that all spaces in our table should be converted into tabs."
@@ -44,26 +41,22 @@ steps:
 
     - element: "#btn-start"
       intro: "Upload the data into your Galaxy history."
-      postclick:
-        - "#btn-start"
+      postclick: true
 
     - element: "#btn-close"
       intro: "Hit the close button to close the upload dialog."
-      postclick:
-        - "#btn-close"
+      postclick: true
 
     - element: "#enable-window-manager > .nav-link"
       intro: "Clicking this button will enable Galaxy's Window Manager mode."
-      postclick:
-        - "#enable-window-manager > .nav-link"
+      postclick: true
 
     - element: "#right"
       intro: "This is your history. It contains all datasets you are currently working with including our uploaded table."
 
     - element: "#current-history-panel div.content-item button[title='Display']"
       intro: "Clicking the eye-icon usually displays a dataset in the center panel."
-      postclick:
-        - "#current-history-panel div.content-item button[title='Display']"
+      postclick: true
 
     - element: "#winbox-1"
       intro: "However while using the Window Manager, the dataset will be shown as resizable window."
