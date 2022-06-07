@@ -17,6 +17,7 @@ const state = {
     itemKey: "hid",
     latestCreateTime: new Date(),
     totalMatchesCount: undefined,
+    lastCheckedTime: new Date(),
 };
 
 const getters = {
@@ -38,6 +39,7 @@ const getters = {
         },
     getLatestCreateTime: (state) => () => state.latestCreateTime,
     getTotalMatchesCount: (state) => () => state.totalMatchesCount,
+    getLastCheckedTime: (state) => () => state.lastCheckedTime,
 };
 
 const getQueryString = (filterText) => {
@@ -76,6 +78,9 @@ const mutations = {
                 }
             }
         });
+    },
+    setLastCheckedTime: (state, { checkForUpdate }) => {
+        state.lastCheckedTime = checkForUpdate;
     },
     saveQueryStats: (state, { stats }) => {
         state.totalMatchesCount = stats.total_matches;
