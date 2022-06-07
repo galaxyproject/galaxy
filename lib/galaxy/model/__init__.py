@@ -4310,7 +4310,7 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
         return self.datatype.get_display_applications_by_dataset(self, trans)
 
     def get_visualizations(self):
-        return self.datatype.get_visualizations(self)
+        return self.datatype.get_visualizations()
 
     def get_datasources(self, trans):
         """
