@@ -2,7 +2,7 @@
 at components/JobStates/CollectionJobStates but it relies on the backbone data
 model, so probably has to go eventually.-->
 <template>
-    <div>
+    <div class="collection-progress">
         <b-progress v-if="maxJobs && runningJobs" :max="maxJobs" height="1em" show-value>
             <b-progress-bar v-if="errorJobs" :value="errorJobs" variant="danger"></b-progress-bar>
             <b-progress-bar v-if="okJobs" :value="okJobs" variant="success"></b-progress-bar>
@@ -45,20 +45,3 @@ export default {
 };
 </script>
 
-<style scoped>
-.progress {
-    border: 1px solid black;
-}
-.progress > .bg-success {
-    color: #38504a;
-}
-.progress > .bg-danger {
-    color: #512c3c;
-}
-.progress > .bg-warning {
-    color: #564136;
-}
-.progress > .bg-secondary {
-    color: #2c3143;
-}
-</style>

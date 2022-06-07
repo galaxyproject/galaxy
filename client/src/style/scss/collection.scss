@@ -50,3 +50,21 @@
         overflow-y: auto;
     }
 }
+
+.collection-progress {
+    .progress  {
+        border: 1px solid black;
+        .bg-success {
+            color: $state-success-text;
+        }
+        .bg-danger {
+            color: $state-danger-text;
+        }
+        .bg-warning {
+            color: $state-warning-text;
+        }
+        .bg-secondary {
+            color: $state-secondary-text;
+        }
+    }
+}
