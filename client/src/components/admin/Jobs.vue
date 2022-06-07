@@ -29,9 +29,9 @@
                 </b-form-group>
                 <b-form name="jobs" @submit.prevent="onRefresh">
                     <b-form-group
+                        v-show="!showAllRunning"
                         id="cutoff"
                         label="Cutoff time period"
-                        v-show="!showAllRunning"
                         description="in minutes">
                         <b-input-group>
                             <b-form-input id="cutoff" v-model="cutoffMin" type="number"> </b-form-input>

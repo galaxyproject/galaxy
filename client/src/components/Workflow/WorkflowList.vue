@@ -4,18 +4,18 @@
         <b-row class="mb-3">
             <b-col cols="6" class="m-1">
                 <index-filter
-                    :debounce-delay="inputDebounceDelay"
                     id="workflow-search"
+                    v-model="filter"
+                    :debounce-delay="inputDebounceDelay"
                     :placeholder="titleSearch"
-                    :help-html="helpHtml"
-                    v-model="filter">
+                    :help-html="helpHtml">
                 </index-filter>
             </b-col>
             <b-col>
                 <WorkflowIndexActions :root="root" class="float-right"> </WorkflowIndexActions>
             </b-col>
         </b-row>
-        <b-table :fields="fields" :items="provider" v-model="workflowItemsModel" v-bind="indexTableAttrs">
+        <b-table v-model="workflowItemsModel" :fields="fields" :items="provider" v-bind="indexTableAttrs">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflows" />
                 <b-alert v-else id="no-workflows" variant="info" show>
@@ -50,12 +50,12 @@
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
             <template v-slot:cell(execute)="row">
-                <WorkflowRunButton :root="root" :id="row.item.id" />
+                <WorkflowRunButton :id="row.item.id" :root="root" />
             </template>
         </b-table>
         <b-pagination
-            v-model="currentPage"
             v-show="rows >= perPage"
+            v-model="currentPage"
             class="gx-workflows-grid-pager"
             v-bind="paginationAttrs"></b-pagination>
     </div>
@@ -113,13 +113,13 @@ export default {
         SharingIndicators,
         WorkflowRunButton,
     },
+    mixins: [paginationMixin, filtersMixin],
     props: {
         inputDebounceDelay: {
             type: Number,
             default: 500,
         },
     },
-    mixins: [paginationMixin, filtersMixin],
     data() {
         return {
             tableId: "workflow-table",
@@ -161,14 +161,14 @@ export default {
             perPage: this.rowsPerPage(50),
         };
     },
-    created() {
-        this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
-    },
     watch: {
         filter(val) {
             this.refresh();
         },
+    },
+    created() {
+        this.root = getAppRoot();
+        this.services = new Services({ root: this.root });
     },
     methods: {
         async provider(ctx) {

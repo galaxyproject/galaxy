@@ -1,6 +1,6 @@
 <template>
     <CurrentUser v-slot="{ user }">
-        <StoredWorkflowDetailsProvider :storedWorkflowId="storedWorkflowId" v-slot="{ result: item, loading }">
+        <StoredWorkflowDetailsProvider v-slot="{ result: item, loading }" :stored-workflow-id="storedWorkflowId">
             <Invocations
                 v-if="!loading && user.id"
                 :user-id="user.id"
@@ -15,16 +15,16 @@ import CurrentUser from "components/providers/CurrentUser";
 import { StoredWorkflowDetailsProvider } from "components/providers/StoredWorkflowsProvider";
 
 export default {
+    components: {
+        CurrentUser,
+        Invocations,
+        StoredWorkflowDetailsProvider,
+    },
     props: {
         storedWorkflowId: {
             type: String,
             required: true,
         },
-    },
-    components: {
-        CurrentUser,
-        Invocations,
-        StoredWorkflowDetailsProvider,
     },
 };
 </script>
