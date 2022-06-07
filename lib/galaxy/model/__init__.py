@@ -4477,7 +4477,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         if include_metadata:
             self._metadata = other_hda._metadata
         self.metadata_deferred = other_hda.metadata_deferred
-        self._metadata = None
         if self.extension == "data":
             self.extension = other_hda.extension
             self.metadata = other_hda.metadata
