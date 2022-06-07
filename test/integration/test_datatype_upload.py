@@ -56,7 +56,7 @@ TEST_CASES = collect_test_data(registry)
 
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
-def test_upload_datatype_auto(instance, test_data, temp_file):
+def test_upload_datatype_auto(instance, test_data, temp_file, celery_session_worker, celery_session_app):
     upload_datatype_helper(instance, test_data, temp_file)
 
 

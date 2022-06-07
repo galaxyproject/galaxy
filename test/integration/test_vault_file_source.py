@@ -17,6 +17,7 @@ class VaultFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["file_sources_config_file"] = FILE_SOURCES_VAULT_CONF
         config["vault_config_file"] = VAULT_CONF
         config["user_library_import_symlink_allowlist"] = os.path.realpath(tempfile.mkdtemp())

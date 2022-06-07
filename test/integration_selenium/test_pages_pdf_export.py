@@ -1,15 +1,15 @@
-from galaxy_test.driver.integration_util import UsesCeleryTasks
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
 )
 
 
-class PagesPdfExportSeleniumIntegrationTestCase(SeleniumIntegrationTestCase, UsesCeleryTasks):
+class PagesPdfExportSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
     ensure_registered = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["enable_beta_markdown_export"] = True
 
     @selenium_test

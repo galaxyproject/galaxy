@@ -11,19 +11,14 @@ from typing import (
 
 from galaxy_test.api.test_workflows import RunsWorkflowFixtures
 from galaxy_test.base import api_asserts
+from galaxy_test.base.api import UsesCeleryTasks
 from galaxy_test.base.populators import (
     DatasetPopulator,
     RunJobsSummary,
     WorkflowPopulator,
 )
 from galaxy_test.driver.integration_setup import PosixFileSourceSetup
-from galaxy_test.driver.integration_util import (
-    IntegrationTestCase,
-    setup_celery_includes,
-    UsesCeleryTasks,
-)
-
-celery_includes = setup_celery_includes()
+from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
 class WorkflowTasksIntegrationTestCase(
@@ -35,7 +30,7 @@ class WorkflowTasksIntegrationTestCase(
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         PosixFileSourceSetup.handle_galaxy_config_kwds(config, cls)
-        cls.setup_celery_config(config)
+        UsesCeleryTasks.handle_galaxy_config_kwds(config)
 
     def setUp(self):
         super().setUp()

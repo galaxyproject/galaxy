@@ -39,6 +39,7 @@ class MixedStoreByObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestC
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls._configure_object_store(DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE, config)
 
     def test_both_types(self):

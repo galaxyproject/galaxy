@@ -314,7 +314,7 @@ class WorkflowRequestMonitor(Monitors):
                 log.trace(monitor_step_timer.to_str())
             except Exception:
                 log.exception("An exception occured scheduling while scheduling workflows")
-            self._monitor_sleep(1)
+            self._monitor_sleep(self.app.config.workflow_monitor_sleep)
 
     def __schedule(self, workflow_scheduler_id, workflow_scheduler):
         invocation_ids = self.__active_invocation_ids(workflow_scheduler_id)

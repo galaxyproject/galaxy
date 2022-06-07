@@ -6,18 +6,13 @@ from galaxy.model.unittest_utils.store_fixtures import (
     one_hda_model_store_dict,
 )
 from galaxy_test.api.test_histories import ImportExportTests
+from galaxy_test.base.api import UsesCeleryTasks
 from galaxy_test.base.api_asserts import assert_has_keys
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
 )
-from galaxy_test.driver.integration_util import (
-    IntegrationTestCase,
-    setup_celery_includes,
-    UsesCeleryTasks,
-)
-
-celery_includes = setup_celery_includes()
+from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
 class ImportExportHistoryOutputsToWorkingDirIntegrationTestCase(ImportExportTests, IntegrationTestCase):
@@ -38,10 +33,6 @@ class ImportExportHistoryViaTasksIntegrationTestCase(ImportExportTests, Integrat
     task_based = True
     framework_tool_and_types = True
 
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        cls.setup_celery_config(config)
-
     def setUp(self):
         super().setUp()
         self._set_up_populators()
@@ -61,10 +52,6 @@ class ImportExportHistoryViaTasksIntegrationTestCase(ImportExportTests, Integrat
 class ImportExportHistoryContentsViaTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
     task_based = True
     framework_tool_and_types = True
-
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        cls.setup_celery_config(config)
 
     def setUp(self):
         super().setUp()

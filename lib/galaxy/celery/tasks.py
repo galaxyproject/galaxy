@@ -1,11 +1,28 @@
+import json
+from concurrent.futures import TimeoutError
+from functools import lru_cache
+from pathlib import Path
+from typing import Callable
+
+from sqlalchemy import (
+    exists,
+    select,
+)
+
 from galaxy import model
-from galaxy.celery import galaxy_task
+from galaxy.celery import (
+    celery_app,
+    galaxy_task,
+)
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.datatypes.registry import Registry as DatatypesRegistry
+from galaxy.jobs import MinimalJobWrapper
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
+from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.tasks import (
     GenerateHistoryContentDownload,
@@ -20,10 +37,21 @@ from galaxy.schema.tasks import (
     WriteHistoryTo,
     WriteInvocationTo,
 )
+from galaxy.structured_app import MinimalManagerApp
+from galaxy.tools import create_tool_from_representation
+from galaxy.tools.data_fetch import do_fetch
+from galaxy.util import galaxy_directory
 from galaxy.util.custom_logging import get_logger
 from galaxy.web.short_term_storage import ShortTermStorageMonitor
 
 log = get_logger(__name__)
+
+
+@lru_cache()
+def cached_create_tool_from_representation(app, raw_tool_source):
+    return create_tool_from_representation(
+        app=app, raw_tool_source=raw_tool_source, tool_dir="", tool_source_class="XmlToolSource"
+    )
 
 
 @galaxy_task(ignore_result=True, action="recalculate a user's disk usage")
@@ -54,6 +82,22 @@ def materialize(
     hda_manager.materialize(request)
 
 
+@galaxy_task(action="set metadata for job")
+def set_job_metadata(
+    tool_job_working_directory,
+    extended_metadata_collection: bool,
+    job_id: int,
+    sa_session: galaxy_scoped_session,
+):
+    return abort_when_job_stops(
+        set_metadata_portable,
+        session=sa_session,
+        job_id=job_id,
+        tool_job_working_directory=tool_job_working_directory,
+        extended_metadata_collection=extended_metadata_collection,
+    )
+
+
 @galaxy_task(action="set dataset association metadata")
 def set_metadata(
     hda_manager: HDAManager, ldda_manager: LDDAManager, dataset_id, model_class="HistoryDatasetAssociation"
@@ -63,6 +107,104 @@ def set_metadata(
     elif model_class == "LibraryDatasetDatasetAssociation":
         dataset = ldda_manager.by_id(dataset_id)
     dataset.datatype.set_meta(dataset)
+
+
+@galaxy_task(bind=True)
+def setup_fetch_data(
+    self, job_id: int, raw_tool_source: str, app: MinimalManagerApp, sa_session: galaxy_scoped_session
+):
+    tool = cached_create_tool_from_representation(app=app, raw_tool_source=raw_tool_source)
+    job = sa_session.query(model.Job).get(job_id)
+    # self.request.hostname is the actual worker name given by the `-n` argument, not the hostname as you might think.
+    job.handler = self.request.hostname
+    job.job_runner_name = "celery"
+    # TODO: assert state
+    mini_job_wrapper = MinimalJobWrapper(job=job, app=app, tool=tool)
+    mini_job_wrapper.change_state(model.Job.states.QUEUED, flush=False, job=job)
+    # Set object store after job destination so can leverage parameters...
+    mini_job_wrapper._set_object_store_ids(job)
+    request_json = Path(mini_job_wrapper.working_directory) / "request.json"
+    request_json_value = next(iter(p.value for p in job.parameters if p.name == "request_json"))
+    request_json.write_text(json.loads(request_json_value))
+    mini_job_wrapper.setup_external_metadata(
+        output_fnames=mini_job_wrapper.job_io.get_output_fnames(),
+        set_extension=True,
+        tmp_dir=mini_job_wrapper.working_directory,
+        # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
+        kwds={"overwrite": False},
+    )
+    mini_job_wrapper.prepare()
+    return mini_job_wrapper.working_directory, str(request_json), mini_job_wrapper.job_io.file_sources_dict
+
+
+@galaxy_task
+def finish_job(job_id: int, raw_tool_source: str, app: MinimalManagerApp, sa_session: galaxy_scoped_session):
+    tool = cached_create_tool_from_representation(app=app, raw_tool_source=raw_tool_source)
+    job = sa_session.query(model.Job).get(job_id)
+    # TODO: assert state ?
+    mini_job_wrapper = MinimalJobWrapper(job=job, app=app, tool=tool)
+    mini_job_wrapper.finish("", "")
+
+
+def is_aborted(session: galaxy_scoped_session, job_id: int):
+    return session.execute(
+        select(
+            exists(model.Job.state).where(
+                model.Job.id == job_id,
+                model.Job.state.in_(
+                    [model.Job.states.DELETED, model.Job.states.DELETED_NEW, model.Job.states.DELETING]
+                ),
+            )
+        )
+    ).scalar()
+
+
+def abort_when_job_stops(function: Callable, session: galaxy_scoped_session, job_id: int, *args, **kwargs):
+    if not is_aborted(session, job_id):
+        future = celery_app.fork_pool.schedule(
+            function,
+            *args,
+            kwargs=kwargs,
+        )
+        while True:
+            try:
+                return future.result(timeout=1)
+            except TimeoutError:
+                if is_aborted(session, job_id):
+                    return
+
+
+def _fetch_data(setup_return):
+    tool_job_working_directory, request_path, file_sources_dict = setup_return
+    working_directory = Path(tool_job_working_directory) / "working"
+    datatypes_registry = DatatypesRegistry()
+    datatypes_registry.load_datatypes(
+        galaxy_directory,
+        config=Path(tool_job_working_directory) / "metadata" / "registry.xml",
+        use_build_sites=False,
+        use_converters=False,
+        use_display_applications=False,
+    )
+    do_fetch(
+        request_path=request_path,
+        working_directory=str(working_directory),
+        registry=datatypes_registry,
+        file_sources_dict=file_sources_dict,
+    )
+    return tool_job_working_directory
+
+
+@galaxy_task(action="Run fetch_data")
+def fetch_data(
+    setup_return,
+    job_id: int,
+    app: MinimalManagerApp,
+    sa_session: galaxy_scoped_session,
+):
+    job = sa_session.query(model.Job).get(job_id)
+    mini_job_wrapper = MinimalJobWrapper(job=job, app=app)
+    mini_job_wrapper.change_state(model.Job.states.RUNNING, flush=True, job=job)
+    return abort_when_job_stops(_fetch_data, session=sa_session, job_id=job_id, setup_return=setup_return)
 
 
 @galaxy_task(ignore_result=True, action="setting up export history job")

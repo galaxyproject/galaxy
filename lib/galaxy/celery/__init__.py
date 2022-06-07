@@ -3,15 +3,22 @@ from functools import (
     lru_cache,
     wraps,
 )
+from multiprocessing import get_context
 from threading import local
 from typing import (
     Any,
+    Callable,
     Dict,
 )
 
+import pebble
 from celery import (
     Celery,
     shared_task,
+)
+from celery.signals import (
+    worker_init,
+    worker_shutting_down,
 )
 from kombu import serialization
 
@@ -28,6 +35,7 @@ from ._serialization import (
 log = get_logger(__name__)
 
 MAIN_TASK_MODULE = "galaxy.celery.tasks"
+DEFAULT_TASK_QUEUE = "galaxy.internal"
 TASKS_MODULES = [MAIN_TASK_MODULE]
 PYDANTIC_AWARE_SERIALIZER_NAME = "pydantic-aware-json"
 
@@ -58,6 +66,8 @@ def build_app():
     kwargs = get_app_properties()
     if kwargs:
         kwargs["check_migrate_databases"] = False
+        kwargs["use_display_applications"] = False
+        kwargs["use_converters"] = False
         import galaxy.app
 
         galaxy_app = galaxy.app.GalaxyManagerApplication(configure_logging=False, **kwargs)
@@ -121,6 +131,8 @@ backend = get_backend()
 celery_app_kwd: Dict[str, Any] = {
     "broker": broker,
     "include": TASKS_MODULES,
+    "task_default_queue": DEFAULT_TASK_QUEUE,
+    "task_create_missing_queues": True,
 }
 if backend:
     celery_app_kwd["backend"] = backend
@@ -130,6 +142,28 @@ celery_app.set_default()
 
 # setup cron like tasks...
 beat_schedule: Dict[str, Dict[str, Any]] = {}
+
+
+def init_fork_pool():
+    # Do slow imports when workers boot.
+    from galaxy.datatypes import registry  # noqa: F401
+    from galaxy.metadata import set_metadata  # noqa: F401
+
+
+@worker_init.connect
+def setup_worker_pool(sender=None, conf=None, instance=None, **kwargs):
+    context = get_context("forkserver")
+    celery_app.fork_pool = pebble.ProcessPool(
+        max_workers=sender.concurrency, max_tasks=100, initializer=init_fork_pool, context=context
+    )
+
+
+@worker_shutting_down.connect
+def tear_down_pool(sig, how, exitcode, **kwargs):
+    log.debug("shutting down forkserver pool")
+    celery_app.fork_pool.stop()
+    celery_app.fork_pool.join(timeout=5)
+
 
 prune_interval = get_history_audit_table_prune_interval()
 if prune_interval > 0:
@@ -154,7 +188,7 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
     if "serializer" not in celery_task_kwd:
         celery_task_kwd["serializer"] = PYDANTIC_AWARE_SERIALIZER_NAME
 
-    def decorate(func):
+    def decorate(func: Callable):
         @shared_task(**celery_task_kwd)
         @wraps(func)
         def wrapper(*args, **kwds):

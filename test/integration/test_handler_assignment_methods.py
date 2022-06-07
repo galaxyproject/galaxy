@@ -36,6 +36,7 @@ class BaseHandlerAssignmentMethodIntegrationTestCase(integration_util.Integratio
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = os.path.join(cls.jobs_directory, "job_conf.xml")

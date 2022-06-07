@@ -9,6 +9,7 @@ class FlushPerNDatasetsTestCase(integration_util.IntegrationInstance):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["flush_per_n_datasets"] = 1
 
 

@@ -22,6 +22,7 @@ class MaximumWorkflowInvocationDurationTestCase(integration_util.IntegrationTest
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["maximum_workflow_invocation_duration"] = 20
 
     def test(self):
@@ -57,6 +58,7 @@ class MaximumWorkflowJobsPerSchedulingIterationTestCase(integration_util.Integra
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["maximum_workflow_jobs_per_scheduling_iteration"] = 1
 
     def test_collection_explicit_and_implicit(self):

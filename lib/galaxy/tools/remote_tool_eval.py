@@ -21,9 +21,8 @@ from galaxy.model import store
 from galaxy.model.store import SessionlessContext
 from galaxy.objectstore import ObjectStore
 from galaxy.structured_app import MinimalToolApp
-from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.tools import (
-    create_tool_from_source,
+    create_tool_from_representation,
     evaluation,
 )
 from galaxy.tools.data import ToolDataTableManager
@@ -98,8 +97,12 @@ def main(TMPDIR, WORKING_DIRECTORY, IMPORT_STORE_DIRECTORY):
         file_sources=job_io.file_sources,
     )
     # TODO: could try to serialize just a minimal tool variant instead of the whole thing ?
-    tool_source = get_tool_source(tool_source_class=job_io.tool_source_class, raw_tool_source=job_io.tool_source)
-    tool = create_tool_from_source(app, tool_source=tool_source, tool_dir=job_io.tool_dir)
+    tool = create_tool_from_representation(
+        app=app,
+        raw_tool_source=job_io.tool_source,
+        tool_dir=job_io.tool_dir,
+        tool_source_class=job_io.tool_source_class,
+    )
     tool_evaluator = evaluation.RemoteToolEvaluator(
         app=app, tool=tool, job=job_io.job, local_working_directory=WORKING_DIRECTORY
     )

@@ -3,10 +3,16 @@ import os
 import uuid
 from urllib.parse import urlencode
 
+import pytest
 import requests
 
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from galaxy.web import statsd_client as statsd
+
+
+@pytest.fixture(scope="session", autouse=True)
+def celery_includes():
+    yield ["galaxy.celery.tasks"]
 
 
 def get_timings(test_uuid):

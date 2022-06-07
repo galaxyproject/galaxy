@@ -6,20 +6,10 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     uses_test_history,
 )
-from galaxy_test.driver.integration_util import (
-    IntegrationTestCase,
-    setup_celery_includes,
-    UsesCeleryTasks,
-)
-
-celery_includes = setup_celery_includes()
+from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
-class AsyncDownloadsIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        cls.setup_celery_config(config)
-
+class AsyncDownloadsIntegrationTestCase(IntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)

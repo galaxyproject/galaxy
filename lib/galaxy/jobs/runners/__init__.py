@@ -9,6 +9,7 @@ import sys
 import threading
 import time
 import traceback
+import typing
 from queue import (
     Empty,
     Queue,
@@ -43,6 +44,12 @@ from galaxy.util import (
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
 from .state_handler_factory import build_state_handlers
+
+if typing.TYPE_CHECKING:
+    from galaxy.jobs import (
+        JobDestination,
+        JobWrapper,
+    )
 
 log = get_logger(__name__)
 
@@ -159,9 +166,10 @@ class BaseJobRunner:
     def put(self, job_wrapper):
         """Add a job to the queue (by job identifier), indicate that the job is ready to run."""
         put_timer = ExecutionTimer()
-        job_wrapper.enqueue()
-        self.mark_as_queued(job_wrapper)
-        log.debug(f"Job [{job_wrapper.job_id}] queued {put_timer}")
+        queue_job = job_wrapper.enqueue()
+        if queue_job:
+            self.mark_as_queued(job_wrapper)
+            log.debug(f"Job [{job_wrapper.job_id}] queued {put_timer}")
 
     def mark_as_queued(self, job_wrapper):
         self.work_queue.put((self.queue_job, job_wrapper))
@@ -364,12 +372,7 @@ class BaseJobRunner:
         # run the metadata setting script here
         # this is terminate-able when output dataset/job is deleted
         # so that long running set_meta()s can be canceled without having to reboot the server
-        if (
-            job_wrapper.get_state() not in [model.Job.states.ERROR, model.Job.states.DELETED]
-            and job_wrapper.job_io.output_paths
-        ):
-            lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
-            venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
+        if job_wrapper.get_state() not in [model.Job.states.ERROR, model.Job.states.DELETED]:
             external_metadata_script = job_wrapper.setup_external_metadata(
                 output_fnames=job_wrapper.job_io.get_output_fnames(),
                 set_extension=True,
@@ -377,31 +380,53 @@ class BaseJobRunner:
                 # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
                 kwds={"overwrite": False},
             )
-            external_metadata_script = f"{lib_adjust} {venv} {external_metadata_script}"
-            if resolve_requirements:
-                dependency_shell_commands = (
-                    self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(
-                        job_directory=job_wrapper.working_directory
+            metadata_strategy = job_wrapper.metadata_strategy
+            if "celery" in metadata_strategy:
+                if not self.app.config.enable_celery_tasks:
+                    raise Exception("CONFIG ERROR, can't request celery metadata without enabling celery tasks")
+                if not self.app.config.celery_backend == "rpc://localhost":
+                    raise Exception(f"Boo, wrong celery backend {self.app.config.celery_backend}")
+                from galaxy.celery.tasks import set_job_metadata
+
+                # We're synchronously waiting for a task here. This means we have to have a result backend.
+                # That is bad practice and also means this can never become part of another task.
+                try:
+                    set_job_metadata.delay(
+                        tool_job_working_directory=job_wrapper.working_directory,
+                        job_id=job_wrapper.job_id,
+                        extended_metadata_collection="extended" in metadata_strategy,
+                    ).get()
+                except Exception:
+                    log.exception("Metadata task failed")
+                    return
+            else:
+                lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
+                venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
+                external_metadata_script = f"{lib_adjust} {venv} {external_metadata_script}"
+                if resolve_requirements:
+                    dependency_shell_commands = (
+                        self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(
+                            job_directory=job_wrapper.working_directory
+                        )
                     )
+                    if dependency_shell_commands:
+                        if isinstance(dependency_shell_commands, list):
+                            dependency_shell_commands = "&&".join(dependency_shell_commands)
+                        external_metadata_script = f"{dependency_shell_commands}&&{external_metadata_script}"
+                log.debug(
+                    "executing external set_meta script for job %d: %s" % (job_wrapper.job_id, external_metadata_script)
                 )
-                if dependency_shell_commands:
-                    if isinstance(dependency_shell_commands, list):
-                        dependency_shell_commands = "&&".join(dependency_shell_commands)
-                    external_metadata_script = f"{dependency_shell_commands}&&{external_metadata_script}"
-            log.debug(
-                "executing external set_meta script for job %d: %s" % (job_wrapper.job_id, external_metadata_script)
-            )
-            external_metadata_proc = subprocess.Popen(
-                args=external_metadata_script,
-                shell=True,
-                cwd=job_wrapper.working_directory,
-                env=os.environ,
-                preexec_fn=os.setpgrp,
-            )
-            job_wrapper.external_output_metadata.set_job_runner_external_pid(
-                external_metadata_proc.pid, self.sa_session
-            )
-            external_metadata_proc.wait()
+                external_metadata_proc = subprocess.Popen(
+                    args=external_metadata_script,
+                    shell=True,
+                    cwd=job_wrapper.working_directory,
+                    env=os.environ,
+                    preexec_fn=os.setpgrp,
+                )
+                job_wrapper.external_output_metadata.set_job_runner_external_pid(
+                    external_metadata_proc.pid, self.sa_session
+                )
+                external_metadata_proc.wait()
             log.debug("execution of external set_meta for job %d finished" % job_wrapper.job_id)
 
     def get_job_file(self, job_wrapper, **kwds):
@@ -507,7 +532,7 @@ class BaseJobRunner:
             if job_state.job_wrapper.cleanup_job == "always":
                 job_state.cleanup()
 
-    def mark_as_resubmitted(self, job_state, info=None):
+    def mark_as_resubmitted(self, job_state: "JobState", info=None):
         job_state.job_wrapper.mark_as_resubmitted(info=info)
         if not self.app.config.track_jobs_in_database:
             job_state.job_wrapper.change_state(model.Job.states.QUEUED)
@@ -518,7 +543,7 @@ class BaseJobRunner:
             stream, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True
         )
 
-    def _finish_or_resubmit_job(self, job_state, job_stdout, job_stderr, job_id=None, external_job_id=None):
+    def _finish_or_resubmit_job(self, job_state: "JobState", job_stdout, job_stderr, job_id=None, external_job_id=None):
         job_wrapper = job_state.job_wrapper
         try:
             job = job_state.job_wrapper.get_job()
@@ -597,10 +622,11 @@ class JobState:
 
     runner_states = runner_states
 
-    def __init__(self, job_wrapper, job_destination):
+    def __init__(self, job_wrapper: "JobWrapper", job_destination: "JobDestination"):
         self.runner_state_handled = False
         self.job_wrapper = job_wrapper
         self.job_destination = job_destination
+        self.runner_state = None
 
         self.redact_email_in_job_name = True
         if self.job_wrapper:

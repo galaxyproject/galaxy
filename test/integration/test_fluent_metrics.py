@@ -7,6 +7,7 @@ from galaxy_test.driver import integration_util
 class FluentMetricsIntegrationTestCase(integration_util.IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["fluent_log"] = True
         config["fluent_host"] = "localhost"
         config["fluent_port"] = 24224

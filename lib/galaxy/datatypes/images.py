@@ -101,11 +101,13 @@ class OMETiff(Tiff):
         optional=True,
     )
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(self, dataset, overwrite=True, metadata_tmp_files_dir=None, **kwd):
         spec_key = "offsets"
         offsets_file = dataset.metadata.offsets
         if not offsets_file:
-            offsets_file = dataset.metadata.spec[spec_key].param.new_file(dataset=dataset)
+            offsets_file = dataset.metadata.spec[spec_key].param.new_file(
+                dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
+            )
         with tifffile.TiffFile(dataset.file_name) as tif:
             offsets = [page.offset for page in tif.pages]
         with open(offsets_file.file_name, "w") as f:

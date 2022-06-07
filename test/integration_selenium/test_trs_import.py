@@ -30,6 +30,7 @@ class TrsImportTestCase(SeleniumIntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         trs_config_dir = cls.trs_config_dir()
         os.makedirs(trs_config_dir)
         trs_config_file = os.path.join(trs_config_dir, "trs_config.yml")

@@ -69,7 +69,10 @@ from galaxy.model.scoped_session import (
 )
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.model.tool_shed_install import mapping as install_mapping
-from galaxy.objectstore import build_object_store_from_config
+from galaxy.objectstore import (
+    BaseObjectStore,
+    build_object_store_from_config,
+)
 from galaxy.queue_worker import (
     GalaxyQueueWorker,
     send_local_control_task,
@@ -312,7 +315,9 @@ class ConfiguresGalaxyMixin:
             if exc.errno != errno.ENOENT or self.config.is_set("shed_tool_data_table_config"):
                 raise
 
-    def _configure_datatypes_registry(self, installed_repository_manager=None):
+    def _configure_datatypes_registry(
+        self, installed_repository_manager=None, use_display_applications=True, use_converters=True
+    ):
         # Create an empty datatypes registry.
         self.datatypes_registry = Registry(self.config)
         if installed_repository_manager and self.config.load_tool_shed_datatypes:
@@ -329,7 +334,13 @@ class ConfiguresGalaxyMixin:
             # Setting override=False would make earlier files would take
             # precedence - but then they wouldn't override tool shed
             # datatypes.
-            self.datatypes_registry.load_datatypes(self.config.root, datatypes_config, override=True)
+            self.datatypes_registry.load_datatypes(
+                self.config.root,
+                datatypes_config,
+                override=True,
+                use_display_applications=use_display_applications,
+                use_converters=use_converters,
+            )
 
     def _configure_object_store(self, **kwds):
         self.object_store = build_object_store_from_config(self.config, **kwds)
@@ -452,6 +463,7 @@ class MinimalGalaxyApplication(BasicSharedApp, ConfiguresGalaxyMixin, HaltableCo
         self.config: Any = self._register_singleton(config.Configuration, config.Configuration(**kwargs))
         self.config.check()
         self._configure_object_store(fsmon=True)
+        self._register_singleton(BaseObjectStore, self.object_store)
         config_file = kwargs.get("global_conf", {}).get("__file__", None)
         if config_file:
             log.debug('Using "galaxy.ini" config file: %s', config_file)
@@ -482,7 +494,7 @@ class MinimalGalaxyApplication(BasicSharedApp, ConfiguresGalaxyMixin, HaltableCo
 class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     """Extends the MinimalGalaxyApplication with most managers that are not tied to a web or job handling context."""
 
-    def __init__(self, configure_logging=True, **kwargs):
+    def __init__(self, configure_logging=True, use_converters=True, use_display_applications=True, **kwargs):
         super().__init__(**kwargs)
         self._register_singleton(MinimalManagerApp, self)
         self.execution_timer_factory = self._register_singleton(
@@ -537,6 +549,13 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         )
 
         self.vault = self._register_singleton(Vault, VaultFactory.from_app(self))
+        # Load security policy.
+        self.security_agent = self.model.security_agent
+        self.host_security_agent = galaxy.model.security.HostAgent(
+            model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions
+        )
+        # Load quota management.
+        self.quota_agent = self._register_singleton(QuotaAgent, get_quota_agent(self.config, self.model))
 
         # We need the datatype registry for running certain tasks that modify HDAs, and to build the registry we need
         # to setup the installed repositories ... this is not ideal
@@ -544,7 +563,11 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.installed_repository_manager = self._register_singleton(
             InstalledRepositoryManager, InstalledRepositoryManager(self)
         )
-        self._configure_datatypes_registry(self.installed_repository_manager)
+        self._configure_datatypes_registry(
+            self.installed_repository_manager,
+            use_converters=use_converters,
+            use_display_applications=use_display_applications,
+        )
         self._register_singleton(Registry, self.datatypes_registry)
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
         self.configure_sentry_client()
@@ -645,13 +668,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self[ToursRegistry] = tour_registry  # type: ignore[misc]
         # Webhooks registry
         self.webhooks_registry = self._register_singleton(WebhooksRegistry, WebhooksRegistry(self.config.webhooks_dir))
-        # Load security policy.
-        self.security_agent = self.model.security_agent
-        self.host_security_agent = galaxy.model.security.HostAgent(
-            model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions
-        )
-        # Load quota management.
-        self.quota_agent = self._register_singleton(QuotaAgent, get_quota_agent(self.config, self.model))
         # Heartbeat for thread profiling
         self.heartbeat = None
         self.auth_manager = self._register_singleton(auth.AuthManager, auth.AuthManager(self.config))

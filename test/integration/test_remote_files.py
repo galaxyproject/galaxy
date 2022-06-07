@@ -33,6 +33,7 @@ class ConfiguresRemoteFilesIntegrationTestCase(integration_util.IntegrationTestC
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         root = os.path.realpath(mkdtemp())
         cls._test_driver.temp_directories.append(root)
         cls.root = root
@@ -257,6 +258,7 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
 class RemoteFilesNotConfiguredIntegrationTestCase(integration_util.IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["library_import_dir"] = None
         config["user_library_import_dir"] = None
         config["ftp_upload_dir"] = None

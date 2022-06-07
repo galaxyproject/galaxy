@@ -111,6 +111,7 @@ class InvalidFetchRequestsTestCase(BaseUploadContentConfigurationTestCase):
 class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["allow_path_paste"] = True
 
     def test_disallowed_for_primary_file(self):
@@ -187,6 +188,7 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["allow_path_paste"] = True
 
     def test_admin_path_paste(self):
@@ -256,6 +258,7 @@ class DefaultBinaryContentFiltersTestCase(BaseUploadContentConfigurationTestCase
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["allow_path_paste"] = True
 
     def test_random_binary_allowed(self):
@@ -279,6 +282,7 @@ class DisableContentCheckingTestCase(BaseUploadContentConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["allow_path_paste"] = True
         config["check_upload_content"] = False
 
@@ -297,6 +301,7 @@ class AutoDecompressTestCase(BaseUploadContentConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["allow_path_paste"] = True
 
     def test_auto_decompress_off(self):
@@ -358,6 +363,7 @@ class LocalAddressWhitelisting(BaseUploadContentConfigurationTestCase):
 class BaseFtpUploadConfigurationTestCase(BaseUploadContentConfigurationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         ftp_dir = cls.ftp_dir()
         os.makedirs(ftp_dir)
         config["ftp_upload_dir"] = ftp_dir
@@ -666,6 +672,7 @@ class ServerDirectoryOffByDefaultTestCase(BaseUploadContentConfigurationTestCase
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["library_import_dir"] = None
 
     def test_server_dir_uploads_403_if_dir_not_set(self):
@@ -686,6 +693,7 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         server_dir = cls.server_dir()
         os.makedirs(server_dir)
         config["library_import_dir"] = server_dir
@@ -733,6 +741,7 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
 class UserServerDirectoryOffByDefaultTestCase(BaseUploadContentConfigurationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["user_library_import_dir"] = None
 
     def test_library_import_dir_not_available_to_non_admins(self):
@@ -752,6 +761,7 @@ class UserServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCa
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         user_server_dir = cls.user_server_dir()
         os.makedirs(user_server_dir)
         config["user_library_import_dir"] = os.path.join(user_server_dir)
@@ -782,6 +792,7 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["allow_path_paste"] = True
 
     def test_fetch_path_to_folder(self):
@@ -917,6 +928,7 @@ class TestDirectoryAndCompressedTypes(BaseUploadContentConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["allow_path_paste"] = True
 
     def test_tar_to_directory(self):

@@ -12,6 +12,7 @@ TEST_SECTION_FILTERS = "filters:restrict_test"
 class ToolboxFiltersSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["user_tool_section_filters"] = TEST_SECTION_FILTERS
         config["toolbox_filter_base_modules"] = TEST_FILTER_MODULES
 

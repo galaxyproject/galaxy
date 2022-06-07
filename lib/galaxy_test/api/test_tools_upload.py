@@ -352,6 +352,40 @@ class ToolsUploadTestCase(ApiTestCase):
         assert dataset["state"] == "error"
         assert dataset["name"] == "html_file.txt"
 
+    @uses_test_history(require_new=False)
+    def test_abort_fetch_job(self, history_id):
+        # This should probably be an integration test that also verifies
+        # that the celery chord is properly canceled.
+        item = {
+            "src": "url",
+            "url": "https://httpstat.us/200?sleep=10000",
+            "ext": "txt",
+        }
+        destination = {"type": "hdas"}
+        targets = [
+            {
+                "destination": destination,
+                "items": [item],
+            }
+        ]
+        payload = {
+            "history_id": history_id,
+            "targets": targets,
+        }
+        fetch_response = self.dataset_populator.fetch(payload, wait=False)
+        self._assert_status_code_is(fetch_response, 200)
+        response = fetch_response.json()
+        job_id = response["jobs"][0]["id"]
+        # Wait until state is running
+        self.dataset_populator.wait_for_job(job_id, ok_states=["running"])
+        cancel_response = self.dataset_populator.cancel_job(job_id)
+        self._assert_status_code_is(cancel_response, 200)
+        dataset = self.dataset_populator.get_history_dataset_details(
+            history_id, dataset_id=response["outputs"][0]["id"], assert_ok=False
+        )
+        assert dataset["file_size"] == 0
+        assert dataset["state"] == "discarded"
+
     @skip_without_datatype("velvet")
     def test_composite_datatype(self):
         with self.dataset_populator.test_history() as history_id:

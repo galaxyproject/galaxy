@@ -43,6 +43,7 @@ class ContainerizedIntegrationTestCase(integration_util.IntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = DOCKERIZED_JOB_CONFIG_FILE
         disable_dependency_resolution(config)
 
@@ -67,6 +68,7 @@ class DockerizedJobsIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config_file
@@ -160,6 +162,7 @@ class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config_file
@@ -197,6 +200,7 @@ class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
 class InlineContainerConfigurationTestCase(MappingContainerResolverTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config_file

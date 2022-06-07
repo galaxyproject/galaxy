@@ -58,11 +58,12 @@ class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls._configure_object_store(DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE, config)
         config["job_config_file"] = JOB_CONFIG_FILE
         config["job_resource_params_file"] = JOB_RESOURCE_PARAMETERS_CONFIG_FILE
         config["object_store_store_by"] = "uuid"
-        config["metadata_strategy"] = "extended"
+        config["metadata_strategy"] = "celery_extended"
         config["outputs_to_working_directory"] = True
 
     def _object_store_counts(self):
