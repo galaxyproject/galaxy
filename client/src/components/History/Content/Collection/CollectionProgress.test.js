@@ -18,7 +18,7 @@ describe("CollectionProgress", () => {
             localVue,
         });
         await wrapper.vm.$nextTick();
-        expect(wrapper.find(".progress").find(".progress-bar-striped").text()).toBe("3");
+        expect(wrapper.find(".progress").find(".bg-warning").text()).toBe("3");
     });
 
     it("should correctly display states", async () => {
@@ -31,7 +31,7 @@ describe("CollectionProgress", () => {
             localVue,
         });
         await wrapper.vm.$nextTick();
-        expect(wrapper.find(".progress").find(".progress-bar-striped").text()).toBe("3");
+        expect(wrapper.find(".progress").find(".bg-warning").text()).toBe("3");
         expect(wrapper.find(".progress").find(".bg-success").text()).toBe("1");
         expect(wrapper.find(".progress").find(".bg-danger").text()).toBe("1");
     });
@@ -46,13 +46,13 @@ describe("CollectionProgress", () => {
             localVue,
         });
         await wrapper.vm.$nextTick();
-        expect(wrapper.find(".progress").find(".progress-bar-striped").text()).toBe("3");
+        expect(wrapper.find(".progress").find(".bg-warning").text()).toBe("3");
         dsc["job_state_summary"]["ok"] = 2;
         dsc["job_state_summary"]["running"] = 1;
         jobStateSummary = new JobStateSummary(dsc);
         await wrapper.setProps({ summary: jobStateSummary });
         await wrapper.vm.$nextTick();
-        expect(wrapper.find(".progress").find(".progress-bar-striped").text()).toBe("1");
+        expect(wrapper.find(".progress").find(".bg-warning").text()).toBe("1");
         expect(wrapper.find(".progress").find(".bg-success").text()).toBe("2");
     });
 });
