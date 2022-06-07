@@ -179,7 +179,7 @@ class JobIO(Dictifiable):
         filenames = [ds.file_name]
         # we will need to stage in metadata file names also
         # TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
-        for value in ds.metadata.values():
+        for value in ds.metadata_.values():
             if isinstance(value, MetadataFile):
                 filenames.append(value.file_name)
         return filenames

@@ -110,14 +110,14 @@ class Sequence(data.Text):
                     data_lines += 1
                 else:
                     data_lines += 1
-            dataset.metadata.data_lines = data_lines
-            dataset.metadata.sequences = sequences
+            dataset.metadata_.data_lines = data_lines
+            dataset.metadata_.sequences = sequences
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
-            if dataset.metadata.sequences:
-                dataset.blurb = f"{util.commaify(str(dataset.metadata.sequences))} sequences"
+            if dataset.metadata_.sequences:
+                dataset.blurb = f"{util.commaify(str(dataset.metadata_.sequences))} sequences"
             else:
                 dataset.blurb = nice_size(dataset.get_size())
         else:
@@ -148,8 +148,8 @@ class Sequence(data.Text):
     def do_slow_split(cls, input_datasets, subdir_generator_function, split_params):
         # count the sequences so we can split
         # TODO: if metadata is present, take the number of lines / 4
-        if input_datasets[0].metadata is not None and input_datasets[0].metadata.sequences is not None:
-            total_sequences = input_datasets[0].metadata.sequences
+        if input_datasets[0].metadata_ is not None and input_datasets[0].metadata_.sequences is not None:
+            total_sequences = input_datasets[0].metadata_.sequences
         else:
             with compression_utils.get_fileobj(input_datasets[0].file_name) as in_file:
                 total_sequences = sum(1 for line in in_file)
@@ -411,9 +411,9 @@ class Fasta(Sequence):
             # if split_mode = number_of_parts, and split_size = 10, and
             # we know the number of sequences (say 1234), then divide by
             # by ten, giving ten files of approx 123 sequences each.
-            if input_datasets[0].metadata is not None and input_datasets[0].metadata.sequences:
+            if input_datasets[0].metadata_ is not None and input_datasets[0].metadata_.sequences:
                 # Galaxy has already counted/estimated the number
-                batch_size = 1 + input_datasets[0].metadata.sequences // split_size
+                batch_size = 1 + input_datasets[0].metadata_.sequences // split_size
                 cls._count_split(input_file, batch_size, subdir_generator_function)
             else:
                 # OK, if Galaxy hasn't counted them, it may be a big file.
@@ -545,8 +545,8 @@ class csFasta(Sequence):
 
     def set_meta(self, dataset, **kwd):
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-            dataset.metadata.data_lines = None
-            dataset.metadata.sequences = None
+            dataset.metadata_.data_lines = None
+            dataset.metadata_.sequences = None
             return
         return Sequence.set_meta(self, dataset, **kwd)
 
@@ -634,26 +634,26 @@ class Fastg(Sequence):
                         x.split("=")[0][1:]: x.split("=")[1]
                         for x in re.findall(':[a-zA-Z0-9_]+=[a-zA-Z0-9_().," ]+', line)
                     }
-                    dataset.metadata.properties.update(props)
+                    dataset.metadata_.properties.update(props)
                     if "version" in props:
-                        dataset.metadata.version = props["version"]
+                        dataset.metadata_.version = props["version"]
                 if line and line.startswith(">"):
                     break
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-            dataset.metadata.data_lines = None
-            dataset.metadata.sequences = None
+            dataset.metadata_.data_lines = None
+            dataset.metadata_.sequences = None
             return
         return Sequence.set_meta(self, dataset, **kwd)
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
-            if dataset.metadata.sequences:
-                dataset.blurb = f"{util.commaify(str(dataset.metadata.sequences))} sequences"
+            if dataset.metadata_.sequences:
+                dataset.blurb = f"{util.commaify(str(dataset.metadata_.sequences))} sequences"
             else:
                 dataset.blurb = nice_size(dataset.get_size())
-            dataset.blurb += f"\nversion={dataset.metadata.version}"
-            for k, v in dataset.metadata.properties.items():
+            dataset.blurb += f"\nversion={dataset.metadata_.version}"
+            for k, v in dataset.metadata_.properties.items():
                 if k != "version":
                     dataset.blurb += f"\n{k}={v}"
         else:
@@ -676,8 +676,8 @@ class BaseFastq(Sequence):
         FIXME: This does not properly handle line wrapping
         """
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-            dataset.metadata.data_lines = None
-            dataset.metadata.sequences = None
+            dataset.metadata_.data_lines = None
+            dataset.metadata_.sequences = None
             return
         data_lines = 0
         sequences = 0
@@ -699,8 +699,8 @@ class BaseFastq(Sequence):
             if seq_counter >= 4:
                 # count final block
                 sequences += 1
-            dataset.metadata.data_lines = data_lines
-            dataset.metadata.sequences = sequences
+            dataset.metadata_.data_lines = data_lines
+            dataset.metadata_.sequences = sequences
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
@@ -996,30 +996,30 @@ class Maf(Alignment):
         indexes, species, species_chromosomes, blocks = build_maf_index_species_chromosomes(dataset.file_name)
         if indexes is None:
             return  # this is not a MAF file
-        dataset.metadata.species = species
-        dataset.metadata.blocks = blocks
+        dataset.metadata_.species = species
+        dataset.metadata_.blocks = blocks
 
         # write species chromosomes to a file
-        chrom_file = dataset.metadata.species_chromosomes
+        chrom_file = dataset.metadata_.species_chromosomes
         if not chrom_file:
-            chrom_file = dataset.metadata.spec["species_chromosomes"].param.new_file(dataset=dataset)
+            chrom_file = dataset.metadata_.spec["species_chromosomes"].param.new_file(dataset=dataset)
         with open(chrom_file.file_name, "w") as chrom_out:
             for spec, chroms in species_chromosomes.items():
                 chrom_out.write("{}\t{}\n".format(spec, "\t".join(chroms)))
-        dataset.metadata.species_chromosomes = chrom_file
+        dataset.metadata_.species_chromosomes = chrom_file
 
-        index_file = dataset.metadata.maf_index
+        index_file = dataset.metadata_.maf_index
         if not index_file:
-            index_file = dataset.metadata.spec["maf_index"].param.new_file(dataset=dataset)
+            index_file = dataset.metadata_.spec["maf_index"].param.new_file(dataset=dataset)
         indexes.write(open(index_file.file_name, "wb"))
-        dataset.metadata.maf_index = index_file
+        dataset.metadata_.maf_index = index_file
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
             dataset.peek = data.get_file_peek(dataset.file_name)
-            if dataset.metadata.blocks:
-                dataset.blurb = f"{util.commaify(str(dataset.metadata.blocks))} blocks"
+            if dataset.metadata_.blocks:
+                dataset.blurb = f"{util.commaify(str(dataset.metadata_.blocks))} blocks"
             else:
                 # Number of blocks is not known ( this should not happen ), and auto-detect is
                 # needed to set metadata
@@ -1038,7 +1038,7 @@ class Maf(Alignment):
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
             out.append("<tr><th>Species:&nbsp;")
-            for species in dataset.metadata.species:
+            for species in dataset.metadata_.species:
                 out.append(f"{species}&nbsp;")
             out.append("</th></tr>")
             if not dataset.peek:
@@ -1120,7 +1120,7 @@ class MafCustomTrack(data.Text):
             maf_file = open(dataset.file_name)
             maf_file.readline()  # move past track line
             for i, block in enumerate(bx.align.maf.Reader(maf_file)):
-                ref_comp = block.get_component_by_src_start(dataset.metadata.dbkey)
+                ref_comp = block.get_component_by_src_start(dataset.metadata_.dbkey)
                 if ref_comp:
                     ref_chrom = bx.align.maf.src_split(ref_comp.src)[-1]
                     if chrom is None:
@@ -1132,9 +1132,9 @@ class MafCustomTrack(data.Text):
                     break
 
             if forward_strand_end > forward_strand_start:
-                dataset.metadata.vp_chromosome = chrom
-                dataset.metadata.vp_start = forward_strand_start
-                dataset.metadata.vp_end = forward_strand_end
+                dataset.metadata_.vp_chromosome = chrom
+                dataset.metadata_.vp_start = forward_strand_start
+                dataset.metadata_.vp_end = forward_strand_end
         except Exception:
             pass
 
@@ -1284,9 +1284,9 @@ class DotBracket(Sequence):
         in dataset.
         """
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-            dataset.metadata.data_lines = None
-            dataset.metadata.sequences = None
-            dataset.metadata.seconday_structures = None
+            dataset.metadata_.data_lines = None
+            dataset.metadata_.sequences = None
+            dataset.metadata_.seconday_structures = None
             return
 
         data_lines = 0
@@ -1299,8 +1299,8 @@ class DotBracket(Sequence):
             if line and line.startswith(">"):
                 sequences += 1
 
-        dataset.metadata.data_lines = data_lines
-        dataset.metadata.sequences = sequences
+        dataset.metadata_.data_lines = data_lines
+        dataset.metadata_.sequences = sequences
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """

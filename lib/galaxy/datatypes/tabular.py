@@ -87,16 +87,16 @@ class TabularData(data.Text):
 
     def set_peek(self, dataset, line_count=None, WIDTH=256, skipchars=None, line_wrap=False, **kwd):
         super().set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
-        if dataset.metadata.comment_lines:
-            dataset.blurb = f"{dataset.blurb}, {util.commaify(str(dataset.metadata.comment_lines))} comments"
+        if dataset.metadata_.comment_lines:
+            dataset.blurb = f"{dataset.blurb}, {util.commaify(str(dataset.metadata_.comment_lines))} comments"
 
     def displayable(self, dataset):
         try:
             return (
                 dataset.has_data()
                 and dataset.state == dataset.states.OK
-                and dataset.metadata.columns > 0
-                and dataset.metadata.data_lines != 0
+                and dataset.metadata_.columns > 0
+                and dataset.metadata_.data_lines != 0
             )
         except Exception:
             return False
@@ -127,7 +127,7 @@ class TabularData(data.Text):
         elif to_ext or not preview:
             to_ext = to_ext or dataset.extension
             return self._serve_raw(dataset, to_ext, headers, **kwd)
-        elif dataset.metadata.columns > 100:
+        elif dataset.metadata_.columns > 100:
             # Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
             # We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
             # For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
@@ -147,14 +147,14 @@ class TabularData(data.Text):
                 )
         else:
             column_names = "null"
-            if dataset.metadata.column_names:
-                column_names = dataset.metadata.column_names
+            if dataset.metadata_.column_names:
+                column_names = dataset.metadata_.column_names
             elif hasattr(dataset.datatype, "column_names"):
                 column_names = dataset.datatype.column_names
-            column_types = dataset.metadata.column_types
+            column_types = dataset.metadata_.column_types
             if not column_types:
                 column_types = []
-            column_number = dataset.metadata.columns
+            column_number = dataset.metadata_.columns
             if column_number is None:
                 column_number = "null"
             return (
@@ -206,12 +206,12 @@ class TabularData(data.Text):
             column_parameter_alias = {}
         out = []
         try:
-            if not column_names and dataset.metadata.column_names:
-                column_names = dataset.metadata.column_names
+            if not column_names and dataset.metadata_.column_names:
+                column_names = dataset.metadata_.column_names
 
-            columns = dataset.metadata.columns
+            columns = dataset.metadata_.columns
             if columns is None:
-                columns = dataset.metadata.spec.columns.no_value
+                columns = dataset.metadata_.spec.columns.no_value
             columns = min(columns, self.max_peek_columns)
             column_headers = [None] * columns
 
@@ -221,10 +221,10 @@ class TabularData(data.Text):
                     column_headers[i] = column_names[i]
 
             # fill in empty headers from ColumnParameters set in the metadata
-            for name, spec in dataset.metadata.spec.items():
+            for name, spec in dataset.metadata_.spec.items():
                 if isinstance(spec.param, metadata.ColumnParameter):
                     try:
-                        i = int(getattr(dataset.metadata, name)) - 1
+                        i = int(getattr(dataset.metadata_, name)) - 1
                     except Exception:
                         i = -1
                     if 0 <= i < columns and column_headers[i] is None:
@@ -254,16 +254,16 @@ class TabularData(data.Text):
                 if not dataset.peek:
                     dataset.set_peek()
                 peek = dataset.peek
-            columns = dataset.metadata.columns
+            columns = dataset.metadata_.columns
             if columns is None:
-                columns = dataset.metadata.spec.columns.no_value
+                columns = dataset.metadata_.spec.columns.no_value
             columns = min(columns, self.max_peek_columns)
             for i, line in enumerate(peek.splitlines()):
                 if i >= self.data_line_offset:
                     if line.startswith(tuple(skipchars)):
                         out.append(f'<tr><td colspan="100%">{escape(line)}</td></tr>')
                     elif line:
-                        elems = line.split(dataset.metadata.delimiter)
+                        elems = line.split(dataset.metadata_.delimiter)
                         elems = elems[: min(len(elems), self.max_peek_columns)]
                         # pad shortened elems, since lines could have been truncated by width
                         if len(elems) < columns:
@@ -290,26 +290,26 @@ class TabularData(data.Text):
     def column_dataprovider(self, dataset, **settings):
         """Uses column settings that are passed in"""
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        delimiter = dataset.metadata.delimiter
+        delimiter = dataset.metadata_.delimiter
         return dataproviders.column.ColumnarDataProvider(dataset_source, deliminator=delimiter, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dataset-column", dataproviders.column.ColumnarDataProvider.settings)
     def dataset_column_dataprovider(self, dataset, **settings):
-        """Attempts to get column settings from dataset.metadata"""
-        delimiter = dataset.metadata.delimiter
+        """Attempts to get column settings from dataset.metadata_"""
+        delimiter = dataset.metadata_.delimiter
         return dataproviders.dataset.DatasetColumnarDataProvider(dataset, deliminator=delimiter, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dict", dataproviders.column.DictDataProvider.settings)
     def dict_dataprovider(self, dataset, **settings):
         """Uses column settings that are passed in"""
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        delimiter = dataset.metadata.delimiter
+        delimiter = dataset.metadata_.delimiter
         return dataproviders.column.DictDataProvider(dataset_source, deliminator=delimiter, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dataset-dict", dataproviders.column.DictDataProvider.settings)
     def dataset_dict_dataprovider(self, dataset, **settings):
-        """Attempts to get column settings from dataset.metadata"""
-        delimiter = dataset.metadata.delimiter
+        """Attempts to get column settings from dataset.metadata_"""
+        delimiter = dataset.metadata_.delimiter
         return dataproviders.dataset.DatasetDictDataProvider(dataset, deliminator=delimiter, **settings)
 
 
@@ -476,13 +476,13 @@ class Tabular(TabularData):
                 else:
                     column_types[i] = first_line_column_types[i]
         # Set the discovered metadata values for the dataset
-        dataset.metadata.data_lines = data_lines
-        dataset.metadata.comment_lines = comment_lines
-        dataset.metadata.column_types = column_types
-        dataset.metadata.columns = len(column_types)
-        dataset.metadata.delimiter = "\t"
+        dataset.metadata_.data_lines = data_lines
+        dataset.metadata_.comment_lines = comment_lines
+        dataset.metadata_.column_types = column_types
+        dataset.metadata_.columns = len(column_types)
+        dataset.metadata_.delimiter = "\t"
         if column_names is not None:
-            dataset.metadata.column_names = column_names
+            dataset.metadata_.column_names = column_names
 
     def as_gbrowse_display_file(self, dataset, **kwd):
         return open(dataset.file_name, "rb")
@@ -499,7 +499,7 @@ class SraManifest(Tabular):
 
     def set_meta(self, dataset, **kwds):
         super().set_meta(dataset, **kwds)
-        dataset.metadata.comment_lines = 1
+        dataset.metadata_.comment_lines = 1
 
     def get_column_names(self, first_line):
         return first_line.strip().split("\t")
@@ -701,9 +701,9 @@ class Sam(Tabular, _BamOrSam):
         >>> samds = Dataset(external_filename=fname)
         >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='sam', create_dataset=True, sa_session=sa_session, dataset=samds))
         >>> Sam().set_meta(hda)
-        >>> hda.metadata.comment_lines
+        >>> hda.metadata_.comment_lines
         2
-        >>> hda.metadata.reference_names
+        >>> hda.metadata_.reference_names
         ['ref', 'ref2']
         """
         if dataset.has_data():
@@ -719,17 +719,17 @@ class Sam(Tabular, _BamOrSam):
                             comment_lines += 1
                         else:
                             # No more comments, and the file is too big to look at the whole thing. Give up.
-                            dataset.metadata.data_lines = None
+                            dataset.metadata_.data_lines = None
                             break
                 else:
                     # Otherwise, read the whole thing and set num data lines.
                     for i, l in enumerate(dataset_fh):  # noqa: B007
                         if l.startswith("@"):
                             comment_lines += 1
-                    dataset.metadata.data_lines = i + 1 - comment_lines
-            dataset.metadata.comment_lines = comment_lines
-            dataset.metadata.columns = 12
-            dataset.metadata.column_types = [
+                    dataset.metadata_.data_lines = i + 1 - comment_lines
+            dataset.metadata_.comment_lines = comment_lines
+            dataset.metadata_.columns = 12
+            dataset.metadata_.column_types = [
                 "str",
                 "int",
                 "str",
@@ -967,7 +967,7 @@ class BaseVcf(Tabular):
 
         if line and line.startswith("#"):
             # Found header line, get sample names.
-            dataset.metadata.sample_names = line.split()[9:]
+            dataset.metadata_.sample_names = line.split()[9:]
 
     @staticmethod
     def merge(split_files, output_file):
@@ -1044,9 +1044,9 @@ class VcfGz(BaseVcf, binary.Binary):
         super().set_meta(dataset, **kwd)
         # Creates the index for the VCF file.
         # These metadata values are not accessible by users, always overwrite
-        index_file = dataset.metadata.tabix_index
+        index_file = dataset.metadata_.tabix_index
         if not index_file:
-            index_file = dataset.metadata.spec["tabix_index"].param.new_file(dataset=dataset)
+            index_file = dataset.metadata_.spec["tabix_index"].param.new_file(dataset=dataset)
 
         try:
             pysam.tabix_index(
@@ -1054,7 +1054,7 @@ class VcfGz(BaseVcf, binary.Binary):
             )
         except Exception as e:
             raise Exception(f"Error setting VCF.gz metadata: {util.unicodify(e)}")
-        dataset.metadata.tabix_index = index_file
+        dataset.metadata_.tabix_index = index_file
 
 
 @build_sniff_from_prefix
@@ -1150,8 +1150,8 @@ class Eland(Tabular):
             for i, name in enumerate(self.column_names):
                 out.append(f"<th>{str(i + 1)}.{name}</th>")
             # This data type requires at least 11 columns in the data
-            if dataset.metadata.columns - len(self.column_names) > 0:
-                for i in range(len(self.column_names), max(dataset.metadata.columns, self.max_peek_columns)):
+            if dataset.metadata_.columns - len(self.column_names) > 0:
+                for i in range(len(self.column_names), max(dataset.metadata_.columns, self.max_peek_columns)):
                     out.append(f"<th>{str(i + 1)}</th>")
                 out.append("</tr>")
             out.append(self.make_html_peek_rows(dataset, skipchars=skipchars, peek=peek))
@@ -1208,7 +1208,7 @@ class Eland(Tabular):
                 # Should always read the entire file (until we devise a more clever way to pass metadata on)
                 # if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
                 # If the dataset is larger than optional_metadata, just count comment lines.
-                #     dataset.metadata.data_lines = None
+                #     dataset.metadata_.data_lines = None
                 # else:
                 # Otherwise, read the whole thing and set num data lines.
                 for i, line in enumerate(dataset_fh):
@@ -1220,10 +1220,10 @@ class Eland(Tabular):
                         tiles[line_pieces[3]] = 1
                         barcodes[line_pieces[6]] = 1
                         reads[line_pieces[7]] = 1
-                dataset.metadata.data_lines = i + 1
-            dataset.metadata.comment_lines = 0
-            dataset.metadata.columns = 21
-            dataset.metadata.column_types = [
+                dataset.metadata_.data_lines = i + 1
+            dataset.metadata_.comment_lines = 0
+            dataset.metadata_.columns = 21
+            dataset.metadata_.column_types = [
                 "str",
                 "int",
                 "int",
@@ -1246,12 +1246,12 @@ class Eland(Tabular):
                 "str",
                 "str",
             ]
-            dataset.metadata.lanes = list(lanes.keys())
-            dataset.metadata.tiles = ["%04d" % int(t) for t in tiles.keys()]
-            dataset.metadata.barcodes = [_ for _ in barcodes.keys() if _ != "0"] + [
+            dataset.metadata_.lanes = list(lanes.keys())
+            dataset.metadata_.tiles = ["%04d" % int(t) for t in tiles.keys()]
+            dataset.metadata_.barcodes = [_ for _ in barcodes.keys() if _ != "0"] + [
                 "NoIndex" for _ in barcodes.keys() if _ == "0"
             ]
-            dataset.metadata.reads = list(reads.keys())
+            dataset.metadata_.reads = list(reads.keys())
 
 
 @build_sniff_from_prefix
@@ -1402,12 +1402,12 @@ class BaseCSV(TabularData):
             column_types.append(self.guess_type(cell))
 
         # Set metadata
-        dataset.metadata.data_lines = data_lines
-        dataset.metadata.comment_lines = int(bool(header_row))
-        dataset.metadata.column_types = column_types
-        dataset.metadata.columns = max(len(header_row), len(data_row))
-        dataset.metadata.column_names = header_row
-        dataset.metadata.delimiter = self.dialect.delimiter
+        dataset.metadata_.data_lines = data_lines
+        dataset.metadata_.comment_lines = int(bool(header_row))
+        dataset.metadata_.column_types = column_types
+        dataset.metadata_.columns = max(len(header_row), len(data_row))
+        dataset.metadata_.column_names = header_row
+        dataset.metadata_.delimiter = self.dialect.delimiter
 
 
 @dataproviders.decorators.has_dataproviders
@@ -1465,7 +1465,7 @@ class ConnectivityTable(Tabular):
             for _ in fh:
                 data_lines += 1
 
-        dataset.metadata.data_lines = data_lines
+        dataset.metadata_.data_lines = data_lines
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
@@ -1615,13 +1615,13 @@ class MatrixMarket(TabularData):
                     else:
                         data_lines += 1
                 if " " in line:
-                    dataset.metadata.delimiter = " "
+                    dataset.metadata_.delimiter = " "
                 else:
-                    dataset.metadata.delimiter = "\t"
-            dataset.metadata.comment_lines = comment_lines
-            dataset.metadata.data_lines = data_lines
-            dataset.metadata.columns = 3
-            dataset.metadata.column_types = ["int", "int", "float"]
+                    dataset.metadata_.delimiter = "\t"
+            dataset.metadata_.comment_lines = comment_lines
+            dataset.metadata_.data_lines = data_lines
+            dataset.metadata_.columns = 3
+            dataset.metadata_.column_types = ["int", "int", "float"]
 
 
 @build_sniff_from_prefix
@@ -1740,28 +1740,28 @@ class CMAP(TabularData):
                         fields = line.split("\t")
                         if len(fields) == 2:
                             if fields[0] == "# CMAP File Version:":
-                                dataset.metadata.cmap_version = fields[1]
+                                dataset.metadata_.cmap_version = fields[1]
                             elif fields[0] == "# Label Channels:":
-                                dataset.metadata.label_channels = int(fields[1])
+                                dataset.metadata_.label_channels = int(fields[1])
                             elif fields[0] == "# Nickase Recognition Site 1:":
                                 fields2 = fields[1].split(";")
                                 if len(fields2) == 2:
-                                    dataset.metadata.channel_1_color = fields2[1]
-                                dataset.metadata.nickase_recognition_site_1 = fields2[0].split(",")
+                                    dataset.metadata_.channel_1_color = fields2[1]
+                                dataset.metadata_.nickase_recognition_site_1 = fields2[0].split(",")
                             elif fields[0] == "# Number of Consensus Maps:":
-                                dataset.metadata.number_of_consensus_nanomaps = int(fields[1])
+                                dataset.metadata_.number_of_consensus_nanomaps = int(fields[1])
                             elif fields[0] == "# Nickase Recognition Site 2:":
                                 fields2 = fields[1].split(";")
                                 if len(fields2) == 2:
-                                    dataset.metadata.channel_2_color = fields2[1]
-                                dataset.metadata.nickase_recognition_site_2 = fields2[0].split(",")
+                                    dataset.metadata_.channel_2_color = fields2[1]
+                                dataset.metadata_.nickase_recognition_site_2 = fields2[0].split(",")
                     elif (
                         self.max_optional_metadata_filesize >= 0
                         and dataset.get_size() > self.max_optional_metadata_filesize
                     ):
                         # If the dataset is larger than optional_metadata, just count comment lines.
                         # No more comments, and the file is too big to look at the whole thing. Give up.
-                        dataset.metadata.data_lines = None
+                        dataset.metadata_.data_lines = None
                         break
                     elif i == comment_lines + 1:
                         number_of_columns = len(line.split("\t"))
@@ -1769,9 +1769,9 @@ class CMAP(TabularData):
                     self.max_optional_metadata_filesize >= 0
                     and dataset.get_size() > self.max_optional_metadata_filesize
                 ):
-                    dataset.metadata.data_lines = i + 1 - comment_lines
-            dataset.metadata.comment_lines = comment_lines
-            dataset.metadata.column_names = column_headers
-            dataset.metadata.column_types = cleaned_column_types
-            dataset.metadata.columns = number_of_columns
-            dataset.metadata.delimiter = "\t"
+                    dataset.metadata_.data_lines = i + 1 - comment_lines
+            dataset.metadata_.comment_lines = comment_lines
+            dataset.metadata_.column_names = column_headers
+            dataset.metadata_.column_types = cleaned_column_types
+            dataset.metadata_.columns = number_of_columns
+            dataset.metadata_.delimiter = "\t"

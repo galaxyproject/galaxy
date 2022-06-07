@@ -26,6 +26,7 @@ from galaxy.model import (
     Dataset,
     DatasetCollectionElement,
     DatasetInstance,
+    handle_metadata_attribute,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
@@ -1399,20 +1400,20 @@ class ColumnListParameter(SelectToolParameter):
                         dataset = converted_dataset
             # Columns can only be identified if the dataset is ready and metadata is available
             if (
-                not hasattr(dataset, "metadata")
-                or not hasattr(dataset.metadata, "columns")
-                or not dataset.metadata.columns
+                not hasattr(dataset, "metadata_")
+                or not hasattr(dataset.metadata_, "columns")
+                or not dataset.metadata_.columns
             ):
                 return []
             # Build up possible columns for this dataset
             this_column_list = []
             if self.numerical:
                 # If numerical was requested, filter columns based on metadata
-                for i, col in enumerate(dataset.metadata.column_types):
+                for i, col in enumerate(dataset.metadata_.column_types):
                     if col == "int" or col == "float":
                         this_column_list.append(str(i + 1))
             else:
-                this_column_list = [str(i) for i in range(1, dataset.metadata.columns + 1)]
+                this_column_list = [str(i) for i in range(1, dataset.metadata_.columns + 1)]
             # Take the intersection of these columns with the other columns.
             if column_list is None:
                 column_list = this_column_list
@@ -1433,9 +1434,11 @@ class ColumnListParameter(SelectToolParameter):
                 cnames = head.rstrip("\n\r ").split("\t")
                 column_list = [("%d" % (i + 1), "c%d: %s" % (i + 1, x)) for i, x in enumerate(cnames)]
                 if self.numerical:  # If numerical was requested, filter columns based on metadata
-                    if hasattr(dataset, "metadata") and hasattr(dataset.metadata, "column_types"):
-                        if len(dataset.metadata.column_types) >= len(cnames):
-                            numerics = [i for i, x in enumerate(dataset.metadata.column_types) if x in ["int", "float"]]
+                    if hasattr(dataset, "metadata_") and hasattr(dataset.metadata_, "column_types"):
+                        if len(dataset.metadata_.column_types) >= len(cnames):
+                            numerics = [
+                                i for i, x in enumerate(dataset.metadata_.column_types) if x in ["int", "float"]
+                            ]
                             column_list = [column_list[i] for i in numerics]
             except Exception:
                 column_list = self.get_column_list(trans, other_values)
@@ -1614,9 +1617,9 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                     dataset = dataset.dataset
                 if dataset:
                     for meta_key, meta_dict in filter_value.items():
-                        if hasattr(dataset, "metadata") and hasattr(dataset.metadata, "spec"):
-                            check_meta_val = dataset.metadata.spec[meta_key].param.to_string(
-                                dataset.metadata.get(meta_key)
+                        if hasattr(dataset, "metadata_") and hasattr(dataset.metadata_, "spec"):
+                            check_meta_val = dataset.metadata_.spec[meta_key].param.to_string(
+                                dataset.metadata_.get(meta_key)
                             )
                             if check_meta_val in meta_dict:
                                 options.extend(meta_dict[check_meta_val])
@@ -2190,6 +2193,7 @@ class DataToolParameter(BaseDataToolParameter):
             call_attribute = False
         ref = value
         for attribute in options_filter_attribute.split("."):
+            attribute = handle_metadata_attribute(ref, attribute)
             ref = getattr(ref, attribute)
         if call_attribute:
             ref = ref()

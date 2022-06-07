@@ -51,10 +51,10 @@ class InfernalCM(Text):
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
-            if dataset.metadata.number_of_models == 1:
+            if dataset.metadata_.number_of_models == 1:
                 dataset.blurb = "1 model"
             else:
-                dataset.blurb = f"{dataset.metadata.number_of_models} models"
+                dataset.blurb = f"{dataset.metadata_.number_of_models} models"
             dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = "file does not exist"
@@ -76,11 +76,11 @@ class InfernalCM(Text):
         """
         Set the number of models and the version of CM file in dataset.
         """
-        dataset.metadata.number_of_models = generic_util.count_special_lines("^INFERNAL", dataset.file_name)
+        dataset.metadata_.number_of_models = generic_util.count_special_lines("^INFERNAL", dataset.file_name)
         with open(dataset.file_name) as f:
             first_line = f.readline()
             if first_line.startswith("INFERNAL"):
-                dataset.metadata.cm_version = (first_line.split()[0]).replace("INFERNAL", "")
+                dataset.metadata_.cm_version = (first_line.split()[0]).replace("INFERNAL", "")
 
 
 @build_sniff_from_prefix
@@ -177,10 +177,10 @@ class Stockholm_1_0(Text):
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
-            if dataset.metadata.number_of_models == 1:
+            if dataset.metadata_.number_of_models == 1:
                 dataset.blurb = "1 alignment"
             else:
-                dataset.blurb = f"{dataset.metadata.number_of_models} alignments"
+                dataset.blurb = f"{dataset.metadata_.number_of_models} alignments"
             dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = "file does not exist"
@@ -194,7 +194,7 @@ class Stockholm_1_0(Text):
 
         Set the number of models in dataset.
         """
-        dataset.metadata.number_of_models = generic_util.count_special_lines(
+        dataset.metadata_.number_of_models = generic_util.count_special_lines(
             "^#[[:space:]+]STOCKHOLM[[:space:]+]1.0", dataset.file_name
         )
 
@@ -268,10 +268,10 @@ class MauveXmfa(Text):
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
-            if dataset.metadata.number_of_models == 1:
+            if dataset.metadata_.number_of_models == 1:
                 dataset.blurb = "1 alignment"
             else:
-                dataset.blurb = f"{dataset.metadata.number_of_models} alignments"
+                dataset.blurb = f"{dataset.metadata_.number_of_models} alignments"
             dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = "file does not exist"
@@ -281,7 +281,7 @@ class MauveXmfa(Text):
         return file_prefix.startswith("#FormatVersion Mauve1")
 
     def set_meta(self, dataset, **kwd):
-        dataset.metadata.number_of_models = generic_util.count_special_lines(
+        dataset.metadata_.number_of_models = generic_util.count_special_lines(
             "^#Sequence([[:digit:]]+)Entry", dataset.file_name
         )
 

@@ -239,7 +239,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                     if "dbkey" in dataset_attributes:
                         metadata_dict["dbkey"] = dataset_attributes["dbkey"]
                     # branch tested with tool_provided_metadata_3 / tool_provided_metadata_10
-                    primary_data.metadata.from_JSON_dict(json_dict=metadata_dict)
+                    primary_data.metadata_.from_JSON_dict(json_dict=metadata_dict)
                 else:
                     primary_data.set_meta()
             except Exception:

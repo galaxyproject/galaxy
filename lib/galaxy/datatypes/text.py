@@ -150,7 +150,7 @@ class ExpressionJson(Json):
                 with open(file_path) as f:
                     contents = f.read(512)
                 raise Exception(f"Invalid JSON encountered {contents}")
-            dataset.metadata.json_type = json_type
+            dataset.metadata_.json_type = json_type
 
 
 @build_sniff_from_prefix
@@ -436,10 +436,10 @@ class Biom1(Json):
                                         if v is not None:
                                             keep_columns.add(k)
                             final_list = sorted(list(keep_columns))
-                            dataset.metadata.table_column_metadata_headers = final_list
+                            dataset.metadata_.table_column_metadata_headers = final_list
                         if b_name in b_transform:
                             metadata_value = b_transform[b_name](metadata_value)
-                        setattr(dataset.metadata, m_name, metadata_value)
+                        setattr(dataset.metadata_, m_name, metadata_value)
                     except Exception:
                         log.exception("Something in the metadata detection for biom1 went wrong.")
 
@@ -510,7 +510,7 @@ class ImgtJson(Json):
                         if "taxonId" in entry:
                             names = "%d: %s" % (entry["taxonId"], ",".join(entry["speciesNames"]))
                             tax_names.append(names)
-                    dataset.metadata.taxon_names = tax_names
+                    dataset.metadata_.taxon_names = tax_names
                 except Exception:
                     return
 
@@ -631,7 +631,7 @@ class Arff(Text):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Attribute-Relation File Format (ARFF)"
-            dataset.blurb += f", {dataset.metadata.comment_lines} comments, {dataset.metadata.columns} attributes"
+            dataset.blurb += f", {dataset.metadata_.comment_lines} comments, {dataset.metadata_.columns} attributes"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
@@ -713,8 +713,8 @@ class Arff(Text):
                         break
                     if line[:5].upper() == "@DATA":
                         data_block = True
-        dataset.metadata.comment_lines = comment_lines
-        dataset.metadata.columns = column_count
+        dataset.metadata_.comment_lines = comment_lines
+        dataset.metadata_.columns = column_count
 
 
 class SnpEffDb(Text):
@@ -765,11 +765,11 @@ class SnpEffDb(Text):
                     if fname.startswith("snpEffectPredictor"):
                         # if snpEffectPredictor.bin download succeeded
                         genome_version = os.path.basename(root)
-                        dataset.metadata.genome_version = genome_version
+                        dataset.metadata_.genome_version = genome_version
                         # read the first line of the gzipped snpEffectPredictor.bin file to get the SnpEff version
                         snpeff_version = self.getSnpeffVersionFromFile(os.path.join(root, fname))
                         if snpeff_version:
-                            dataset.metadata.snpeff_version = snpeff_version
+                            dataset.metadata_.snpeff_version = snpeff_version
                     else:
                         m = re.match(regulation_pattern, fname)
                         if m:
@@ -779,8 +779,8 @@ class SnpEffDb(Text):
                             value = annotations_dict[fname]
                             name = value.lstrip("-")
                             annotations.append(name)
-            dataset.metadata.regulation = regulations
-            dataset.metadata.annotation = annotations
+            dataset.metadata_.regulation = regulations
+            dataset.metadata_.annotation = annotations
             try:
                 with open(dataset.file_name, "w") as fh:
                     fh.write(f"{genome_version}\n" if genome_version else "Genome unknown")
@@ -845,10 +845,10 @@ class SnpSiftDbNSFP(Text):
         """
         cannot do this until we are setting metadata
         """
-        annotations = f"dbNSFP Annotations: {','.join(dataset.metadata.annotation)}\n"
+        annotations = f"dbNSFP Annotations: {','.join(dataset.metadata_.annotation)}\n"
         with open(dataset.file_name, "a") as f:
-            if dataset.metadata.bgzip:
-                bn = dataset.metadata.bgzip
+            if dataset.metadata_.bgzip:
+                bn = dataset.metadata_.bgzip
                 f.write(bn)
                 f.write("\n")
             f.write(annotations)
@@ -860,17 +860,17 @@ class SnpSiftDbNSFP(Text):
                 flist = os.listdir(efp)
                 for fname in flist:
                     if fname.endswith(".gz"):
-                        dataset.metadata.bgzip = fname
+                        dataset.metadata_.bgzip = fname
                         try:
                             with gzip.open(os.path.join(efp, fname), "rt") as fh:
                                 buf = fh.read(5000)
                                 lines = buf.splitlines()
                                 headers = lines[0].split("\t")
-                                dataset.metadata.annotation = headers[4:]
+                                dataset.metadata_.annotation = headers[4:]
                         except Exception as e:
                             log.warning("set_meta fname: %s  %s", fname, unicodify(e))
                     if fname.endswith(".tbi"):
-                        dataset.metadata.index = fname
+                        dataset.metadata_.index = fname
             self.regenerate_primary_file(dataset)
         except Exception as e:
             log.warning(
@@ -881,8 +881,8 @@ class SnpSiftDbNSFP(Text):
 
         def set_peek(self, dataset):
             if not dataset.dataset.purged:
-                dataset.peek = f"{dataset.metadata.reference_name} :  {','.join(dataset.metadata.annotation)}"
-                dataset.blurb = f"{dataset.metadata.reference_name}"
+                dataset.peek = f"{dataset.metadata_.reference_name} :  {','.join(dataset.metadata_.annotation)}"
+                dataset.blurb = f"{dataset.metadata_.reference_name}"
             else:
                 dataset.peek = "file does not exist"
                 dataset.blurb = "file purged from disc"

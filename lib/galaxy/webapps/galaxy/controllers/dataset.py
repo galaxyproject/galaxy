@@ -143,10 +143,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
 
         fname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in data.name)[0:150]
 
-        file_ext = data.metadata.spec.get(metadata_file).get("file_ext", metadata_file)
+        file_ext = data.metadata_.spec.get(metadata_file).get("file_ext", metadata_file)
         trans.response.headers["Content-Type"] = "application/octet-stream"
         trans.response.headers["Content-Disposition"] = f'attachment; filename="Galaxy{data.hid}-[{fname}].{file_ext}"'
-        return open(data.metadata.get(metadata_file).file_name, "rb")
+        return open(data.metadata_.get(metadata_file).file_name, "rb")
 
     def _check_dataset(self, trans, hda_id):
         # DEPRECATION: We still support unencoded ids for backward compatibility
@@ -246,7 +246,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 (r.name, trans.security.encode_id(r.id))
                 for r in trans.app.security_agent.get_legitimate_roles(trans, data.dataset, "root")
             ]
-            data_metadata = [(name, spec) for name, spec in data.metadata.spec.items()]
+            data_metadata = [(name, spec) for name, spec in data.metadata_.spec.items()]
             converters_collection = [(key, value.name) for key, value in data.get_converter_types().items()]
             can_manage_dataset = trans.app.security_agent.can_manage_dataset(
                 trans.get_current_user_roles(), data.dataset
@@ -267,7 +267,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             ]
             for name, spec in data_metadata:
                 if spec.visible:
-                    attributes = data.metadata.get_metadata_parameter(name, trans=trans)
+                    attributes = data.metadata_.get_metadata_parameter(name, trans=trans)
                     if type(attributes) is form_builder.SelectField:
                         attribute_inputs.append(
                             {
@@ -402,7 +402,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 # The following for loop will save all metadata_spec items
                 for name, spec in data.datatype.metadata_spec.items():
                     if not spec.get("readonly"):
-                        setattr(data.metadata, name, spec.unwrap(payload.get(name) or None))
+                        setattr(data.metadata_, name, spec.unwrap(payload.get(name) or None))
                 data.datatype.after_setting_metadata(data)
                 # Sanitize annotation before adding it.
                 if payload.get("annotation"):

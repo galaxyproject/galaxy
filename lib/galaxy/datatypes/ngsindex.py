@@ -44,7 +44,7 @@ class BowtieIndex(Html):
         """
         cannot do this until we are setting metadata
         """
-        bn = dataset.metadata.base_name
+        bn = dataset.metadata_.base_name
         flist = os.listdir(dataset.extra_files_path)
         rval = [
             f"<html><head><title>Files for Composite Dataset {bn}</title></head><p/>Comprises the following files:<p/><ul>"
@@ -59,8 +59,8 @@ class BowtieIndex(Html):
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
-            dataset.peek = f"Bowtie index file ({dataset.metadata.sequence_space})"
-            dataset.blurb = f"{dataset.metadata.sequence_space} space"
+            dataset.peek = f"Bowtie index file ({dataset.metadata_.sequence_space})"
+            dataset.blurb = f"{dataset.metadata_.sequence_space} space"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"

@@ -396,12 +396,12 @@ class Dta(TabularData):
             column_types.append(self.guess_type(cell))
 
         # Set metadata
-        dataset.metadata.data_lines = data_lines
-        dataset.metadata.comment_lines = 0
-        dataset.metadata.column_types = ["float", "float"]
-        dataset.metadata.columns = 2
-        dataset.metadata.column_names = ["m/z", "intensity"]
-        dataset.metadata.delimiter = " "
+        dataset.metadata_.data_lines = data_lines
+        dataset.metadata_.comment_lines = 0
+        dataset.metadata_.column_types = ["float", "float"]
+        dataset.metadata_.columns = 2
+        dataset.metadata_.column_names = ["m/z", "intensity"]
+        dataset.metadata_.delimiter = " "
 
 
 @build_sniff_from_prefix
@@ -463,21 +463,21 @@ class Dta2d(TabularData):
                 for line in dtafile:
                     if delim is None:
                         delim = self._parse_delimiter(line)
-                        dataset.metadata.column_names = self._parse_header(line.split(delim))
+                        dataset.metadata_.column_names = self._parse_header(line.split(delim))
                     data_lines += 1
 
         # Set metadata
         if delim is not None:
-            dataset.metadata.delimiter = delim
+            dataset.metadata_.delimiter = delim
 
-        dataset.metadata.data_lines = data_lines
-        dataset.metadata.comment_lines = 0
-        dataset.metadata.column_types = ["float", "float", "float"]
-        dataset.metadata.columns = 3
-        if dataset.metadata.column_names is None or dataset.metadata.column_names == []:
-            dataset.metadata.comment_lines += 1
-            dataset.metadata.data_lines -= 1
-            dataset.metadata.column_names = ["SEC", "MZ", "INT"]
+        dataset.metadata_.data_lines = data_lines
+        dataset.metadata_.comment_lines = 0
+        dataset.metadata_.column_types = ["float", "float", "float"]
+        dataset.metadata_.columns = 3
+        if dataset.metadata_.column_names is None or dataset.metadata_.column_names == []:
+            dataset.metadata_.comment_lines += 1
+            dataset.metadata_.data_lines -= 1
+            dataset.metadata_.column_names = ["SEC", "MZ", "INT"]
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         sep = None
@@ -602,26 +602,26 @@ class Edta(TabularData):
                         delim = self._parse_delimiter(line)
                         tpe = self._parse_type(line.split(delim))
                         if tpe == 0:
-                            dataset.metadata.column_names = ["RT", "m/z", "intensity"]
+                            dataset.metadata_.column_names = ["RT", "m/z", "intensity"]
                         else:
-                            dataset.metadata.column_names = self._clean_header(line.split(delim))
+                            dataset.metadata_.column_names = self._clean_header(line.split(delim))
                     data_lines += 1
 
         # Set metadata
         if delim is not None:
-            dataset.metadata.delimiter = delim
-        for c in dataset.metadata.column_names:
+            dataset.metadata_.delimiter = delim
+        for c in dataset.metadata_.column_names:
             if any(c.startswith(_) for _ in ["RT", "m/z", "intensity", "charge"]):
-                dataset.metadata.column_types.append("float")
+                dataset.metadata_.column_types.append("float")
             else:
-                dataset.metadata.column_types.append("str")
+                dataset.metadata_.column_types.append("str")
 
-        dataset.metadata.data_lines = data_lines
-        dataset.metadata.comment_lines = 0
-        dataset.metadata.columns = len(dataset.metadata.column_names)
+        dataset.metadata_.data_lines = data_lines
+        dataset.metadata_.comment_lines = 0
+        dataset.metadata_.columns = len(dataset.metadata_.column_names)
         if tpe is not None and tpe > 0:
-            dataset.metadata.comment_lines += 1
-            dataset.metadata.data_lines -= 1
+            dataset.metadata_.comment_lines += 1
+            dataset.metadata_.data_lines -= 1
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         sep = None

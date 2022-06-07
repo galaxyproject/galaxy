@@ -931,7 +931,7 @@ class DefaultToolAction(ToolAction):
                     metadata_new_value = fill_template(
                         action.default, context=params, python_template_version=tool.python_template_version
                     ).split(",")
-                    dataset.metadata.__setattr__(str(action.name), metadata_new_value)
+                    dataset.metadata_.__setattr__(str(action.name), metadata_new_value)
 
     def _get_default_data_name(
         self, dataset, tool, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None, **kwd
@@ -1228,8 +1228,8 @@ def determine_output_format(
                                     break
                             # See if the attribute to be checked belongs to the metadata associated with the
                             # HistoryDatasetAssociation object.
-                            if check.metadata is not None:
-                                metadata_value = check.metadata.get(check_attribute, None)
+                            if check.metadata_ is not None:
+                                metadata_value = check.metadata_.get(check_attribute, None)
                                 if metadata_value is not None:
                                     if str(metadata_value) == str(check_value):
                                         ext = check_format

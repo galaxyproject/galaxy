@@ -125,7 +125,7 @@ class Interval(Tabular):
                                 for header_val in header_list:
                                     if header_val in elems:
                                         # found highest priority header to meta_name
-                                        setattr(dataset.metadata, meta_name, elems.index(header_val) + 1)
+                                        setattr(dataset.metadata_, meta_name, elems.index(header_val) + 1)
                                         break  # next meta_name
                             break  # Our metadata is set, so break out of the outer loop
                         else:
@@ -133,18 +133,18 @@ class Interval(Tabular):
                             # We'll make a best guess at the location of the metadata columns.
                             elems = line.split("\t")
                             if len(elems) > 2:
-                                if overwrite or not dataset.metadata.element_is_set("chromCol"):
-                                    dataset.metadata.chromCol = 1
+                                if overwrite or not dataset.metadata_.element_is_set("chromCol"):
+                                    dataset.metadata_.chromCol = 1
                                 try:
                                     int(elems[1])
-                                    if overwrite or not dataset.metadata.element_is_set("startCol"):
-                                        dataset.metadata.startCol = 2
+                                    if overwrite or not dataset.metadata_.element_is_set("startCol"):
+                                        dataset.metadata_.startCol = 2
                                 except Exception:
                                     pass  # Metadata default will be used
                                 try:
                                     int(elems[2])
-                                    if overwrite or not dataset.metadata.element_is_set("endCol"):
-                                        dataset.metadata.endCol = 3
+                                    if overwrite or not dataset.metadata_.element_is_set("endCol"):
+                                        dataset.metadata_.endCol = 3
                                 except Exception:
                                     pass  # Metadata default will be used
                                 # we no longer want to guess that this column is the 'name', name must now be set manually for interval files
@@ -153,14 +153,14 @@ class Interval(Tabular):
                                 #    try:
                                 #        int( elems[3] )
                                 #    except Exception:
-                                #        if overwrite or not dataset.metadata.element_is_set( 'nameCol' ):
-                                #            dataset.metadata.nameCol = 4
+                                #        if overwrite or not dataset.metadata_.element_is_set( 'nameCol' ):
+                                #            dataset.metadata_.nameCol = 4
                                 if len(elems) < 6 or elems[5] not in data.valid_strand:
-                                    if overwrite or not dataset.metadata.element_is_set("strandCol"):
-                                        dataset.metadata.strandCol = 0
+                                    if overwrite or not dataset.metadata_.element_is_set("strandCol"):
+                                        dataset.metadata_.strandCol = 0
                                 else:
-                                    if overwrite or not dataset.metadata.element_is_set("strandCol"):
-                                        dataset.metadata.strandCol = 6
+                                    if overwrite or not dataset.metadata_.element_is_set("strandCol"):
+                                        dataset.metadata_.strandCol = 6
                                 break
                             if (i - empty_line_count) > num_check_lines:
                                 break  # Our metadata is set or we examined 100 non-empty lines, so break out of the outer loop
@@ -172,11 +172,11 @@ class Interval(Tabular):
             return (
                 dataset.has_data()
                 and dataset.state == dataset.states.OK
-                and dataset.metadata.columns > 0
-                and dataset.metadata.data_lines != 0
-                and dataset.metadata.chromCol
-                and dataset.metadata.startCol
-                and dataset.metadata.endCol
+                and dataset.metadata_.columns > 0
+                and dataset.metadata_.data_lines != 0
+                and dataset.metadata_.chromCol
+                and dataset.metadata_.startCol
+                and dataset.metadata_.endCol
             )
         except Exception:
             return False
@@ -190,11 +190,11 @@ class Interval(Tabular):
         try:
             # If column indexes were not passwed, determine from metadata
             if chrom_col is None:
-                chrom_col = int(dataset.metadata.chromCol) - 1
+                chrom_col = int(dataset.metadata_.chromCol) - 1
             if start_col is None:
-                start_col = int(dataset.metadata.startCol) - 1
+                start_col = int(dataset.metadata_.startCol) - 1
             if end_col is None:
-                end_col = int(dataset.metadata.endCol) - 1
+                end_col = int(dataset.metadata_.endCol) - 1
             # Scan lines of file to find a reasonable chromosome and range
             chrom = None
             start = sys.maxsize
@@ -243,11 +243,11 @@ class Interval(Tabular):
         """Returns file contents with only the bed data"""
         with tempfile.NamedTemporaryFile(delete=False, mode="w") as fh:
             c, s, e, t, n = (
-                dataset.metadata.chromCol,
-                dataset.metadata.startCol,
-                dataset.metadata.endCol,
-                dataset.metadata.strandCol or 0,
-                dataset.metadata.nameCol or 0,
+                dataset.metadata_.chromCol,
+                dataset.metadata_.startCol,
+                dataset.metadata_.endCol,
+                dataset.metadata_.strandCol or 0,
+                dataset.metadata_.nameCol or 0,
             )
             c, s, e, t, n = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1, int(n) - 1
             if t >= 0:  # strand column (should) exists
@@ -323,10 +323,10 @@ class Interval(Tabular):
     def validate(self, dataset, **kwd):
         """Validate an interval file using the bx GenomicIntervalReader"""
         c, s, e, t = (
-            dataset.metadata.chromCol,
-            dataset.metadata.startCol,
-            dataset.metadata.endCol,
-            dataset.metadata.strandCol,
+            dataset.metadata_.chromCol,
+            dataset.metadata_.startCol,
+            dataset.metadata_.endCol,
+            dataset.metadata_.strandCol,
         )
         c, s, e, t = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1
         with compression_utils.get_fileobj(dataset.file_name, "r") as infile:
@@ -483,14 +483,14 @@ class Bed(Interval):
                     elems = line.split("\t")
                     if len(elems) > 2:
                         if len(elems) > 3:
-                            if overwrite or not dataset.metadata.element_is_set("nameCol"):
-                                dataset.metadata.nameCol = 4
+                            if overwrite or not dataset.metadata_.element_is_set("nameCol"):
+                                dataset.metadata_.nameCol = 4
                         if len(elems) < 6:
-                            if overwrite or not dataset.metadata.element_is_set("strandCol"):
-                                dataset.metadata.strandCol = 0
+                            if overwrite or not dataset.metadata_.element_is_set("strandCol"):
+                                dataset.metadata_.strandCol = 0
                         else:
-                            if overwrite or not dataset.metadata.element_is_set("strandCol"):
-                                dataset.metadata.strandCol = 6
+                            if overwrite or not dataset.metadata_.element_is_set("strandCol"):
+                                dataset.metadata_.strandCol = 6
                         break
             Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
@@ -707,10 +707,10 @@ class BedStrict(Bed):
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         Tabular.set_meta(self, dataset, overwrite=overwrite, **kwd)  # need column count first
-        if dataset.metadata.columns >= 4:
-            dataset.metadata.nameCol = 4
-            if dataset.metadata.columns >= 6:
-                dataset.metadata.strandCol = 6
+        if dataset.metadata_.columns >= 4:
+            dataset.metadata_.nameCol = 4
+            if dataset.metadata_.columns >= 6:
+                dataset.metadata_.strandCol = 6
 
     def sniff(self, filename):
         return False  # NOTE: This would require aggressively validating the entire file
@@ -824,8 +824,8 @@ class Gff(Tabular, _RemoteCallMixin):
                         break
 
         # Set attribute metadata and then set additional metadata.
-        dataset.metadata.attribute_types = attribute_types
-        dataset.metadata.attributes = len(attribute_types)
+        dataset.metadata_.attribute_types = attribute_types
+        dataset.metadata_.attributes = len(attribute_types)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         self.set_attribute_metadata(dataset)

@@ -321,7 +321,7 @@ class ColumnSetAction(DefaultJobAction):
                                 v = v[1:]
                             v = int(v)
                         if v != 0:
-                            setattr(dataset_assoc.dataset.metadata, k, v)
+                            setattr(dataset_assoc.dataset.metadata_, k, v)
 
     @classmethod
     def get_short_str(cls, pja):

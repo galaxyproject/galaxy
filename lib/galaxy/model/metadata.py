@@ -123,10 +123,10 @@ class MetadataCollection(Mapping):
             except Exception:
                 raise KeyError
         # `key` is an attribute of this instance, not some metadata: raise
-        # KeyError to prevent e.g. `'items' in dataset.metadata` from returning
+        # KeyError to prevent e.g. `'items' in dataset.metadata_` from returning
         # True
         # Not doing this would also break Cheetah's NameMapper._valueForName()
-        # since dataset.metadata['items'] would be None
+        # since dataset.metadata_['items'] would be None
         raise KeyError
 
     def __len__(self):
@@ -181,7 +181,7 @@ class MetadataCollection(Mapping):
         """
         meta_val = self[name]
         try:
-            meta_spec = self.parent.metadata.spec[name]
+            meta_spec = self.parent.metadata_.spec[name]
         except KeyError:
             log.debug(f"No metadata element with name '{name}' found")
             return False
@@ -643,7 +643,7 @@ class FileParameter(MetadataParameter):
         if MetadataTempFile.is_JSONified_value(value):
             value = MetadataTempFile.from_JSON(value)
         if isinstance(value, MetadataTempFile):
-            mf = parent.metadata.get(self.spec.name, None)
+            mf = parent.metadata_.get(self.spec.name, None)
             if mf is None:
                 mf = self.new_file(dataset=parent, **value.kwds)
             # Ensure the metadata file gets updated with content

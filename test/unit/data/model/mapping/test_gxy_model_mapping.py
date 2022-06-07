@@ -3357,7 +3357,7 @@ class TestLibraryDatasetDatasetAssociation(BaseTest):
             assert stored_obj.message == message
             # We cannot test obj.metadata by setting it directly (like the other attributes).
             # However, the following assertion verifies that it exists and has been initialized correctly.
-            assert stored_obj.metadata.parent.id == obj_id
+            assert stored_obj.metadata_.parent.id == obj_id
             assert stored_obj._metadata == _metadata
             assert stored_obj.metadata_deferred is metadata_deferred
 

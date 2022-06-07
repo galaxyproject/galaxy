@@ -71,14 +71,14 @@ class Audio(Binary):
         if which("ffprobe"):
             metadata, streams = ffprobe(dataset.file_name)
 
-            dataset.metadata.duration = metadata["duration"]
-            dataset.metadata.audio_codecs = [
+            dataset.metadata_.duration = metadata["duration"]
+            dataset.metadata_.audio_codecs = [
                 stream["codec_name"] for stream in streams if stream["codec_type"] == "audio"
             ]
-            dataset.metadata.sample_rates = [
+            dataset.metadata_.sample_rates = [
                 stream["sample_rate"] for stream in streams if stream["codec_type"] == "audio"
             ]
-            dataset.metadata.audio_streams = len([stream for stream in streams if stream["codec_type"] == "audio"])
+            dataset.metadata_.audio_streams = len([stream for stream in streams if stream["codec_type"] == "audio"])
 
 
 class Video(Binary):
@@ -158,19 +158,19 @@ class Video(Binary):
         if which("ffprobe"):
             metadata, streams = ffprobe(dataset.file_name)
             (w, h, fps) = self._get_resolution(streams)
-            dataset.metadata.resolution_w = w
-            dataset.metadata.resolution_h = h
-            dataset.metadata.fps = fps
+            dataset.metadata_.resolution_w = w
+            dataset.metadata_.resolution_h = h
+            dataset.metadata_.fps = fps
 
-            dataset.metadata.audio_codecs = [
+            dataset.metadata_.audio_codecs = [
                 stream["codec_name"] for stream in streams if stream["codec_type"] == "audio"
             ]
-            dataset.metadata.video_codecs = [
+            dataset.metadata_.video_codecs = [
                 stream["codec_name"] for stream in streams if stream["codec_type"] == "video"
             ]
 
-            dataset.metadata.audio_streams = len([stream for stream in streams if stream["codec_type"] == "audio"])
-            dataset.metadata.video_streams = len([stream for stream in streams if stream["codec_type"] == "video"])
+            dataset.metadata_.audio_streams = len([stream for stream in streams if stream["codec_type"] == "audio"])
+            dataset.metadata_.video_streams = len([stream for stream in streams if stream["codec_type"] == "video"])
 
 
 class Mkv(Video):
@@ -274,9 +274,9 @@ class Wav(Audio):
         """Set the metadata for this dataset from the file contents."""
         try:
             with wave.open(dataset.dataset.file_name, "rb") as fd:
-                dataset.metadata.rate = fd.getframerate()
-                dataset.metadata.nframes = fd.getnframes()
-                dataset.metadata.sampwidth = fd.getsampwidth()
-                dataset.metadata.nchannels = fd.getnchannels()
+                dataset.metadata_.rate = fd.getframerate()
+                dataset.metadata_.nframes = fd.getnframes()
+                dataset.metadata_.sampwidth = fd.getsampwidth()
+                dataset.metadata_.nchannels = fd.getnchannels()
         except wave.Error:
             pass

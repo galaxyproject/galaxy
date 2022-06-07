@@ -450,7 +450,7 @@ class JobSearch:
                                 and_(
                                     or_(a.dataset_version.in_([0, b.version]), b.update_time < model.Job.create_time),
                                     b.extension == c.extension,
-                                    b.metadata == c.metadata,
+                                    b.metadata_ == c.metadata_,
                                     *name_condition,
                                 ),
                                 b.id.in_(stmt),

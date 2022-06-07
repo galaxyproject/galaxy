@@ -327,13 +327,13 @@ def _ensure_relations_attached_and_expunge(deferred_hda: HistoryDatasetAssociati
 
 
 def _assert_2_bed_metadata(hda: HistoryDatasetAssociation) -> None:
-    assert hda.metadata.columns == 6
-    assert hda.metadata.data_lines == 68
-    assert hda.metadata.comment_lines == 0
-    assert hda.metadata.chromCol == 1
-    assert hda.metadata.startCol == 2
-    assert hda.metadata.endCol == 3
-    assert hda.metadata.viz_filter_cols == [4]
+    assert hda.metadata_.columns == 6
+    assert hda.metadata_.data_lines == 68
+    assert hda.metadata_.comment_lines == 0
+    assert hda.metadata_.chromCol == 1
+    assert hda.metadata_.startCol == 2
+    assert hda.metadata_.endCol == 3
+    assert hda.metadata_.viz_filter_cols == [4]
 
 
 def _assert_path_contains_2_bed(path) -> None:

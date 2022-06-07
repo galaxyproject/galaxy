@@ -67,7 +67,7 @@ class QualityScoreSOLiD(QualityScore):
 
     def set_meta(self, dataset, **kwd):
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-            dataset.metadata.data_lines = None
+            dataset.metadata_.data_lines = None
             return
         return QualityScore.set_meta(self, dataset, **kwd)
 

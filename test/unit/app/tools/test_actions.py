@@ -200,7 +200,7 @@ def __assert_output_format_is(expected, output, input_extensions=None, param_con
     i = 1
     for name, ext in input_extensions:
         hda = model.HistoryDatasetAssociation(extension=ext)
-        hda.metadata.random_field = str(i)  # Populate a random metadata field for testing
+        hda.metadata_.random_field = str(i)  # Populate a random metadata field for testing
         inputs[name] = hda
         last_ext = ext
         i += 1

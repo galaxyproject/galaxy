@@ -146,19 +146,19 @@ class Dzi(GenericXml):
     def set_meta(self, dataset, **kwd):
         tree = util.parse_xml(dataset.file_name)
         root = tree.getroot()
-        dataset.metadata.format = root.get("Format")
-        dataset.metadata.tile_size = root.get("TileSize")
+        dataset.metadata_.format = root.get("Format")
+        dataset.metadata_.tile_size = root.get("TileSize")
         # DeepZoom image files can include
         # xml namespace attributes.
         if root.tag.find("Collection") >= 0:
-            dataset.metadata.max_level = root.get("MaxLevel")
-            dataset.metadata.quality = root.get("Quality")
+            dataset.metadata_.max_level = root.get("MaxLevel")
+            dataset.metadata_.quality = root.get("Quality")
         elif root.tag.find("Image") >= 0:
-            dataset.metadata.overlap = root.get("Overlap")
+            dataset.metadata_.overlap = root.get("Overlap")
         for elem in root:
             if elem.tag.find("Size") >= 0:
-                dataset.metadata.width = elem.get("Width")
-                dataset.metadata.height = elem.get("Height")
+                dataset.metadata_.width = elem.get("Width")
+                dataset.metadata_.height = elem.get("Height")
 
     def get_visualizations(self, dataset):
         """Returns a list of visualizations for datatype"""

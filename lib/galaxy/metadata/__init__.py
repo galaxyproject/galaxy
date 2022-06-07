@@ -99,7 +99,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
                 return normalized_path.replace(normalized_remote_metadata_directory, target_directory, 1)
             return path
 
-        dataset.metadata.from_JSON_dict(metadata_output_path, path_rewriter=path_rewriter)
+        dataset.metadata_.from_JSON_dict(metadata_output_path, path_rewriter=path_rewriter)
 
     def _metadata_results_from_file(self, dataset, filename_results_code):
         try:
@@ -291,7 +291,7 @@ class ExtendedDirectoryMetadataGenerator(PortableDirectoryMetadataGenerator):
             os.path.join(working_directory, "metadata", "outputs_populated")
         )
         imported_dataset = import_model_store.sa_session.query(galaxy.model.HistoryDatasetAssociation).find(dataset.id)
-        dataset.metadata = imported_dataset.metadata
+        dataset.metadata_ = imported_dataset.metadata_
         return dataset
 
 
@@ -307,12 +307,12 @@ def _initialize_metadata_inputs(dataset, path_for_part, tmp_dir, kwds, real_meta
     json.dump(kwds, open(filename_kwds, "wt+"), ensure_ascii=True)
 
     override_metadata = []
-    for meta_key, spec_value in dataset.metadata.spec.items():
-        if isinstance(spec_value.param, FileParameter) and dataset.metadata.get(meta_key, None) is not None:
+    for meta_key, spec_value in dataset.metadata_.spec.items():
+        if isinstance(spec_value.param, FileParameter) and dataset.metadata_.get(meta_key, None) is not None:
             if not real_metadata_object:
                 metadata_temp = MetadataTempFile()
                 metadata_temp.tmp_dir = tmp_dir
-                shutil.copy(dataset.metadata.get(meta_key, None).file_name, metadata_temp.file_name)
+                shutil.copy(dataset.metadata_.get(meta_key, None).file_name, metadata_temp.file_name)
                 override_metadata.append((meta_key, metadata_temp.to_JSON()))
 
     json.dump(override_metadata, open(filename_override_metadata, "wt+"))

@@ -64,12 +64,12 @@ class GenomeGraphs(Tabular):
 
     def set_meta(self, dataset, **kwd):
         super().set_meta(dataset, **kwd)
-        dataset.metadata.markerCol = 1
+        dataset.metadata_.markerCol = 1
         header = open(dataset.file_name).readlines()[0].strip().split("\t")
-        dataset.metadata.columns = len(header)
+        dataset.metadata_.columns = len(header)
         t = ["numeric" for x in header]
         t[0] = "string"
-        dataset.metadata.column_types = t
+        dataset.metadata_.column_types = t
         return True
 
     def as_ucsc_display_file(self, dataset, **kwd):
@@ -572,13 +572,13 @@ class IdeasPre(Html):
         super().set_meta(dataset, **kwd)
         for fname in os.listdir(dataset.extra_files_path):
             if fname.startswith("chromosomes"):
-                dataset.metadata.chrom_bed = os.path.join(dataset.extra_files_path, fname)
+                dataset.metadata_.chrom_bed = os.path.join(dataset.extra_files_path, fname)
             elif fname.startswith("chromosome_windows"):
-                dataset.metadata.chrom_windows = os.path.join(dataset.extra_files_path, fname)
+                dataset.metadata_.chrom_windows = os.path.join(dataset.extra_files_path, fname)
             elif fname.startswith("IDEAS_input_config"):
-                dataset.metadata.input_config = os.path.join(dataset.extra_files_path, fname)
+                dataset.metadata_.input_config = os.path.join(dataset.extra_files_path, fname)
             elif fname.startswith("tmp"):
-                dataset.metadata.tmp_archive = os.path.join(dataset.extra_files_path, fname)
+                dataset.metadata_.tmp_archive = os.path.join(dataset.extra_files_path, fname)
         self.regenerate_primary_file(dataset)
 
     def generate_primary_file(self, dataset=None):
@@ -744,7 +744,7 @@ class RexpBase(Html):
         A file can be written as
         write.table(file='foo.pheno',pData(foo),sep='\t',quote=F,row.names=F)
         """
-        p = open(dataset.metadata.pheno_path).readlines()
+        p = open(dataset.metadata_.pheno_path).readlines()
         if len(p) > 0:  # should only need to fix an R pheno file once
             head = p[0].strip().split("\t")
             line1 = p[1].strip().split("\t")
@@ -761,7 +761,7 @@ class RexpBase(Html):
         note that R is weird and does not include the row.name in
         the header. why?"""
         if not dataset.dataset.purged:
-            pp = os.path.join(dataset.extra_files_path, f"{dataset.metadata.base_name}.pheno")
+            pp = os.path.join(dataset.extra_files_path, f"{dataset.metadata_.base_name}.pheno")
             try:
                 with open(pp) as f:
                     p = f.readlines()
@@ -779,7 +779,7 @@ class RexpBase(Html):
         """
         expects a .pheno file in the extra_files_dir - ugh
         """
-        pp = os.path.join(dataset.extra_files_path, f"{dataset.metadata.base_name}.pheno")
+        pp = os.path.join(dataset.extra_files_path, f"{dataset.metadata_.base_name}.pheno")
         try:
             with open(pp) as f:
                 p = f.readlines()
@@ -803,7 +803,7 @@ class RexpBase(Html):
         """
         cannot do this until we are setting metadata
         """
-        bn = dataset.metadata.base_name
+        bn = dataset.metadata_.base_name
         flist = os.listdir(dataset.extra_files_path)
         rval = [
             f"<html><head><title>Files for Composite Dataset {bn}</title></head><p/>Comprises the following files:<p/><ul>"
@@ -818,7 +818,7 @@ class RexpBase(Html):
 
     def init_meta(self, dataset, copy_from=None):
         if copy_from:
-            dataset.metadata = copy_from.metadata
+            dataset.metadata_ = copy_from.metadata_
 
     def set_meta(self, dataset, **kwd):
         """
@@ -833,18 +833,18 @@ class RexpBase(Html):
             if verbose:
                 gal_Log.debug("@@@rexpression set_meta failed - no dataset?")
             return False
-        bn = dataset.metadata.base_name
+        bn = dataset.metadata_.base_name
         if not bn:
             for f in flist:
                 n = os.path.splitext(f)[0]
                 bn = n
-                dataset.metadata.base_name = bn
+                dataset.metadata_.base_name = bn
         if not bn:
             bn = "?"
-            dataset.metadata.base_name = bn
+            dataset.metadata_.base_name = bn
         pn = f"{bn}.pheno"
         pp = os.path.join(dataset.extra_files_path, pn)
-        dataset.metadata.pheno_path = pp
+        dataset.metadata_.pheno_path = pp
         try:
             with open(pp) as f:
                 pf = f.readlines()  # read the basename.phenodata in the extra_files_path
@@ -854,17 +854,17 @@ class RexpBase(Html):
             h = pf[0].strip()
             h = h.split("\t")  # hope is header
             h = [escape(x) for x in h]
-            dataset.metadata.column_names = h
-            dataset.metadata.columns = len(h)
+            dataset.metadata_.column_names = h
+            dataset.metadata_.columns = len(h)
             dataset.peek = "".join(pf[:5])
         else:
-            dataset.metadata.column_names = []
-            dataset.metadata.columns = 0
+            dataset.metadata_.column_names = []
+            dataset.metadata_.columns = 0
             dataset.peek = "No pheno file found"
         if pf and len(pf) > 1:
-            dataset.metadata.pheCols = self.get_phecols(phenolist=pf)
+            dataset.metadata_.pheCols = self.get_phecols(phenolist=pf)
         else:
-            dataset.metadata.pheCols = [
+            dataset.metadata_.pheCols = [
                 ("", "No useable phenotypes found", False),
             ]
         if not dataset.info:
