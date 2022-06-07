@@ -4,10 +4,10 @@ import ast
 import os
 import re
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import (
+    find_packages,
+    setup,
+)
 
 SOURCE_DIR = "galaxy"
 
@@ -33,66 +33,7 @@ PROJECT_EMAIL = get_var("PROJECT_EMAIL")
 PROJECT_DESCRIPTION = get_var("PROJECT_DESCRIPTION")
 
 TEST_DIR = "tests"
-PACKAGES = [
-    "galaxy",
-    "galaxy.actions",
-    "galaxy.app_unittest_utils",
-    "galaxy.authnz",
-    "galaxy.dependencies",
-    "galaxy.forms",
-    "galaxy.jobs",
-    "galaxy.jobs.rules",
-    "galaxy.jobs.runners",
-    "galaxy.jobs.runners.state_handlers",
-    "galaxy.jobs.runners.util",
-    "galaxy.jobs.runners.util.cli",
-    "galaxy.jobs.runners.util.cli.job",
-    "galaxy.jobs.runners.util.cli.shell",
-    "galaxy.jobs.runners.util.condor",
-    "galaxy.jobs.runners.util.job_script",
-    "galaxy.jobs.splitters",
-    "galaxy.managers",
-    "galaxy.tools",
-    "galaxy.tools.actions",
-    "galaxy.tools.data",
-    "galaxy.tools.data_manager",
-    "galaxy.tools.error_reports",
-    "galaxy.tools.error_reports.plugins",
-    "galaxy.tools.expressions",
-    "galaxy.tools.filters",
-    "galaxy.tools.imp_exp",
-    "galaxy.tools.parameters",
-    "galaxy.tools.search",
-    "galaxy.tools.util",
-    "galaxy.tools.util.galaxyops",
-    "galaxy.tool_shed",
-    "galaxy.tool_shed.galaxy_install",
-    "galaxy.tool_shed.galaxy_install.datatypes",
-    "galaxy.tool_shed.galaxy_install.metadata",
-    "galaxy.tool_shed.galaxy_install.repository_dependencies",
-    "galaxy.tool_shed.galaxy_install.tools",
-    "galaxy.tool_shed.metadata",
-    "galaxy.tool_shed.tools",
-    "galaxy.tool_shed.util",
-    "galaxy.tours",
-    "galaxy.visualization",
-    "galaxy.visualization.data_providers",
-    "galaxy.visualization.data_providers.phyloviz",
-    "galaxy.visualization.genome",
-    "galaxy.visualization.plugins",
-    "galaxy.visualization.tracks",
-    "galaxy.webhooks",
-    "galaxy.work",
-    "galaxy.workflow",
-    "galaxy.workflow.refactor",
-    "galaxy.workflow.reports",
-    "galaxy.workflow.resources",
-    "galaxy.workflow.schedulers",
-    "galaxy_ext",
-    "galaxy_ext.container_monitor",
-    "galaxy_ext.expressions",
-    "galaxy_ext.metadata",
-]
+PACKAGES = find_packages(where=".", exclude=["galaxy.tools.bundled*", "tests*"])
 ENTRY_POINTS = """
         [console_scripts]
         galaxy-main=galaxy.main:main

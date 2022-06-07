@@ -8,10 +8,10 @@ from typing import (
     List,
 )
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import (
+    find_packages,
+    setup,
+)
 
 SOURCE_DIR = "galaxy"
 
@@ -37,13 +37,7 @@ PROJECT_EMAIL = get_var("PROJECT_EMAIL")
 PROJECT_DESCRIPTION = get_var("PROJECT_DESCRIPTION")
 
 TEST_DIR = "tests"
-PACKAGES = [
-    "galaxy",
-    "galaxy.job_execution",
-    "galaxy.job_execution.actions",
-    "galaxy.job_execution.ports",
-    "galaxy.metadata",
-]
+PACKAGES = find_packages(where=".", exclude=["tests*"])
 ENTRY_POINTS = """
         [console_scripts]
         galaxy-set-metadata=galaxy.metadata.set_metadata:set_metadata

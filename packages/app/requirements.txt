@@ -1,6 +1,7 @@
 galaxy-auth
 galaxy-config
 galaxy-data
+galaxy-files
 galaxy-job-execution
 galaxy-job-metrics
 galaxy-objectstore

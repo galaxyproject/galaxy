@@ -8,10 +8,10 @@ from typing import (
     List,
 )
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import (
+    find_packages,
+    setup,
+)
 
 SOURCE_DIR = "galaxy"
 
@@ -37,16 +37,7 @@ PROJECT_EMAIL = get_var("PROJECT_EMAIL")
 PROJECT_DESCRIPTION = get_var("PROJECT_DESCRIPTION")
 
 TEST_DIR = "tests"
-PACKAGES = [
-    "galaxy",
-    "galaxy.web",
-    "galaxy.web.framework",
-    "galaxy.web.framework.helpers",
-    "galaxy.web.framework.middleware",
-    "galaxy.web.legacy_framework",
-    "galaxy.web.proxy",
-    "galaxy.web.short_term_storage",
-]
+PACKAGES = find_packages(where=".", exclude=["tests*"])
 ENTRY_POINTS = """
         [console_scripts]
 """
