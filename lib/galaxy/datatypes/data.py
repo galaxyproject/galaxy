@@ -37,7 +37,6 @@ from galaxy.util import (
     FILENAME_VALID_CHARS,
     inflector,
     iter_start_of_line,
-    smart_str,
     unicodify,
 )
 from galaxy.util.bunch import Bunch
@@ -437,8 +436,6 @@ class Data(metaclass=DataMeta):
         # Prevent IE8 from sniffing content type since we're explicit about it.  This prevents intentionally text/plain
         # content from being rendered in the browser
         headers["X-Content-Type-Options"] = "nosniff"
-        if isinstance(data, str):  # TODO: if this is possible, the type hint for `data` is incorrect.
-            return smart_str(data), headers
         if filename and filename != "index":
             # For files in extra_files_path
             extra_dir = data.dataset.extra_files_path_name
