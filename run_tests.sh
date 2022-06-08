@@ -314,7 +314,7 @@ do
       -a|-api|--api)
           GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE="True"  # Run these tests with a non-trivial object store.
           export GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE
-          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           marker="not cwl_conformance"
           report_file="./run_api_tests.html"
           if [ $# -gt 1 ]; then
@@ -328,7 +328,7 @@ do
       -cwl|--cwl)
           GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE="True"  # Run these tests with a non-trivial object store.
           export GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE
-          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           marker="cwl_conformance"
           report_file="./run_cwl_tests.html"
           generate_cwl_conformance_tests=1
@@ -341,7 +341,7 @@ do
           fi
           ;;
       -selenium|--selenium)
-          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           report_file="./run_selenium_tests.html"
           skip_client_build=""
           if [ $# -gt 1 ]; then
@@ -385,7 +385,7 @@ do
           shift 2
           ;;
       -f|-framework|--framework)
-          GALAXY_TEST_TOOL_CONF="test/functional/tools/samples_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="test/functional/tools/sample_tool_conf.xml"
           marker="tool"
           report_file="run_framework_tests.html"
           framework_test=1;
@@ -478,7 +478,7 @@ do
           fi
           ;;
       -i|-integration|--integration)
-          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           report_file="./run_integration_tests.html"
           if [ $# -gt 1 ]; then
               integration_extra=$2
