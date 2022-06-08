@@ -2,12 +2,12 @@
 at components/JobStates/CollectionJobStates but it relies on the backbone data
 model, so probably has to go eventually.-->
 <template>
-    <div>
-        <b-progress v-if="maxJobs && runningJobs" :max="maxJobs" height="1em" show-value>
-            <b-progress-bar v-if="errorJobs" :value="errorJobs" variant="danger"></b-progress-bar>
-            <b-progress-bar v-if="okJobs" :value="okJobs" variant="success"></b-progress-bar>
-            <b-progress-bar v-if="runningJobs" :value="runningJobs" variant="info" animated></b-progress-bar>
-            <b-progress-bar v-if="waitingJobs" :value="waitingJobs" variant="dark" animated></b-progress-bar>
+    <div class="collection-progress">
+        <b-progress v-if="maxJobs && runningJobs" :max="maxJobs" show-value>
+            <b-progress-bar v-if="errorJobs" :value="errorJobs" variant="danger" />
+            <b-progress-bar v-if="okJobs" :value="okJobs" variant="success" />
+            <b-progress-bar v-if="runningJobs" :value="runningJobs" variant="warning" />
+            <b-progress-bar v-if="waitingJobs" :value="waitingJobs" variant="secondary" />
         </b-progress>
     </div>
 </template>
@@ -19,9 +19,6 @@ export default {
         summary: { type: JobStateSummary, required: true },
     },
     computed: {
-        hasRunningJobs() {
-            return this.summary && this.summary.get("running") > 0;
-        },
         maxJobs() {
             return this.summary.get("all_jobs");
         },
@@ -44,15 +41,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.progress-bar {
-    border: 1px solid black;
-}
-.progress > .bg-success {
-    color: black;
-}
-.progress > .bg-danger {
-    color: black;
-}
-</style>

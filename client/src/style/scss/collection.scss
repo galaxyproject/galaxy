@@ -50,3 +50,13 @@
         overflow-y: auto;
     }
 }
+
+.collection-progress {
+    .progress {
+        border: $border-default;
+        border-color: $text-muted;
+        .progress-bar {
+            color: $text-muted;
+        }
+    }
+}
