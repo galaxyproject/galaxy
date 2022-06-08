@@ -1,10 +1,17 @@
 import tempfile
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
 
 from galaxy.datatypes.tabular import (
     MAX_DATA_LINES,
     Tabular,
 )
 from .util import MockDataset
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 
 def test_tabular_set_meta_large_file():
@@ -14,4 +21,4 @@ def test_tabular_set_meta_large_file():
         test_file.flush()
         dataset = MockDataset(id=1)
         dataset.file_name = test_file.name
-        Tabular().set_meta(dataset)
+        Tabular().set_meta(cast("DatasetInstance", dataset))

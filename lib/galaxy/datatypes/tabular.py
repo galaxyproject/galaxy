@@ -12,6 +12,11 @@ import shutil
 import subprocess
 import tempfile
 from json import dumps
+from typing import (
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
 import pysam
 from markupsafe import escape
@@ -38,6 +43,9 @@ from galaxy.model import DatasetInstance
 from galaxy.util import compression_utils
 from galaxy.util.markdown import MarkdownFormatHelpers
 from . import dataproviders
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -84,7 +92,7 @@ class TabularData(data.Text):
     )
 
     @abc.abstractmethod
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         raise NotImplementedError
 
     def set_peek(self, dataset, line_count=None, WIDTH=256, skipchars=None, line_wrap=False, **kwd):
@@ -326,8 +334,14 @@ class Tabular(TabularData):
         return None
 
     def set_meta(
-        self, dataset, overwrite=True, skip=None, max_data_lines=MAX_DATA_LINES, max_guess_type_data_lines=None, **kwd
-    ):
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
         """
         Tries to determine the number of columns as well as those columns that
         contain numerical values in the dataset.  A skip parameter is used
@@ -406,6 +420,7 @@ class Tabular(TabularData):
             return True
 
         is_column_type = {}  # Dict to store column type string to checking function
+        column_type: Optional[str]  # need to declare type for subsequent mypy checks
         for column_type in column_type_set_order:
             is_column_type[column_type] = locals()[f"is_{column_type}"]
 
@@ -418,8 +433,8 @@ class Tabular(TabularData):
         data_lines = 0
         comment_lines = 0
         column_names = None
-        column_types = []
-        first_line_column_types = [default_column_type]  # default value is one column of type str
+        column_types: List[Optional[str]] = []
+        first_line_column_types: List[Optional[str]] = [default_column_type]  # default value is one column of type str
         if dataset.has_data():
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
             with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
@@ -461,8 +476,8 @@ class Tabular(TabularData):
                             column_types = [None for col in first_line_column_types]
                     if max_data_lines is not None and data_lines >= max_data_lines:
                         if dataset_fh.tell() != dataset.get_size():
-                            data_lines = None  # Clear optional data_lines metadata value
-                            comment_lines = None  # Clear optional comment_lines metadata value; additional comment lines could appear below this point
+                            data_lines = None  # type: ignore[assignment]  # Clear optional data_lines metadata value
+                            comment_lines = None  # type: ignore[assignment]  # Clear optional comment_lines metadata value; additional comment lines could appear below this point
                         break
                     i += 1
 

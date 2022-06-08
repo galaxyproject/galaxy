@@ -236,9 +236,8 @@ class Data(metaclass=DataMeta):
         if copy_from:
             dataset.metadata = copy_from.metadata
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> bool:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """Unimplemented method, allows guessing of metadata from contents of file"""
-        return True
 
     def missing_meta(
         self, dataset: "DatasetInstance", check: Optional[List] = None, skip: Optional[List] = None
@@ -975,7 +974,7 @@ class Text(Data):
         """Returns the mime type of the datatype"""
         return "text/plain"
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """
         Set the number of lines of data in dataset.
         """
