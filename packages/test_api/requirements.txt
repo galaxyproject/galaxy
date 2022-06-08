@@ -1,2 +1,5 @@
 galaxy-test-base
+pytest
+python-dateutil
+requests
 tuspy
