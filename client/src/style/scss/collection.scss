@@ -54,18 +54,9 @@
 .collection-progress {
     .progress {
         border: $border-default;
-        border-color: $brand-primary;
-        .bg-success {
-            color: $state-success-text;
-        }
-        .bg-danger {
-            color: $state-danger-text;
-        }
-        .bg-warning {
-            color: $state-warning-text;
-        }
-        .bg-secondary {
-            color: $state-secondary-text;
+        border-color: $text-muted;
+        .progress-bar {
+            color: $text-muted;
         }
     }
 }

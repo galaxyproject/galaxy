@@ -79,8 +79,6 @@ $state-success-text: theme-color-level("success", $alert-color-level);
 $state-success-bg: theme-color-level("success", $alert-bg-level);
 $state-success-border: theme-color-level("success", $alert-border-level);
 
-$state-secondary-text: theme-color-level("secondary", $alert-color-level);
-
 // Fonts and sizes
 $font-family-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
