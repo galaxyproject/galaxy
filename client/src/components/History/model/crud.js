@@ -38,3 +38,27 @@ export function purgeAllDeletedContent(history) {
     const filters = { deleted: true };
     return purgeSelectedContent(history, filters);
 }
+
+export function changeDbkeyOfSelectedContent(history, filters, items, extraParams) {
+    const operationType = "change_dbkey";
+    const params = { type: operationType, dbkey: extraParams.dbkey };
+    return bulkUpdate(history, operationType, filters, items, params);
+}
+
+export function changeDatatypeOfSelectedContent(history, filters, items, extraParams) {
+    const operationType = "change_datatype";
+    const params = { type: operationType, datatype: extraParams.datatype };
+    return bulkUpdate(history, operationType, filters, items, params);
+}
+
+export function addTagsToSelectedContent(history, filters, items, extraParams) {
+    const operationType = "add_tags";
+    const params = { type: operationType, tags: extraParams.tags };
+    return bulkUpdate(history, operationType, filters, items, params);
+}
+
+export function removeTagsFromSelectedContent(history, filters, items, extraParams) {
+    const operationType = "remove_tags";
+    const params = { type: operationType, tags: extraParams.tags };
+    return bulkUpdate(history, operationType, filters, items, params);
+}

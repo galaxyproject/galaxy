@@ -14,6 +14,9 @@
         </p>
         <p v-else v-localize>The operation failed for the following reasons:</p>
         <div>
+            <ul v-if="errorMessage">
+                <li>{{ errorMessage }}</li>
+            </ul>
             <ul>
                 <li v-for="(reason, index) in reasons" :key="`error-${index}`">
                     {{ reason }}
@@ -52,6 +55,9 @@ export default {
                 return [...new Set(this.operationError.result.errors.map((e) => e.error))];
             }
             return [];
+        },
+        errorMessage() {
+            return this.operationError?.errorMessage?.message;
         },
     },
     methods: {

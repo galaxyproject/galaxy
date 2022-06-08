@@ -20,6 +20,13 @@ class GenomesManager:
     def get_dbkeys(self, user: m.User, chrom_info: bool) -> List[List[str]]:
         return self.genomes.get_dbkeys(user, chrom_info)
 
+    def is_registered_dbkey(self, dbkey: str, user: m.User) -> bool:
+        dbkeys = self.get_dbkeys(user, chrom_info=False)
+        for _, key in dbkeys:
+            if dbkey == key:
+                return True
+        return False
+
     def get_genome(
         self, trans: ProvidesUserContext, id: str, num: int, chrom: str, low: int, high: int, reference: bool
     ) -> Any:
