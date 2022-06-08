@@ -9,8 +9,14 @@ import socket
 import string
 import time
 from http.cookies import CookieError
-from typing import Any, Dict
-from urllib.parse import urlparse
+from typing import (
+    Any,
+    Dict,
+)
+from urllib.parse import (
+    urljoin,
+    urlparse,
+)
 
 import mako.lookup
 import mako.runtime
@@ -62,6 +68,8 @@ UCSC_SERVERS = (
     'hgw7.soe.ucsc.edu',
     'hgw8.soe.ucsc.edu',
 )
+
+TOOL_RUNNER_SESSION_COOKIE = "galaxytoolrunnersession"
 
 
 class WebApplication(base.WebApplication):
@@ -379,14 +387,41 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             if name in self.response.cookies:
                 return self.response.cookies[name].value
             else:
+                if name not in self.request.cookies and TOOL_RUNNER_SESSION_COOKIE in self.request.cookies:
+                    # TOOL_RUNNER_SESSION_COOKIE value is the encoded galaxysession cookie.
+                    # We decode it here and pretend it's the galaxysession
+                    tool_runner_path = urljoin(self.app.config.galaxy_url_prefix, "tool_runner")
+                    if self.request.path.startswith(tool_runner_path):
+                        return self.security.decode_guid(self.request.cookies[TOOL_RUNNER_SESSION_COOKIE].value)
                 return self.request.cookies[name].value
         except Exception:
             return None
 
-    def set_cookie(self, value, name='galaxysession', path='/', age=90, version='1'):
+    def set_cookie(self, value, name="galaxysession", path="/", age=90, version="1"):
+        self._set_cookie(value, name=name, path=path, age=age, version=version)
+        if name == "galaxysession":
+            # Set an extra sessioncookie that will only be sent and be accepted on the tool_runner path.
+            # Use the id_secret to encode the sessioncookie, so if a malicious site
+            # obtains the sessioncookie they can only run tools.
+            self._set_cookie(
+                value,
+                name=TOOL_RUNNER_SESSION_COOKIE,
+                path=urljoin(path, "tool_runner"),
+                age=age,
+                version=version,
+                encode_value=True,
+            )
+            tool_runner_cookie = self.response.cookies[TOOL_RUNNER_SESSION_COOKIE]
+            tool_runner_cookie["path"] = urljoin(path, "tool_runner")
+            tool_runner_cookie["SameSite"] = "None"
+            tool_runner_cookie["secure"] = True
+
+    def _set_cookie(self, value, name="galaxysession", path="/", age=90, version="1", encode_value=False):
         """Convenience method for setting a session cookie"""
         # The galaxysession cookie value must be a high entropy 128 bit random number encrypted
         # using a server secret key.  Any other value is invalid and could pose security issues.
+        if encode_value:
+            value = self.security.encode_guid(value)
         self.response.cookies[name] = unicodify(value)
         self.response.cookies[name]['path'] = path
         self.response.cookies[name]['max-age'] = 3600 * 24 * age  # 90 days
