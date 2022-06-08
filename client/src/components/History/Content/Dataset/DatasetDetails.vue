@@ -21,7 +21,7 @@
                         <span class="value">{{ result.misc_info }}</span>
                     </div>
                 </div>
-                <DatasetActions :item="result" />
+                <DatasetActions :item="result" :show-highlight="showHighlight" @toggleHighlights="toggleHighlights" />
                 <pre v-if="result.peek" class="dataset-peek p-1" v-html="result.peek" />
             </div>
         </div>
@@ -40,10 +40,16 @@ export default {
     },
     props: {
         dataset: { type: Object, required: true },
+        showHighlight: { type: Boolean, default: false },
     },
     computed: {
         stateText() {
             return STATES[this.dataset.state] && STATES[this.dataset.state].text;
+        },
+    },
+    methods: {
+        toggleHighlights() {
+            this.$emit("toggleHighlights");
         },
     },
 };

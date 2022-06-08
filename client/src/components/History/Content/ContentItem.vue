@@ -23,6 +23,23 @@
                             :icon="['far', 'square']"
                             @click.stop="$emit('update:selected', true)" />
                     </span>
+                    <span v-if="highlight == 'input'" v-b-tooltip.hover title="Input" @click.stop="toggleHighlights">
+                        <span class="text-info fa fa-arrow-circle-up fa-fw" />
+                    </span>
+                    <span
+                        v-else-if="highlight == 'noInputs'"
+                        v-b-tooltip.hover
+                        title="No Inputs for this item"
+                        @click.stop="toggleHighlights">
+                        <span class="text-info fa fa-minus-circle fa-fw" />
+                    </span>
+                    <span
+                        v-else-if="highlight == 'output'"
+                        v-b-tooltip.hover
+                        title="Inputs highlighted for this item"
+                        @click.stop="toggleHighlights">
+                        <span class="fa fa-check-circle fa-fw" />
+                    </span>
                     <span v-if="hasStateIcon">
                         <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
                     </span>
@@ -60,7 +77,12 @@
             @input="onTags" />
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <div class="detail-animation-wrapper" :class="expandDataset ? '' : 'collapsed'">
-            <DatasetDetails v-if="expandDataset" :dataset="item" @edit="onEdit" />
+            <DatasetDetails
+                v-if="expandDataset"
+                :dataset="item"
+                :show-highlight="isHistoryItem && isHistPanel"
+                @edit="onEdit"
+                @toggleHighlights="toggleHighlights" />
         </div>
     </div>
 </template>
@@ -84,9 +106,11 @@ export default {
     },
     props: {
         expandDataset: { type: Boolean, required: true },
+        highlight: { type: String, default: null },
         id: { type: Number, required: true },
         isDataset: { type: Boolean, default: true },
         isHistoryItem: { type: Boolean, default: true },
+        isHistPanel: { type: Boolean, default: false },
         item: { type: Object, required: true },
         name: { type: String, required: true },
         selected: { type: Boolean, default: false },
@@ -167,6 +191,9 @@ export default {
         },
         onTagClick(tag) {
             this.$emit("tag-click", tag.label);
+        },
+        toggleHighlights() {
+            this.$emit("toggleHighlights", this.item);
         },
     },
 };
