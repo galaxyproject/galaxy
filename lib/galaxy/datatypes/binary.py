@@ -484,7 +484,7 @@ class BamNative(CompressedArchive, _BamOrSam):
     )
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        _BamOrSam().set_meta(dataset)
+        _BamOrSam().set_meta(dataset, overwrite=overwrite, **kwd)
 
     @staticmethod
     def merge(split_files, output_file):
