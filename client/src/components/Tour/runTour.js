@@ -121,5 +121,6 @@ export async function runTour(tourId, tourData = null) {
             },
         });
     });
-    return mountTour({ steps });
+    const requirements = tourData.requirements || [];
+    return mountTour({ steps, requirements });
 }
