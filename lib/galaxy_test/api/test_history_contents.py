@@ -1259,6 +1259,49 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
                 assert item["data_type"] == "galaxy.datatypes.tabular.Tabular"
                 assert "metadata_column_names" in item
 
+    @skip_without_tool("cat_data_and_sleep")
+    def test_bulk_datatype_change_errors(self):
+        with self.dataset_populator.test_history() as history_id:
+            num_datasets = 3
+            dataset_ids = []
+            for _ in range(num_datasets):
+                hda_id = self.dataset_populator.new_dataset(history_id)["id"]
+                dataset_ids.append(hda_id)
+            self.dataset_populator.wait_for_history_jobs(history_id)
+
+            # Run tool on last dataset
+            input_hda_id = hda_id
+            inputs = {
+                "input1": {"src": "hda", "id": input_hda_id},
+                "sleep_time": 10,
+            }
+            run_response = self.dataset_populator.run_tool_raw(
+                "cat_data_and_sleep",
+                inputs,
+                history_id,
+            )
+            output_hda_id = run_response.json()["outputs"][0]["id"]
+            num_datasets += 1  # the new output dataset
+
+            dataset_ids_in_use = [input_hda_id, output_hda_id]
+
+            expected_datatype = "tabular"
+            # Change datatype of all datasets (4 in total)
+            payload = {
+                "operation": "change_datatype",
+                "params": {
+                    "type": "change_datatype",
+                    "datatype": expected_datatype,
+                },
+            }
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            # First 2 datasets are ok
+            assert bulk_operation_result["success_count"] == 2
+            # Last 2 are in use (input and output) and must fail
+            assert len(bulk_operation_result["errors"]) == 2
+            for error in bulk_operation_result["errors"]:
+                assert error["item"]["id"] in dataset_ids_in_use
+
     def test_index_returns_expected_total_matches(self):
         with self.dataset_populator.test_history() as history_id:
             datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
