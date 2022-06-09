@@ -238,7 +238,7 @@ history_panel:
     refresh_button: '.history-refresh-button'
     name: '.title .name'
     name_beta: '.history-title span:last-child'
-    name_edit_input: 
+    name_edit_input:
       selector: 'name input'
       type: data-description
     contents: '#current-history-panel .history-content'
@@ -279,9 +279,9 @@ history_panel:
       type: xpath
       selector: '//a[text()="Use Beta History Panel"]'
     options_use_legacy_history: 'a[data-description="switch to legacy history view"]'
-    
+
     collection_menu_button: '.collection-menu'
-    collection_menu_edit_attributes: 
+    collection_menu_edit_attributes:
       type: xpath
       selector: '//button[@title="Edit attributes"]'
     new_history_button: '.history-new-button'
@@ -322,10 +322,10 @@ edit_dataset_attributes:
 
 edit_collection_attributes:
   selectors:
-    database_genome_tab: 
+    database_genome_tab:
       type: xpath
       selector: '//a[contains(text(), "Database/Build")]'
-    database_value: 
+    database_value:
       type: xpath
       selector: '//span[contains(text(), "${dbkey}")]'
     save_btn: '.save-collection-edit'
@@ -337,6 +337,7 @@ tool_panel:
   selectors:
     tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
     outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
+    data_source_tool_link: 'a[href$$="tool_runner/data_source_redirect?tool_id=${tool_id}"]'
     search: '.search-query'
     workflow_names: '#internal-workflows .toolTitle'
     views_button: '.tool-panel-dropdown'
