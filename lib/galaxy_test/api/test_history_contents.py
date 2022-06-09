@@ -1302,6 +1302,39 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
             for error in bulk_operation_result["errors"]:
                 assert error["item"]["id"] in dataset_ids_in_use
 
+    def test_bulk_datatype_change_auto(self):
+        with self.dataset_populator.test_history() as history_id:
+            tabular_contents = "1\t2\t3\na\tb\tc\n"
+            dataset_ids = [
+                self.dataset_populator.new_dataset(history_id, content=tabular_contents)["id"],
+                self.dataset_populator.new_dataset(history_id, content=tabular_contents)["id"],
+            ]
+            self.dataset_populator.wait_for_history_jobs(history_id)
+
+            history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
+            for item in history_contents:
+                assert item["extension"] == "txt"
+                assert item["data_type"] == "galaxy.datatypes.data.Text"
+                assert "metadata_delimiter" not in item
+
+            # Change datatype of all datasets to auto
+            payload = {
+                "operation": "change_datatype",
+                "params": {
+                    "type": "change_datatype",
+                    "datatype": "auto",
+                },
+            }
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            self._assert_bulk_success(bulk_operation_result, expected_success_count=len(dataset_ids))
+            history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
+            # Should be detected as `tabular` and set the metadata correctly
+            for item in history_contents:
+                assert item["extension"] == "tabular"
+                assert item["data_type"] == "galaxy.datatypes.tabular.Tabular"
+                assert "metadata_delimiter" in item
+                assert item["metadata_delimiter"] == "\t"
+
     def test_index_returns_expected_total_matches(self):
         with self.dataset_populator.test_history() as history_id:
             datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
