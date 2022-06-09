@@ -54,6 +54,10 @@ export default {
             if (this.operationError && this.operationError.result) {
                 return [...new Set(this.operationError.result.errors.map((e) => e.error))];
             }
+            const response_error = this.operationError?.errorMessage?.response?.data?.err_msg;
+            if (response_error) {
+                return [response_error];
+            }
             return [];
         },
         errorMessage() {
