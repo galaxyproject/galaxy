@@ -82,7 +82,7 @@ class BaseJobRunner:
     start_methods = ["_init_monitor_thread", "_init_worker_threads"]
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
-    def __init__(self, app, nworkers, **kwargs):
+    def __init__(self, app, nworkers: int, **kwargs):
         """Start the job runner"""
         self.app = app
         self.redact_email_in_job_name = self.app.config.redact_email_in_job_name
@@ -524,7 +524,7 @@ class BaseJobRunner:
         except Exception:
             log.exception("Caught exception in runner state handler")
 
-    def fail_job(self, job_state, exception=False):
+    def fail_job(self, job_state: "JobState", exception=False, message=None, full_status=None):
         if getattr(job_state, "stop_job", True):
             self.stop_job(job_state.job_wrapper)
         job_state.job_wrapper.reclaim_ownership()

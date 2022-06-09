@@ -41,6 +41,7 @@ from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
+    JobState,
 )
 from galaxy.tool_util.deps import dependencies
 from galaxy.util import (
@@ -314,7 +315,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             else:
                 message = LOST_REMOTE_ERROR
             if not job_state.job_wrapper.get_job().finished:
-                self.fail_job(job_state, message, full_status=full_status)
+                self.fail_job(job_state, message=message, full_status=full_status)
             return None
         if pulsar_status == "running" and not job_state.running:
             job_state.running = True
@@ -607,7 +608,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
         job_destination_params = dict(job_destination_params.items())
         return self.client_manager.get_client(job_destination_params, **get_client_kwds)
 
-    def finish_job(self, job_state):
+    def finish_job(self, job_state: JobState):
+        assert isinstance(job_state, AsynchronousJobState)
         stderr = stdout = ""
         job_wrapper = job_state.job_wrapper
         try:
@@ -667,8 +669,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
 
-    def fail_job(self, job_state, message=GENERIC_REMOTE_ERROR, full_status=None, exception=False):
+    def fail_job(self, job_state: JobState, exception=False, message=GENERIC_REMOTE_ERROR, full_status=None):
         """Seperated out so we can use the worker threads for it."""
+        assert isinstance(job_state, AsynchronousJobState)
         self.stop_job(job_state.job_wrapper)
         stdout = ""
         stderr = ""
