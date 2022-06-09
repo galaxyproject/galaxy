@@ -140,7 +140,7 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
     trans.sa_session.flush()
     history.add_dataset(hda, genome_build=uploaded_dataset.dbkey, quota=False)
     permissions = trans.app.security_agent.history_get_default_permissions(history)
-    trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions)
+    trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
     trans.sa_session.flush()
     return hda
 
@@ -211,7 +211,7 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
     else:
         # Copy the current user's DefaultUserPermissions to the new LibraryDatasetDatasetAssociation.dataset
         trans.app.security_agent.set_all_dataset_permissions(
-            ldda.dataset, trans.app.security_agent.user_get_default_permissions(trans.user)
+            ldda.dataset, trans.app.security_agent.user_get_default_permissions(trans.user), new=True
         )
         folder.add_library_dataset(ld, genome_build=uploaded_dataset.dbkey)
         trans.sa_session.add(folder)

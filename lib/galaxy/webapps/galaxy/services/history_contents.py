@@ -61,6 +61,7 @@ from galaxy.model import (
     User,
 )
 from galaxy.model.security import GalaxyRBACAgent
+from galaxy.objectstore import BaseObjectStore
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
@@ -153,6 +154,11 @@ class LegacyHistoryContentsIndexParams(Model):
     dataset_details: Optional[DatasetDetailsType]
     deleted: Optional[bool]
     visible: Optional[bool]
+    sharable: Optional[bool] = Field(
+        default=None,
+        title="Sharable",
+        description="Whether to return only sharable or not sharable datasets. Leave unset for both.",
+    )
 
 
 class HistoryContentsIndexJobsSummaryParams(Model):
@@ -263,6 +269,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def __init__(
         self,
         security: IdEncodingHelper,
+        object_store: BaseObjectStore,
         history_manager: histories.HistoryManager,
         history_contents_manager: HistoryContentsManager,
         hda_manager: hdas.HDAManager,
@@ -292,6 +299,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         self.item_operator = HistoryItemOperator(self.hda_manager, self.hdca_manager, self.dataset_collection_manager)
         self.short_term_storage_allocator = short_term_storage_allocator
         self.genomes_manager = genomes_manager
+        self.object_store = object_store
 
     def index(
         self,
@@ -1113,6 +1121,13 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         ids = legacy_params_dict.get("ids")
         if ids:
             legacy_params_dict["ids"] = self.decode_ids(ids)
+
+        object_store_ids = None
+        sharable = legacy_params.sharable
+        if sharable is not None:
+            object_store_ids = self.object_store.object_store_ids(private=not sharable)
+            if object_store_ids:
+                legacy_params_dict["object_store_ids"] = object_store_ids
         contents = history.contents_iter(**legacy_params_dict)
         items = [
             self._serialize_legacy_content_item(trans, content, legacy_params_dict.get("dataset_details"))

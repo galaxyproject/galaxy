@@ -182,7 +182,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(namelist) == 3, f"Expected 3 elements in [{namelist}]"
 
     def test_hda_security(self):
-        element_identifiers = self.dataset_collection_populator.pair_identifiers(self.history_id)
+        element_identifiers = self.dataset_collection_populator.pair_identifiers(self.history_id, wait=True)
         self.dataset_populator.make_private(self.history_id, element_identifiers[0]["id"])
         with self._different_user():
             history_id = self.dataset_populator.new_history()

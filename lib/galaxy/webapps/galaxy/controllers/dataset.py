@@ -325,7 +325,12 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             permission_disable = True
             permission_inputs = list()
             if trans.user:
-                if data.dataset.actions:
+                if not data.dataset.sharable:
+                    permission_message = "The dataset is stored on private storage to you and cannot be shared."
+                    permission_inputs.append(
+                        {"name": "not_sharable", "type": "hidden", "label": permission_message, "readonly": True}
+                    )
+                elif data.dataset.actions:
                     in_roles = {}
                     for action, roles in trans.app.security_agent.get_permissions(data.dataset).items():
                         in_roles[action.action] = [trans.security.encode_id(role.id) for role in roles]

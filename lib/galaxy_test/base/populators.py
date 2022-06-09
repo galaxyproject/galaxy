@@ -359,7 +359,10 @@ class BaseDatasetPopulator(BasePopulator):
             run_response = self.tools_post(payload)
         else:
             payload = self.fetch_payload(history_id, content=content, **kwds)
-            run_response = self.fetch(payload, wait=wait)
+            fetch_kwds = dict(wait=wait)
+            if "assert_ok" in kwds:
+                fetch_kwds["assert_ok"] = kwds["assert_ok"]
+            run_response = self.fetch(payload, **fetch_kwds)
         if wait:
             self.wait_for_tool_run(history_id, run_response, assert_ok=kwds.get("assert_ok", True))
         return run_response
@@ -1003,10 +1006,24 @@ class BaseDatasetPopulator(BasePopulator):
             "access": [role_id],
             "manage": [role_id],
         }
+        response = self.update_permissions_raw(history_id, dataset_id, payload)
+        response.raise_for_status()
+        return response.json()
+
+    def make_public_raw(self, history_id: str, dataset_id: str) -> Response:
+        role_id = self.user_private_role_id()
+        payload = {
+            "access": json.dumps([]),
+            "manage": json.dumps([role_id]),
+        }
+        response = self.update_permissions_raw(history_id, dataset_id, payload)
+        return response
+
+    def update_permissions_raw(self, history_id: str, dataset_id: str, payload: dict) -> Response:
         url = f"histories/{history_id}/contents/{dataset_id}/permissions"
         update_response = self._put(url, payload, admin=True, json=True)
-        assert update_response.status_code == 200, update_response.content
-        return update_response.json()
+        update_response.raise_for_status()
+        return update_response
 
     def make_public(self, history_id: str) -> dict:
         sharing_response = self._put(f"histories/{history_id}/publish")
@@ -2525,8 +2542,8 @@ class BaseDatasetCollectionPopulator:
         payload = dict(history_id=history_id, collection_type=collection_type, **kwds)
         return payload
 
-    def pair_identifiers(self, history_id, contents=None):
-        hda1, hda2 = self.__datasets(history_id, count=2, contents=contents)
+    def pair_identifiers(self, history_id, contents=None, wait=False):
+        hda1, hda2 = self.__datasets(history_id, count=2, contents=contents, wait=wait)
 
         element_identifiers = [
             dict(name="forward", src="hda", id=hda1["id"]),
@@ -2562,10 +2579,12 @@ class BaseDatasetCollectionPopulator:
         else:
             return self.dataset_populator.fetch(payload, wait=wait)
 
-    def __datasets(self, history_id, count, contents=None):
+    def __datasets(self, history_id, count, contents=None, wait=False):
         datasets = []
         for i in range(count):
-            new_kwds = {}
+            new_kwds = {
+                "wait": wait,
+            }
             if contents:
                 new_kwds["content"] = contents[i]
             datasets.append(self.dataset_populator.new_dataset(history_id, **new_kwds))

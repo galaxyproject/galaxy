@@ -166,7 +166,15 @@ class BaseJobRunner:
     def put(self, job_wrapper):
         """Add a job to the queue (by job identifier), indicate that the job is ready to run."""
         put_timer = ExecutionTimer()
-        queue_job = job_wrapper.enqueue()
+        try:
+            queue_job = job_wrapper.enqueue()
+        except Exception as e:
+            queue_job = False
+            # Required for exceptions thrown by object store incompatiblity.
+            # tested by test/integration/objectstore/test_private_handling.py
+            job_wrapper.fail(str(e), exception=e)
+            log.debug(f"Job [{job_wrapper.job_id}] failed to queue {put_timer}")
+            return
         if queue_job:
             self.mark_as_queued(job_wrapper)
             log.debug(f"Job [{job_wrapper.job_id}] queued {put_timer}")

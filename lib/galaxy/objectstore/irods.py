@@ -108,6 +108,7 @@ def parse_config_xml(config_xml):
                 "path": staging_path,
             },
             "extra_dirs": extra_dirs,
+            "private": DiskObjectStore.parse_private_from_config_xml(config_xml),
         }
     except Exception:
         # Toss it back up after logging, we can't continue loading at this point.
@@ -538,6 +539,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 open(os.path.join(self.staging_path, rel_path), "w").close()
                 self._push_to_irods(rel_path, from_string="")
         log.debug("irods_pt _create: %s", ipt_timer)
+        return self
 
     def _empty(self, obj, **kwargs):
         if self._exists(obj, **kwargs):

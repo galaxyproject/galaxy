@@ -199,6 +199,11 @@ def get_legacy_index_query_params(
         description="Whether to return visible or hidden datasets only. Leave unset for both.",
         deprecated=True,
     ),
+    sharable: Optional[bool] = Query(
+        default=None,
+        title="Sharable",
+        description="Whether to return only sharable or not sharable datasets. Leave unset for both.",
+    ),
 ) -> LegacyHistoryContentsIndexParams:
     """This function is meant to be used as a dependency to render the OpenAPI documentation
     correctly"""
@@ -208,6 +213,7 @@ def get_legacy_index_query_params(
         details=details,
         deleted=deleted,
         visible=visible,
+        sharable=sharable,
     )
 
 
@@ -217,6 +223,7 @@ def parse_legacy_index_query_params(
     details: Optional[str] = None,
     deleted: Optional[bool] = None,
     visible: Optional[bool] = None,
+    sharable: Optional[bool] = None,
     **_,  # Additional params are ignored
 ) -> LegacyHistoryContentsIndexParams:
     """Parses (legacy) query parameters for the history contents `index` operation
@@ -242,6 +249,7 @@ def parse_legacy_index_query_params(
         ids=id_list,
         deleted=deleted,
         visible=visible,
+        sharable=sharable,
         dataset_details=dataset_details,
     )
 

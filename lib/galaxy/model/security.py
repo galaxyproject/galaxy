@@ -899,16 +899,23 @@ class GalaxyRBACAgent(RBACAgent):
         # Make sure that DATASET_MANAGE_PERMISSIONS is associated with at least 1 role
         has_dataset_manage_permissions = False
         permissions = permissions or {}
-        for action, roles in permissions.items():
-            if isinstance(action, Action):
-                if action == self.permitted_actions.DATASET_MANAGE_PERMISSIONS and roles:
-                    has_dataset_manage_permissions = True
-                    break
-            elif action == self.permitted_actions.DATASET_MANAGE_PERMISSIONS.action and roles:
-                has_dataset_manage_permissions = True
-                break
+        for _ in _walk_action_roles(permissions, self.permitted_actions.DATASET_MANAGE_PERMISSIONS):
+            has_dataset_manage_permissions = True
+            break
         if not has_dataset_manage_permissions:
             return "At least 1 role must be associated with manage permissions on this dataset."
+
+        # If this is new, the objectstore likely hasn't been set yet - defer check until
+        # the job handler assigns it.
+        if not new and not dataset.sharable:
+            # ensure dataset not shared.
+            dataset_access_roles = []
+            for _, roles in _walk_action_roles(permissions, self.permitted_actions.DATASET_ACCESS):
+                dataset_access_roles.extend(roles)
+
+            if len(dataset_access_roles) != 1 or dataset_access_roles[0].type != self.model.Role.types.PRIVATE:
+                return galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE
+
         flush_needed = False
         # Delete all of the current permissions on the dataset
         if not new:
@@ -937,6 +944,12 @@ class GalaxyRBACAgent(RBACAgent):
         Permission looks like: { Action.action : [ Role, Role ] }
         """
         permission = permission or {}
+
+        # if modifying access - ensure it is sharable.
+        for _ in _walk_action_roles(permission, self.permitted_actions.DATASET_ACCESS):
+            dataset.ensure_sharable()
+            break
+
         flush_needed = False
         for action, roles in permission.items():
             if isinstance(action, Action):
@@ -976,6 +989,7 @@ class GalaxyRBACAgent(RBACAgent):
         self.set_all_dataset_permissions(dst, self.get_permissions(src))
 
     def privately_share_dataset(self, dataset, users=None):
+        dataset.ensure_sharable()
         intersect = None
         users = users or []
         for user in users:
@@ -1154,6 +1168,19 @@ class GalaxyRBACAgent(RBACAgent):
             else:
                 return False
 
+    def dataset_is_private_to_a_user(self, dataset):
+        """
+        If the Dataset object has exactly one access role and that is
+        the current user's private role then we consider the dataset private.
+        """
+        access_roles = dataset.get_access_roles(self)
+
+        if len(access_roles) != 1:
+            return False
+        else:
+            access_role = access_roles[0]
+            return access_role.type == self.model.Role.types.PRIVATE
+
     def datasets_are_public(self, trans, datasets):
         """
         Given a transaction object and a list of Datasets, return
@@ -1188,6 +1215,8 @@ class GalaxyRBACAgent(RBACAgent):
     def make_dataset_public(self, dataset):
         # A dataset is considered public if there are no "access" actions associated with it.  Any
         # other actions ( 'manage permissions', 'edit metadata' ) are irrelevant.
+        dataset.ensure_sharable()
+
         flush_needed = False
         for dp in dataset.actions:
             if dp.action == self.permitted_actions.DATASET_ACCESS.action:
@@ -1632,3 +1661,12 @@ class HostAgent(RBACAgent):
             hdadaa = self.model.HistoryDatasetAssociationDisplayAtAuthorization(hda=hda, user=user, site=site)
         self.sa_session.add(hdadaa)
         self.sa_session.flush()
+
+
+def _walk_action_roles(permissions, query_action):
+    for action, roles in permissions.items():
+        if isinstance(action, Action):
+            if action == query_action and roles:
+                yield action, roles
+        elif action == query_action.action and roles:
+            yield action, roles

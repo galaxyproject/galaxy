@@ -591,4 +591,5 @@ class LibrariesApiTestCase(ApiTestCase):
         hda_id = self.dataset_populator.new_dataset(history_id, content=content, wait=wait)["id"]
         payload = {"from_hda_id": hda_id, "create_type": "file", "folder_id": folder_id}
         ld = self._post(f"libraries/{folder_id}/contents", payload)
+        ld.raise_for_status()
         return ld

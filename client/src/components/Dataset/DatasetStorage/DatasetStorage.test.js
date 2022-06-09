@@ -10,14 +10,17 @@ const localVue = getLocalVue();
 
 const TEST_STORAGE_API_RESPONSE_WITHOUT_ID = {
     object_store_id: null,
+    private: false,
 };
 const TEST_STORAGE_API_RESPONSE_WITH_ID = {
     object_store_id: "foobar",
+    private: false,
 };
 const TEST_STORAGE_API_RESPONSE_WITH_NAME = {
     object_store_id: "foobar",
     name: "my cool storage",
     description: "My cool **markdown**",
+    private: true,
 };
 const TEST_DATASET_ID = "1";
 const TEST_STORAGE_URL = `/api/datasets/${TEST_DATASET_ID}/storage`;
@@ -46,9 +49,6 @@ describe("Dataset Storage", () => {
         wrapper = shallowMount(DatasetStorage, {
             propsData: { datasetId: TEST_DATASET_ID },
             localVue,
-            stubs: {
-                "loading-span": true,
-            },
         });
     }
 
@@ -102,6 +102,7 @@ describe("Dataset Storage", () => {
         expect(byIdSpan.length).toBe(1);
         const byNameSpan = wrapper.findAll(".display-os-by-name");
         expect(byNameSpan.length).toBe(0);
+        expect(wrapper.find("object-store-restriction-span-stub").props("isPrivate")).toBeFalsy();
     });
 
     it("test dataset storage with object store name", async () => {
@@ -116,6 +117,7 @@ describe("Dataset Storage", () => {
         expect(byIdSpan.length).toBe(0);
         const byNameSpan = wrapper.findAll(".display-os-by-name");
         expect(byNameSpan.length).toBe(1);
+        expect(wrapper.find("object-store-restriction-span-stub").props("isPrivate")).toBeTruthy();
     });
 
     afterEach(() => {
