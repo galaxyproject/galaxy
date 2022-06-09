@@ -1018,15 +1018,17 @@ class WorkflowsAPIController(
         dict_workflow = json.loads(self.workflow_dict(trans, encoded_workflow_id))
 
         spec_version = kwd.get("spec_version", "https://w3id.org/ieee/ieee-2791-schema/2791object.json")
-
+        
         for i, w in enumerate(reversed(stored_workflow.workflows)):
             if workflow == w:
                 current_version = i
 
+        import pdb; pdb.set_trace()
+
         contributors = []
         for contributing_user in contributing_users:
             contributor = {
-                "orcid": kwd.get("xref", []),
+                "orcid": kwd.get("xref", ''),
                 "name": contributing_user.username,
                 "affiliation": "",
                 "contribution": ["authoredBy"],
@@ -1035,24 +1037,11 @@ class WorkflowsAPIController(
             contributors.append(contributor)
 
         reviewers = []
-        for reviewer in reviewing_users:
-            reviewer = {
-                "status": "approved",
-                "reviewer_comment": "",
-                "date": workflow_invocation.update_time.isoformat(),
-                "reviewer": {
-                    "orcid": kwd.get("orcid", []),
-                    "name": contributing_user.username,
-                    "affiliation": "",
-                    "contribution": "curatedBy",
-                    "email": contributing_user.email,
-                },
-            }
-            reviewers.append(reviewer)
+
 
         provenance_domain = {
             "name": workflow.name,
-            "version": current_version,
+            "version": str(current_version) + '.0',
             "review": reviewers,
             "derived_from": url_for("workflow", id=encoded_workflow_id, qualified=True),
             "created": workflow_invocation.create_time.isoformat(),
@@ -1189,22 +1178,17 @@ class WorkflowsAPIController(
             try:
                 for k, v in inv_step.workflow_step.tool_inputs.items():
                     param, value, step = k, v, inv_step.workflow_step.order_index
-                    parametric_domain.append({"param": param, "value": value, "step": step})
+                    parametric_domain.append({"param": str(param), "value": str(value), "step": str(step)})
             except Exception:
                 continue
 
         execution_domain = {
-            "script_access_type": "a_galaxy_workflow",
-            "script": [url_for("workflows", encoded_workflow_id=encoded_workflow_id, qualified=True)],
+            "script": [{"uri": {"uri": url_for("workflows", encoded_workflow_id=encoded_workflow_id, qualified=True)}}],
             "script_driver": "Galaxy",
             "software_prerequisites": software_prerequisites,
-            "external_data_endpoints": [
-                {"name": "Access to Galaxy", "url": url_for("/", qualified=True)},
-                kwd.get("external_data_endpoints"),
-            ],
+            "external_data_endpoints": [{"name": "Access to Galaxy", "url": url_for("/", qualified=True)}],
             "environment_variables": kwd.get("environment_variables", {}),
         }
-
         extension = [
             {
                 "extension_schema": "https://raw.githubusercontent.com/biocompute-objects/extension_domain/6d2cd8482e6075746984662edcf78b57d3d38065/galaxy/galaxy_extension.json",
@@ -1219,8 +1203,8 @@ class WorkflowsAPIController(
         ]
 
         error_domain = {
-            "empirical_error": kwd.get("empirical_error", []),
-            "algorithmic_error": kwd.get("algorithmic_error", []),
+            "empirical_error": kwd.get("empirical_error", {}),
+            "algorithmic_error": kwd.get("algorithmic_error", {}),
         }
 
         bco_dict = {
