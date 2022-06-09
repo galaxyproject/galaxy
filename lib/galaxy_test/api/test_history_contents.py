@@ -1226,6 +1226,39 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
                 if item["history_content_type"] == "dataset":
                     assert item["dbkey"] == expected_dbkey
 
+    def test_bulk_datatype_change(self):
+        with self.dataset_populator.test_history() as history_id:
+            num_datasets = 3
+            dataset_ids = []
+            for _ in range(num_datasets):
+                hda_id = self.dataset_populator.new_dataset(history_id)["id"]
+                dataset_ids.append(hda_id)
+
+            history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
+            for item in history_contents:
+                assert item["extension"] == "txt"
+                assert item["data_type"] == "galaxy.datatypes.data.Text"
+                assert "metadata_column_names" not in item
+
+            self.dataset_populator.wait_for_history_jobs(history_id)
+
+            expected_datatype = "tabular"
+            # Change datatype of all datasets
+            payload = {
+                "operation": "change_datatype",
+                "params": {
+                    "type": "change_datatype",
+                    "datatype": expected_datatype,
+                },
+            }
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            self._assert_bulk_success(bulk_operation_result, expected_success_count=num_datasets)
+            history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
+            for item in history_contents:
+                assert item["extension"] == "tabular"
+                assert item["data_type"] == "galaxy.datatypes.tabular.Tabular"
+                assert "metadata_column_names" in item
+
     def test_index_returns_expected_total_matches(self):
         with self.dataset_populator.test_history() as history_id:
             datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
