@@ -4,8 +4,6 @@ immediate_actions listed below.
 """
 import datetime
 import socket
-import time
-import webbrowser
 
 from markupsafe import escape
 
