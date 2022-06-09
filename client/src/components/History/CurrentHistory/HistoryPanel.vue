@@ -96,10 +96,13 @@
                                         :name="item.name"
                                         :expand-dataset="isExpanded(item)"
                                         :is-dataset="isDataset(item)"
+                                        is-hist-panel
+                                        :highlight="getHighlight(item)"
                                         :selected="isSelected(item)"
                                         :selectable="showSelection"
                                         @tag-click="onTagClick"
                                         @tag-change="onTagChange"
+                                        @toggleHighlights="toggleHighlights"
                                         @update:expand-dataset="setExpanded(item, $event)"
                                         @update:selected="setSelected(item, $event)"
                                         @view-collection="$emit('view-collection', item)"
@@ -122,6 +125,7 @@ import { HistoryItemsProvider } from "components/providers/storeProviders";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
 import { deleteContent, updateContentFields } from "components/History/model/queries";
+import { getHighlights } from "components/History/Content/model/highlights";
 import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
 import Listing from "components/History/Layout/Listing";
@@ -161,6 +165,8 @@ export default {
     data() {
         return {
             filterText: "",
+            highlights: {},
+            highlightsKey: null,
             invisible: {},
             offset: 0,
             showAdvanced: false,
@@ -195,14 +201,22 @@ export default {
         queryKey() {
             this.invisible = {};
             this.offset = 0;
+            this.resetHighlights();
         },
         historyId(newVal, oldVal) {
             if (newVal !== oldVal) {
                 this.operationRunning = null;
+                this.resetHighlights();
             }
         },
     },
     methods: {
+        getHighlight(item) {
+            return this.highlights[this.getItemKey(item)];
+        },
+        getItemKey(item) {
+            return `${item.id}-${item.history_content_type}`;
+        },
         hasMatches(items) {
             return !!items && items.length > 0;
         },
@@ -245,6 +259,19 @@ export default {
         onOperationError(error) {
             console.debug("OPERATION ERROR", error);
             this.operationError = error;
+        },
+        async toggleHighlights(item) {
+            const key = this.getItemKey(item);
+            if (this.highlightsKey != key) {
+                this.highlightsKey = key;
+                this.highlights = await getHighlights(item, key);
+            } else {
+                this.resetHighlights();
+            }
+        },
+        resetHighlights() {
+            this.highlights = {};
+            this.highlightsKey = null;
         },
     },
 };

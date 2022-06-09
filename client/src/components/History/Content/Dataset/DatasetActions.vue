@@ -50,6 +50,15 @@
                     @click.stop="onVisualize">
                     <span class="fa fa-bar-chart-o" />
                 </b-button>
+                <b-button
+                    v-if="showHighlight"
+                    class="px-1"
+                    title="Show Inputs for this item"
+                    size="sm"
+                    variant="link"
+                    @click.stop="onHighlight">
+                    <span class="fa fa-sitemap" />
+                </b-button>
                 <b-button v-if="showRerun" class="px-1" title="Help" size="sm" variant="link" @click.stop="onRerun">
                     <span class="fa fa-question" />
                 </b-button>
@@ -68,6 +77,7 @@ export default {
     mixins: [legacyNavigationMixin],
     props: {
         item: { type: Object, required: true },
+        showHighlight: { type: Boolean, default: false },
     },
     computed: {
         downloadUrl() {
@@ -124,6 +134,9 @@ export default {
             if (!this.iframeAdd(redirectParams)) {
                 this.backboneRoute(path);
             }
+        },
+        onHighlight() {
+            this.$emit("toggleHighlights");
         },
     },
 };
