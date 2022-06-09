@@ -1008,11 +1008,28 @@ class WorkflowsAPIController(
         workflow = workflow_invocation.workflow
         stored_workflow = workflow.stored_workflow
 
-        # pull in the user info from those who the history and workflow has been shared with
-        contributing_users = [stored_workflow.user]
+        # pull in the license info from workflow if it exists
+        bco_license = ''
+        if workflow.license:
+            bco_license = workflow.license
 
-        # may want to extend this to have more reviewers.
-        reviewing_users = [stored_workflow.user]
+        # pull in the creator_metadata info from workflow if it exists
+        reviewers = []
+        contributors = []
+        if workflow.creator_metadata:
+            for creator in workflow.creator_metadata:
+                if creator['class'] == 'Person':
+                    contributor = {}
+                    contributor['contribution'] = ['contributedBy']
+                    if 'name' in creator:
+                        contributor['name'] = creator['name']
+                    if 'email' in creator:
+                        contributor['email'] = creator['email']
+                    if 'identifier' in creator:
+                        contributor['orcid'] = creator['identifier']
+                    
+                    contributors.append(contributor)
+
         encoded_workflow_id = trans.security.encode_id(stored_workflow.id)
         encoded_history_id = trans.security.encode_id(history.id)
         dict_workflow = json.loads(self.workflow_dict(trans, encoded_workflow_id))
@@ -1023,29 +1040,14 @@ class WorkflowsAPIController(
             if workflow == w:
                 current_version = i
 
-        contributors = []
-        for contributing_user in contributing_users:
-            contributor = {
-                "orcid": kwd.get("xref", ''),
-                "name": contributing_user.username,
-                "affiliation": "",
-                "contribution": ["authoredBy"],
-                "email": contributing_user.email,
-            }
-            contributors.append(contributor)
-
-        reviewers = []
-
-
         provenance_domain = {
             "name": workflow.name,
             "version": str(current_version) + '.0',
             "review": reviewers,
-            "derived_from": url_for("workflow", id=encoded_workflow_id, qualified=True),
             "created": workflow_invocation.create_time.isoformat(),
             "modified": workflow_invocation.update_time.isoformat(),
             "contributors": contributors,
-            "license": "https://spdx.org/licenses/CC-BY-4.0.html",
+            "license": bco_license,
         }
 
         keywords = []
@@ -1187,13 +1189,15 @@ class WorkflowsAPIController(
             "external_data_endpoints": [{"name": "Access to Galaxy", "url": url_for("/", qualified=True)}],
             "environment_variables": kwd.get("environment_variables", {}),
         }
+
         extension = [
             {
-                "extension_schema": "https://raw.githubusercontent.com/biocompute-objects/extension_domain/6d2cd8482e6075746984662edcf78b57d3d38065/galaxy/galaxy_extension.json",
+                "extension_schema": "https://raw.githubusercontent.com/biocompute-objects/extension_domain/1.2.0/galaxy/galaxy_extension.json",
                 "galaxy_extension": {
                     "galaxy_url": url_for("/", qualified=True),
                     "galaxy_version": VERSION,
                     # TODO:
+                    # Extend this definition to include more information that is significan for a galaxy workflow/invocation? 
                     # 'aws_estimate': aws_estimate,
                     # 'job_metrics': metrics
                 },
@@ -1224,7 +1228,7 @@ class WorkflowsAPIController(
             "error_domain": error_domain,
         }
         # Generate etag from the BCO excluding object_id and spec_version, as
-        # specified in https://github.com/biocompute-objects/BCO_Specification/blob/main/docs/top-level.md#203-etag-etag
+        # specified in https://opensource.ieee.org/2791-object/ieee-2791-schema/-/blob/master/2791object.json
         etag = hashlib.sha256(json.dumps(bco_dict, sort_keys=True).encode()).hexdigest()
         bco_dict.update(
             {
