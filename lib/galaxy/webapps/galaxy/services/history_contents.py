@@ -691,7 +691,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     ) -> HistoryContentBulkOperationResult:
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
-        self._validate_bulk_operation_params(payload, trans.user)
+        self._validate_bulk_operation_params(payload, trans.user, trans)
         contents: List[HistoryItemModel]
         if payload.items:
             contents = self._get_contents_by_item_list(
@@ -1469,11 +1469,19 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
         return self.__collection_dict(trans, dataset_collection_instance, view="element")
 
-    def _validate_bulk_operation_params(self, payload: HistoryContentBulkOperationPayload, user: User):
+    def _validate_bulk_operation_params(
+        self, payload: HistoryContentBulkOperationPayload, user: User, trans: ProvidesHistoryContext
+    ):
         if payload.operation == HistoryContentItemOperation.change_dbkey:
             dbkey = cast(ChangeDbkeyOperationParams, payload.params).dbkey
             if not self.genomes_manager.is_registered_dbkey(dbkey, user):
-                raise exceptions.RequestParameterInvalidException(f"{dbkey} is not registered")
+                raise exceptions.RequestParameterInvalidException(f"Database/build '{dbkey}' is not registered")
+        if payload.operation == HistoryContentItemOperation.change_datatype:
+            ensure_celery_tasks_enabled(trans.app.config)
+            datatype = cast(ChangeDatatypeOperationParams, payload.params).datatype
+            existing_datatype = trans.app.datatypes_registry.get_datatype_by_extension(datatype)
+            if not existing_datatype and not datatype == "auto":
+                raise exceptions.RequestParameterInvalidException(f"Data type '{datatype}' is not registered")
 
     def _apply_bulk_operation(
         self,
