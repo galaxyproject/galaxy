@@ -57,7 +57,8 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     # Prevent execution of alembic/env.py at test collection stage (alembic.context not set)
     # Also ignore functional tests (galaxy_test/ and tool_shed/test/).
     unit_extra='--doctest-modules --ignore=galaxy/model/migrations/alembic/ --ignore=galaxy_test/ --ignore=tool_shed/test/'
-    pytest $unit_extra .
+    # Ignore exit code 5 (no tests ran)
+    pytest $unit_extra . || test $? -eq 5
     make mypy
     cd ..
 done
