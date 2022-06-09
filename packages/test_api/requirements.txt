@@ -1,1 +1,8 @@
 galaxy-test-base
+pytest
+python-dateutil
+requests
+pytest
+python-dateutil
+requests
+tuspy
