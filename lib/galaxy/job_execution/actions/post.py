@@ -4,6 +4,8 @@ immediate_actions listed below.
 """
 import datetime
 import socket
+import time
+import webbrowser
 
 from markupsafe import escape
 
@@ -55,7 +57,9 @@ class EmailAction(DefaultJobAction):
         try:
             frm = app.config.email_from
             history_id_encoded = app.security.encode_id(job.history_id)
+            workflow_id_encoded = app.security.encode_id(job.workflow_invocation_step.workflow_invocation_id)
             link = f"{app.config.galaxy_infrastructure_url}/histories/view?id={history_id_encoded}"
+            link_invocation = f"{app.config.galaxy_infrastructure_url}/workflows/invocations/report?id={workflow_id_encoded}"
             if frm is None:
                 if action.action_arguments and "host" in action.action_arguments:
                     host = action.action_arguments["host"]
@@ -66,6 +70,7 @@ class EmailAction(DefaultJobAction):
             subject = f"Galaxy job completion notification from history '{job.history.name}'"
             outdata = ",\n".join(ds.dataset.display_name() for ds in job.output_datasets)
             body = f"Your Galaxy job generating dataset(s):\n\n{outdata}\n\nis complete as of {datetime.datetime.now().strftime('%I:%M')}. Click the link below to access your data: \n{link}"
+            body += f"\n\nWorkflow Invocations ID:\n{link_invocation}"
             send_mail(frm, to, subject, body, app.config)
         except Exception as e:
             log.error("EmailAction PJA Failed, exception: %s", unicodify(e))
