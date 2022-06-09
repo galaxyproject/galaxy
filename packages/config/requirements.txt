@@ -1,4 +1,0 @@
-boltons
-pykwalify
-PyYAML
-requests
