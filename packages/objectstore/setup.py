@@ -15,8 +15,6 @@ from setuptools import (
 
 SOURCE_DIR = "galaxy"
 
-_version_re = re.compile(r"__version__\s+=\s+(.*)")
-
 project_short_name = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 with open(f"{SOURCE_DIR}/project_galaxy_{project_short_name}.py") as f:
     init_contents = f.read()
@@ -36,7 +34,6 @@ PROJECT_AUTHOR = get_var("PROJECT_AUTHOR")
 PROJECT_EMAIL = get_var("PROJECT_EMAIL")
 PROJECT_DESCRIPTION = get_var("PROJECT_DESCRIPTION")
 
-TEST_DIR = "tests"
 PACKAGES = find_packages(where=".", exclude=["tests*"])
 ENTRY_POINTS = """
         [console_scripts]
@@ -50,17 +47,13 @@ PACKAGE_DIR = {
 }
 
 readme = open("README.rst").read()
-history = open("HISTORY.rst").read().replace(".. :changelog:", "")
+history = open("HISTORY.rst").read()
 
 if os.path.exists("requirements.txt"):
     requirements = open("requirements.txt").read().split("\n")
 else:
     # In tox, it will cover them anyway.
     requirements = []
-
-
-test_requirements = open("test-requirements.txt").read().split("\n")
-
 
 setup(
     name=PROJECT_NAME,
@@ -96,6 +89,4 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
     ],
-    test_suite=TEST_DIR,
-    tests_require=test_requirements,
 )
