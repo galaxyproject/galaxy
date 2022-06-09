@@ -609,7 +609,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
         return self.client_manager.get_client(job_destination_params, **get_client_kwds)
 
     def finish_job(self, job_state: JobState):
-        assert isinstance(job_state, AsynchronousJobState)
+        assert isinstance(
+            job_state, AsynchronousJobState
+        ), f"job_state type is '{type(job_state)}', expected AsynchronousJobState"
         stderr = stdout = ""
         job_wrapper = job_state.job_wrapper
         try:
@@ -620,11 +622,11 @@ class PulsarJobRunner(AsynchronousJobRunner):
             stderr = run_results.get("stderr", "")
             exit_code = run_results.get("returncode", None)
             pulsar_outputs = PulsarOutputs.from_status_response(run_results)
-            job_state = job_wrapper.get_state()
+            state = job_wrapper.get_state()
             # Use Pulsar client code to transfer/copy files back
             # and cleanup job if needed.
-            completed_normally = job_state not in [model.Job.states.ERROR, model.Job.states.DELETED]
-            if completed_normally and job_state == model.Job.states.STOPPED:
+            completed_normally = state not in [model.Job.states.ERROR, model.Job.states.DELETED]
+            if completed_normally and state == model.Job.states.STOPPED:
                 # Discard pulsar exit code (probably -9), we know the user stopped the job
                 log.debug("Setting exit code for stopped job {job_wrapper.job_id} to 0 (was {exit_code})")
                 exit_code = 0
@@ -671,7 +673,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     def fail_job(self, job_state: JobState, exception=False, message=GENERIC_REMOTE_ERROR, full_status=None):
         """Seperated out so we can use the worker threads for it."""
-        assert isinstance(job_state, AsynchronousJobState)
         self.stop_job(job_state.job_wrapper)
         stdout = ""
         stderr = ""
