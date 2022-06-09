@@ -28,6 +28,7 @@ from galaxy.celery.tasks import materialize as materialize_task
 from galaxy.celery.tasks import (
     prepare_dataset_collection_download,
     prepare_history_content_download,
+    set_metadata,
     write_history_content_to,
 )
 from galaxy.managers import (
@@ -1564,7 +1565,7 @@ class HistoryItemOperator:
             HistoryContentItemOperation.undelete: lambda item, params, trans: self._undelete(item),
             HistoryContentItemOperation.purge: lambda item, params, trans: self._purge(item, trans),
             HistoryContentItemOperation.change_datatype: lambda item, params, trans: self._change_datatype(
-                item, params
+                item, params, trans
             ),
             HistoryContentItemOperation.change_dbkey: lambda item, params, trans: self._change_dbkey(item, params),
             HistoryContentItemOperation.add_tags: lambda item, params, trans: self._add_tags(item, trans.user, params),
@@ -1608,9 +1609,14 @@ class HistoryItemOperator:
             return self.dataset_collection_manager.delete(trans, "history", item.id, recursive=True, purge=True)
         self.hda_manager.purge(item, flush=self.flush)
 
-    def _change_datatype(self, item: HistoryItemModel, params: ChangeDatatypeOperationParams):
+    def _change_datatype(
+        self, item: HistoryItemModel, params: ChangeDatatypeOperationParams, trans: ProvidesHistoryContext
+    ):
         if isinstance(item, HistoryDatasetAssociation):
-            item.change_datatype(params.datatype)
+            if params.datatype == "auto":  # Trigger job to auto-detect datatype
+                self.hda_manager.set_metadata(trans, item, overwrite=True)
+            else:
+                set_metadata.delay(self.hda_manager, None, dataset_id=item.id)
 
     def _change_dbkey(self, item: HistoryItemModel, params: ChangeDbkeyOperationParams):
         if isinstance(item, HistoryDatasetAssociation):
