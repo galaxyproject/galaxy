@@ -24,21 +24,21 @@
                             @click.stop="$emit('update:selected', true)" />
                     </span>
                     <span v-if="highlight == 'input'" v-b-tooltip.hover title="Input" @click.stop="toggleHighlights">
-                        <span class="text-info fa fa-arrow-circle-up fa-fw" />
+                        <font-awesome-icon class="text-info" icon="arrow-circle-up" />
                     </span>
                     <span
                         v-else-if="highlight == 'noInputs'"
                         v-b-tooltip.hover
                         title="No Inputs for this item"
                         @click.stop="toggleHighlights">
-                        <span class="text-info fa fa-minus-circle fa-fw" />
+                        <font-awesome-icon icon="minus-circle" />
                     </span>
                     <span
                         v-else-if="highlight == 'output'"
                         v-b-tooltip.hover
                         title="Inputs highlighted for this item"
                         @click.stop="toggleHighlights">
-                        <span class="fa fa-check-circle fa-fw" />
+                        <font-awesome-icon icon="check-circle" />
                     </span>
                     <span v-if="hasStateIcon">
                         <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
@@ -96,6 +96,11 @@ import ContentOptions from "./ContentOptions";
 import DatasetDetails from "./Dataset/DatasetDetails";
 import { updateContentFields } from "components/History/model/queries";
 import { JobStateSummary } from "./Collection/JobStateSummary";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faArrowCircleUp, faMinusCircle, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faArrowCircleUp, faMinusCircle, faCheckCircle);
 
 export default {
     components: {
@@ -103,6 +108,7 @@ export default {
         ContentOptions,
         DatasetDetails,
         StatelessTags,
+        FontAwesomeIcon,
     },
     props: {
         expandDataset: { type: Boolean, required: true },

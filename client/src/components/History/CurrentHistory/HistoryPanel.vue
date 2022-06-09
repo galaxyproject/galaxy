@@ -212,26 +212,7 @@ export default {
     },
     methods: {
         getHighlight(item) {
-            const key = this.getItemKey(item);
-            // the current item has one item in its parameters (i.e.: outputs)
-            if (Object.keys(this.highlights).length == 1) {
-                // parameters has itself as an output (i.e.: no inputs)
-                if (key == this.highlightsKey && this.highlights[key] == "output") {
-                    return "noInputs";
-                }
-                // parameters has another item as output but not current one
-                // (i.e.: the current one is an output)
-                else if (key == this.highlightsKey) {
-                    return "output";
-                }
-                // parameters has another item as output but not current one
-                // (i.e.: must be the item that created it/it was copied from)
-                else if (this.highlights[key] == "output") {
-                    return "input";
-                }
-            } else {
-                return this.highlights[key];
-            }
+            return this.highlights[this.getItemKey(item)];
         },
         getItemKey(item) {
             return `${item.id}-${item.history_content_type}`;
@@ -283,7 +264,7 @@ export default {
             const key = this.getItemKey(item);
             if (this.highlightsKey != key) {
                 this.highlightsKey = key;
-                this.highlights = await getHighlights(item);
+                this.highlights = await getHighlights(item, key);
             } else {
                 this.resetHighlights();
             }
