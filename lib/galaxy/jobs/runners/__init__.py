@@ -21,6 +21,7 @@ from galaxy.job_execution.output_collect import (
     default_exit_code_file,
     read_exit_code_from,
 )
+from galaxy.job_execution.setup import JobIO
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.env import env_to_statement
@@ -49,6 +50,7 @@ if typing.TYPE_CHECKING:
     from galaxy.jobs import (
         JobDestination,
         JobWrapper,
+        MinimalJobWrapper,
     )
 
 log = get_logger(__name__)
@@ -78,6 +80,8 @@ class RunnerParams(ParamsWithSpecs):
 
 
 class BaseJobRunner:
+
+    runner_name = "BaseJobRunner"
 
     start_methods = ["_init_monitor_thread", "_init_worker_threads"]
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
@@ -163,7 +167,7 @@ class BaseJobRunner:
                     self.work_queue.put((self.fail_job, job_state))
 
     # Causes a runner's `queue_job` method to be called from a worker thread
-    def put(self, job_wrapper):
+    def put(self, job_wrapper: "MinimalJobWrapper"):
         """Add a job to the queue (by job identifier), indicate that the job is ready to run."""
         put_timer = ExecutionTimer()
         queue_job = job_wrapper.enqueue()
@@ -171,7 +175,7 @@ class BaseJobRunner:
             self.mark_as_queued(job_wrapper)
             log.debug(f"Job [{job_wrapper.job_id}] queued {put_timer}")
 
-    def mark_as_queued(self, job_wrapper):
+    def mark_as_queued(self, job_wrapper: "MinimalJobWrapper"):
         self.work_queue.put((self.queue_job, job_wrapper))
 
     def shutdown(self):
@@ -213,7 +217,7 @@ class BaseJobRunner:
                 )
 
     # Most runners should override the legacy URL handler methods and destination param method
-    def url_to_destination(self, url):
+    def url_to_destination(self, url: str):
         """
         Convert a legacy URL to a JobDestination.
 
@@ -223,22 +227,21 @@ class BaseJobRunner:
         """
         return galaxy.jobs.JobDestination(runner=url.split(":")[0])
 
-    def parse_destination_params(self, params):
+    def parse_destination_params(self, params: typing.Dict[str, typing.Any]):
         """Parse the JobDestination ``params`` dict and return the runner's native representation of those params."""
         raise NotImplementedError()
 
     def prepare_job(
         self,
-        job_wrapper,
-        include_metadata=False,
-        include_work_dir_outputs=True,
-        modify_command_for_container=True,
-        stream_stdout_stderr=False,
+        job_wrapper: "MinimalJobWrapper",
+        include_metadata: bool = False,
+        include_work_dir_outputs: bool = True,
+        modify_command_for_container: bool = True,
+        stream_stdout_stderr: bool = False,
     ):
         """Some sanity checks that all runners' queue_job() methods are likely to want to do"""
         job_id = job_wrapper.get_id_tag()
         job_state = job_wrapper.get_state()
-        job_wrapper.is_ready = False
         job_wrapper.runner_command_line = None
 
         # Make sure the job hasn't been deleted
@@ -285,10 +288,10 @@ class BaseJobRunner:
 
     def build_command_line(
         self,
-        job_wrapper,
-        include_metadata=False,
-        include_work_dir_outputs=True,
-        modify_command_for_container=True,
+        job_wrapper: "MinimalJobWrapper",
+        include_metadata: bool = False,
+        include_work_dir_outputs: bool = True,
+        modify_command_for_container: bool = True,
         stream_stdout_stderr=False,
     ):
         container = self._find_container(job_wrapper)
@@ -304,7 +307,12 @@ class BaseJobRunner:
             stream_stdout_stderr=stream_stdout_stderr,
         )
 
-    def get_work_dir_outputs(self, job_wrapper, job_working_directory=None, tool_working_directory=None):
+    def get_work_dir_outputs(
+        self,
+        job_wrapper: "MinimalJobWrapper",
+        job_working_directory: typing.Optional[str] = None,
+        tool_working_directory: typing.Optional[str] = None,
+    ):
         """
         Returns list of pairs (source_file, destination) describing path
         to work_dir output file and ultimate destination.
@@ -317,6 +325,7 @@ class BaseJobRunner:
         if tool_working_directory is None:
             if not job_working_directory:
                 job_working_directory = os.path.abspath(job_wrapper.working_directory)
+                assert job_working_directory
             tool_working_directory = os.path.join(job_working_directory, "working")
 
         # Set up dict of dataset id --> output path; output path can be real or
@@ -351,7 +360,7 @@ class BaseJobRunner:
                         )
         return output_pairs
 
-    def _walk_dataset_outputs(self, job):
+    def _walk_dataset_outputs(self, job: model.Job):
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             for dataset in (
                 dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations
@@ -368,7 +377,7 @@ class BaseJobRunner:
         #      yield (dataset_assoc, dataset_assoc.dataset)
         #  I don't understand the reworking it backwards.  -John
 
-    def _handle_metadata_externally(self, job_wrapper, resolve_requirements=False):
+    def _handle_metadata_externally(self, job_wrapper: "MinimalJobWrapper", resolve_requirements: bool = False):
         """
         Set metadata externally. Used by the Pulsar job runner where this
         shouldn't be attached to command line to execute.
@@ -433,13 +442,13 @@ class BaseJobRunner:
                 external_metadata_proc.wait()
             log.debug("execution of external set_meta for job %d finished" % job_wrapper.job_id)
 
-    def get_job_file(self, job_wrapper, **kwds):
+    def get_job_file(self, job_wrapper: "MinimalJobWrapper", **kwds):
         job_metrics = job_wrapper.app.job_metrics
         job_instrumenter = job_metrics.job_instrumenters[job_wrapper.job_destination.id]
 
         env_setup_commands = kwds.get("env_setup_commands", [])
         env_setup_commands.append(job_wrapper.get_env_setup_clause() or "")
-        destination = job_wrapper.job_destination or {}
+        destination = job_wrapper.job_destination
         envs = destination.get("env", [])
         envs.extend(job_wrapper.environment_variables)
         for env in envs:
@@ -464,16 +473,16 @@ class BaseJobRunner:
         options.update(**kwds)
         return job_script(**options)
 
-    def write_executable_script(self, path, contents, job_io):
+    def write_executable_script(self, path: str, contents: str, job_io: JobIO):
         write_script(path, contents, job_io)
 
     def _find_container(
         self,
-        job_wrapper,
-        compute_working_directory=None,
-        compute_tool_directory=None,
-        compute_job_directory=None,
-        compute_tmp_directory=None,
+        job_wrapper: "MinimalJobWrapper",
+        compute_working_directory: typing.Optional[str] = None,
+        compute_tool_directory: typing.Optional[str] = None,
+        compute_job_directory: typing.Optional[str] = None,
+        compute_tmp_directory: typing.Optional[str] = None,
     ):
         job_directory_type = "galaxy" if compute_working_directory is None else "pulsar"
         if not compute_working_directory:
@@ -515,7 +524,7 @@ class BaseJobRunner:
             job_wrapper.set_container(container)
         return container
 
-    def _handle_runner_state(self, runner_state, job_state):
+    def _handle_runner_state(self, runner_state, job_state: "JobState"):
         try:
             for handler in self.runner_state_handlers.get(runner_state, []):
                 handler(self.app, self, job_state)
@@ -536,7 +545,7 @@ class BaseJobRunner:
             if job_state.job_wrapper.cleanup_job == "always":
                 job_state.cleanup()
 
-    def mark_as_resubmitted(self, job_state: "JobState", info=None):
+    def mark_as_resubmitted(self, job_state: "JobState", info: typing.Optional[str] = None):
         job_state.job_wrapper.mark_as_resubmitted(info=info)
         if not self.app.config.track_jobs_in_database:
             job_state.job_wrapper.change_state(model.Job.states.QUEUED)

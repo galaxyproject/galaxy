@@ -993,6 +993,7 @@ class MinimalJobWrapper(HasResourceParameters):
         self.params = None
         if job.params:
             self.params = loads(job.params)
+        self.runner_command_line = None
 
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.__external_output_metadata = None
@@ -1528,7 +1529,7 @@ class MinimalJobWrapper(HasResourceParameters):
         if flush:
             self.sa_session.flush()
 
-    def get_state(self):
+    def get_state(self) -> str:
         job = self.get_job()
         self.sa_session.refresh(job)
         return job.state
