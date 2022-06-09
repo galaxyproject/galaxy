@@ -31,6 +31,7 @@ from galaxy.celery.tasks import (
     set_metadata,
     write_history_content_to,
 )
+from galaxy.datatypes import sniff
 from galaxy.managers import (
     folders,
     hdas,
@@ -1613,10 +1614,26 @@ class HistoryItemOperator:
         self, item: HistoryItemModel, params: ChangeDatatypeOperationParams, trans: ProvidesHistoryContext
     ):
         if isinstance(item, HistoryDatasetAssociation):
-            if params.datatype == "auto":  # Trigger job to auto-detect datatype
-                self.hda_manager.set_metadata(trans, item, overwrite=True)
-            else:
-                set_metadata.delay(dataset_id=item.id)
+            self._ensure_can_change_hda_datatype(item)
+            self._set_hda_datatype(item, params.datatype, trans)
+            set_metadata.delay(dataset_id=item.id)
+
+    def _set_hda_datatype(self, hda: HistoryDatasetAssociation, datatype: str, trans: ProvidesHistoryContext):
+        if datatype == "auto":
+            path = hda.dataset.file_name
+            datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order)
+        else:
+            datatype = datatype
+        trans.app.datatypes_registry.change_datatype(hda, datatype)
+        trans.sa_session.flush()
+
+    def _ensure_can_change_hda_datatype(self, hda: HistoryDatasetAssociation):
+        if not hda.datatype.is_datatype_change_allowed():
+            raise exceptions.MessageException(f'Changing datatype "{hda.extension}" is not allowed.')
+        if not hda.ok_to_edit_metadata():
+            raise exceptions.MessageException(
+                "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
+            )
 
     def _change_dbkey(self, item: HistoryItemModel, params: ChangeDbkeyOperationParams):
         if isinstance(item, HistoryDatasetAssociation):
