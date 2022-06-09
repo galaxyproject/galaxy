@@ -1616,7 +1616,7 @@ class HistoryItemOperator:
             if params.datatype == "auto":  # Trigger job to auto-detect datatype
                 self.hda_manager.set_metadata(trans, item, overwrite=True)
             else:
-                set_metadata.delay(self.hda_manager, None, dataset_id=item.id)
+                set_metadata.delay(dataset_id=item.id)
 
     def _change_dbkey(self, item: HistoryItemModel, params: ChangeDbkeyOperationParams):
         if isinstance(item, HistoryDatasetAssociation):
