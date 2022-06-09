@@ -1023,8 +1023,6 @@ class WorkflowsAPIController(
             if workflow == w:
                 current_version = i
 
-        import pdb; pdb.set_trace()
-
         contributors = []
         for contributing_user in contributing_users:
             contributor = {
