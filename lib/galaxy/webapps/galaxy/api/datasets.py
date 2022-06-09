@@ -184,6 +184,7 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         return {
             'object_store_id': object_store_id,
+            'sharable': dataset.sharable,
             'name': name,
             'description': description,
             'percent_used': percent_used,

@@ -342,7 +342,7 @@ class LibrariesApiTestCase(ApiTestCase):
         self._assert_status_code_is(folder_response, 200)
         folder_id = folder_response.json()[0]['id']
         history_id = self.dataset_populator.new_history()
-        hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")['id']
+        hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)['id']
         payload = {'from_hda_id': hda_id}
         create_response = self._post(f"folders/{folder_id}/contents", payload)
         self._assert_status_code_is(create_response, 200)
@@ -358,7 +358,7 @@ class LibrariesApiTestCase(ApiTestCase):
         print(subfolder_response.json())
         subfolder_id = subfolder_response.json()['id']
         history_id = self.dataset_populator.new_history()
-        hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3 sub")['id']
+        hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3 sub", wait=True)['id']
         payload = {'from_hda_id': hda_id}
         create_response = self._post(f"folders/{subfolder_id}/contents", payload)
         self._assert_status_code_is(create_response, 200)
@@ -518,4 +518,5 @@ class LibrariesApiTestCase(ApiTestCase):
         hda_id = self.dataset_populator.new_dataset(history_id, content=content, wait=wait)['id']
         payload = {'from_hda_id': hda_id, 'create_type': 'file', 'folder_id': folder_id}
         ld = self._post(f"libraries/{folder_id}/contents", payload)
+        ld.raise_for_status()
         return ld

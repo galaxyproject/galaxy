@@ -893,7 +893,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
                 else:
                     self._assert_dataset_permission_denied_response(response)
 
-        new_dataset = self.dataset_populator.new_dataset(history_id, content='Cat1Test')
+        new_dataset = self.dataset_populator.new_dataset(history_id, content='Cat1Test', wait=True)
         inputs = dict(
             input1=dataset_to_param(new_dataset),
         )

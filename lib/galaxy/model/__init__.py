@@ -136,6 +136,7 @@ JOB_METRIC_SCALE = 7
 # Tags that get automatically propagated from inputs to outputs when running jobs.
 AUTO_PROPAGATED_TAGS = ["name"]
 YIELD_PER_ROWS = 100
+CANNOT_SHARE_PRIVATE_DATASET_MESSAGE = "Attempting to share a non-sharable dataset."
 
 
 if TYPE_CHECKING:
@@ -1367,6 +1368,19 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             params_dict[name] = value
         job_attrs['params'] = params_dict
         return job_attrs
+
+    def requires_sharable_storage(self, security_agent):
+        # An easy optimization would be to calculate this in galaxy.tools.actions when the
+        # job is created and all the output permissions are already known. Having to reload
+        # these permissions in the job code shouldn't strictly be needed.
+
+        requires_sharing = False
+        for dataset_assoc in self.output_datasets + self.output_library_datasets:
+            if not security_agent.dataset_is_private_to_a_user(dataset_assoc.dataset.dataset):
+                requires_sharing = True
+                break
+
+        return requires_sharing
 
     def to_dict(self, view='collection', system_details=False):
         if view == 'admin_job_list':
@@ -2790,7 +2804,12 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
         visible = galaxy.util.string_as_bool_or_none(kwds.get('visible', None))
         if visible is not None:
             query = query.filter(content_class.visible == visible)
+        if 'object_store_ids' in kwds:
+            if content_class == HistoryDatasetAssociation:
+                query = query.join(content_class.dataset).filter(Dataset.table.c.object_store_id.in_(kwds.get("object_store_ids")))
+            # else ignoring object_store_ids on HDCAs...
         if 'ids' in kwds:
+            assert 'object_store_ids' not in kwds
             ids = kwds['ids']
             max_in_filter_length = kwds.get('max_in_filter_length', MAX_IN_FILTER_LENGTH)
             if len(ids) < max_in_filter_length:
@@ -3226,11 +3245,24 @@ class Dataset(StorableObject, RepresentById, _HasTable):
     def in_ready_state(self):
         return self.state in self.ready_states
 
+    @property
+    def sharable(self):
+        """Return True if placed into an objectstore not labeled as ``private``."""
+        if self.external_filename:
+            return True
+        else:
+            object_store = self._assert_object_store_set()
+            return not object_store.is_private(self)
+
+    def ensure_sharable(self):
+        if not self.sharable:
+            raise Exception(CANNOT_SHARE_PRIVATE_DATASET_MESSAGE)
+
     def get_file_name(self):
         if not self.external_filename:
-            assert self.object_store is not None, f"Object Store has not been initialized for dataset {self.id}"
-            if self.object_store.exists(self):
-                return self.object_store.get_filename(self)
+            object_store = self._assert_object_store_set()
+            if object_store.exists(self):
+                return object_store.get_filename(self)
             else:
                 return ''
         else:
@@ -3244,6 +3276,10 @@ class Dataset(StorableObject, RepresentById, _HasTable):
         else:
             self.external_filename = filename
     file_name = property(get_file_name, set_file_name)
+
+    def _assert_object_store_set(self):
+        assert self.object_store is not None, f"Object Store has not been initialized for dataset {self.id}"
+        return self.object_store
 
     def get_extra_files_path(self):
         # Unlike get_file_name - external_extra_files_path is not backed by an
@@ -4134,6 +4170,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         """
         Copy this HDA to a library optionally replacing an existing LDDA.
         """
+        if not self.dataset.sharable:
+            raise Exception("Attempting to share a non-sharable dataset.")
+
         if replace_dataset:
             # The replace_dataset param ( when not None ) refers to a LibraryDataset that
             #   is being replaced with a new version.

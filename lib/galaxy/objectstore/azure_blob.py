@@ -75,6 +75,7 @@ def parse_config_xml(config_xml):
                 'path': staging_path,
             },
             'extra_dirs': extra_dirs,
+            'private': ConcreteObjectStore.parse_private_from_config_xml(config_xml),
         }
     except Exception:
         # Toss it back up after logging, we can't continue loading at this point.

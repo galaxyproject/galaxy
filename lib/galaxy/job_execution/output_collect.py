@@ -279,7 +279,7 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
         # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
         trans.app.security_agent.copy_library_permissions(trans, ld, ldda)
         # Copy the current user's DefaultUserPermissions to the new LibraryDatasetDatasetAssociation.dataset
-        trans.app.security_agent.set_all_dataset_permissions(ldda.dataset, trans.app.security_agent.user_get_default_permissions(trans.user))
+        trans.app.security_agent.set_all_dataset_permissions(ldda.dataset, trans.app.security_agent.user_get_default_permissions(trans.user), flush=False, new=True)
         library_folder.add_library_dataset(ld, genome_build=ldda.dbkey)
         trans.sa_session.add(library_folder)
         trans.sa_session.flush()

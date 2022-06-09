@@ -39,6 +39,7 @@ from galaxy.model.base import SharedModelMapping
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.objectstore import ObjectStore
 from galaxy.queue_worker import (
     GalaxyQueueWorker,
     send_local_control_task,
@@ -146,6 +147,7 @@ class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableC
         if configure_logging:
             config.configure_logging(self.config)
         self._configure_object_store(fsmon=True)
+        self._register_singleton(ObjectStore, self.object_store)
         config_file = kwargs.get('global_conf', {}).get('__file__', None)
         if config_file:
             log.debug('Using "galaxy.ini" config file: %s', config_file)
