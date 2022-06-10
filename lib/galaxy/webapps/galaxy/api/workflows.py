@@ -1014,7 +1014,7 @@ class WorkflowsAPIController(
             bco_license = workflow.license
 
         # pull in the creator_metadata info from workflow if it exists
-        reviewers = []
+        reviewers: list = []
         contributors = []
         if workflow.creator_metadata:
             for creator in workflow.creator_metadata:
@@ -1027,7 +1027,7 @@ class WorkflowsAPIController(
                         contributor['email'] = creator['email']
                     if 'identifier' in creator:
                         contributor['orcid'] = creator['identifier']
-                    
+
                     contributors.append(contributor)
 
         encoded_workflow_id = trans.security.encode_id(stored_workflow.id)
@@ -1035,7 +1035,7 @@ class WorkflowsAPIController(
         dict_workflow = json.loads(self.workflow_dict(trans, encoded_workflow_id))
 
         spec_version = kwd.get("spec_version", "https://w3id.org/ieee/ieee-2791-schema/2791object.json")
-        
+
         for i, w in enumerate(reversed(stored_workflow.workflows)):
             if workflow == w:
                 current_version = i
@@ -1197,7 +1197,7 @@ class WorkflowsAPIController(
                     "galaxy_url": url_for("/", qualified=True),
                     "galaxy_version": VERSION,
                     # TODO:
-                    # Extend this definition to include more information that is significan for a galaxy workflow/invocation? 
+                    # Extend this definition to include more information that is significan for a galaxy workflow/invocation?
                     # 'aws_estimate': aws_estimate,
                     # 'job_metrics': metrics
                 },
