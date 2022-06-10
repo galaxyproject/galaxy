@@ -9,13 +9,11 @@ from distutils.version import StrictVersion
 DEV_RELEASE = os.environ.get("DEV_RELEASE", None) == "1"
 PROJECT_DIRECTORY = os.getcwd()
 PROJECT_DIRECTORY_NAME = os.path.basename(os.path.abspath(PROJECT_DIRECTORY))
-PROJECT_MODULE_FILENAME = f"project_galaxy_{PROJECT_DIRECTORY_NAME}.py"
 PROJECT_NAME = PROJECT_DIRECTORY_NAME.replace("_", "-")
 
 
 def main(argv):
-    source_dir = argv[1]
-    version = argv[2]
+    version = argv[1]
     if not DEV_RELEASE:
         old_version = StrictVersion(version)
         old_version_tuple = old_version.version
@@ -51,16 +49,24 @@ def main(argv):
         with open(history_path, "w") as f:
             f.write(history)
 
-    mod_path = os.path.join(PROJECT_DIRECTORY, source_dir, PROJECT_MODULE_FILENAME)
-    with open(mod_path) as f:
-        mod = f.read()
+    setup_cfg_path = os.path.join(PROJECT_DIRECTORY, "setup.cfg")
+    with open(setup_cfg_path) as f:
+        setup_cfg = f.read()
     if not DEV_RELEASE:
-        mod = re.sub(r"__version__ = '[\d\.]+'", f"__version__ = '{new_version}.dev0'", mod, 1)
+        setup_cfg = re.sub(
+            r"^version = [\d\.]+", f"version = {new_version}.dev0", setup_cfg, count=1, flags=re.MULTILINE
+        )
     else:
-        mod = re.sub(f"dev{dev_version}", f"dev{new_dev_version}", mod, 1)
-    with open(mod_path, "w") as f:
-        f.write(mod)
-    shell(["git", "commit", "-m", f"Starting work on {PROJECT_NAME} {new_version}", "HISTORY.rst", mod_path])
+        setup_cfg = re.sub(
+            rf"^version = ([\d\.]+).dev{dev_version}",
+            rf"version = \1.dev{new_dev_version}",
+            setup_cfg,
+            count=1,
+            flags=re.MULTILINE,
+        )
+    with open(setup_cfg_path, "w") as f:
+        f.write(setup_cfg)
+    shell(["git", "commit", "-m", f"Starting work on {PROJECT_NAME} {new_version}", "HISTORY.rst", setup_cfg_path])
 
 
 def shell(cmds, **kwds):
