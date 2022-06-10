@@ -1565,7 +1565,7 @@ class HistoryItemOperator:
             HistoryContentItemOperation.undelete: lambda item, params, trans: self._undelete(item),
             HistoryContentItemOperation.purge: lambda item, params, trans: self._purge(item, trans),
             HistoryContentItemOperation.change_datatype: lambda item, params, trans: self._change_datatype(
-                item, params
+                item, params, trans
             ),
             HistoryContentItemOperation.change_dbkey: lambda item, params, trans: self._change_dbkey(item, params),
             HistoryContentItemOperation.add_tags: lambda item, params, trans: self._add_tags(item, trans.user, params),
@@ -1609,11 +1609,14 @@ class HistoryItemOperator:
             return self.dataset_collection_manager.delete(trans, "history", item.id, recursive=True, purge=True)
         self.hda_manager.purge(item, flush=self.flush)
 
-    def _change_datatype(self, item: HistoryItemModel, params: ChangeDatatypeOperationParams):
+    def _change_datatype(
+        self, item: HistoryItemModel, params: ChangeDatatypeOperationParams, trans: ProvidesHistoryContext
+    ):
         if isinstance(item, HistoryDatasetAssociation):
             self.hda_manager.ensure_can_change_datatype(item)
             self.hda_manager.ensure_can_set_metadata(item)
             item.dataset.state = item.dataset.states.SETTING_METADATA
+            trans.sa_session.flush()
             change_datatype.delay(dataset_id=item.id, datatype=params.datatype)
 
     def _change_dbkey(self, item: HistoryItemModel, params: ChangeDbkeyOperationParams):
