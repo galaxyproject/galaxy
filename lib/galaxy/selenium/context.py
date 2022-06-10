@@ -1,9 +1,9 @@
 import os
 from abc import abstractmethod
 from typing import Optional
+from urllib.parse import urljoin
 
 import yaml
-from six.moves.urllib.parse import urljoin
 
 from .driver_factory import ConfiguredDriver
 from .navigates_galaxy import NavigatesGalaxy
