@@ -1,63 +1,101 @@
 <template>
     <CurrentUser v-slot="{ user }">
-        <UserHistories v-if="user" v-slot="{ currentHistory, histories, handlers, historiesLoading }" :user="user">
-            <div v-if="!historiesLoading" id="histories" class="columns-container d-flex flex-row h-100">
-                <HistoryPanel
-                    :history="currentHistory"
-                    class="column current-history p-1 ml-0 mr-1 shadow"
-                    v-on="handlers"
-                    @view-collection="onViewCollection">
-                </HistoryPanel>
-                <template v-for="history in histories">
-                    <HistoryPanel
-                        v-if="history.id !== currentHistory.id"
-                        :key="history.id"
-                        :history="history"
-                        class="column p-1 mx-1"
-                        v-on="handlers"
-                        @view-collection="onViewCollection">
-                    </HistoryPanel>
-                </template>
+        <UserHistories v-if="user" v-slot="{ histories, handlers, historiesLoading }" :user="user">
+            <div v-if="!historiesLoading && histories.length" id="histories" class="h-100 overflow-hidden">
+                <b-container class="mt-1 mb-3">
+                    <b-row>
+                        <b-col>
+                            <b-input-group>
+                                <DebouncedInput v-slot="{ value, input }" v-model="historiesFilter">
+                                    <b-form-input
+                                        size="sm"
+                                        :class="historiesFilter && 'font-weight-bold'"
+                                        :value="value"
+                                        :placeholder="'search histories' | localize"
+                                        data-description="filter text input"
+                                        @input="input"
+                                        @keyup.esc="updateFilter('')" />
+                                </DebouncedInput>
+                                <b-input-group-append>
+                                    <b-button
+                                        size="sm"
+                                        data-description="show deleted filter toggle"
+                                        @click="updateFilter('')">
+                                        <icon icon="times" />
+                                    </b-button>
+                                </b-input-group-append>
+                            </b-input-group>
+                        </b-col>
+
+                        <b-col>
+                            <b-input-group>
+                                <DebouncedInput v-slot="{ value, input }" v-model="datasetsFilter">
+                                    <b-form-input
+                                        size="sm"
+                                        :class="datasetsFilter && 'font-weight-bold'"
+                                        :value="value"
+                                        :placeholder="'search all datasets' | localize"
+                                        data-description="filter text input"
+                                        @input="input"
+                                        @keyup.esc="updateFilter('')" />
+                                </DebouncedInput>
+                                <b-input-group-append>
+                                    <b-button
+                                        size="sm"
+                                        data-description="show deleted filter toggle"
+                                        @click="updateFilter('')">
+                                        <icon icon="times" />
+                                    </b-button>
+                                </b-input-group-append>
+                            </b-input-group>
+                        </b-col>
+                    </b-row>
+                </b-container>
+
+                <hr />
+
+                <b-container fluid class="h-100 overflow-auto">
+                    <virtual-list
+                        class="row overflow-auto h-100"
+                        :data-key="'id'"
+                        :data-component="MultipleViewItem"
+                        :data-sources="histories"
+                        :direction="'horizontal'"
+                        :item-class="'col-1 d-flex'"
+                        :extra-props="{ handlers, onViewCollection }"
+                        :wrap-class="'row flex-row flex-nowrap h-100'">
+                    </virtual-list>
+                </b-container>
             </div>
-            <div v-else class="flex-grow-1 loadingBackground h-100">
-                <span v-localize class="sr-only">Loading History...</span>
-            </div>
+            <b-alert v-else class="m-2" variant="info" show>
+                <LoadingSpan message="Loading Histories" />
+            </b-alert>
         </UserHistories>
     </CurrentUser>
 </template>
 
 <script>
+import MultipleViewItem from "./MultipleViewItem";
+import LoadingSpan from "components/LoadingSpan";
+import VirtualList from "vue-virtual-scroll-list";
+import DebouncedInput from "components/DebouncedInput";
 import CurrentUser from "components/providers/CurrentUser";
 import UserHistories from "components/providers/UserHistories";
-import HistoryPanel from "components/History/CurrentHistory/HistoryPanel";
 
 export default {
     components: {
+        LoadingSpan,
+        VirtualList,
+        DebouncedInput,
         CurrentUser,
         UserHistories,
-        HistoryPanel,
+    },
+    data() {
+        return { MultipleViewItem: MultipleViewItem, datasetsFilter: "", historiesFilter: "" };
     },
     methods: {
         onViewCollection(collection) {},
+        updateFilter(filter) {},
     },
 };
 </script>
-
-<style lang="scss">
-.columns-container > :nth-child(2) {
-    margin-left: 19rem !important;
-}
-
-.column {
-    width: 20%;
-    max-width: 18rem;
-    min-width: 17rem;
-}
-
-.current-history {
-    z-index: 10;
-    height: 100%;
-    position: fixed;
-    background: white;
-}
-</style>
