@@ -435,6 +435,24 @@ class ToolsUploadTestCase(ApiTestCase):
             }
         }
         inputs, datsets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+    @skip_without_datatype("velvet")
+    @uses_test_history(require_new=False)
+    def test_composite_datatype_pbed_stage_fetch(self, history_id):
+        job = {
+            "input1": {
+                "class": "File",
+                "format": "pbed",
+                "composite_data": [
+                    "test-data/rgenetics.bim",
+                    "test-data/rgenetics.bed",
+                    "test-data/rgenetics.fam",
+                ],
+            }
+        }
+        inputs, datsets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
     @skip_without_datatype("velvet")
     @uses_test_history(require_new=False)
@@ -453,6 +471,7 @@ class ToolsUploadTestCase(ApiTestCase):
         inputs, datsets = stage_inputs(
             self.galaxy_interactor, history_id, job, use_path_paste=False, use_fetch_api=False
         )
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
     @skip_without_datatype("velvet")
     @uses_test_history(require_new=False)
