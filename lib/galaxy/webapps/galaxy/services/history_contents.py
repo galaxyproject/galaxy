@@ -1612,20 +1612,13 @@ class HistoryItemOperator:
 
     def _change_datatype(self, item: HistoryItemModel, params: ChangeDatatypeOperationParams):
         if isinstance(item, HistoryDatasetAssociation):
-            self._ensure_can_change_hda_datatype(item)
+            self.hda_manager.ensure_can_change_datatype(item)
+            self.hda_manager.ensure_can_set_metadata(item)
             item.dataset.state = item.dataset.states.SETTING_METADATA
             # Chain tasks using immutable signature to avoid messing with dependency injection
             change_datatype_task = change_datatype.si(dataset_id=item.id, datatype=params.datatype)
             set_metadata_task = set_metadata.si(dataset_id=item.id)
             (change_datatype_task | set_metadata_task).delay()
-
-    def _ensure_can_change_hda_datatype(self, hda: HistoryDatasetAssociation):
-        if not hda.datatype.is_datatype_change_allowed():
-            raise exceptions.MessageException(f'Changing datatype "{hda.extension}" is not allowed.')
-        if not hda.ok_to_edit_metadata():
-            raise exceptions.MessageException(
-                "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
-            )
 
     def _change_dbkey(self, item: HistoryItemModel, params: ChangeDbkeyOperationParams):
         if isinstance(item, HistoryDatasetAssociation):

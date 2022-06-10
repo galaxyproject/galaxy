@@ -128,11 +128,7 @@ def set_metadata(
 ):
     dataset_instance = _get_dataset_by_id(hda_manager, ldda_manager, dataset_id, model_class)
     if overwrite:
-        for name, spec in dataset_instance.metadata.spec.items():
-            # We need to be careful about the attributes we are resetting
-            if name not in ["name", "info", "dbkey", "base_name"]:
-                if spec.get("default"):
-                    setattr(dataset_instance.metadata, name, spec.unwrap(spec.get("default")))
+        hda_manager.overwrite_metadata(dataset_instance)
     try:
         dataset_instance.datatype.set_meta(dataset_instance)
         dataset_instance.set_peek()
