@@ -671,20 +671,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
 
-    def fail_job(self, job_state: JobState, exception=False, message=GENERIC_REMOTE_ERROR, full_status=None):
-        """Seperated out so we can use the worker threads for it."""
-        self.stop_job(job_state.job_wrapper)
-        stdout = ""
-        stderr = ""
-        if full_status:
-            stdout = full_status.get("stdout", "")
-            stderr = full_status.get("stderr", "")
-        self._handle_runner_state("failure", job_state)
-        if not job_state.runner_state_handled:
-            job_state.job_wrapper.fail(
-                getattr(job_state, "fail_message", message), tool_stdout=stdout, tool_stderr=stderr, exception=exception
-            )
-
     def check_pid(self, pid):
         try:
             os.kill(pid, 0)

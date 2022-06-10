@@ -442,7 +442,7 @@ class BaseJobRunner:
                 external_metadata_proc.wait()
             log.debug("execution of external set_meta for job %d finished" % job_wrapper.job_id)
 
-    def get_job_file(self, job_wrapper: "MinimalJobWrapper", **kwds):
+    def get_job_file(self, job_wrapper: "MinimalJobWrapper", **kwds) -> str:
         job_metrics = job_wrapper.app.job_metrics
         job_instrumenter = job_metrics.job_instrumenters[job_wrapper.job_destination.id]
 
@@ -533,7 +533,7 @@ class BaseJobRunner:
         except Exception:
             log.exception("Caught exception in runner state handler")
 
-    def fail_job(self, job_state: "JobState", exception=False, message=None, full_status=None):
+    def fail_job(self, job_state: "JobState", exception=False, message="Job failed", full_status=None):
         if getattr(job_state, "stop_job", True):
             self.stop_job(job_state.job_wrapper)
         job_state.job_wrapper.reclaim_ownership()
@@ -541,9 +541,21 @@ class BaseJobRunner:
         # Not convinced this is the best way to indicate this state, but
         # something necessary
         if not job_state.runner_state_handled:
-            job_state.job_wrapper.fail(getattr(job_state, "fail_message", "Job failed"), exception=exception)
-            if job_state.job_wrapper.cleanup_job == "always":
-                job_state.cleanup()
+            # full_status currently only passed in pulsar runner,
+            # but might be useful for other runners in the future.
+            full_status = full_status or {}
+            tool_stdout = full_status.get("stdout")
+            tool_stderr = full_status.get("stderr")
+            fail_message = getattr(job_state, "fail_message", message)
+            job_state.job_wrapper.fail(
+                fail_message, tool_stdout=tool_stdout, tool_stderr=tool_stderr, exception=exception
+            )
+            # job_stdout and job_stderr might not be quite right here, but since the job failed I don't think it matters
+            self._finish_or_resubmit_job(
+                job_state,
+                job_stdout="",
+                job_stderr=fail_message,
+            )
 
     def mark_as_resubmitted(self, job_state: "JobState", info: typing.Optional[str] = None):
         job_state.job_wrapper.mark_as_resubmitted(info=info)
@@ -560,6 +572,10 @@ class BaseJobRunner:
         job_wrapper = job_state.job_wrapper
         try:
             job = job_state.job_wrapper.get_job()
+            if job_id is None:
+                job_id = job.get_id_tag()
+            if external_job_id is None:
+                external_job_id = job.get_job_runner_external_id()
             exit_code = job_state.read_exit_code()
 
             outputs_directory = os.path.join(job_wrapper.working_directory, "outputs")
@@ -831,7 +847,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
     def check_watched_item(self, job_state):
         raise NotImplementedError()
 
-    def finish_job(self, job_state):
+    def finish_job(self, job_state: AsynchronousJobState):
         """
         Get the output/error for a finished job, pass to `job_wrapper.finish`
         and cleanup all the job's temporary files.

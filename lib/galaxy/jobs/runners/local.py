@@ -186,6 +186,9 @@ class LocalJobRunner(BaseJobRunner):
     def _fail_job_local(self, job_wrapper, message):
         job_destination = job_wrapper.job_destination
         job_state = JobState(job_wrapper, job_destination)
+        job_state.exit_code_file = default_exit_code_file(
+            job_wrapper.working_directory, job_state.job_wrapper.get_id_tag()
+        )
         job_state.fail_message = message
         job_state.stop_job = False
         self.fail_job(job_state, exception=True)

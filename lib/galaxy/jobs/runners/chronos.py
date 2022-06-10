@@ -6,7 +6,6 @@ from galaxy import model
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
-    JobState,
 )
 from galaxy.util import unicodify
 
@@ -196,18 +195,6 @@ class ChronosJobRunner(AsynchronousJobRunner):
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
             self.monitor_queue.put(ajs)
-
-    def fail_job(self, job_state: JobState, exception=False, message=None, full_status=None):
-        assert isinstance(job_state, AsynchronousJobState)
-        if getattr(job_state, "stop_job", True):
-            self.stop_job(job_state.job_wrapper)
-        job_state.job_wrapper.reclaim_ownership()
-        self._handle_runner_state("failure", job_state)
-        if not job_state.runner_state_handled:
-            job_state.job_wrapper.fail(getattr(job_state, "fail_message", "Job failed"), exception=exception)
-            self._finish_or_resubmit_job(job_state, "", job_state.fail_message, job_id=job_state.job_id)
-            if job_state.job_wrapper.cleanup_job == "always":
-                job_state.cleanup()
 
     @handle_exception_call
     def check_watched_item(self, job_state):

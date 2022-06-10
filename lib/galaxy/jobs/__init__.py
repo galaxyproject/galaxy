@@ -1162,7 +1162,7 @@ class MinimalJobWrapper(HasResourceParameters):
     def galaxy_url(self):
         return self.get_destination_configuration("galaxy_infrastructure_url")
 
-    def get_job(self):
+    def get_job(self) -> model.Job:
         return self.sa_session.query(model.Job).get(self.job_id)
 
     def get_id_tag(self):
@@ -2513,7 +2513,9 @@ class TaskWrapper(JobWrapper):
         self.status = "prepared"
         return self.extra_filenames
 
-    def fail(self, message, exception=False):
+    def fail(
+        self, message, exception=False, tool_stdout="", tool_stderr="", exit_code=None, job_stdout=None, job_stderr=None
+    ):
         log.error(f"TaskWrapper Failure {message}")
         self.status = "error"
         # How do we want to handle task failure?  Fail the job and let it clean up?

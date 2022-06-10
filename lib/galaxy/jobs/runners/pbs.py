@@ -24,7 +24,6 @@ from galaxy.jobs import JobDestination
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
-    JobState,
 )
 from galaxy.util.bunch import Bunch
 
@@ -486,19 +485,6 @@ class PBSJobRunner(AsynchronousJobRunner):
         jobs = pbs.pbs_statjob(c, job_id, stat_attrl, None)
         pbs.pbs_disconnect(c)
         return jobs[0].attribs[0].value
-
-    def fail_job(self, job_state: JobState, exception=False, message=None, full_status=None):
-        """
-        Separated out so we can use the worker threads for it.
-        """
-        # NB: The stop_job method was modified to limit exceptions being sent up here,
-        # so the wrapper's fail method will now be called in case of error:
-        assert isinstance(job_state, AsynchronousJobState)
-        if job_state.stop_job:
-            self.stop_job(job_state.job_wrapper)
-        job_state.job_wrapper.fail(job_state.fail_message)
-        if job_state.job_wrapper.cleanup_job == "always":
-            job_state.cleanup()
 
     def get_stage_in_out(self, fnames, symlink=False):
         """Convenience function to create a stagein/stageout list"""
