@@ -1,6 +1,7 @@
 <template>
     <div v-if="history.size" class="history-size my-1 d-flex justify-content-between">
         <b-button
+            v-b-tooltip.hover
             title="Access Dashboard"
             variant="link"
             size="sm"
@@ -11,6 +12,7 @@
         </b-button>
         <b-button-group>
             <b-button
+                v-b-tooltip.hover
                 title="Show active"
                 variant="link"
                 size="sm"
@@ -21,6 +23,7 @@
             </b-button>
             <b-button
                 v-if="history.contents_active.deleted"
+                v-b-tooltip.hover
                 title="Show deleted"
                 variant="link"
                 size="sm"
@@ -31,6 +34,7 @@
             </b-button>
             <b-button
                 v-if="history.contents_active.hidden"
+                v-b-tooltip.hover
                 title="Show hidden"
                 variant="link"
                 size="sm"
@@ -39,6 +43,15 @@
                 <icon icon="lock" />
                 <span>{{ history.contents_active.hidden }}</span>
             </b-button>
+            <b-button
+                v-b-tooltip.hover
+                :title="'Last updated ' + diffToNow"
+                variant="link"
+                size="sm"
+                class="rounded-0 text-decoration-none"
+                @click="reloadContents()">
+                <span :class="reloadButtonCls" />
+            </b-button>
         </b-button-group>
     </div>
 </template>
@@ -46,6 +59,7 @@
 <script>
 import { backboneRoute } from "components/plugins/legacyNavigation";
 import prettyBytes from "pretty-bytes";
+import { formatDistanceToNowStrict } from "date-fns";
 
 export default {
     filters: {
@@ -55,6 +69,18 @@ export default {
     },
     props: {
         history: { type: Object, required: true },
+        lastChecked: { type: Date, default: null },
+    },
+    data() {
+        return {
+            diffToNow: 0,
+            reloadButtonCls: "fa fa-sync",
+        };
+    },
+    mounted() {
+        this.updateTime();
+        // update every second
+        setInterval(this.updateTime.bind(this), 1000);
     },
     methods: {
         onDashboard() {
@@ -62,6 +88,16 @@ export default {
         },
         setFilter(newFilterText) {
             this.$emit("update:filter-text", newFilterText);
+        },
+        updateTime() {
+            this.diffToNow = formatDistanceToNowStrict(this.lastChecked, { addSuffix: true, includeSeconds: true });
+        },
+        async reloadContents() {
+            this.$emit("reloadContents");
+            this.reloadButtonCls = "fa fa-sync fa-spin";
+            setTimeout(() => {
+                this.reloadButtonCls = "fa fa-sync";
+            }, 1000);
         },
     },
 };

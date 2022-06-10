@@ -36,7 +36,11 @@
                     <section v-if="!showAdvanced">
                         <HistoryDetails :history="history" @update:history="$emit('updateHistory', $event)" />
                         <HistoryMessages :history="history" />
-                        <HistoryCounter :history="history" :filter-text.sync="filterText" />
+                        <HistoryCounter
+                            :history="history"
+                            :last-checked="lastChecked"
+                            :filter-text.sync="filterText"
+                            @reloadContents="reloadContents" />
                         <HistoryOperations
                             :history="history"
                             :show-selection="showSelection"
@@ -139,6 +143,7 @@ import HistorySelectionOperations from "./HistoryOperations/SelectionOperations"
 import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
 import SelectionChangeWarning from "./HistoryOperations/SelectionChangeWarning";
 import OperationErrorDialog from "./HistoryOperations/OperationErrorDialog";
+import { rewatchHistory } from "store/historyStore/model/watchHistory";
 
 export default {
     components: {
@@ -196,6 +201,10 @@ export default {
         isProcessing() {
             return this.operationRunning >= this.history.update_time;
         },
+        /** @returns {Date} */
+        lastChecked() {
+            return this.$store.getters.getLastCheckedTime();
+        },
     },
     watch: {
         queryKey() {
@@ -242,6 +251,9 @@ export default {
         onUnhide(item) {
             this.setInvisible(item);
             updateContentFields(item, { visible: true });
+        },
+        reloadContents() {
+            rewatchHistory();
         },
         setInvisible(item) {
             Vue.set(this.invisible, item.hid, true);

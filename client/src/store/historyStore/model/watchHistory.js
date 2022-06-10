@@ -13,6 +13,8 @@ import { getGalaxyInstance } from "app";
 const limit = 1000;
 const throttlePeriod = 3000;
 
+let watchTimeout = null;
+
 // last time the history has changed
 let lastUpdateTime = null;
 
@@ -23,6 +25,8 @@ export async function watchHistory() {
     // get current history
     const history = await getCurrentHistoryFromServer();
     const historyId = history.id;
+    const checkForUpdate = new Date();
+    store.commit("setLastCheckedTime", { checkForUpdate });
 
     // continue if the history update time has changed
     if (!lastUpdateTime || lastUpdateTime < history.update_time) {
@@ -58,7 +62,14 @@ export async function watchHistory() {
             });
         }
     }
-    setTimeout(() => {
+    watchTimeout = setTimeout(() => {
         watchHistory();
     }, throttlePeriod);
+}
+
+export function rewatchHistory() {
+    if (watchTimeout) {
+        clearTimeout(watchTimeout);
+        watchHistory();
+    }
 }
