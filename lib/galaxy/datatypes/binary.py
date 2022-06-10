@@ -1206,7 +1206,7 @@ class Loom(H5):
                     if isinstance(loom_spec_version, bytes):
                         loom_spec_version = loom_spec_version.decode()
                 dataset.metadata.loom_spec_version = loom_spec_version
-                dataset.creation_date = loom_file.attrs.get("creation_date")
+                dataset.metadata.creation_date = loom_file.attrs.get("creation_date")
                 dataset.metadata.shape = tuple(loom_file["matrix"].shape)
 
                 tmp = list(loom_file.get("layers", {}).keys())
@@ -1343,7 +1343,7 @@ class Anndata(H5):
             dataset.metadata.description = anndata_file.attrs.get("description")
             dataset.metadata.url = anndata_file.attrs.get("url")
             dataset.metadata.doi = anndata_file.attrs.get("doi")
-            dataset.creation_date = anndata_file.attrs.get("creation_date")
+            dataset.metadata.creation_date = anndata_file.attrs.get("creation_date")
             dataset.metadata.shape = anndata_file.attrs.get("shape", dataset.metadata.shape)
             # none of the above appear to work in any dataset tested, but could be useful for
             # future AnnData datasets
