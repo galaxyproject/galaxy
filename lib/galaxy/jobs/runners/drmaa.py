@@ -397,11 +397,13 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         if job_id is None:
             self.put(job_wrapper)
             return
-        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
-        ajs.job_id = str(job_id)
+        ajs = AsynchronousJobState(
+            files_dir=job_wrapper.working_directory,
+            job_wrapper=job_wrapper,
+            job_id=job_id,
+            job_destination=job_wrapper.job_destination,
+        )
         ajs.command_line = job.get_command_line()
-        ajs.job_wrapper = job_wrapper
-        ajs.job_destination = job_wrapper.job_destination
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(
                 f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the DRM queue"

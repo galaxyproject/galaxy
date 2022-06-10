@@ -435,12 +435,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
             log.exception("failure running job %d", job_wrapper.job_id)
             return
 
-        pulsar_job_state = AsynchronousJobState()
-        pulsar_job_state.job_wrapper = job_wrapper
-        pulsar_job_state.job_id = job_id
+        pulsar_job_state = AsynchronousJobState(job_wrapper=job_wrapper, job_id=job_id, job_destination=job_destination)
         pulsar_job_state.old_state = True
         pulsar_job_state.running = False
-        pulsar_job_state.job_destination = job_destination
         self.monitor_job(pulsar_job_state)
 
     def __needed_features(self, client):
@@ -744,14 +741,13 @@ class PulsarJobRunner(AsynchronousJobRunner):
             self.pulsar_app.shutdown()
 
     def _job_state(self, job, job_wrapper):
-        job_state = AsynchronousJobState()
+        raw_job_id = job.get_job_runner_external_id() or job_wrapper.job_id
+        job_state = AsynchronousJobState(
+            job_wrapper=job_wrapper, job_id=raw_job_id, job_destination=job_wrapper.job_destination
+        )
         # TODO: Determine why this is set when using normal message queue updates
         # but not CLI submitted MQ updates...
-        raw_job_id = job.get_job_runner_external_id() or job_wrapper.job_id
-        job_state.job_id = str(raw_job_id)
         job_state.runner_url = job_wrapper.get_job_runner_url()
-        job_state.job_destination = job_wrapper.job_destination
-        job_state.job_wrapper = job_wrapper
         return job_state
 
     def __client_outputs(self, client, job_wrapper):

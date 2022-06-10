@@ -656,6 +656,7 @@ class JobState:
         self.job_wrapper = job_wrapper
         self.job_destination = job_destination
         self.runner_state = None
+        self.exit_code_file = default_exit_code_file(job_wrapper.working_directory, job_wrapper.get_id_tag())
 
         self.redact_email_in_job_name = True
         if self.job_wrapper:
@@ -670,7 +671,6 @@ class JobState:
                 self.job_file = JobState.default_job_file(files_dir, id_tag)
                 self.output_file = os.path.join(files_dir, f"galaxy_{id_tag}.o")
                 self.error_file = os.path.join(files_dir, f"galaxy_{id_tag}.e")
-                self.exit_code_file = default_exit_code_file(files_dir, id_tag)
             job_name = f"g{id_tag}"
             if self.job_wrapper.tool.old_id:
                 job_name += f"_{self.job_wrapper.tool.old_id}"
@@ -730,7 +730,8 @@ class AsynchronousJobState(JobState):
         self.job_file = job_file
         self.output_file = output_file
         self.error_file = error_file
-        self.exit_code_file = exit_code_file
+        if exit_code_file:
+            self.exit_code_file = exit_code_file
         self.job_name = job_name
 
         self.set_defaults(files_dir)

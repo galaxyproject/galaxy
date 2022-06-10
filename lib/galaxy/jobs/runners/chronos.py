@@ -180,11 +180,13 @@ class ChronosJobRunner(AsynchronousJobRunner):
     def recover(self, job, job_wrapper):
         msg = "(name!r/runner!r) is still in {state!s} state, adding to" " the runner monitor queue"
         job_id = job.get_job_runner_external_id()
-        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
-        ajs.job_id = self.JOB_NAME_PREFIX + str(job_id)
+        ajs = AsynchronousJobState(
+            files_dir=job_wrapper.working_directory,
+            job_wrapper=job_wrapper,
+            job_id=self.JOB_NAME_PREFIX + str(job_id),
+            job_destination=job_wrapper.job_destination,
+        )
         ajs.command_line = job.command_line
-        ajs.job_wrapper = job_wrapper
-        ajs.job_destination = job_wrapper.job_destination
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             LOGGER.debug(msg.format(name=job.id, runner=job.job_runner_external_id, state=job.state))
             ajs.old_state = model.Job.states.RUNNING
