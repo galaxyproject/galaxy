@@ -15,6 +15,7 @@ from galaxy.celery import (
     galaxy_task,
 )
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.managers.collections import DatasetCollectionManager
@@ -96,6 +97,24 @@ def set_job_metadata(
         tool_job_working_directory=tool_job_working_directory,
         extended_metadata_collection=extended_metadata_collection,
     )
+
+
+@galaxy_task(action="set or detect dataset datatype")
+def change_datatype(
+    hda_manager: HDAManager,
+    ldda_manager: LDDAManager,
+    datatypes_registry: DatatypesRegistry,
+    sa_session: galaxy_scoped_session,
+    dataset_id: int,
+    datatype: str,
+    model_class: str = "HistoryDatasetAssociation",
+):
+    dataset_instance = _get_dataset_by_id(hda_manager, ldda_manager, dataset_id, model_class)
+    if datatype == "auto":
+        path = dataset_instance.dataset.file_name
+        datatype = sniff.guess_ext(path, datatypes_registry.sniff_order)
+    datatypes_registry.change_datatype(dataset_instance, datatype)
+    sa_session.flush()
 
 
 @galaxy_task(action="set dataset association metadata")
