@@ -1009,7 +1009,7 @@ class WorkflowsAPIController(
         stored_workflow = workflow.stored_workflow
 
         # pull in the license info from workflow if it exists
-        bco_license = ''
+        bco_license = ""
         if workflow.license:
             bco_license = workflow.license
 
@@ -1018,15 +1018,15 @@ class WorkflowsAPIController(
         contributors = []
         if workflow.creator_metadata:
             for creator in workflow.creator_metadata:
-                if creator['class'] == 'Person':
+                if creator["class"] == "Person":
                     contributor = {}
-                    contributor['contribution'] = ['contributedBy']
-                    if 'name' in creator:
-                        contributor['name'] = creator['name']
-                    if 'email' in creator:
-                        contributor['email'] = creator['email']
-                    if 'identifier' in creator:
-                        contributor['orcid'] = creator['identifier']
+                    contributor["contribution"] = ["contributedBy"]
+                    if "name" in creator:
+                        contributor["name"] = creator["name"]
+                    if "email" in creator:
+                        contributor["email"] = creator["email"]
+                    if "identifier" in creator:
+                        contributor["orcid"] = creator["identifier"]
 
                     contributors.append(contributor)
 
@@ -1042,7 +1042,7 @@ class WorkflowsAPIController(
 
         provenance_domain = {
             "name": workflow.name,
-            "version": str(current_version) + '.0',
+            "version": str(current_version) + ".0",
             "review": reviewers,
             "created": workflow_invocation.create_time.isoformat(),
             "modified": workflow_invocation.update_time.isoformat(),
