@@ -107,6 +107,26 @@ def set_metadata(
     model_class: str = "HistoryDatasetAssociation",
     overwrite: bool = True,
 ):
+    dataset_instance = _get_dataset_by_id(hda_manager, ldda_manager, dataset_id, model_class)
+    if overwrite:
+        for name, spec in dataset_instance.metadata.spec.items():
+            # We need to be careful about the attributes we are resetting
+            if name not in ["name", "info", "dbkey", "base_name"]:
+                if spec.get("default"):
+                    setattr(dataset_instance.metadata, name, spec.unwrap(spec.get("default")))
+    try:
+        dataset_instance.datatype.set_meta(dataset_instance)
+        dataset_instance.set_peek()
+        dataset_instance.dataset.state = dataset_instance.dataset.states.OK
+    except Exception as e:
+        log.info(f"Setting metadata failed on {model_class} {dataset_instance.id}: {str(e)}")
+        dataset_instance.dataset.state = dataset_instance.dataset.states.FAILED_METADATA
+    sa_session.flush()
+
+
+def _get_dataset_by_id(
+    hda_manager: HDAManager, ldda_manager: LDDAManager, dataset_id: int, model_class: str = "HistoryDatasetAssociation"
+) -> model.DatasetInstance:
     dataset: model.DatasetInstance
     if model_class == "HistoryDatasetAssociation":
         dataset = hda_manager.by_id(dataset_id)
@@ -114,20 +134,7 @@ def set_metadata(
         dataset = ldda_manager.by_id(dataset_id)
     else:
         raise NotImplementedError(f"Cannot set metadata for model_class {model_class}")
-    if overwrite:
-        for name, spec in dataset.metadata.spec.items():
-            # We need to be careful about the attributes we are resetting
-            if name not in ["name", "info", "dbkey", "base_name"]:
-                if spec.get("default"):
-                    setattr(dataset.metadata, name, spec.unwrap(spec.get("default")))
-    try:
-        dataset.datatype.set_meta(dataset)
-        dataset.set_peek()
-        dataset.dataset.state = dataset.dataset.states.OK
-    except Exception:
-        log.info(f"Setting metadata failed on {model_class} {dataset.id}: {str(e)}")
-        dataset.dataset.state = dataset.dataset.states.FAILED_METADATA
-    sa_session.flush()
+    return dataset
 
 
 @galaxy_task(bind=True)
