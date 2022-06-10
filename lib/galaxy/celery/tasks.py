@@ -121,6 +121,7 @@ def set_metadata(
                 if spec.get("default"):
                     setattr(dataset.metadata, name, spec.unwrap(spec.get("default")))
     dataset.datatype.set_meta(dataset)
+    dataset.set_peek()
     sa_session.flush()
 
 
