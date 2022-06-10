@@ -24,6 +24,7 @@ from typing_extensions import (
 )
 
 from galaxy import exceptions
+from galaxy.celery.tasks import change_datatype
 from galaxy.celery.tasks import materialize as materialize_task
 from galaxy.celery.tasks import (
     prepare_dataset_collection_download,
@@ -31,7 +32,6 @@ from galaxy.celery.tasks import (
     set_metadata,
     write_history_content_to,
 )
-from galaxy.datatypes import sniff
 from galaxy.managers import (
     folders,
     hdas,
@@ -1566,7 +1566,7 @@ class HistoryItemOperator:
             HistoryContentItemOperation.undelete: lambda item, params, trans: self._undelete(item),
             HistoryContentItemOperation.purge: lambda item, params, trans: self._purge(item, trans),
             HistoryContentItemOperation.change_datatype: lambda item, params, trans: self._change_datatype(
-                item, params, trans
+                item, params
             ),
             HistoryContentItemOperation.change_dbkey: lambda item, params, trans: self._change_dbkey(item, params),
             HistoryContentItemOperation.add_tags: lambda item, params, trans: self._add_tags(item, trans.user, params),
@@ -1610,23 +1610,14 @@ class HistoryItemOperator:
             return self.dataset_collection_manager.delete(trans, "history", item.id, recursive=True, purge=True)
         self.hda_manager.purge(item, flush=self.flush)
 
-    def _change_datatype(
-        self, item: HistoryItemModel, params: ChangeDatatypeOperationParams, trans: ProvidesHistoryContext
-    ):
+    def _change_datatype(self, item: HistoryItemModel, params: ChangeDatatypeOperationParams):
         if isinstance(item, HistoryDatasetAssociation):
             self._ensure_can_change_hda_datatype(item)
             item.dataset.state = item.dataset.states.SETTING_METADATA
-            self._set_hda_datatype(item, params.datatype, trans)
-            set_metadata.delay(dataset_id=item.id)
-
-    def _set_hda_datatype(self, hda: HistoryDatasetAssociation, datatype: str, trans: ProvidesHistoryContext):
-        if datatype == "auto":
-            path = hda.dataset.file_name
-            datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order)
-        else:
-            datatype = datatype
-        trans.app.datatypes_registry.change_datatype(hda, datatype)
-        trans.sa_session.flush()
+            # Chain tasks using immutable signature to avoid messing with dependency injection
+            change_datatype_task = change_datatype.si(dataset_id=item.id, datatype=params.datatype)
+            set_metadata_task = set_metadata.si(dataset_id=item.id)
+            (change_datatype_task | set_metadata_task).delay()
 
     def _ensure_can_change_hda_datatype(self, hda: HistoryDatasetAssociation):
         if not hda.datatype.is_datatype_change_allowed():

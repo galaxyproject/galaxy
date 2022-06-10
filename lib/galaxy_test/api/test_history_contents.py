@@ -1253,6 +1253,10 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
             }
             bulk_operation_result = self._apply_bulk_operation(history_id, payload)
             self._assert_bulk_success(bulk_operation_result, expected_success_count=num_datasets)
+
+            # Wait for celery tasks to finish
+            self.dataset_populator.wait_for_history(history_id)
+
             history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
             for item in history_contents:
                 assert item["extension"] == "tabular"
@@ -1327,6 +1331,10 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
             }
             bulk_operation_result = self._apply_bulk_operation(history_id, payload)
             self._assert_bulk_success(bulk_operation_result, expected_success_count=len(dataset_ids))
+
+            # Wait for celery tasks to finish
+            self.dataset_populator.wait_for_history(history_id)
+
             history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
             # Should be detected as `tabular` and set the metadata correctly
             for item in history_contents:
