@@ -1615,6 +1615,7 @@ class HistoryItemOperator:
     ):
         if isinstance(item, HistoryDatasetAssociation):
             self._ensure_can_change_hda_datatype(item)
+            item.dataset.state = item.dataset.states.SETTING_METADATA
             self._set_hda_datatype(item, params.datatype, trans)
             set_metadata.delay(dataset_id=item.id)
 

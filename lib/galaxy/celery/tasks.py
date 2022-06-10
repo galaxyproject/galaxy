@@ -120,8 +120,13 @@ def set_metadata(
             if name not in ["name", "info", "dbkey", "base_name"]:
                 if spec.get("default"):
                     setattr(dataset.metadata, name, spec.unwrap(spec.get("default")))
-    dataset.datatype.set_meta(dataset)
-    dataset.set_peek()
+    try:
+        dataset.datatype.set_meta(dataset)
+        dataset.set_peek()
+        dataset.dataset.state = dataset.dataset.states.OK
+    except Exception:
+        log.info(f"Setting metadata failed on {model_class} {dataset.id}: {str(e)}")
+        dataset.dataset.state = dataset.dataset.states.FAILED_METADATA
     sa_session.flush()
 
 
