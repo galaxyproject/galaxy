@@ -2,10 +2,7 @@ import json
 from concurrent.futures import TimeoutError
 from functools import lru_cache
 from pathlib import Path
-from typing import (
-    Callable,
-    Optional,
-)
+from typing import Callable
 
 from sqlalchemy import (
     exists,
@@ -110,20 +107,21 @@ def set_metadata(
     model_class: str = "HistoryDatasetAssociation",
     overwrite: bool = True,
 ):
-    dataset: Optional[model.DatasetInstance] = None
+    dataset: model.DatasetInstance
     if model_class == "HistoryDatasetAssociation":
         dataset = hda_manager.by_id(dataset_id)
     elif model_class == "LibraryDatasetDatasetAssociation":
         dataset = ldda_manager.by_id(dataset_id)
-    if dataset:
-        if overwrite:
-            for name, spec in dataset.metadata.spec.items():
-                # We need to be careful about the attributes we are resetting
-                if name not in ["name", "info", "dbkey", "base_name"]:
-                    if spec.get("default"):
-                        setattr(dataset.metadata, name, spec.unwrap(spec.get("default")))
-        dataset.datatype.set_meta(dataset)
-        sa_session.flush()
+    else:
+        raise NotImplementedError(f"Cannot set metadata for model_class {model_class}")
+    if overwrite:
+        for name, spec in dataset.metadata.spec.items():
+            # We need to be careful about the attributes we are resetting
+            if name not in ["name", "info", "dbkey", "base_name"]:
+                if spec.get("default"):
+                    setattr(dataset.metadata, name, spec.unwrap(spec.get("default")))
+    dataset.datatype.set_meta(dataset)
+    sa_session.flush()
 
 
 @galaxy_task(bind=True)
