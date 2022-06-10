@@ -99,7 +99,7 @@ def set_job_metadata(
     )
 
 
-@galaxy_task(action="set or detect dataset datatype")
+@galaxy_task(action="set or detect dataset datatype and updates metadata")
 def change_datatype(
     hda_manager: HDAManager,
     ldda_manager: LDDAManager,
@@ -115,6 +115,7 @@ def change_datatype(
         datatype = sniff.guess_ext(path, datatypes_registry.sniff_order)
     datatypes_registry.change_datatype(dataset_instance, datatype)
     sa_session.flush()
+    set_metadata(hda_manager, ldda_manager, sa_session, dataset_id, model_class)
 
 
 @galaxy_task(action="set dataset association metadata")
@@ -127,9 +128,9 @@ def set_metadata(
     overwrite: bool = True,
 ):
     dataset_instance = _get_dataset_by_id(hda_manager, ldda_manager, dataset_id, model_class)
-    if overwrite:
-        hda_manager.overwrite_metadata(dataset_instance)
     try:
+        if overwrite:
+            hda_manager.overwrite_metadata(dataset_instance)
         dataset_instance.datatype.set_meta(dataset_instance)
         dataset_instance.set_peek()
         dataset_instance.dataset.state = dataset_instance.dataset.states.OK

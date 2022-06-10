@@ -29,7 +29,6 @@ from galaxy.celery.tasks import materialize as materialize_task
 from galaxy.celery.tasks import (
     prepare_dataset_collection_download,
     prepare_history_content_download,
-    set_metadata,
     write_history_content_to,
 )
 from galaxy.managers import (
@@ -1615,10 +1614,7 @@ class HistoryItemOperator:
             self.hda_manager.ensure_can_change_datatype(item)
             self.hda_manager.ensure_can_set_metadata(item)
             item.dataset.state = item.dataset.states.SETTING_METADATA
-            # Chain tasks using immutable signature to avoid messing with dependency injection
-            change_datatype_task = change_datatype.si(dataset_id=item.id, datatype=params.datatype)
-            set_metadata_task = set_metadata.si(dataset_id=item.id)
-            (change_datatype_task | set_metadata_task).delay()
+            change_datatype.delay(dataset_id=item.id, datatype=params.datatype)
 
     def _change_dbkey(self, item: HistoryItemModel, params: ChangeDbkeyOperationParams):
         if isinstance(item, HistoryDatasetAssociation):
