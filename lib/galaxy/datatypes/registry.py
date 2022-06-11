@@ -393,9 +393,14 @@ class Registry:
                                     "description": description,
                                     "description_url": description_url,
                                 }
-                                composite_files = datatype_instance.composite_files
+                                composite_files = datatype_instance.get_composite_files()
                                 if composite_files:
-                                    datatype_info_dict["composite_files"] = [_.dict() for _ in composite_files.values()]
+                                    _composite_files = []
+                                    for name, composite_file in composite_files.items():
+                                        _composite_file = composite_file.dict()
+                                        _composite_file["name"] = name
+                                        _composite_files.append(_composite_file)
+                                    datatype_info_dict["composite_files"] = _composite_files
                                 self.datatype_info_dicts.append(datatype_info_dict)
 
                                 for auto_compressed_type in auto_compressed_types:

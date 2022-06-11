@@ -161,18 +161,27 @@ def _fetch_target(upload_config: "UploadConfig", target):
         composite = item.pop("composite", None)
         if datatype and datatype.composite_type:
             composite_type = datatype.composite_type
-            writable_files = datatype.writable_files
             assert composite_type == "auto_primary_file", "basic composite uploads not yet implemented"
 
             # get_composite_dataset_name finds dataset name from basename of contents
             # and such but we're not implementing that here yet. yagni?
             # also need name...
+            metadata = {
+                composite_file.substitute_name_with_metadata: datatype.metadata_spec[
+                    composite_file.substitute_name_with_metadata
+                ].default
+                for composite_file in datatype.composite_files.values()
+                if composite_file.substitute_name_with_metadata
+            }
             name = item.get("name") or "Composite Dataset"
-            dataset_bunch = Bunch(
+            metadata["base_name"] = name
+            dataset = Bunch(
                 name=name,
+                metadata=metadata,
             )
+            writable_files = datatype.get_writable_files_for_dataset(dataset)
             primary_file = stream_to_file(
-                StringIO(datatype.generate_primary_file(dataset_bunch)),
+                StringIO(datatype.generate_primary_file(dataset)),
                 prefix="upload_auto_primary_file",
                 dir=upload_config.working_directory,
             )
@@ -189,7 +198,7 @@ def _fetch_target(upload_config: "UploadConfig", target):
             }
             _copy_and_validate_simple_attributes(item, rval)
             composite_items = composite.get("elements", [])
-            keys = [value.name for value in writable_files.values()]
+            keys = list(writable_files.keys())
             composite_item_idx = 0
             for composite_item in composite_items:
                 if composite_item_idx >= len(keys):

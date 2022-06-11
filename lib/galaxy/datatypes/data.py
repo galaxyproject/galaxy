@@ -792,20 +792,13 @@ class Data(metaclass=DataMeta):
         kwds["is_binary"] = is_binary
         kwds["to_posix_lines"] = to_posix_lines
         kwds["space_to_tab"] = space_to_tab
-        return Bunch(**kwds)
+
+        composite_file = Bunch(**kwds)
+        return composite_file
 
     def add_composite_file(self, name, **kwds):
         # self.composite_files = self.composite_files.copy()
         self.composite_files[name] = self.__new_composite_file(name, **kwds)
-
-    def __substitute_composite_key(self, key, composite_file, dataset=None):
-        if composite_file.substitute_name_with_metadata:
-            if dataset:
-                meta_value = str(dataset.metadata.get(composite_file.substitute_name_with_metadata))
-            else:
-                meta_value = self.spec[composite_file.substitute_name_with_metadata].default  # type: ignore
-            return key % meta_value
-        return key
 
     @property
     def writable_files(self):
@@ -813,6 +806,14 @@ class Data(metaclass=DataMeta):
         if self.composite_type != "auto_primary_file":
             files[self.primary_file_name] = self.__new_composite_file(self.primary_file_name)
         for key, value in self.get_composite_files().items():
+            files[key] = value
+        return files
+
+    def get_writable_files_for_dataset(self, dataset):
+        files = {}
+        if self.composite_type != "auto_primary_file":
+            files[self.primary_file_name] = self.__new_composite_file(self.primary_file_name)
+        for key, value in self.get_composite_files(dataset).items():
             files[key] = value
         return files
 
