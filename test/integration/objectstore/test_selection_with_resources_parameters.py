@@ -1,4 +1,4 @@
-"""Integration tests for object stores."""
+"""Test selecting an object store with resource parameters configured in job configuration."""
 
 import os
 import string
@@ -48,7 +48,7 @@ DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
 )
 
 
-class TestObjectStoreSelectionIntegration(BaseObjectStoreIntegrationTestCase):
+class TestObjectStoreSelectionWithResourceParameterIntegration(BaseObjectStoreIntegrationTestCase):
     # populated by config_object_store
     files_default_path: str
     files_static_path: str
