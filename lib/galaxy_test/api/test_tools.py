@@ -869,6 +869,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     @uses_test_history(require_new=False)
     def test_run_cat1(self, history_id):
         # Run simple non-upload tool with an input data parameter.
+        initial_disk_usage = self.dataset_populator.total_disk_usage()
         new_dataset = self.dataset_populator.new_dataset(history_id, content="Cat1Test")
         inputs = dict(
             input1=dataset_to_param(new_dataset),
@@ -878,6 +879,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
         self.assertEqual(output1_content.strip(), "Cat1Test")
+        final_disk_usage = self.dataset_populator.total_disk_usage()
+        assert final_disk_usage >= initial_disk_usage + 9 * 2
 
     @skip_without_tool("cat1")
     @uses_test_history(require_new=True)
