@@ -18,16 +18,14 @@ TEST_METADATA_LINE = "set_metadata_and_stuff.sh"
 TEST_FILES_PATH = "file_path"
 TEE_REDIRECT = '> "$__out" 2> "$__err"'
 RETURN_CODE_CAPTURE = "; return_code=$?; echo $return_code > galaxy_1.ec"
-CAPTURE_AND_REDIRECT = f"{TEE_REDIRECT}{RETURN_CODE_CAPTURE}"
 CP_WORK_DIR_OUTPUTS = '; \nif [ -f "foo" ] ; then cp "foo" "bar" ; fi'
-TEE_LOG = """__out="${TMPDIR:-.}/out.$$" __err="${TMPDIR:-.}/err.$$"
-mkfifo "$__out" "$__err"
-trap 'rm -f "$__out" "$__err"' EXIT
-tee -a '../outputs/tool_stdout' < "$__out" &
-tee -a '../outputs/tool_stderr' < "$__err" >&2 & """
 
 
 class TestCommandFactory(TestCase):
+
+    stream_stdout_stderr = False
+    TEE_LOG = " "
+    CAPTURE_AND_REDIRECT = f'> "../outputs/tool_stdout" 2> "../outputs/tool_stderr"{RETURN_CODE_CAPTURE}'
 
     def setUp(self):
         self.job_dir = mkdtemp()
@@ -47,29 +45,20 @@ class TestCommandFactory(TestCase):
 
     def test_simplest_command(self):
         self.include_work_dir_outputs = False
-        self.__assert_command_is(self._surround_command(MOCK_COMMAND_LINE))
-
-    def test_kill_trap_replaced(self):
-        self.include_work_dir_outputs = False
-        self.job_wrapper.command_line = f"{TRAP_KILL_CONTAINER}{MOCK_COMMAND_LINE}"
-        expected_command_line = self._surround_command(MOCK_COMMAND_LINE).replace(
-            """trap 'rm -f "$__out" "$__err"' EXIT""",
-            """trap 'rm -f "$__out" "$__err"; _on_exit' EXIT"""
-        )
-        self.__assert_command_is(expected_command_line)
+        self._assert_command_is(self._surround_command(MOCK_COMMAND_LINE))
 
     def test_shell_commands(self):
         self.include_work_dir_outputs = False
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
-        self.__assert_command_is(self._surround_command(f"{dep_commands[0]}; {MOCK_COMMAND_LINE}"))
+        self._assert_command_is(self._surround_command(f"{dep_commands[0]}; {MOCK_COMMAND_LINE}"))
 
     def test_shell_commands_external(self):
         self.job_wrapper.commands_in_new_shell = True
         self.include_work_dir_outputs = False
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
-        self.__assert_command_is(self._surround_command(
+        self._assert_command_is(self._surround_command(
             '{} {}/tool_script.sh'.format(
                 self.job_wrapper.shell,
                 self.job_wrapper.working_directory,
@@ -80,35 +69,35 @@ class TestCommandFactory(TestCase):
         self.include_work_dir_outputs = False
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
-        self.__assert_command_is(self._surround_command(MOCK_COMMAND_LINE), remote_command_params=dict(dependency_resolution="remote"))
+        self._assert_command_is(self._surround_command(MOCK_COMMAND_LINE), remote_command_params=dict(dependency_resolution="remote"))
 
     def test_explicit_local_dependency_resolution(self):
         self.include_work_dir_outputs = False
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
-        self.__assert_command_is(self._surround_command(f"{dep_commands[0]}; {MOCK_COMMAND_LINE}"),
-                                 remote_command_params=dict(dependency_resolution="local"))
+        self._assert_command_is(self._surround_command(f"{dep_commands[0]}; {MOCK_COMMAND_LINE}"),
+                                remote_command_params=dict(dependency_resolution="local"))
 
     def test_task_prepare_inputs(self):
         self.include_work_dir_outputs = False
         self.job_wrapper.prepare_input_files_cmds = ["/opt/split1", "/opt/split2"]
-        self.__assert_command_is(self._surround_command(f"/opt/split1; /opt/split2; {MOCK_COMMAND_LINE}"))
+        self._assert_command_is(self._surround_command(f"/opt/split1; /opt/split2; {MOCK_COMMAND_LINE}"))
 
     def test_workdir_outputs(self):
         self.include_work_dir_outputs = True
         self.workdir_outputs = [("foo", "bar")]
-        self.__assert_command_is(self._surround_command(MOCK_COMMAND_LINE, CP_WORK_DIR_OUTPUTS))
+        self._assert_command_is(self._surround_command(MOCK_COMMAND_LINE, CP_WORK_DIR_OUTPUTS))
 
     def test_workdir_outputs_with_glob(self):
         self.include_work_dir_outputs = True
         self.workdir_outputs = [("foo*bar", "foo_x_bar")]
-        self.__assert_command_is(self._surround_command(
+        self._assert_command_is(self._surround_command(
             MOCK_COMMAND_LINE, '; \nif [ -f "foo"*"bar" ] ; then cp "foo"*"bar" "foo_x_bar" ; fi'))
 
     def test_set_metadata_skipped_if_unneeded(self):
         self.include_metadata = True
         self.include_work_dir_outputs = False
-        self.__assert_command_is(self._surround_command(MOCK_COMMAND_LINE))
+        self._assert_command_is(self._surround_command(MOCK_COMMAND_LINE))
 
     def test_set_metadata(self):
         self._test_set_metadata()
@@ -122,7 +111,7 @@ class TestCommandFactory(TestCase):
         self.include_work_dir_outputs = False
         self.job_wrapper.metadata_line = TEST_METADATA_LINE
         expected_command = self._surround_command(MOCK_COMMAND_LINE, f"; cd '{self.job_dir}'; {SETUP_GALAXY_FOR_METADATA}{TEST_METADATA_LINE}")
-        self.__assert_command_is(expected_command)
+        self._assert_command_is(expected_command)
 
     def test_empty_metadata(self):
         """
@@ -133,7 +122,7 @@ class TestCommandFactory(TestCase):
         self.job_wrapper.metadata_line = ' '
         # Empty metadata command do not touch command line.
         expected_command = self._surround_command(MOCK_COMMAND_LINE, f"; cd '{self.job_dir}'")
-        self.__assert_command_is(expected_command)
+        self._assert_command_is(expected_command)
 
     def test_metadata_kwd_defaults(self):
         configured_kwds = self.__set_metadata_with_kwds()
@@ -164,7 +153,7 @@ class TestCommandFactory(TestCase):
             self.__command()
         return self.job_wrapper.configured_external_metadata_kwds
 
-    def __assert_command_is(self, expected_command, **command_kwds):
+    def _assert_command_is(self, expected_command, **command_kwds):
         command = self.__command(**command_kwds)
         self.assertEqual(command, expected_command)
 
@@ -181,13 +170,34 @@ class TestCommandFactory(TestCase):
             job_wrapper=self.job_wrapper,
             include_metadata=self.include_metadata,
             include_work_dir_outputs=self.include_work_dir_outputs,
+            stream_stdout_stderr=self.stream_stdout_stderr,
             **extra_kwds
         )
         return build_command(**kwds)
 
     def _surround_command(self, command, post_command=""):
-        command = f'''{PREPARE_DIRS}; {TEE_LOG}{command} {CAPTURE_AND_REDIRECT}{post_command}; sh -c "exit $return_code"'''
+        command = f'''{PREPARE_DIRS};{self.TEE_LOG}{command} {self.CAPTURE_AND_REDIRECT}{post_command}; sh -c "exit $return_code"'''
         return command.replace("galaxy_1.ec", os.path.join(self.job_wrapper.working_directory, "galaxy_1.ec"), 1)
+
+
+class TestCommandFactoryStreamStdoutStderr(TestCommandFactory):
+
+    stream_stdout_stderr = True
+    TEE_LOG = """ __out="${TMPDIR:-.}/out.$$" __err="${TMPDIR:-.}/err.$$"
+mkfifo "$__out" "$__err"
+trap 'rm -f "$__out" "$__err"' EXIT
+tee -a '../outputs/tool_stdout' < "$__out" &
+tee -a '../outputs/tool_stderr' < "$__err" >&2 & """
+    CAPTURE_AND_REDIRECT = f"{TEE_REDIRECT}{RETURN_CODE_CAPTURE}"
+
+    def test_kill_trap_replaced(self):
+        self.include_work_dir_outputs = False
+        self.job_wrapper.command_line = f"{TRAP_KILL_CONTAINER}{MOCK_COMMAND_LINE}"
+        expected_command_line = self._surround_command(MOCK_COMMAND_LINE).replace(
+            """trap 'rm -f "$__out" "$__err"' EXIT""",
+            """trap 'rm -f "$__out" "$__err"; _on_exit' EXIT"""
+        )
+        self._assert_command_is(expected_command_line)
 
 
 class MockJobWrapper:
