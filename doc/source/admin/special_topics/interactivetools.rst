@@ -65,7 +65,7 @@ Set these values in `galaxy.yml`:
           # ...
           gx_it_proxy:
             enable: true
-            proxy_port: 4002
+            port: 4002
         galaxy:
           # ...
           interactivetools_enable: true
