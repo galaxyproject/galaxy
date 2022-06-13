@@ -42,19 +42,19 @@
                         </b-button>
                     </template>
                     <template v-slot:body>
-                        <div v-if="input.help" class="my-2">{{ input.help }}</div>
+                        <div v-if="input.help" class="my-2" data-description="repeat help">{{ input.help }}</div>
                         <FormNode v-bind="$props" :inputs="cache" :prefix="getPrefix(input.name, cacheId)" />
                     </template>
                 </FormCard>
                 <b-button v-if="!sustainRepeats" @click="repeatInsert(input)">
                     <font-awesome-icon icon="plus" class="mr-1" />
-                    <span>Insert {{ input.title || "Repeat" }}</span>
+                    <span data-description="repeat insert">Insert {{ input.title || "Repeat" }}</span>
                 </b-button>
             </div>
             <div v-else-if="input.type == 'section'">
                 <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
                     <template v-slot:body>
-                        <div v-if="input.help" class="my-2">{{ input.help }}</div>
+                        <div v-if="input.help" class="my-2" data-description="section help">{{ input.help }}</div>
                         <FormNode v-bind="$props" :inputs="input.inputs" :prefix="getPrefix(input.name)" />
                     </template>
                 </FormCard>

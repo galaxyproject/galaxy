@@ -45,6 +45,38 @@ describe("FormDisplay", () => {
                         },
                     ],
                 },
+                {
+                    type: "repeat",
+                    name: "repeat_block",
+                    title: "Repeat Block",
+                    help: "repeat help",
+                    inputs: [
+                        {
+                            type: "text",
+                            name: "repeat_text_a",
+                        },
+                        {
+                            type: "text",
+                            name: "repeat_text_b",
+                        },
+                    ],
+                },
+                {
+                    type: "section",
+                    name: "section_block",
+                    title: "Section Block",
+                    help: "section help",
+                    inputs: [
+                        {
+                            type: "text",
+                            name: "section_text_a",
+                        },
+                        {
+                            type: "text",
+                            name: "section_text_b",
+                        },
+                    ],
+                },
             ],
             errors: {},
             validationScrollTo: [],
@@ -104,5 +136,20 @@ describe("FormDisplay", () => {
         });
         const conditionalBoolDisabled = wrapper.findAll("[type='checkbox']");
         expect(conditionalBoolDisabled.length).toEqual(0);
+    });
+
+    it("repeats", async () => {
+        const repeatButton = wrapper.find("[data-description='repeat insert']");
+        expect(repeatButton.text()).toBe("Insert Repeat Block");
+        const repeatHelpHidden = wrapper.find("[data-description='repeat help']").exists();
+        expect(repeatHelpHidden).toBe(false);
+        await repeatButton.trigger("click");
+        const repeatHelpText = wrapper.find("[data-description='repeat help']").text();
+        expect(repeatHelpText).toBe("repeat help");
+    });
+
+    it("section", async () => {
+        const sectionHelpText = wrapper.find("[data-description='section help']").text();
+        expect(sectionHelpText).toBe("section help");
     });
 });
