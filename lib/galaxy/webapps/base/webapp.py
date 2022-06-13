@@ -13,10 +13,7 @@ from typing import (
     Any,
     Dict,
 )
-from urllib.parse import (
-    urljoin,
-    urlparse,
-)
+from urllib.parse import urlparse
 
 import mako.lookup
 import mako.runtime
@@ -390,7 +387,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 if name not in self.request.cookies and TOOL_RUNNER_SESSION_COOKIE in self.request.cookies:
                     # TOOL_RUNNER_SESSION_COOKIE value is the encoded galaxysession cookie.
                     # We decode it here and pretend it's the galaxysession
-                    tool_runner_path = urljoin(self.app.config.galaxy_url_prefix, "tool_runner")
+                    tool_runner_path = url_for(controller="tool_runner")
                     if self.request.path.startswith(tool_runner_path):
                         return self.security.decode_guid(self.request.cookies[TOOL_RUNNER_SESSION_COOKIE].value)
                 return self.request.cookies[name].value
@@ -406,13 +403,12 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             self._set_cookie(
                 value,
                 name=TOOL_RUNNER_SESSION_COOKIE,
-                path=urljoin(path, "tool_runner"),
+                path=url_for(controller="tool_runner"),
                 age=age,
                 version=version,
                 encode_value=True,
             )
             tool_runner_cookie = self.response.cookies[TOOL_RUNNER_SESSION_COOKIE]
-            tool_runner_cookie["path"] = urljoin(path, "tool_runner")
             tool_runner_cookie["SameSite"] = "None"
             tool_runner_cookie["secure"] = True
 
