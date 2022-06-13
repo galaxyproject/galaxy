@@ -1,0 +1,47 @@
+<tool id="interactive_tool_audiolabeler" tool_type="interactive" name="Audio Labeler" version="0.1">
+    <description>Label audio file</description>
+    <requirements>
+        <container type="docker">ylebras/audio_labeler-docker:latest</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Audio Labeler" requires_domain="True">
+            <port>3838</port>
+            <url>/</url>
+        </entry_point>
+    </entry_points>
+    <command><![CDATA[
+
+        rm /opt/shiny-server/samples/sample-apps/audio/www/tmp/* &&
+
+        #for $count, $file in enumerate($input):
+            #set $cleaned_name = str($count + 1) + '_' + re.sub('[^\w\-\.\s]', '_', str($file.element_identifier))
+            ln -sf '$file' '/opt/shiny-server/samples/sample-apps/audio/www/tmp/${cleaned_name}.${file.ext}' &&
+        #end for
+
+    ]]>
+    </command>
+    <inputs>
+        <param name="input" type="data" multiple="true" format="wav" label="Input sound data file(s) in wav format"/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+<![CDATA[
+
+`Audio Labeler <https://github.com/gibbona1/audio_labeler>`_ is a R Shiny App to label audio files
+
+]]>
+    </help>
+    <citations>
+           <citation type="bibtex">@misc{githubsurvey2022,
+           author       = {ANTHONY THOMAS GIBBONS},
+           title        = {{Audio labeler R Shiny app}},
+           publisher    = {Github},
+           url          = {https://github.com/gibbona1/audio_labeler}
+           }
+          }</citation>
+    </citations>
+</tool>
