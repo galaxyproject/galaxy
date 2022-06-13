@@ -161,6 +161,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job_wrapper,
             include_metadata=False,
             modify_command_for_container=False,
+            stream_stdout_stderr=True,
         ):
             return
 
