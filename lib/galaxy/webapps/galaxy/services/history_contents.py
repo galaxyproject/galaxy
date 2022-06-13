@@ -24,6 +24,7 @@ from typing_extensions import (
 )
 
 from galaxy import exceptions
+from galaxy.celery.tasks import change_datatype
 from galaxy.celery.tasks import materialize as materialize_task
 from galaxy.celery.tasks import (
     prepare_dataset_collection_download,
@@ -691,7 +692,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     ) -> HistoryContentBulkOperationResult:
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
-        self._validate_bulk_operation_params(payload, trans.user)
+        self._validate_bulk_operation_params(payload, trans.user, trans)
         contents: List[HistoryItemModel]
         if payload.items:
             contents = self._get_contents_by_item_list(
@@ -1469,11 +1470,19 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
         return self.__collection_dict(trans, dataset_collection_instance, view="element")
 
-    def _validate_bulk_operation_params(self, payload: HistoryContentBulkOperationPayload, user: User):
+    def _validate_bulk_operation_params(
+        self, payload: HistoryContentBulkOperationPayload, user: User, trans: ProvidesHistoryContext
+    ):
         if payload.operation == HistoryContentItemOperation.change_dbkey:
             dbkey = cast(ChangeDbkeyOperationParams, payload.params).dbkey
             if not self.genomes_manager.is_registered_dbkey(dbkey, user):
-                raise exceptions.RequestParameterInvalidException(f"{dbkey} is not registered")
+                raise exceptions.RequestParameterInvalidException(f"Database/build '{dbkey}' is not registered")
+        if payload.operation == HistoryContentItemOperation.change_datatype:
+            ensure_celery_tasks_enabled(trans.app.config)
+            datatype = cast(ChangeDatatypeOperationParams, payload.params).datatype
+            existing_datatype = trans.app.datatypes_registry.get_datatype_by_extension(datatype)
+            if not existing_datatype and not datatype == "auto":
+                raise exceptions.RequestParameterInvalidException(f"Data type '{datatype}' is not registered")
 
     def _apply_bulk_operation(
         self,
@@ -1555,9 +1564,9 @@ class HistoryItemOperator:
             HistoryContentItemOperation.delete: lambda item, params, trans: self._delete(item),
             HistoryContentItemOperation.undelete: lambda item, params, trans: self._undelete(item),
             HistoryContentItemOperation.purge: lambda item, params, trans: self._purge(item, trans),
-            # HistoryContentItemOperation.change_datatype: lambda item, params, trans: self._change_datatype(
-            #     item, params
-            # ),
+            HistoryContentItemOperation.change_datatype: lambda item, params, trans: self._change_datatype(
+                item, params, trans
+            ),
             HistoryContentItemOperation.change_dbkey: lambda item, params, trans: self._change_dbkey(item, params),
             HistoryContentItemOperation.add_tags: lambda item, params, trans: self._add_tags(item, trans.user, params),
             HistoryContentItemOperation.remove_tags: lambda item, params, trans: self._remove_tags(
@@ -1600,9 +1609,15 @@ class HistoryItemOperator:
             return self.dataset_collection_manager.delete(trans, "history", item.id, recursive=True, purge=True)
         self.hda_manager.purge(item, flush=self.flush)
 
-    def _change_datatype(self, item: HistoryItemModel, params: ChangeDatatypeOperationParams):
+    def _change_datatype(
+        self, item: HistoryItemModel, params: ChangeDatatypeOperationParams, trans: ProvidesHistoryContext
+    ):
         if isinstance(item, HistoryDatasetAssociation):
-            item.change_datatype(params.datatype)
+            self.hda_manager.ensure_can_change_datatype(item)
+            self.hda_manager.ensure_can_set_metadata(item)
+            item.dataset.state = item.dataset.states.SETTING_METADATA
+            trans.sa_session.flush()
+            change_datatype.delay(dataset_id=item.id, datatype=params.datatype)
 
     def _change_dbkey(self, item: HistoryItemModel, params: ChangeDbkeyOperationParams):
         if isinstance(item, HistoryDatasetAssociation):

@@ -379,45 +379,50 @@ class DatasetAssociationManager(
             rval["modify_item_roles"] = modify_item_role_list
         return rval
 
+    def ensure_can_change_datatype(self, dataset: model.DatasetInstance):
+        if not dataset.datatype.is_datatype_change_allowed():
+            raise exceptions.InsufficientPermissionsException(
+                f'Changing datatype "{dataset.extension}" is not allowed.'
+            )
+
+    def ensure_can_set_metadata(self, dataset: model.DatasetInstance):
+        if not dataset.ok_to_edit_metadata():
+            raise exceptions.ItemAccessibilityException(
+                "This dataset is currently being used as input or output. You cannot change datatype until the jobs have completed or you have canceled them."
+            )
+
     def detect_datatype(self, trans, dataset_assoc):
         """Sniff and assign the datatype to a given dataset association (ldda or hda)"""
         data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
-        if data.datatype.is_datatype_change_allowed():
-            if not data.ok_to_edit_metadata():
-                raise exceptions.ItemAccessibilityException(
-                    "This dataset is currently being used as input or output. You cannot change datatype until the jobs have completed or you have canceled them."
-                )
-            else:
-                path = data.dataset.file_name
-                datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order)
-                trans.app.datatypes_registry.change_datatype(data, datatype)
-                trans.sa_session.flush()
-                self.set_metadata(trans, dataset_assoc)
-        else:
-            raise exceptions.InsufficientPermissionsException(f'Changing datatype "{data.extension}" is not allowed.')
+        self.ensure_can_change_datatype(data)
+        self.ensure_can_set_metadata(data)
+        path = data.dataset.file_name
+        datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order)
+        trans.app.datatypes_registry.change_datatype(data, datatype)
+        trans.sa_session.flush()
+        self.set_metadata(trans, dataset_assoc)
 
     def set_metadata(self, trans, dataset_assoc, overwrite=False, validate=True):
         """Trigger a job that detects and sets metadata on a given dataset association (ldda or hda)"""
         data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
-        if not data.ok_to_edit_metadata():
-            raise exceptions.ItemAccessibilityException(
-                "This dataset is currently being used as input or output. You cannot edit metadata until the jobs have completed or you have canceled them."
-            )
-        else:
-            if overwrite:
-                for name, spec in data.metadata.spec.items():
-                    # We need to be careful about the attributes we are resetting
-                    if name not in ["name", "info", "dbkey", "base_name"]:
-                        if spec.get("default"):
-                            setattr(data.metadata, name, spec.unwrap(spec.get("default")))
+        self.ensure_can_set_metadata(data)
+        if overwrite:
+            self.overwrite_metadata(data)
 
-            job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
-                self.app.datatypes_registry.set_external_metadata_tool,
-                trans,
-                incoming={"input1": data, "validate": validate},
-                overwrite=overwrite,
-            )
-            self.app.job_manager.enqueue(job, tool=self.app.datatypes_registry.set_external_metadata_tool)
+        job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+            self.app.datatypes_registry.set_external_metadata_tool,
+            trans,
+            incoming={"input1": data, "validate": validate},
+            overwrite=overwrite,
+        )
+        self.app.job_manager.enqueue(job, tool=self.app.datatypes_registry.set_external_metadata_tool)
+
+    def overwrite_metadata(self, data):
+        for name, spec in data.metadata.spec.items():
+            # We need to be careful about the attributes we are resetting
+            if name not in ["name", "info", "dbkey", "base_name"]:
+                if spec.get("default"):
+                    setattr(data.metadata, name, spec.unwrap(spec.get("default")))
 
     def update_permissions(self, trans, dataset_assoc, **kwd):
         action = kwd.get("action", "set_permissions")

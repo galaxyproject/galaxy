@@ -827,7 +827,7 @@ class HistoryContentItemOperation(str, Enum):
     delete = "delete"
     undelete = "undelete"
     purge = "purge"
-    # change_datatype = "change_datatype"
+    change_datatype = "change_datatype"
     change_dbkey = "change_dbkey"
     add_tags = "add_tags"
     remove_tags = "remove_tags"

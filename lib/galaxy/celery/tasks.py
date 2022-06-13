@@ -15,6 +15,7 @@ from galaxy.celery import (
     galaxy_task,
 )
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.managers.collections import DatasetCollectionManager
@@ -98,15 +99,58 @@ def set_job_metadata(
     )
 
 
+@galaxy_task(action="set or detect dataset datatype and updates metadata")
+def change_datatype(
+    hda_manager: HDAManager,
+    ldda_manager: LDDAManager,
+    datatypes_registry: DatatypesRegistry,
+    sa_session: galaxy_scoped_session,
+    dataset_id: int,
+    datatype: str,
+    model_class: str = "HistoryDatasetAssociation",
+):
+    dataset_instance = _get_dataset_by_id(hda_manager, ldda_manager, dataset_id, model_class)
+    if datatype == "auto":
+        path = dataset_instance.dataset.file_name
+        datatype = sniff.guess_ext(path, datatypes_registry.sniff_order)
+    datatypes_registry.change_datatype(dataset_instance, datatype)
+    sa_session.flush()
+    set_metadata(hda_manager, ldda_manager, sa_session, dataset_id, model_class)
+
+
 @galaxy_task(action="set dataset association metadata")
 def set_metadata(
-    hda_manager: HDAManager, ldda_manager: LDDAManager, dataset_id, model_class="HistoryDatasetAssociation"
+    hda_manager: HDAManager,
+    ldda_manager: LDDAManager,
+    sa_session: galaxy_scoped_session,
+    dataset_id: int,
+    model_class: str = "HistoryDatasetAssociation",
+    overwrite: bool = True,
 ):
+    dataset_instance = _get_dataset_by_id(hda_manager, ldda_manager, dataset_id, model_class)
+    try:
+        if overwrite:
+            hda_manager.overwrite_metadata(dataset_instance)
+        dataset_instance.datatype.set_meta(dataset_instance)
+        dataset_instance.set_peek()
+        dataset_instance.dataset.state = dataset_instance.dataset.states.OK
+    except Exception as e:
+        log.info(f"Setting metadata failed on {model_class} {dataset_instance.id}: {str(e)}")
+        dataset_instance.dataset.state = dataset_instance.dataset.states.FAILED_METADATA
+    sa_session.flush()
+
+
+def _get_dataset_by_id(
+    hda_manager: HDAManager, ldda_manager: LDDAManager, dataset_id: int, model_class: str = "HistoryDatasetAssociation"
+) -> model.DatasetInstance:
+    dataset: model.DatasetInstance
     if model_class == "HistoryDatasetAssociation":
         dataset = hda_manager.by_id(dataset_id)
     elif model_class == "LibraryDatasetDatasetAssociation":
         dataset = ldda_manager.by_id(dataset_id)
-    dataset.datatype.set_meta(dataset)
+    else:
+        raise NotImplementedError(f"Cannot set metadata for model_class {model_class}")
+    return dataset
 
 
 @galaxy_task(bind=True)

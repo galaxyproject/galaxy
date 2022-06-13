@@ -1226,6 +1226,123 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
                 if item["history_content_type"] == "dataset":
                     assert item["dbkey"] == expected_dbkey
 
+    def test_bulk_datatype_change(self):
+        with self.dataset_populator.test_history() as history_id:
+            num_datasets = 3
+            dataset_ids = []
+            for _ in range(num_datasets):
+                hda_id = self.dataset_populator.new_dataset(history_id)["id"]
+                dataset_ids.append(hda_id)
+
+            history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
+            for item in history_contents:
+                assert item["extension"] == "txt"
+                assert item["data_type"] == "galaxy.datatypes.data.Text"
+                assert "metadata_column_names" not in item
+
+            self.dataset_populator.wait_for_history_jobs(history_id)
+
+            expected_datatype = "tabular"
+            # Change datatype of all datasets
+            payload = {
+                "operation": "change_datatype",
+                "params": {
+                    "type": "change_datatype",
+                    "datatype": expected_datatype,
+                },
+            }
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            self._assert_bulk_success(bulk_operation_result, expected_success_count=num_datasets)
+
+            # Wait for celery tasks to finish
+            self.dataset_populator.wait_for_history(history_id)
+
+            history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
+            for item in history_contents:
+                assert item["extension"] == "tabular"
+                assert item["data_type"] == "galaxy.datatypes.tabular.Tabular"
+                assert "metadata_column_names" in item
+
+    @skip_without_tool("cat_data_and_sleep")
+    def test_bulk_datatype_change_errors(self):
+        with self.dataset_populator.test_history() as history_id:
+            num_datasets = 3
+            dataset_ids = []
+            for _ in range(num_datasets):
+                hda_id = self.dataset_populator.new_dataset(history_id)["id"]
+                dataset_ids.append(hda_id)
+            self.dataset_populator.wait_for_history_jobs(history_id)
+
+            # Run tool on last dataset
+            input_hda_id = hda_id
+            inputs = {
+                "input1": {"src": "hda", "id": input_hda_id},
+                "sleep_time": 10,
+            }
+            run_response = self.dataset_populator.run_tool_raw(
+                "cat_data_and_sleep",
+                inputs,
+                history_id,
+            )
+            output_hda_id = run_response.json()["outputs"][0]["id"]
+            num_datasets += 1  # the new output dataset
+
+            dataset_ids_in_use = [input_hda_id, output_hda_id]
+
+            expected_datatype = "tabular"
+            # Change datatype of all datasets (4 in total)
+            payload = {
+                "operation": "change_datatype",
+                "params": {
+                    "type": "change_datatype",
+                    "datatype": expected_datatype,
+                },
+            }
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            # First 2 datasets are ok
+            assert bulk_operation_result["success_count"] == 2
+            # Last 2 are in use (input and output) and must fail
+            assert len(bulk_operation_result["errors"]) == 2
+            for error in bulk_operation_result["errors"]:
+                assert error["item"]["id"] in dataset_ids_in_use
+
+    def test_bulk_datatype_change_auto(self):
+        with self.dataset_populator.test_history() as history_id:
+            tabular_contents = "1\t2\t3\na\tb\tc\n"
+            dataset_ids = [
+                self.dataset_populator.new_dataset(history_id, content=tabular_contents)["id"],
+                self.dataset_populator.new_dataset(history_id, content=tabular_contents)["id"],
+            ]
+            self.dataset_populator.wait_for_history_jobs(history_id)
+
+            history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
+            for item in history_contents:
+                assert item["extension"] == "txt"
+                assert item["data_type"] == "galaxy.datatypes.data.Text"
+                assert "metadata_delimiter" not in item
+
+            # Change datatype of all datasets to auto
+            payload = {
+                "operation": "change_datatype",
+                "params": {
+                    "type": "change_datatype",
+                    "datatype": "auto",
+                },
+            }
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            self._assert_bulk_success(bulk_operation_result, expected_success_count=len(dataset_ids))
+
+            # Wait for celery tasks to finish
+            self.dataset_populator.wait_for_history(history_id)
+
+            history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
+            # Should be detected as `tabular` and set the metadata correctly
+            for item in history_contents:
+                assert item["extension"] == "tabular"
+                assert item["data_type"] == "galaxy.datatypes.tabular.Tabular"
+                assert "metadata_delimiter" in item
+                assert item["metadata_delimiter"] == "\t"
+
     def test_index_returns_expected_total_matches(self):
         with self.dataset_populator.test_history() as history_id:
             datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
