@@ -550,12 +550,6 @@ class BaseJobRunner:
             job_state.job_wrapper.fail(
                 fail_message, tool_stdout=tool_stdout, tool_stderr=tool_stderr, exception=exception
             )
-            # job_stdout and job_stderr might not be quite right here, but since the job failed I don't think it matters
-            self._finish_or_resubmit_job(
-                job_state,
-                job_stdout="",
-                job_stderr=fail_message,
-            )
 
     def mark_as_resubmitted(self, job_state: "JobState", info: typing.Optional[str] = None):
         job_state.job_wrapper.mark_as_resubmitted(info=info)
