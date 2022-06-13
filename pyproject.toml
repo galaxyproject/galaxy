@@ -136,7 +136,7 @@ responses = "*"
 selenium = "*"
 Sphinx = ">=4.0"  # support docutils 0.17
 sphinx_markdown_tables = "*"
-sphinx_rtd_theme = "*"
+sphinx_rtd_theme = ">=1.0.0"
 statsd = "*"
 testfixtures = "*"
 tuspy = "*"
