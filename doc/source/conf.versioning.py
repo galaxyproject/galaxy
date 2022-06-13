@@ -3,8 +3,9 @@
 # This file is appended to conf.py by the Build docs github workflow.
 #
 import re
-from distutils.version import LooseVersion
 from subprocess import check_output
+
+from packaging.version import Version
 
 # This is set in the Jenkins matrix config
 TARGET_GIT_BRANCH = os.environ.get("TARGET_BRANCH", "dev")  # noqa: F821
@@ -17,7 +18,7 @@ BANNER_APPEND = """ You can alternatively <a href="%(stable_path)s">view this pa
 exists</a> or <a href="%(stable_root)s">view the top of the latest release's documentation</a>."""
 
 # Minimum version for linking to docs
-MIN_DOC_VERSION = LooseVersion("17.05")
+MIN_DOC_VERSION = Version("17.05")
 
 # Enable simpleversioning
 extensions += ["sphinxcontrib.simpleversioning"]  # noqa: F821
@@ -43,16 +44,16 @@ for _tag in reversed(tags):
         _ver = _tag[1:]
         if not _stable:
             _stable = _ver
-        if LooseVersion(_ver) >= MIN_DOC_VERSION:
-            simpleversioning_versions.append({"id": "release_%s" % _ver, "name": _ver})
+        if Version(_ver) >= MIN_DOC_VERSION:
+            simpleversioning_versions.append({"id": f"release_{_ver}", "name": _ver})
 
 if re.fullmatch(r"release_\d{2}\.\d{2}", TARGET_GIT_BRANCH):
     if _stable:
         # The current stable release will go here but fail the next conditional, avoiding either banner.
-        if TARGET_GIT_BRANCH != "release_%s" % _stable:
+        if TARGET_GIT_BRANCH != f"release_{_stable}":
             simpleversioning_show_banner = True
             _target_ver = TARGET_GIT_BRANCH[len("release_") :]
-            if LooseVersion(_target_ver) > LooseVersion(_stable):
+            if Version(_target_ver) > Version(_stable):
                 # Pre-release
                 # Insert it between master and _stable
                 simpleversioning_versions.insert(2, {"id": TARGET_GIT_BRANCH, "name": _target_ver})

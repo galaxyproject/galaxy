@@ -1,6 +1,7 @@
 import os
 import re
-from distutils.version import LooseVersion
+
+from packaging.version import Version
 
 _version_re = re.compile(r"^version\s+=\s+(.*)", flags=re.MULTILINE)
 
@@ -18,9 +19,9 @@ def main():
     version = version_match.group(1)
 
     if not DEV_RELEASE:
+        version_obj = Version(version)
         # Strip .devN
-        version_tuple = LooseVersion(version).version[0:3]
-        print(".".join(map(str, version_tuple)))
+        print(version_obj.base_version)
     else:
         print(version)
 
