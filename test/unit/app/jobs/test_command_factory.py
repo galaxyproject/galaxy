@@ -25,7 +25,7 @@ class TestCommandFactory(TestCase):
 
     stream_stdout_stderr = False
     TEE_LOG = " "
-    CAPTURE_AND_REDIRECT = f'> "../outputs/tool_stdout" 2> "../outputs/tool_stderr"{RETURN_CODE_CAPTURE}'
+    CAPTURE_AND_REDIRECT = f"> '../outputs/tool_stdout' 2> '../outputs/tool_stderr'{RETURN_CODE_CAPTURE}"
 
     def setUp(self):
         self.job_dir = mkdtemp()

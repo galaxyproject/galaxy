@@ -280,7 +280,7 @@ class CommandsBuilder:
 
     def capture_stdout_stderr(self, stdout_file, stderr_file, stream_stdout_stderr=False):
         if not stream_stdout_stderr:
-            self.append_command(f'> "{stdout_file}" 2> "{stderr_file}"', sep="")
+            self.append_command(f"> '{stdout_file}' 2> '{stderr_file}'", sep="")
             return
         trap_command = """trap 'rm -f "$__out" "$__err"' EXIT"""
         if TRAP_KILL_CONTAINER in self.commands:
