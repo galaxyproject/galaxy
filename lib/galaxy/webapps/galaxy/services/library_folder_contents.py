@@ -14,7 +14,6 @@ from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
 
-TIME_FORMAT = "%Y-%m-%d %I:%M %p"
 FOLDER_TYPE_NAME = "folder"
 FILE_TYPE_NAME = "file"
 
@@ -95,7 +94,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         for content_item in self._load_folder_contents(trans, folders, datasets, offset, limit):
             return_item = {}
             encoded_id = trans.security.encode_id(content_item.id)
-            create_time = content_item.create_time.strftime(TIME_FORMAT)
+            create_time = str(content_item.create_time)
 
             if content_item.api_type == FOLDER_TYPE_NAME:
                 encoded_id = f"F{encoded_id}"
@@ -105,7 +104,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                 can_manage = is_admin or (
                     trans.user and trans.app.security_agent.can_manage_library_item(current_user_roles, folder)
                 )
-                update_time = content_item.update_time.strftime(TIME_FORMAT)
+                update_time = str(content_item.update_time)
                 return_item.update(dict(can_modify=can_modify, can_manage=can_manage))
                 if content_item.description:
                     return_item.update(dict(description=content_item.description))
@@ -131,7 +130,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                 )
                 raw_size = int(content_item.library_dataset_dataset_association.get_size())
                 nice_size = util.nice_size(raw_size)
-                update_time = content_item.library_dataset_dataset_association.update_time.strftime(TIME_FORMAT)
+                update_time = str(content_item.library_dataset_dataset_association.update_time)
 
                 library_dataset_dict = content_item.to_dict()
                 encoded_ldda_id = trans.security.encode_id(content_item.library_dataset_dataset_association.id)

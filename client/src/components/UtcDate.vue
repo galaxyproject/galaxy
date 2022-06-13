@@ -11,7 +11,7 @@
 </template>
 
 <script>
-import { formatDistanceToNow, parse, parseISO } from "date-fns";
+import { formatDistanceToNow, parseISO } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
 export default {
@@ -24,10 +24,6 @@ export default {
             type: String,
             default: "date", // or elapsed
         },
-        customFormat: {
-            type: String,
-            default: undefined,
-        },
     },
     computed: {
         elapsedTime: function () {
@@ -37,12 +33,8 @@ export default {
             return this.parsedDate.toISOString();
         },
         parsedDate: function () {
-            if (this.customFormat !== undefined) {
-                return parse(this.date, this.customFormat, new Date());
-            } else {
-                // assume ISO format date, except in Galaxy this won't have TZinfo -- it will always be Zulu
-                return parseISO(`${this.date}Z`);
-            }
+            // assume ISO format date, except in Galaxy this won't have TZinfo -- it will always be Zulu
+            return parseISO(`${this.date}Z`);
         },
         pretty: function () {
             return `${formatInTimeZone(this.parsedDate, "Etc/Zulu", "eeee MMM do H:mm:ss yyyy")} UTC`;
