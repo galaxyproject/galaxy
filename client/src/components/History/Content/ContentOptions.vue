@@ -47,7 +47,7 @@
             size="sm"
             variant="link"
             @click.stop="$emit('unhide')">
-            <icon icon="unlock" />
+            <icon icon="eye-slash" />
         </b-button>
     </span>
 </template>
