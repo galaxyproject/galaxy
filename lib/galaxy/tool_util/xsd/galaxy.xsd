@@ -614,36 +614,37 @@ serve as complete descriptions of the runtime of a tool.
       <xs:element name="requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="container" type="Container" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="cores_min" type="float" use="optional">
+    <xs:attribute name="cores_min" type="xs:float" use="optional">
       <xs:documentation xml:lang="en"><![CDATA[
 Maximum reserved number of CPU cores if runtime allows it (unimplemented in Galaxy currently).
 ]]></xs:documentation>
     </xs:attribute>
-    <xs:attribute name="cores_max" type="xs:long" use="optional">
+    <xs:attribute name="cores_max" type="xs:float" use="optional">
     </xs:attribute>
       <xs:documentation xml:lang="en"><![CDATA[
 Minimum reserved number of CPU cores if runtime allows it (unimplemented in Galaxy currently).
 ]]></xs:documentation>
-    <xs:attribute name="ram_min" type="xs:long" use="optional">
+    <xs:attribute name="ram_min" type="xs:float" use="optional">
       <xs:documentation xml:lang="en"><![CDATA[
 Minimum reserved RAM in mebibytes (2**20) if runtime allows it (unimplemented in Galaxy currently).
 ]]></xs:documentation>
     </xs:attribute>
-    <xs:attribute name="ram_max" type="xs:long" use="optional">
+    <xs:attribute name="ram_max" type="xs:float" use="optional">
       <xs:documentation xml:lang="en"><![CDATA[
 Maximum reserved RAM in mebibytes (2**20) if runtime allows it (unimplemented in Galaxy currently).
 ]]></xs:documentation>
     </xs:attribute>
-    <xs:attribute name="tmpdir_min" type="xs:long" use="optional">
+    <xs:attribute name="tmpdir_min" type="xs:float" use="optional">
       <xs:documentation xml:lang="en"><![CDATA[
 Minimum reserved filesystem based storage for the designated temporary directory, in mebibytes (2**20) if runtime allows it (unimplemented in Galaxy currently).
 ]]></xs:documentation>
     </xs:attribute>
-    <xs:attribute name="tmpdir_max" type="xs:long" use="optional">
+    <xs:attribute name="tmpdir_max" type="xs:float" use="optional">
       <xs:documentation xml:lang="en"><![CDATA[
 Maximum reserved filesystem based storage for the designated temporary directory, in mebibytes (2**20) if runtime allows it (unimplemented in Galaxy currently).
 ]]></xs:documentation>
     </xs:attribute>
+  </xs:attribute>
   </xs:complexType>
 
   <xs:complexType name="Requirement">
