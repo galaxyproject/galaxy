@@ -1,80 +1,50 @@
 <template>
-    <div class="mb-3 workflow-invocation-state-component">
-        <div v-if="invocationAndJobTerminal">
-            <span>
-                <a class="invocation-report-link" :href="invocationLink"
-                    ><b>View Report {{ indexStr }}</b></a
-                >
-                <a
-                    v-b-tooltip
-                    class="fa fa-print ml-1 invocation-pdf-link"
-                    :href="invocationPdfLink"
-                    title="Download PDF" />
-            </span>
-        </div>
-        <div v-else>
-            <span class="fa fa-spinner fa-spin" />
-            <span>Invocation {{ indexStr }}...</span>
-            <span
-                v-if="!invocationSchedulingTerminal"
-                v-b-tooltip.hover
-                class="fa fa-times cancel-workflow-scheduling"
-                title="Cancel scheduling of workflow invocation"
-                @click="cancelWorkflowScheduling"></span>
-        </div>
-        <progress-bar v-if="!stepCount" note="Loading step state summary..." :loading="true" class="steps-progress" />
-        <progress-bar
-            v-else-if="invocationState == 'cancelled'"
-            note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
-            :error-count="1"
-            class="steps-progress" />
-        <progress-bar
-            v-else-if="invocationState == 'failed'"
-            note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
-            :error-count="1"
-            class="steps-progress" />
-        <progress-bar
-            v-else
-            :note="stepStatesStr"
-            :total="stepCount"
-            :ok-count="stepStates.scheduled"
-            :loading="!invocationSchedulingTerminal"
-            class="steps-progress" />
-        <progress-bar
-            :note="jobStatesStr"
-            :total="jobCount"
-            :ok-count="okCount"
-            :running-count="runningCount"
-            :new-count="newCount"
-            :error-count="errorCount"
-            :loading="!invocationAndJobTerminal"
-            class="jobs-progress" />
-        <span v-if="invocationAndJobTerminal">
-            <a class="bco-json" :href="bcoJSON"><b>Download BioCompute Object</b></a>
-        </span>
-        <workflow-invocation-details
-            v-if="invocation"
-            :invocation="invocation"
-            :invocation-and-job-terminal="invocationAndJobTerminal" />
+    <b-tabs v-if="invocation">
+        <b-tab title="Summary" active>
+            <workflow-invocation-summary
+                :invocation="invocation"
+                :index="index"
+                :invocation-and-job-terminal="invocationAndJobTerminal"
+                :invocation-scheduling-terminal="invocationSchedulingTerminal"
+                :job-states-summary="jobStatesSummary"
+                @invocation-cancelled="cancelWorkflowScheduling" />
+        </b-tab>
+        <b-tab title="Details">
+            <workflow-invocation-details
+                :invocation="invocation"
+                :invocation-and-job-terminal="invocationAndJobTerminal" />
+        </b-tab>
+        <b-tab title="Workflow Overview">
+            <p>TODO: Insert readonly version of workflow editor here</p>
+        </b-tab>
+        <b-tab title="Export">
+            <div v-if="invocationAndJobTerminal">
+                <workflow-invocation-export-options :invocation-id="invocation.id" />
+            </div>
+            <div v-else>
+                <p v-localize>Waiting for invocation to complete...</p>
+            </div>
+        </b-tab>
+    </b-tabs>
+    <div v-else>
+        <p v-localize>Loading invocation...</p>
     </div>
 </template>
 <script>
 import { cancelWorkflowScheduling } from "./services";
-import { getRootFromIndexLink } from "onload";
-import WorkflowInvocationDetails from "./WorkflowInvocationDetails";
+import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
+import WorkflowInvocationDetails from "./WorkflowInvocationDetails.vue";
+import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
 
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import mixin from "components/JobStates/mixin";
-import ProgressBar from "components/ProgressBar";
-
 import { mapGetters, mapActions } from "vuex";
-
-const getUrl = (path) => getRootFromIndexLink() + path;
 
 export default {
     components: {
-        ProgressBar,
+        WorkflowInvocationSummary,
         WorkflowInvocationDetails,
+        WorkflowInvocationExportOptions,
     },
     mixins: [mixin],
     props: {
@@ -84,7 +54,8 @@ export default {
         },
         index: {
             type: Number,
-            optional: true,
+            required: false,
+            default: null,
         },
     },
     data() {
@@ -95,50 +66,14 @@ export default {
     },
     computed: {
         ...mapGetters(["getInvocationById", "getInvocationJobsSummaryById"]),
-        indexStr() {
-            if (this.index == null) {
-                return "";
-            } else {
-                return `${this.index + 1}`;
-            }
-        },
         invocation: function () {
             return this.getInvocationById(this.invocationId);
         },
         invocationState: function () {
             return this.invocation?.state || "new";
         },
-        createdTime: function () {
-            return this.invocation?.create_time || null;
-        },
-        stepCount: function () {
-            return this.invocation?.steps.length;
-        },
-        stepStates: function () {
-            const stepStates = {};
-            if (!this.invocation) {
-                return {};
-            }
-            for (const step of this.invocation.steps) {
-                if (!stepStates[step.state]) {
-                    stepStates[step.state] = 1;
-                } else {
-                    stepStates[step.state] += 1;
-                }
-            }
-            return stepStates;
-        },
         invocationAndJobTerminal: function () {
             return !!(this.invocationSchedulingTerminal && this.jobStatesTerminal);
-        },
-        invocationLink: function () {
-            return getUrl(`workflows/invocations/report?id=${this.invocationId}`);
-        },
-        bcoJSON: function () {
-            return getUrl(`api/invocations/${this.invocationId}/biocompute/download`);
-        },
-        invocationPdfLink: function () {
-            return getUrl(`api/invocations/${this.invocationId}/report.pdf`);
         },
         invocationSchedulingTerminal: function () {
             return (
@@ -153,16 +88,6 @@ export default {
                 return true;
             }
             return this.jobStatesSummary && this.jobStatesSummary.terminal();
-        },
-        stepStatesStr: function () {
-            return `${this.stepStates.scheduled || 0} of ${this.stepCount} steps successfully scheduled.`;
-        },
-        jobStatesStr: function () {
-            let jobStr = `${this.jobStatesSummary?.numTerminal() || 0} of ${this.jobCount} jobs complete`;
-            if (!this.invocationSchedulingTerminal) {
-                jobStr += " (total number of jobs will change until all steps fully scheduled)";
-            }
-            return `${jobStr}.`;
         },
         jobStatesSummary() {
             const jobsSummary = this.getInvocationJobsSummaryById(this.invocationId);
