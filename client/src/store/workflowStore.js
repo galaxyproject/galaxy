@@ -18,6 +18,10 @@ const getters = {
             return "...";
         }
     },
+    getStoredWorkflowIdByInstanceId: (state) => (workflowId) => {
+        const storedWorkflow = state.workflowsByInstanceId[workflowId];
+        return storedWorkflow?.id;
+    },
 };
 
 const actions = {
