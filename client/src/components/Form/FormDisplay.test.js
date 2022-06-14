@@ -141,11 +141,13 @@ describe("FormDisplay", () => {
     it("repeats", async () => {
         const repeatButton = wrapper.find("[data-description='repeat insert']");
         expect(repeatButton.text()).toBe("Insert Repeat Block");
-        const repeatHelpHidden = wrapper.find("[data-description='repeat help']").exists();
-        expect(repeatHelpHidden).toBe(false);
-        await repeatButton.trigger("click");
-        const repeatHelpText = wrapper.find("[data-description='repeat help']").text();
-        expect(repeatHelpText).toBe("repeat help");
+        const repeatHelp = wrapper.find("[data-description='repeat help']").exists();
+        expect(repeatHelp).toBeTruthy();
+        for (let i = 0; i < 3; i++) {
+            const repeatBlocks = wrapper.findAll("[data-description='repeat block']").length;
+            expect(repeatBlocks).toBe(i);
+            await repeatButton.trigger("click");
+        }
     });
 
     it("section", async () => {
