@@ -1,5 +1,5 @@
 <template>
-    <div v-if="history.size" class="history-size my-1 d-flex justify-content-between">
+    <div class="history-size my-1 d-flex justify-content-between">
         <b-button
             v-b-tooltip.hover
             title="Access Dashboard"
