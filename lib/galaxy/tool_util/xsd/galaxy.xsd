@@ -598,11 +598,22 @@ practice.
     </xs:attribute>
   </xs:complexType>
 
+  <xs:complexType name="ResourceRequirement">
+    <xs:sequence>
+      <xs:element name="cores_min" type="Resource" minOccurs="0" maxOccurs="1" />
+      <xs:element name="cores_max" type="Resource" minOccurs="0" maxOccurs="1" />
+      <xs:element name="ram_min" type="Resource" minOccurs="0" maxOccurs="1" />
+      <xs:element name="ram_max" type="Resource" minOccurs="0" maxOccurs="1" />
+      <xs:element name="tmpdir_min" type="Resource" minOccurs="0" maxOccurs="1" />
+      <xs:element name="tmpdir_max" type="Resource" minOccurs="0" maxOccurs="1" />
+    </xs:sequence>
+  </xs:complexType>
+
   <xs:complexType name="Requirements">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
-This is a container tag set for the ``requirement`` and ``container`` tags
+This is a container tag set for the ``requirement``, ``resource`` and ``container`` tags
 described in greater detail below. ``requirement``s describe software packages
 and other individual computing requirements required to execute a tool, while
 ``container``s describe Docker or Singularity containers that should be able to
@@ -613,40 +624,9 @@ serve as complete descriptions of the runtime of a tool.
     <xs:sequence>
       <xs:element name="requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="container" type="Container" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="resource" type="Resource" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="cores_min" type="xs:float" use="optional">
-      <xs:documentation xml:lang="en"><![CDATA[
-Maximum reserved number of CPU cores if runtime allows it (unimplemented in Galaxy currently).
-]]></xs:documentation>
-    </xs:attribute>
-    <xs:attribute name="cores_max" type="xs:float" use="optional">
-    </xs:attribute>
-      <xs:documentation xml:lang="en"><![CDATA[
-Minimum reserved number of CPU cores if runtime allows it (unimplemented in Galaxy currently).
-]]></xs:documentation>
-    <xs:attribute name="ram_min" type="xs:float" use="optional">
-      <xs:documentation xml:lang="en"><![CDATA[
-Minimum reserved RAM in mebibytes (2**20) if runtime allows it (unimplemented in Galaxy currently).
-]]></xs:documentation>
-    </xs:attribute>
-    <xs:attribute name="ram_max" type="xs:float" use="optional">
-      <xs:documentation xml:lang="en"><![CDATA[
-Maximum reserved RAM in mebibytes (2**20) if runtime allows it (unimplemented in Galaxy currently).
-]]></xs:documentation>
-    </xs:attribute>
-    <xs:attribute name="tmpdir_min" type="xs:float" use="optional">
-      <xs:documentation xml:lang="en"><![CDATA[
-Minimum reserved filesystem based storage for the designated temporary directory, in mebibytes (2**20) if runtime allows it (unimplemented in Galaxy currently).
-]]></xs:documentation>
-    </xs:attribute>
-    <xs:attribute name="tmpdir_max" type="xs:float" use="optional">
-      <xs:documentation xml:lang="en"><![CDATA[
-Maximum reserved filesystem based storage for the designated temporary directory, in mebibytes (2**20) if runtime allows it (unimplemented in Galaxy currently).
-]]></xs:documentation>
-    </xs:attribute>
-  </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="Requirement">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -700,12 +680,23 @@ resolver.
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="RequirementType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This value defines the type of the 3rd party module required by this tool.</xs:documentation>
+            <xs:documentation xml:lang="en">Valid values are ``package``, ``set_environment``, ``python-module`` (deprecated), ``binary`` (deprecated)</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="version" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">For requirements of type ``package`` this value defines a specific version of the tool dependency.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="Resource">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="ResourceType" use="required">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">This value describes the resource available to the tool at runtime. Currently not implemented in Galaxy.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -6753,6 +6744,43 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="binary"/>
       <xs:enumeration value="package"/>
       <xs:enumeration value="set_environment"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ResourceType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Type of resource specification.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="cores_min">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum reserved number of CPU cores, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="cores_max">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Maximum reserved number of CPU cores, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="ram_min">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum reserved RAM in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="ram_max">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Maximum reserved RAM in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="tmpdir_min">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum reserved filesystem-based storage for the designated temporary directory in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="tmpdir_max">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Maximum reserved filesystem based storage for the designated temporary directory, in mebibytes (2**20) if runtime allows it (unimplemented in Galaxy currently).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="ContainerType">
