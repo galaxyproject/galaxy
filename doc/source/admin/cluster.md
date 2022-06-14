@@ -314,8 +314,7 @@ Runs jobs via [AWS Batch](https://aws.amazon.com/batch/). Built on top of AWS El
 
 #### Dependencies
 
-AWS Batch job runner requirs AWS Elastic File System (EFS) being mounted as a shared file system that enables Galaxy and job containers to read and write files. In the best pratice, Galaxy is installed an AWS EC2 instance and an EFS is mounted to the EC2 as a local drive. Job-related paths, such as objects, jobs_directory, tool_directory and so on, need to be placed on the EFS drive.
-In addition, a Galaxy admin needs to configure a Batch compute environment, a Batch job queue and proper AWS IAM roles, and specify them as destination parameters.
+The AWS Batch job runner requires AWS Elastic File System (EFS) to be mounted as a shared file system that enables both Galaxy and job containers to read and write files. In a typical use case, Galaxy is installed on an AWS EC2 instance where an EFS drive is mounted, and all job-related paths, such as objects, jobs_directory, tool_directory and so on, are placed on the EFS drive. Galaxy admins configure Batch compute environments, Batch job queues and proper AWS IAM roles, and specify them as destination parameters.
 AWS Batch job runner requires [boto3](https://pypi.org/project/boto3/) to be installed in Galaxy's environment.
 
 #### Parameters and Configuration
