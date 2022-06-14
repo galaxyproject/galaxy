@@ -14,9 +14,9 @@
                 :invocation="invocation"
                 :invocation-and-job-terminal="invocationAndJobTerminal" />
         </b-tab>
-        <b-tab title="Workflow Overview">
+        <!-- <b-tab title="Workflow Overview">
             <p>TODO: Insert readonly version of workflow editor here</p>
-        </b-tab>
+        </b-tab> -->
         <b-tab title="Export">
             <div v-if="invocationAndJobTerminal">
                 <workflow-invocation-export-options :invocation-id="invocation.id" />
