@@ -97,7 +97,10 @@ from galaxy.util.task import IntervalTask
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
-from galaxy.web import url_for
+from galaxy.web import (
+    legacy_url_for,
+    url_for,
+)
 from galaxy.web.proxy import ProxyManager
 from galaxy.web_stack import application_stack_instance, ApplicationStack
 from galaxy.webhooks import WebhooksRegistry
@@ -610,10 +613,12 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Inject url_for for components to more easily optionally depend
         # on url_for.
         self.url_for = url_for
+        self.legacy_url_for = legacy_url_for
 
         self.server_starttime = int(time.time())  # used for cachebusting
         # Limit lifetime of tool shed repository cache to app startup
         self.tool_shed_repository_cache = None
+        self.legacy_mapper = None
         log.info(f"Galaxy app startup finished {startup_timer}")
 
     def _shutdown_queue_worker(self):
