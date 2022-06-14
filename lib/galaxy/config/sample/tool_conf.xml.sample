@@ -135,7 +135,7 @@
     <tool file="interactive/interactivetool_cellxgene.xml" />
     <tool file="interactive/interactivetool_ethercalc.xml" />
     <tool file="interactive/interactivetool_hicbrowser.xml" />
-    <tool file="interactive/interactivetool_jupytool.xml" />
+    <tool file="interactive/interactivetool_jupyter_notebook_0.3.xml" />
     <tool file="interactive/interactivetool_jupyter_notebook.xml" />
     <tool file="interactive/interactivetool_neo4j.xml" />
     <tool file="interactive/interactivetool_phinch.xml" />

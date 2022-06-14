@@ -1,4 +1,4 @@
-<tool id="interactive_tool_jupytool" tool_type="interactive" name="Interactive JupyTool and notebook" version="0.0.1" profile="22.01">
+<tool id="interactive_tool_jupyter_notebook" tool_type="interactive" name="Interactive JupyTool and notebook" version="0.3" profile="22.01">
     <requirements>
         <container type="docker">quay.io/bgruening/docker-jupyter-notebook:ie2</container>
     </requirements>
