@@ -65,7 +65,10 @@
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
             <template v-slot:cell(execute)="data">
-                <WorkflowRunButton :id="getWorkflowByInstanceId(data.item.workflow_id).id" :root="root" />
+                <WorkflowRunButton
+                    :id="getStoredWorkflowIdByInstanceId(data.item.workflow_id)"
+                    :root="root"
+                    v-if="getStoredWorkflowIdByInstanceId(data.item.workflow_id)" />
             </template>
         </b-table>
         <b-pagination
@@ -122,7 +125,7 @@ export default {
         };
     },
     computed: {
-        ...mapGetters(["getWorkflowNameByInstanceId", "getWorkflowByInstanceId"]),
+        ...mapGetters(["getWorkflowNameByInstanceId", "getWorkflowByInstanceId", "getStoredWorkflowIdByInstanceId"]),
         ...mapGetters("history", ["getHistoryById", "getHistoryNameById"]),
         title() {
             let title = `Workflow Invocations`;
