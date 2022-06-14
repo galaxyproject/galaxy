@@ -8919,8 +8919,8 @@ class PageRevision(Base, Dictifiable, RepresentById):
 
     def to_dict(self, view="element"):
         rval = super().to_dict(view=view)
-        rval["create_time"] = str(self.create_time)
-        rval["update_time"] = str(self.update_time)
+        rval["create_time"] = self.create_time.isoformat()
+        rval["update_time"] = self.update_time.isoformat()
         return rval
 
 

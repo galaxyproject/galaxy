@@ -282,7 +282,7 @@ class WorkflowsAPIController(
             trans, workflow_id, by_stored_id=not instance
         )
         return [
-            {"version": i, "update_time": str(w.update_time), "steps": len(w.steps)}
+            {"version": i, "update_time": w.update_time.isoformat(), "steps": len(w.steps)}
             for i, w in enumerate(reversed(stored_workflow.workflows))
         ]
 

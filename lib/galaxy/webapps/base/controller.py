@@ -522,7 +522,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         trans.sa_session.flush()
         ldda_dict = ldda.to_dict()
         rval = trans.security.encode_dict_ids(ldda_dict)
-        update_time = ldda.update_time.strftime("%Y-%m-%d %I:%M %p")
+        update_time = ldda.update_time.isoformat()
         rval["update_time"] = update_time
         return rval
 
