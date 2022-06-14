@@ -437,14 +437,39 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
 
 class SeleniumTestCase(FunctionalTestCase, TestWithSeleniumMixin):
     galaxy_driver_class = GalaxyTestDriver
+    ACCEPTABLE_LOG_LEVELS = ("DEBUG", "INFO", "WARNING")
+    IGNORE_ERRORS = ("favicon", "xkcd", "phdcomics")
 
     def setUp(self):
         super().setUp()
         self.setup_selenium()
         self.admin_api_key = get_admin_api_key()
 
+    def get_error_messages(self):
+        browser_log = self.driver.get_log("browser")
+        error_messages = []
+        for entry in browser_log:
+            if entry["level"] not in self.ACCEPTABLE_LOG_LEVELS:
+                for error_to_ignore in self.IGNORE_ERRORS:
+                    error_message = entry["message"]
+                    if error_to_ignore in error_message:
+                        break
+                else:
+                    error_messages.append(error_message)
+        return error_messages
+
+    def raise_exception_on_console_error(self):
+        error_logs = "\n".join(self.get_error_messages())
+        if error_logs:
+            raise Exception(f"console logged following errors:\n {error_logs}")
+
     def tearDown(self):
         exception = None
+        try:
+            self.raise_exception_on_console_error()
+        except Exception as e:
+            exception = e
+
         try:
             self.tear_down_selenium()
         except Exception as e:
