@@ -1,4 +1,11 @@
 import copy
+from enum import Enum
+from typing import (
+    Callable,
+    Dict,
+    Optional,
+    Union,
+)
 
 from galaxy.util import (
     asbool,
@@ -204,20 +211,67 @@ class ContainerDescription:
         return f"ContainerDescription[identifier={self.identifier},type={self.type}]"
 
 
+class ResourceType(str, Enum):
+    cores_min = "cores_min"
+    cores_max = "cores_max"
+    ram_min = "ram_min"
+    ram_max = "ram_max"
+    tmpdir_min = "tmpdir_min"
+    tmpdir_max = "tmpdir_max"
+
+
+class ResourceRequirement:
+    def __init__(self, value_or_expression: Union[int, float, str], resource_type: ResourceType):
+        self.value_or_expression = value_or_expression
+        self.resource_type = resource_type
+        self._runtime_required: Optional[bool] = None
+
+    @property
+    def runtime_required(self):
+        if self._runtime_required is None:
+            try:
+                float(self.value_or_expression)
+                self._runtime_required = False
+            except ValueError:
+                self._runtime_required = True
+        return self._runtime_required
+
+    @staticmethod
+    def from_dict(resource_dict):
+        resource_type = next(iter(resource_dict.keys()))
+        value_or_expression = resource_dict[resource_type]
+        return ResourceRequirement(value_or_expression=value_or_expression, resource_type=resource_type)
+
+    def get_value(self, runtime: Optional[Dict] = None, js_evaluator: Optional[Callable] = None):
+        if self.runtime_required:
+            # TODO: hook up evaluator
+            # return js_evaluator(self.value_or_expression, runtime)
+            raise NotImplementedError(
+                f"{self.value_or_expression} is not an integer or float value, expressions currently not implemented"
+            )
+        return float(self.value_or_expression)
+
+
 def parse_requirements_from_dict(root_dict):
     requirements = root_dict.get("requirements", [])
+    resource_requirements = root_dict.get("resource_requirements", [])
     containers = root_dict.get("containers", [])
-    return ToolRequirements.from_list(requirements), [ContainerDescription.from_dict(c) for c in containers]
+    return (
+        ToolRequirements.from_list(requirements),
+        [ContainerDescription.from_dict(c) for c in containers],
+        [ResourceRequirement.from_dict(r) for r in resource_requirements],
+    )
 
 
-def parse_requirements_from_xml(xml_root):
+def parse_requirements_from_xml(xml_root, parse_resources=False):
     """
+    Parses requirement, containers and optionally resource_requirements from Xml tree.
 
     >>> from galaxy.util import parse_xml_string
-    >>> def load_requirements(contents):
+    >>> def load_requirements(contents, parse_resources=False):
     ...     contents_document = '''<tool><requirements>%s</requirements></tool>'''
     ...     root = parse_xml_string(contents_document % contents)
-    ...     return parse_requirements_from_xml(root)
+    ...     return parse_requirements_from_xml(root, parse_resources=parse_resources)
     >>> reqs, containers = load_requirements('''<requirement>bwa</requirement>''')
     >>> reqs[0].name
     'bwa'
@@ -252,8 +306,18 @@ def parse_requirements_from_xml(xml_root):
         container_elems = requirements_elem.findall("container")
 
     containers = [container_from_element(c) for c in container_elems]
+    if parse_resources:
+        resource_elems = requirements_elem.findall("resource_requirement") if requirements_elem else []
+        resources = [resource_from_element(r) for r in resource_elems]
+        return requirements, containers, resources
 
     return requirements, containers
+
+
+def resource_from_element(resource_elem):
+    value_or_expression = xml_text(resource_elem)
+    resource_type = resource_elem.get("type", DEFAULT_CONTAINER_TYPE)
+    return ResourceRequirement(value_or_expression=value_or_expression, resource_type=resource_type)
 
 
 def container_from_element(container_elem):

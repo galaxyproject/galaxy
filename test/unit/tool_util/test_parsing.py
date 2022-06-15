@@ -30,6 +30,7 @@ TOOL_XML_1 = """
     <requirements>
         <container type="docker">mycool/bwa</container>
         <requirement type="package" version="1.0">bwa</requirement>
+        <resource_requirement type="cores_min">1</resource_requirement>
     </requirements>
     <outputs>
         <data name="out1" format="bam" from_work_dir="out1.bam" />
@@ -118,6 +119,8 @@ command: "bowtie_wrapper.pl --map-the-stuff"
 interpreter: "perl"
 runtime_version:
   command: "bowtie --version"
+resource_requirements:
+  - cores_min: 1
 requirements:
   - type: package
     name: bwa
@@ -309,9 +312,11 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         assert self._tool_source.parse_action_module() is None
 
     def test_requirements(self):
-        requirements, containers = self._tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements = self._tool_source.parse_requirements_and_containers()
         assert requirements[0].type == "package"
         assert list(containers)[0].identifier == "mycool/bwa"
+        assert resource_requirements[0].resource_type == "cores_min"
+        assert not resource_requirements[0].runtime_required
 
     def test_outputs(self):
         outputs, output_collections = self._tool_source.parse_outputs(object())
@@ -477,10 +482,11 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         assert self._tool_source.parse_action_module() is None
 
     def test_requirements(self):
-        requirements, containers = self._tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements = self._tool_source.parse_requirements_and_containers()
         assert requirements[0].type == "package"
         assert requirements[0].name == "bwa"
         assert containers[0].identifier == "awesome/bowtie"
+        assert resource_requirements[0].resource_type == "cores_min"
 
     def test_outputs(self):
         outputs, output_collections = self._tool_source.parse_outputs(object())
