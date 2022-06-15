@@ -194,7 +194,7 @@ class ConditionalDependencies:
         return "galaxycloudrunner.rules" in self.job_rule_modules
 
     def check_total_perspective_vortex(self):
-        return "vortex.rules" in self.job_rule_modules
+        return "tpv.rules" in self.job_rule_modules
 
     def check_pbs_python(self):
         return "galaxy.jobs.runners.pbs:PBSJobRunner" in self.job_runners
