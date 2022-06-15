@@ -67,7 +67,7 @@ class CloudAuthzsSerializer(base.ModelSerializer):
             else None,
             "last_update": lambda item, key, **context: str(item.last_update),
             "last_activity": lambda item, key, **context: str(item.last_activity),
-            "create_time": lambda item, key, **context: str(item.create_time),
+            "create_time": lambda item, key, **context: item.create_time.isoformat(),
             "description": lambda item, key, **context: str(item.description),
         }
         self.serializers.update(serializers)

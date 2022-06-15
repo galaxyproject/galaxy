@@ -159,11 +159,7 @@
                     </div>
                 </template>
                 <template v-slot:cell(update_time)="row">
-                    <UtcDate
-                        v-if="row.item.update_time"
-                        :date="row.item.update_time"
-                        custom-format="'YYYY-MM-DD- HH:mm a'"
-                        mode="elapsed" />
+                    <UtcDate v-if="row.item.update_time" :date="row.item.update_time" mode="elapsed" />
                 </template>
                 <template v-slot:cell(is_unrestricted)="row">
                     <font-awesome-icon v-if="row.item.is_unrestricted" title="Unrestricted dataset" icon="globe" />
