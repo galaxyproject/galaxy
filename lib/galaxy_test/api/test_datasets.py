@@ -15,6 +15,7 @@ from galaxy_test.base.api_asserts import assert_has_keys
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    skip_if_github_down,
     skip_without_datatype,
     skip_without_tool,
 )
@@ -457,3 +458,16 @@ class DatasetsApiTestCase(ApiTestCase):
         sources = storage_info_dict["sources"]
         assert len(sources) == 1
         assert sources[0]["source_uri"] == TEST_SOURCE_URI
+
+    @skip_if_github_down
+    def test_display_application_link(self):
+        item = {
+            "src": "url",
+            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
+            "ext": "bam",
+        }
+        output = self.dataset_populator.fetch_hda(self.history_id, item)
+        dataset_details = self.dataset_populator.get_history_dataset_details(
+            self.history_id, dataset=output, assert_ok=True
+        )
+        assert "display_application/" in dataset_details["display_apps"][0]["links"][0]["href"]

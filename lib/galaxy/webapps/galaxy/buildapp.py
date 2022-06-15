@@ -263,6 +263,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     # Indicate that all configuration settings have been provided
     webapp.finalize_config()
     app.api_spec = webapp.build_apispec()
+    app.legacy_mapper = webapp.mapper
 
     # Wrap the webapp in some useful middleware
     if kwargs.get("middleware", True):
