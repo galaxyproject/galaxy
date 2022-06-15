@@ -6,16 +6,16 @@
     <entry_points>
         <entry_point name="Audio Labeler" requires_domain="True">
             <port>3838</port>
-            <url>/</url>
+            <url>/sample-apps/audio/</url>
         </entry_point>
     </entry_points>
     <command><![CDATA[
 
         rm /opt/shiny-server/samples/sample-apps/audio/www/tmp/* &&
-
+        #import re
         #for $count, $file in enumerate($input):
             #set $cleaned_name = str($count + 1) + '_' + re.sub('[^\w\-\.\s]', '_', str($file.element_identifier))
-            ln -sf '$file' '/opt/shiny-server/samples/sample-apps/audio/www/tmp/${cleaned_name}.${file.ext}' &&
+            ln -sf '$file' '/opt/shiny-server/samples/sample-apps/audio/www/tmp/${cleaned_name}.${file.ext}'
         #end for
 
     ]]>
