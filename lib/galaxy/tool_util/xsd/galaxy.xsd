@@ -6753,27 +6753,27 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="cores_min">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Minimum reserved number of CPU cores, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+          <xs:documentation xml:lang="en">Minimum reserved number of CPU cores, if runtime allows it (unimplemented in Galaxy currently).</xs:documentation>
         </xs:annotation>
       </xs:enumeration>
       <xs:enumeration value="cores_max">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Maximum reserved number of CPU cores, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+          <xs:documentation xml:lang="en">Maximum reserved number of CPU cores, if runtime allows it (unimplemented in Galaxy currently).</xs:documentation>
         </xs:annotation>
       </xs:enumeration>
       <xs:enumeration value="ram_min">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Minimum reserved RAM in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+          <xs:documentation xml:lang="en">Minimum reserved RAM in mebibytes (2**20 bytes), if runtime allows it (unimplemented in Galaxy currently).</xs:documentation>
         </xs:annotation>
       </xs:enumeration>
       <xs:enumeration value="ram_max">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Maximum reserved RAM in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+          <xs:documentation xml:lang="en">Maximum reserved RAM in mebibytes (2**20 bytes), if runtime allows it (unimplemented in Galaxy currently).</xs:documentation>
         </xs:annotation>
       </xs:enumeration>
       <xs:enumeration value="tmpdir_min">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Minimum reserved filesystem-based storage for the designated temporary directory in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+          <xs:documentation xml:lang="en">Minimum reserved filesystem-based storage for the designated temporary directory in mebibytes (2**20 bytes), if runtime allows it (unimplemented in Galaxy currently).</xs:documentation>
         </xs:annotation>
       </xs:enumeration>
       <xs:enumeration value="tmpdir_max">
