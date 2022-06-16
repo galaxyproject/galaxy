@@ -145,7 +145,7 @@ export default {
                     } else if (response.data.redirect) {
                         window.location = encodeURI(response.data.redirect);
                     } else {
-                        window.location = `${rootUrl}?syncUserLocale=true`;
+                        window.location = `${rootUrl}`;
                     }
                 })
                 .catch((error) => {
