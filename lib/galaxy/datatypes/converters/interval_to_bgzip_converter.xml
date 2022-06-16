@@ -1,4 +1,4 @@
-<tool id="CONVERTER_interval_to_bgzip_0" name="Convert Interval to BGZIP" version="1.0.1" hidden="true" profile="16.04">
+<tool id="CONVERTER_interval_to_bgzip_0" name="Convert Interval to BGZIP" version="1.0.2" hidden="true" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
         <requirement type="package" version="9.0">coreutils</requirement>

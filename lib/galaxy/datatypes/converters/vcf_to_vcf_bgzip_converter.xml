@@ -1,4 +1,4 @@
-<tool id="CONVERTER_vcf_to_vcf_bgzip_0" name="Convert VCF to VCF_BGZIP" version="1.0.2" hidden="true" profile="16.04">
+<tool id="CONVERTER_vcf_to_vcf_bgzip_0" name="Convert VCF to VCF_BGZIP" version="1.0.3" hidden="true" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
         <requirement type="package" version="1.14">htslib</requirement>

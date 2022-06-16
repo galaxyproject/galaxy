@@ -1,4 +1,4 @@
-<tool id="CONVERTER_interval_to_tabix_0" name="Convert Interval to tabix" version="1.0.1" hidden="true" profile="16.04">
+<tool id="CONVERTER_interval_to_tabix_0" name="Convert Interval to tabix" version="1.0.2" hidden="true" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
         <requirement type="package" version="1.14">htslib</requirement>
