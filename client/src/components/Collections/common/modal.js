@@ -16,14 +16,14 @@ export function collectionCreatorModalSetup(options, Galaxy = null) {
         };
     });
     const showEl = function (el) {
-        let close_event = options.closing_events === undefined || options.closing_events
+        const close_event = options.closing_events === undefined || options.closing_events;
         modal.show({
             title: options.title || _l("Create a collection"),
             body: el,
             width: "85%",
             height: "100%",
             xlarge: true,
-            closing_events: close_event
+            closing_events: close_event,
         });
     };
     return { promise, options, showEl };
