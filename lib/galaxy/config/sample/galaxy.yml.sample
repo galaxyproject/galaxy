@@ -46,6 +46,9 @@ gravity:
   # Configuration for Gunicorn.
   gunicorn:
 
+    # Enable Galaxy gunicorn server.
+    # enable: true
+
     # The socket to bind. A string of the form: ``HOST``, ``HOST:PORT``, ``unix:PATH``, ``fd://FD``. An IP is a valid HOST.
     # bind: localhost:8080
 
@@ -64,11 +67,21 @@ gravity:
     # extra_args:
 
     # Use Gunicorn's --preload option to fork workers after loading the Galaxy Application.
-    # Consumes less memory when multiple processes are configured.
-    # preload: true
+    # Consumes less memory when multiple processes are configured. Default is ``false`` if using unicornherder, else ``true``.
+    # preload:
+
+    # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
+    # names.
+    # environment: {}
 
   # Configuration for Celery Processes.
   celery:
+
+    # Enable Celery distributed task queue.
+    # enable: true
+
+    # Enable Celery Beat periodic task runner.
+    # enable_beat: true
 
     # Number of Celery Workers to start.
     # concurrency: 2
@@ -86,6 +99,10 @@ gravity:
 
     # Extra arguments to pass to Celery command line.
     # extra_args:
+
+    # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
+    # names.
+    # environment: {}
 
   # Configuration for gx-it-proxy.
   gx_it_proxy:
@@ -118,6 +135,10 @@ gravity:
     # This is an advanced option that is only needed when proxying to remote interactive tool container that cannot be reached through the local network.
     # reverse_proxy: false
 
+    # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
+    # names.
+    # environment: {}
+
   # Configuration for tusd server (https://github.com/tus/tusd).
   # The ``tusd`` binary must be installed manually and made available on PATH (e.g in galaxy's .venv/bin directory).
   tusd:
@@ -125,6 +146,9 @@ gravity:
     # Enable tusd server.
     # If enabled, you also need to set up your proxy as outlined in https://docs.galaxyproject.org/en/latest/admin/nginx.html#receiving-files-via-the-tus-protocol.
     # enable: false
+
+    # Path to tusd binary
+    # tusd_path: tusd
 
     # Host to bind the tusd server to
     # host: localhost
@@ -138,6 +162,10 @@ gravity:
 
     # Extra arguments to pass to tusd command line.
     # extra_args:
+
+    # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
+    # names.
+    # environment: {}
 
   # Configure dynamic handlers in this section.
   # See https://docs.galaxyproject.org/en/latest/admin/scaling.html#dynamically-defined-handlers for details.
