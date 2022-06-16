@@ -1,10 +1,14 @@
 import copy
-from enum import Enum
 from typing import (
     Callable,
     Dict,
     Optional,
     Union,
+)
+
+from typing_extensions import (
+    get_args,
+    Literal,
 )
 
 from galaxy.util import (
@@ -211,18 +215,24 @@ class ContainerDescription:
         return f"ContainerDescription[identifier={self.identifier},type={self.type}]"
 
 
-class ResourceType(str, Enum):
-    cores_min = "cores_min"
-    cores_max = "cores_max"
-    ram_min = "ram_min"
-    ram_max = "ram_max"
-    tmpdir_min = "tmpdir_min"
-    tmpdir_max = "tmpdir_max"
+ResourceType = Literal[
+    "cores_min",
+    "cores_max",
+    "ram_min",
+    "ram_max",
+    "tmpdir_min",
+    "tmpdir_max",
+]
+VALID_RESOURCE_TYPES = get_args(ResourceType)
 
 
 class ResourceRequirement:
     def __init__(self, value_or_expression: Union[int, float, str], resource_type: ResourceType):
         self.value_or_expression = value_or_expression
+        if not resource_type:
+            raise ValueError("Missing resource requirement type")
+        if resource_type not in VALID_RESOURCE_TYPES:
+            raise ValueError(f"Invalid resource requirement type '{resource_type}'")
         self.resource_type = resource_type
         self._runtime_required: Optional[bool] = None
 
@@ -316,7 +326,7 @@ def parse_requirements_from_xml(xml_root, parse_resources=False):
 
 def resource_from_element(resource_elem):
     value_or_expression = xml_text(resource_elem)
-    resource_type = resource_elem.get("type", DEFAULT_CONTAINER_TYPE)
+    resource_type = resource_elem.get("type")
     return ResourceRequirement(value_or_expression=value_or_expression, resource_type=resource_type)
 
 

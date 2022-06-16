@@ -6778,7 +6778,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       </xs:enumeration>
       <xs:enumeration value="tmpdir_max">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Maximum reserved filesystem based storage for the designated temporary directory, in mebibytes (2**20) if runtime allows it (unimplemented in Galaxy currently).</xs:documentation>
+          <xs:documentation xml:lang="en">Maximum reserved filesystem based storage for the designated temporary directory in mebibytes (2**20 bytes), if runtime allows it (unimplemented in Galaxy currently).</xs:documentation>
         </xs:annotation>
       </xs:enumeration>
     </xs:restriction>
