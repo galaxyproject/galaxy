@@ -30,7 +30,7 @@ TOOL_XML_1 = """
     <requirements>
         <container type="docker">mycool/bwa</container>
         <requirement type="package" version="1.0">bwa</requirement>
-        <resource_requirement type="cores_min">1</resource_requirement>
+        <resource type="cores_min">1</resource>
     </requirements>
     <outputs>
         <data name="out1" format="bam" from_work_dir="out1.bam" />
@@ -119,12 +119,12 @@ command: "bowtie_wrapper.pl --map-the-stuff"
 interpreter: "perl"
 runtime_version:
   command: "bowtie --version"
-resource_requirements:
-  - cores_min: 1
 requirements:
   - type: package
     name: bwa
     version: 1.0.1
+  - type: resource
+    cores_min: 1
 containers:
   - type: docker
     identifier: "awesome/bowtie"

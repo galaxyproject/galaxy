@@ -1,7 +1,9 @@
 import copy
 from typing import (
     Callable,
+    cast,
     Dict,
+    List,
     Optional,
     Union,
 )
@@ -262,20 +264,44 @@ class ResourceRequirement:
         return float(self.value_or_expression)
 
 
+def resource_requirements_from_list(requirements) -> List[ResourceRequirement]:
+    cwl_to_galaxy = {
+        "coresMin": "cores_min",
+        "coresMax": "cores_max",
+        "ramMin": "ram_min",
+        "ramMax": "ram_max",
+        "tmpdirMin": "tmpdir_min",
+        "tmpdirMax": "tmpdir_max",
+    }
+    rr = []
+    for r in requirements:
+        if r.get("class") == "ResourceRequirement":
+            valid_key_set = set(cwl_to_galaxy.keys())
+        elif r.get("type") == "resource":
+            valid_key_set = set(cwl_to_galaxy.values())
+        else:
+            continue
+        for key in valid_key_set.intersection(set(r.keys())):
+            value = r[key]
+            key = cast(ResourceType, cwl_to_galaxy.get(key, key))
+            rr.append(ResourceRequirement(value_or_expression=value, resource_type=key))
+    return rr
+
+
 def parse_requirements_from_dict(root_dict):
     requirements = root_dict.get("requirements", [])
-    resource_requirements = root_dict.get("resource_requirements", [])
+    resource_requirements = resource_requirements_from_list(requirements)
     containers = root_dict.get("containers", [])
     return (
         ToolRequirements.from_list(requirements),
         [ContainerDescription.from_dict(c) for c in containers],
-        [ResourceRequirement.from_dict(r) for r in resource_requirements],
+        resource_requirements,
     )
 
 
 def parse_requirements_from_xml(xml_root, parse_resources=False):
     """
-    Parses requirement, containers and optionally resource_requirements from Xml tree.
+    Parses requirements, containers and optionally resource requirements from Xml tree.
 
     >>> from galaxy.util import parse_xml_string
     >>> def load_requirements(contents, parse_resources=False):
@@ -317,7 +343,7 @@ def parse_requirements_from_xml(xml_root, parse_resources=False):
 
     containers = [container_from_element(c) for c in container_elems]
     if parse_resources:
-        resource_elems = requirements_elem.findall("resource_requirement") if requirements_elem else []
+        resource_elems = requirements_elem.findall("resource") if requirements_elem else []
         resources = [resource_from_element(r) for r in resource_elems]
         return requirements, containers, resources
 

@@ -459,23 +459,8 @@ class CommandLineToolProxy(ToolProxy):
                     requirements.append((package["package"], first_version))
         return requirements
 
-    def resource_requirements(self) -> List[Dict[str, Union[int, float, str]]]:
-        cwl_to_galaxy = {
-            "coresMin": "cores_min",
-            "coresMax": "cores_max",
-            "ramMin": "ram_min",
-            "ramMax": "ram_max",
-            "tmpdirMin": "tmpdir_min",
-            "tmpdirMax": "tmpdir_max",
-        }
-        cwl_key_set = set(cwl_to_galaxy.keys())
-        rr = []
-        for r in self._tool.tool.get("requirements", []):
-            if r["class"] == "ResourceRequirement":
-                for key in cwl_key_set.intersection(set(r.keys())):
-                    galaxy_key = cwl_to_galaxy[key]
-                    rr.append({galaxy_key: r[key]})
-        return rr
+    def resource_requirements(self):
+        return [r for r in self.requirements if r["class"] == "ResourceRequirement"]
 
     @property
     def requirements(self):
