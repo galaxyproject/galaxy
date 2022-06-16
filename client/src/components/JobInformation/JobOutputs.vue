@@ -1,6 +1,9 @@
 <template>
     <div>
-        <h3 v-if="title">{{ title }}</h3>
+        <h3 v-if="title">
+            {{ title }}
+            <span v-if="paginate && totalLength > firstN"> (showing {{ firstN }} of {{ totalLength }}) </span>
+        </h3>
         <table id="job-outputs" class="tabletip info_data_table">
             <thead>
                 <tr>
@@ -21,6 +24,13 @@
                             :item-src="item.value.src" />
                     </td>
                 </tr>
+                <tr v-if="paginate && totalLength > firstN">
+                    <td colspan="2">
+                        <b-button block variant="secondary" @click="firstN += 10">
+                            Show {{ totalLength - firstN >= 10 ? 10 : totalLength - firstN }} more outputs
+                        </b-button>
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -39,10 +49,32 @@ export default {
             type: String,
             required: false,
         },
+        paginate: {
+            type: Boolean,
+            default: false,
+        },
+    },
+    data() {
+        return {
+            firstN: 10,
+        };
     },
     computed: {
         nonHiddenOutputs() {
-            return Object.fromEntries(Object.entries(this.jobOutputs).filter(([key, value]) => !key.startsWith("__")));
+            if (this.paginate) {
+                return Object.fromEntries(
+                    Object.entries(this.jobOutputs)
+                        .filter(([key, value]) => !key.startsWith("__"))
+                        .slice(0, this.firstN)
+                );
+            } else {
+                return Object.fromEntries(
+                    Object.entries(this.jobOutputs).filter(([key, value]) => !key.startsWith("__"))
+                );
+            }
+        },
+        totalLength() {
+            return Object.entries(this.jobOutputs).filter(([key, value]) => !key.startsWith("__")).length;
         },
     },
 };
