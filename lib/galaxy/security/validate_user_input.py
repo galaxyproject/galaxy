@@ -71,7 +71,7 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False, v
     message = validate_email_str(email)
     if not message and validate_domain:
         domain = extract_domain(email)
-        message = validate_domain(domain)
+        message = validate_domain_resolves(domain)
 
     if (
         not message
@@ -97,8 +97,8 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False, v
     return message
 
 
-def validate_domain(domain):
-    message = None
+def validate_domain_resolves(domain):
+    message = ""
     try:
         socket.gethostbyname(domain)
     except socket.gaierror:
