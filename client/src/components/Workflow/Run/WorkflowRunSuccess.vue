@@ -69,7 +69,7 @@ export default {
             if (this.invocations.length < 1) {
                 return false;
             }
-            return (this.invocations[0].history_id && this.currentHistoryId != this.invocations[0].history_id) || false;
+            return this.invocations[0].history_id && this.currentHistoryId != this.invocations[0].history_id;
         },
     },
     mounted() {
