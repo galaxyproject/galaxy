@@ -19,6 +19,7 @@ const FAKE_QUOTA_USAGES_LIST = [
     {
         sourceLabel: "Unlimited source",
         quotaInBytes: null,
+        isUnlimited: true,
     },
 ];
 
@@ -40,5 +41,23 @@ describe("QuotaUsageSummary.vue", () => {
         const expectedNumberOfBars = FAKE_QUOTA_USAGES_LIST.length;
 
         expect(wrapper.findAll("quotausagebar-stub").length).toBe(expectedNumberOfBars);
+    });
+
+    it("should display `unlimited` quota when all sources are unlimited", async () => {
+        const FAKE_UNLIMITED_QUOTA_USAGES = [
+            {
+                sourceLabel: "Unlimited source 1",
+                quotaInBytes: null,
+                isUnlimited: true,
+            },
+            {
+                sourceLabel: "Unlimited source 2",
+                quotaInBytes: null,
+                isUnlimited: true,
+            },
+        ];
+        const wrapper = mountQuotaUsageSummaryWith(FAKE_UNLIMITED_QUOTA_USAGES);
+        const summaryText = wrapper.find("h2").text();
+        expect(summaryText).toContain("unlimited");
     });
 });
