@@ -641,7 +641,7 @@ class DiskObjectStore(ConcreteObjectStore):
             hash id (e.g., /files/dataset_10.dat (old) vs.
             /files/000/dataset_10.dat (new))
         """
-        base = os.path.abspath(self.extra_dirs.get(base_dir, self.file_path))
+        base = os.path.abspath(self.extra_dirs.get(base_dir) or self.file_path)
         # extra_dir should never be constructed from provided data but just
         # make sure there are no shenannigans afoot
         if extra_dir and extra_dir != os.path.normpath(extra_dir):
