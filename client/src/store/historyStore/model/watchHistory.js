@@ -22,6 +22,8 @@ let lastUpdateTime = null;
 let lastRequestDate = new Date();
 
 export async function watchHistory() {
+    // "Reset" watchTimeout so we don't queue up watchHistory calls in rewatchHistory.
+    watchTimeout = null;
     // get current history
     const history = await getCurrentHistoryFromServer();
     const historyId = history.id;
