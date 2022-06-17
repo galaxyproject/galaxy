@@ -485,7 +485,7 @@ def _has_src_to_path(upload_config, item, is_dataset=False) -> Tuple[str, str]:
     if src == "url":
         url = item.get("url")
         try:
-            path = stream_url_to_file(url, file_sources=upload_config.file_sources)
+            path = stream_url_to_file(url, file_sources=upload_config.file_sources, dir=upload_config.working_directory)
         except Exception as e:
             raise Exception(f"Failed to fetch url {url}. {str(e)}")
 
@@ -499,7 +499,7 @@ def _has_src_to_path(upload_config, item, is_dataset=False) -> Tuple[str, str]:
         if name is None:
             name = url.split("/")[-1]
     elif src == "pasted":
-        path = stream_to_file(StringIO(item["paste_content"]))
+        path = stream_to_file(StringIO(item["paste_content"]), dir=upload_config.working_directory)
         if name is None:
             name = "Pasted Entry"
     else:
