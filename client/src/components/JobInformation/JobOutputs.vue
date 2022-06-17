@@ -26,7 +26,7 @@
                 </tr>
                 <tr v-if="paginate && totalLength > firstN">
                     <td colspan="2">
-                        <b-button block variant="secondary" @click="firstN += 10">
+                        <b-button id="paginate-btn" block variant="secondary" @click="firstN += 10">
                             Show {{ totalLength - firstN >= 10 ? 10 : totalLength - firstN }} more outputs
                         </b-button>
                     </td>
@@ -60,21 +60,18 @@ export default {
         };
     },
     computed: {
+        entries() {
+            return Object.entries(this.jobOutputs).filter(([key, value]) => !key.startsWith("__"));
+        },
         nonHiddenOutputs() {
             if (this.paginate) {
-                return Object.fromEntries(
-                    Object.entries(this.jobOutputs)
-                        .filter(([key, value]) => !key.startsWith("__"))
-                        .slice(0, this.firstN)
-                );
+                return Object.fromEntries(this.entries.slice(0, this.firstN));
             } else {
-                return Object.fromEntries(
-                    Object.entries(this.jobOutputs).filter(([key, value]) => !key.startsWith("__"))
-                );
+                return Object.fromEntries(this.entries);
             }
         },
         totalLength() {
-            return Object.entries(this.jobOutputs).filter(([key, value]) => !key.startsWith("__")).length;
+            return this.entries.length;
         },
     },
 };
