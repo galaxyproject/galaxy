@@ -1082,8 +1082,9 @@ def configure_logging(config):
         register_postfork_function(root.addHandler, sentry_handler)
 
     # AMP customization START: Dump logging configuration
-    import logging_tree
-    logging_tree.printout()        
+    # Dumping this on every galaxy configuration library intialization overwhelms output
+    #import logging_tree
+    #logging_tree.printout()        
     # AMP customization END
     
 
