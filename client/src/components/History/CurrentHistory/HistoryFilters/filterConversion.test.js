@@ -30,6 +30,7 @@ describe("test filtering helpers to convert settings to filter text", () => {
             "visible:": defaultFilters.visible,
             "other:": "other",
             "anything:": undefined,
+            "value:": "",
         };
         expect(getFilterText(settings)).toBe("other:other");
         settings["visible:"] = !defaultFilters.visible;

@@ -34,7 +34,7 @@ export function getFilterText(filterSettings) {
     let newFilterText = "";
     Object.entries(filterSettings).forEach(([key, value]) => {
         const skipDefault = hasDefaults && normalized[key] !== undefined;
-        if (!skipDefault && value !== undefined) {
+        if (!skipDefault && value !== undefined && value !== "") {
             if (newFilterText) {
                 newFilterText += " ";
             }
