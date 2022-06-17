@@ -43,22 +43,27 @@ def stream_url_to_str(
 
 
 def stream_url_to_file(
-    path: str, file_sources: Optional["ConfiguredFileSources"] = None, prefix: str = "gx_file_stream"
+    path: str,
+    file_sources: Optional["ConfiguredFileSources"] = None,
+    prefix: str = "gx_file_stream",
+    dir: Optional[str] = None,
 ) -> str:
     temp_name: str
     if file_sources and file_sources.looks_like_uri(path):
         file_source_path = file_sources.get_file_source_path(path)
-        with tempfile.NamedTemporaryFile(prefix=prefix, delete=False) as temp:
+        with tempfile.NamedTemporaryFile(prefix=prefix, delete=False, dir=dir) as temp:
             temp_name = temp.name
         file_source_path.file_source.realize_to(file_source_path.path, temp_name)
     elif path.startswith("base64://"):
-        with tempfile.NamedTemporaryFile(prefix=prefix, delete=False) as temp:
+        with tempfile.NamedTemporaryFile(prefix=prefix, delete=False, dir=dir) as temp:
             temp_name = temp.name
             temp.write(base64.b64decode(path[len("base64://") :]))
             temp.flush()
     else:
         page = urllib.request.urlopen(path, timeout=DEFAULT_SOCKET_TIMEOUT)  # page will be .close()ed in stream_to_file
-        temp_name = stream_to_file(page, prefix=prefix, source_encoding=get_charset_from_http_headers(page.headers))
+        temp_name = stream_to_file(
+            page, prefix=prefix, source_encoding=get_charset_from_http_headers(page.headers), dir=dir
+        )
     return temp_name
 
 
