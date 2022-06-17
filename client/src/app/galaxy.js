@@ -77,7 +77,8 @@ GalaxyApp.prototype._init = function (options, bootstrapped) {
     this._initUser(options.user || {});
     this.debug("GalaxyApp.user: ", this.user);
 
-    this._initUserLocale();
+    this.localize._setUserLocale(this.user, this.config);
+    this.localize._getUserLocale();
     this.debug("currentLocale: ", sessionStorage.getItem("currentLocale"));
 
     this._setUpListeners();
