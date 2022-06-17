@@ -31,7 +31,7 @@
                 <b-dropdown-item v-if="!showDeleted" v-b-modal:purge-selected-content data-description="purge option">
                     <span v-localize>Delete (permanently)</span>
                 </b-dropdown-item>
-                <b-dropdown-divider />
+                <b-dropdown-divider v-if="showBuildOptions" />
                 <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
                     <span v-localize>Build Dataset List</span>
                 </b-dropdown-item>
