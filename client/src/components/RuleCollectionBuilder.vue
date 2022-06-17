@@ -572,6 +572,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import _l from "utils/localization";
+import { refreshContentsWrapper } from "utils/data";
 import HotTable from "@handsontable/vue";
 import UploadUtils from "mvc/upload/upload-utils";
 import JobStatesModel from "mvc/history/job-states-model";
@@ -1313,10 +1314,7 @@ export default {
             this.mapping.splice(index, 1);
         },
         refreshAndWait(response) {
-            const Galaxy = getGalaxyInstance();
-            if (Galaxy && Galaxy.currHistoryPanel) {
-                Galaxy.currHistoryPanel.refreshContents();
-            }
+            refreshContentsWrapper();
             this.waitOnJob(response);
         },
         waitOnJob(response) {
@@ -1332,9 +1330,7 @@ export default {
                         "Unknown error encountered while running your upload job, this could be a server issue or a problem with the upload definition.";
                     this.doFullJobCheck(jobId);
                 } else {
-                    const Galaxy = getGalaxyInstance();
-                    const history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
-                    history.refresh && history.refresh();
+                    refreshContentsWrapper();
                     this.oncreate();
                 }
             };

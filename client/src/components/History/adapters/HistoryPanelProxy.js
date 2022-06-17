@@ -56,7 +56,8 @@ export class HistoryPanelProxy {
         watchHistory();
     }
     refreshContents() {
-        // to be removed after disabling legacy history
+        // to be removed after disabling legacy history, present to provide uniform interface
+        // with History Panel Backbone View.
     }
     loadCurrentHistory() {
         store.dispatch("history/loadCurrentHistory");
