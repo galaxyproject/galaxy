@@ -270,7 +270,7 @@ class DatasetAssociationManager(
         """
         super().delete(item, flush=flush)
         if stop_job:
-            self.stop_creating_job(item)
+            self.stop_creating_job(item, flush=flush)
         return item
 
     def purge(self, dataset_assoc, flush=True):
@@ -281,13 +281,14 @@ class DatasetAssociationManager(
         # TODO: this check may belong in the controller
         self.dataset_manager.error_unless_dataset_purge_allowed()
 
-        # We need to ignore a potential flush=False here and force the flush
+        # We need to ignore a potential flush=False here if jobs are not tracked in the database,
         # so that job cleanup associated with stop_creating_job will see
         # the dataset as purged.
-        super().purge(dataset_assoc, flush=True)
+        flush_required = not self.app.config.track_jobs_in_database
+        super().purge(dataset_assoc, flush=flush or flush_required)
 
         # stop any jobs outputing the dataset_assoc
-        self.stop_creating_job(dataset_assoc)
+        self.stop_creating_job(dataset_assoc, flush=True)
 
         # more importantly, purge underlying dataset as well
         if dataset_assoc.dataset.user_can_purge:
@@ -310,7 +311,7 @@ class DatasetAssociationManager(
             break
         return job
 
-    def stop_creating_job(self, dataset_assoc):
+    def stop_creating_job(self, dataset_assoc, flush=False):
         """
         Stops an dataset_assoc's creating job if all the job's other outputs are deleted.
         """
@@ -330,6 +331,8 @@ class DatasetAssociationManager(
                     job.mark_deleted(track_jobs_in_database)
                     if not track_jobs_in_database:
                         self.app.job_manager.stop(job)
+                    if flush:
+                        self.session().flush()
                     return True
         return False
 
