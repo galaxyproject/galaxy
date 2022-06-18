@@ -4,7 +4,6 @@
 import collections
 import json
 import os
-import shlex
 import string
 import subprocess
 import tempfile
@@ -328,7 +327,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         p = subprocess.run(log_cmd, capture_output=True, text=True)
         if p.returncode:
             raise Exception(
-                f"Command '{shlex.join(log_cmd)}' failed with exit code: {p.returncode}.\nstdout: {p.stdout}\nstderr: {p.stderr}"
+                f"Command '{' '.join(log_cmd)}' failed with exit code: {p.returncode}.\nstdout: {p.stdout}\nstderr: {p.stderr}"
             )
         output = p.stdout
         EXPECTED_STDOUT = "The bool is not true"
