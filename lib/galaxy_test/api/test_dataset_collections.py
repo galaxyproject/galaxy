@@ -358,6 +358,14 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(offset_contents) == 1
         assert offset_contents[0]['element_index'] == 1
 
+    def test_collection_contents_empty_root(self):
+        hdca = self.dataset_collection_populator.create_list_in_history(self.history_id, contents=[]).json()
+        assert hdca["elements"] == []
+        root_contents_url = hdca["contents_url"]
+        response = self._get(root_contents_url)
+        response.raise_for_status()
+        assert response.json() == []
+
     def test_get_suitable_converters_single_datatype(self):
         response = self.dataset_collection_populator.upload_collection(self.history_id, "list:paired", elements=[
             {
