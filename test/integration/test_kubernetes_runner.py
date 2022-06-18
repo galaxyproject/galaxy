@@ -323,7 +323,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         self._wait_for_external_state(sa_session=sa_session, job=job, expected=app.model.Job.states.RUNNING)
 
         external_id = job.job_runner_external_id
-        output = unicodify(subprocess.check_output(["kubectl", "logs", "-l" f"job-name={external_id}"]))
+        output = unicodify(subprocess.check_output(["kubectl", "logs", "-l", f"job-name={external_id}"]))
         EXPECTED_STDOUT = "The bool is not true"
         EXPECTED_STDERR = "The bool is very not true"
         assert EXPECTED_STDOUT in output
