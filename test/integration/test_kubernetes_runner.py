@@ -325,7 +325,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
 
         external_id = job.job_runner_external_id
         log_cmd = ["kubectl", "logs", "-l", f"job-name={external_id}"]
-        p = subprocess.run(log_cmd)
+        p = subprocess.run(log_cmd, capture_output=True, text=True)
         if p.returncode:
             raise Exception(
                 f"Command '{shlex.join(log_cmd)}' failed with exit code: {p.returncode}.\nstdout: {p.stdout}\nstderr: {p.stderr}"
