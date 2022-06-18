@@ -696,7 +696,7 @@ resolver.
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="ResourceType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This value describes the resource available to the tool at runtime. Currently not implemented in Galaxy.</xs:documentation>
+            <xs:documentation xml:lang="en">This value describes the type of resource required by the tool at runtime. Not yet implemented in Galaxy.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
