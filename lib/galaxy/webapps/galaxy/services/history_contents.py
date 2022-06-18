@@ -1097,10 +1097,12 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         return hdas
 
     def __deserialize_dataset(self, trans, hda, payload: Dict[str, Any]):
-        self.hda_deserializer.deserialize(hda, payload, user=trans.user, trans=trans)
+        # TODO: when used in batch it would be a lot faster if we set flush=false
+        # and the caller flushes only at the end or when a given chunk size is reached.
+        self.hda_deserializer.deserialize(hda, payload, user=trans.user, trans=trans, flush=True)
         # TODO: this should be an effect of deleting the hda
         if payload.get("deleted", False):
-            self.hda_manager.stop_creating_job(hda)
+            self.hda_manager.stop_creating_job(hda, flush=True)
 
     def __index_legacy(
         self,

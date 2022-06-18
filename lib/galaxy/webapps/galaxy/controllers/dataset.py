@@ -876,8 +876,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             hda.mark_deleted()
             hda.clear_associated_files()
             trans.log_event(f"Dataset id {str(id)} marked as deleted")
-            self.hda_manager.stop_creating_job(hda)
-            trans.sa_session.flush()
+            self.hda_manager.stop_creating_job(hda, flush=True)
         except Exception:
             msg = f"HDA deletion failed (encoded: {dataset_id}, decoded: {id})"
             log.exception(msg)

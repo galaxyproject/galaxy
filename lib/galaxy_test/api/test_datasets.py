@@ -301,32 +301,31 @@ class DatasetsApiTestCase(ApiTestCase):
 
     @skip_without_tool("cat_data_and_sleep")
     def test_delete_cancels_job(self):
-        with self.dataset_populator.test_history() as history_id:
-            hda_id = self.dataset_populator.new_dataset(history_id)["id"]
-            self.dataset_populator.wait_for_history_jobs(history_id)
-            active_jobs = self.dataset_populator.active_history_jobs(history_id)
-            assert not active_jobs
+        hda_id = self.dataset_populator.new_dataset(self.history_id)["id"]
+        inputs = {
+            "input1": {"src": "hda", "id": hda_id},
+            "sleep_time": 10,
+        }
+        run_response = self.dataset_populator.run_tool_raw(
+            "cat_data_and_sleep",
+            inputs,
+            self.history_id,
+        ).json()
+        output_hda_id = run_response["outputs"][0]["id"]
+        job_id = run_response["jobs"][0]["id"]
 
-            inputs = {
-                "input1": {"src": "hda", "id": hda_id},
-                "sleep_time": 10,
-            }
-            run_response = self.dataset_populator.run_tool_raw(
-                "cat_data_and_sleep",
-                inputs,
-                history_id,
-            ).json()
-            queued_id = run_response["outputs"][0]["id"]
-            active_jobs = self.dataset_populator.active_history_jobs(history_id)
-            assert active_jobs
+        job_details = self.dataset_populator.get_job_details(job_id).json()
+        assert job_details["state"] in ("new", "queued", "running"), job_details
 
-            # Use stop_job to cancel the creating job
-            delete_response = self.dataset_populator.delete_dataset(history_id, queued_id, stop_job=True)
-            self._assert_status_code_is_ok(delete_response)
+        # Use stop_job to cancel the creating job
+        delete_response = self.dataset_populator.delete_dataset(self.history_id, output_hda_id, stop_job=True)
+        self._assert_status_code_is_ok(delete_response)
+        deleted_hda = delete_response.json()
+        assert deleted_hda["deleted"], deleted_hda
 
-            # The job should be cancelled
-            active_jobs = self.dataset_populator.active_history_jobs(history_id)
-            assert not active_jobs, "Job was not cancelled"
+        # The job should be cancelled
+        deleted_job_details = self.dataset_populator.get_job_details(job_id).json()
+        assert deleted_job_details["state"] in ("deleting", "deleted"), deleted_job_details
 
     def test_delete_batch(self):
         num_datasets = 4
