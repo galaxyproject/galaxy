@@ -120,6 +120,7 @@
 import _l from "utils/localization";
 import _ from "underscore";
 import { getGalaxyInstance } from "app";
+import { refreshContentsWrapper } from "utils/data";
 import UploadRow from "mvc/upload/collection/collection-row";
 import UploadBoxMixin from "./UploadBoxMixin";
 import { uploadModelsToPayload } from "./helpers";
@@ -250,8 +251,7 @@ export default {
             const outputs = incoming.outputs || incoming.data.outputs || {};
             it.set({ percentage: 100, status: "success", outputs });
             this._updateStateForSuccess(it);
-            const Galaxy = getGalaxyInstance();
-            Galaxy.currHistoryPanel.refreshContents();
+            refreshContentsWrapper();
         },
 
         _eventBuild: function () {

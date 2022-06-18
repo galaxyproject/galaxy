@@ -61,7 +61,7 @@
 <script>
 import _l from "utils/localization";
 import _ from "underscore";
-import { getGalaxyInstance } from "app";
+import { refreshContentsWrapper } from "utils/data";
 import UploadRow from "mvc/upload/composite/composite-row";
 import UploadBoxMixin from "./UploadBoxMixin";
 import { uploadModelsToPayload } from "./helpers";
@@ -193,11 +193,10 @@ export default {
 
         /** Refresh success state */
         _eventSuccess: function (message) {
-            const Galaxy = getGalaxyInstance();
             this.collection.each((it) => {
                 it.set("status", "success");
             });
-            Galaxy.currHistoryPanel.refreshContents();
+            refreshContentsWrapper();
         },
 
         /** Refresh error state */

@@ -25,6 +25,7 @@
 </template>
 
 <script>
+import { mapGetters } from "vuex";
 import { WorkflowInvocationState } from "components/WorkflowInvocationState";
 import Webhooks from "mvc/webhooks";
 import { getAppRoot } from "onload/loadConfig";
@@ -50,6 +51,7 @@ export default {
         };
     },
     computed: {
+        ...mapGetters("history", ["currentHistoryId"]),
         timesExecuted() {
             return this.invocations.length;
         },
@@ -67,13 +69,7 @@ export default {
             if (this.invocations.length < 1) {
                 return false;
             }
-            const Galaxy = getGalaxyInstance();
-            return (
-                (this.invocations[0].history_id &&
-                    Galaxy.currHistoryPanel &&
-                    Galaxy.currHistoryPanel.model.id != this.invocations[0].history_id) ||
-                false
-            );
+            return this.invocations[0].history_id && this.currentHistoryId != this.invocations[0].history_id;
         },
     },
     mounted() {

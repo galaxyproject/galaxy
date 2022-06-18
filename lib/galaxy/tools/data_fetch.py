@@ -499,7 +499,7 @@ def _has_src_to_path(upload_config, item, is_dataset=False) -> Tuple[str, str]:
         if name is None:
             name = url.split("/")[-1]
     elif src == "pasted":
-        path = stream_to_file(StringIO(item["paste_content"]))
+        path = stream_to_file(StringIO(item["paste_content"]), dir=upload_config.working_directory)
         if name is None:
             name = "Pasted Entry"
     else:

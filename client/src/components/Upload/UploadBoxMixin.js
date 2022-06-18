@@ -6,11 +6,10 @@ import UploadExtension from "mvc/upload/upload-extension";
 import UploadModel from "mvc/upload/upload-model";
 import UploadWrapper from "./UploadWrapper";
 import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
-import { getGalaxyInstance } from "app";
 import UploadFtp from "mvc/upload/upload-ftp";
 import LazyLimited from "mvc/lazy/lazy-limited";
 import { findExtension } from "./utils";
-import { filesDialog } from "utils/data";
+import { filesDialog, refreshContentsWrapper } from "utils/data";
 import { getAppRoot } from "onload";
 import { UploadQueue } from "utils/uploadbox";
 import axios from "axios";
@@ -195,8 +194,7 @@ export default {
             this.counterAnnounce--;
             this.counterSuccess++;
             this._updateStateForCounters();
-            const Galaxy = getGalaxyInstance();
-            Galaxy.currHistoryPanel.refreshContents();
+            refreshContentsWrapper();
         },
         /** A new file has been dropped/selected through the uploadbox plugin */
         _eventAnnounce: function (index, file) {
