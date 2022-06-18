@@ -598,17 +598,6 @@ practice.
     </xs:attribute>
   </xs:complexType>
 
-  <xs:complexType name="ResourceRequirement">
-    <xs:sequence>
-      <xs:element name="cores_min" type="Resource" minOccurs="0" maxOccurs="1" />
-      <xs:element name="cores_max" type="Resource" minOccurs="0" maxOccurs="1" />
-      <xs:element name="ram_min" type="Resource" minOccurs="0" maxOccurs="1" />
-      <xs:element name="ram_max" type="Resource" minOccurs="0" maxOccurs="1" />
-      <xs:element name="tmpdir_min" type="Resource" minOccurs="0" maxOccurs="1" />
-      <xs:element name="tmpdir_max" type="Resource" minOccurs="0" maxOccurs="1" />
-    </xs:sequence>
-  </xs:complexType>
-
   <xs:complexType name="Requirements">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
