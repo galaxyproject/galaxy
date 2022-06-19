@@ -37,7 +37,7 @@ export default {
             "createNewHistory",
             "updateHistory",
             "deleteHistory",
-            "setCurrentHistoryId",
+            "setCurrentHistory",
             "setHistory",
             "loadHistories",
             "secureHistory",
@@ -73,7 +73,7 @@ export default {
                 setHistory: this.setHistory,
 
                 // select new history, basically just needs the id
-                setCurrentHistory: (h) => this.setCurrentHistoryId(h.id),
+                setCurrentHistory: (h) => this.setCurrentHistory(h.id),
 
                 // create new history then select it
                 createNewHistory: this.createNewHistory,
