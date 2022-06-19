@@ -13,6 +13,7 @@ import json
 import os
 import random
 import re
+import shlex
 import shutil
 import smtplib
 import stat
@@ -76,6 +77,12 @@ from .path import (  # noqa: F401
     safe_makedirs,
     safe_relpath,
 )
+
+try:
+    shlex_join = shlex.join  # type: ignore[attr-defined]
+except AttributeError:
+    # Python < 3.8
+    shlex_join = lambda split_command: " ".join(map(shlex.quote, split_command))  # noqa: E731
 
 inflector = Inflector()
 
