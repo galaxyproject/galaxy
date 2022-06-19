@@ -455,6 +455,10 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
             key = self._bucket.get_key(rel_path)
+            if key is None:
+                message = f"Attempting to download an invalid key for path {rel_path}."
+                log.critical(message)
+                raise Exception(message)
             # Test if cache is large enough to hold the new file
             if self.cache_size > 0 and key.size > self.cache_size:
                 log.critical(
