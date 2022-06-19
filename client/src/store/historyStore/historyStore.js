@@ -153,11 +153,8 @@ const actions = {
         commit("setHistory", history);
         commit("setCurrentHistoryId", history.id);
     },
-    async setCurrentHistoryId({ commit, dispatch, getters }, id) {
-        // Need to do 2 requests because apparently the response from "setHistory"
-        // can't be twisted to be the same as a normal lookup
+    async setCurrentHistoryId({ dispatch, getters }, id) {
         if (id !== getters.currentHistoryId) {
-            commit("setCurrentHistoryId", id);
             const changedHistory = await setCurrentHistoryOnServer(id);
             dispatch("loadHistoryById", changedHistory.id);
         }
