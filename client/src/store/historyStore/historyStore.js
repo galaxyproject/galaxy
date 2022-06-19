@@ -98,8 +98,8 @@ const actions = {
             return dispatch("createNewHistory");
         }
     },
-    loadCurrentHistory({ dispatch }) {
-        getCurrentHistoryFromServer().then((history) => dispatch("selectHistory", history));
+    async loadCurrentHistory({ dispatch }) {
+        return getCurrentHistoryFromServer().then((history) => dispatch("selectHistory", history));
     },
     loadHistories({ commit }) {
         if (!isLoadingHistories) {
