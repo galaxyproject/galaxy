@@ -12,7 +12,6 @@ Build a mulled image with:
 import json
 import logging
 import os
-import shlex
 import shutil
 import stat
 import string
@@ -31,6 +30,7 @@ from galaxy.tool_util.deps.docker_util import command_list as docker_command_lis
 from galaxy.util import (
     commands,
     safe_makedirs,
+    shlex_join,
     unicodify,
 )
 from ._cli import arg_parser
@@ -301,7 +301,7 @@ def mull_targets(
             involucro_args.insert(6, "-set")
             involucro_args.insert(7, f"TEST_BINDS={','.join(test_bind)}")
     cmd = involucro_context.build_command(involucro_args)
-    print(f"Executing: {' '.join(shlex.quote(_) for _ in cmd)}")
+    print(f"Executing: {shlex_join(cmd)}")
     if dry_run:
         return 0
     ensure_installed(involucro_context, True)

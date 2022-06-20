@@ -11,10 +11,14 @@ import time
 
 import pytest
 
-from galaxy.util import unicodify
+from galaxy.util import (
+    shlex_join,
+    unicodify,
+)
 from galaxy_test.base.populators import (
     DatasetPopulator,
     skip_without_tool,
+    wait_on,
 )
 from galaxy_test.driver import integration_util
 from .test_containerized_jobs import MulledJobTestCases
@@ -308,20 +312,36 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
     def test_exit_code_127(self):
         inputs = {
             "failbool": True,
-            "sleepsecs": 20,
+            "sleepsecs": 5,
         }
         running_response = self.dataset_populator.run_tool_raw(
             "job_properties",
             inputs,
             self.history_id,
         )
-        time.sleep(10)
         # check that logs are also available in job logs
         app = self._app
-        sa_session = app.model.context.current
-        job = sa_session.query(app.model.Job).get(app.security.decode_id(running_response.json()["jobs"][0]["id"]))
+        job_id = app.security.decode_id(running_response.json()["jobs"][0]["id"])
+        sa_session = app.model.context
+        job = sa_session.query(app.model.Job).get(job_id)
+        self._wait_for_external_state(sa_session=sa_session, job=job, expected=app.model.Job.states.RUNNING)
+
         external_id = job.job_runner_external_id
-        output = unicodify(subprocess.check_output(["kubectl", "logs", "-l" f"job-name={external_id}"]))
+
+        def get_kubectl_logs(allow_wait=True):
+            log_cmd = ["kubectl", "logs", "-l", f"job-name={external_id}"]
+            p = subprocess.run(log_cmd, capture_output=True, text=True)
+            if p.returncode:
+                if allow_wait and "is waiting to start" in p.stderr:
+                    return None
+                raise Exception(
+                    f"Command '{shlex_join(log_cmd)}' failed with exit code: {p.returncode}.\nstdout: {p.stdout}\nstderr: {p.stderr}"
+                )
+            return p.stdout
+
+        wait_on(get_kubectl_logs, "k8s logs")
+        output = get_kubectl_logs(allow_wait=False)
+
         EXPECTED_STDOUT = "The bool is not true"
         EXPECTED_STDERR = "The bool is very not true"
         assert EXPECTED_STDOUT in output

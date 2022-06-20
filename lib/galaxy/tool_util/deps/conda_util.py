@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import re
-import shlex
 import shutil
 import sys
 import tempfile
@@ -18,6 +17,7 @@ import packaging.version
 from galaxy.util import (
     commands,
     listify,
+    shlex_join,
     smart_str,
     which,
 )
@@ -237,7 +237,7 @@ class CondaContext(installable.InstallableContext):
         env = {}
         if self.condarc_override:
             env["CONDARC"] = self.condarc_override
-        cmd_string = " ".join(map(shlex.quote, cmd))
+        cmd_string = shlex_join(cmd)
         kwds = dict()
         try:
             if stdout_path:
