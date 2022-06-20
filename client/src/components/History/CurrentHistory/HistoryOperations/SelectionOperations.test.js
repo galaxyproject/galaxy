@@ -100,10 +100,31 @@ describe("History Selection Operations", () => {
                 expect(wrapper.find(option).exists()).toBe(true);
             });
 
-            it("should display 'undelete' option only on deleted items", async () => {
+            it("should display 'undelete' option only on deleted and non-purged items", async () => {
                 const option = '[data-description="undelete option"]';
+                const ONE_PURGED_SELECTED = new Map([["FAKE_ID", { purged: true }]]);
+                const ONE_NON_PURGED_SELECTED = new Map([["FAKE_ID", { purged: false }]]);
                 expect(wrapper.find(option).exists()).toBe(false);
-                await wrapper.setProps({ filterText: "deleted:true" });
+                await wrapper.setProps({
+                    filterText: "deleted:true",
+                    contentSelection: ONE_NON_PURGED_SELECTED,
+                });
+                expect(wrapper.find(option).exists()).toBe(true);
+
+                // In manual selection mode, if all selected items are purged we don't allow undeleting
+                await wrapper.setProps({
+                    filterText: "deleted:true",
+                    contentSelection: ONE_PURGED_SELECTED,
+                    isQuerySelection: false,
+                });
+                expect(wrapper.find(option).exists()).toBe(false);
+
+                // In query selection mode we don't know if some items may not be purged, so we allow to undelete
+                await wrapper.setProps({
+                    filterText: "deleted:true",
+                    contentSelection: ONE_PURGED_SELECTED,
+                    isQuerySelection: true,
+                });
                 expect(wrapper.find(option).exists()).toBe(true);
             });
 
