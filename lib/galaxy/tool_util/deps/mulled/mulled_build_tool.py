@@ -29,7 +29,7 @@ def main(argv=None):
     parser.add_argument("tool", metavar="TOOL", default=None, help="Path to tool to build mulled image for.")
     args = parser.parse_args()
     tool_source = get_tool_source(args.tool)
-    requirements, _ = tool_source.parse_requirements_and_containers()
+    requirements, *_ = tool_source.parse_requirements_and_containers()
     targets = requirements_to_mulled_targets(requirements)
     kwds = args_to_mull_targets_kwds(args)
     mull_targets(targets, **kwds)

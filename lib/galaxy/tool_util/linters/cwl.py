@@ -32,7 +32,7 @@ def lint_new_draft(tool_source, lint_ctx):
 
 
 def lint_docker_image(tool_source, lint_ctx):
-    _, containers = tool_source.parse_requirements_and_containers()
+    _, containers, *_ = tool_source.parse_requirements_and_containers()
     if len(containers) == 0:
         lint_ctx.warn("Tool does not specify a DockerPull source.")
     else:

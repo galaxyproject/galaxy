@@ -459,6 +459,9 @@ class CommandLineToolProxy(ToolProxy):
                     requirements.append((package["package"], first_version))
         return requirements
 
+    def resource_requirements(self):
+        return [r for r in self.requirements if r["class"] == "ResourceRequirement"]
+
     @property
     def requirements(self):
         return getattr(self._tool, "requirements", [])

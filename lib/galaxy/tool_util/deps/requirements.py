@@ -1,4 +1,17 @@
 import copy
+from typing import (
+    Callable,
+    cast,
+    Dict,
+    List,
+    Optional,
+    Union,
+)
+
+from typing_extensions import (
+    get_args,
+    Literal,
+)
 
 from galaxy.util import (
     asbool,
@@ -204,20 +217,91 @@ class ContainerDescription:
         return f"ContainerDescription[identifier={self.identifier},type={self.type}]"
 
 
+ResourceType = Literal[
+    "cores_min",
+    "cores_max",
+    "ram_min",
+    "ram_max",
+    "tmpdir_min",
+    "tmpdir_max",
+]
+VALID_RESOURCE_TYPES = get_args(ResourceType)
+
+
+class ResourceRequirement:
+    def __init__(self, value_or_expression: Union[int, float, str], resource_type: ResourceType):
+        self.value_or_expression = value_or_expression
+        if not resource_type:
+            raise ValueError("Missing resource requirement type")
+        if resource_type not in VALID_RESOURCE_TYPES:
+            raise ValueError(f"Invalid resource requirement type '{resource_type}'")
+        self.resource_type = resource_type
+        try:
+            float(self.value_or_expression)
+            self.runtime_required = False
+        except ValueError:
+            self.runtime_required = True
+
+    @staticmethod
+    def from_dict(resource_dict):
+        resource_type = next(iter(resource_dict.keys()))
+        value_or_expression = resource_dict[resource_type]
+        return ResourceRequirement(value_or_expression=value_or_expression, resource_type=resource_type)
+
+    def get_value(self, runtime: Optional[Dict] = None, js_evaluator: Optional[Callable] = None):
+        if self.runtime_required:
+            # TODO: hook up evaluator
+            # return js_evaluator(self.value_or_expression, runtime)
+            raise NotImplementedError(
+                f"{self.value_or_expression} is not an integer or float value, expressions currently not implemented"
+            )
+        return float(self.value_or_expression)
+
+
+def resource_requirements_from_list(requirements) -> List[ResourceRequirement]:
+    cwl_to_galaxy = {
+        "coresMin": "cores_min",
+        "coresMax": "cores_max",
+        "ramMin": "ram_min",
+        "ramMax": "ram_max",
+        "tmpdirMin": "tmpdir_min",
+        "tmpdirMax": "tmpdir_max",
+    }
+    rr = []
+    for r in requirements:
+        if r.get("class") == "ResourceRequirement":
+            valid_key_set = set(cwl_to_galaxy.keys())
+        elif r.get("type") == "resource":
+            valid_key_set = set(cwl_to_galaxy.values())
+        else:
+            continue
+        for key in valid_key_set.intersection(set(r.keys())):
+            value = r[key]
+            key = cast(ResourceType, cwl_to_galaxy.get(key, key))
+            rr.append(ResourceRequirement(value_or_expression=value, resource_type=key))
+    return rr
+
+
 def parse_requirements_from_dict(root_dict):
     requirements = root_dict.get("requirements", [])
+    resource_requirements = resource_requirements_from_list(requirements)
     containers = root_dict.get("containers", [])
-    return ToolRequirements.from_list(requirements), [ContainerDescription.from_dict(c) for c in containers]
+    return (
+        ToolRequirements.from_list(requirements),
+        [ContainerDescription.from_dict(c) for c in containers],
+        resource_requirements,
+    )
 
 
-def parse_requirements_from_xml(xml_root):
+def parse_requirements_from_xml(xml_root, parse_resources=False):
     """
+    Parses requirements, containers and optionally resource requirements from Xml tree.
 
     >>> from galaxy.util import parse_xml_string
-    >>> def load_requirements(contents):
+    >>> def load_requirements(contents, parse_resources=False):
     ...     contents_document = '''<tool><requirements>%s</requirements></tool>'''
     ...     root = parse_xml_string(contents_document % contents)
-    ...     return parse_requirements_from_xml(root)
+    ...     return parse_requirements_from_xml(root, parse_resources=parse_resources)
     >>> reqs, containers = load_requirements('''<requirement>bwa</requirement>''')
     >>> reqs[0].name
     'bwa'
@@ -252,8 +336,18 @@ def parse_requirements_from_xml(xml_root):
         container_elems = requirements_elem.findall("container")
 
     containers = [container_from_element(c) for c in container_elems]
+    if parse_resources:
+        resource_elems = requirements_elem.findall("resource") if requirements_elem else []
+        resources = [resource_from_element(r) for r in resource_elems]
+        return requirements, containers, resources
 
     return requirements, containers
+
+
+def resource_from_element(resource_elem):
+    value_or_expression = xml_text(resource_elem)
+    resource_type = resource_elem.get("type")
+    return ResourceRequirement(value_or_expression=value_or_expression, resource_type=resource_type)
 
 
 def container_from_element(container_elem):

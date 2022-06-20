@@ -1038,9 +1038,10 @@ class Tool(Dictifiable):
         self.__parse_tests(tool_source)
 
         # Requirements (dependencies)
-        requirements, containers = tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
         self.requirements = requirements
         self.containers = containers
+        self.resource_requirements = resource_requirements
 
         required_files = tool_source.parse_required_files()
         if required_files is None:
