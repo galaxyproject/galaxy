@@ -28,7 +28,7 @@
                 <b-dropdown-item v-else v-b-modal:delete-selected-content data-description="delete option">
                     <span v-localize>Delete</span>
                 </b-dropdown-item>
-                <b-dropdown-item v-if="!showDeleted" v-b-modal:purge-selected-content data-description="purge option">
+                <b-dropdown-item v-b-modal:purge-selected-content data-description="purge option">
                     <span v-localize>Delete (permanently)</span>
                 </b-dropdown-item>
                 <b-dropdown-divider v-if="showBuildOptions" />

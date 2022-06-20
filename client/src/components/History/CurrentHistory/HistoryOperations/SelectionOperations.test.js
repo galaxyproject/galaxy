@@ -93,6 +93,13 @@ describe("History Selection Operations", () => {
                 expect(wrapper.find(option).exists()).toBe(false);
             });
 
+            it("should display 'permanently delete' option always", async () => {
+                const option = '[data-description="purge option"]';
+                expect(wrapper.find(option).exists()).toBe(true);
+                await wrapper.setProps({ filterText: "deleted:true" });
+                expect(wrapper.find(option).exists()).toBe(true);
+            });
+
             it("should display 'undelete' option only on deleted items", async () => {
                 const option = '[data-description="undelete option"]';
                 expect(wrapper.find(option).exists()).toBe(false);
