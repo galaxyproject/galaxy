@@ -4,6 +4,7 @@ import sys
 import yaml
 from pydantic.error_wrappers import ValidationError
 
+from galaxy.selenium.data import load_root_component
 from ._impl import (
     get_tour_id_from_path,
     load_tour_from_path,
@@ -30,7 +31,7 @@ def main(argv=None):
         message = None
         tour = None
         try:
-            tour = load_tour_from_path(tour_path, warn=warn)
+            tour = load_tour_from_path(tour_path, warn=warn, resolve_components=False)
         except OSError:
             message = f"Tour '{tour_id}' could not be loaded, error reading file."
         except yaml.error.YAMLError:
@@ -45,6 +46,15 @@ def main(argv=None):
                 TourDetails(**tour)
             except ValidationError as e:
                 message = f"Validation issue with tour data for '{tour_id}'. [{e}]"
+
+            for tour_step in tour["steps"]:
+                root_component = load_root_component()
+                if "component" in tour_step:
+                    component = tour_step["component"]
+                    try:
+                        root_component.resolve_element_locator(component)
+                    except Exception as e:
+                        message = f"Tour '{tour_id}' - failed to resolve component {component}. [{e}]"
         if message:
             validated = False
             print(message)

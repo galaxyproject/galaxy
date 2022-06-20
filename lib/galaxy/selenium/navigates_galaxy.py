@@ -1911,6 +1911,10 @@ class NavigatesGalaxy(HasDriver):
 
     def run_tour_step(self, step, step_index, tour_callback):
         element_str = step.get("element", None)
+        if element_str is None:
+            component = step.get("component", None)
+            if component is not None:
+                element_str = self.components.resolve_element_locator(component)[1]
 
         preclick = step.get("preclick", [])
         if preclick is True:
@@ -1920,7 +1924,6 @@ class NavigatesGalaxy(HasDriver):
             print(f"(Pre)Clicking {preclick_selector}")
             self._tour_wait_for_and_click_element(preclick_selector)
 
-        element_str = step.get("element", None)
         if element_str is not None:
             print(f"Waiting for element {element_str}")
             element = self.tour_wait_for_element_present(element_str)

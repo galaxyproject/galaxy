@@ -36,7 +36,7 @@
             <b-button
                 id="btn-close"
                 ref="btnClose"
-                class="ui-button-default"
+                class="ui-button-default upload-close"
                 :title="btnCloseTitle"
                 @click="$emit('dismiss')">
                 {{ btnCloseTitle }}
@@ -62,7 +62,7 @@
             <b-button
                 id="btn-start"
                 ref="btnStart"
-                class="ui-button-default"
+                class="ui-button-default upload-start"
                 :disabled="!enableStart"
                 :title="btnStartTitle"
                 :variant="enableStart ? 'primary' : ''"
@@ -72,7 +72,7 @@
             <b-button
                 id="btn-new"
                 ref="btnCreate"
-                class="ui-button-default"
+                class="ui-button-default upload-paste"
                 :title="btnCreateTitle"
                 :disabled="!enableSources"
                 @click="_eventCreate()">
