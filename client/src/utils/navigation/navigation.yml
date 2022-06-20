@@ -124,11 +124,15 @@ history_panel:
     selectors:
       # These now appear other places :_( - e.g. in the invocation view so we'll try
       # prefixing ids with #current-history-panel but obviously we need to switch to classes or data
-      _: '#current-history-panel #${history_content_type}-${id}'
+      _:
+      - '#current-history-panel [data-hid="${hid}"][data-state="${state}"]'
+      - '#current-history-panel #${history_content_type}-${id}'
+      - '#current-history-panel [data-hid="${hid}"]'
 
       title: '${_} .content-title'
       hid: '${_} .hid'
       name: '${_} .name'
+      datatype: '${_} .datatype .value'
       details: '${_} .details'
       title_button_area: '${_} .primary-actions'
       primary_action_buttons: '${_} .actions .left'
@@ -139,6 +143,7 @@ history_panel:
       info: '${_} .info .value'
       peek: '${_} .dataset-peek'
       toolhelp_title: '${_} .toolhelp strong'
+      state_icon: '${_} .state-icon'
 
       # Title buttons...
       display_button: '${_} .display-btn'
@@ -146,10 +151,10 @@ history_panel:
       delete_button: '${_} .delete-btn'
 
       # Action buttons...
-      download_button: '${_} .icon-btn.download-btn'
-      info_button: '${_} .icon-btn.params-btn'
+      download_button: '${_} .download-btn'
+      info_button: '${_} .params-btn'
       tool_help_button: '${_} .fa.fa-question'
-      rerun_button: '${_} .icon-btn.rerun-btn'
+      rerun_button: '${_} .rerun-btn'
       alltags: '${_} .alltags .ti-tags'
 
   # beta content item
@@ -884,9 +889,12 @@ upload:
     ftp_close: '.popover-header .popover-close'
     row: '#upload-row-${n}'
     settings_button: '#upload-row-${n} .upload-settings'
+    paste_content: '#upload-row-${n} .upload-text-content'
     settings: '.upload-settings-table'
     setting_deferred: '.upload-deferred'
     start: '.upload-button'
+    start_uploading: '.upload-start'
+    close: '.upload-close'
     rule_source_content: 'textarea.upload-rule-source-content'
     rule_select_data_type: '.rule-data-type'
     rule_select_input_type: '.rule-select-type'
@@ -899,6 +907,7 @@ upload:
       type: xpath
       selector: '//span[contains(@title, "${path}")]'
     file_dialog_ok: '.file-dialog-modal-ok'
+    paste_new: .upload-paste
 
 rule_builder:
   selectors:

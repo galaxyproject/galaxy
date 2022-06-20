@@ -12,6 +12,7 @@ import yaml
 from pydantic import parse_obj_as
 
 from galaxy.exceptions import ObjectNotFound
+from galaxy.selenium.data import load_root_component
 from galaxy.util import config_directories_from_setting
 from ._interface import ToursRegistry
 from ._schema import TourList
@@ -19,6 +20,8 @@ from ._schema import TourList
 log = logging.getLogger(__name__)
 
 TOUR_EXTENSIONS = (".yml", ".yaml")
+
+ROOT_COMPONENT = load_root_component()
 
 
 def build_tours_registry(tour_directories: str):
@@ -29,7 +32,7 @@ def noop_warn(str):
     pass
 
 
-def load_tour_steps(contents_dict, warn=None):
+def load_tour_steps(contents_dict, warn=None, resolve_components=True):
     warn = warn or noop_warn
     #  Some of this can be done on the clientside.  Maybe even should?
     title_default = contents_dict.get("title_default")
@@ -42,6 +45,10 @@ def load_tour_steps(contents_dict, warn=None):
         if "backdrop" in step:
             warn(f"Deprecated and dropped property backdrop found in step {step}")
             step.pop("backdrop")
+
+        if "component" in step and resolve_components:
+            component = step.pop("component")
+            step["element"] = ROOT_COMPONENT.resolve_element_locator(component)[1]
 
         if "intro" in step:
             step["content"] = step.pop("intro")
@@ -58,10 +65,10 @@ def get_tour_id_from_path(tour_path: Union[str, os.PathLike]) -> str:
     return os.path.splitext(filename)[0]
 
 
-def load_tour_from_path(tour_path: Union[str, os.PathLike], warn=None) -> dict:
+def load_tour_from_path(tour_path: Union[str, os.PathLike], warn=None, resolve_components=True) -> dict:
     with open(tour_path) as f:
         tour = yaml.safe_load(f)
-        load_tour_steps(tour, warn=warn)
+        load_tour_steps(tour, warn=warn, resolve_components=resolve_components)
     return tour
 
 

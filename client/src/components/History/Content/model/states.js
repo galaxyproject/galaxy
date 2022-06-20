@@ -10,9 +10,9 @@ export const STATES = {
         icon: "exclamation-triangle",
     },
     deferred: {
-        status: "danger",
+        status: "info",
         text: "This dataset is remote, has not be ingested by Galaxy, and full metadata may not be available.",
-        icon: "exclamation-triangle",
+        icon: "cloud",
     },
     /** has no data */
     empty: {

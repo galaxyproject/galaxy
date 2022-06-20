@@ -16,7 +16,7 @@ steps:
     # 'element' is the JQuery Selector (http://api.jquery.com/category/selectors/) of the element you want to describe
     # In this case we want to highlight the Upload button with the `.upload-button` selector
     - title: "Upload your data"
-      element: ".upload-button"
+      component: upload.start
       intro: "Galaxy supports many ways to get in your data. Use this button to upload your data."
       # You can trigger click() events on arbitrary elements before (preclick) or after (postclick) the element is shown
       postclick: true
@@ -24,12 +24,11 @@ steps:
     - title: "Upload your data"
       element: "#btn-local"
       intro: "You can upload data from your computer."
-      postclick:
-        - "#btn-new"
 
     - title: "Upload your data"
       element: "#btn-new"
       intro: "Copy and paste data directly into Galaxy or include URLs that lead to your data"
+      preclick: true
 
     - title: "Insert URLs"
       element: ".upload-text-content"
@@ -63,10 +62,9 @@ steps:
       textinsert: 'filter'
 
     - title: "Select a tool"
-      element: 'a[href$="tool_runner?tool_id=Filter1"]'
+      component: tool_panel.tool_link(tool_id=Filter1)
       intro: "Select and load a tool for your analysis by clicking the underlined link."
-      postclick:
-        - 'a[href$="tool_runner?tool_id=Filter1"]'
+      postclick: true
 
     - title: "Filter Tool"
       element: '.center-panel'
