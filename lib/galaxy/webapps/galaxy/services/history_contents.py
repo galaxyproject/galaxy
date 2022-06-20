@@ -24,9 +24,9 @@ from typing_extensions import (
 )
 
 from galaxy import exceptions
-from galaxy.celery.tasks import change_datatype
-from galaxy.celery.tasks import materialize as materialize_task
 from galaxy.celery.tasks import (
+    change_datatype,
+    materialize as materialize_task,
     prepare_dataset_collection_download,
     prepare_history_content_download,
     write_history_content_to,

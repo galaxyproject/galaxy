@@ -25,8 +25,10 @@ from sqlalchemy.orm import (
     undefer,
 )
 
-from galaxy import exceptions as glx_exceptions
-from galaxy import model
+from galaxy import (
+    exceptions as glx_exceptions,
+    model,
+)
 from galaxy.managers import (
     annotatable,
     base,

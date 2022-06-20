@@ -9,8 +9,8 @@ from tool_shed.util import (
     common_util,
     container_util,
     metadata_util,
+    shed_util_common as suc,
 )
-from tool_shed.util import shed_util_common as suc
 
 log = logging.getLogger(__name__)
 

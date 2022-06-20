@@ -9,8 +9,8 @@ from galaxy import (
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
+    require_admin,
 )
-from galaxy.web import require_admin as require_admin
 from galaxy.webapps.base.controller import BaseAPIController
 from tool_shed.util import repository_util
 

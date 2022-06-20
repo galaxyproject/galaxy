@@ -1,7 +1,9 @@
 import logging
 
-from .test_toolbox import build_tests as _build_tests
-from .test_toolbox import ToolTestCase
+from .test_toolbox import (
+    build_tests as _build_tests,
+    ToolTestCase,
+)
 
 try:
     from nose.tools import nottest

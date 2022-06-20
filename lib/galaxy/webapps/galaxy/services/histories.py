@@ -19,8 +19,10 @@ from sqlalchemy import (
     true,
 )
 
-from galaxy import exceptions as glx_exceptions
-from galaxy import model
+from galaxy import (
+    exceptions as glx_exceptions,
+    model,
+)
 from galaxy.celery.tasks import (
     import_model_store,
     prepare_history_download,

@@ -2,9 +2,9 @@ import logging
 import os
 import tempfile
 
-from galaxy.util import etree
-from galaxy.util import parse_xml as galaxy_parse_xml
 from galaxy.util import (
+    etree,
+    parse_xml as galaxy_parse_xml,
     unicodify,
     xml_to_string,
 )

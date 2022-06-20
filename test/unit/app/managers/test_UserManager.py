@@ -12,8 +12,8 @@ from galaxy import (
     exceptions,
     model,
 )
-from galaxy.managers import base as base_manager
 from galaxy.managers import (
+    base as base_manager,
     histories,
     users,
 )

@@ -13,8 +13,10 @@ from galaxy.util import (
     config_directories_from_setting,
     parse_xml,
 )
-from galaxy.visualization.plugins import config_parser
-from galaxy.visualization.plugins import plugin as vis_plugins
+from galaxy.visualization.plugins import (
+    config_parser,
+    plugin as vis_plugins,
+)
 
 log = logging.getLogger(__name__)
 

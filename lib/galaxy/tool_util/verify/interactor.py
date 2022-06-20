@@ -14,8 +14,10 @@ from logging import getLogger
 from typing import Optional
 
 import requests
-from packaging.version import parse as parse_version
-from packaging.version import Version
+from packaging.version import (
+    parse as parse_version,
+    Version,
+)
 from requests.cookies import RequestsCookieJar
 
 try:

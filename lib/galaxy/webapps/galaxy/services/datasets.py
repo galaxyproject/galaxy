@@ -17,8 +17,8 @@ from pydantic import (
     Field,
 )
 
-from galaxy import exceptions as galaxy_exceptions
 from galaxy import (
+    exceptions as galaxy_exceptions,
     model,
     util,
     web,

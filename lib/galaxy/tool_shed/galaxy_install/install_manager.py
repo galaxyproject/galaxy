@@ -21,9 +21,9 @@ from galaxy.tool_shed.tools.data_table_manager import ShedToolDataTableManager
 from galaxy.tool_shed.util import (
     hg_util,
     repository_util,
+    shed_util_common as suc,
+    tool_util,
 )
-from galaxy.tool_shed.util import shed_util_common as suc
-from galaxy.tool_shed.util import tool_util
 from galaxy.tool_util.deps import views
 from galaxy.util.tool_shed import (
     common_util,

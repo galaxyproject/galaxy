@@ -7,8 +7,10 @@ from testfixtures import log_capture
 import galaxy.jobs.dynamic_tool_destination as dt
 from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
 from galaxy.jobs.mapper import JobMappingException
-from . import mockGalaxy as mg
-from . import ymltests as yt
+from . import (
+    mockGalaxy as mg,
+    ymltests as yt,
+)
 
 theApp = mg.App("cluster_default", "test_spec")
 script_dir = os.path.dirname(__file__)
