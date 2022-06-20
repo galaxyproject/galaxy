@@ -6312,6 +6312,9 @@ class HistoryDatasetCollectionAssociation(
         """Checks to see that the indicated collection is a member of the
         hdca by using a recursive CTE sql query to find the collection's parents
         and checking to see if any of the parents are associated with this hdca"""
+        if collection_id == self.collection_id:
+            # collection_id is root collection
+            return True
 
         sa_session = object_session(self)
         DCE = DatasetCollectionElement

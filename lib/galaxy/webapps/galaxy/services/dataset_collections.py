@@ -232,7 +232,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
 
         # check to make sure the dsc is part of the validated hdca
         decoded_parent_id = self.decode_id(parent_id)
-        if parent_id != hdca_id and not hdca.contains_collection(decoded_parent_id):
+        if not hdca.contains_collection(decoded_parent_id):
             raise exceptions.ObjectNotFound(
                 "Requested dataset collection is not contained within indicated history content"
             )
