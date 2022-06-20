@@ -1,5 +1,6 @@
 import json
 import os
+import tempfile
 from contextlib import contextmanager
 from os import environ
 from shutil import rmtree
@@ -33,6 +34,30 @@ def test_simple_path_get():
         execute_context.execute_request(request)
         output = _unnamed_output(execute_context)
         assert output
+
+
+def test_simple_uri_get():
+    with _execute_context() as execute_context:
+        request = {
+            "targets": [
+                {
+                    "destination": {
+                        "type": "hdas",
+                    },
+                    "elements": [
+                        {
+                            "src": "url",
+                            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                        }
+                    ],
+                }
+            ]
+        }
+        execute_context.execute_request(request)
+        output = _unnamed_output(execute_context)
+        hda_result = output["elements"][0]
+        assert hda_result["state"] == "ok"
+        assert hda_result["ext"] == "bed"
 
 
 def test_deferred_uri_get():
@@ -222,8 +247,13 @@ def test_hdca_failed_expansion():
 def _execute_context():
     job_directory = mkdtemp()
     try:
+        # temporarily set tempdir to non-existing location
+        # to make sure all intermediate files are created in the working
+        # directory
+        tempfile.tempdir = "/abcdefgh123456"
         yield ExecuteContext(job_directory)
     finally:
+        tempfile.tempdir = None
         rmtree(job_directory)
 
 
