@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import (
     List,
     Optional,
@@ -10,10 +11,22 @@ from pydantic import (
 )
 
 
+class Requirement(str, Enum):
+    """Available types of job sources (model classes) that produce dataset collections."""
+
+    LOGGED_IN = "logged_in"
+    NEW_HISTORY = "new_history"
+    ADMIN = "admin"
+
+
 class TourCore(BaseModel):
     name: str = Field(title="Name", description="Name of tour")
     description: str = Field(title="Description", description="Tour description")
     tags: List[str] = Field(title="Tags", description="Topic topic tags")
+    requirements: List[Requirement] = Field(title="Requirements", description="Requirements to run the tour.")
+
+    class Config:
+        use_enum_values = True  # when using .dict()
 
 
 class Tour(TourCore):

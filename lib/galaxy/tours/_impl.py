@@ -11,6 +11,7 @@ from typing import (
 import yaml
 from pydantic import parse_obj_as
 
+from galaxy.exceptions import ObjectNotFound
 from galaxy.util import config_directories_from_setting
 from ._interface import ToursRegistry
 from ._schema import TourList
@@ -32,6 +33,9 @@ def load_tour_steps(contents_dict, warn=None):
     warn = warn or noop_warn
     #  Some of this can be done on the clientside.  Maybe even should?
     title_default = contents_dict.get("title_default")
+    if "requirements" not in contents_dict:
+        contents_dict["requirements"] = []
+
     for step in contents_dict["steps"]:
         # Remove attributes no longer used, so they are attempted to be
         # validated.
@@ -94,6 +98,7 @@ class ToursRegistryImpl:
                 "name": self.tours[k].get("name"),
                 "description": self.tours[k].get("description"),
                 "tags": self.tours[k].get("tags"),
+                "requirements": self.tours[k].get("requirements"),
             }
             tours.append(tourdata)
         return parse_obj_as(TourList, tours)
@@ -102,6 +107,8 @@ class ToursRegistryImpl:
         """Return tour contents."""
         # Extra format translation could happen here (like the previous intro_to_tour)
         # For now just return the loaded contents.
+        if tour_id not in self.tours:
+            raise ObjectNotFound(f"tour {tour_id} not found")
         return self.tours.get(tour_id)
 
     def load_tour(self, tour_id):
