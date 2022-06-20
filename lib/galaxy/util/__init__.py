@@ -82,7 +82,9 @@ try:
     shlex_join = shlex.join  # type: ignore[attr-defined]
 except AttributeError:
     # Python < 3.8
-    shlex_join = lambda split_command: " ".join(map(shlex.quote, split_command))  # noqa: E731
+    def shlex_join(split_command):
+        return " ".join(map(shlex.quote, split_command))
+
 
 inflector = Inflector()
 

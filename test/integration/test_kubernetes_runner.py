@@ -335,7 +335,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
                 if allow_wait and "is waiting to start" in p.stderr:
                     return None
                 raise Exception(
-                    f"Command '{shlex_join}' failed with exit code: {p.returncode}.\nstdout: {p.stdout}\nstderr: {p.stderr}"
+                    f"Command '{shlex_join(log_cmd)}' failed with exit code: {p.returncode}.\nstdout: {p.stdout}\nstderr: {p.stderr}"
                 )
             return p.stdout
 
