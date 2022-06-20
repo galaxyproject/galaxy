@@ -45,7 +45,7 @@
             </b-button>
             <b-button
                 v-b-tooltip.hover
-                :title="'Last updated ' + diffToNow"
+                :title="'Last refreshed ' + diffToNow"
                 variant="link"
                 size="sm"
                 class="rounded-0 text-decoration-none"
