@@ -199,8 +199,8 @@ class BaseAPIController(BaseController):
                 deleted=deleted,
             )
 
-        except exceptions.MessageException as e:
-            raise e
+        except exceptions.MessageException:
+            raise
         except Exception as e:
             log.exception("Exception in get_object check for %s %s.", class_name, str(id))
             raise HTTPInternalServerError(comment=util.unicodify(e))

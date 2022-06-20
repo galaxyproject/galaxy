@@ -185,8 +185,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         if user is not None:
             return self.user_serializer.serialize_to_view(user, view="detailed")
         else:
-            item = self.anon_user_api_value(trans)
-            return item
+            return self.anon_user_api_value(trans)
 
     def _get_user_full(self, trans, user_id, **kwd):
         """Return referenced user or None if anonymous user is referenced."""
@@ -213,7 +212,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             if not trans.user_is_admin:
                 if trans.user != user or user.deleted:
                     raise exceptions.InsufficientPermissionsException(
-                        "You are not allowed to perform action on that user", id=id
+                        "You are not allowed to perform action on that user", id=user_id
                     )
             return user
         except exceptions.MessageException:
