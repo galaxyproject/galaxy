@@ -236,17 +236,11 @@ class ResourceRequirement:
         if resource_type not in VALID_RESOURCE_TYPES:
             raise ValueError(f"Invalid resource requirement type '{resource_type}'")
         self.resource_type = resource_type
-        self._runtime_required: Optional[bool] = None
-
-    @property
-    def runtime_required(self):
-        if self._runtime_required is None:
-            try:
-                float(self.value_or_expression)
-                self._runtime_required = False
-            except ValueError:
-                self._runtime_required = True
-        return self._runtime_required
+        try:
+            float(self.value_or_expression)
+            self.runtime_required = False
+        except ValueError:
+            self.runtime_required = True
 
     @staticmethod
     def from_dict(resource_dict):
