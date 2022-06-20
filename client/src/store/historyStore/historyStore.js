@@ -112,7 +112,7 @@ const actions = {
                     console.warn("loadHistories error", err);
                 })
                 .finally(() => {
-                    isLoadingHistories = null;
+                    isLoadingHistories = false;
                     commit("setHistoriesLoading", false);
                 });
         }
