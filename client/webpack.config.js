@@ -207,7 +207,11 @@ module.exports = (env = {}, argv = {}) => {
                     errors: true,
                     warnings: false,
                 },
+                webSocketURL: {
+                    port: process.env.GITPOD_WORKSPACE_ID ? 443 : undefined,
+                },
             },
+            allowedHosts: process.env.GITPOD_WORKSPACE_ID ? "all" : "auto",
             devMiddleware: {
                 publicPath: "/static/dist",
             },
