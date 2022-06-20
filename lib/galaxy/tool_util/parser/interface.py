@@ -182,7 +182,7 @@ class ToolSource(metaclass=ABCMeta):
 
     @abstractmethod
     def parse_requirements_and_containers(self):
-        """Return triple of ToolRequirement, ContainerDescription and ResourceRequirements lists."""
+        """Return triple of ToolRequirement, ContainerDescription and ResourceRequirement lists."""
 
     @abstractmethod
     def parse_input_pages(self):
