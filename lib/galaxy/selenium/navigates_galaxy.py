@@ -1250,6 +1250,7 @@ class NavigatesGalaxy(HasDriver):
         alert = self.driver.switch_to.alert
         alert.send_keys(new_name)
         alert.accept()
+        self.components.workflows.workflow_with_name(workflow_name=new_name).wait_for_visible()
 
     @retry_during_transitions
     def workflow_index_name(self, workflow_index=0):
