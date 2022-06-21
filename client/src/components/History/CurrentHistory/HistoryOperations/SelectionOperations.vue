@@ -1,7 +1,7 @@
 <template>
     <section v-if="hasSelection">
         <ConfigProvider v-slot="{ config }">
-            <b-dropdown text="Selection" size="sm" variant="primary" data-description="selected content menu">
+            <b-dropdown text="Selection" size="sm" variant="primary" data-description="selected content menu" no-flip>
                 <template v-slot:button-content>
                     <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
                         All <b>{{ totalItemsInQuery }}</b> selected
