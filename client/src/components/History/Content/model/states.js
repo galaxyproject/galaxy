@@ -74,3 +74,8 @@ export const STATES = {
         spin: true,
     },
 };
+
+/** For collections it is necessary to reduce the available states of the collection items to a single state which
+ * can be displayed to represent the collection itself. The order matters.
+ */
+export const STATE_REDUCE = ["error", "failed", "queued", "upload", "running", "paused"];

@@ -90,7 +90,7 @@
 <script>
 import { backboneRoute, iframeAdd } from "components/plugins/legacyNavigation";
 import { StatelessTags } from "components/Tags";
-import { STATES } from "./model/states";
+import { STATES, STATE_REDUCE } from "./model/states";
 import CollectionDescription from "./Collection/CollectionDescription";
 import ContentOptions from "./ContentOptions";
 import DatasetDetails from "./Dataset/DatasetDetails";
@@ -150,7 +150,7 @@ export default {
         },
         state() {
             if (this.item.job_state_summary) {
-                for (const key of ["error", "failed", "paused", "upload", "running"]) {
+                for (const key of STATE_REDUCE) {
                     if (this.item.job_state_summary[key] > 0) {
                         return key;
                     }
