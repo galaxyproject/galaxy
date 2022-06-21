@@ -3,7 +3,7 @@ at components/JobStates/CollectionJobStates but it relies on the backbone data
 model, so probably has to go eventually.-->
 <template>
     <div class="collection-progress">
-        <b-progress v-if="maxJobs && runningJobs" :max="maxJobs" show-value>
+        <b-progress v-if="maxJobs != okJobs + errorJobs" :max="maxJobs" show-value>
             <b-progress-bar v-if="errorJobs" :value="errorJobs" variant="danger" />
             <b-progress-bar v-if="okJobs" :value="okJobs" variant="success" />
             <b-progress-bar v-if="runningJobs" :value="runningJobs" variant="warning" />
