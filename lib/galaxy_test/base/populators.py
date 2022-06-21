@@ -84,8 +84,8 @@ from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tool_util.verify.wait import (
     timeout_type,
     TimeoutAssertionError,
+    wait_on as tool_util_wait_on,
 )
-from galaxy.tool_util.verify.wait import wait_on as tool_util_wait_on
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     galaxy_root_path,

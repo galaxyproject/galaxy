@@ -14,8 +14,10 @@ from typing import (
 
 import galaxy.exceptions
 import galaxy.util
-from galaxy.managers import hdas as hda_manager
-from galaxy.managers import visualizations as visualization_manager
+from galaxy.managers import (
+    hdas as hda_manager,
+    visualizations as visualization_manager,
+)
 from galaxy.model import (
     HistoryDatasetAssociation,
     LibraryDatasetDatasetAssociation,

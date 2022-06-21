@@ -27,8 +27,8 @@ from os.path import (
     pardir,
     realpath,
     relpath,
+    sep as separator,
 )
-from os.path import sep as separator
 from pathlib import Path
 
 try:

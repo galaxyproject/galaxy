@@ -21,15 +21,13 @@ from pulsar.client import (
     ClientJobDescription,
     ClientOutputs,
     EXTENDED_METADATA_DYNAMIC_COLLECTION_PATTERN,
-)
-from pulsar.client import finish_job as pulsar_finish_job
-from pulsar.client import (
+    finish_job as pulsar_finish_job,
     PathMapper,
     PulsarClientTransportError,
     PulsarOutputs,
+    submit_job as pulsar_submit_job,
+    url_to_destination_params,
 )
-from pulsar.client import submit_job as pulsar_submit_job
-from pulsar.client import url_to_destination_params
 
 # TODO: Perform pulsar release with this included in the client package
 from pulsar.client.staging import DEFAULT_DYNAMIC_COLLECTION_PATTERN

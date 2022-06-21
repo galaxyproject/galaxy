@@ -22,9 +22,9 @@ from galaxy import (
     web,
 )
 from galaxy.datatypes.interval import ChromatinInteractions
-from galaxy.managers import api_keys
-from galaxy.managers import base as managers_base
 from galaxy.managers import (
+    api_keys,
+    base as managers_base,
     configuration,
     users,
     workflows,

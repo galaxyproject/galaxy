@@ -29,11 +29,9 @@ from galaxy.model.store.discover import (
     discover_target_directory,
     DiscoveredFile,
     JsonCollectedDatasetMatch,
-)
-from galaxy.model.store.discover import MetadataSourceProvider as AbstractMetadataSourceProvider
-from galaxy.model.store.discover import ModelPersistenceContext
-from galaxy.model.store.discover import PermissionProvider as AbstractPermissionProvider
-from galaxy.model.store.discover import (
+    MetadataSourceProvider as AbstractMetadataSourceProvider,
+    ModelPersistenceContext,
+    PermissionProvider as AbstractPermissionProvider,
     persist_elements_to_folder,
     persist_elements_to_hdca,
     persist_hdas,

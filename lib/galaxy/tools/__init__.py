@@ -132,8 +132,10 @@ from galaxy.util.tool_shed.common_util import (
 )
 from galaxy.version import VERSION_MAJOR
 from galaxy.work.context import proxy_work_context_for_history
-from .execute import execute as execute_job
-from .execute import MappingParameters
+from .execute import (
+    execute as execute_job,
+    MappingParameters,
+)
 
 if TYPE_CHECKING:
     from galaxy.managers.jobs import JobSearch

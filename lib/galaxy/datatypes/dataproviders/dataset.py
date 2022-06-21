@@ -8,8 +8,10 @@ Dataproviders that use either:
 import logging
 import sys
 
-from bx import seq as bx_seq
-from bx import wiggle as bx_wig
+from bx import (
+    seq as bx_seq,
+    wiggle as bx_wig,
+)
 
 from galaxy.util import sqlite
 from . import (

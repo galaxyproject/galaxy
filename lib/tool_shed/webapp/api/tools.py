@@ -17,8 +17,8 @@ from tool_shed.util import (
     common_util,
     metadata_util,
     repository_util,
+    shed_util_common as suc,
 )
-from tool_shed.util import shed_util_common as suc
 from tool_shed.utility_containers import ToolShedUtilityContainerManager
 from tool_shed.webapp.search.tool_search import ToolSearch
 

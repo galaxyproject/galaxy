@@ -18,8 +18,8 @@ from galaxy import (
 )
 from galaxy.actions.library import LibraryActions
 from galaxy.exceptions import ObjectNotFound
-from galaxy.managers import base as managers_base
 from galaxy.managers import (
+    base as managers_base,
     folders,
     lddas,
     library_datasets,

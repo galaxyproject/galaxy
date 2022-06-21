@@ -40,8 +40,10 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.zipstream import ZipstreamWrapper
-from . import dataproviders as p_dataproviders
-from . import metadata
+from . import (
+    dataproviders as p_dataproviders,
+    metadata,
+)
 
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance

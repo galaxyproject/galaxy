@@ -25,9 +25,7 @@ from tool_shed.util import (
     hg_util,
     readme_util,
     repository_util,
-)
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import (
+    shed_util_common as suc,
     tool_dependency_util,
     tool_util,
 )
