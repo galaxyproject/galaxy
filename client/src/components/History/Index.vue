@@ -56,8 +56,8 @@ export default {
         };
     },
     methods: {
-        onViewCollection(collection, getListOffset) {
-            this.listOffset = getListOffset();
+        onViewCollection(collection, currentOffset) {
+            this.listOffset = currentOffset;
             this.breadcrumbs = [...this.breadcrumbs, collection];
         },
     },

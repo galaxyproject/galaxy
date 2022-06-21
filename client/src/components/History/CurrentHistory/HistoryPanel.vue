@@ -97,7 +97,7 @@
                                 :items="itemsLoaded"
                                 :query-key="queryKey"
                                 @scroll="onScroll">
-                                <template v-slot:item="{ item, getOffset }">
+                                <template v-slot:item="{ item, currentOffset }">
                                     <ContentItem
                                         v-if="!invisible[item.hid]"
                                         :id="item.hid"
@@ -114,7 +114,7 @@
                                         @toggleHighlights="toggleHighlights"
                                         @update:expand-dataset="setExpanded(item, $event)"
                                         @update:selected="setSelected(item, $event)"
-                                        @view-collection="$emit('view-collection', item, getOffset)"
+                                        @view-collection="$emit('view-collection', item, currentOffset)"
                                         @delete="onDelete(item)"
                                         @undelete="onUndelete(item)"
                                         @unhide="onUnhide(item)" />

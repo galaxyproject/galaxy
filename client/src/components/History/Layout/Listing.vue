@@ -9,7 +9,7 @@
             :data-component="{}"
             @scroll="onScroll">
             <template v-slot:item="{ item }">
-                <slot name="item" :item="item" :get-offset="getOffset" />
+                <slot name="item" :item="item" :current-offset="getOffset()" />
             </template>
             <template v-slot:footer>
                 <LoadingSpan v-if="loading" class="m-2" message="Loading" />
@@ -77,7 +77,7 @@ export default {
             this.$emit("scroll", rangeStart);
         },
         getOffset() {
-            return this.$refs.listing.getOffset();
+            return this.$refs.listing?.getOffset() || 0;
         },
     },
 };
