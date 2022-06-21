@@ -132,19 +132,25 @@ class ShellJobRunner(AsynchronousJobRunner):
         Retuns the returncode of the submission and the stdout, which contains the external job_id.
         """
         cmd_out = shell.execute(job_interface.submit(job_file))
-        if cmd_out.returncode == 0:
-            return cmd_out.returncode, cmd_out.stdout
+        returncode = cmd_out.returncode
+        if returncode == 0:
+            stdout = cmd_out.stdout
+            if not stdout or not stdout.strip():
+                log.warning(
+                    f"({galaxy_id_tag}) Execute returned a 0 exit code but no external identifier will be recovered from empty stdout - stderr is {cmd_out.stderr}"
+                )
+            return returncode, stdout
         stdout = f"({galaxy_id_tag}) submission failed (stdout): {cmd_out.stdout}"
         stderr = f"({galaxy_id_tag}) submission failed (stderr): {cmd_out.stderr}"
         if retry > 0:
-            log.debug("%s, retrying in %s seconds", stdout, timeout)
-            log.debug("%s, retrying in %s seconds", stderr, timeout)
+            log.info("%s, retrying in %s seconds", stdout, timeout)
+            log.info("%s, retrying in %s seconds", stderr, timeout)
             time.sleep(timeout)
             return self.submit(shell, job_interface, job_file, galaxy_id_tag, retry=retry - 1, timeout=timeout)
         else:
             log.error(stdout)
             log.error(stderr)
-            return cmd_out.returncode, cmd_out.stdout
+            return returncode, cmd_out.stdout
 
     def check_watched_items(self):
         """
