@@ -20,15 +20,15 @@
                     <span v-localize>Hide</span>
                 </b-dropdown-item>
                 <b-dropdown-item
-                    v-if="showDeleted"
+                    v-if="canUndeleteSelection"
                     v-b-modal:restore-selected-content
                     data-description="undelete option">
                     <span v-localize>Undelete</span>
                 </b-dropdown-item>
-                <b-dropdown-item v-else v-b-modal:delete-selected-content data-description="delete option">
+                <b-dropdown-item v-if="!showDeleted" v-b-modal:delete-selected-content data-description="delete option">
                     <span v-localize>Delete</span>
                 </b-dropdown-item>
-                <b-dropdown-item v-if="!showDeleted" v-b-modal:purge-selected-content data-description="purge option">
+                <b-dropdown-item v-b-modal:purge-selected-content data-description="purge option">
                     <span v-localize>Delete (permanently)</span>
                 </b-dropdown-item>
                 <b-dropdown-divider v-if="showBuildOptions" />
@@ -209,6 +209,17 @@ export default {
         },
         noTagsSelected() {
             return this.selectedTags.length === 0;
+        },
+        canUndeleteSelection() {
+            return this.showDeleted && (this.isQuerySelection || !this.areAllSelectedPurged);
+        },
+        areAllSelectedPurged() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "purged") && !item["purged"]) {
+                    return false;
+                }
+            }
+            return true;
         },
     },
     watch: {
