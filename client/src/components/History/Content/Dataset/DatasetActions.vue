@@ -6,7 +6,7 @@
                     <span class="fa fa-bug" />
                 </b-button>
                 <b-button
-                    v-if="showDownloads"
+                    v-if="showDownloads && !metaFiles"
                     class="download-btn px-1"
                     title="Download"
                     size="sm"
@@ -14,6 +14,22 @@
                     @click.stop="onDownload">
                     <span class="fa fa-save" />
                 </b-button>
+                <b-dropdown
+                    v-if="showDownloads && metaFiles"
+                    no-caret
+                    v-b-tooltip.bottom.hover
+                    size="sm"
+                    variant="link"
+                    toggle-class="text-decoration-none"
+                    title="Download"
+                    data-description="dataset download">
+                    <template v-slot:button-content>
+                        <span class="fa fa-save"/>
+                    </template>
+                    <b-dropdown-item>
+                        You have data.
+                    </b-dropdown-item>
+                </b-dropdown>
                 <b-button
                     v-if="showDownloads"
                     class="px-1"
@@ -82,6 +98,9 @@ export default {
     computed: {
         downloadUrl() {
             return prependPath(`api/datasets/${this.item.id}/display?to_ext=${this.item.extension}`);
+        },
+        metaFiles() {
+            return this.meta_files;
         },
         showDownloads() {
             return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);
