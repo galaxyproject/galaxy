@@ -1,7 +1,9 @@
 <template>
     <b-dropdown
         v-if="hasMetaFiles"
+        dropup
         no-caret
+        no-flip
         v-b-tooltip.top.hover
         size="sm"
         variant="link"
@@ -15,7 +17,7 @@
         <b-dropdown-item
             v-for="(metaFile, index) of metaFiles"
             :key="index"
-            @click.stop="onDownload(metaUrl, metaFile.file_type)">
+            @click.stop="onDownload(metaDownloadUrl, metaFile.file_type)">
             Download {{ metaFile.file_type }}
         </b-dropdown-item>
     </b-dropdown>
