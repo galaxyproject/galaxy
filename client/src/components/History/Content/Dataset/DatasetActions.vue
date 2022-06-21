@@ -5,7 +5,7 @@
                 <b-button v-if="showError" class="px-1" title="Error" size="sm" variant="link" @click.stop="onError">
                     <span class="fa fa-bug" />
                 </b-button>
-                <dataset-download v-if="showDownloads" :item="item" />
+                <dataset-download v-if="showDownloads" :item="item" @on-download="onDownload" />
                 <b-button
                     v-if="showDownloads"
                     class="px-1"
@@ -61,7 +61,6 @@
 
 <script>
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
-import { prependPath } from "utils/redirect";
 import { copy as sendToClipboard } from "utils/clipboard";
 import { absPath } from "utils/redirect";
 import DatasetDownload from "./DatasetDownload";
@@ -102,6 +101,9 @@ export default {
         onCopyLink() {
             const msg = this.localize("Link is copied to your clipboard");
             sendToClipboard(absPath(this.downloadUrl), msg);
+        },
+        onDownload(resource) {
+            window.location.href = resource;
         },
         onError() {
             this.backboneRoute("datasets/error", { dataset_id: this.item.id });

@@ -55,7 +55,7 @@ export default {
     },
     methods: {
         onDownload(resource, extension = "") {
-            window.location.href = `${resource}${extension}`;
+            this.$emit("on-download", `${resource}${extension}`);
         },
     },
 };
