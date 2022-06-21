@@ -9,6 +9,7 @@
         variant="link"
         toggle-class="text-decoration-none"
         title="Download"
+        class="download-btn"
         data-description="dataset download">
         <template v-slot:button-content>
             <span class="fa fa-save" />
@@ -17,6 +18,7 @@
         <b-dropdown-item
             v-for="(metaFile, index) of metaFiles"
             :key="index"
+            :data-description="`download ${metaFile.file_type}`"
             @click.stop="onDownload(metaDownloadUrl, metaFile.file_type)">
             Download {{ metaFile.file_type }}
         </b-dropdown-item>
