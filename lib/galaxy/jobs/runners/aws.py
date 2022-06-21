@@ -179,6 +179,10 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             "default": "",
             "map": str,
         },
+        "retry_on_exit_action": {
+            "default": "RETRY",
+            "map": str,
+        },
     }
 
     FARGATE_VCPUS = [0.25, 0.5, 1, 2, 4]
@@ -293,18 +297,19 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
     def _get_retry_strategy(self, destination_params):
         """ Make a simple one-condition retry strategy
         """
-        # TODO make multiple-condition retry strategies
+        # TODO make multi-condition retry strategies
         attemps = destination_params.get("retry_attempts")
         status_reason = destination_params.get("retry_on_exit_statusReason")
         reason = destination_params.get("retry_on_exit_reason")
         exit_code = destination_params.get("retry_on_exit_exitCode")
+        action = destination_params.get("retry_on_exit_action")
 
         if attemps <= 1:
             return
 
         strategy = {
             "attempts": attemps,
-            "evaluateOnExit": [{"action": "RETRY"}],
+            "evaluateOnExit": [{"action": action}],
         }
         if status_reason:
             strategy["evaluateOnExit"][0]["onStatusReason"] = status_reason
