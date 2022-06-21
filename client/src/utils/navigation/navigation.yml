@@ -669,24 +669,29 @@ invocations:
     toggle_invocation_details: '.toggle-invocation-details'
     progress_steps_note: '.workflow-invocation-state-component .steps-progress .progressNote'
     progress_jobs_note: '.workflow-invocation-state-component .jobs-progress .progressNote'
-    input_details: '.workflow-invocation-state-component .invocation-inputs-details'
-    input_details_title: '.workflow-invocation-state-component .invocation-inputs-details [data-label="${label}"]'
-    input_details_name:  '.workflow-invocation-state-component .invocation-inputs-details [data-label="${label}"] .name'
 
-    steps_details: '.workflow-invocation-state-component .invocation-steps-details'
-    step_title: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .step-title'
-    step_details: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .portlet-operations'
-    step_output_collection: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-output-collection-details'
-    step_output_collection_toggle: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-output-collection-details .name'
+    invocation_tab:
+      type: xpath
+      selector: '//a[text()="${label}"]'
+    invocation_details_tab:
+      type: xpath
+      selector: '//a[text()="${label}"]'
+    input_details_title: '[data-label="${label}"]'
+    input_details_name: '[data-label="${label}"] .name'
+
+    step_title: '[data-step="${order_index}"] .step-title'
+    step_details: '[data-step="${order_index}"] .portlet-operations'
+    step_output_collection: '[data-step="${order_index}"] .invocation-step-output-collection-details'
+    step_output_collection_toggle: '[data-step="${order_index}"] .invocation-step-output-collection-details .name'
     step_output_collection_element_identifier:
       type: xpath
       selector: '//span[@class="content-title name"][text()="${element_identifier}"]'
-    step_output_collection_element_datatype: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-output-collection-details .datatype .value'
-    step_job_details: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details'
-    step_job_table: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table'
-    step_job_table_rows: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table tbody tr'
-    step_job_information: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table tbody .b-table-details .info_data_table'
-    step_job_information_tool_id: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table tbody .b-table-details .info_data_table #galaxy-tool-id'
+    step_output_collection_element_datatype: '[data-step="${order_index}"] .invocation-step-output-collection-details .datatype .value'
+    step_job_details: '[data-step="${order_index}"] .invocation-step-job-details'
+    step_job_table: '[data-step="${order_index}"] .invocation-step-job-details table'
+    step_job_table_rows: '[data-step="${order_index}"] .invocation-step-job-details table tbody tr'
+    step_job_information: '[data-step="${order_index}"] .invocation-step-job-details table tbody .b-table-details .info_data_table'
+    step_job_information_tool_id: '[data-step="${order_index}"] .invocation-step-job-details table tbody .b-table-details .info_data_table #galaxy-tool-id'
 
 tour:
   popover:
