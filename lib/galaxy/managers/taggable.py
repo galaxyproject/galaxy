@@ -122,9 +122,9 @@ class TaggableFilterMixin:
                 if ":" not in val:
                     # We require an exact match and the tag to look for has no user_value,
                     # so we can't just concatenate user_tname, ':' and user_vale
-                    cond = target_model.table.c.user_tname == val
+                    cond = target_model.table.c.user_tname.ilike(val)
                 else:
-                    cond = column == val
+                    cond = column.ilike(val)
             else:
                 cond = column.contains(val, autoescape=True)
             return sql.expression.and_(model_class.table.c.id == getattr(target_model.table.c, id_column), cond)
