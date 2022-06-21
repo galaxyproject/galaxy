@@ -19,10 +19,15 @@ export const STATES = {
         status: "success",
         text: "No data.",
     },
-    /** the tool producing this dataset failed */
+    /** the tool producing this dataset has errored */
     error: {
         status: "danger",
         text: "An error occurred with this dataset:",
+        icon: "exclamation-triangle",
+    },
+    /** the dataset has failed */
+    failed: {
+        status: "danger",
         icon: "exclamation-triangle",
     },
     /** metadata discovery/setting failed or errored (but otherwise ok) */
@@ -78,4 +83,4 @@ export const STATES = {
 /** For collections it is necessary to reduce the available states of the collection items to a single state which
  * can be displayed to represent the collection itself. The order matters.
  */
-export const STATE_REDUCE = ["error", "failed", "queued", "upload", "running", "paused"];
+export const STATES_REDUCE = ["error", "failed", "queued", "upload", "running", "paused"];
