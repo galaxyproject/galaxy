@@ -482,11 +482,17 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         assert self._tool_source.parse_action_module() is None
 
     def test_requirements(self):
-        requirements, containers, resource_requirements = self._tool_source.parse_requirements_and_containers()
-        assert requirements[0].type == "package"
-        assert requirements[0].name == "bwa"
-        assert containers[0].identifier == "awesome/bowtie"
-        assert resource_requirements[0].resource_type == "cores_min"
+        software_requirements, containers, resource_requirements = self._tool_source.parse_requirements_and_containers()
+        assert software_requirements.to_dict() == [{"name": "bwa", "type": "package", "version": "1.0.1", "specs": []}]
+        assert len(containers) == 1
+        assert containers[0].to_dict() == {
+            "identifier": "awesome/bowtie",
+            "type": "docker",
+            "resolve_dependencies": False,
+            "shell": "/bin/sh",
+        }
+        assert len(resource_requirements) == 1
+        assert resource_requirements[0].to_dict() == {"resource_type": "cores_min", "value_or_expression": 1}
 
     def test_outputs(self):
         outputs, output_collections = self._tool_source.parse_outputs(object())

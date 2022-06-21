@@ -89,7 +89,12 @@ class YamlToolSource(ToolSource):
         return self.root_dict.get("runtime_version", {}).get("interpreter", None)
 
     def parse_requirements_and_containers(self):
-        return requirements.parse_requirements_from_dict(self.root_dict)
+        mixed_requirements = self.root_dict.get("requirements", [])
+        return requirements.parse_requirements_from_lists(
+            software_requirements=[r for r in mixed_requirements if r.get("type") != "resource"],
+            containers=self.root_dict.get("containers", []),
+            resource_requirements=[r for r in mixed_requirements if r.get("type") == "resource"],
+        )
 
     def parse_input_pages(self):
         # All YAML tools have only one page (feature is deprecated)
