@@ -47,7 +47,7 @@ export default {
             return this.metaFiles && this.metaFiles.length > 0;
         },
         metaDownloadUrl() {
-            return prependPath(`dataset/get_metadata_file?hda_id=${this.item.id}&metadata_name=`);
+            return prependPath(`api/datasets/${this.item.id}/metadata_file?metadata_file=`);
         },
         metaFiles() {
             return this.item.meta_files;

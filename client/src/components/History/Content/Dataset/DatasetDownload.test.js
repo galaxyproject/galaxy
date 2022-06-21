@@ -36,8 +36,8 @@ describe("DatasetDownload", () => {
         await wrapper.trigger("click");
         const emitted = wrapper.emitted()["on-download"];
         expect(emitted[0][0]).toBe(`/api/datasets/item_id/display?to_ext=ext`);
-        expect(emitted[1][0]).toBe(`/dataset/get_metadata_file?hda_id=item_id&metadata_name=a`);
-        expect(emitted[2][0]).toBe(`/dataset/get_metadata_file?hda_id=item_id&metadata_name=b`);
+        expect(emitted[1][0]).toBe(`/api/datasets/item_id/metadata_file?metadata_file=a`);
+        expect(emitted[2][0]).toBe(`/api/datasets/item_id/metadata_file?metadata_file=b`);
         expect(emitted[3][0]).toBe(`/api/datasets/item_id/display?to_ext=ext`);
     });
 });
