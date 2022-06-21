@@ -23,9 +23,11 @@ from galaxy import (
     web,
 )
 from galaxy.exceptions import ObjectInvalid
-from galaxy.managers import api_keys
-from galaxy.managers import base as managers_base
-from galaxy.managers import users
+from galaxy.managers import (
+    api_keys,
+    base as managers_base,
+    users,
+)
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     User,
