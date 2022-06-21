@@ -5,31 +5,7 @@
                 <b-button v-if="showError" class="px-1" title="Error" size="sm" variant="link" @click.stop="onError">
                     <span class="fa fa-bug" />
                 </b-button>
-                <b-button
-                    v-if="showDownloads && !metaFiles"
-                    class="download-btn px-1"
-                    title="Download"
-                    size="sm"
-                    variant="link"
-                    @click.stop="onDownload">
-                    <span class="fa fa-save" />
-                </b-button>
-                <b-dropdown
-                    v-if="showDownloads && metaFiles"
-                    no-caret
-                    v-b-tooltip.bottom.hover
-                    size="sm"
-                    variant="link"
-                    toggle-class="text-decoration-none"
-                    title="Download"
-                    data-description="dataset download">
-                    <template v-slot:button-content>
-                        <span class="fa fa-save"/>
-                    </template>
-                    <b-dropdown-item>
-                        You have data.
-                    </b-dropdown-item>
-                </b-dropdown>
+                <dataset-download v-if="showDownloads" :item="item" />
                 <b-button
                     v-if="showDownloads"
                     class="px-1"
@@ -88,20 +64,18 @@ import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { prependPath } from "utils/redirect";
 import { copy as sendToClipboard } from "utils/clipboard";
 import { absPath } from "utils/redirect";
+import DatasetDownload from "./DatasetDownload";
 
 export default {
+    components: {
+        DatasetDownload,
+    },
     mixins: [legacyNavigationMixin],
     props: {
         item: { type: Object, required: true },
         showHighlight: { type: Boolean, default: false },
     },
     computed: {
-        downloadUrl() {
-            return prependPath(`api/datasets/${this.item.id}/display?to_ext=${this.item.extension}`);
-        },
-        metaFiles() {
-            return this.meta_files;
-        },
         showDownloads() {
             return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);
         },
@@ -128,9 +102,6 @@ export default {
         onCopyLink() {
             const msg = this.localize("Link is copied to your clipboard");
             sendToClipboard(absPath(this.downloadUrl), msg);
-        },
-        onDownload() {
-            window.location.href = this.downloadUrl;
         },
         onError() {
             this.backboneRoute("datasets/error", { dataset_id: this.item.id });
