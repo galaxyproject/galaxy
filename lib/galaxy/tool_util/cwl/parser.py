@@ -366,6 +366,29 @@ class ToolProxy(metaclass=ABCMeta):
         loaded_object = pickle.loads(to_unpickle)
         return loaded_object
 
+    @property
+    def requirements(self) -> List:
+        return getattr(self._tool, "requirements", [])
+
+    def hints_or_requirements_of_class(self, class_name: str) -> List:
+        reqs_and_hints = self.requirements + getattr(self._tool, "hints", [])
+        return [hint for hint in reqs_and_hints if hint["class"] == class_name]
+
+    def software_requirements(self) -> List:
+        # Roughest imaginable pass at parsing requirements, really need to take in specs, handle
+        # multiple versions, etc...
+        requirements = []
+        for hint in self.hints_or_requirements_of_class("SoftwareRequirement"):
+            packages = hint.get("packages", [])
+            for package in packages:
+                versions = package.get("version", [])
+                first_version = None if not versions else versions[0]
+                requirements.append((package["package"], first_version))
+        return requirements
+
+    def resource_requirements(self) -> List:
+        return self.hints_or_requirements_of_class("ResourceRequirement")
+
 
 class CommandLineToolProxy(ToolProxy):
     _class = "CommandLineTool"
@@ -436,35 +459,6 @@ class CommandLineToolProxy(ToolProxy):
                 return hint["dockerPull"]
 
         return None
-
-    def hints_or_requirements_of_class(self, class_name):
-        tool = self._tool.tool
-        reqs_and_hints = tool.get("requirements", []) + tool.get("hints", [])
-        for hint in reqs_and_hints:
-            if hint["class"] == class_name:
-                yield hint
-
-    def software_requirements(self):
-        # Roughest imaginable pass at parsing requirements, really need to take in specs, handle
-        # multiple versions, etc...
-        tool = self._tool.tool
-        reqs_and_hints = tool.get("requirements", []) + tool.get("hints", [])
-        requirements = []
-        for hint in reqs_and_hints:
-            if hint["class"] == "SoftwareRequirement":
-                packages = hint.get("packages", [])
-                for package in packages:
-                    versions = package.get("version", [])
-                    first_version = None if not versions else versions[0]
-                    requirements.append((package["package"], first_version))
-        return requirements
-
-    def resource_requirements(self):
-        return [r for r in self.requirements if r["class"] == "ResourceRequirement"]
-
-    @property
-    def requirements(self):
-        return getattr(self._tool, "requirements", [])
 
 
 class ExpressionToolProxy(CommandLineToolProxy):
