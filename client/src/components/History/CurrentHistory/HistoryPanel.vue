@@ -91,8 +91,13 @@
                                     No data found for selected filter.
                                 </b-alert>
                             </div>
-                            <Listing v-else :items="itemsLoaded" :query-key="queryKey" @scroll="onScroll">
-                                <template v-slot:item="{ item }">
+                            <Listing
+                                v-else
+                                :offset="listOffset"
+                                :items="itemsLoaded"
+                                :query-key="queryKey"
+                                @scroll="onScroll">
+                                <template v-slot:item="{ item, getOffset }">
                                     <ContentItem
                                         v-if="!invisible[item.hid]"
                                         :id="item.hid"
@@ -109,7 +114,7 @@
                                         @toggleHighlights="toggleHighlights"
                                         @update:expand-dataset="setExpanded(item, $event)"
                                         @update:selected="setSelected(item, $event)"
-                                        @view-collection="$emit('view-collection', item)"
+                                        @view-collection="$emit('view-collection', item, getOffset)"
                                         @delete="onDelete(item)"
                                         @undelete="onUndelete(item)"
                                         @unhide="onUnhide(item)" />
@@ -165,6 +170,7 @@ export default {
         OperationErrorDialog,
     },
     props: {
+        listOffset: { type: Number, default: 0 },
         history: { type: Object, required: true },
     },
     data() {
