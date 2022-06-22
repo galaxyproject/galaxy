@@ -5,15 +5,7 @@
                 <b-button v-if="showError" class="px-1" title="Error" size="sm" variant="link" @click.stop="onError">
                     <span class="fa fa-bug" />
                 </b-button>
-                <b-button
-                    v-if="showDownloads"
-                    class="download-btn px-1"
-                    title="Download"
-                    size="sm"
-                    variant="link"
-                    @click.stop="onDownload">
-                    <span class="fa fa-save" />
-                </b-button>
+                <dataset-download v-if="showDownloads" :item="item" @on-download="onDownload" />
                 <b-button
                     v-if="showDownloads"
                     class="px-1"
@@ -69,20 +61,20 @@
 
 <script>
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
-import { prependPath } from "utils/redirect";
 import { copy as sendToClipboard } from "utils/clipboard";
 import { absPath } from "utils/redirect";
+import DatasetDownload from "./DatasetDownload";
 
 export default {
+    components: {
+        DatasetDownload,
+    },
     mixins: [legacyNavigationMixin],
     props: {
         item: { type: Object, required: true },
         showHighlight: { type: Boolean, default: false },
     },
     computed: {
-        downloadUrl() {
-            return prependPath(`api/datasets/${this.item.id}/display?to_ext=${this.item.extension}`);
-        },
         showDownloads() {
             return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);
         },
@@ -110,8 +102,8 @@ export default {
             const msg = this.localize("Link is copied to your clipboard");
             sendToClipboard(absPath(this.downloadUrl), msg);
         },
-        onDownload() {
-            window.location.href = this.downloadUrl;
+        onDownload(resource) {
+            window.location.href = resource;
         },
         onError() {
             this.backboneRoute("datasets/error", { dataset_id: this.item.id });

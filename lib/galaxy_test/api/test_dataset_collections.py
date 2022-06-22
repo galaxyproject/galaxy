@@ -432,7 +432,10 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert offset_contents[0]["element_index"] == 1
 
     def test_collection_contents_empty_root(self):
-        hdca = self.dataset_collection_populator.create_list_in_history(self.history_id, contents=[]).json()
+        create_response = self.dataset_collection_populator.create_list_in_history(
+            self.history_id, contents=[], wait=True
+        ).json()
+        hdca = create_response["output_collections"][0]
         assert hdca["elements"] == []
         root_contents_url = hdca["contents_url"]
         response = self._get(root_contents_url)

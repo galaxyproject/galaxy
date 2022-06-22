@@ -1602,11 +1602,15 @@ class HistoryItemOperator:
 
     def _undelete(self, item: HistoryItemModel):
         if getattr(item, "purged", False):
-            return
+            raise exceptions.ItemDeletionException("This item has been permanently deleted and cannot be recovered.")
         manager = self._get_item_manager(item)
         manager.undelete(item, flush=self.flush)
 
     def _purge(self, item: HistoryItemModel, trans: ProvidesHistoryContext):
+        if getattr(item, "purged", False):
+            # TODO: remove this `update` when we can properly track the operation results to notify the history
+            item.update()
+            return
         if isinstance(item, HistoryDatasetCollectionAssociation):
             return self.dataset_collection_manager.delete(trans, "history", item.id, recursive=True, purge=True)
         self.hda_manager.purge(item, flush=self.flush)

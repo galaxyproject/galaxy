@@ -24,6 +24,9 @@ const TASKS_CONFIG = {
     enable_celery_tasks: true,
 };
 
+const getPurgedContentSelection = () => new Map([["FAKE_ID", { purged: true }]]);
+const getNonPurgedContentSelection = () => new Map([["FAKE_ID", { purged: false }]]);
+
 async function mountSelectionOperationsWrapper(config) {
     const wrapper = shallowMount(
         SelectionOperations,
@@ -93,10 +96,41 @@ describe("History Selection Operations", () => {
                 expect(wrapper.find(option).exists()).toBe(false);
             });
 
-            it("should display 'undelete' option only on deleted items", async () => {
+            it("should display 'permanently delete' option always", async () => {
+                const option = '[data-description="purge option"]';
+                expect(wrapper.find(option).exists()).toBe(true);
+                await wrapper.setProps({ filterText: "deleted:true" });
+                expect(wrapper.find(option).exists()).toBe(true);
+            });
+
+            it("should display 'undelete' option only on deleted and non-purged items", async () => {
                 const option = '[data-description="undelete option"]';
                 expect(wrapper.find(option).exists()).toBe(false);
-                await wrapper.setProps({ filterText: "deleted:true" });
+                await wrapper.setProps({
+                    filterText: "deleted:true",
+                    contentSelection: getNonPurgedContentSelection(),
+                });
+                expect(wrapper.find(option).exists()).toBe(true);
+            });
+
+            it("should not display 'undelete' when is manual selection mode and all selected items are purged", async () => {
+                const option = '[data-description="undelete option"]';
+                await wrapper.setProps({
+                    filterText: "deleted:true",
+                    contentSelection: getPurgedContentSelection(),
+                    isQuerySelection: false,
+                });
+                expect(wrapper.find(option).exists()).toBe(false);
+            });
+
+            it("should display 'undelete' option when is query selection mode and filtering by deleted", async () => {
+                const option = '[data-description="undelete option"]';
+                // In query selection mode we don't know if some items may not be purged, so we allow to undelete
+                await wrapper.setProps({
+                    filterText: "deleted:true",
+                    contentSelection: getPurgedContentSelection(),
+                    isQuerySelection: true,
+                });
                 expect(wrapper.find(option).exists()).toBe(true);
             });
 

@@ -263,10 +263,18 @@ class FastAPIDatasets:
         tags=["histories"],
         response_class=FileResponse,
     )
+    @router.get(
+        "/api/datasets/{history_content_id}/metadata_file",
+        summary="Returns the metadata file associated with this history item.",
+        response_class=FileResponse,
+    )
     def get_metadata_file(
         self,
         trans=DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        history_id: Optional[EncodedDatabaseIdField] = Query(
+            default=None,
+            description="The encoded database identifier of the History.",
+        ),
         history_content_id: EncodedDatabaseIdField = DatasetIDPathParam,
         metadata_file: str = Query(
             ...,

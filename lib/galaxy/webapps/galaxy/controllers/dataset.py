@@ -47,6 +47,7 @@ from galaxy.webapps.base.controller import (
     url_for,
     UsesExtendedMetadataMixin,
 )
+from galaxy.webapps.galaxy.services.datasets import DatasetsService
 from ..api import depends
 
 log = logging.getLogger(__name__)
@@ -65,6 +66,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     history_manager: HistoryManager = depends(HistoryManager)
     hda_manager: HDAManager = depends(HDAManager)
     hda_deserializer: HDADeserializer = depends(HDADeserializer)
+    service: DatasetsService = depends(DatasetsService)
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
@@ -134,19 +136,15 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     def default(self, trans, dataset_id=None, **kwd):
         return "This link may not be followed from within Galaxy."
 
-    @web.expose
-    def get_metadata_file(self, trans, hda_id, metadata_file):
+    @web.expose_api_raw_anonymous_and_sessionless
+    def get_metadata_file(self, trans, hda_id, metadata_name):
         """Allows the downloading of metadata files associated with datasets (eg. bai index for bam files)"""
-        data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(self.decode_id(hda_id))
-        if not data or not self._can_access_dataset(trans, data):
-            return trans.show_error_message("You are not allowed to access this dataset")
-
-        fname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in data.name)[0:150]
-
-        file_ext = data.metadata.spec.get(metadata_file).get("file_ext", metadata_file)
-        trans.response.headers["Content-Type"] = "application/octet-stream"
-        trans.response.headers["Content-Disposition"] = f'attachment; filename="Galaxy{data.hid}-[{fname}].{file_ext}"'
-        return open(data.metadata.get(metadata_file).file_name, "rb")
+        # Backward compatibility with legacy links, should use `/api/datasets/{hda_id}/get_metadata_file` instead
+        fh, headers = self.service.get_metadata_file(
+            trans, history_content_id=hda_id, metadata_file=metadata_name, open_file=True
+        )
+        trans.response.headers.update(headers)
+        return fh
 
     def _check_dataset(self, trans, hda_id):
         # DEPRECATION: We still support unencoded ids for backward compatibility
