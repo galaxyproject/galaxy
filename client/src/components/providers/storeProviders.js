@@ -3,6 +3,7 @@ import axios from "axios";
 import { prependPath } from "utils/redirect";
 import { mapActions, mapGetters } from "vuex";
 import { mapCacheActions } from "vuex-cache";
+import { HasAttributesMixin } from "./utils";
 
 export const SimpleProviderMixin = {
     props: {
@@ -135,6 +136,7 @@ export const JobProvider = {
  */
 export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undefined) => {
     return {
+        mixins: [HasAttributesMixin],
         watch: {
             $attrs(newVal, oldVal) {
                 if (JSON.stringify(newVal) != JSON.stringify(oldVal)) {
@@ -153,9 +155,6 @@ export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undef
         },
         computed: {
             ...mapGetters([storeGetter, storeCountGetter]),
-            attributes() {
-                return this.toCamelCase(this.$attrs);
-            },
             result() {
                 return this[storeGetter](this.attributes);
             },
@@ -183,14 +182,6 @@ export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undef
                     this.error = error;
                     this.loading = false;
                 }
-            },
-            toCamelCase(attributes) {
-                const result = {};
-                for (const key in attributes) {
-                    const newKey = key.replace(/-./g, (x) => x[1].toUpperCase());
-                    result[newKey] = attributes[key];
-                }
-                return result;
             },
         },
     };
