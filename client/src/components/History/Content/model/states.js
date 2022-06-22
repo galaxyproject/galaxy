@@ -25,7 +25,7 @@ export const STATES = {
         text: "An error occurred with this dataset:",
         icon: "exclamation-triangle",
     },
-    /** the dataset has failed */
+    /** the job has failed, this is not a dataset but a job state used in the collection job state summary. */
     failed: {
         status: "danger",
         icon: "exclamation-triangle",
