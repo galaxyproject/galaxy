@@ -371,7 +371,9 @@ export var DatasetListItemView = _super.extend(
                         ${_.map(
                             this.model.get("meta_files"),
                             (meta_file) =>
-                                `<a class="dropdown-item" href="${urls.meta_download + meta_file.file_type}">
+                                `<a class="dropdown-item" href="${
+                                    urls.meta_download + meta_file.file_type
+                                }" data-description="download ${meta_file.file_type}">
                                     ${_l("Download")} ${meta_file.file_type}
                                 </a>`
                         )}

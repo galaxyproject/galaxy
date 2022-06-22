@@ -184,6 +184,7 @@ history_panel:
       download_button: '${_} .download-btn'
       info_button: '${_} .params-btn'
       alltags: '${_} .alltags .ti-tags'
+      metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
 
       dataset_operations_dropdown: '${_}  .dataset-actions'
 
