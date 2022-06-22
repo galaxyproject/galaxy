@@ -3,11 +3,15 @@ at components/JobStates/CollectionJobStates but it relies on the backbone data
 model, so probably has to go eventually.-->
 <template>
     <div class="collection-progress">
-        <b-progress v-if="maxJobs != okJobs + errorJobs" :max="maxJobs" show-value>
-            <b-progress-bar v-if="errorJobs" :value="errorJobs" variant="danger" />
-            <b-progress-bar v-if="okJobs" :value="okJobs" variant="success" />
-            <b-progress-bar v-if="runningJobs" :value="runningJobs" variant="warning" />
-            <b-progress-bar v-if="waitingJobs" :value="waitingJobs" variant="secondary" />
+        <b-progress v-if="maxJobs != okJobs + errorJobs" :max="maxJobs">
+            <b-progress-bar v-if="errorJobs" :value="errorJobs" variant="danger" v-b-tooltip.hover="errorJobs" />
+            <b-progress-bar v-if="okJobs" :value="okJobs" variant="success" v-b-tooltip.hover="okJobs" />
+            <b-progress-bar v-if="runningJobs" :value="runningJobs" variant="warning" v-b-tooltip.hover="runningJobs" />
+            <b-progress-bar
+                v-if="waitingJobs"
+                :value="waitingJobs"
+                variant="secondary"
+                v-b-tooltip.hover="waitingJobs" />
         </b-progress>
     </div>
 </template>
@@ -15,6 +19,7 @@ model, so probably has to go eventually.-->
 import { JobStateSummary } from "./JobStateSummary";
 
 export default {
+    data: {},
     props: {
         summary: { type: JobStateSummary, required: true },
     },
