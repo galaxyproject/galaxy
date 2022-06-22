@@ -90,7 +90,7 @@
 <script>
 import { backboneRoute, iframeAdd } from "components/plugins/legacyNavigation";
 import { StatelessTags } from "components/Tags";
-import { STATES, STATES_REDUCE } from "./model/states";
+import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./model/states";
 import CollectionDescription from "./Collection/CollectionDescription";
 import ContentOptions from "./ContentOptions";
 import DatasetDetails from "./Dataset/DatasetDetails";
@@ -150,9 +150,9 @@ export default {
         },
         state() {
             if (this.item.job_state_summary) {
-                for (const key of STATES_REDUCE) {
-                    if (this.item.job_state_summary[key] > 0) {
-                        return key;
+                for (const state of HIERARCHICAL_COLLECTION_JOB_STATES) {
+                    if (this.item.job_state_summary[state] > 0) {
+                        return state;
                     }
                 }
                 return "ok";

@@ -80,7 +80,7 @@ export const STATES = {
     },
 };
 
-/** For collections it is necessary to reduce the available states of the collection items to a single state which
- * can be displayed to represent the collection itself. The order matters.
+/** We want to display a single state for a dataset collection whose elements may have mixed states.
+ * This list is ordered from highest to lowest priority. If any element is in error state the whole collection should be in error.
  */
-export const STATES_REDUCE = ["error", "failed", "queued", "upload", "running", "paused"];
+export const HIERARCHICAL_COLLECTION_JOB_STATES = ["error", "failed", "queued", "upload", "paused", "running", "new"];
