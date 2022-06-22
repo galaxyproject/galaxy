@@ -1,12 +1,10 @@
 import unittest
 
-import pytest
-import requests
-
 from galaxy.model.unittest_utils.store_fixtures import (
     one_ld_library_model_store_dict,
     TEST_LIBRARY_NAME,
 )
+from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -208,10 +206,9 @@ class LibrariesApiTestCase(ApiTestCase):
             "ForCreateDatasets", wait=True
         )
         with self._different_user():
-            with pytest.raises(requests.exceptions.HTTPError) as exc_info:
-                self.library_populator.show_ld(library["id"], library_dataset["id"])
-            # TODO: this should really be 403 and a proper JSON exception.
-            self._assert_status_code_is(exc_info.value.response, 400)
+            response = self.library_populator.show_ld_raw(library["id"], library_dataset["id"])
+            api_asserts.assert_status_code_is(response, 403)
+            api_asserts.assert_error_code_is(response, 403002)
 
     def test_create_dataset(self):
         library, library_dataset = self.library_populator.new_library_dataset_in_private_library(
