@@ -421,8 +421,10 @@ class BamNative(CompressedArchive, _BamOrSam):
         file_paths = []
         rel_paths.append(f"{name or dataset.file_name}.{dataset.extension}")
         file_paths.append(dataset.file_name)
-        rel_paths.append(f"{name or dataset.file_name}.{dataset.extension}.bai")
-        file_paths.append(dataset.metadata.bam_index.file_name)
+        # We may or may not have a bam index file (BamNative doesn't have it, but also index generation may have failed)
+        if dataset.metadata.bam_index:
+            rel_paths.append(f"{name or dataset.file_name}.{dataset.extension}.bai")
+            file_paths.append(dataset.metadata.bam_index.file_name)
         return zip(file_paths, rel_paths)
 
     def groom_dataset_content(self, file_name):
