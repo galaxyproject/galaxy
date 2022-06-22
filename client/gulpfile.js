@@ -121,6 +121,13 @@ function buildPlugins(callback, forceRebuild) {
                                     shell: true,
                                 }
                             ).status === 0;
+                        if (!skipBuild) {
+                            // Hash exists and is outdated, triggering a rebuild.
+                            // Stage current hash to .orig for debugging and to
+                            // force a plugin rebuild in the event of a failure
+                            // (i.e. -- we're committed to a new build of this plugin).
+                            fs.renameSync(hashFilePath, `${hashFilePath}.orig`)
+                        }
                     } else {
                         console.log(`No build hashfile detected for ${pluginName}, generating now.`);
                     }
