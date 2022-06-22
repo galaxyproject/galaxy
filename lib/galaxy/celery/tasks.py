@@ -129,6 +129,8 @@ def set_metadata(
 ):
     dataset_instance = _get_dataset_by_id(hda_manager, ldda_manager, dataset_id, model_class)
     try:
+        if dataset_instance.has_deferred_data:
+            return  # Skip setting metadata on deferred datasets
         if overwrite:
             hda_manager.overwrite_metadata(dataset_instance)
         dataset_instance.datatype.set_meta(dataset_instance)
