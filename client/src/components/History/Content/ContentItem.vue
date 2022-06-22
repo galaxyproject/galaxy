@@ -46,12 +46,6 @@
                     <span class="id hid">{{ id }}</span>
                     <span>:</span>
                     <span class="content-title name">{{ name }}</span>
-                    <CollectionDescription
-                        v-if="!isDataset"
-                        :job-state-summary="jobState"
-                        :collection-type="item.collection_type"
-                        :element-count="item.element_count"
-                        :elements-datatypes="item.elements_datatypes" />
                 </span>
                 <ContentOptions
                     :is-dataset="isDataset"
@@ -67,6 +61,13 @@
                     @unhide="$emit('unhide')" />
             </div>
         </div>
+        <CollectionDescription
+            v-if="!isDataset"
+            class="px-2 pb-2"
+            :job-state-summary="jobState"
+            :collection-type="item.collection_type"
+            :element-count="item.element_count"
+            :elements-datatypes="item.elements_datatypes" />
         <StatelessTags
             v-if="!tagsDisabled || hasTags"
             class="alltags p-1"

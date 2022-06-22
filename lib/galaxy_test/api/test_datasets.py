@@ -131,6 +131,43 @@ class DatasetsApiTestCase(ApiTestCase):
         index_response = self._get("datasets", payload).json()
         assert len(index_response) == 0
 
+    def test_search_by_tag_case_insensitive(self):
+        history_id = self.dataset_populator.new_history()
+        hda_id = self.dataset_populator.new_dataset(history_id)["id"]
+        update_payload = {
+            "tags": ["name:new_TAG", "cool:another_TAG"],
+        }
+        updated_hda = self._put(f"histories/{history_id}/contents/{hda_id}", update_payload, json=True).json()
+        assert "name:new_TAG" in updated_hda["tags"]
+        assert "cool:another_TAG" in updated_hda["tags"]
+        payload = {
+            "limit": 10,
+            "offset": 0,
+            "q": ["history_content_type", "tag"],
+            "qv": ["dataset", "name:new_tag"],
+            "history_id": history_id,
+        }
+        index_response = self._get("datasets", payload).json()
+        assert len(index_response) == 1
+        payload = {
+            "limit": 10,
+            "offset": 0,
+            "q": ["history_content_type", "tag-contains"],
+            "qv": ["dataset", "new_tag"],
+            "history_id": history_id,
+        }
+        index_response = self._get("datasets", payload).json()
+        assert len(index_response) == 1
+        payload = {
+            "limit": 10,
+            "offset": 0,
+            "q": ["history_content_type", "tag-contains"],
+            "qv": ["dataset", "notag"],
+            "history_id": history_id,
+        }
+        index_response = self._get("datasets", payload).json()
+        assert len(index_response) == 0
+
     def test_search_by_tool_id(self):
         self.dataset_populator.new_dataset(self.history_id)
         payload = {
