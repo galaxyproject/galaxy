@@ -19,7 +19,6 @@ model, so probably has to go eventually.-->
 import { JobStateSummary } from "./JobStateSummary";
 
 export default {
-    data: {},
     props: {
         summary: { type: JobStateSummary, required: true },
     },
