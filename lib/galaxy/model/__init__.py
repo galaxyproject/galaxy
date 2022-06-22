@@ -2885,7 +2885,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             .distinct()
         )
         # postgres needs an alias on FROM
-        distinct_datasets_alias = aliased(distinct_datasets, name="datasets")
+        distinct_datasets_alias = aliased(distinct_datasets.subquery(), name="datasets")
         # then, bind as property of history using the cls.id
         size_query = (
             select([func.coalesce(func.sum(distinct_datasets_alias.c.dataset_size), 0)])
