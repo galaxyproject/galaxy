@@ -10,14 +10,12 @@ from galaxy.model.unittest_utils.store_fixtures import (
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    FILE_URL,
     LibraryPopulator,
     skip_if_github_down,
     skip_without_asgi,
 )
 from ._framework import ApiTestCase
-
-FILE_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
-FILE_MD5 = "37b59762b59fff860460522d271bc111"
 
 
 class LibrariesApiTestCase(ApiTestCase):
@@ -268,37 +266,14 @@ class LibrariesApiTestCase(ApiTestCase):
         assert dataset["file_size"] == 61, dataset
 
     def test_fetch_single_url_to_folder(self):
-        library, response = self._fetch_single_url_to_folder()
+        library, response = self.library_populator.fetch_single_url_to_folder()
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
         assert dataset["file_size"] == 61, dataset
 
     def test_fetch_single_url_with_invalid_datatype(self):
-        _, response = self._fetch_single_url_to_folder("xxx", assert_ok=False)
+        _, response = self.library_populator.fetch_single_url_to_folder("xxx", assert_ok=False)
         self._assert_status_code_is(response, 400)
         assert response.json()["err_msg"] == "Requested extension 'xxx' unknown, cannot upload dataset."
-
-    def _fetch_single_url_to_folder(self, file_type="auto", assert_ok=True):
-        history_id, library, destination = self._setup_fetch_to_folder("single_url")
-        items = [
-            {
-                "src": "url",
-                "url": FILE_URL,
-                "MD5": FILE_MD5,
-                "ext": file_type,
-            }
-        ]
-        targets = [
-            {
-                "destination": destination,
-                "items": items,
-            }
-        ]
-        payload = {
-            "history_id": history_id,  # TODO: Shouldn't be needed :(
-            "targets": targets,
-            "validate_hashes": True,
-        }
-        return library, self.dataset_populator.fetch(payload, assert_ok=assert_ok)
 
     def test_legacy_upload_unknown_datatype(self):
         library = self.library_populator.new_private_library("ForLegacyUpload")
