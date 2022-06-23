@@ -863,14 +863,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         id = None
         try:
             id = self.decode_id(dataset_id)
-            hda = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
-            assert hda, f"Invalid HDA: {id}"
-            # Walk up parent datasets to find the containing history
-            topmost_parent = hda
-            while topmost_parent.parent:
-                topmost_parent = topmost_parent.parent
-            assert topmost_parent in trans.history.datasets, "Data does not belong to current history"
-            # Mark deleted and cleanup
+            hda = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
             hda.mark_deleted()
             hda.clear_associated_files()
             trans.log_event(f"Dataset id {str(id)} marked as deleted")
@@ -889,17 +882,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         id = None
         try:
             id = self.decode_id(dataset_id)
-            history = trans.get_history()
-            hda = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
-            assert hda and hda.undeletable, f"Invalid HDA: {id}"
-            # Walk up parent datasets to find the containing history
-            topmost_parent = hda
-            while topmost_parent.parent:
-                topmost_parent = topmost_parent.parent
-            assert topmost_parent in history.datasets, "Data does not belong to current history"
-            # Mark undeleted
-            hda.mark_undeleted()
-            trans.sa_session.flush()
+            item = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
+            self.hda_manager.undelete(item)
             trans.log_event(f"Dataset id {str(id)} has been undeleted")
         except Exception:
             msg = f"HDA undeletion failed (encoded: {dataset_id}, decoded: {id})"
@@ -912,22 +896,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     def _unhide(self, trans, dataset_id):
         try:
             id = self.decode_id(dataset_id)
-        except Exception:
-            return False
-        history = trans.get_history()
-        hda = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
-        if hda:
-            # Walk up parent datasets to find the containing history
-            topmost_parent = hda
-            while topmost_parent.parent:
-                topmost_parent = topmost_parent.parent
-            assert topmost_parent in history.datasets, "Data does not belong to current history"
-            # Mark undeleted
-            hda.mark_unhidden()
+            item = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
+            item.mark_unhidden()
             trans.sa_session.flush()
             trans.log_event(f"Dataset id {str(id)} has been unhidden")
             return True
-        return False
+        except Exception:
+            return False
 
     def _purge(self, trans, dataset_id):
         message = None
