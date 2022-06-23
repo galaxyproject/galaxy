@@ -1274,7 +1274,9 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
             assert details["state"] == "deferred"
             assert details["extension"] == "bed"
             assert details["data_type"] == "galaxy.datatypes.interval.Bed"
-            assert details["metadata_columns"]
+            assert "metadata_columns" in details
+            assert "metadata_delimiter" in details
+            assert "metadata_comment_lines" in details
 
             new_datatype = "txt"
             payload = {
@@ -1287,16 +1289,15 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
             bulk_operation_result = self._apply_bulk_operation(history_id, payload)
             self._assert_bulk_success(bulk_operation_result, expected_success_count=1)
 
-            # Wait for celery tasks to finish
-            time.sleep(2)  # I don't like this at all, is there another way to wait for celery here?
-
             history_contents = self._get_history_contents(history_id, query="?v=dev&view=detailed")
             for item in history_contents:
                 assert item["state"] == "deferred"
                 assert item["extension"] == "txt"
                 assert item["data_type"] == "galaxy.datatypes.data.Text"
-                # Should keep or discard old metadata?
+                # It should discard old metadata
                 assert "metadata_columns" not in item
+                assert "metadata_delimiter" not in item
+                assert "metadata_comment_lines" not in item
 
     @skip_without_tool("cat_data_and_sleep")
     def test_bulk_datatype_change_errors(self):
