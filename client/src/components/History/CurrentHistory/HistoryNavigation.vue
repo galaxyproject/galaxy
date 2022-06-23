@@ -54,11 +54,6 @@
                         <span v-localize>Delete this History</span>
                     </b-dropdown-item>
 
-                    <b-dropdown-item v-b-modal:purge-history-modal>
-                        <Icon fixed-width icon="burn" class="mr-1" />
-                        <span v-localize>Purge this History</span>
-                    </b-dropdown-item>
-
                     <b-dropdown-divider></b-dropdown-divider>
 
                     <b-dropdown-item @click="iframeRedirect('/history/resume_paused_jobs?current=True')">
