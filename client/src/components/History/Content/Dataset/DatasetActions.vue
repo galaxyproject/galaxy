@@ -62,22 +62,20 @@
 <script>
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { copy as sendToClipboard } from "utils/clipboard";
-import { absPath, prependPath } from "utils/redirect";
+import { absPath } from "utils/redirect";
+import { downloadUrlMixin } from "./mixins.js";
 import DatasetDownload from "./DatasetDownload";
 
 export default {
     components: {
         DatasetDownload,
     },
-    mixins: [legacyNavigationMixin],
+    mixins: [legacyNavigationMixin, downloadUrlMixin],
     props: {
         item: { type: Object, required: true },
         showHighlight: { type: Boolean, default: false },
     },
     computed: {
-        downloadUrl() {
-            return prependPath(`api/datasets/${this.item.id}/display?to_ext=${this.item.extension}`);
-        },
         showDownloads() {
             return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);
         },

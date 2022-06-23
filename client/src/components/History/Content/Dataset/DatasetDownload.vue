@@ -36,15 +36,14 @@
 
 <script>
 import { prependPath } from "utils/redirect";
+import { downloadUrlMixin } from "./mixins.js";
 
 export default {
+    mixins: [downloadUrlMixin],
     props: {
         item: { type: Object, required: true },
     },
     computed: {
-        downloadUrl() {
-            return prependPath(`api/datasets/${this.item.id}/display?to_ext=${this.item.extension}`);
-        },
         hasMetaFiles() {
             return this.metaFiles && this.metaFiles.length > 0;
         },
