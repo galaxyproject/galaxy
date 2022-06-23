@@ -1,12 +1,6 @@
 <template>
-    <div
-        :id="contentId"
-        :class="['content-item m-1 p-0 rounded', contentCls]"
-        draggable
-        :data-hid="id"
-        :data-state="state"
-        @dragstart="onDragStart">
-        <div class="p-1 cursor-pointer" @click.stop="onClick">
+    <div :id="contentId" :class="['content-item m-1 p-0 rounded', contentCls]" :data-hid="id" :data-state="state">
+        <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @click.stop="onClick">
             <div class="d-flex justify-content-between">
                 <span class="p-1 font-weight-bold">
                     <span v-if="selectable" class="selector">
