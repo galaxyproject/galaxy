@@ -993,6 +993,7 @@ class MinimalJobWrapper(HasResourceParameters):
         self.params = None
         if job.params:
             self.params = loads(job.params)
+        self.runner_command_line = None
 
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.__external_output_metadata = None
@@ -1161,7 +1162,7 @@ class MinimalJobWrapper(HasResourceParameters):
     def galaxy_url(self):
         return self.get_destination_configuration("galaxy_infrastructure_url")
 
-    def get_job(self):
+    def get_job(self) -> model.Job:
         return self.sa_session.query(model.Job).get(self.job_id)
 
     def get_id_tag(self):
@@ -1528,7 +1529,7 @@ class MinimalJobWrapper(HasResourceParameters):
         if flush:
             self.sa_session.flush()
 
-    def get_state(self):
+    def get_state(self) -> str:
         job = self.get_job()
         self.sa_session.refresh(job)
         return job.state
@@ -2512,7 +2513,9 @@ class TaskWrapper(JobWrapper):
         self.status = "prepared"
         return self.extra_filenames
 
-    def fail(self, message, exception=False):
+    def fail(
+        self, message, exception=False, tool_stdout="", tool_stderr="", exit_code=None, job_stdout=None, job_stderr=None
+    ):
         log.error(f"TaskWrapper Failure {message}")
         self.status = "error"
         # How do we want to handle task failure?  Fail the job and let it clean up?

@@ -334,16 +334,17 @@ class PBSJobRunner(AsynchronousJobRunner):
         job_wrapper.set_job_destination(job_destination, job_id)
 
         # Store PBS related state information for job
-        job_state = AsynchronousJobState()
-        job_state.job_wrapper = job_wrapper
-        job_state.job_id = job_id
-        job_state.job_file = job_file
-        job_state.output_file = ofile
-        job_state.error_file = efile
-        job_state.exit_code_file = ecfile
+        job_state = AsynchronousJobState(
+            job_wrapper=job_wrapper,
+            job_id=job_id,
+            exit_code_file=ecfile,
+            job_destination=job_destination,
+            job_file=job_file,
+            output_file=ofile,
+            error_file=efile,
+        )
         job_state.old_state = "N"
         job_state.running = False
-        job_state.job_destination = job_destination
 
         # Add to our 'queue' of jobs to monitor
         self.monitor_queue.put(job_state)
@@ -486,25 +487,6 @@ class PBSJobRunner(AsynchronousJobRunner):
         pbs.pbs_disconnect(c)
         return jobs[0].attribs[0].value
 
-    def fail_job(self, pbs_job_state):
-        """
-        Separated out so we can use the worker threads for it.
-        """
-        # NB: The stop_job method was modified to limit exceptions being sent up here,
-        # so the wrapper's fail method will now be called in case of error:
-        if pbs_job_state.stop_job:
-            self.stop_job(pbs_job_state.job_wrapper)
-        pbs_job_state.job_wrapper.fail(pbs_job_state.fail_message)
-        if pbs_job_state.job_wrapper.cleanup_job == "always":
-            self.cleanup(
-                (
-                    pbs_job_state.output_file,
-                    pbs_job_state.error_file,
-                    pbs_job_state.exit_code_file,
-                    pbs_job_state.job_file,
-                )
-            )
-
     def get_stage_in_out(self, fnames, symlink=False):
         """Convenience function to create a stagein/stageout list"""
         stage = ""
@@ -552,16 +534,17 @@ class PBSJobRunner(AsynchronousJobRunner):
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         job_id = job.get_job_runner_external_id()
-        pbs_job_state = AsynchronousJobState()
-        pbs_job_state.output_file = f"{self.app.config.cluster_files_directory}/{job.id}.o"
-        pbs_job_state.error_file = f"{self.app.config.cluster_files_directory}/{job.id}.e"
-        pbs_job_state.exit_code_file = f"{self.app.config.cluster_files_directory}/{job.id}.ec"
-        pbs_job_state.job_file = f"{self.app.config.cluster_files_directory}/{job.id}.sh"
-        pbs_job_state.job_id = str(job_id)
+        pbs_job_state = AsynchronousJobState(
+            job_wrapper=job_wrapper,
+            job_id=job_id,
+            job_file=f"{self.app.config.cluster_files_directory}/{job.id}.sh",
+            output_file=f"{self.app.config.cluster_files_directory}/{job.id}.o",
+            error_file=f"{self.app.config.cluster_files_directory}/{job.id}.e",
+            exit_code_file=f"{self.app.config.cluster_files_directory}/{job.id}.ec",
+            job_destination=job_wrapper.job_destination,
+        )
         pbs_job_state.runner_url = job_wrapper.get_job_runner_url()
-        pbs_job_state.job_destination = job_wrapper.job_destination
         job_wrapper.command_line = job.command_line
-        pbs_job_state.job_wrapper = job_wrapper
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(
                 f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the PBS queue"
