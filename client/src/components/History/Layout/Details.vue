@@ -21,7 +21,7 @@
 
         <!-- edit form, change title, annotation, or tags -->
         <div v-else class="mt-3" data-description="edit form">
-            <b-textarea
+            <b-input
                 v-model="localProps.name"
                 class="mb-2"
                 placeholder="Name"
