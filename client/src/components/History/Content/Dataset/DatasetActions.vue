@@ -62,7 +62,7 @@
 <script>
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { copy as sendToClipboard } from "utils/clipboard";
-import { absPath } from "utils/redirect";
+import { absPath, prependPath } from "utils/redirect";
 import DatasetDownload from "./DatasetDownload";
 
 export default {
@@ -75,6 +75,9 @@ export default {
         showHighlight: { type: Boolean, default: false },
     },
     computed: {
+        downloadUrl() {
+            return prependPath(`api/datasets/${this.item.id}/display?to_ext=${this.item.extension}`);
+        },
         showDownloads() {
             return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);
         },
