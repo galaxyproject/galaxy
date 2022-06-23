@@ -22,6 +22,7 @@
         <!-- edit form, change title, annotation, or tags -->
         <div v-else class="mt-3" data-description="edit form">
             <b-input
+                ref="name"
                 v-model="localProps.name"
                 class="mb-2"
                 placeholder="Name"
@@ -66,6 +67,7 @@
 import { mapGetters } from "vuex";
 import short from "components/directives/v-short";
 import { StatelessTags } from "components/Tags";
+import Vue from "vue";
 
 export default {
     components: {
@@ -102,6 +104,12 @@ export default {
                 annotation: this.annotation,
                 tags: this.tags,
             };
+            // After dom update, focus on input
+            Vue.nextTick(() => {
+                if (this.$refs.name) {
+                    this.$refs.name.focus();
+                }
+            });
         },
     },
 };
