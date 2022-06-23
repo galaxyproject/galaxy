@@ -63,13 +63,14 @@
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { copy as sendToClipboard } from "utils/clipboard";
 import { absPath } from "utils/redirect";
+import { downloadUrlMixin } from "./mixins.js";
 import DatasetDownload from "./DatasetDownload";
 
 export default {
     components: {
         DatasetDownload,
     },
-    mixins: [legacyNavigationMixin],
+    mixins: [legacyNavigationMixin, downloadUrlMixin],
     props: {
         item: { type: Object, required: true },
         showHighlight: { type: Boolean, default: false },
