@@ -1266,6 +1266,39 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
                 assert item["data_type"] == "galaxy.datatypes.tabular.Tabular"
                 assert "metadata_column_names" in item
 
+    def test_bulk_datatype_change_should_skip_set_metadata_on_deferred_data(self):
+        with self.dataset_populator.test_history() as history_id:
+            details = self.dataset_populator.create_deferred_hda(
+                history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed", ext="bed"
+            )
+            assert details["state"] == "deferred"
+            assert details["extension"] == "bed"
+            assert details["data_type"] == "galaxy.datatypes.interval.Bed"
+            assert "metadata_columns" in details
+            assert "metadata_delimiter" in details
+            assert "metadata_comment_lines" in details
+
+            new_datatype = "txt"
+            payload = {
+                "operation": "change_datatype",
+                "params": {
+                    "type": "change_datatype",
+                    "datatype": new_datatype,
+                },
+            }
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            self._assert_bulk_success(bulk_operation_result, expected_success_count=1)
+
+            history_contents = self._get_history_contents(history_id, query="?v=dev&view=detailed")
+            for item in history_contents:
+                assert item["state"] == "deferred"
+                assert item["extension"] == "txt"
+                assert item["data_type"] == "galaxy.datatypes.data.Text"
+                # It should discard old metadata
+                assert "metadata_columns" not in item
+                assert "metadata_delimiter" not in item
+                assert "metadata_comment_lines" not in item
+
     @skip_without_tool("cat_data_and_sleep")
     def test_bulk_datatype_change_errors(self):
         with self.dataset_populator.test_history() as history_id:

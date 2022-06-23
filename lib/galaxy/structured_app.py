@@ -83,6 +83,7 @@ class MinimalApp(BasicSharedApp):
 
 
 class MinimalManagerApp(MinimalApp):
+    # Minimal App that is sufficient to run Celery tasks
     file_sources: ConfiguredFileSources
     genome_builds: GenomeBuilds
     dataset_collection_manager: Any  # 'galaxy.managers.collections.DatasetCollectionManager'
@@ -97,6 +98,7 @@ class MinimalManagerApp(MinimalApp):
     user_manager: Any
     job_config: "JobConfiguration"
     job_manager: Any  # galaxy.jobs.manager.JobManager
+    job_metrics: "JobMetrics"
 
     @property
     def is_job_handler(self) -> bool:

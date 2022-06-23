@@ -94,6 +94,9 @@ from galaxy.util.resources import resource_string
 from . import api_asserts
 from .api import ApiTestInteractor
 
+FILE_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
+FILE_MD5 = "37b59762b59fff860460522d271bc111"
+
 CWL_TOOL_DIRECTORY = os.path.join(galaxy_root_path, "test", "functional", "tools", "cwl_tools")
 
 # Simple workflow that takes an input and call cat wrapper on it.
@@ -2157,6 +2160,29 @@ class LibraryPopulator:
         data = dict(name=name)
         create_response = self.galaxy_interactor.post("libraries", data=data, admin=True, json=True)
         return create_response.json()
+
+    def fetch_single_url_to_folder(self, file_type="auto", assert_ok=True):
+        history_id, library, destination = self.setup_fetch_to_folder("single_url")
+        items = [
+            {
+                "src": "url",
+                "url": FILE_URL,
+                "MD5": FILE_MD5,
+                "ext": file_type,
+            }
+        ]
+        targets = [
+            {
+                "destination": destination,
+                "items": items,
+            }
+        ]
+        payload = {
+            "history_id": history_id,  # TODO: Shouldn't be needed :(
+            "targets": targets,
+            "validate_hashes": True,
+        }
+        return library, self.dataset_populator.fetch(payload, assert_ok=assert_ok)
 
     def get_permissions(
         self,

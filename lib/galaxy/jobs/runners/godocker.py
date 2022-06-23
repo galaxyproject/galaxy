@@ -253,11 +253,13 @@ class GodockerJobRunner(AsynchronousJobRunner):
         # Jobs in Running & Queued state in galaxy are put in the monitor_queue
         # by creating an AsynchronousJobState object
         job_id = job_wrapper.job_id
-        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
-        ajs.job_id = str(job_id)
-        ajs.job_destination = job_wrapper.job_destination
+        ajs = AsynchronousJobState(
+            files_dir=job_wrapper.working_directory,
+            job_wrapper=job_wrapper,
+            job_id=job_id,
+            job_destination=job_wrapper.job_destination,
+        )
         job_wrapper.command_line = job.command_line
-        ajs.job_wrapper = job_wrapper
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(
                 f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the god queue"

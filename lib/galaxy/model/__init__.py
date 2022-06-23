@@ -455,7 +455,7 @@ class JobLike:
 
     def set_streams(self, tool_stdout, tool_stderr, job_stdout=None, job_stderr=None, job_messages=None):
         def shrink_and_unicodify(what, stream):
-            if len(stream) > galaxy.util.DATABASE_MAX_STRING_SIZE:
+            if stream and len(stream) > galaxy.util.DATABASE_MAX_STRING_SIZE:
                 log.info(
                     "%s for %s %d is greater than %s, only a portion will be logged to database",
                     what,

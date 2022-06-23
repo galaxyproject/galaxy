@@ -382,17 +382,23 @@ class DatasetAssociationManager(
             rval["modify_item_roles"] = modify_item_role_list
         return rval
 
-    def ensure_can_change_datatype(self, dataset: model.DatasetInstance):
+    def ensure_can_change_datatype(self, dataset: model.DatasetInstance, raiseException: bool = True) -> bool:
         if not dataset.datatype.is_datatype_change_allowed():
+            if not raiseException:
+                return False
             raise exceptions.InsufficientPermissionsException(
                 f'Changing datatype "{dataset.extension}" is not allowed.'
             )
+        return True
 
-    def ensure_can_set_metadata(self, dataset: model.DatasetInstance):
+    def ensure_can_set_metadata(self, dataset: model.DatasetInstance, raiseException: bool = True) -> bool:
         if not dataset.ok_to_edit_metadata():
+            if not raiseException:
+                return False
             raise exceptions.ItemAccessibilityException(
                 "This dataset is currently being used as input or output. You cannot change datatype until the jobs have completed or you have canceled them."
             )
+        return True
 
     def detect_datatype(self, trans, dataset_assoc):
         """Sniff and assign the datatype to a given dataset association (ldda or hda)"""

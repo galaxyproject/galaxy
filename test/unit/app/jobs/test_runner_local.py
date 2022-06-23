@@ -97,6 +97,7 @@ class TestLocalJobRunner(TestCase, UsesTools):
 
     def test_stopping_job_at_shutdown(self):
         self.job_wrapper.command_line = '''python -c "import time; time.sleep(15)"'''
+        self.app.model.session = bunch.Bunch(add=lambda x: None, flush=lambda: None)
         runner = local.LocalJobRunner(self.app, 1)
         runner.start()
         self.app.config.monitor_thread_join_timeout = 15
@@ -203,7 +204,9 @@ class MockJobWrapper:
     def has_limits(self):
         return False
 
-    def fail(self, message, exception):
+    def fail(
+        self, message, exception=False, tool_stdout="", tool_stderr="", exit_code=None, job_stdout=None, job_stderr=None
+    ):
         self.fail_message = message
         self.fail_exception = exception
 
