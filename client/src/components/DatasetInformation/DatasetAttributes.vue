@@ -27,8 +27,12 @@
                     </b-tab>
                     <b-tab v-if="!result['conversion_disable'] || !result['datatype_disable']">
                         <template v-slot:title>
-                            <span v-if="!result['conversion_disable']" class="mr-2"><font-awesome-icon icon="cog" class="mr-1" />{{ "Convert" | l }}</span>
-                            <span v-if="!result['datatype_disable']"><font-awesome-icon icon="database" class="mr-1" />{{ "Datatypes" | l }}</span>
+                            <span v-if="!result['conversion_disable']">
+                                <font-awesome-icon icon="cog" class="mr-1" />{{ "Convert" | l }}
+                            </span>
+                            <span v-else>
+                                <font-awesome-icon icon="database" class="mr-1" />{{ "Datatypes" | l }}
+                            </span>
                         </template>
                         <div v-if="!result['conversion_disable']" class="ui-portlet-section">
                             <div class="portlet-header">
