@@ -32,20 +32,25 @@
             -->
             <div class="p-2 details">
                 <div class="summary">
-                    <div class="mb-1">
-                        <b-skeleton width="85%"></b-skeleton>
+                    <div class="blurb">
+                        <span class="value">...</span>
                     </div>
                     <span class="datatype">
-                        <b-skeleton width="55%"></b-skeleton>
+                        <label v-localize class="prompt">format</label>
+                        <span class="value">...</span>
+                    </span>
+                    <span class="dbkey">
+                        <label v-localize class="prompt">database</label>
+                        <span class="value">?</span>
                     </span>
                     <div class="info">
-                        <span class="value">Dataset Information Loading.</span>
+                        <span class="value">Loading</span>
                     </div>
                 </div>
                 <pre class="dataset-peek p-1">
                     <table cellspacing="0" cellpadding="3">
                         <tbody>
-                            <tr><td>Loading...</td></tr>
+                            <tr><td>Dataset peek loading...</td></tr>
                         </tbody>
                     </table>
                 </pre>
