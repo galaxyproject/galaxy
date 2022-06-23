@@ -368,7 +368,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
     def set_user(self, user):
         """Set the current user."""
         if self.galaxy_session:
-            if user.bootstrap_admin_user:
+            if user and not user.bootstrap_admin_user:
                 self.galaxy_session.user = user
                 self.sa_session.add(self.galaxy_session)
                 self.sa_session.flush()
