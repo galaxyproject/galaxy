@@ -29,6 +29,7 @@
                 trim
                 max-rows="4"
                 data-description="name input"
+                @keyup.enter="onSave"
                 @keyup.esc="onToggle" />
             <b-textarea
                 v-if="showAnnotation"
