@@ -33,41 +33,12 @@
             </div>
         </b-row>
         <ConfigProvider v-slot="{ config }">
-            <b-row v-if="config && !config.single_user && config.enable_account_interface" class="ml-3 mb-1">
-                <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
-                <div class="pref-content pr-1">
-                    <a id="delete-account" href="javascript:void(0)"
-                        ><b v-b-modal.modal-prevent-closing v-localize>Delete Account</b></a
-                    >
-                    <div v-localize class="form-text text-muted">Delete your account on this Galaxy server.</div>
-                    <b-modal
-                        id="modal-prevent-closing"
-                        ref="modal"
-                        centered
-                        title="Account Deletion"
-                        title-tag="h2"
-                        @show="resetModal"
-                        @hidden="resetModal"
-                        @ok="handleOk">
-                        <p>
-                            <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
-                            <b>
-                                This action cannot be undone. Your account will be permanently deleted, along with the
-                                data contained in it.
-                            </b>
-                        </p>
-                        <b-form ref="form" @submit.prevent="handleSubmit">
-                            <b-form-group
-                                :state="nameState"
-                                label="Enter your user email for this account as confirmation."
-                                label-for="Email"
-                                invalid-feedback="Incorrect email">
-                                <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
-                            </b-form-group>
-                        </b-form>
-                    </b-modal>
-                </div>
-            </b-row>
+            <UserDeletion
+                v-if="config && !config.single_user && config.enable_account_interface"
+                :email="email"
+                :root="root"
+                :user-id="userId">
+            </UserDeletion>
         </ConfigProvider>
         <p class="mt-2">
             {{ titleYouAreUsing }} <strong>{{ diskUsage }}</strong> {{ titleOfDiskSpace }}
@@ -91,7 +62,9 @@ import axios from "axios";
 import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import ConfigProvider from "components/providers/ConfigProvider";
-import { userLogoutAll, userLogoutClient } from "layout/menu";
+import { userLogoutAll } from "layout/menu";
+import UserDeletion from "./UserDeletion";
+
 import "@fortawesome/fontawesome-svg-core";
 
 Vue.use(BootstrapVue);
@@ -99,6 +72,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         ConfigProvider,
+        UserDeletion,
     },
     props: {
         userId: {
@@ -115,12 +89,9 @@ export default {
             email: "",
             diskUsage: "",
             quotaUsageString: "",
-            baseUrl: `${getAppRoot()}user`,
+            root: getAppRoot(),
             messageVariant: null,
             message: null,
-            name: "",
-            nameState: null,
-            deleteError: "",
             submittedNames: [],
             titleYouAreUsing: _l("You are using"),
             titleOfDiskSpace: _l("of disk space in this Galaxy instance."),
@@ -130,6 +101,9 @@ export default {
         };
     },
     computed: {
+        baseUrl() {
+            return `${this.root}user`;
+        },
         activeLinks() {
             const activeLinks = {};
             const UserPreferencesModel = getUserPreferencesModel();
@@ -155,9 +129,6 @@ export default {
             }
 
             return activeLinks;
-        },
-        showDeleteError() {
-            return this.deleteError !== "";
         },
     },
     created() {
@@ -237,50 +208,9 @@ export default {
                 },
             });
         },
-        checkFormValidity() {
-            const valid = this.$refs.form.checkValidity();
-            this.nameState = valid;
-            return valid;
-        },
-        resetModal() {
-            this.name = "";
-            this.nameState = null;
-        },
-        handleOk(bvModalEvt) {
-            // Prevent modal from closing
-            bvModalEvt.preventDefault();
-            // Trigger submit handler
-            this.handleSubmit();
-        },
-        async handleSubmit() {
-            if (!this.checkFormValidity()) {
-                return false;
-            }
-            if (this.email === this.name) {
-                this.nameState = true;
-                try {
-                    await axios.delete(`${getAppRoot()}api/users/${this.userId}`);
-                } catch (e) {
-                    if (e.response.status === 403) {
-                        this.deleteError =
-                            "User deletion must be configured on this instance in order to allow user self-deletion.  Please contact an administrator for assistance.";
-                        return false;
-                    }
-                }
-                userLogoutClient();
-            } else {
-                this.nameState = false;
-                return false;
-            }
-        },
     },
 };
 </script>
 <style scoped>
-.pref-content {
-    width: calc(100% - 3rem);
-}
-.pref-icon {
-    width: 3rem;
-}
+@import "user-styles.scss";
 </style>
