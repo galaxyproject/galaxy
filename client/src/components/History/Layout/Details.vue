@@ -67,7 +67,6 @@
 import { mapGetters } from "vuex";
 import short from "components/directives/v-short";
 import { StatelessTags } from "components/Tags";
-import Vue from "vue";
 
 export default {
     components: {
@@ -105,7 +104,7 @@ export default {
                 tags: this.tags,
             };
             // After dom update, focus on input
-            Vue.nextTick(() => {
+            this.$nextTick(() => {
                 if (this.$refs.name) {
                     this.$refs.name.focus();
                 }
