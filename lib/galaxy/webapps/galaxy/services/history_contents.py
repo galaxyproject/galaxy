@@ -14,6 +14,7 @@ from typing import (
     Union,
 )
 
+from celery import group
 from pydantic import (
     Extra,
     Field,
@@ -1618,24 +1619,42 @@ class HistoryItemOperator:
         self, item: HistoryItemModel, params: ChangeDatatypeOperationParams, trans: ProvidesHistoryContext
     ):
         if isinstance(item, HistoryDatasetAssociation):
-            self.hda_manager.ensure_can_change_datatype(item)
-            self.hda_manager.ensure_can_set_metadata(item)
-            is_deferred = item.has_deferred_data
-            item.dataset.state = item.dataset.states.SETTING_METADATA
+            wrapped_task = self._change_item_datatype(item, params, trans)
             trans.sa_session.flush()
-            if is_deferred:
-                if params.datatype == "auto":  # if `auto` just keep the original guessed datatype
-                    item.update()  # TODO: remove this `update` when we can properly track the operation results to notify the history
-                else:
-                    trans.app.datatypes_registry.change_datatype(item, params.datatype)
-                item.dataset.state = item.dataset.states.DEFERRED
-                trans.sa_session.flush()
+            if wrapped_task:
+                wrapped_task.delay()
+
+        elif isinstance(item, HistoryDatasetCollectionAssociation):
+            wrapped_tasks = []
+            for dataset_instance in item.dataset_instances:
+                wrapped_task = self._change_item_datatype(dataset_instance, params, trans)
+                if wrapped_task:
+                    wrapped_tasks.append(wrapped_task)
+            trans.sa_session.flush()
+            group(wrapped_tasks).delay()
+
+    def _change_item_datatype(
+        self, item: HistoryDatasetAssociation, params: ChangeDatatypeOperationParams, trans: ProvidesHistoryContext
+    ):
+        self.hda_manager.ensure_can_change_datatype(item)
+        self.hda_manager.ensure_can_set_metadata(item)
+        is_deferred = item.has_deferred_data
+        item.dataset.state = item.dataset.states.SETTING_METADATA
+        if is_deferred:
+            if params.datatype == "auto":  # if `auto` just keep the original guessed datatype
+                item.update()  # TODO: remove this `update` when we can properly track the operation results to notify the history
             else:
-                change_datatype.delay(dataset_id=item.id, datatype=params.datatype)
+                trans.app.datatypes_registry.change_datatype(item, params.datatype)
+            item.dataset.state = item.dataset.states.DEFERRED
+        else:
+            return change_datatype.si(dataset_id=item.id, datatype=params.datatype)
 
     def _change_dbkey(self, item: HistoryItemModel, params: ChangeDbkeyOperationParams):
         if isinstance(item, HistoryDatasetAssociation):
             item.set_dbkey(params.dbkey)
+        elif isinstance(item, HistoryDatasetCollectionAssociation):
+            for dataset_instance in item.dataset_instances:
+                dataset_instance.set_dbkey(params.dbkey)
 
     def _add_tags(self, item: HistoryItemModel, user: User, params: TagOperationParams):
         manager = self._get_item_manager(item)
