@@ -1621,9 +1621,18 @@ class HistoryItemOperator:
         if isinstance(item, HistoryDatasetAssociation):
             self.hda_manager.ensure_can_change_datatype(item)
             self.hda_manager.ensure_can_set_metadata(item)
+            is_deferred = item.has_deferred_data
             item.dataset.state = item.dataset.states.SETTING_METADATA
             trans.sa_session.flush()
-            change_datatype.delay(dataset_id=item.id, datatype=params.datatype)
+            if is_deferred:
+                if params.datatype == "auto":  # if `auto` just keep the original guessed datatype
+                    item.update()  # TODO: remove this `update` when we can properly track the operation results to notify the history
+                else:
+                    trans.app.datatypes_registry.change_datatype(item, params.datatype)
+                item.dataset.state = item.dataset.states.DEFERRED
+                trans.sa_session.flush()
+            else:
+                change_datatype.delay(dataset_id=item.id, datatype=params.datatype)
 
     def _change_dbkey(self, item: HistoryItemModel, params: ChangeDbkeyOperationParams):
         if isinstance(item, HistoryDatasetAssociation):
