@@ -1589,7 +1589,11 @@ class NavigatesGalaxy(HasDriver):
         if self.is_beta_history():
             editable_text_input_element.clear()
         editable_text_input_element.send_keys(new_name)
-        self.send_enter(editable_text_input_element)
+        if not self.is_beta_history():
+            # in the new history 'enter' submits the change, which we don't want
+            # to automatically do here since we may edit other fields prior to
+            # submitting
+            self.send_enter(editable_text_input_element)
         return editable_text_input_element
 
     def history_panel_name_input(self):
