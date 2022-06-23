@@ -511,7 +511,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         history_id: EncodedDatabaseIdField,
         payload: CreateHistoryContentPayload,
         serialization_params: SerializationParams,
-    ) -> AnyHistoryContentItem:
+    ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
         """
         Create a new HDA or HDCA.
 
@@ -520,6 +520,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         """
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
 
+        serialization_params.default_view = "detailed"
         history_content_type = payload.type
         if history_content_type == HistoryContentType.dataset:
             source = payload.source
@@ -1334,7 +1335,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                     history, add_to_history=True
                 )
                 hda_dict = self.hda_serializer.serialize_to_view(
-                    hda, user=trans.user, trans=trans, default_view="detailed", **serialization_params.dict()
+                    hda, user=trans.user, trans=trans, **serialization_params.dict()
                 )
                 rval.append(hda_dict)
         else:
@@ -1368,7 +1369,6 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             return None
 
         trans.sa_session.flush()
-        serialization_params.default_view = "detailed"
         return self.hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, **serialization_params.dict())
 
     def __create_hda_from_ldda(self, trans, history: History, ldda_id: EncodedDatabaseIdField):
@@ -1465,7 +1465,6 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
         # if the consumer specified keys or view, use the secondary serializer
         if serialization_params.view or serialization_params.keys:
-            serialization_params.default_view = "detailed"
             return self.hdca_serializer.serialize_to_view(
                 dataset_collection_instance, user=trans.user, trans=trans, **serialization_params.dict()
             )

@@ -31,12 +31,6 @@ SerializationKeysQueryParam: Optional[str] = Query(
     description="Comma-separated list of keys to be passed to the serializer",
 )
 
-SerializationDefaultViewQueryParam: Optional[str] = Query(
-    None,
-    title="Default View",
-    description="The item view that will be used in case no particular view was specified.",
-)
-
 FilterQueryQueryParam: Optional[List[str]] = Query(
     default=None,
     title="Filter Query",
@@ -67,9 +61,8 @@ def parse_serialization_params(
 def query_serialization_params(
     view: Optional[str] = SerializationViewQueryParam,
     keys: Optional[str] = SerializationKeysQueryParam,
-    default_view: Optional[str] = SerializationDefaultViewQueryParam,
 ) -> SerializationParams:
-    return parse_serialization_params(view=view, keys=keys, default_view=default_view, format=format)
+    return parse_serialization_params(view=view, keys=keys)
 
 
 def get_value_filter_query_params(

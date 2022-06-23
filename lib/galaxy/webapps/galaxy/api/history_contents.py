@@ -587,7 +587,7 @@ class FastAPIHistoryContents:
         ),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: CreateHistoryContentPayload = Body(...),
-    ) -> AnyHistoryContentItem:
+    ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
         """Create a new `HDA` or `HDCA` in the given History."""
         payload.type = type or payload.type
         return self.service.create(trans, history_id, payload, serialization_params)
