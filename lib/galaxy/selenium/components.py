@@ -12,9 +12,23 @@ from typing import (
     Union,
 )
 
-from selenium.webdriver.common.by import By
-
 from galaxy.util.bunch import Bunch
+
+
+class By:
+    """
+    Set of supported locator strategies.
+    """
+
+    ID = "id"
+    XPATH = "xpath"
+    LINK_TEXT = "link text"
+    PARTIAL_LINK_TEXT = "partial link text"
+    NAME = "name"
+    TAG_NAME = "tag name"
+    CLASS_NAME = "class name"
+    CSS_SELECTOR = "css selector"
+
 
 LocatorT = Tuple[By, str]
 
