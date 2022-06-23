@@ -35,12 +35,14 @@ export default {
         errorJobs() {
             const failed = this.summary.get("failed") || 0;
             const error = this.summary.get("error") || 0;
-            return failed + error;
+            const discarded = this.summary.get("discarded") || 0;
+            return failed + error + discarded;
         },
         waitingJobs() {
             const queued = this.summary.get("queued") || 0;
             const waiting = this.summary.get("waiting") || 0;
-            return queued + waiting;
+            const paused = this.summary.get("paused") || 0;
+            return queued + waiting + paused;
         },
     },
 };
