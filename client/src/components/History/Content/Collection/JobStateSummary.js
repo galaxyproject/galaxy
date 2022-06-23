@@ -6,8 +6,8 @@
  */
 import { STATES } from "../model/states";
 
-const NON_TERMINAL_STATES = [STATES.NEW, STATES.WAITING, STATES.QUEUED, STATES.RUNNING];
-const ERROR_STATES = [STATES.ERROR, STATES.DISCARDED];
+const NON_TERMINAL_STATES = ["new", "waiting", "queued", "running"];
+const ERROR_STATES = ["error", "discarded"];
 
 export class JobStateSummary extends Map {
     constructor(dsc = {}) {
@@ -28,18 +28,18 @@ export class JobStateSummary extends Map {
     get state() {
         if (this.jobCount) {
             if (this.isErrored) {
-                return STATES.ERROR;
+                return STATES.error;
             }
             if (this.isRunning) {
-                return STATES.RUNNING;
+                return STATES.running;
             }
             if (this.isNew) {
-                return STATES.LOADING;
+                return STATES.loading;
             }
             if (this.isTerminal) {
-                return STATES.OK;
+                return STATES.ok;
             }
-            return STATES.QUEUED;
+            return STATES.queued;
         }
         return this.populated_state;
     }
@@ -47,11 +47,11 @@ export class JobStateSummary extends Map {
     // Flags
 
     get isNew() {
-        return !this.populated_state || this.populated_state == STATES.NEW;
+        return !this.populated_state || this.populated_state == STATES.new;
     }
 
     get isErrored() {
-        return this.populated_state == STATES.ERROR || this.anyHasJobs(...ERROR_STATES);
+        return this.populated_state == STATES.error || this.anyHasJobs(...ERROR_STATES);
     }
 
     get isTerminal() {
@@ -62,20 +62,28 @@ export class JobStateSummary extends Map {
     }
 
     get isRunning() {
-        return this.hasJobs(STATES.RUNNING);
+        return this.hasJobs(STATES.running);
     }
 
     // Counts
+
+    get okCount() {
+        return this.get("ok");
+    }
 
     get jobCount() {
         return this.get("all_jobs");
     }
 
     get errorCount() {
-        return this.get(STATES.ERROR);
+        return (this.get("error") || 0) + (this.get("failed") || 0) + (this.get("discarded") || 0);
     }
 
     get runningCount() {
-        return this.get(STATES.RUNNING);
+        return this.get("running");
+    }
+
+    get waitingCount() {
+        return (this.get("queued") || 0) + (this.get("waiting") || 0) + (this.get("paused") || 0);
     }
 }
