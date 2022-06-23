@@ -1,10 +1,10 @@
 <template>
     <b-dropdown
         v-if="hasMetaFiles"
+        v-b-tooltip.top.hover
         dropup
         no-caret
         no-flip
-        v-b-tooltip.top.hover
         size="sm"
         variant="link"
         toggle-class="text-decoration-none"
