@@ -79,7 +79,6 @@ export class JobStateSummary extends Map {
         return (
             (this.get("error") || 0) +
             (this.get("failed") || 0) +
-            (this.get("discarded") || 0) +
             (this.get("deleted") || 0)
         );
     }
