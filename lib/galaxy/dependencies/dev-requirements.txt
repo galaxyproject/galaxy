@@ -57,12 +57,14 @@ defusedxml==0.7.1; python_version >= "3.6" and python_full_version < "3.0.0" and
 deprecated==1.2.13; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 deprecation==2.1.0
 dictobj==0.4
+distlib==0.3.4; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0"
 docopt==0.6.2
 docutils==0.16; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
 ecdsa==0.17.0; python_version >= "2.6" and python_full_version < "3.0.0" or python_full_version >= "3.3.0"
 edam-ontology==1.25.2
 fastapi-utils==0.2.1; python_version >= "3.6" and python_version < "4.0"
 fastapi==0.78.0; python_full_version >= "3.6.1"
+filelock==3.7.1; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7"
 fluent-logger==0.10.0; python_version >= "3.5"
 fonttools==4.33.3; python_version >= "3.7"
 fs==2.4.16
@@ -221,6 +223,7 @@ tinydb==4.7.0; python_version >= "3.6" and python_version < "4.0"
 toml==0.10.2; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.3.0" and python_version >= "3.7"
 tomli==2.0.1; python_version < "3.11" and python_full_version >= "3.6.2" and python_version >= "3.7" and python_full_version <= "3.11.0a6"
 tornado==6.1; python_version >= "3.5"
+tox==3.25.0; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
 tqdm==4.64.0; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0"
 trio-websocket==0.9.2; python_version >= "3.7" and python_version < "4.0"
 trio==0.21.0; python_version >= "3.7" and python_version < "4.0"
@@ -235,6 +238,7 @@ urllib3==1.26.9; python_version >= "3.7" and python_full_version < "3.0.0" and p
 uvicorn==0.17.6; python_version >= "3.7"
 uvloop==0.16.0; python_version >= "3.7"
 vine==5.0.0; python_version >= "3.7"
+virtualenv==20.14.1; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0"
 watchdog==2.1.9; python_version >= "3.6"
 wcwidth==0.2.5; python_full_version >= "3.6.2" and python_version >= "3.7"
 webencodings==0.5.1; python_version >= "3.7"
