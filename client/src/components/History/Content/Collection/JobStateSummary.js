@@ -6,8 +6,8 @@
  */
 import { STATES } from "../model/states";
 
-const NON_TERMINAL_STATES = ["new", "waiting", "queued", "running"];
-const ERROR_STATES = ["error", "discarded"];
+const NON_TERMINAL_STATES = ["new", "waiting", "queued", "running", "resubmitted", "upload"];
+const ERROR_STATES = ["error", "discarded", "deleted"];
 
 export class JobStateSummary extends Map {
     constructor(dsc = {}) {
@@ -76,7 +76,12 @@ export class JobStateSummary extends Map {
     }
 
     get errorCount() {
-        return (this.get("error") || 0) + (this.get("failed") || 0) + (this.get("discarded") || 0);
+        return (
+            (this.get("error") || 0) +
+            (this.get("failed") || 0) +
+            (this.get("discarded") || 0) +
+            (this.get("deleted") || 0)
+        );
     }
 
     get runningCount() {
