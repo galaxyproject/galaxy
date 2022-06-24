@@ -188,6 +188,7 @@ class FastAPIHistories:
 
     @router.get(
         '/api/histories/{id}',
+        name="history",
         summary='Returns the history with the given ID.',
     )
     def show(
