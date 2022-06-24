@@ -102,7 +102,9 @@ export function submitUpload(config) {
     }
     const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload/`;
 
-    if (isPasted(data)) {
+    if (hasFiles(data) || isComposite(data)) {
+        return tusUpload(data.files, 0, data, tusEndpoint, cnf);
+    } else {
         if (data.targets.length && data.targets[0].elements.length) {
             const pasted = data.targets[0].elements[0];
             if (isUrl(pasted)) {
@@ -113,13 +115,15 @@ export function submitUpload(config) {
                 return tusUpload([blob], 0, data, tusEndpoint, cnf);
             }
         }
-    } else {
-        return tusUpload(data.files, 0, data, tusEndpoint, cnf);
     }
 }
 
-function isPasted(data) {
-    return !data.files.length;
+function hasFiles(data) {
+    return data.files.length;
+}
+
+function isComposite(data) {
+    return data.targets.length && data.targets[0].items && data.targets[0].items[0].composite;
 }
 
 function isUrl(pasted_item) {
