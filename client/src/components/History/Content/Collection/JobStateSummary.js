@@ -76,11 +76,7 @@ export class JobStateSummary extends Map {
     }
 
     get errorCount() {
-        return (
-            (this.get("error") || 0) +
-            (this.get("failed") || 0) +
-            (this.get("deleted") || 0)
-        );
+        return (this.get("error") || 0) + (this.get("failed") || 0) + (this.get("deleted") || 0);
     }
 
     get runningCount() {
