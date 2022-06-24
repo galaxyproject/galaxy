@@ -2738,12 +2738,44 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         inputs = {"input_bam": dataset_to_param(details), "ref_names": "chrM"}
         run_response = self.dataset_populator.run_tool(tool_id="metadata_bam", inputs=inputs, history_id=history_id)
         output = run_response["outputs"][0]
-        details = self.dataset_populator.get_history_dataset_details(
+        output_details = self.dataset_populator.get_history_dataset_details(
             history_id, dataset=output, wait=True, assert_ok=True
         )
-        assert details["state"] == "ok"
+        assert output_details["state"] == "ok"
         output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
         assert output_content.startswith("chrM")
+
+    @skip_without_tool("pileup")
+    @uses_test_history(require_new=False)
+    def test_metadata_validator_on_deferred_input(self, history_id):
+        deferred_bam_details = self.dataset_populator.create_deferred_hda(
+            history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam", ext="bam"
+        )
+        fasta1_contents = open(self.get_filename("1.fasta")).read()
+        fasta = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
+        inputs = {"input1": dataset_to_param(deferred_bam_details), "reference": dataset_to_param(fasta)}
+        run_response = self.dataset_populator.run_tool(tool_id="pileup", inputs=inputs, history_id=history_id)
+        self.dataset_populator.wait_for_job(run_response["jobs"][0]["id"], assert_ok=True)
+
+    @pytest.mark.xfail
+    @skip_without_tool("pileup")
+    @uses_test_history(require_new=False)
+    def test_metadata_validator_can_fail_on_deferred_input(self, history_id):
+        # This test fails because we just skip the validator
+        # Fixing this is a TODO
+        deferred_bam_details = self.dataset_populator.create_deferred_hda(
+            history_id,
+            "https://github.com/galaxyproject/galaxy/blob/dev/test-data/3unsorted.bam?raw=true",
+            ext="unsorted.bam",
+        )
+        fasta1_contents = open(self.get_filename("1.fasta")).read()
+        fasta = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
+        inputs = {"input1": dataset_to_param(deferred_bam_details), "reference": dataset_to_param(fasta)}
+        run_response = self.dataset_populator.run_tool(tool_id="pileup", inputs=inputs, history_id=history_id)
+        self.dataset_populator.wait_for_job(run_response["jobs"][0]["id"], assert_ok=False)
+        job_id = run_response["jobs"][0]["id"]
+        job_details = self.dataset_populator.get_job_details(job_id=job_id).json()
+        assert job_details["state"] == "failed"
 
     @skip_without_tool("cat1")
     @uses_test_history(require_new=False)
