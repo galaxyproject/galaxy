@@ -7,7 +7,7 @@
 import { STATES } from "../model/states";
 
 const NON_TERMINAL_STATES = ["new", "waiting", "queued", "running", "resubmitted", "upload"];
-const ERROR_STATES = ["error", "discarded", "deleted"];
+const ERROR_STATES = ["error", "failed", "deleted"];
 
 export class JobStateSummary extends Map {
     constructor(dsc = {}) {
