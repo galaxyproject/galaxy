@@ -1919,7 +1919,7 @@ class NavigatesGalaxy(HasDriver):
         if element_str is None:
             component = step.get("component", None)
             if component is not None:
-                element_str = self.components.resolve_element_locator(component)[1]
+                element_str = self.components.resolve_component_locator(component).locator
 
         preclick = step.get("preclick", [])
         if preclick is True:

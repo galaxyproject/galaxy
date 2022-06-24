@@ -48,7 +48,7 @@ def load_tour_steps(contents_dict, warn=None, resolve_components=True):
 
         if "component" in step and resolve_components:
             component = step.pop("component")
-            step["element"] = ROOT_COMPONENT.resolve_element_locator(component)[1]
+            step["element"] = ROOT_COMPONENT.resolve_component_locator(component).locator
 
         if "intro" in step:
             step["content"] = step.pop("intro")
