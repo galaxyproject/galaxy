@@ -5641,7 +5641,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         dataset_permission_attributes = dataset_permission_attributes or ()
         return_entities = return_entities or ()
         dataset_collection = self
-        db_session = object_session(self)
         dc = alias(DatasetCollection)
         dce = alias(DatasetCollectionElement)
 
@@ -5654,7 +5653,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             return [getattr(column_collection, a).label(f"{a}{label_fragment}") for a in attributes]
 
         q = (
-            db_session.query(
+            select(
                 *attribute_columns(dce.c, element_attributes, nesting_level),
                 *attribute_columns(dc.c, collection_attributes, nesting_level),
             )
@@ -5696,7 +5695,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             .add_columns(*attribute_columns(DatasetPermissions, dataset_permission_attributes))
         )
         for entity in return_entities:
-            q = q.add_entity(entity)
+            q = q.add_columns(entity)
             if entity == DatasetCollectionElement:
                 q = q.filter(entity.id == dce.c.id)
         return q.distinct().order_by(*order_by_columns)
@@ -5704,10 +5703,12 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     @property
     def dataset_states_and_extensions_summary(self):
         if not hasattr(self, "_dataset_states_and_extensions_summary"):
-            q = self._get_nested_collection_attributes(hda_attributes=("extension",), dataset_attributes=("state",))
+            statement = self._get_nested_collection_attributes(
+                hda_attributes=("extension",), dataset_attributes=("state",)
+            )
             extensions = set()
             states = set()
-            for extension, state in q:
+            for extension, state in object_session(self).execute(statement).all():
                 states.add(state)
                 extensions.add(extension)
 
@@ -5743,13 +5744,13 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             if ":" not in self.collection_type:
                 _populated_optimized = self.populated_state == DatasetCollection.populated_states.OK
             else:
-                q = self._get_nested_collection_attributes(
+                statement = self._get_nested_collection_attributes(
                     collection_attributes=("populated_state",),
                     inner_filter=InnerCollectionFilter(
                         "populated_state", operator.__ne__, DatasetCollection.populated_states.OK
                     ),
                 )
-                _populated_optimized = q.session.query(~exists(q.subquery())).scalar()
+                _populated_optimized = object_session(self).query(~exists(statement.subquery())).scalar()
 
             self._populated_optimized = _populated_optimized
 
@@ -5765,9 +5766,9 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     @property
     def dataset_action_tuples(self):
         if not hasattr(self, "_dataset_action_tuples"):
-            q = self._get_nested_collection_attributes(dataset_permission_attributes=("action", "role_id"))
+            statement = self._get_nested_collection_attributes(dataset_permission_attributes=("action", "role_id"))
             _dataset_action_tuples = []
-            for _dataset_action_tuple in q:
+            for _dataset_action_tuple in object_session(self).execute(statement).all():
                 if _dataset_action_tuple[0] is None:
                     continue
                 _dataset_action_tuples.append(_dataset_action_tuple)
@@ -5778,24 +5779,27 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
 
     @property
     def element_identifiers_extensions_and_paths(self):
-        q = self._get_nested_collection_attributes(
+        statement = self._get_nested_collection_attributes(
             element_attributes=("element_identifier",), hda_attributes=("extension",), return_entities=(Dataset,)
         )
-        return [(row[:-2], row.extension, row.Dataset.file_name) for row in q]
+        return [
+            (row[:-2], row.extension, row.Dataset.file_name) for row in object_session(self).execute(statement).all()
+        ]
 
     @property
     def element_identifiers_extensions_paths_and_metadata_files(
         self,
     ) -> List[List[Any]]:
         results = []
-        if object_session(self):
-            q = self._get_nested_collection_attributes(
+        session = object_session(self)
+        if session:
+            statement = self._get_nested_collection_attributes(
                 element_attributes=("element_identifier",),
                 hda_attributes=("extension",),
                 return_entities=(HistoryDatasetAssociation, Dataset),
             )
             # element_identifiers, extension, path
-            for row in q:
+            for row in session.execute(statement).all():
                 result = [row[:-3], row.extension, row.Dataset.file_name]
                 hda = row.HistoryDatasetAssociation
                 result.append(hda.get_metadata_file_paths_and_extensions())
@@ -5840,7 +5844,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     def dataset_instances(self):
         db_session = object_session(self)
         if db_session and self.id:
-            return self._get_nested_collection_attributes(return_entities=(HistoryDatasetAssociation,)).all()
+            statement = self._get_nested_collection_attributes(return_entities=(HistoryDatasetAssociation,))
+            return db_session.execute(statement).all()
         else:
             # Sessionless context
             instances = []
@@ -5856,7 +5861,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     def dataset_elements(self):
         db_session = object_session(self)
         if db_session and self.id:
-            return self._get_nested_collection_attributes(return_entities=(DatasetCollectionElement,)).all()
+            statement = self._get_nested_collection_attributes(return_entities=(DatasetCollectionElement,))
+            return db_session.execute(statement).all()
         elements = []
         for element in self.elements:
             if element.is_collection:
@@ -5939,9 +5945,10 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return new_collection
 
     def replace_failed_elements(self, replacements):
-        hda_id_to_element = dict(
-            self._get_nested_collection_attributes(return_entities=[DatasetCollectionElement], hda_attributes=["id"])
+        statement = self._get_nested_collection_attributes(
+            return_entities=[DatasetCollectionElement], hda_attributes=["id"]
         )
+        hda_id_to_element = dict(object_session(self).execute(statement).all())
         for failed, replacement in replacements.items():
             element = hda_id_to_element.get(failed.id)
             if element:
@@ -6152,10 +6159,10 @@ class HistoryDatasetCollectionAssociation(
     @property
     def dataset_dbkeys_and_extensions_summary(self):
         if not hasattr(self, "_dataset_dbkeys_and_extensions_summary"):
-            rows = self.collection._get_nested_collection_attributes(hda_attributes=("_metadata", "extension"))
+            statement = self.collection._get_nested_collection_attributes(hda_attributes=("_metadata", "extension"))
             extensions = set()
             dbkeys = set()
-            for row in rows:
+            for row in object_session(self).execute(statement).all():
                 if row is not None:
                     dbkey_field = row._metadata.get("dbkey")
                     if isinstance(dbkey_field, list):
