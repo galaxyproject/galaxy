@@ -17,7 +17,8 @@ virtualenv -p "$TEST_PYTHON" "$TEST_ENV_DIR"
 pip install --upgrade pip setuptools wheel
 pip install -r../lib/galaxy/dependencies/pinned-lint-requirements.txt
 
-# ensure ordered by dependency dag
+# ensure ordered by dependency DAG
+# TODO: add selenium in once type issues are cleared up
 PACKAGE_DIRS=(
     util
     objectstore
@@ -30,6 +31,8 @@ PACKAGE_DIRS=(
     auth
     web_stack
     web_framework
+    navigation
+    tours
     app
     webapps
     test_base

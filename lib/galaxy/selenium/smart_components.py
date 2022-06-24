@@ -1,4 +1,4 @@
-from .components import (
+from galaxy.navigation.components import (
     Component,
     Target,
 )

@@ -1,0 +1,2 @@
+include *.rst *.txt LICENSE
+include galaxy/navigation/*yml
