@@ -21,13 +21,15 @@
 
         <!-- edit form, change title, annotation, or tags -->
         <div v-else class="mt-3" data-description="edit form">
-            <b-textarea
+            <b-input
+                ref="name"
                 v-model="localProps.name"
                 class="mb-2"
                 placeholder="Name"
                 trim
                 max-rows="4"
                 data-description="name input"
+                @keyup.enter="onSave"
                 @keyup.esc="onToggle" />
             <b-textarea
                 v-if="showAnnotation"
@@ -102,6 +104,12 @@ export default {
                 annotation: this.annotation,
                 tags: this.tags,
             };
+            // After dom update, focus on input
+            this.$nextTick(() => {
+                if (this.$refs.name) {
+                    this.$refs.name.focus();
+                }
+            });
         },
     },
 };

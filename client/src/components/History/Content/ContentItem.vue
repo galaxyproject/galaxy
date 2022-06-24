@@ -1,12 +1,6 @@
 <template>
-    <div
-        :id="contentId"
-        :class="['content-item m-1 p-0 rounded', contentCls]"
-        draggable
-        :data-hid="id"
-        :data-state="state"
-        @dragstart="onDragStart">
-        <div class="p-1 cursor-pointer" @click.stop="onClick">
+    <div :id="contentId" :class="['content-item m-1 p-0 rounded', contentCls]" :data-hid="id" :data-state="state">
+        <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @click.stop="onClick">
             <div class="d-flex justify-content-between">
                 <span class="p-1 font-weight-bold">
                     <span v-if="selectable" class="selector">
@@ -77,14 +71,14 @@
             @tag-click="onTagClick"
             @input="onTags" />
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
-        <div class="detail-animation-wrapper" :class="expandDataset ? '' : 'collapsed'">
+        <b-collapse :visible="expandDataset">
             <DatasetDetails
                 v-if="expandDataset"
                 :dataset="item"
                 :show-highlight="isHistoryItem && isHistPanel"
                 @edit="onEdit"
                 @toggleHighlights="toggleHighlights" />
-        </div>
+        </b-collapse>
     </div>
 </template>
 
@@ -213,14 +207,5 @@ export default {
     .name {
         word-break: break-all;
     }
-}
-.detail-animation-wrapper {
-    overflow: hidden;
-    transition: max-height 0.2s ease-out;
-    height: auto;
-    max-height: 400px;
-}
-.detail-animation-wrapper.collapsed {
-    max-height: 0;
 }
 </style>

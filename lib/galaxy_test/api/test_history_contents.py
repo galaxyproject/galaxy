@@ -1212,7 +1212,7 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
             _, _, history_contents = self._create_test_history_contents(history_id)
 
             expected_dbkey = "apiMel3"
-            # Change dbkey of all items (only datasets will be affected)
+            # Change dbkey of all items
             payload = {
                 "operation": "change_dbkey",
                 "params": {
@@ -1220,11 +1220,35 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
                     "dbkey": expected_dbkey,
                 },
             }
-            # All items should success (even collections)
+            # All items should succeed
             expected_success_count = len(history_contents)
             bulk_operation_result = self._apply_bulk_operation(history_id, payload)
             self._assert_bulk_success(bulk_operation_result, expected_success_count)
             history_contents = self._get_history_contents(history_id, query="?v=dev&keys=dbkey")
+            for item in history_contents:
+                if item["history_content_type"] == "dataset":
+                    assert item["dbkey"] == expected_dbkey
+
+    def test_bulk_dbkey_change_dataset_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            _, collection_ids, history_contents = self._create_test_history_contents(history_id)
+
+            expected_dbkey = "apiMel3"
+            # Change dbkey of all items
+            payload = {
+                "operation": "change_dbkey",
+                "params": {
+                    "type": "change_dbkey",
+                    "dbkey": expected_dbkey,
+                },
+            }
+            # All items should succeed
+            expected_success_count = len(collection_ids)
+            query = "q=history_content_type-eq&qv=dataset_collection"
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload, query)
+            self._assert_bulk_success(bulk_operation_result, expected_success_count)
+            history_contents = self._get_history_contents(history_id, query="?v=dev&keys=dbkey")
+            # now verify that datasets within collections have the expected dbkey
             for item in history_contents:
                 if item["history_content_type"] == "dataset":
                     assert item["dbkey"] == expected_dbkey
@@ -1265,6 +1289,43 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
                 assert item["extension"] == "tabular"
                 assert item["data_type"] == "galaxy.datatypes.tabular.Tabular"
                 assert "metadata_column_names" in item
+
+    def test_bulk_datatype_change_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            _, collection_ids, history_contents = self._create_test_history_contents(history_id)
+
+            history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
+            for item in history_contents:
+                if item["history_content_type"] == "dataset":
+                    assert item["extension"] == "txt"
+                    assert item["data_type"] == "galaxy.datatypes.data.Text"
+                    assert "metadata_column_names" not in item
+
+            self.dataset_populator.wait_for_history_jobs(history_id)
+
+            expected_datatype = "tabular"
+            # Change datatype of all datasets
+            payload = {
+                "operation": "change_datatype",
+                "params": {
+                    "type": "change_datatype",
+                    "datatype": expected_datatype,
+                },
+            }
+            bulk_operation_result = self._apply_bulk_operation(
+                history_id, payload, query="q=history_content_type-eq&qv=dataset_collection"
+            )
+            self._assert_bulk_success(bulk_operation_result, expected_success_count=len(collection_ids))
+
+            # Wait for celery tasks to finish
+            self.dataset_populator.wait_for_history(history_id)
+
+            history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
+            for item in history_contents:
+                if item["history_content_type"] == "dataset":
+                    assert item["extension"] == "tabular"
+                    assert item["data_type"] == "galaxy.datatypes.tabular.Tabular"
+                    assert "metadata_column_names" in item
 
     def test_bulk_datatype_change_should_skip_set_metadata_on_deferred_data(self):
         with self.dataset_populator.test_history() as history_id:
