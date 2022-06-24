@@ -1,7 +1,7 @@
 <template>
     <b-modal ref="modal" v-bind="$attrs" :title="'Switch to History' | l" v-on="$listeners">
         <b-form-group :description="'Filter histories' | l">
-            <b-input v-model="filter" :placeholder="'Search Filter' | l" />
+            <b-form-input v-model="filter" :placeholder="'Search Filter' | l" />
         </b-form-group>
 
         <b-table
@@ -34,6 +34,7 @@
 </template>
 
 <script>
+import { BModal, BFormGroup, BFormInput, BTable, BPagination } from "bootstrap-vue";
 import { StatelessTags } from "components/Tags";
 import UtcDate from "components/UtcDate";
 
@@ -41,6 +42,11 @@ export default {
     components: {
         StatelessTags,
         UtcDate,
+        BModal,
+        BFormGroup,
+        BFormInput,
+        BTable,
+        BPagination,
     },
     props: {
         currentHistoryId: { type: String, required: true },
