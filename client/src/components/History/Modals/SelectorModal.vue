@@ -1,7 +1,7 @@
 <template>
     <b-modal ref="modal" v-bind="$attrs" :title="'Switch to History' | l" v-on="$listeners">
         <b-form-group :description="'Filter histories' | l">
-            <b-form-input v-model="filter" :placeholder="'Search Filter' | l" />
+            <b-form-input v-model="filter" type="search" :placeholder="'Search Filter' | l" />
         </b-form-group>
 
         <b-table
