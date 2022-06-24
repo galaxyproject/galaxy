@@ -61,7 +61,6 @@
 
 <script>
 import { iframeAdd } from "components/plugins/legacyNavigation";
-import { prependPath } from "utils/redirect";
 import { copy as sendToClipboard } from "utils/clipboard";
 import { absPath } from "utils/redirect";
 import { downloadUrlMixin } from "./mixins.js";
