@@ -130,7 +130,7 @@
         <SelectorModal
             id="selector-history-modal"
             :histories="histories"
-            :current-history="history"
+            :current-history-id="history.id"
             @selectHistory="$emit('setCurrentHistory', $event)" />
 
         <CopyModal id="copy-history-modal" :history="history" />
