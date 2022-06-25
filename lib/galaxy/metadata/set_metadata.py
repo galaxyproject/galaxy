@@ -434,7 +434,7 @@ def set_metadata_portable(
                 if not object_store or not export_store:
                     # Can't happen, but type system doesn't know
                     raise Exception("object_store not built")
-                if not link_data_only and os.path.getsize(external_filename):
+                if not is_deferred and not link_data_only and os.path.getsize(external_filename):
                     # Here we might be updating a disk based objectstore when outputs_to_working_directory is used,
                     # or a remote object store from its cache path.
                     object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
@@ -469,7 +469,7 @@ def set_metadata_portable(
                         context_value = context[context_key]
                         setattr(dataset, context_key, context_value)
                 # We only want to persist the external_filename if the dataset has been linked in.
-                if not link_data_only:
+                if not is_deferred and not link_data_only:
                     dataset.dataset.external_filename = None
                     dataset.dataset.extra_files_path = None
                 export_store.add_dataset(dataset)

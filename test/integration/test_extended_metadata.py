@@ -91,6 +91,37 @@ class ExtendedMetadataIntegrationTestCase(integration_util.IntegrationTestCase):
         assert dataset["created_from_basename"] == "4.bed"
 
 
+class ExtendedMetadataDeferredIntegrationTestCase(integration_util.IntegrationTestCase):
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["metadata_strategy"] = "extended"
+        config["object_store_store_by"] = "uuid"
+        config["retry_metadata_internally"] = False
+
+    def test_deferred_upload_with_metadata_files(self):
+        history_id = self.dataset_populator.new_history()
+        deferred_dataset = self.dataset_populator.create_deferred_hda(
+            history_id=history_id,
+            uri="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
+            ext="bam",
+        )
+        inputs = {"input1": {"src": "hda", "id": deferred_dataset["id"]}}
+        run_response = self.dataset_populator.run_tool("cat1", inputs=inputs, history_id=history_id)
+        self.dataset_populator.wait_for_job(run_response["jobs"][0]["id"], assert_ok=True)
+        bam_dataset = self.dataset_populator.get_history_dataset_details(
+            history_id=history_id, content_id=run_response["outputs"][0]["id"]
+        )
+        assert bam_dataset["state"] == "ok"
+        assert bam_dataset["extension"] == "bam"
+        metadata_response = self._get(f"datasets/{bam_dataset['id']}/metadata_file?metadata_file=bam_index")
+        metadata_response.raise_for_status()
+        assert metadata_response.content.startswith(b"BAI")
+
+
 class ExtendedMetadataIntegrationInstance(integration_util.IntegrationInstance):
     """Describe a Galaxy test instance with embedded pulsar configured."""
 
