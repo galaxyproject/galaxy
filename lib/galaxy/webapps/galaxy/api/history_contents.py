@@ -713,6 +713,12 @@ class FastAPIHistoryContents:
             description="When deleting a dataset collection, whether to also delete containing datasets.",
             deprecated=True,
         ),
+        stop_job: Optional[bool] = Query(
+            default=False,
+            title="Stop Job",
+            description="Whether to stop the creating job if all outputs of the job have been deleted.",
+            deprecated=True,
+        ),
         payload: DeleteHistoryContentPayload = Body(None),
     ):
         """
@@ -725,6 +731,7 @@ class FastAPIHistoryContents:
             payload = DeleteHistoryContentPayload()
         payload.purge = payload.purge or purge is True
         payload.recursive = payload.recursive or recursive is True
+        payload.stop_job = payload.stop_job or stop_job is True
         rval = self.service.delete(
             trans,
             id=id,
