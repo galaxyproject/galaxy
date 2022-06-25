@@ -1,3 +1,5 @@
+from selenium.webdriver.common.by import By
+
 from .framework import (
     selenium_test,
     SeleniumTestCase,
@@ -116,11 +118,11 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.wait_for_and_click(self.navigation.collection_builders.selectors.clear_filters)
 
         forward_column = self.wait_for_visible(self.navigation.collection_builders.selectors.forward_datasets)
-        first_datset_forward = forward_column.find_elements_by_css_selector("li")[0]
+        first_datset_forward = forward_column.find_elements(By.CSS_SELECTOR, "li")[0]
         first_datset_forward.click()
 
         reverse_column = self.wait_for_visible(self.navigation.collection_builders.selectors.reverse_datasets)
-        second_dataset_reverse = reverse_column.find_elements_by_css_selector("li")[1]
+        second_dataset_reverse = reverse_column.find_elements(By.CSS_SELECTOR, "li")[1]
         second_dataset_reverse.click()
 
         self.collection_builder_hide_originals()

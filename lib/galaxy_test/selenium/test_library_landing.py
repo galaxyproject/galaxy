@@ -1,3 +1,5 @@
+from selenium.webdriver.common.by import By
+
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -86,7 +88,7 @@ class LibraryLandingTestCase(SeleniumTestCase):
 
     @retry_assertion_during_transitions
     def _assert_names_are(self, expected_names):
-        names = [e.find_element_by_css_selector("td a").text for e in self.libraries_index_table_elements()]
+        names = [e.find_element(By.CSS_SELECTOR, "td a").text for e in self.libraries_index_table_elements()]
         self.assertEqual(names, expected_names)
 
     @retry_assertion_during_transitions

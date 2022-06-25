@@ -1,3 +1,5 @@
+from selenium.webdriver.common.by import By
+
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -214,7 +216,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         # Insert a tag
         tags_cell = self.get_history_tags_cell(self.history2_name)
-        tag_area = tags_cell.find_element_by_css_selector(".ti-new-tag-input-wrapper input")
+        tag_area = tags_cell.find_element(By.CSS_SELECTOR, ".ti-new-tag-input-wrapper input")
         tag_area.click()
         tag_area.send_keys(self.history2_tags[0])
         self.send_enter(tag_area)
@@ -223,7 +225,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         # Search by tag
         tags_cell = self.get_history_tags_cell(self.history2_name)
-        tag = tags_cell.find_element_by_css_selector(".ti-tag-center")
+        tag = tags_cell.find_element(By.CSS_SELECTOR, ".ti-tag-center")
         tag.click()
 
         self.assert_grid_histories_are([self.history2_name], False)
@@ -290,8 +292,8 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
     def get_history_tags_cell(self, history_name):
         tags_cell = None
         grid = self.wait_for_selector("#grid-table-body")
-        for row in grid.find_elements_by_tag_name("tr"):
-            td = row.find_elements_by_tag_name("td")
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            td = row.find_elements(By.TAG_NAME, "td")
             if td[1].text == history_name:
                 tags_cell = td[4]
                 break
@@ -303,9 +305,9 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     def check_histories(self, histories):
         grid = self.wait_for_selector("#grid-table-body")
-        for row in grid.find_elements_by_tag_name("tr"):
-            td = row.find_elements_by_tag_name("td")
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            td = row.find_elements(By.TAG_NAME, "td")
             history_name = td[1].text
             if history_name in histories:
-                checkbox = td[0].find_element_by_tag_name("input")
+                checkbox = td[0].find_element(By.TAG_NAME, "input")
                 checkbox.click()

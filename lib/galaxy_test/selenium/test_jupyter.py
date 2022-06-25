@@ -1,3 +1,5 @@
+from selenium.webdriver.common.by import By
+
 from galaxy_test.base.populators import flakey
 from .framework import (
     managed_history,
@@ -40,7 +42,7 @@ class JupyterTestCase(SeleniumTestCase):
                 self.driver.switch_to.frame(viz_iframe)
                 self.components.gies.jupyter.body.wait_for_visible()
                 self.wait_for_selector("ul.nav")
-                li_links = self.driver.find_elements_by_css_selector("ul.nav li.dropdown a.dropdown-toggle")
+                li_links = self.driver.find_elements(By.CSS_SELECTOR, "ul.nav li.dropdown a.dropdown-toggle")
                 cell_li = None
                 found_li_texts = []
                 for li_link in li_links:

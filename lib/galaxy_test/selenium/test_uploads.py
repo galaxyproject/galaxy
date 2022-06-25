@@ -1,6 +1,7 @@
 import os
 
 import pytest
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
 from .framework import (
@@ -201,7 +202,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         rule_builder.menu_item_rule_type(rule_type="add-filter-count").wait_for_and_click()
         filter_editor = rule_builder.rule_editor(rule_type="add-filter-count")
         filter_editor_element = filter_editor.wait_for_visible()
-        filter_input = filter_editor_element.find_element_by_css_selector("input[type='number']")
+        filter_input = filter_editor_element.find_element(By.CSS_SELECTOR, "input[type='number']")
         filter_input.clear()
         filter_input.send_keys("1")
         self.screenshot("rules_example_1_4_filter_header")
@@ -418,7 +419,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         rule_builder.menu_item_rule_type(rule_type="add-filter-count").wait_for_and_click()
         filter_editor = rule_builder.rule_editor(rule_type="add-filter-count")
         filter_editor_element = filter_editor.wait_for_visible()
-        filter_input = filter_editor_element.find_element_by_css_selector("input[type='number']")
+        filter_input = filter_editor_element.find_element(By.CSS_SELECTOR, "input[type='number']")
         filter_input.clear()
         filter_input.send_keys("1")
         self.screenshot("rules_deferred_datasets_4_filter_header")
@@ -481,7 +482,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
     def _scroll_to_end_of_table(self):
         rule_builder = self.components.rule_builder
         table_elem = rule_builder.table.wait_for_visible()
-        first_cell = table_elem.find_elements_by_css_selector("td")[0]
+        first_cell = table_elem.find_elements(By.CSS_SELECTOR, "td")[0]
         action_chains = self.action_chains()
         action_chains.move_to_element(first_cell)
         action_chains.click(first_cell)

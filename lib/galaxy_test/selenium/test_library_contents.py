@@ -1,5 +1,6 @@
 import os
 
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 
 from .framework import (
@@ -168,5 +169,5 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
 
     @retry_during_transitions
     def _select_history_option(self, select_id, label_text):
-        select = Select(self.driver.find_element_by_id(select_id))
+        select = Select(self.driver.find_element(By.ID, select_id))
         select.select_by_visible_text(label_text)

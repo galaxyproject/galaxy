@@ -10,7 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as ec
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.wait import WebDriverWait
 
 UNSPECIFIED_TIMEOUT = object()
 
@@ -28,13 +28,13 @@ class HasDriver:
         driver.get(new_url)
 
     def assert_xpath(self, xpath):
-        assert self.driver.find_element_by_xpath(xpath)
+        assert self.driver.find_element(By.XPATH, xpath)
 
     def assert_selector(self, selector):
-        assert self.driver.find_element_by_css_selector(selector)
+        assert self.driver.find_element(By.CSS_SELECTOR, selector)
 
     def assert_selector_absent_or_hidden(self, selector):
-        elements = self.driver.find_elements_by_css_selector(selector)
+        elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
         for element in elements:
             assert not element.is_displayed()
 
@@ -44,7 +44,7 @@ class HasDriver:
             assert not element.is_displayed()
 
     def selector_is_displayed(self, selector):
-        element = self.driver.find_element_by_css_selector(selector)
+        element = self.driver.find_element(By.CSS_SELECTOR, selector)
         return element.is_displayed()
 
     def is_displayed(self, selector_template):
@@ -52,7 +52,7 @@ class HasDriver:
         return element.is_displayed()
 
     def assert_selector_absent(self, selector):
-        assert len(self.driver.find_elements_by_css_selector(selector)) == 0
+        assert len(self.driver.find_elements(By.CSS_SELECTOR, selector)) == 0
 
     def find_elements(self, selector_template):
         return self.driver.find_elements(*selector_template.element_locator)
@@ -133,7 +133,7 @@ class HasDriver:
 
     def wait_for_selector_absent(self, selector, **kwds):
         element = self._wait_on(
-            lambda driver: len(driver.find_elements_by_css_selector(selector)) == 0,
+            lambda driver: len(driver.find_elements(By.CSS_SELECTOR, selector)) == 0,
             f"CSS selector [{selector}] to become absent",
             **kwds,
         )
@@ -203,24 +203,24 @@ class HasDriver:
         return WebDriverWait(self.driver, timeout)
 
     def click_xpath(self, xpath):
-        element = self.driver.find_element_by_xpath(xpath)
+        element = self.driver.find_element(By.XPATH, xpath)
         element.click()
 
     def click_label(self, text):
-        element = self.driver.find_element_by_link_text(text)
+        element = self.driver.find_element(By.LINK_TEXT, text)
         element.click()
 
     def click_selector(self, selector):
-        element = self.driver.find_element_by_css_selector(selector)
+        element = self.driver.find_element(By.CSS_SELECTOR, selector)
         element.click()
 
     def fill(self, form, info):
         for key, value in info.items():
-            input_element = form.find_element_by_name(key)
+            input_element = form.find_element(By.NAME, key)
             input_element.send_keys(value)
 
     def click_submit(self, form):
-        submit_button = form.find_element_by_css_selector("input[type='submit']")
+        submit_button = form.find_element(By.CSS_SELECTOR, "input[type='submit']")
         submit_button.click()
 
     def prepend_timeout_message(self, timeout_exception, message):
