@@ -168,10 +168,10 @@ history_panel:
 
       hid: '${_} .hid'
       name: '${_} .name'
-      blurb: '${_} .blurb .value'
-      dbkey: '${_} .dbkey .value'
-      info: '${_} .info .value'
-      peek: '${_} .dataset-peek'
+      blurb: '${_} .not-loading .blurb .value'
+      dbkey: '${_} .not-loading .dbkey .value'
+      info: '${_} .not-loading .info .value'
+      peek: '${_} .not-loading .dataset-peek'
       toolhelp_title: '${_} .toolhelp strong'
 
       # Title buttons...
@@ -682,7 +682,7 @@ invocations:
     step_output_collection_element_identifier:
       type: xpath
       selector: '//span[@class="content-title name"][text()="${element_identifier}"]'
-    step_output_collection_element_datatype: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-output-collection-details .datatype .value'
+    step_output_collection_element_datatype: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-output-collection-details .not-loading .datatype .value'
     step_job_details: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details'
     step_job_table: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table'
     step_job_table_rows: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table tbody tr'
