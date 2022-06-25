@@ -55,13 +55,11 @@ except ImportError:
 LXML_AVAILABLE = True
 try:
     from lxml import etree
-
-    Element = etree._Element
+    from lxml.etree import _Element as Element
 except ImportError:
     LXML_AVAILABLE = False
     import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
-
-    Element = etree.Element
+    from xml.etree.ElementTree import Element  # noqa: F401  # type: ignore[assignment,no-redef]
 
 try:
     import docutils.core as docutils_core
