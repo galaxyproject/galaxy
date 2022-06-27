@@ -93,6 +93,15 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         self._assert_has_keys(state_details, *states)
         self._assert_has_keys(state_ids, *states)
 
+    def test_show_history_returns_expected_urls(self):
+        # This test can be dropped when the URL attributes become deprecated
+        history_id = self._create_history("TestHistoryForUrls")["id"]
+        show_response = self._show(history_id)
+        self._assert_has_key(show_response, "id", "url", "contents_url")
+
+        assert show_response["url"] == f"/api/histories/{history_id}"
+        assert show_response["contents_url"] == f"/api/histories/{history_id}/contents"
+
     def test_show_most_recently_used(self):
         history_id = self._create_history("TestHistoryRecent")["id"]
         show_response = self._get("histories/most_recently_used").json()
