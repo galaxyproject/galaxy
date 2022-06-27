@@ -65,7 +65,7 @@
                         <span class="fa fa-star-o" />
                     </b-button>
                     <b-button
-                        v-else
+                        v-else-if="showRemoveFavorite"
                         v-b-tooltip.hover
                         role="button"
                         title="Remove from Favorites"
@@ -176,8 +176,14 @@ export default {
         versions() {
             return this.options.versions;
         },
+        hasUser() {
+            return !this.user.isAnonymous;
+        },
         showAddFavorite() {
-            return !!this.user.email && !this.isFavorite;
+            return this.hasUser && !this.isFavorite;
+        },
+        showRemoveFavorite() {
+            return this.hasUser && !this.showAddFavorite;
         },
         showVersions() {
             return this.versions && this.versions.length > 1;
