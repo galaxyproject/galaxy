@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 from typing import Optional
 
 from galaxy import (
@@ -9,6 +10,7 @@ from galaxy.managers import base as managers_base
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.model import tags
+from galaxy.model.security import GalaxyRBACAgent
 from galaxy.schema.schema import (
     CreateLibraryFilePayload,
     LibraryFolderContentsIndexQueryPayload,
@@ -22,6 +24,14 @@ log = logging.getLogger(__name__)
 
 FOLDER_TYPE_NAME = "folder"
 FILE_TYPE_NAME = "file"
+
+
+@dataclass
+class UserFolderPermissions:
+    access: bool
+    modify: bool
+    add: bool
+    manage: bool
 
 
 class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
@@ -50,24 +60,11 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         with 'F' if it is a folder as opposed to a data set which does not have it. Full path is provided in
         response as a separate object providing data for breadcrumb path building.
         """
-        is_admin = trans.user_is_admin
-        current_user_roles = trans.get_current_user_roles()
-
         folder = self.folder_manager.get(trans, folder_id)
 
-        # Special level of security on top of libraries.
-        if trans.app.security_agent.can_access_library(current_user_roles, folder.parent_library) or is_admin:
-            pass
-        else:
-            if trans.user:
-                log.warning(
-                    f"SECURITY: User (id: {trans.user.id}) without proper access rights is trying to load folder with ID of {folder_id}"
-                )
-            else:
-                log.warning(f"SECURITY: Anonymous user is trying to load restricted folder with ID of {folder_id}")
-            raise exceptions.ObjectNotFound(
-                f"Folder with the id provided ( F{self.encode_id(folder_id)} ) was not found"
-            )
+        is_admin = trans.user_is_admin
+        current_user_roles = trans.get_current_user_roles()
+        user_permissions = self._check_user_folder_permissions(trans, current_user_roles, folder)
 
         folder_contents = []
         update_time = ""
@@ -83,14 +80,8 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
 
             if content_item.api_type == FOLDER_TYPE_NAME:
                 encoded_id = f"F{encoded_id}"
-                can_modify = is_admin or (
-                    trans.user and trans.app.security_agent.can_modify_library_item(current_user_roles, folder)
-                )
-                can_manage = is_admin or (
-                    trans.user and trans.app.security_agent.can_manage_library_item(current_user_roles, folder)
-                )
                 update_time = content_item.update_time.isoformat()
-                return_item.update(dict(can_modify=can_modify, can_manage=can_manage))
+                return_item.update(dict(can_modify=user_permissions.modify, can_manage=user_permissions.manage))
                 if content_item.description:
                     return_item.update(dict(description=content_item.description))
 
@@ -108,10 +99,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
 
                 # Can user manage the permissions on the dataset?
                 can_manage = is_admin or (
-                    trans.user
-                    and trans.app.security_agent.can_manage_dataset(
-                        current_user_roles, content_item.library_dataset_dataset_association.dataset
-                    )
+                    trans.user and trans.app.security_agent.can_manage_dataset(current_user_roles, dataset)
                 )
                 raw_size = int(content_item.library_dataset_dataset_association.get_size())
                 nice_size = util.nice_size(raw_size)
@@ -160,14 +148,6 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         # Return the reversed path so it starts with the library node.
         full_path = self._build_path(trans, folder)[::-1]
 
-        user_can_add_library_item = is_admin or trans.app.security_agent.can_add_library_item(
-            current_user_roles, folder
-        )
-
-        user_can_modify_folder = is_admin or trans.app.security_agent.can_modify_library_item(
-            current_user_roles, folder
-        )
-
         parent_library_id = None
         if folder.parent_library is not None:
             parent_library_id = trans.security.encode_id(folder.parent_library.id)
@@ -177,13 +157,37 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         metadata = dict(
             full_path=full_path,
             total_rows=total_rows,
-            can_add_library_item=user_can_add_library_item,
-            can_modify_folder=user_can_modify_folder,
+            can_add_library_item=user_permissions.add,
+            can_modify_folder=user_permissions.modify,
             folder_name=folder.name,
             folder_description=folder.description,
             parent_library_id=parent_library_id,
         )
         return LibraryFolderContentsIndexResult.construct(metadata=metadata, folder_contents=folder_contents)
+
+    # Special level of security on top of libraries.
+    def _check_user_folder_permissions(self, trans, current_user_roles, folder) -> UserFolderPermissions:
+        """Returns the permissions of the user for the given folder or raises an exception if the user has no access."""
+        if trans.user_is_admin:
+            return UserFolderPermissions(access=True, modify=True, add=True, manage=True)
+
+        security_agent: GalaxyRBACAgent = trans.app.security_agent
+        can_access_library = security_agent.can_access_library(current_user_roles, folder.parent_library)
+        if can_access_library:
+            return UserFolderPermissions(
+                access=True,  # Access to the parent library means access to any sub-folder
+                modify=security_agent.can_modify_library_item(current_user_roles, folder),
+                add=security_agent.can_add_library_item(current_user_roles, folder),
+                manage=security_agent.can_manage_library_item(current_user_roles, folder),
+            )
+
+        warning_message = (
+            f"SECURITY: User (id: {trans.user.id}) without proper access rights is trying to load folder with ID of {folder.id}"
+            if trans.user
+            else f"SECURITY: Anonymous user is trying to load restricted folder with ID of {folder.id}"
+        )
+        log.warning(warning_message)
+        raise exceptions.ObjectNotFound(f"Folder with the id provided ( F{self.encode_id(folder.id)} ) was not found")
 
     def create(self, trans, folder_id, payload: CreateLibraryFilePayload):
         """
