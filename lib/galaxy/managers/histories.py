@@ -482,9 +482,11 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             "size": lambda item, key, **context: int(item.disk_size),
             "nice_size": lambda item, key, **context: item.disk_nice_size,
             "state": self.serialize_history_state,
-            "url": lambda item, key, **context: self.url_for("history", id=self.app.security.encode_id(item.id)),
+            "url": lambda item, key, **context: self.url_for(
+                "history", id=self.app.security.encode_id(item.id), context=context
+            ),
             "contents_url": lambda item, key, **context: self.url_for(
-                "history_contents", history_id=self.app.security.encode_id(item.id)
+                "history_contents", history_id=self.app.security.encode_id(item.id), context=context
             ),
             "empty": lambda item, key, **context: (len(item.datasets) + len(item.dataset_collections)) <= 0,
             "count": lambda item, key, **context: len(item.datasets),

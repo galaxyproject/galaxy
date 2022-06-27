@@ -338,6 +338,13 @@ class DatasetsApiTestCase(ApiTestCase):
 
     @skip_without_tool("cat_data_and_sleep")
     def test_delete_cancels_job(self):
+        self._run_cancel_job(use_query_params=False)
+
+    @skip_without_tool("cat_data_and_sleep")
+    def test_delete_cancels_job_with_query_params(self):
+        self._run_cancel_job(use_query_params=True)
+
+    def _run_cancel_job(self, use_query_params=False):
         hda_id = self.dataset_populator.new_dataset(self.history_id)["id"]
         inputs = {
             "input1": {"src": "hda", "id": hda_id},
@@ -355,7 +362,9 @@ class DatasetsApiTestCase(ApiTestCase):
         assert job_details["state"] in ("new", "queued", "running"), job_details
 
         # Use stop_job to cancel the creating job
-        delete_response = self.dataset_populator.delete_dataset(self.history_id, output_hda_id, stop_job=True)
+        delete_response = self.dataset_populator.delete_dataset(
+            self.history_id, output_hda_id, stop_job=True, use_query_params=use_query_params
+        )
         self._assert_status_code_is_ok(delete_response)
         deleted_hda = delete_response.json()
         assert deleted_hda["deleted"], deleted_hda

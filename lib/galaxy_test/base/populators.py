@@ -597,9 +597,13 @@ class BaseDatasetPopulator(BasePopulator):
         purge: bool = False,
         stop_job: bool = False,
         wait_for_purge: bool = False,
+        use_query_params: bool = False,
     ) -> Response:
         dataset_url = f"histories/{history_id}/contents/{content_id}"
-        delete_response = self._delete(dataset_url, {"purge": purge, "stop_job": stop_job}, json=True)
+        if use_query_params:
+            delete_response = self._delete(f"{dataset_url}?purge={purge}&stop_job={stop_job}")
+        else:
+            delete_response = self._delete(dataset_url, {"purge": purge, "stop_job": stop_job}, json=True)
         delete_response.raise_for_status()
         if wait_for_purge and delete_response.status_code == 202:
             return self.wait_for_purge(history_id, content_id)
