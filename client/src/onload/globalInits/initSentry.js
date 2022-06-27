@@ -11,7 +11,11 @@ export const initSentry = (galaxy, config) => {
 
     if (config.sentry) {
         const { sentry_dsn_public, email } = config.sentry;
-        Sentry.init({ dsn: sentry_dsn_public });
+        const release = `${config.version_major}.${config.version_minor}`;
+        Sentry.init({
+            dsn: sentry_dsn_public,
+            release: release,
+        });
         if (email) {
             Sentry.configureScope((scope) => {
                 scope.setUser({
