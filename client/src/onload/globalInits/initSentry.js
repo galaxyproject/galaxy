@@ -8,10 +8,12 @@ import * as Sentry from "@sentry/browser";
  */
 export const initSentry = (galaxy, config) => {
     console.log("initSentry");
-
     if (config.sentry) {
         const { sentry_dsn_public, email } = config.sentry;
-        const release = `${config.version_major}.${config.version_minor}`;
+        let release = galaxy.config.version_major;
+        if (galaxy.config.version_minor) {
+            release += `.${galaxy.config.version_minor}`;
+        }
         Sentry.init({
             dsn: sentry_dsn_public,
             release: release,
