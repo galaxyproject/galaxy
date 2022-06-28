@@ -1,5 +1,3 @@
-from selenium.webdriver.common.by import By
-
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -57,11 +55,11 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
     def delete_custom_build(self, build_name):
         delete_button = None
         grid = self.wait_for_selector("table.grid > tbody")
-        for row in grid.find_elements(By.TAG_NAME, "tr"):
-            td = row.find_elements(By.TAG_NAME, "td")
+        for row in grid.find_elements(self.by.CSS_SELECTOR, "tr"):
+            td = row.find_elements(self.by.CSS_SELECTOR, "td")
             name = td[0].text
             if name == build_name:
-                delete_button = td[3].find_element(By.CSS_SELECTOR, ".fa-trash-o")
+                delete_button = td[3].find_element(self.by.CSS_SELECTOR, ".fa-trash-o")
                 break
 
         if delete_button is None:
@@ -73,8 +71,8 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         builds = []
         grid = self.wait_for_selector("table.grid > tbody")
-        for row in grid.find_elements(By.TAG_NAME, "tr"):
-            name = row.find_elements(By.TAG_NAME, "td")[0].text
+        for row in grid.find_elements(self.by.CSS_SELECTOR, "tr"):
+            name = row.find_elements(self.by.CSS_SELECTOR, "td")[0].text
             builds.append(name)
         return builds
 

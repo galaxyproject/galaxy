@@ -750,9 +750,11 @@ class NavigatesGalaxy(HasDriver):
         self.upload_set_footer_extension(ext, tab_id="composite")
 
         table = self.components.upload.composite.table().wait_for_visible()
-        source_select_buttons = table.find_elements_by_css_selector("div.dropdown button.btn")
-        paste_buttons = table.find_elements_by_css_selector(".upload-source .dropdown-menu .dropdown-item .fa-edit")
-        textareas = table.find_elements_by_css_selector("div.upload-text-column textarea.upload-text-content")
+        source_select_buttons = table.find_elements(self.by.CSS_SELECTOR, "div.dropdown button.btn")
+        paste_buttons = table.find_elements(
+            self.by.CSS_SELECTOR, ".upload-source .dropdown-menu .dropdown-item .fa-edit"
+        )
+        textareas = table.find_elements(self.by.CSS_SELECTOR, "div.upload-text-column textarea.upload-text-content")
 
         for i in range(len(paste_content)):
             source_select_buttons[i].click()

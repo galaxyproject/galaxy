@@ -78,9 +78,12 @@ preferences:
     manage_api_key: '#edit-preferences-api-key'
     current_email: "#user-preferences-current-email"
     get_new_key: '#submit'
+    api_key_input: "[data-label='Current API key:'] > input"
     delete_account: '#delete-account'
     delete_account_input: '#name-input'
     delete_account_ok_btn: '.modal-footer .btn-primary'
+    email_input: "input[id='email']"
+    username_input: "input[id='username']"
 
 toolbox_filters:
   selectors:
@@ -859,6 +862,7 @@ libraries:
       private_dataset_icon: '.fa-key'
       open_location_details_btn: '.details-btn'
       location_details_ok_btn: '#details-modal .btn-primary'
+      add_history_items: '#dataset_add_bulk'
 
     labels:
       from_history: 'from History'

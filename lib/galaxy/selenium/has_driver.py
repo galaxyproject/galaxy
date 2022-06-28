@@ -7,9 +7,10 @@ from typing import (
     List,
     Optional,
     Type,
+    Union,
 )
 
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException as SeleniumTimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -22,10 +23,13 @@ from galaxy.navigation.components import Target
 
 UNSPECIFIED_TIMEOUT = object()
 
+HasFindElement = Union[WebDriver, WebElement]
+
 
 class HasDriver:
-    TimeoutException = TimeoutException
+    TimeoutException: Type[SeleniumTimeoutException] = SeleniumTimeoutException
     by: Type[By] = By
+    keys: Type[Keys] = Keys
     driver: WebDriver
 
     def re_get_with_query_params(self, params_str: str):
@@ -235,12 +239,14 @@ class HasDriver:
         submit_button = form.find_element(By.CSS_SELECTOR, "input[type='submit']")
         submit_button.click()
 
-    def prepend_timeout_message(self, timeout_exception: TimeoutException, message: str) -> TimeoutException:
+    def prepend_timeout_message(
+        self, timeout_exception: SeleniumTimeoutException, message: str
+    ) -> SeleniumTimeoutException:
         msg = message
         timeout_msg = timeout_exception.msg
         if timeout_msg:
             msg += f" {timeout_msg}"
-        return TimeoutException(
+        return SeleniumTimeoutException(
             msg=msg,
             screen=timeout_exception.screen,
             stacktrace=timeout_exception.stacktrace,
@@ -253,6 +259,24 @@ class HasDriver:
         finally:
             self.driver.switch_to.default_content()
 
+    def find_element_by_link_text(self, text: str, element: Optional[WebElement] = None) -> WebElement:
+        return self._locator_aware(element).find_element(By.LINK_TEXT, text)
+
+    def find_element_by_xpath(self, xpath: str, element: Optional[WebElement] = None) -> WebElement:
+        return self._locator_aware(element).find_element(By.XPATH, xpath)
+
+    def find_element_by_id(self, id: str, element: Optional[WebElement] = None) -> WebElement:
+        return self._locator_aware(element).find_element(By.ID, id)
+
+    def find_element_by_selector(self, selector: str, element: Optional[WebElement] = None) -> WebElement:
+        return self._locator_aware(element).find_element(By.CSS_SELECTOR, selector)
+
+    def _locator_aware(self, element: Optional[WebElement] = None) -> HasFindElement:
+        if element is None:
+            return self.driver
+        else:
+            return element
+
 
 def exception_indicates_click_intercepted(exception):
     return "click intercepted" in str(exception)
@@ -264,6 +288,9 @@ def exception_indicates_not_clickable(exception):
 
 def exception_indicates_stale_element(exception):
     return "stale" in str(exception)
+
+
+TimeoutException = SeleniumTimeoutException
 
 
 __all__ = (
