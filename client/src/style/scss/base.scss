@@ -1045,6 +1045,20 @@ a.action-button {
     @extend .btn, .active;
 }
 
+// A content button is a button in content items
+
+.content-buttons {
+    .btn:hover,
+    .btn:active,
+    .btn:focus,
+    .btn:focus-visible {
+        @extend .text-white;
+        background-color: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+    }    
+}
+
 // A menu button is a button that has an attached popup menu
 
 .menubutton {

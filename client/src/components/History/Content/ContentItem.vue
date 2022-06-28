@@ -1,5 +1,5 @@
 <template>
-    <div :id="contentId" :class="['content-item m-1 p-0 rounded', contentCls]" :data-hid="id" :data-state="state">
+    <div :id="contentId" :class="['content-item m-1 p-0 rounded content-buttons', contentCls]" :data-hid="id" :data-state="state">
         <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @click.stop="onClick">
             <div class="d-flex justify-content-between">
                 <span class="p-1 font-weight-bold">
