@@ -4,8 +4,8 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,
 )
-from galaxy_test.base.uses_shed import UsesShed
 from galaxy_test.driver import integration_util
+from galaxy_test.driver.uses_shed import UsesShed
 
 
 class WorkflowInvocationTestCase(integration_util.IntegrationTestCase, UsesShed):

@@ -185,7 +185,7 @@ else:
     _HasTable = object
 
 
-def get_uuid(uuid: Optional[Union[UUID, str]] = None):
+def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
     if isinstance(uuid, UUID):
         return uuid
     if not uuid:
