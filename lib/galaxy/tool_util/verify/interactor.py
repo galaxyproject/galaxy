@@ -338,7 +338,8 @@ class GalaxyInteractorApi:
 
     def get_history(self, history_name="test_history"):
         # Return the most recent non-deleted history matching the provided name
-        response = self._get(f"histories?q=name&qv={history_name}&order=update_time")
+        filters = urllib.parse.urlencode({"q": "name", "qv": history_name, "order": "update_time"})
+        response = self._get(f"histories?{filters}")
         try:
             return response.json()[-1]
         except IndexError:
