@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-undef
 define(["i18n!nls/locale"], function (localeStrings) {
     /**
      * @param {String} strToLocalize
