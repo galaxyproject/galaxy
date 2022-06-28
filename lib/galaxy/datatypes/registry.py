@@ -1055,7 +1055,7 @@ class Registry:
             dataset = None
 
         datatype_by_extension = self.get_datatype_by_extension(ext)
-        if datatype_by_extension is not None and datatype_by_extension.matches_any(accepted_formats):
+        if datatype_by_extension and datatype_by_extension.matches_any(accepted_formats):
             return True, None, None
 
         for convert_ext in self.get_converters_by_datatype(ext):
