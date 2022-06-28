@@ -57,7 +57,9 @@ class EmailAction(DefaultJobAction):
             history_id_encoded = app.security.encode_id(job.history_id)
             invocation_id_encoded = app.security.encode_id(job.workflow_invocation_step.workflow_invocation_id)
             link = f"{app.config.galaxy_infrastructure_url}/histories/view?id={history_id_encoded}"
-            link_invocation = f"{app.config.galaxy_infrastructure_url}/workflows/invocations/report?id={invocation_id_encoded}"
+            link_invocation = (
+                f"{app.config.galaxy_infrastructure_url}/workflows/invocations/report?id={invocation_id_encoded}"
+            )
             if frm is None:
                 if action.action_arguments and "host" in action.action_arguments:
                     host = action.action_arguments["host"]
