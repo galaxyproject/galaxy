@@ -17,5 +17,5 @@ class JobOutputsToWorkingDirectoryIntegrationInstance(integration_util.Integrati
 instance = integration_util.integration_module_instance(JobOutputsToWorkingDirectoryIntegrationInstance)
 
 test_tools = integration_util.integration_tool_runner(
-    ["output_format", "output_empty_work_dir", "collection_creates_pair_from_work_dir"]
+    ["output_format", "output_empty_work_dir", "collection_creates_pair_from_work_dir", "strict_shell_profile"]
 )
