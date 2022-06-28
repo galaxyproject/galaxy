@@ -1,0 +1,131 @@
+
+===========================================================
+May 2022 Galaxy Release (v 22.05)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Feature1**
+  Feature description.
+
+**Feature2**
+  Feature description.
+
+**Feature3**
+  Feature description.
+
+
+New Visualizations
+===========================================================
+
+.. visualizations
+* Add gulp target for force-rebuild of viz plugins
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 13370`_
+* Properly initialize chart settings for new visualizations
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 13561`_
+* Point to GTN tutorial in visualizations readme
+  (thanks to `@beatrizserrano <https://github.com/beatrizserrano>`__).
+  `Pull Request 13616`_
+* Add 3D PCA visualization
+  (thanks to `@xtrojak <https://github.com/xtrojak>`__).
+  `Pull Request 13771`_
+* Support phylocanvas autobuild
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 14023`_
+* Fix a bug in PCA artifact staging that prevents a plugin rebuild.
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 14148`_
+
+New Datatypes
+===========================================================
+
+.. datatypes
+* Python code formatting standard, automatic.
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 11162`_
+* Add new molecule datatypes
+  (thanks to `@muon-spectroscopy-computational-project <https://github.com/muon-spectroscopy-computational-project>`__).
+  `Pull Request 12375`_
+* Upgrade syntax to Python 3.7
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 13500`_
+* add mzqc datatype
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 13564`_
+* Update mypy to 0.942 . Fix new mypy errors.
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 13650`_
+* Create data_fetch and set_metadata celery tasks
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 13655`_
+* Add bigWig to Wig converter
+  (thanks to `@gallardoalba <https://github.com/gallardoalba>`__).
+  `Pull Request 13708`_
+* Replace last use of deprecated ``imp`` module
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 13817`_
+* Add support for gz-compressed gfa1 and gfa2 files
+  (thanks to `@gallardoalba <https://github.com/gallardoalba>`__).
+  `Pull Request 13927`_
+* Tighten sniffers
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 13959`_
+* Don't create a BGZF index when running the compressing converter
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 13969`_
+* Fix bug: set creation_date on dataset.metadata, not dataset
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 14039`_
+* Fix composite datatypes with ``substitute_name_with_metadata``
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 14053`_
+* Enable generating urls for WSGI routes within FastAPI routes
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 14066`_
+* Fix collection download for bam native files
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 14162`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* Python code formatting standard, automatic.
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 11162`_
+* Add built-in converters to tool panel
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 13447`_
+* Add JupyTool, user-configurable interactive Jupyter-based tool.
+  (thanks to `@blankenberg <https://github.com/blankenberg>`__).
+  `Pull Request 13606`_
+* Fix David URL
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 13666`_
+* IT updates from EU
+  (thanks to `@gmauro <https://github.com/gmauro>`__).
+  `Pull Request 13811`_
+* Bump ncb-datasets-cli dependency to 13.14.0
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 13853`_
+
+Release Testing Team
+===========================================================
+
+A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+
+<team members go here>
+
+Release Notes
+===========================================================
+
+Please see the `full release notes <22.05_announce.html>`_ for more details.
+
+.. include:: 22.05_prs.rst
+
+.. include:: _thanks.rst
