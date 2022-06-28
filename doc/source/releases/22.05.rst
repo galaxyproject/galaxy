@@ -17,10 +17,10 @@ Enhancements
 * Add new molecule datatypes
   (thanks to `@muon-spectroscopy-computational-project <https://github.com/muon-spectroscopy-computational-project>`__).
   `Pull Request 12375`_
-* Add DEFERRED datasets to Galaxy.
+* Add DEFERRED datasets to Galaxy
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 12533`_
-* Storage dashboard
+* Add Storage dashboard
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 13113`_
 * Add built-in converters to tool panel
@@ -29,7 +29,7 @@ Enhancements
 * Enable infinite scrolling / pagination for history and collection items
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 13477`_
-* Reorganized alembic branch
+* Replace SQLAlchemy Migrate with Alembic
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 13513`_
 * Add filtering to new History
@@ -47,10 +47,10 @@ Enhancements
 * Replace bootstrap-tour.js with popper.js
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 13778`_
-* IT updates from EU
+* Add and update various interactive tools
   (thanks to `@gmauro <https://github.com/gmauro>`__).
   `Pull Request 13811`_
-* Beta History: add more bulk operations
+* Add more bulk operations to Beta History
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 13877`_
 * Update color scheme collection progress bar
@@ -63,10 +63,10 @@ Enhancements
   `Pull Request 13370`_
 .. enhancement_tag_datatypes
 
-* add mzqc datatype
+* Add mzqc datatype
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 13564`_
-* Update mypy to 0.942 . Fix new mypy errors.
+* Update mypy to 0.942 and fix new mypy errors
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 13650`_
 * Create data_fetch and set_metadata celery tasks
@@ -83,7 +83,7 @@ Enhancements
   `Pull Request 13927`_
 .. enhancement_tag_tools
 
-* Add JupyTool, user-configurable interactive Jupyter-based tool.
+* Add JupyTool, user-configurable interactive Jupyter-based tool
   (thanks to `@blankenberg <https://github.com/blankenberg>`__).
   `Pull Request 13606`_
 .. enhancement_tag_workflows
@@ -91,25 +91,25 @@ Enhancements
 * Simplified workflow form runtime options
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13613`_
-* Selenium tests for much of `#13600 <https://github.com/galaxyproject/galaxy/issues/13600>`__.
+* Selenium tests for much of `#13600 <https://github.com/galaxyproject/galaxy/issues/13600>`__
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13673`_
-* Rework workflow index API for more consistency between deleted/hidden and showing shared workflows.
+* Rework workflow index API for more consistency between deleted/hidden and showing shared workflows
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13699`_
-* Implement API endpoints and tests for workflow sharing options.
+* Implement API endpoints and tests for workflow sharing options
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13719`_
-* Fix import workflow file and UX enhancements
+* Fix workflow file import and enhance UX for workflow imports
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 13754`_
-* Implement more useful workflow tagging.
+* Implement more useful workflow tagging
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13786`_
-* Implement initial jest unit tests for WorkflowList.vue.
+* Implement initial jest unit tests for WorkflowList.vue
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13856`_
-* Use an Enum for invocations view.
+* Use an Enum for invocations view
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13875`_
 * Workflow List Vue Component Improvements
@@ -118,21 +118,21 @@ Enhancements
 * More Workflow List Component Improvements
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13892`_
-* API workflow index allow 'searching' by owner.
+* API workflow index allow 'searching' by owner
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13934`_
 * More Uniform URI Access and Validation
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13947`_
-* Localize workflow deletion confirmation message...
+* Localize workflow deletion confirmation message
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13987`_
-* Workflow deletion selenium tests.
+* Add workflow deletion selenium tests
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13994`_
 .. enhancement_tag_ui
 
-* Client dependency updates, swap to node 16.
+* Update Client dependency, swap to node 16
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 13282`_
 * Run jest tests using node 16 in CI
@@ -144,7 +144,7 @@ Enhancements
 * Add support for gulp build process to use a configurable directory
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 13657`_
-* Formalize supported browsers, drop transpilation, enforce with eslint.
+* Formalize supported browsers, drop transpilation, enforce with eslint
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 13709`_
 * Swap to vue/recommended eslint
@@ -153,7 +153,7 @@ Enhancements
 * Citation separation
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 13847`_
-* Add client build timestamp to application config.
+* Add client build timestamp to application config
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 13874`_
 .. enhancement_tag_jobs
@@ -161,13 +161,13 @@ Enhancements
 * Attach dataset source in model store imports
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 13560`_
-* Overhaul job metrics.
+* Overhaul job metrics
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13634`_
 * More Python typing around job evaluation code
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13659`_
-* Migrate jobs index to FastAPI controller.
+* Migrate jobs index to FastAPI controller
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13767`_
 * Port api/tools/fetch to FastAPI, add schema, and use `__FETCH_DATA__` in most tests
@@ -207,9 +207,6 @@ Enhancements
 * Check prefix before complete loading when checking yaml and cwl tools
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 12604`_
-* Support bulk dbkey and datatype collection changes
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 14172`_
 * Maintain redirect if login is necessary
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 13274`_
@@ -237,7 +234,7 @@ Enhancements
 * Add source_metadata attribute for workflows imported using TRS ID or via URL
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 13376`_
-* Allow legacy EDAM mappings.
+* Allow legacy EDAM mappings
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13413`_
 * Add sorting function to Saved Rules Selector
@@ -252,7 +249,7 @@ Enhancements
 * let linter check for duplicated names/labels
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 13459`_
-* Small enhancements from the deferred data branch.
+* Small enhancements from the deferred data branch
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13475`_
 * Various Celery Framework Enhancements
@@ -264,7 +261,7 @@ Enhancements
 * Run tests with ``metadata_strategy: extended`` on weekly schedule
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 13503`_
-* Integration end-to-end test for PDF export.
+* Integration end-to-end test for PDF export
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13504`_
 * Add API endpoint to recalculate user disk usage
@@ -273,10 +270,10 @@ Enhancements
 * Add retries to `test_github_search`
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 13509`_
-* More small atomic enhancements from the deferred data branch.
+* More small atomic enhancements from the deferred data branch
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13517`_
-* Disable implicit optional types.
+* Disable implicit optional types
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13519`_
 * Update Python dependencies
@@ -339,7 +336,7 @@ Enhancements
 * Update Python dependencies
   (thanks to `@galaxybot <https://github.com/galaxybot>`__).
   `Pull Request 13661`_
-* Disable implicitly attaching HDAs to histories.
+* Disable implicitly attaching HDAs to histories
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13670`_
 * Use authenticated git protocol in pre-commit repo
@@ -351,7 +348,7 @@ Enhancements
 * Add OIDC PKCE parameter support
   (thanks to `@gecage952 <https://github.com/gecage952>`__).
   `Pull Request 13683`_
-* Infrastructure for building dynamic files for download asynchronously.
+* Infrastructure for building dynamic files for download asynchronously
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13691`_
 * Update irods client
@@ -372,10 +369,10 @@ Enhancements
 * Watch changes to history object instead of changed history items
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 13721`_
-* Anonymous user history menu fixes.
+* Anonymous user history menu fixes
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 13724`_
-* Implement pagination of workflows grid.
+* Implement pagination of workflows grid
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13725`_
 * Workflow index API fix and testing
@@ -405,7 +402,7 @@ Enhancements
 * Adjust tours and tour tests to new history
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 13777`_
-* Switch workflow sharing to common Vue component.
+* Switch workflow sharing to common Vue component
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13780`_
 * Replace 2 uses of deprecated ``imp`` module
@@ -417,7 +414,7 @@ Enhancements
 * Update committers list
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 13791`_
-* Allow users to view invocations only for a particular workflow.
+* Allow users to view invocations only for a particular workflow
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13792`_
 * Update Python dependencies
@@ -435,7 +432,7 @@ Enhancements
 * Use ``load_app_properties()`` to load Galaxy config file
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 13809`_
-* Improve assert error for transient citation rendering test issue.
+* Improve assert error for transient citation rendering test issue
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13814`_
 * Add allowance for members changing their own name…
@@ -453,7 +450,7 @@ Enhancements
 * Beta History: display 'processing' message while running bulk operations
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 13844`_
-* Typing fixes from deferred data branch.
+* Typing fixes from deferred data branch
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13845`_
 * Beta History: display `global` history bulk operations only when necessary
@@ -462,7 +459,7 @@ Enhancements
 * Beta History: notify query selection break
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 13850`_
-* Improved typing of Galaxy model store related stuff.
+* Improved typing of Galaxy model store related stuff
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13861`_
 * galaxy-tool-util: better link in the README
@@ -510,16 +507,16 @@ Enhancements
 * Recommend rebasing PRs over merging the target branch
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 13961`_
-* More remove legacy tool dependencies handling in tool shed.
+* More remove legacy tool dependencies handling in tool shed
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13966`_
-* Refactor authenticate controller into a services layer.
+* Refactor authenticate controller into a services layer
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13967`_
 * Use colon symbol instead of equal sign in history filters
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 13971`_
-* Remove can_eliminate_tool_dependency from tool shed code.
+* Remove can_eliminate_tool_dependency from tool shed code
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13975`_
 * Update Python dependencies
@@ -531,25 +528,25 @@ Enhancements
 * Add history update time to Beta History
   (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
   `Pull Request 13989`_
-* More workflow Jest tests.
+* More workflow Jest tests
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13993`_
-* Small tour tweaks.
+* Small tour tweaks
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13996`_
 * Add text to history import/switch buttons
   (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
   `Pull Request 14001`_
-* Script to validate tours structure.
+* Script to validate tours structure
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 14003`_
 * Cleaner, More Robust Workflow Creation Form Testing Logic
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 14004`_
-* Add galaxy-test-driver to CI package tests.
+* Add galaxy-test-driver to CI package tests
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 14011`_
-* Bring galaxy-test-api under CI also.
+* Bring galaxy-test-api under CI also
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 14012`_
 * Update Python dependencies
@@ -558,10 +555,10 @@ Enhancements
 * Use setuptools custom package discovery instead of explicit listing
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 14022`_
-* Add a tour for deferred datasets.
+* Add a tour for deferred datasets
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 14036`_
-* Add tour requirements.
+* Add tour requirements
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 14037`_
 * Enable change datatype in bulk
@@ -588,9 +585,12 @@ Enhancements
 * Rephrase 'updated' to 'refreshed' in history counter
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 14113`_
+* Support bulk dbkey and datatype collection changes
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 14172`_
 .. small_enhancement
 
-* Python code formatting standard, automatic.
+* Python code formatting standard, automatic
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 11162`_
 * Remove uWSGI / WSGI support
@@ -608,7 +608,7 @@ Enhancements
 * Relax checks for `test_github_search`
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 13410`_
-* Disable implicit re-imports across the project.
+* Disable implicit re-imports across the project
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13476`_
 * Update logging configuration documentation
@@ -641,7 +641,7 @@ Enhancements
 * Fix mypy error on bool expressions
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 13712`_
-* Rework admin job tables into reusable Galaxy job table component.
+* Rework admin job tables into reusable Galaxy job table component
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13769`_
 * Unused client dependency purge
@@ -662,10 +662,10 @@ Enhancements
 * Duplicates removed from filtering.js
   (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
   `Pull Request 13835`_
-* ToolSourceDisplay dynamic import for shared libs bundle size improvement.
+* ToolSourceDisplay dynamic import for shared libs bundle size improvement
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 13837`_
-* Refactor toward invocations service layer.
+* Refactor toward invocations service layer
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13862`_
 * Update committer login name
@@ -677,7 +677,7 @@ Enhancements
 * Beta History Collections: set default visible and deleted state in ContentOptions
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 13939`_
-* Small code cleanup fixes to galaxy.model.store related code.
+* Small code cleanup fixes to galaxy.model.store related code
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13944`_
 * Drop update_time from JobStateHistory
@@ -714,7 +714,7 @@ Fixes
 * Support phylocanvas autobuild
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 14023`_
-* Fix a bug in PCA artifact staging that prevents a plugin rebuild.
+* Fix a bug in PCA artifact staging that prevents a plugin rebuild
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 14148`_
 .. bug_tag_datatypes
@@ -747,16 +747,16 @@ Fixes
   `Pull Request 13853`_
 .. bug_tag_workflows
 
-* Fix workflow index API boolean parameters.
+* Fix workflow index API boolean parameters
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13698`_
-* More robust workflow grid selenium tests.
+* More robust workflow grid selenium tests
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13855`_
-* Fix workflow bookmarking API.
+* Fix workflow bookmarking API
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13857`_
-* Fix showing invocations for a particular workflow.
+* Fix showing invocations for a particular workflow
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 14102`_
 .. bug_tag_ui
@@ -814,7 +814,7 @@ Fixes
 * Only stream stdout/stderr on kubernetes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 13642`_
-* Improve error handling for CLI job runner.
+* Improve error handling for CLI job runner
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13759`_
 * Fix error when getting destinations by tag
@@ -846,7 +846,7 @@ Fixes
 * Fix persistent mulled cache unused for repo_has_name
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 13718`_
-* Fix up configuration for STS.  Can't rebuild config without this.
+* Fix up configuration for STS.  Can't rebuild config without this
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 13834`_
 * Misc fixes 2022-05
@@ -855,7 +855,7 @@ Fixes
 * Fix a small error in job doc
   (thanks to `@qiagu <https://github.com/qiagu>`__).
   `Pull Request 14013`_
-* Interactivetool doc/sample tweaks.
+* Interactivetool doc/sample tweaks
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 14025`_
 .. bug
@@ -866,12 +866,6 @@ Fixes
 * Trim spaces from around email addresses and usernames when registering
   (thanks to `@natefoo <https://github.com/natefoo>`__).
   `Pull Request 12482`_
-* Fix logic around tool favorites for anonymous users.
-  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
-  `Pull Request 14189`_
-* Support stop_job param in query string
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 14194`_
 * Fix a bug in username minimum length transformation and set minimum length to 1
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 13195`_
@@ -908,7 +902,7 @@ Fixes
 * Fix copy tool id
   (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
   `Pull Request 13463`_
-* Make test_user_library_permissions.py more robust.
+* Make test_user_library_permissions.py more robust
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13487`_
 * Expand input parameter workflow steps in workflow run form
@@ -965,7 +959,7 @@ Fixes
 * Minor tweak to language in history dropdown in beta history
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 13631`_
-* Potentially fix flakey rename test with beta history.
+* Potentially fix flakey rename test with beta history
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13633`_
 * Limit tool parameter value to show only 20 lines with overflow scrolling
@@ -974,13 +968,13 @@ Fixes
 * Forward type annotation of depends
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 13643`_
-* Fix package CI for pysam errors.
+* Fix package CI for pysam errors
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13644`_
 * Fix unselect file in FTP uploader popup
   (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
   `Pull Request 13652`_
-* Correct data fetch API call in the client.
+* Correct data fetch API call in the client
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13669`_
 * Update supervisor config when starting galaxy via run.sh
@@ -1001,10 +995,10 @@ Fixes
 * Fix sorting of recursively discovered datasets
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 13688`_
-* Fix download collection button in history panel.
+* Fix download collection button in history panel
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13690`_
-* Two small fixes to testing infrastructure.
+* Two small fixes to testing infrastructure
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13693`_
 * Raise a more appropriate error when there's no version table
@@ -1025,25 +1019,25 @@ Fixes
 * Miscellaneous Histories API fixes
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 13717`_
-* Simplify some selenium upload tests to respect either history properly.
+* Simplify some selenium upload tests to respect either history properly
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13726`_
-* Converge testing and classes for history options across new and old history panel.
+* Converge testing and classes for history options across new and old history panel
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13727`_
-* Eliminate dependency of legacy history for history sharing tests.
+* Eliminate dependency of legacy history for history sharing tests
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13729`_
 * Unquote url before using it
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 13730`_
-* Fix test_navigates_galaxy.py for beta history panel.
+* Fix test_navigates_galaxy.py for beta history panel
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13732`_
-* Fix tests for simple_constructs.yml.
+* Fix tests for simple_constructs.yml
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13758`_
-* More robust is_beta_history() testing check.
+* More robust is_beta_history() testing check
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13762`_
 * Add an option to disable searching for distributed object store datasets that don't have an object_store_id
@@ -1058,7 +1052,7 @@ Fixes
 * Do not store toolbox on ToolPanelViewSearch
   (thanks to `@cat-bro <https://github.com/cat-bro>`__).
   `Pull Request 13776`_
-* Fixes for sharing component error handling.
+* Fixes for sharing component error handling
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13779`_
 * Beta History: fix history query counts synchronization
@@ -1070,7 +1064,7 @@ Fixes
 * Fix thread accumulation in testing
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 13788`_
-* Potential fix for certain kind of transient Selenium library errors.
+* Potential fix for certain kind of transient Selenium library errors
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13794`_
 * Pulsar fix for tools that use chromosome len files
@@ -1115,7 +1109,7 @@ Fixes
 * Backport: Respect GRAVITY_STATE_DIR when activating venv
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 13897`_
-* Fix typing for unpinned request dependency.
+* Fix typing for unpinned request dependency
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13898`_
 * Expand/collapse history dataset display content
@@ -1193,7 +1187,7 @@ Fixes
 * Fix missing biotools package
   (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 14020`_
-* Remove fabric as a dependency for Galaxy.
+* Remove fabric as a dependency for Galaxy
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 14030`_
 * Add sessioncookie with ``SameSite=None; secure`` for tool_runner path
@@ -1223,7 +1217,7 @@ Fixes
 * Clear history refresh timeout for snappier operations in new history
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 14088`_
-* Storage Dashboard: fix unlimited quota display
+* Fix unlimited quota display in Storage Dashboard
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 14090`_
 * Update window manager margin
@@ -1307,9 +1301,15 @@ Fixes
 * Fix histories API URL building
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 14186`_
+* Fix logic around tool favorites for anonymous users
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 14189`_
 * Fix `FilesDialog` navigation back when a file source shows an error
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 14190`_
+* Support stop_job param in query string
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 14194`_
 * Replace release note videos with youtube links
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 14201`_

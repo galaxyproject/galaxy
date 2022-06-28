@@ -37,7 +37,7 @@ New Visualizations
 * Support phylocanvas autobuild
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 14023`_
-* Fix a bug in PCA artifact staging that prevents a plugin rebuild.
+* Fix a bug in PCA artifact staging that prevents a plugin rebuild
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 14148`_
 
@@ -45,7 +45,7 @@ New Datatypes
 ===========================================================
 
 .. datatypes
-* Python code formatting standard, automatic.
+* Python code formatting standard, automatic
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 11162`_
 * Add new molecule datatypes
@@ -54,10 +54,10 @@ New Datatypes
 * Upgrade syntax to Python 3.7
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 13500`_
-* add mzqc datatype
+* Add mzqc datatype
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 13564`_
-* Update mypy to 0.942 . Fix new mypy errors.
+* Update mypy to 0.942 and fix new mypy errors
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 13650`_
 * Create data_fetch and set_metadata celery tasks
@@ -95,19 +95,19 @@ Builtin Tool Updates
 ===========================================================
 
 .. tools
-* Python code formatting standard, automatic.
+* Python code formatting standard, automatic
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 11162`_
 * Add built-in converters to tool panel
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 13447`_
-* Add JupyTool, user-configurable interactive Jupyter-based tool.
+* Add JupyTool, user-configurable interactive Jupyter-based tool
   (thanks to `@blankenberg <https://github.com/blankenberg>`__).
   `Pull Request 13606`_
 * Fix David URL
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 13666`_
-* IT updates from EU
+* Add and update various interactive tools
   (thanks to `@gmauro <https://github.com/gmauro>`__).
   `Pull Request 13811`_
 * Bump ncb-datasets-cli dependency to 13.14.0
