@@ -1,4 +1,4 @@
-import json
+#!/usr/bin/env python3
 import os
 
 import click
@@ -42,22 +42,21 @@ def upload_file(url, path, api_key, history_id, file_type='auto', dbkey='?', fil
     # Extract session from created upload URL
     session_id = uploader.url.rsplit('/', 1)[1]
     payload = {
-        'history_id': history_id,
-        'targets': json.dumps([
-            {
-                "destination": {"type": "hdas"},
-                "elements": [
-                    {
-                        "src": "files",
-                        "ext": file_type,
-                        "dbkey": dbkey,
-                        "name": filename
-                    }
-                ]
-            }
-        ]),
+        "history_id": history_id,
+        "targets":
+            [
+                {
+                    "destination": {"type": "hdas"},
+                    "elements": [{"src": "files", "ext": file_type, "dbkey": dbkey, "name": filename}],
+                }
+            ],
+        "files_0|file_data": {"session_id": session_id, "name": filename},
     }
-    response = requests.post(f"{url}{SUBMISSION_ENDPOINT}", data=payload, files={'files_0|file_data': json.dumps({"session_id": session_id})}, headers=headers)
+    response = requests.post(
+        f"{url}{SUBMISSION_ENDPOINT}",
+        json=payload,
+        headers=headers,
+    )
     response.raise_for_status()
 
 
