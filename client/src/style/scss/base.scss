@@ -1052,7 +1052,7 @@ a.action-button {
     .btn:active,
     .btn:focus,
     .btn:focus-visible {
-        @extend .text-white;
+        @extend .text-info;
         background-color: transparent !important;
         border-color: transparent !important;
         box-shadow: none !important;
