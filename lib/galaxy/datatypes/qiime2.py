@@ -12,7 +12,8 @@ from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.sniff import build_sniff_from_prefix
 
 
-class _QIIME2Result(CompressedZipArchive):
+class _QIIME2ResultBase(CompressedZipArchive):
+    """Base class for QIIME2Artifact and QIIME2Visualization"""
     MetadataElement(name="semantic_type", readonly=True)
     MetadataElement(name="semantic_type_simple", readonly=True, visible=False)
     MetadataElement(name="uuid", readonly=True)
@@ -52,12 +53,13 @@ class _QIIME2Result(CompressedZipArchive):
             ('Type', dataset.metadata.semantic_type),
             ('UUID', dataset.metadata.uuid)]
         if not simple:
-            if dataset.metadata.format is not None:
+            if dataset.metadata.semantic_type != 'Visualization':
                 peek.append(('Format', dataset.metadata.format))
             peek.append(('Version', dataset.metadata.version))
         return peek
 
     def _sniff(self, filename):
+        """Helper method for use in inherited datatypes"""
         try:
             if not zipfile.is_zipfile(filename):
                 raise Exception()
@@ -66,7 +68,7 @@ class _QIIME2Result(CompressedZipArchive):
             return False
 
 
-class QIIME2Artifact(_QIIME2Result):
+class QIIME2Artifact(_QIIME2ResultBase):
     file_ext = "qza"
 
     def sniff(self, filename):
@@ -74,7 +76,7 @@ class QIIME2Artifact(_QIIME2Result):
         return metadata and metadata['semantic_type'] != 'Visualization'
 
 
-class QIIME2Visualization(_QIIME2Result):
+class QIIME2Visualization(_QIIME2ResultBase):
     file_ext = "qzv"
 
     def sniff(self, filename):
@@ -86,7 +88,7 @@ class QIIME2Visualization(_QIIME2Result):
 class QIIME2Metadata(Tabular):
     """
     QIIME 2 supports overriding the type of a column to Categorical when
-    a specific directive `#Q2:types` is present under the ID row.
+    a specific directive `#q2:types` is present under the ID row.
 
     Galaxy already understands column types quite well, however we sometimes
     want to override its inferred type.
@@ -96,15 +98,15 @@ class QIIME2Metadata(Tabular):
     and interacts best with the current implementation of Tabular.
     """
     file_ext = "qiime2.tabular"
-    _TYPES_DIRECTIVE = '#q2:types'
     is_subclass = False
 
+    _TYPES_DIRECTIVE = '#q2:types'
+    _search_lines = 2
 
     def get_column_names(self, first_line=None):
         if first_line is None:
             return None
         return first_line.strip().split('\t')
-
 
     def set_meta(self, dataset, **kwargs):
         """
@@ -116,7 +118,7 @@ class QIIME2Metadata(Tabular):
         if dataset.has_data():
             with open(dataset.file_name) as dataset_fh:
                 line = None
-                for line, _ in zip(dataset_fh, range(2)):
+                for line, _ in zip(dataset_fh, range(self._search_lines)):
                     if line.startswith(self._TYPES_DIRECTIVE):
                         break
                 if line is None:
@@ -144,14 +146,27 @@ class QIIME2Metadata(Tabular):
                         dataset.metadata.column_types[idx] = 'str'
 
     def sniff_prefix(self, file_prefix):
-        for _, line in zip(range(4), file_prefix.line_iterator()):
+        for _, line in zip(range(self._search_lines),
+                           file_prefix.line_iterator()):
             if line.startswith(self._TYPES_DIRECTIVE):
                 return True
 
         return False
 
 
+##############################################################################
+# Helpers
+##############################################################################
+
+
 def _strip_properties(expression):
+    # This is necessary because QIIME 2's semantic types include a limited
+    # form of intersection type, which means that `A & B` is a subtype of `A`
+    # as well as a subtype of `B`. This means it is not generally speaking
+    # possible or practical to enumerate all valid subtypes and then do an
+    # exact match using <options options_filter_attribute="Some[Type]">
+    # So instead filter out 90% of the invalid inputs and let QIIME 2 raise an
+    # error on the finer details such as these "properties".
     try:
         expression_tree = ast.parse(expression)
         reconstructer = _PredicateRemover()
