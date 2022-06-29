@@ -13,7 +13,7 @@
                 :key="index"
                 v-b-tooltip.hover.right
                 class="rule-link dropdown-item saved-rule-item"
-                :title="formatPreview(session.rule, index)"
+                :title="formatPreview(session.rule)"
                 @click="$emit('update-rules', session.rule)"
                 >Saved rule from
                 <UtcDate :date="session.dateTime" mode="elapsed" />
@@ -39,14 +39,13 @@ export default {
             type: Array,
             required: true,
         },
-        ruleColHeaders: {
-            type: Array,
-            required: true,
-        },
     },
     data: function () {
         return {
             savedRulesMenu: _l("Recently used rules"),
+            // Get the 61 character values for ASCII 65 (A) to 126 (~), which is how handson table labels its columns
+            // This ensures the handson table headers are available for passing to the display method in formatPreview
+            hotHeaders: [... new Array(61).keys()].map(i => String.fromCharCode(i + 65))
         };
     },
     computed: {
@@ -58,7 +57,7 @@ export default {
         },
     },
     methods: {
-        formatPreview(savedRuleJson, index) {
+        formatPreview(savedRuleJson) {
             let prettyString = "";
             let delim = "";
             let numOfPreviewedRules = 0;
@@ -67,7 +66,7 @@ export default {
                 if (numOfPreviewedRules == 5) {
                     return prettyString;
                 } else {
-                    prettyString += delim + RULES[element.type].display(element, this.ruleColHeaders[index]);
+                    prettyString += delim + RULES[element.type].display(element, this.hotHeaders);
                     prettyString = prettyString.slice(0, -1);
                     delim = ", ";
                     numOfPreviewedRules++;
