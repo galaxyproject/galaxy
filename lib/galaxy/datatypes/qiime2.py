@@ -206,7 +206,6 @@ class _PredicateRemover(ast.NodeVisitor):
         super().__init__()
 
     def visit_Name(self, node):
-        print(node.id)
         if self.tuple_count == 0:
             self.expression += node.id
         else:
@@ -228,6 +227,10 @@ class _PredicateRemover(ast.NodeVisitor):
         # nested index we now need to add that space back
         if post_strip < pre_strip:
             self.expression += ', '
+
+    def visit_Subscript(self, node):
+        # Changed by Python 3.10
+        self.visit_Index(node)
 
     def visit_Tuple(self, node):
         self.tuple_count = len(node.elts) - 1
