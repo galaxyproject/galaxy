@@ -2539,7 +2539,7 @@ class LibraryFolderContentsIndexQueryPayload(Model):
 
 
 class LibraryFolderItemBase(Model):
-    id: EncodedDatabaseIdField
+    id: DecodedDatabaseIdField
     name: str
     type: str
     create_time: datetime = CreateTimeField
@@ -2563,7 +2563,7 @@ class FileLibraryFolderItem(LibraryFolderItemBase):
     state: Dataset.states = DatasetStateField
     file_size: str
     raw_size: int
-    ldda_id: EncodedDatabaseIdField
+    ldda_id: DecodedDatabaseIdField
     tags: str
     message: Optional[str]
 
@@ -2572,7 +2572,7 @@ AnyLibraryFolderItem = Annotated[Union[FileLibraryFolderItem, FolderLibraryFolde
 
 
 class LibraryFolderMetadata(Model):
-    parent_library_id: EncodedDatabaseIdField
+    parent_library_id: DecodedDatabaseIdField
     folder_name: str
     folder_description: str
     total_rows: int

@@ -53,8 +53,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
 
-        decoded_folder_id = self.folder_manager.cut_and_decode(trans, folder_id)
-        folder = self.folder_manager.get(trans, decoded_folder_id)
+        folder = self.folder_manager.get(trans, folder_id)
 
         # Special level of security on top of libraries.
         if trans.app.security_agent.can_access_library(current_user_roles, folder.parent_library) or is_admin:
@@ -62,13 +61,13 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         else:
             if trans.user:
                 log.warning(
-                    f"SECURITY: User (id: {trans.user.id}) without proper access rights is trying to load folder with ID of {decoded_folder_id}"
+                    f"SECURITY: User (id: {trans.user.id}) without proper access rights is trying to load folder with ID of {folder_id}"
                 )
             else:
-                log.warning(
-                    f"SECURITY: Anonymous user is trying to load restricted folder with ID of {decoded_folder_id}"
-                )
-            raise exceptions.ObjectNotFound(f"Folder with the id provided ( {folder_id} ) was not found")
+                log.warning(f"SECURITY: Anonymous user is trying to load restricted folder with ID of {folder_id}")
+            raise exceptions.ObjectNotFound(
+                f"Folder with the id provided ( F{self.encode_id(folder_id)} ) was not found"
+            )
 
         folder_contents = []
         update_time = ""
@@ -186,46 +185,24 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         )
         return LibraryFolderContentsIndexResult.construct(metadata=metadata, folder_contents=folder_contents)
 
-    def create(self, trans, encoded_folder_id, payload: CreateLibraryFilePayload):
+    def create(self, trans, folder_id, payload: CreateLibraryFilePayload):
         """
-        Create a new library file from an HDA.
-
-        :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
-        :type   encoded_folder_id:      an encoded id string
-        :param  payload:    dictionary structure containing:
-            :param from_hda_id:         (optional) the id of an accessible HDA to copy into the library
-            :type  from_hda_id:         encoded id
-            :param from_hdca_id:         (optional) the id of an accessible HDCA to copy into the library
-            :type  from_hdca_id:         encoded id
-            :param ldda_message:        (optional) the new message attribute of the LDDA created
-            :type   ldda_message:       str
-            :param extended_metadata:   (optional) dub-dictionary containing any extended metadata to associate with the item
-            :type  extended_metadata:   dict
-        :type   payload:    dict
-
-        :returns:   a dictionary describing the new item if ``from_hda_id`` is supplied or a list of
-                    such dictionaries describing the new items if ``from_hdca_id`` is supplied.
-        :rtype:     object
-
-        :raises:    ObjectAttributeInvalidException,
-            InsufficientPermissionsException, ItemAccessibilityException,
-            InternalServerError
+        Create a new library file from an HDA/HDCA.
         """
         if trans.user_is_bootstrap_admin:
             raise exceptions.RealUserRequiredException("Only real users can create a new library file.")
         self.check_user_is_authenticated(trans)
-        encoded_folder_id_16 = self.__decode_library_content_id(trans, encoded_folder_id)
         decoded_hda_id = payload.from_hda_id
         decoded_hdca_id = payload.from_hdca_id
         ldda_message = payload.ldda_message
         try:
             if decoded_hda_id:
                 return self._copy_hda_to_library_folder(
-                    trans, self.hda_manager, decoded_hda_id, encoded_folder_id_16, ldda_message
+                    trans, self.hda_manager, decoded_hda_id, folder_id, ldda_message
                 )
             if decoded_hdca_id:
                 return self._copy_hdca_to_library_folder(
-                    trans, self.hda_manager, decoded_hdca_id, encoded_folder_id_16, ldda_message
+                    trans, self.hda_manager, decoded_hdca_id, folder_id, ldda_message
                 )
         except Exception as exc:
             # TODO handle exceptions better within the mixins
@@ -238,25 +215,6 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             else:
                 log.exception(exc)
                 raise exc
-
-    def __decode_library_content_id(self, trans, encoded_folder_id):
-        """
-        Identify whether the id provided is properly encoded LibraryFolder.
-
-        :param  encoded_folder_id:  encoded id of Galaxy LibraryFolder
-        :type   encoded_folder_id:  encoded string
-
-        :returns:   encoded id of Folder (had 'F' prepended)
-        :type:  string
-
-        :raises:    MalformedId
-        """
-        if (len(encoded_folder_id) % 16 == 1) and encoded_folder_id.startswith("F"):
-            return encoded_folder_id[1:]
-        else:
-            raise exceptions.MalformedId(
-                f"Malformed folder id ( {str(encoded_folder_id)} ) specified, unable to decode."
-            )
 
     def _build_path(self, trans, folder):
         """
