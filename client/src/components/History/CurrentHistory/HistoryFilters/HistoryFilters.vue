@@ -97,7 +97,7 @@ export default {
             create_time_gt: "",
             create_time_lt: "",
         };
-    }, 
+    },
     computed: {
         filterSettings() {
             return toAlias(getFilters(this.filterText));
