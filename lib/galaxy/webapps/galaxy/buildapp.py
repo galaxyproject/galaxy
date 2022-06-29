@@ -1029,28 +1029,6 @@ def populate_api_routes(webapp, app):
         webapp, name_prefix="library_dataset_", path_prefix="/api/libraries/{library_id}/contents/{library_content_id}"
     )
 
-    # =======================
-    # ===== FOLDERS API =====
-    # =======================
-
-    webapp.mapper.connect(
-        "add_history_datasets_to_library",
-        "/api/folders/{encoded_folder_id}/contents",
-        controller="folder_contents",
-        action="create",
-        conditions=dict(method=["POST"]),
-    )
-
-    webapp.mapper.resource(
-        "content",
-        "contents",
-        controller="folder_contents",
-        name_prefix="folder_",
-        path_prefix="/api/folders/{folder_id}",
-        parent_resources=dict(member_name="folder", collection_name="folders"),
-        conditions=dict(method=["GET"]),
-    )
-
     webapp.mapper.resource("job", "jobs", path_prefix="/api")
     webapp.mapper.connect(
         "job_search", "/api/jobs/search", controller="jobs", action="search", conditions=dict(method=["POST"])
