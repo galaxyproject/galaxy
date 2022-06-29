@@ -51,7 +51,7 @@ api_tags_metadata = [
     },
     {"name": "histories"},
     {"name": "libraries"},
-    {"name": "folders"},
+    {"name": "data libraries folders"},
     {"name": "job_lock"},
     {"name": "metrics"},
     {"name": "default"},
