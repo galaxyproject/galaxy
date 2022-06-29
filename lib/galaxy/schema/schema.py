@@ -5,7 +5,6 @@ import re
 from datetime import datetime
 from enum import Enum
 from typing import (
-    Annotated,
     Any,
     Dict,
     List,
@@ -24,7 +23,10 @@ from pydantic import (
     Json,
     UUID4,
 )
-from typing_extensions import Literal
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
 from galaxy.model import (
     Dataset,
