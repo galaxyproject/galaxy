@@ -83,4 +83,4 @@ export const STATES = {
 /** We want to display a single state for a dataset collection whose elements may have mixed states.
  * This list is ordered from highest to lowest priority. If any element is in error state the whole collection should be in error.
  */
-export const HIERARCHICAL_COLLECTION_JOB_STATES = ["error", "failed", "queued", "upload", "paused", "running", "new"];
+export const HIERARCHICAL_COLLECTION_JOB_STATES = ["error", "failed", "upload", "paused", "running", "queued", "new"];
