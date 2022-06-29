@@ -1,9 +1,9 @@
+from selenium.webdriver.support.ui import Select
+
 from galaxy.navigation.components import (
     Component,
     Target,
 )
-
-from selenium.webdriver.support.ui import Select
 
 
 class SmartComponent:

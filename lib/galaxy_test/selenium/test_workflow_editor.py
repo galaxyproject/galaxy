@@ -649,14 +649,10 @@ steps:
         self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
         self.components.masthead.workflow.wait_for_and_click()
 
-        # parse workflow table
-        table_elements = self.workflow_index_table_elements()
+        self.components.tool_panel.search.wait_for_and_send_keys(new_workflow_name)
         self.sleep_for(self.wait_types.UX_RENDER)
-        bookmark_td = table_elements[0].find_elements(By.TAG_NAME, "td")[4]
-
-        # get bookmark pseudo element
-        # https://stackoverflow.com/questions/45427223/click-on-pseudo-element-using-selenium
-        self.action_chains().move_to_element_with_offset(bookmark_td, 20, 20).click().perform()
+        self.components.workflows.bookmark_link.wait_for_and_click()
+        self.components.masthead.workflow.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
 
         # search for bookmark in tools menu
