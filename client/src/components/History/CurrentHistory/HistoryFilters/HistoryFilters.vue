@@ -51,21 +51,13 @@
             <small class="mt-1">Filter by creation time:</small>
             <b-form-group class="m-0">
                 <b-input-group>
-                    <b-form-input v-model="filterSettings['create_time>']" size="sm" placeholder="created after" />
+                    <b-form-input v-model="create_time_gt" size="sm" placeholder="created after" />
                     <b-input-group-append>
-                        <b-form-datepicker
-                            v-model="filterSettings['create_time>']"
-                            reset-button
-                            button-only
-                            size="sm" />
+                        <b-form-datepicker v-model="create_time_gt" reset-button button-only size="sm" />
                     </b-input-group-append>
-                    <b-form-input v-model="filterSettings['create_time<']" size="sm" placeholder="created before" />
+                    <b-form-input v-model="create_time_lt" size="sm" placeholder="created before" />
                     <b-input-group-append>
-                        <b-form-datepicker
-                            v-model="filterSettings['create_time<']"
-                            reset-button
-                            button-only
-                            size="sm" />
+                        <b-form-datepicker v-model="create_time_lt" reset-button button-only size="sm" />
                     </b-input-group-append>
                 </b-input-group>
             </b-form-group>
@@ -100,6 +92,12 @@ export default {
         filterText: { type: String, default: null },
         showAdvanced: { type: Boolean, default: false },
     },
+    data() {
+        return {
+            create_time_gt: "",
+            create_time_lt: "",
+        };
+    },
     computed: {
         filterSettings() {
             return toAlias(getFilters(this.filterText));
@@ -118,12 +116,20 @@ export default {
             return Object.keys(STATES);
         },
     },
+    watch: {
+        filterSettings() {
+            this.create_time_gt = this.filterSettings["create_time>"];
+            this.create_time_lt = this.filterSettings["create_time<"];
+        },
+    },
     methods: {
         onOption(name, value) {
             this.filterSettings[name] = value;
         },
         onSearch() {
             this.onToggle();
+            this.filterSettings["create_time>"] = this.create_time_gt;
+            this.filterSettings["create_time<"] = this.create_time_lt;
             this.updateFilter(getFilterText(this.filterSettings));
         },
         onToggle() {
