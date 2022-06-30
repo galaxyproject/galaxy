@@ -45,7 +45,7 @@ export default {
             savedRulesMenu: _l("Recently used rules"),
             // Get the 61 character values for ASCII 65 (A) to 126 (~), which is how handson table labels its columns
             // This ensures the handson table headers are available for passing to the display method in formatPreview
-            hotHeaders: [... new Array(61).keys()].map(i => String.fromCharCode(i + 65))
+            hotHeaders: [...new Array(61).keys()].map((i) => String.fromCharCode(i + 65)),
         };
     },
     computed: {
@@ -67,7 +67,7 @@ export default {
                     return prettyString;
                 } else {
                     prettyString += delim + RULES[element.type].display(element, this.hotHeaders);
-                    prettyString = prettyString.slice(0, -1);
+                    prettyString = prettyString.trim();
                     delim = ", ";
                     numOfPreviewedRules++;
                 }
