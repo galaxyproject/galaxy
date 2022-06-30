@@ -26,7 +26,7 @@ export default {
         },
         outputFormat: {
             type: String,
-            required: true,
+            default: "bibliography",
         },
         prefix: {
             type: String,
