@@ -1,9 +1,9 @@
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 from galaxy import (
     exceptions,
+    model,
     util,
 )
 from galaxy.managers import base as managers_base
@@ -65,27 +65,35 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         user_permissions = self._check_user_folder_permissions(trans, current_user_roles, folder)
+        tag_manager = tags.GalaxyTagHandler(trans.sa_session)
 
         folder_contents = []
         update_time = ""
         create_time = ""
 
-        folders, datasets = self._apply_preferences(folder, payload.include_deleted, payload.search_text)
-
+        contents, total_rows = self.folder_manager.get_contents(
+            trans, folder, payload.include_deleted, payload.search_text, payload.offset, payload.limit
+        )
         #  Go through every accessible item (folders, datasets) in the folder and include its metadata.
-        for content_item in self._load_folder_contents(trans, folders, datasets, payload.offset, payload.limit):
+        for content_item in contents:
             return_item = {}
-            encoded_id = trans.security.encode_id(content_item.id)
+            encoded_id = self.encode_id(content_item.id)
             create_time = content_item.create_time.isoformat()
 
-            if content_item.api_type == FOLDER_TYPE_NAME:
+            if isinstance(content_item, model.LibraryFolder):
                 encoded_id = f"F{encoded_id}"
                 update_time = content_item.update_time.isoformat()
-                return_item.update(dict(can_modify=user_permissions.modify, can_manage=user_permissions.manage))
+                return_item.update(
+                    dict(
+                        type=FOLDER_TYPE_NAME,
+                        can_modify=user_permissions.modify,
+                        can_manage=user_permissions.manage,
+                    )
+                )
                 if content_item.description:
                     return_item.update(dict(description=content_item.description))
 
-            elif content_item.api_type == FILE_TYPE_NAME:
+            elif isinstance(content_item, model.LibraryDataset):
                 #  Is the dataset public or private?
                 #  When both are False the dataset is 'restricted'
                 #  Access rights are checked on the dataset level, not on the ld or ldda level to maintain consistency
@@ -106,13 +114,13 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                 update_time = content_item.library_dataset_dataset_association.update_time.isoformat()
 
                 library_dataset_dict = content_item.to_dict()
-                encoded_ldda_id = trans.security.encode_id(content_item.library_dataset_dataset_association.id)
+                encoded_ldda_id = self.encode_id(content_item.library_dataset_dataset_association.id)
 
-                tag_manager = tags.GalaxyTagHandler(trans.sa_session)
                 ldda_tags = tag_manager.get_tags_str(content_item.library_dataset_dataset_association.tags)
 
                 return_item.update(
                     dict(
+                        type=FILE_TYPE_NAME,
                         file_ext=library_dataset_dict["file_ext"],
                         date_uploaded=library_dataset_dict["date_uploaded"],
                         update_time=update_time,
@@ -136,7 +144,6 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             return_item.update(
                 dict(
                     id=encoded_id,
-                    type=content_item.api_type,
                     name=content_item.name,
                     update_time=update_time,
                     create_time=create_time,
@@ -146,13 +153,11 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             folder_contents.append(return_item)
 
         # Return the reversed path so it starts with the library node.
-        full_path = self._build_path(trans, folder)[::-1]
+        full_path = self.folder_manager.build_folder_path(trans, folder)[::-1]
 
         parent_library_id = None
         if folder.parent_library is not None:
-            parent_library_id = trans.security.encode_id(folder.parent_library.id)
-
-        total_rows = len(folders) + len(datasets)
+            parent_library_id = self.encode_id(folder.parent_library.id)
 
         metadata = dict(
             full_path=full_path,
@@ -219,116 +224,3 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             else:
                 log.exception(exc)
                 raise exc
-
-    def _build_path(self, trans, folder):
-        """
-        Search the path upwards recursively and load the whole route of
-        names and ids for breadcrumb building purposes.
-
-        :param folder: current folder for navigating up
-        :param type:   Galaxy LibraryFolder
-
-        :returns:   list consisting of full path to the library
-        :type:      list
-        """
-        path_to_root = []
-        # We are almost in root
-        encoded_id = trans.security.encode_id(folder.id)
-        path_to_root.append((f"F{encoded_id}", folder.name))
-        if folder.parent_id is not None:
-            # We add the current folder and traverse up one folder.
-            upper_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(folder.parent_id)
-            path_to_root.extend(self._build_path(trans, upper_folder))
-        return path_to_root
-
-    def _load_folder_contents(self, trans, folders, datasets, offset=None, limit=None):
-        """
-        Loads all contents of the folder (folders and data sets) but only
-        in the first level. Include deleted if the flag is set and if the
-        user has access to undelete it.
-
-        :param  folder:          the folder which contents are being loaded
-        :type   folder:          Galaxy LibraryFolder
-
-        :param  include_deleted: flag, when true the items that are deleted
-            and can be undeleted by current user are shown
-        :type   include_deleted: boolean
-
-        :returns:   a list containing the requested items
-        :type:      list
-        """
-        current_user_roles = trans.get_current_user_roles()
-        is_admin = trans.user_is_admin
-        content_items = []
-
-        offset = 0 if offset is None else int(offset)
-        limit = 0 if limit is None else int(limit)
-
-        current_folders = self._calculate_pagination(folders, offset, limit)
-
-        for subfolder in current_folders:
-            if (
-                not subfolder.deleted
-                or is_admin
-                or trans.app.security_agent.can_modify_library_item(current_user_roles, subfolder)
-            ):
-                # Undeleted folders are non-restricted for now.
-                # Admins or users with MODIFY permissions can see deleted folders.
-                subfolder.api_type = FOLDER_TYPE_NAME
-                content_items.append(subfolder)
-
-        limit -= len(content_items)
-        offset -= len(folders)
-        offset = max(0, offset)
-
-        current_datasets = self._calculate_pagination(datasets, offset, limit)
-
-        for dataset in current_datasets:
-            if dataset.deleted:
-                if is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, dataset):
-                    # Admins or users with MODIFY permissions can see deleted folders.
-                    dataset.api_type = FILE_TYPE_NAME
-                    content_items.append(dataset)
-            else:
-                if is_admin or trans.app.security_agent.can_access_dataset(
-                    current_user_roles, dataset.library_dataset_dataset_association.dataset
-                ):
-                    # Admins or users with ACCESS permissions can see datasets.
-                    dataset.api_type = FILE_TYPE_NAME
-                    content_items.append(dataset)
-
-        return content_items
-
-    def _calculate_pagination(self, items, offset: int, limit: int):
-        if limit > 0:
-            paginated_items = items[offset : offset + limit]
-        else:
-            paginated_items = items[offset:]
-        return paginated_items
-
-    def _apply_preferences(self, folder, include_deleted: Optional[bool], search_text: Optional[str]):
-        def check_deleted(array, include_deleted):
-            if include_deleted:
-                result_array = array
-            else:
-                result_array = [data for data in array if data.deleted == include_deleted]
-            return result_array
-
-        def filter_searched_datasets(dataset):
-            if dataset.library_dataset_dataset_association.message:
-                description = dataset.library_dataset_dataset_association.message
-            elif dataset.library_dataset_dataset_association.info:
-                description = dataset.library_dataset_dataset_association.info
-            else:
-                description = ""
-
-            return search_text in dataset.name or search_text in description
-
-        datasets = check_deleted(folder.datasets, include_deleted)
-        folders = check_deleted(folder.folders, include_deleted)
-
-        if search_text is not None:
-            folders = [item for item in folders if search_text in item.name or search_text in item.description]
-            datasets = list(filter(filter_searched_datasets, datasets))
-
-        return folders, datasets

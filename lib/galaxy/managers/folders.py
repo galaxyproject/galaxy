@@ -2,13 +2,29 @@
 Manager and Serializer for Library Folders.
 """
 import logging
+from typing import (
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 
+from sqlalchemy import (
+    and_,
+    false,
+    func,
+    or_,
+)
+from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import (
     MultipleResultsFound,
     NoResultFound,
 )
 
-from galaxy import util
+from galaxy import (
+    model,
+    util,
+)
 from galaxy.exceptions import (
     AuthenticationRequired,
     InconsistentDatabase,
@@ -18,6 +34,8 @@ from galaxy.exceptions import (
     MalformedId,
     RequestParameterInvalidException,
 )
+from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.security import RBACAgent
 
 log = logging.getLogger(__name__)
 
@@ -335,3 +353,155 @@ class FolderManager:
         :rtype:    int
         """
         return self.decode_folder_id(trans, self.cut_the_prefix(encoded_folder_id))
+
+    def get_contents(
+        self,
+        trans,
+        folder: model.LibraryFolder,
+        include_deleted: Optional[bool] = False,
+        search_text: Optional[str] = None,
+        offset: Optional[int] = None,
+        limit: Optional[int] = None,
+    ) -> Tuple[List[Union[model.LibraryFolder, model.LibraryDataset]], int]:
+        """Retrieves the contents of the given folder that match the provided filters and pagination parameters.
+        Returns a tuple with the list of paginated contents and the total number of items contained in the folder."""
+        is_admin = trans.user_is_admin
+        sa_session = trans.sa_session
+        user_roles = trans.get_current_user_roles()
+        user_role_ids = [role.id for role in user_roles]
+        security_agent = trans.app.security_agent
+        content_items: List[Union[model.LibraryFolder, model.LibraryDataset]] = []
+
+        sub_folders_query = self._get_sub_folders_query(
+            sa_session, folder, user_role_ids, security_agent, include_deleted, search_text, is_admin
+        )
+        total_sub_folders = sub_folders_query.count()
+        if limit is not None:
+            sub_folders_query = sub_folders_query.limit(limit)
+        if offset is not None:
+            sub_folders_query = sub_folders_query.offset(offset)
+        folders = sub_folders_query.all()
+        content_items.extend(folders)
+
+        # Update pagination
+        if limit:
+            limit -= len(folders)
+        if offset:
+            offset -= len(folders)
+            offset = max(0, offset)
+
+        datasets_query = self._get_contained_datasets_query(
+            sa_session, folder, user_role_ids, security_agent, include_deleted, search_text, is_admin
+        )
+        total_datasets = datasets_query.count()
+        if limit is not None:
+            datasets_query = datasets_query.limit(limit)
+        if offset is not None:
+            datasets_query = datasets_query.offset(offset)
+        datasets = datasets_query.all()
+        content_items.extend(datasets)
+        return (content_items, total_sub_folders + total_datasets)
+
+    def _get_sub_folders_query(
+        self,
+        sa_session: galaxy_scoped_session,
+        folder: model.LibraryFolder,
+        user_role_ids,
+        security_agent: RBACAgent,
+        include_deleted: Optional[bool] = False,
+        search_text: Optional[str] = None,
+        is_admin: bool = False,
+    ):
+        query = sa_session.query(model.LibraryFolder)
+        query = query.filter(model.LibraryFolder.parent_id == folder.id)
+        # Undeleted folders are non-restricted for now.
+        # Admins or users with MODIFY permissions can see deleted folders.
+        if include_deleted:
+            if not is_admin:  # Filter by User has MODIFY permission.
+                actions_alias = aliased(model.LibraryDatasetPermissions)
+                query = query.outerjoin(model.LibraryDataset.actions.of_type(actions_alias))
+                query = query.filter(
+                    and_(
+                        actions_alias.action == security_agent.permitted_actions.LIBRARY_MODIFY.action,
+                        actions_alias.role_id.in_(user_role_ids),
+                    )
+                )
+        else:
+            query = query.filter(model.LibraryFolder.deleted == false())
+        if search_text:
+            search_text = search_text.lower()
+            query = query.filter(
+                or_(
+                    func.lower(model.LibraryFolder.name).contains(search_text, autoescape=True),
+                    func.lower(model.LibraryFolder.description).contains(search_text, autoescape=True),
+                )
+            )
+        return query
+
+    def _get_contained_datasets_query(
+        self,
+        sa_session: galaxy_scoped_session,
+        folder: model.LibraryFolder,
+        user_role_ids: List[int],
+        security_agent: RBACAgent,
+        include_deleted: Optional[bool] = False,
+        search_text: Optional[str] = None,
+        is_admin: bool = False,
+    ):
+
+        query = sa_session.query(model.LibraryDataset)
+        query = query.filter(model.LibraryDataset.folder_id == folder.id)
+        if is_admin:
+            if not include_deleted:
+                query = query.filter(model.LibraryDataset.deleted == false())
+        else:
+            # Filter by User has ACCESS permission.
+            actions_alias = aliased(model.LibraryDatasetPermissions)
+            query = query.outerjoin(model.LibraryDataset.actions.of_type(actions_alias))
+            query = query.filter(
+                and_(
+                    actions_alias.action == security_agent.permitted_actions.DATASET_ACCESS.action,
+                    actions_alias.role_id.in_(user_role_ids),
+                )
+            )
+            if include_deleted:  # Filter by User has MODIFY permission.
+                query = query.filter(
+                    and_(
+                        actions_alias.action == security_agent.permitted_actions.LIBRARY_MODIFY.action,
+                        actions_alias.role_id.in_(user_role_ids),
+                    )
+                )
+
+        if search_text:
+            search_text = search_text.lower()
+            ldda_alias = aliased(model.LibraryDatasetDatasetAssociation)
+            query = query.outerjoin(model.LibraryDataset.library_dataset_dataset_association.of_type(ldda_alias))
+            query = query.filter(
+                or_(
+                    func.lower(ldda_alias.name).contains(search_text, autoescape=True),
+                    func.lower(ldda_alias.message).contains(search_text, autoescape=True),
+                )
+            )
+
+        return query
+
+    def build_folder_path(self, trans, folder):
+        """
+        Search the path upwards recursively and load the whole route of
+        names and ids for breadcrumb building purposes.
+
+        :param folder: current folder for navigating up
+        :param type:   Galaxy LibraryFolder
+
+        :returns:   list consisting of full path to the library
+        :type:      list
+        """
+        path_to_root = []
+        # We are almost in root
+        encoded_id = trans.security.encode_id(folder.id)
+        path_to_root.append((f"F{encoded_id}", folder.name))
+        if folder.parent_id is not None:
+            # We add the current folder and traverse up one folder.
+            upper_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(folder.parent_id)
+            path_to_root.extend(self.build_folder_path(trans, upper_folder))
+        return path_to_root
