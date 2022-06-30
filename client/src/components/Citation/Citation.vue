@@ -33,7 +33,11 @@ export default {
     computed: {
         link() {
             const cite = this.citation.cite;
-            return cite.data && cite.data[0] && cite.data[0].URL;
+            if (cite.data && cite.data[0] && cite.data[0].URL) {
+                //decode uri and return
+                return decodeURIComponent(cite.data[0].URL);
+            }
+            return null;
         },
         citationHtml() {
             const citation = this.citation;
