@@ -23,7 +23,10 @@ from pydantic import (
     Json,
     UUID4,
 )
-from typing_extensions import Literal
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
 from galaxy.model import (
     Dataset,
@@ -2525,6 +2528,82 @@ class LibraryFolderCurrentPermissions(BaseModel):
         ...,
         title="Add Role List",
         description="A list containing pairs of role names and corresponding encoded IDs which can add items to the Library folder.",
+    )
+
+
+class LibraryFolderContentsIndexQueryPayload(Model):
+    limit: int = 10
+    offset: int = 0
+    search_text: Optional[str] = None
+    include_deleted: Optional[bool] = None
+
+
+class LibraryFolderItemBase(Model):
+    id: DecodedDatabaseIdField
+    name: str
+    type: str
+    create_time: datetime = CreateTimeField
+    update_time: datetime = UpdateTimeField
+    can_manage: bool
+    deleted: bool
+
+
+class FolderLibraryFolderItem(LibraryFolderItemBase):
+    type: Literal["folder"]
+    can_modify: bool
+    description: Optional[str] = FolderDescriptionField
+
+
+class FileLibraryFolderItem(LibraryFolderItemBase):
+    type: Literal["file"]
+    file_ext: str
+    date_uploaded: datetime
+    is_unrestricted: bool
+    is_private: bool
+    state: Dataset.states = DatasetStateField
+    file_size: str
+    raw_size: int
+    ldda_id: DecodedDatabaseIdField
+    tags: str
+    message: Optional[str]
+
+
+AnyLibraryFolderItem = Annotated[Union[FileLibraryFolderItem, FolderLibraryFolderItem], Field(discriminator="type")]
+
+
+class LibraryFolderMetadata(Model):
+    parent_library_id: DecodedDatabaseIdField
+    folder_name: str
+    folder_description: str
+    total_rows: int
+    can_modify_folder: bool
+    can_add_library_item: bool
+    full_path: List[List[str]]
+
+
+class LibraryFolderContentsIndexResult(Model):
+    metadata: LibraryFolderMetadata
+    folder_contents: List[AnyLibraryFolderItem]
+
+
+class CreateLibraryFilePayload(Model):
+    from_hda_id: Optional[DecodedDatabaseIdField] = Field(
+        default=None,
+        title="From HDA ID",
+        description="The ID of an accessible HDA to copy into the library.",
+    )
+    from_hdca_id: Optional[DecodedDatabaseIdField] = Field(
+        default=None,
+        title="From HDCA ID",
+        description=(
+            "The ID of an accessible HDCA to copy into the library. "
+            "Nested collections are not allowed, you must flatten the collection first."
+        ),
+    )
+    ldda_message: Optional[str] = Field(
+        default="",
+        title="LDDA Message",
+        description="The new message attribute of the LDDA created.",
     )
 
 

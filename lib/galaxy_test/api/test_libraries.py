@@ -181,13 +181,13 @@ class LibrariesApiTestCase(ApiTestCase):
     def test_create_dataset_denied(self):
         url, payload = self._create_dataset_kwargs()
         with self._different_user():
-            create_response = self._post(url, payload)
+            create_response = self._post(url, payload, json=True)
             self._assert_status_code_is(create_response, 403)
 
     def test_create_dataset_bootstrap_admin_user(self):
         url, payload = self._create_dataset_kwargs()
         with self._different_user():
-            create_response = self._post(url, payload, key=self.master_api_key)
+            create_response = self._post(url, payload, key=self.master_api_key, json=True)
             self._assert_status_code_is(create_response, 400)
 
     def _create_dataset_kwargs(self):
@@ -376,7 +376,7 @@ class LibrariesApiTestCase(ApiTestCase):
         history_id = self.dataset_populator.new_history()
         hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")["id"]
         payload = {"from_hda_id": hda_id}
-        create_response = self._post(f"folders/{folder_id}/contents", payload)
+        create_response = self._post(f"folders/{folder_id}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "name", "id")
 
@@ -392,7 +392,7 @@ class LibrariesApiTestCase(ApiTestCase):
         history_id = self.dataset_populator.new_history()
         hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3 sub")["id"]
         payload = {"from_hda_id": hda_id}
-        create_response = self._post(f"folders/{subfolder_id}/contents", payload)
+        create_response = self._post(f"folders/{subfolder_id}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "name", "id")
         dataset_update_time = create_response.json()["update_time"]
@@ -523,7 +523,7 @@ class LibrariesApiTestCase(ApiTestCase):
         self._assert_status_code_is(folder_response, 200)
         folder_id = folder_response.json()[0]["id"]
         payload = {"from_hdca_id": hdca_id}
-        create_response = self._post(f"folders/{folder_id}/contents", payload)
+        create_response = self._post(f"folders/{folder_id}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 200)
         assert len(create_response.json()) == 2
         # Also test that anything different from a flat dataset collection list
@@ -532,7 +532,7 @@ class LibrariesApiTestCase(ApiTestCase):
             "outputs"
         ][0]["id"]
         payload = {"from_hdca_id": hdca_pair_id}
-        create_response = self._post(f"folders/{folder_id}/contents", payload)
+        create_response = self._post(f"folders/{folder_id}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 501)
         assert (
             create_response.json()["err_msg"]

@@ -34,7 +34,7 @@ from . import (
 
 log = logging.getLogger(__name__)
 
-router = Router(tags=["folders"])
+router = Router(tags=["data libraries folders"])
 
 FolderIdPathParam: EncodedDatabaseIdField = Path(
     ..., title="Folder ID", description="The encoded identifier of the library folder."
