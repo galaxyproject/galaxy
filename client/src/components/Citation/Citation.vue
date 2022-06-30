@@ -22,12 +22,15 @@ export default {
     props: {
         citation: {
             type: Object,
+            required: true,
         },
         outputFormat: {
             type: String,
+            required: true,
         },
         prefix: {
             type: String,
+            default: "",
         },
     },
     computed: {
