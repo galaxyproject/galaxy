@@ -96,7 +96,7 @@ Version: 2022.2.1"""
 
 def test_qiime2tabular_sniff():
     q2md = QIIME2Metadata()
-    with get_input_files("qiime2.tsv") as input_files:
+    with get_input_files("qiime2.qiime2.tabular") as input_files:
         assert q2md.sniff(input_files[0]) is True
 
 
@@ -108,7 +108,7 @@ def test_qiime2tabular_sniff_false():
 
 def test_qiime2tabular_set_meta():
     q2md = QIIME2Metadata()
-    with get_input_files("qiime2.tsv") as input_files:
+    with get_input_files("qiime2.qiime2.tabular") as input_files:
         dataset = MockDataset(1)
         dataset.file_name = input_files[0]
 
