@@ -485,23 +485,16 @@ class FolderManager:
 
         return query
 
-    def build_folder_path(self, trans, folder):
+    def build_folder_path(self, trans, folder: model.LibraryFolder) -> List[Tuple[str, str]]:
         """
-        Search the path upwards recursively and load the whole route of
-        names and ids for breadcrumb building purposes.
+        Returns the folder path from root to the given folder.
 
-        :param folder: current folder for navigating up
-        :param type:   Galaxy LibraryFolder
-
-        :returns:   list consisting of full path to the library
-        :type:      list
+        The path items are tuples with the name and id of each folder for breadcrumb building purposes.
         """
-        path_to_root = []
-        # We are almost in root
-        encoded_id = trans.security.encode_id(folder.id)
-        path_to_root.append((f"F{encoded_id}", folder.name))
-        if folder.parent_id is not None:
-            # We add the current folder and traverse up one folder.
-            upper_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(folder.parent_id)
-            path_to_root.extend(self.build_folder_path(trans, upper_folder))
+        current_folder = folder
+        path_to_root = [(f"F{trans.security.encode_id(current_folder.id)}", current_folder.name)]
+        while current_folder.parent_id is not None:
+            parent_folder = trans.sa_session.query(model.LibraryFolder).get(current_folder.parent_id)
+            current_folder = parent_folder
+            path_to_root.insert(0, (f"F{trans.security.encode_id(current_folder.id)}", current_folder.name))
         return path_to_root

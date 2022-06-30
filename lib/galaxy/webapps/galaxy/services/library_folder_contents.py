@@ -60,18 +60,15 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         with 'F' if it is a folder as opposed to a data set which does not have it. Full path is provided in
         response as a separate object providing data for breadcrumb path building.
         """
-        folder = self.folder_manager.get(trans, folder_id)
-
+        folder: model.LibraryFolder = self.folder_manager.get(trans, folder_id)
         current_user_roles = trans.get_current_user_roles()
-        user_permissions = self._retrieve_user_folder_permissions(trans, current_user_roles, folder)
+        user_permissions = self._retrieve_user_permissions_on_folder(trans, current_user_roles, folder)
         tag_manager = tags.GalaxyTagHandler(trans.sa_session)
 
         folder_contents = []
-
         contents, total_rows = self.folder_manager.get_contents(
             trans, folder, payload.include_deleted, payload.search_text, payload.offset, payload.limit
         )
-        #  Go through every accessible item (folders, datasets) in the folder and include its metadata.
         for content_item in contents:
             if isinstance(content_item, model.LibraryFolder):
                 serialized_item = self._serialize_folder(user_permissions, content_item)
@@ -79,44 +76,8 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                 serialized_item = self._serialize_dataset(trans, current_user_roles, tag_manager, content_item)
             folder_contents.append(serialized_item)
 
-        # Return the reversed path so it starts with the library node.
-        full_path = self.folder_manager.build_folder_path(trans, folder)[::-1]
-
-        parent_library_id = self.encode_id(folder.parent_library.id) if folder.parent_library else None
-        metadata = dict(
-            full_path=full_path,
-            total_rows=total_rows,
-            can_add_library_item=user_permissions.add,
-            can_modify_folder=user_permissions.modify,
-            folder_name=folder.name,
-            folder_description=folder.description,
-            parent_library_id=parent_library_id,
-        )
+        metadata = self._serialize_folder_metadata(trans, folder, user_permissions, total_rows)
         return LibraryFolderContentsIndexResult.construct(metadata=metadata, folder_contents=folder_contents)
-
-    # Special level of security on top of libraries.
-    def _retrieve_user_folder_permissions(self, trans, current_user_roles, folder) -> UserFolderPermissions:
-        """Returns the permissions of the user for the given folder or raises an exception if the user has no access."""
-        if trans.user_is_admin:
-            return UserFolderPermissions(access=True, modify=True, add=True, manage=True)
-
-        security_agent: GalaxyRBACAgent = trans.app.security_agent
-        can_access_library = security_agent.can_access_library(current_user_roles, folder.parent_library)
-        if can_access_library:
-            return UserFolderPermissions(
-                access=True,  # Access to the parent library means access to any sub-folder
-                modify=security_agent.can_modify_library_item(current_user_roles, folder),
-                add=security_agent.can_add_library_item(current_user_roles, folder),
-                manage=security_agent.can_manage_library_item(current_user_roles, folder),
-            )
-
-        warning_message = (
-            f"SECURITY: User (id: {trans.user.id}) without proper access rights is trying to load folder with ID of {folder.id}"
-            if trans.user
-            else f"SECURITY: Anonymous user is trying to load restricted folder with ID of {folder.id}"
-        )
-        log.warning(warning_message)
-        raise exceptions.ObjectNotFound(f"Folder with the id provided ( F{self.encode_id(folder.id)} ) was not found")
 
     def create(self, trans, folder_id, payload: CreateLibraryFilePayload):
         """
@@ -148,6 +109,32 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             else:
                 log.exception(exc)
                 raise exc
+
+    def _retrieve_user_permissions_on_folder(self, trans, current_user_roles, folder) -> UserFolderPermissions:
+        """Returns the permissions of the user for the given folder.
+
+        Raises an ObjectNotFound exception if the user has no access to the parent library.
+        """
+        if trans.user_is_admin:
+            return UserFolderPermissions(access=True, modify=True, add=True, manage=True)
+
+        security_agent: GalaxyRBACAgent = trans.app.security_agent
+        can_access_library = security_agent.can_access_library(current_user_roles, folder.parent_library)
+        if can_access_library:
+            return UserFolderPermissions(
+                access=True,  # Access to the parent library means access to any sub-folder
+                modify=security_agent.can_modify_library_item(current_user_roles, folder),
+                add=security_agent.can_add_library_item(current_user_roles, folder),
+                manage=security_agent.can_manage_library_item(current_user_roles, folder),
+            )
+
+        warning_message = (
+            f"SECURITY: User (id: {trans.user.id}) without proper access rights is trying to load folder with ID of {folder.id}"
+            if trans.user
+            else f"SECURITY: Anonymous user is trying to load restricted folder with ID of {folder.id}"
+        )
+        log.warning(warning_message)
+        raise exceptions.ObjectNotFound(f"Folder with the id provided ( F{self.encode_id(folder.id)} ) was not found")
 
     def _serialize_dataset(self, trans, current_user_roles, tag_manager, content_item):
         security_agent = trans.app.security_agent
@@ -194,3 +181,17 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             description=content_item.description,
         )
         return folder_dict
+
+    def _serialize_folder_metadata(self, trans, folder, user_permissions: UserFolderPermissions, total_rows: int):
+        full_path = self.folder_manager.build_folder_path(trans, folder)
+        parent_library_id = self.encode_id(folder.parent_library.id) if folder.parent_library else None
+        metadata = dict(
+            full_path=full_path,
+            total_rows=total_rows,
+            can_add_library_item=user_permissions.add,
+            can_modify_folder=user_permissions.modify,
+            folder_name=folder.name,
+            folder_description=folder.description,
+            parent_library_id=parent_library_id,
+        )
+        return metadata
