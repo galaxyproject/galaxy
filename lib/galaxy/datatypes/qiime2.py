@@ -200,41 +200,22 @@ class _PredicateRemover(ast.NodeVisitor):
 
     def __init__(self):
         self.expression = ''
-        self.tuple_count = 0
-        self.in_index = False
-
-        super().__init__()
 
     def visit_Name(self, node):
-        if self.tuple_count == 0:
-            self.expression += node.id
-        else:
-            self.expression += node.id + ', '
-            self.tuple_count -= 1
-
-        self.generic_visit(node)
-
-    def visit_Index(self, node):
-        pre_strip = len(self.expression)
-        self.expression = self.expression.rstrip(', ')
-        post_strip = len(self.expression)
-
-        self.expression += '['
-        self.generic_visit(node)
-        self.expression += ']'
-
-        # If we stripped the space for the next tuple element to accomodate a
-        # nested index we now need to add that space back
-        if post_strip < pre_strip:
-            self.expression += ', '
+        self.expression += node.id
 
     def visit_Subscript(self, node):
-        # Changed by Python 3.10
-        self.visit_Index(node)
+        self.visit(node.value)
+        self.expression += '['
+        self.visit(node.slice)
+        self.expression += ']'
 
     def visit_Tuple(self, node):
-        self.tuple_count = len(node.elts) - 1
-        self.generic_visit(node)
+        trailing_comma = ''
+        for n in node.elts:
+            self.expression += trailing_comma
+            self.visit(n)
+            trailing_comma = ', '
 
     def visit_BinOp(self, node):
         self.visit(node.left)
