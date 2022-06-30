@@ -96,7 +96,6 @@ class QIIME2Metadata(Tabular):
     """
 
     file_ext = "qiime2.tabular"
-    is_subclass = False
 
     _TYPES_DIRECTIVE = "#q2:types"
     _search_lines = 2
