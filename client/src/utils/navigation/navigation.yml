@@ -882,6 +882,11 @@ gies:
     iframe: 'body iframe[seamless="seamless"]'
 
 upload:
+  composite:
+    selectors:
+      table: 'div#composite table.upload-table'
+      close: 'div#composite div.upload-buttons button'
+
   selectors:
     tab: '#tab-title-link-${tab}'
     ftp_add: '#btn-ftp'
