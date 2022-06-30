@@ -35,12 +35,8 @@ export default {
     },
     computed: {
         link() {
-            const cite = this.citation.cite;
-            if (cite.data && cite.data[0] && cite.data[0].URL) {
-                //decode uri and return
-                return decodeURIComponent(cite.data[0].URL);
-            }
-            return null;
+            const citeUrl = this.citation.cite?.data?.[0]?.URL;
+            return citeUrl ? decodeURIComponent(citeUrl) : null;
         },
         citationHtml() {
             const citation = this.citation;
