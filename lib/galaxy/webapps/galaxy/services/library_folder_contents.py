@@ -62,103 +62,27 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         """
         folder = self.folder_manager.get(trans, folder_id)
 
-        is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
-        user_permissions = self._check_user_folder_permissions(trans, current_user_roles, folder)
+        user_permissions = self._retrieve_user_folder_permissions(trans, current_user_roles, folder)
         tag_manager = tags.GalaxyTagHandler(trans.sa_session)
 
         folder_contents = []
-        update_time = ""
-        create_time = ""
 
         contents, total_rows = self.folder_manager.get_contents(
             trans, folder, payload.include_deleted, payload.search_text, payload.offset, payload.limit
         )
         #  Go through every accessible item (folders, datasets) in the folder and include its metadata.
         for content_item in contents:
-            return_item = {}
-            encoded_id = self.encode_id(content_item.id)
-            create_time = content_item.create_time.isoformat()
-
             if isinstance(content_item, model.LibraryFolder):
-                encoded_id = f"F{encoded_id}"
-                update_time = content_item.update_time.isoformat()
-                return_item.update(
-                    dict(
-                        type=FOLDER_TYPE_NAME,
-                        can_modify=user_permissions.modify,
-                        can_manage=user_permissions.manage,
-                    )
-                )
-                if content_item.description:
-                    return_item.update(dict(description=content_item.description))
-
+                serialized_item = self._serialize_folder(user_permissions, content_item)
             elif isinstance(content_item, model.LibraryDataset):
-                #  Is the dataset public or private?
-                #  When both are False the dataset is 'restricted'
-                #  Access rights are checked on the dataset level, not on the ld or ldda level to maintain consistency
-                dataset = content_item.library_dataset_dataset_association.dataset
-                is_unrestricted = trans.app.security_agent.dataset_is_public(dataset)
-                is_private = (
-                    not is_unrestricted
-                    and trans.user
-                    and trans.app.security_agent.dataset_is_private_to_user(trans, dataset)
-                )
-
-                # Can user manage the permissions on the dataset?
-                can_manage = is_admin or (
-                    trans.user and trans.app.security_agent.can_manage_dataset(current_user_roles, dataset)
-                )
-                raw_size = int(content_item.library_dataset_dataset_association.get_size())
-                nice_size = util.nice_size(raw_size)
-                update_time = content_item.library_dataset_dataset_association.update_time.isoformat()
-
-                library_dataset_dict = content_item.to_dict()
-                encoded_ldda_id = self.encode_id(content_item.library_dataset_dataset_association.id)
-
-                ldda_tags = tag_manager.get_tags_str(content_item.library_dataset_dataset_association.tags)
-
-                return_item.update(
-                    dict(
-                        type=FILE_TYPE_NAME,
-                        file_ext=library_dataset_dict["file_ext"],
-                        date_uploaded=library_dataset_dict["date_uploaded"],
-                        update_time=update_time,
-                        is_unrestricted=is_unrestricted,
-                        is_private=is_private,
-                        can_manage=can_manage,
-                        state=library_dataset_dict["state"],
-                        file_size=nice_size,
-                        raw_size=raw_size,
-                        ldda_id=encoded_ldda_id,
-                        tags=ldda_tags,
-                    )
-                )
-                if content_item.library_dataset_dataset_association.message:
-                    return_item.update(dict(message=content_item.library_dataset_dataset_association.message))
-                elif content_item.library_dataset_dataset_association.info:
-                    # There is no message but ldda info contains something so we display that instead.
-                    return_item.update(dict(message=content_item.library_dataset_dataset_association.info))
-
-            # For every item include the default metadata
-            return_item.update(
-                dict(
-                    id=encoded_id,
-                    name=content_item.name,
-                    update_time=update_time,
-                    create_time=create_time,
-                    deleted=content_item.deleted,
-                )
-            )
-            folder_contents.append(return_item)
+                serialized_item = self._serialize_dataset(trans, current_user_roles, tag_manager, content_item)
+            folder_contents.append(serialized_item)
 
         # Return the reversed path so it starts with the library node.
         full_path = self.folder_manager.build_folder_path(trans, folder)[::-1]
 
-        parent_library_id = None
-        if folder.parent_library is not None:
-            parent_library_id = self.encode_id(folder.parent_library.id)
-
+        parent_library_id = self.encode_id(folder.parent_library.id) if folder.parent_library else None
         metadata = dict(
             full_path=full_path,
             total_rows=total_rows,
@@ -171,7 +95,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         return LibraryFolderContentsIndexResult.construct(metadata=metadata, folder_contents=folder_contents)
 
     # Special level of security on top of libraries.
-    def _check_user_folder_permissions(self, trans, current_user_roles, folder) -> UserFolderPermissions:
+    def _retrieve_user_folder_permissions(self, trans, current_user_roles, folder) -> UserFolderPermissions:
         """Returns the permissions of the user for the given folder or raises an exception if the user has no access."""
         if trans.user_is_admin:
             return UserFolderPermissions(access=True, modify=True, add=True, manage=True)
@@ -224,3 +148,49 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             else:
                 log.exception(exc)
                 raise exc
+
+    def _serialize_dataset(self, trans, current_user_roles, tag_manager, content_item):
+        security_agent = trans.app.security_agent
+        is_admin = trans.user_is_admin
+        ldda = content_item.library_dataset_dataset_association
+        dataset = ldda.dataset
+        #  Access rights are checked on the dataset level, not on the ld or ldda level to maintain consistency
+        is_unrestricted = security_agent.dataset_is_public(dataset)
+        raw_size = int(ldda.get_size())
+        library_dataset_dict = content_item.to_dict()
+        dataset_dict = dict(
+            id=self.encode_id(content_item.id),
+            name=content_item.name,
+            type=FILE_TYPE_NAME,
+            create_time=content_item.create_time.isoformat(),
+            update_time=ldda.update_time.isoformat(),
+            can_manage=is_admin or (trans.user and security_agent.can_manage_dataset(current_user_roles, dataset)),
+            deleted=content_item.deleted,
+            file_ext=library_dataset_dict["file_ext"],
+            date_uploaded=library_dataset_dict["date_uploaded"],
+            #  Is the dataset public or private?
+            #  When both are False the dataset is 'restricted'
+            is_unrestricted=is_unrestricted,
+            is_private=not is_unrestricted and trans.user and security_agent.dataset_is_private_to_user(trans, dataset),
+            state=library_dataset_dict["state"],
+            file_size=util.nice_size(raw_size),
+            raw_size=raw_size,
+            ldda_id=self.encode_id(ldda.id),
+            tags=tag_manager.get_tags_str(ldda.tags),
+            message=ldda.message or ldda.info,
+        )
+        return dataset_dict
+
+    def _serialize_folder(self, user_permissions, content_item):
+        folder_dict = dict(
+            id=f"F{self.encode_id(content_item.id)}",
+            name=content_item.name,
+            type=FOLDER_TYPE_NAME,
+            create_time=content_item.create_time.isoformat(),
+            update_time=content_item.update_time.isoformat(),
+            can_manage=user_permissions.manage,
+            deleted=content_item.deleted,
+            can_modify=user_permissions.modify,
+            description=content_item.description,
+        )
+        return folder_dict
