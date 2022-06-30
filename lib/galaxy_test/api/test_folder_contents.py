@@ -118,22 +118,22 @@ class FolderContentsApiTestCase(ApiTestCase):
         folder_name = "Test Folder Contents Index search text"
         folder_id = self._create_folder_in_library(folder_name)
 
-        dataset_names = ["AB", "BC", "ABC"]
+        dataset_names = ["AB", "BX", "abx"]
         for name in dataset_names:
             self._create_dataset_in_folder(folder_id, name)
 
-        subfolder_names = ["Folder_A", "Folder_C"]
+        subfolder_names = ["Folder_a", "Folder_X"]
         for name in subfolder_names:
             self._create_subfolder_in(folder_id, name)
 
         all_names = dataset_names + subfolder_names
 
-        search_terms = ["A", "B", "C"]
+        search_terms = ["A", "B", "X"]
         for search_text in search_terms:
             response = self._get(f"folders/{folder_id}/contents?search_text={search_text}")
             self._assert_status_code_is(response, 200)
             contents = response.json()["folder_contents"]
-            matching_names = [name for name in all_names if search_text in name]
+            matching_names = [name for name in all_names if search_text.casefold() in name.casefold()]
             assert len(contents) == len(matching_names)
 
     def test_index_permissions_include_deleted(self):
