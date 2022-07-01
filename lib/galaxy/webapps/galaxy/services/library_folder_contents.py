@@ -1,5 +1,10 @@
 import logging
 from dataclasses import dataclass
+from typing import (
+    Any,
+    Dict,
+    List,
+)
 
 from galaxy import (
     exceptions,
@@ -7,10 +12,12 @@ from galaxy import (
     util,
 )
 from galaxy.managers import base as managers_base
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.model import tags
 from galaxy.model.security import GalaxyRBACAgent
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     CreateLibraryFilePayload,
     LibraryFolderContentsIndexQueryPayload,
@@ -53,7 +60,10 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         )
 
     def index(
-        self, trans, folder_id, payload: LibraryFolderContentsIndexQueryPayload
+        self,
+        trans: ProvidesUserContext,
+        folder_id: DecodedDatabaseIdField,
+        payload: LibraryFolderContentsIndexQueryPayload,
     ) -> LibraryFolderContentsIndexResult:
         """
         Displays a collection (list) of a folder's contents (files and folders). Encoded folder ID is prepended
@@ -71,15 +81,15 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         )
         for content_item in contents:
             if isinstance(content_item, model.LibraryFolder):
-                serialized_item = self._serialize_folder(user_permissions, content_item)
+                serialized_item = self._serialize_library_folder(user_permissions, content_item)
             elif isinstance(content_item, model.LibraryDataset):
-                serialized_item = self._serialize_dataset(trans, current_user_roles, tag_manager, content_item)
+                serialized_item = self._serialize_library_dataset(trans, current_user_roles, tag_manager, content_item)
             folder_contents.append(serialized_item)
 
-        metadata = self._serialize_folder_metadata(trans, folder, user_permissions, total_rows)
+        metadata = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows)
         return LibraryFolderContentsIndexResult.construct(metadata=metadata, folder_contents=folder_contents)
 
-    def create(self, trans, folder_id, payload: CreateLibraryFilePayload):
+    def create(self, trans: ProvidesUserContext, folder_id: DecodedDatabaseIdField, payload: CreateLibraryFilePayload):
         """
         Create a new library file from an HDA/HDCA.
         """
@@ -110,7 +120,9 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                 log.exception(exc)
                 raise exc
 
-    def _retrieve_user_permissions_on_folder(self, trans, current_user_roles, folder) -> UserFolderPermissions:
+    def _retrieve_user_permissions_on_folder(
+        self, trans: ProvidesUserContext, current_user_roles: List[model.Role], folder: model.LibraryFolder
+    ) -> UserFolderPermissions:
         """Returns the permissions of the user for the given folder.
 
         Raises an ObjectNotFound exception if the user has no access to the parent library.
@@ -136,23 +148,29 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         log.warning(warning_message)
         raise exceptions.ObjectNotFound(f"Folder with the id provided ( F{self.encode_id(folder.id)} ) was not found")
 
-    def _serialize_dataset(self, trans, current_user_roles, tag_manager, content_item):
+    def _serialize_library_dataset(
+        self,
+        trans: ProvidesUserContext,
+        current_user_roles: List[model.Role],
+        tag_manager: tags.GalaxyTagHandler,
+        library_dataset: model.LibraryDataset,
+    ) -> Dict[str, Any]:
         security_agent = trans.app.security_agent
         is_admin = trans.user_is_admin
-        ldda = content_item.library_dataset_dataset_association
+        ldda = library_dataset.library_dataset_dataset_association
         dataset = ldda.dataset
         #  Access rights are checked on the dataset level, not on the ld or ldda level to maintain consistency
         is_unrestricted = security_agent.dataset_is_public(dataset)
         raw_size = int(ldda.get_size())
-        library_dataset_dict = content_item.to_dict()
+        library_dataset_dict = library_dataset.to_dict()
         dataset_dict = dict(
-            id=self.encode_id(content_item.id),
-            name=content_item.name,
+            id=self.encode_id(library_dataset.id),
+            name=library_dataset.name,
             type=FILE_TYPE_NAME,
-            create_time=content_item.create_time.isoformat(),
+            create_time=library_dataset.create_time.isoformat(),
             update_time=ldda.update_time.isoformat(),
             can_manage=is_admin or (trans.user and security_agent.can_manage_dataset(current_user_roles, dataset)),
-            deleted=content_item.deleted,
+            deleted=library_dataset.deleted,
             file_ext=library_dataset_dict["file_ext"],
             date_uploaded=library_dataset_dict["date_uploaded"],
             #  Is the dataset public or private?
@@ -168,22 +186,30 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         )
         return dataset_dict
 
-    def _serialize_folder(self, user_permissions, content_item):
+    def _serialize_library_folder(
+        self, user_permissions: UserFolderPermissions, folder: model.LibraryFolder
+    ) -> Dict[str, Any]:
         folder_dict = dict(
-            id=f"F{self.encode_id(content_item.id)}",
-            name=content_item.name,
+            id=f"F{self.encode_id(folder.id)}",
+            name=folder.name,
             type=FOLDER_TYPE_NAME,
-            create_time=content_item.create_time.isoformat(),
-            update_time=content_item.update_time.isoformat(),
+            create_time=folder.create_time.isoformat(),
+            update_time=folder.update_time.isoformat(),
             can_manage=user_permissions.manage,
-            deleted=content_item.deleted,
+            deleted=folder.deleted,
             can_modify=user_permissions.modify,
-            description=content_item.description,
+            description=folder.description,
         )
         return folder_dict
 
-    def _serialize_folder_metadata(self, trans, folder, user_permissions: UserFolderPermissions, total_rows: int):
-        full_path = self.folder_manager.build_folder_path(trans, folder)
+    def _serialize_library_folder_metadata(
+        self,
+        trans: ProvidesUserContext,
+        folder: model.LibraryFolder,
+        user_permissions: UserFolderPermissions,
+        total_rows: int,
+    ) -> Dict[str, Any]:
+        full_path = self.folder_manager.build_folder_path(trans.sa_session, trans.security, folder)
         parent_library_id = self.encode_id(folder.parent_library.id) if folder.parent_library else None
         metadata = dict(
             full_path=full_path,

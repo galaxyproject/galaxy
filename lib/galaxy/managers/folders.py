@@ -36,6 +36,7 @@ from galaxy.exceptions import (
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security import RBACAgent
+from galaxy.security.idencoding import IdEncodingHelper
 
 log = logging.getLogger(__name__)
 
@@ -406,7 +407,7 @@ class FolderManager:
         self,
         sa_session: galaxy_scoped_session,
         folder: model.LibraryFolder,
-        user_role_ids,
+        user_role_ids: List[int],
         security_agent: RBACAgent,
         include_deleted: Optional[bool] = False,
         search_text: Optional[str] = None,
@@ -448,7 +449,6 @@ class FolderManager:
         search_text: Optional[str] = None,
         is_admin: bool = False,
     ):
-
         query = sa_session.query(model.LibraryDataset)
         query = query.filter(model.LibraryDataset.folder_id == folder.id)
         if is_admin:
@@ -471,7 +471,6 @@ class FolderManager:
                         actions_alias.role_id.in_(user_role_ids),
                     )
                 )
-
         if search_text:
             search_text = search_text.lower()
             ldda_alias = aliased(model.LibraryDatasetDatasetAssociation)
@@ -482,19 +481,20 @@ class FolderManager:
                     func.lower(ldda_alias.message).contains(search_text, autoescape=True),
                 )
             )
-
         return query
 
-    def build_folder_path(self, trans, folder: model.LibraryFolder) -> List[Tuple[str, str]]:
+    def build_folder_path(
+        self, sa_session: galaxy_scoped_session, security: IdEncodingHelper, folder: model.LibraryFolder
+    ) -> List[Tuple[str, str]]:
         """
         Returns the folder path from root to the given folder.
 
         The path items are tuples with the name and id of each folder for breadcrumb building purposes.
         """
         current_folder = folder
-        path_to_root = [(f"F{trans.security.encode_id(current_folder.id)}", current_folder.name)]
+        path_to_root = [(f"F{security.encode_id(current_folder.id)}", current_folder.name)]
         while current_folder.parent_id is not None:
-            parent_folder = trans.sa_session.query(model.LibraryFolder).get(current_folder.parent_id)
+            parent_folder = sa_session.query(model.LibraryFolder).get(current_folder.parent_id)
             current_folder = parent_folder
-            path_to_root.insert(0, (f"F{trans.security.encode_id(current_folder.id)}", current_folder.name))
+            path_to_root.insert(0, (f"F{security.encode_id(current_folder.id)}", current_folder.name))
         return path_to_root
