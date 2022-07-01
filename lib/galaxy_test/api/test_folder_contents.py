@@ -47,34 +47,32 @@ class FolderContentsApiTestCase(ApiTestCase):
     def test_index(self):
         folder_id = self._create_folder_in_library("Test Folder Contents Index")
 
+        self._create_subfolder_in(folder_id)
         self._create_dataset_in_folder(folder_id)
 
         response = self._get(f"folders/{folder_id}/contents")
-        self._assert_status_code_is(response, 200)
-        contents = response.json()["folder_contents"]
-        assert len(contents) == 1
+        self._assert_index_count_is_correct(response, expected_contents_count=2)
 
     def test_index_include_deleted(self):
         folder_name = "Test Folder Contents Index include deleted"
         folder_id = self._create_folder_in_library(folder_name)
 
+        sub_folder_id = self._create_subfolder_in(folder_id)
         hda_id = self._create_dataset_in_folder(folder_id)
         self._delete_library_dataset(hda_id)
+        self._delete_subfolder(sub_folder_id)
 
         response = self._get(f"folders/{folder_id}/contents")
-        self._assert_status_code_is(response, 200)
-        contents = response.json()["folder_contents"]
-        assert len(contents) == 0
+        self._assert_index_count_is_correct(response, expected_contents_count=0)
 
         include_deleted = True
         response = self._get(f"folders/{folder_id}/contents?include_deleted={include_deleted}")
-        self._assert_status_code_is(response, 200)
-        contents = response.json()["folder_contents"]
-        assert len(contents) == 1
-        assert contents[0]["deleted"] is True
+        index_response = self._assert_index_count_is_correct(response, expected_contents_count=2)
+        for content in index_response["folder_contents"]:
+            assert content["deleted"] is True
 
-    def test_index_limit_offset(self):
-        folder_name = "Test Folder Contents Index limit"
+    def test_index_pagination(self):
+        folder_name = "Test Folder Contents Pagination"
         folder_id = self._create_folder_in_library(folder_name)
 
         num_subfolders = 5
@@ -88,30 +86,52 @@ class FolderContentsApiTestCase(ApiTestCase):
         total_items = num_datasets + num_subfolders
 
         response = self._get(f"folders/{folder_id}/contents")
-        self._assert_status_code_is(response, 200)
-        original_contents = response.json()["folder_contents"]
-        assert len(original_contents) == total_items
+        index_response = self._assert_index_count_is_correct(response, expected_contents_count=total_items)
+        original_contents = index_response["folder_contents"]
 
         limit = 7
         response = self._get(f"folders/{folder_id}/contents?limit={limit}")
-        self._assert_status_code_is(response, 200)
-        contents = response.json()["folder_contents"]
-        assert len(contents) == limit
+        index_response = self._assert_index_count_is_correct(
+            response, expected_contents_count=limit, expected_total_count=total_items
+        )
+
+        limit = 20
+        response = self._get(f"folders/{folder_id}/contents?limit={limit}")
+        index_response = self._assert_index_count_is_correct(response, expected_contents_count=total_items)
 
         offset = 3
         response = self._get(f"folders/{folder_id}/contents?offset={offset}")
-        self._assert_status_code_is(response, 200)
-        contents = response.json()["folder_contents"]
-        assert len(contents) == total_items - offset
+        index_response = self._assert_index_count_is_correct(
+            response, expected_contents_count=total_items - offset, expected_total_count=total_items
+        )
+
+        offset = 20
+        response = self._get(f"folders/{folder_id}/contents?offset={offset}")
+        index_response = self._assert_index_count_is_correct(
+            response, expected_contents_count=0, expected_total_count=total_items
+        )
 
         limit = 4
         offset = 4
         response = self._get(f"folders/{folder_id}/contents?limit={limit}&offset={offset}")
-        self._assert_status_code_is(response, 200)
-        contents = response.json()["folder_contents"]
-        assert len(contents) == limit
+        index_response = self._assert_index_count_is_correct(
+            response, expected_contents_count=limit, expected_total_count=total_items
+        )
+        contents = index_response["folder_contents"]
         expected_query_result = original_contents[offset : offset + limit]
         for index in range(limit):
+            assert contents[index]["id"] == expected_query_result[index]["id"]
+
+        limit = 20
+        offset = 6
+        response = self._get(f"folders/{folder_id}/contents?limit={limit}&offset={offset}")
+        actual_limit = limit if limit < total_items else total_items - offset
+        index_response = self._assert_index_count_is_correct(
+            response, expected_contents_count=actual_limit, expected_total_count=total_items
+        )
+        contents = index_response["folder_contents"]
+        expected_query_result = original_contents[offset : offset + actual_limit]
+        for index in range(actual_limit):
             assert contents[index]["id"] == expected_query_result[index]["id"]
 
     def test_index_search_text(self):
@@ -130,15 +150,15 @@ class FolderContentsApiTestCase(ApiTestCase):
 
         search_terms = ["A", "B", "X"]
         for search_text in search_terms:
-            response = self._get(f"folders/{folder_id}/contents?search_text={search_text}")
-            self._assert_status_code_is(response, 200)
-            contents = response.json()["folder_contents"]
             matching_names = [name for name in all_names if search_text.casefold() in name.casefold()]
-            assert len(contents) == len(matching_names)
+            response = self._get(f"folders/{folder_id}/contents?search_text={search_text}")
+            index_response = self._assert_index_count_is_correct(response, expected_contents_count=len(matching_names))
+            contents = index_response["folder_contents"]
+            for content in contents:
+                assert search_text.casefold() in content["name"].casefold()
 
     def test_index_permissions_include_deleted(self):
-
-        folder_name = "Test Folder Contents Index permissions include deteleted"
+        folder_name = "Test Folder Contents Index permissions include deleted"
         folder_id = self._create_folder_in_library(folder_name)
 
         num_subfolders = 5
@@ -171,22 +191,16 @@ class FolderContentsApiTestCase(ApiTestCase):
         # Verify deleted contents are not listed
         include_deleted = False
         response = self._get(f"folders/{folder_id}/contents?include_deleted={include_deleted}")
-        self._assert_status_code_is(response, 200)
-        contents = response.json()["folder_contents"]
-        assert len(contents) == num_non_deleted
+        self._assert_index_count_is_correct(response, expected_contents_count=num_non_deleted)
 
         include_deleted = True
         # Admins can see everything...
         response = self._get(f"folders/{folder_id}/contents?include_deleted={include_deleted}", admin=True)
-        self._assert_status_code_is(response, 200)
-        contents = response.json()["folder_contents"]
-        assert len(contents) == num_total_contents
+        self._assert_index_count_is_correct(response, expected_contents_count=num_total_contents)
 
         # Owner can see everything too
         response = self._get(f"folders/{folder_id}/contents?include_deleted={include_deleted}")
-        self._assert_status_code_is(response, 200)
-        contents = response.json()["folder_contents"]
-        assert len(contents) == num_total_contents
+        self._assert_index_count_is_correct(response, expected_contents_count=num_total_contents)
 
         # Users with access but no modify permission can't see deleted
         with self._different_user():
@@ -196,15 +210,26 @@ class FolderContentsApiTestCase(ApiTestCase):
 
         with self._different_user():
             response = self._get(f"folders/{folder_id}/contents?include_deleted={include_deleted}")
-            self._assert_status_code_is(response, 200)
-            contents = response.json()["folder_contents"]
-            assert len(contents) == num_non_deleted
+            self._assert_index_count_is_correct(response, expected_contents_count=num_non_deleted)
+
+    def _assert_index_count_is_correct(
+        self, raw_response, expected_contents_count: int, expected_total_count: Optional[int] = None
+    ) -> dict:
+        self._assert_status_code_is(raw_response, 200)
+        if expected_total_count is None:
+            expected_total_count = expected_contents_count
+        index_response = raw_response.json()
+        metadata = index_response["metadata"]
+        contents = index_response["folder_contents"]
+        assert metadata["total_rows"] == expected_total_count, "Expected total rows doesn't match"
+        assert len(contents) == expected_contents_count, "Expected number of contents doesn't match"
+        return index_response
 
     def _create_folder_in_library(self, name: str) -> Any:
         root_folder_id = self.library["root_folder_id"]
         return self._create_subfolder_in(root_folder_id, name)
 
-    def _create_subfolder_in(self, folder_id: str, name: str) -> str:
+    def _create_subfolder_in(self, folder_id: str, name: Optional[str] = "Test Folder") -> str:
         data = {
             "name": name,
             "description": f"The description of {name}",
