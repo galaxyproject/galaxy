@@ -20,7 +20,7 @@
                 </section>
                 <section class="position-relative flex-grow-1 scroller">
                     <div>
-                        <Listing :items="payload" :loading="loading" @scroll="onScroll">
+                        <LayoutListing :items="payload" :loading="loading" @scroll="onScroll">
                             <template v-slot:item="{ item }">
                                 <ContentItem
                                     :id="item.element_index + 1"
@@ -32,7 +32,7 @@
                                     @update:expand-dataset="setExpanded(item, $event)"
                                     @view-collection="onViewSubCollection" />
                             </template>
-                        </Listing>
+                        </LayoutListing>
                     </div>
                 </section>
             </section>
@@ -48,7 +48,7 @@ import CollectionNavigation from "./CollectionNavigation";
 import CollectionOperations from "./CollectionOperations";
 import CollectionDetails from "./CollectionDetails";
 import ExpandedItems from "components/History/Content/ExpandedItems";
-import Listing from "components/History/Layout/Listing";
+import LayoutListing from "components/History/Layout/LayoutListing";
 
 export default {
     components: {
@@ -58,7 +58,7 @@ export default {
         CollectionOperations,
         ContentItem,
         ExpandedItems,
-        Listing,
+        LayoutListing,
     },
     props: {
         history: { type: Object, required: true },

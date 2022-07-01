@@ -1,5 +1,5 @@
 <template>
-    <Details
+    <LayoutDetails
         :name="dsc.name"
         :tags="dsc.tags"
         :writeable="writeable"
@@ -13,19 +13,19 @@
                 :element-count="dsc.element_count"
                 :elements-datatypes="dsc.elements_datatypes" />
         </template>
-    </Details>
+    </LayoutDetails>
 </template>
 
 <script>
 import short from "components/directives/v-short";
-import Details from "components/History/Layout/Details";
+import LayoutDetails from "components/History/Layout/LayoutDetails";
 import CollectionDescription from "components/History/Content/Collection/CollectionDescription";
 import { JobStateSummary } from "components/History/Content/Collection/JobStateSummary";
 
 export default {
     components: {
         CollectionDescription,
-        Details,
+        LayoutDetails,
     },
     directives: {
         short,
