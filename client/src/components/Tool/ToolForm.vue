@@ -3,7 +3,9 @@
         <CurrentUser v-slot="{ user }">
             <UserHistories v-if="user" v-slot="{ currentHistoryId }" :user="user">
                 <div v-if="currentHistoryId">
-                    <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
+                    <b-alert :show="messageShow" :variant="messageVariant">
+                        {{ messageText }}
+                    </b-alert>
                     <LoadingSpan v-if="showLoading" message="Loading Tool" />
                     <div v-if="showEntryPoints">
                         <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
