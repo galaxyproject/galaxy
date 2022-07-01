@@ -7,7 +7,7 @@ define(["i18n!nls/locale"], function (localeStrings) {
     var localize = function (strToLocalize) {
         return localeStrings[strToLocalize] || strToLocalize;
     };
-    
+
     localize.cacheNonLocalized = false;
 
     localize._setUserLocale = function _setUserLocale(user, config) {
