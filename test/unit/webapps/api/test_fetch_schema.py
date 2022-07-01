@@ -81,6 +81,47 @@ recursive_archive_payload = {
 }
 
 
+nested_element_regression_payload = {
+    "history_id": "80a1fcbe9fcb3c61",
+    "targets": [
+        {
+            "destination": {"type": "hdca"},
+            "elements": [
+                {
+                    "name": "a",
+                    "elements": [
+                        {
+                            "name": "a",
+                            "elements": [
+                                {
+                                    "url": "https://example.com",
+                                    "src": "url",
+                                    "dbkey": "?",
+                                    "ext": "auto",
+                                    "name": "forward",
+                                },
+                                {
+                                    "url": "https://example.com",
+                                    "src": "url",
+                                    "dbkey": "?",
+                                    "ext": "auto",
+                                    "name": "reverse",
+                                },
+                            ],
+                            "collection_type": "paired",
+                        },
+                    ],
+                    "collection_type": "list:paired",
+                },
+            ],
+            "collection_type": "list:list:paired",
+            "name": "a",
+        }
+    ],
+    "auto_decompress": True,
+}
+
+
 def test_fetch_data_schema():
     payload = FetchDataPayload(**example_payload)
     elements = payload.targets[0].items  # type: ignore[union-attr]  # alias doesn't type check properly
@@ -113,3 +154,7 @@ def test_recursive_archive_form_like_data():
     payload = deepcopy(recursive_archive_payload)
     payload["targets"] = dumps(payload["targets"])
     FetchDataPayload(**payload)
+
+
+def test_nested_elemet_regression():
+    FetchDataPayload(**nested_element_regression_payload)
