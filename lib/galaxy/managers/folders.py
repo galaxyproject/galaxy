@@ -2,6 +2,7 @@
 Manager and Serializer for Library Folders.
 """
 import logging
+from dataclasses import dataclass
 from typing import (
     List,
     Optional,
@@ -13,6 +14,7 @@ from sqlalchemy import (
     and_,
     false,
     func,
+    not_,
     or_,
 )
 from sqlalchemy.orm import aliased
@@ -39,6 +41,15 @@ from galaxy.security import RBACAgent
 from galaxy.security.idencoding import IdEncodingHelper
 
 log = logging.getLogger(__name__)
+
+
+@dataclass
+class SecurityParams:
+    """Contains security data bundled for reusability."""
+
+    user_role_ids: List[model.Role]
+    security_agent: RBACAgent
+    is_admin: bool
 
 
 # =============================================================================
@@ -366,17 +377,18 @@ class FolderManager:
     ) -> Tuple[List[Union[model.LibraryFolder, model.LibraryDataset]], int]:
         """Retrieves the contents of the given folder that match the provided filters and pagination parameters.
         Returns a tuple with the list of paginated contents and the total number of items contained in the folder."""
-        is_admin = trans.user_is_admin
         sa_session = trans.sa_session
-        user_roles = trans.get_current_user_roles()
-        user_role_ids = [role.id for role in user_roles]
-        security_agent = trans.app.security_agent
-        content_items: List[Union[model.LibraryFolder, model.LibraryDataset]] = []
-
-        sub_folders_query = self._get_sub_folders_query(
-            sa_session, folder, user_role_ids, security_agent, include_deleted, search_text, is_admin
+        security_params = SecurityParams(
+            user_role_ids=[role.id for role in trans.get_current_user_roles()],
+            security_agent=trans.app.security_agent,
+            is_admin=trans.user_is_admin,
         )
-        total_sub_folders = sub_folders_query.count()
+
+        content_items: List[Union[model.LibraryFolder, model.LibraryDataset]] = []
+        sub_folders_query = self._get_sub_folders_query(
+            sa_session, folder, security_params, include_deleted, search_text
+        )
+        total_sub_folders: int = sub_folders_query.count()
         if limit is not None:
             sub_folders_query = sub_folders_query.limit(limit)
         if offset is not None:
@@ -385,14 +397,16 @@ class FolderManager:
         content_items.extend(folders)
 
         # Update pagination
+        num_folders_returned = len(folders)
+        num_folders_skipped = total_sub_folders - num_folders_returned
         if limit:
-            limit -= len(folders)
+            limit -= num_folders_returned
         if offset:
-            offset -= len(folders)
+            offset -= num_folders_skipped
             offset = max(0, offset)
 
         datasets_query = self._get_contained_datasets_query(
-            sa_session, folder, user_role_ids, security_agent, include_deleted, search_text, is_admin
+            sa_session, folder, security_params, include_deleted, search_text
         )
         total_datasets = datasets_query.count()
         if limit is not None:
@@ -407,80 +421,92 @@ class FolderManager:
         self,
         sa_session: galaxy_scoped_session,
         folder: model.LibraryFolder,
-        user_role_ids: List[int],
-        security_agent: RBACAgent,
+        security: SecurityParams,
         include_deleted: Optional[bool] = False,
         search_text: Optional[str] = None,
-        is_admin: bool = False,
     ):
-        query = sa_session.query(model.LibraryFolder)
-        query = query.filter(model.LibraryFolder.parent_id == folder.id)
-        # Undeleted folders are non-restricted for now.
-        # Admins or users with MODIFY permissions can see deleted folders.
-        if include_deleted:
-            if not is_admin:  # Filter by User has MODIFY permission.
-                actions_alias = aliased(model.LibraryDatasetPermissions)
-                query = query.outerjoin(model.LibraryDataset.actions.of_type(actions_alias))
-                query = query.filter(
-                    and_(
-                        actions_alias.action == security_agent.permitted_actions.LIBRARY_MODIFY.action,
-                        actions_alias.role_id.in_(user_role_ids),
-                    )
-                )
-        else:
-            query = query.filter(model.LibraryFolder.deleted == false())
+        """Builds a query to retrieve all the sub-folders contained in the given folder applying filters."""
+        item_model = model.LibraryFolder
+        item_permission_model = model.LibraryFolderPermissions
+        query = sa_session.query(item_model)
+        query = query.filter(item_model.parent_id == folder.id)
+        query = self._filter_by_include_deleted(query, item_model, item_permission_model, include_deleted, security)
         if search_text:
             search_text = search_text.lower()
             query = query.filter(
                 or_(
-                    func.lower(model.LibraryFolder.name).contains(search_text, autoescape=True),
-                    func.lower(model.LibraryFolder.description).contains(search_text, autoescape=True),
+                    func.lower(item_model.name).contains(search_text, autoescape=True),
+                    func.lower(item_model.description).contains(search_text, autoescape=True),
                 )
             )
+        query = query.group_by(item_model.id)
         return query
 
     def _get_contained_datasets_query(
         self,
         sa_session: galaxy_scoped_session,
         folder: model.LibraryFolder,
-        user_role_ids: List[int],
-        security_agent: RBACAgent,
+        security: SecurityParams,
         include_deleted: Optional[bool] = False,
         search_text: Optional[str] = None,
-        is_admin: bool = False,
     ):
-        query = sa_session.query(model.LibraryDataset)
-        query = query.filter(model.LibraryDataset.folder_id == folder.id)
-        if is_admin:
-            if not include_deleted:
-                query = query.filter(model.LibraryDataset.deleted == false())
-        else:
-            # Filter by User has ACCESS permission.
-            actions_alias = aliased(model.LibraryDatasetPermissions)
-            query = query.outerjoin(model.LibraryDataset.actions.of_type(actions_alias))
-            query = query.filter(
-                and_(
-                    actions_alias.action == security_agent.permitted_actions.DATASET_ACCESS.action,
-                    actions_alias.role_id.in_(user_role_ids),
-                )
-            )
-            if include_deleted:  # Filter by User has MODIFY permission.
-                query = query.filter(
-                    and_(
-                        actions_alias.action == security_agent.permitted_actions.LIBRARY_MODIFY.action,
-                        actions_alias.role_id.in_(user_role_ids),
-                    )
-                )
-        if search_text:
-            search_text = search_text.lower()
-            ldda_alias = aliased(model.LibraryDatasetDatasetAssociation)
-            query = query.outerjoin(model.LibraryDataset.library_dataset_dataset_association.of_type(ldda_alias))
+        """Builds a query to retrieve all the datasets contained in the given folder applying filters."""
+        item_model = model.LibraryDataset
+        item_permission_model = model.LibraryDatasetPermissions
+        access_action = security.security_agent.permitted_actions.DATASET_ACCESS.action
+        query = sa_session.query(item_model)
+        query = query.filter(item_model.folder_id == folder.id)
+        query = self._filter_by_include_deleted(query, item_model, item_permission_model, include_deleted, security)
+        ldda = aliased(model.LibraryDatasetDatasetAssociation)
+        query = query.outerjoin(item_model.library_dataset_dataset_association.of_type(ldda))
+        if not security.is_admin:  # Non-admin users require ACCESS permission
+            # We check against the actual dataset and not the ldda (for now?)
+            associated_dataset = aliased(model.Dataset)
+            dataset_permission = aliased(model.DatasetPermissions)
+            query = query.outerjoin(ldda.dataset.of_type(associated_dataset))
+            query = query.outerjoin(associated_dataset.actions.of_type(dataset_permission))
             query = query.filter(
                 or_(
-                    func.lower(ldda_alias.name).contains(search_text, autoescape=True),
-                    func.lower(ldda_alias.message).contains(search_text, autoescape=True),
+                    # The dataset is public
+                    not_(dataset_permission.action == access_action),
+                    # The user has explicit access
+                    and_(
+                        dataset_permission.action == access_action,
+                        dataset_permission.role_id.in_(security.user_role_ids),
+                    ),
                 )
             )
+
+        if search_text:
+            search_text = search_text.lower()
+            query = query.filter(
+                or_(
+                    func.lower(ldda.name).contains(search_text, autoescape=True),
+                    func.lower(ldda.message).contains(search_text, autoescape=True),
+                )
+            )
+        query = query.group_by(item_model.id)
+        return query
+
+    def _filter_by_include_deleted(
+        self, query, item_model, item_permissions_model, include_deleted: Optional[bool], security: SecurityParams
+    ):
+        if include_deleted:  # Admins or users with MODIFY permissions can see deleted contents
+            if not security.is_admin:
+                item_permission = aliased(item_permissions_model)
+                query = query.outerjoin(item_model.actions.of_type(item_permission))
+                query = query.filter(
+                    or_(
+                        item_model.deleted == false(),  # Is not deleted
+                        # User has MODIFY permission
+                        and_(
+                            item_permission.action == security.security_agent.permitted_actions.LIBRARY_MODIFY.action,
+                            item_permission.role_id.in_(security.user_role_ids),
+                        ),
+                    )
+                )
+        else:
+            query = query.filter(item_model.deleted == false())
         return query
 
     def build_folder_path(

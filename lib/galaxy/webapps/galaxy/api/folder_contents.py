@@ -80,6 +80,11 @@ class FastAPILibraryFoldersContents:
 
         Additional metadata for the folder is provided in the response as a separate object containing data
         for breadcrumb path building, permissions and other folder's details.
+
+        **Security note**:
+        - Accessing a library folder or sub-folder requires only access to the parent library.
+        - Deleted folders can only be accessed by admins or users with `MODIFY` permission.
+        - Datasets may be public, private or restricted (to a group of users). Listing deleted datasets has the same requirements as folders.
         """
         payload = LibraryFolderContentsIndexQueryPayload(
             limit=limit, offset=offset, search_text=search_text, include_deleted=include_deleted
