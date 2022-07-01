@@ -13,7 +13,6 @@
                 :key="index"
                 class="formatted-reference"
                 :citation="citation"
-                output-format="bibliography"
                 prefix="-" />
         </div>
         <div v-if="hasRequirements" class="mb-1">

@@ -1,4 +1,4 @@
-"""A mixing that extends a HasDriver class with Galaxy-specific utilities.
+"""A mixin that extends a HasDriver class with Galaxy-specific utilities.
 
 Implementer must provide a self.build_url method to target Galaxy.
 """
@@ -741,6 +741,25 @@ class NavigatesGalaxy(HasDriver):
         self.upload_start()
 
         self.wait_for_and_click_selector("button#btn-close")
+
+    def perform_upload_of_composite_dataset_pasted_data(self, ext, paste_content):
+        self.home()
+        self.upload_start_click()
+        self.components.upload.tab(tab="composite").wait_for_and_click()
+        self.upload_set_footer_extension(ext, tab_id="composite")
+
+        table = self.components.upload.composite.table().wait_for_visible()
+        source_select_buttons = table.find_elements_by_css_selector("div.dropdown button.btn")
+        paste_buttons = table.find_elements_by_css_selector(".upload-source .dropdown-menu .dropdown-item .fa-edit")
+        textareas = table.find_elements_by_css_selector("div.upload-text-column textarea.upload-text-content")
+
+        for i in range(len(paste_content)):
+            source_select_buttons[i].click()
+            paste_buttons[i].click()
+            textareas[i].send_keys(paste_content[i])
+
+        self.upload_start(tab_id="composite")
+        self.components.upload.composite.close.wait_for_and_click()
 
     def upload_list(self, test_paths, name="test", ext=None, genome=None, hide_source_items=True):
         self._collection_upload_start(test_paths, ext, genome, "List")

@@ -42,6 +42,14 @@
                         <span v-else>You have {{ histories.length }} histories.</span>
                     </b-dropdown-text>
 
+                    <b-dropdown-item
+                        v-if="!currentUser.isAnonymous"
+                        data-description="switch to multi history view"
+                        @click="redirect('/history/view_multiple')">
+                        <Icon fixed-width class="mr-1" icon="columns" />
+                        <span v-localize>Show Histories Side-by-Side</span>
+                    </b-dropdown-item>
+
                     <b-dropdown-divider></b-dropdown-divider>
 
                     <b-dropdown-item v-if="!currentUser.isAnonymous" v-b-modal:copy-history-modal>
@@ -73,14 +81,6 @@
                         @click="backboneRoute('/histories/show_structure')">
                         <Icon fixed-width icon="code-branch" class="mr-1" />
                         <span v-localize>Show Structure</span>
-                    </b-dropdown-item>
-
-                    <b-dropdown-item
-                        v-if="!currentUser.isAnonymous"
-                        data-description="switch to multi history view"
-                        @click="redirect('/history/view_multiple')">
-                        <Icon fixed-width class="mr-1" icon="columns" />
-                        <span v-localize>Show Histories Side-by-Side</span>
                     </b-dropdown-item>
 
                     <template v-if="!currentUser.isAnonymous">

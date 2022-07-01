@@ -339,7 +339,6 @@
                                 <saved-rules-selector
                                     ref="savedRulesSelector"
                                     :saved-rules="savedRules"
-                                    :rule-col-headers="colHeadersPerRule"
                                     @update-rules="restoreRules" />
                             </span>
                             <div v-if="jaggedData" class="rule-warning">

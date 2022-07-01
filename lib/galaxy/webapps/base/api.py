@@ -1,16 +1,17 @@
 from fastapi import (
     FastAPI,
     Request,
+    status,
 )
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import (
+    BaseHTTPMiddleware,
+    RequestResponseEndpoint,
+)
 from starlette.responses import Response
-
-try:
-    from starlette_context.middleware import RawContextMiddleware
-    from starlette_context.plugins import RequestIdPlugin
-except ImportError:
-    pass
+from starlette_context.middleware import RawContextMiddleware
+from starlette_context.plugins import RequestIdPlugin
 
 from galaxy.exceptions import MessageException
 from galaxy.web.framework.base import walk_controller_modules
@@ -18,6 +19,21 @@ from galaxy.web.framework.decorators import (
     api_error_message,
     validation_error_to_message_exception,
 )
+
+
+# Copied from https://stackoverflow.com/questions/71222144/runtimeerror-no-response-returned-in-fastapi-when-refresh-request/72677699#72677699
+class SuppressNoResponseReturnedMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        try:
+            return await call_next(request)
+        except RuntimeError as exc:
+            if str(exc) == "No response returned." and await request.is_disconnected():
+                return Response(status_code=status.HTTP_204_NO_CONTENT)
+            raise
+
+
+def add_empty_response_middleware(app: FastAPI) -> None:
+    app.add_middleware(SuppressNoResponseReturnedMiddleware)
 
 
 def add_exception_handler(app: FastAPI) -> None:
