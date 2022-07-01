@@ -5,7 +5,7 @@
  * submitted, delayed only by the throttle period and the request response time.
  */
 
-import store from "store/index";
+import defaultStore from "store/index";
 import { urlData } from "utils/url";
 import { getCurrentHistoryFromServer } from "./queries";
 import { getGalaxyInstance } from "app";
@@ -21,7 +21,7 @@ let lastUpdateTime = null;
 // last time changed history items have been requested
 let lastRequestDate = new Date();
 
-export async function watchHistory() {
+export async function watchHistoryOnce(store) {
     // "Reset" watchTimeout so we don't queue up watchHistory calls in rewatchHistory.
     watchTimeout = null;
     // get current history
@@ -64,9 +64,19 @@ export async function watchHistory() {
             });
         }
     }
-    watchTimeout = setTimeout(() => {
-        watchHistory();
-    }, throttlePeriod);
+}
+
+export async function watchHistory(store = defaultStore) {
+    try {
+        await watchHistoryOnce(store);
+    } catch (error) {
+        // would be fantastic if we could show some error alerting the user to this
+        console.warn(error);
+    } finally {
+        watchTimeout = setTimeout(() => {
+            watchHistory(store);
+        }, throttlePeriod);
+    }
 }
 
 export function rewatchHistory() {
