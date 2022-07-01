@@ -10,6 +10,20 @@ from ._util import is_datasource
 from ..verify import asserts
 
 
+def check_compare_attribs(element, lint_ctx, test_idx):
+    COMPARE_COMPATIBILITY = {
+        "sort": ["diff", "re_match", "re_match_multiline"],
+        "lines_diff": ["diff", "re_match", "contains"],
+        "decompress": ["diff"],
+        "delta": ["diff"],
+        "delta_frac": ["diff"],
+    }
+    compare = element.get("compare", "diff")
+    for attrib in COMPARE_COMPATIBILITY:
+        if attrib in element.attrib and compare not in COMPARE_COMPATIBILITY[attrib]:
+            lint_ctx.error(f'Test {test_idx}: Attribute {attrib} is incompatible with compare="{compare}".', node=element)
+
+
 def lint_tests(tool_xml, lint_ctx):
     # determine node to report for general problems with tests
     tests = tool_xml.findall("./tests/test")
@@ -83,6 +97,13 @@ def lint_tests(tool_xml, lint_ctx):
                 )
                 continue
 
+            if output.tag == "output":
+                check_compare_attribs(output, lint_ctx, test_idx)
+            elements = output.findall("./element")
+            if elements:
+                for element in elements:
+                    check_compare_attribs(element, lint_ctx, test_idx)
+
             # check that
             # - test/output corresponds to outputs/data and
             # - test/collection to outputs/output_collection
@@ -108,7 +129,6 @@ def lint_tests(tool_xml, lint_ctx):
                             node=output,
                         )
                 else:
-                    elements = output.findall("./element")
                     if "count" not in output.attrib and len(elements) == 0:
                         lint_ctx.error(
                             f"Test {test_idx}: test collection '{name}' must have a 'count' attribute or 'element' children",

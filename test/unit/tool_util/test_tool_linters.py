@@ -763,6 +763,28 @@ TESTS_EXPECT_NUM_OUTPUTS_FILTER = """
 </tool>
 """
 
+TESTS_COMPARE_ATTRIB_INCOMPATIBILITY = """
+<tool>
+    <outputs>
+        <data name="data_name"/>
+        <collection name="collection_name" type="list:list"/>
+    </outputs>
+    <tests>
+        <test>
+            <output name="data_name" compare="re_match" decompress="true"/>
+            <output_collection name="collection_name">
+                <element compare="contains" sort="true" />
+            </output_collection>
+        </test>
+        <test>
+            <output name="data_name" compare="diff" lines_diff="2"/>
+            <output_collection name="collection_name">
+                <element compare="contains" lines_diff="2" />
+            </output_collection>
+        </test>
+    </tests>
+</tool>"""
+
 # tool xml for xml_order linter
 XML_ORDER = """
 <tool>
@@ -1606,6 +1628,17 @@ def test_tests_expect_num_outputs_filter(lint_ctx):
     assert "Test should specify 'expect_num_outputs' if outputs have filters" in lint_ctx.warn_messages
     assert len(lint_ctx.warn_messages) == 1
     assert len(lint_ctx.error_messages) == 0
+
+
+def test_tests_compare_attrib_incompatibility(lint_ctx):
+    tool_source = get_xml_tool_source(TESTS_COMPARE_ATTRIB_INCOMPATIBILITY)
+    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    assert 'Test 1: Attribute decompress is incompatible with compare="re_match".' in lint_ctx.error_messages
+    assert 'Test 1: Attribute sort is incompatible with compare="contains".' in lint_ctx.error_messages
+    assert not lint_ctx.info_messages
+    assert len(lint_ctx.valid_messages) == 1
+    assert not lint_ctx.warn_messages
+    assert len(lint_ctx.error_messages) == 2
 
 
 def test_xml_order(lint_ctx):

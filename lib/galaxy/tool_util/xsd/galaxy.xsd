@@ -1582,6 +1582,29 @@ temporary file, which will either be compared with the file named in the
 ``file`` attribute value or checked against assertions made by a child
 ``assert_contents`` tag to verify that the tool is functionally correct.
 
+Different methods can be chosen for the comparison with the local file specified
+by ``file`` using the ``compare`` attribute:
+
+- ``diff``: uses diff to compare the history data set and the file provided by
+  ``file``. Compressed files are decompressed before the compariopm if
+  ``decompress`` is set to ``true``. BAM files are converted to SAM before the
+  comparision and for pdf some special rules are implemented. The number of
+  allowed differences can be set with ``lines_diff``.  If ``sort="true"`` history
+  and local data is sorted before the comparison.
+- ``re_match``: each line of the history data set is compared to the regular
+  expression specified in the corresponding line of the ``file``. The allowed
+  number of non matching lines can be set with ``lines_diff`` and the history
+  dataset can be sorted if ``sort`` is set to ``true``.
+- ``re_match_multiline``: it is checked if the history data sets matches the
+  multi line regular expression given in ``file``. The history dataset is sorted
+  before the comparison if the ``sort`` atrribute is set to ``true``.
+- ``contains``: check if each line in ``file`` is contained in the history data set.
+  The allowed number of lines that are not contained in the history dataset
+  can be set with ``lines_diff``.
+- ``sim_size``: compares the size of the history dataset and the ``file`` subject to
+  the values of the ``delta`` and ``delta_frac`` attributes. Note that a ``has_size``
+  content assertion should be preferred, because this avoids storing the test file.
+
         ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -1631,9 +1654,13 @@ data type. If these do not match, the test will fail.
     </xs:attribute>
     <xs:attribute name="sort" type="PermissiveBoolean">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This flag causes the lines of the output
-to be sorted before they are compared to the expected output. This could be
-useful for non-deterministic output.</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+Applies only if ``compare`` is ``diff``, ``re_match`` or ``re_match_multiline``. This flag causes the lines of the history data set
+to be sorted before the comparison. In case of ``diff`` also the local file is sorted. This could be
+useful for non-deterministic output.
+
+]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
@@ -1668,7 +1695,7 @@ it may be inconvenient to upload the entiry file and this can be used instead.
     </xs:attribute>
     <xs:attribute name="lines_diff" type="xs:integer">
       <xs:annotation>
-        <xs:documentation xml:lang="en">If ``compare`` is set to ``diff``, the number of lines of difference to allow (each line with a modification is a line added and a line removed so this counts as two lines).</xs:documentation>
+        <xs:documentation xml:lang="en">Applies only if ``compare`` is set to ``diff``, ``re_match``, and ``contains``. If ``compare`` is set to ``diff``, the number of lines of difference to allow (each line with a modification is a line added and a line removed so this counts as two lines).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="decompress" type="PermissiveBoolean">
