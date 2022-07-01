@@ -18,7 +18,7 @@
 
 <script>
 import short from "components/directives/v-short";
-import Details from "components/History/Layout/DetailsLayout";
+import DetailsLayout from "components/History/Layout/DetailsLayout";
 import CollectionDescription from "components/History/Content/Collection/CollectionDescription";
 import { JobStateSummary } from "components/History/Content/Collection/JobStateSummary";
 

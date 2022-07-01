@@ -1,6 +1,8 @@
 <template>
     <b-form @submit.prevent="submit">
-        <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
+        <b-alert :show="messageShow" :variant="messageVariant">
+            {{ messageText }}
+        </b-alert>
         <b-card header="Change your password">
             <b-form-group v-if="user" label="Current Password">
                 <b-form-input v-model="current" type="password" />
