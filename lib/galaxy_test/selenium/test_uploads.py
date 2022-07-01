@@ -12,6 +12,51 @@ from .framework import (
 
 class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
+    def test_upload_file(self):
+        self.perform_upload(self.get_filename("1.sam"))
+
+        self.history_panel_wait_for_hid_ok(1)
+        history_count = len(self.history_contents())
+        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+
+        self.history_panel_click_item_title(hid=1, wait=True)
+        self.assert_item_summary_includes(1, "28 lines")
+
+    @selenium_test
+    def test_upload_pasted_content(self):
+        pasted_content = "this is pasted"
+        self.perform_upload_of_pasted_content(pasted_content)
+
+        self.history_panel_wait_for_hid_ok(1)
+        history_count = len(self.history_contents())
+        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+
+    @selenium_test
+    def test_upload_pasted_url_content(self):
+        pasted_content = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/LICENSE.txt"
+        self.perform_upload_of_pasted_content(pasted_content)
+
+        self.history_panel_wait_for_hid_ok(1)
+        history_count = len(self.history_contents())
+        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+
+    @selenium_test
+    def test_upload_composite_dataset_pasted_data(self):
+        paste_content = ["a", "b", "c"]
+        self.perform_upload_of_composite_dataset_pasted_data("velvet", paste_content)
+
+        self.history_panel_wait_for_hid_ok(1)
+        history_count = len(self.history_contents())
+        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+
+        self.history_panel_click_item_title(hid=1, wait=True)
+        self.history_panel_item_view_dataset_details(1)
+        param_values = self.driver.find_elements_by_css_selector("#tool-parameters td.tool-parameter-value")
+        request_json = param_values[1].text
+        for data in paste_content:
+            assert f'"paste_content": "{data}"' in request_json
+
+    @selenium_test
     def test_upload_simplest(self):
         self.perform_upload(self.get_filename("1.sam"))
 
