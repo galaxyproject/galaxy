@@ -1633,8 +1633,14 @@ def test_tests_expect_num_outputs_filter(lint_ctx):
 def test_tests_compare_attrib_incompatibility(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_COMPARE_ATTRIB_INCOMPATIBILITY)
     run_lint(lint_ctx, tests.lint_tsts, tool_source)
-    assert 'Test 1: Attribute decompress is incompatible with compare="re_match".' in lint_ctx.error_messages
-    assert 'Test 1: Attribute sort is incompatible with compare="contains".' in lint_ctx.error_messages
+    assert (
+        'Test 1: Attribute decompress is incompatible with compare="re_match".'
+        in lint_ctx.error_messages
+    )
+    assert (
+        'Test 1: Attribute sort is incompatible with compare="contains".'
+        in lint_ctx.error_messages
+    )
     assert not lint_ctx.info_messages
     assert len(lint_ctx.valid_messages) == 1
     assert not lint_ctx.warn_messages

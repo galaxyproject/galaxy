@@ -1594,9 +1594,9 @@ by ``file`` using the ``compare`` attribute:
 - ``re_match``: each line of the history data set is compared to the regular
   expression specified in the corresponding line of the ``file``. The allowed
   number of non matching lines can be set with ``lines_diff`` and the history
-  and local dataset is sorted if ``sort`` is set to ``true``.
+  dataset is sorted if ``sort`` is set to ``true``.
 - ``re_match_multiline``: it is checked if the history data sets matches the
-  multi line regular expression given in ``file``. The history and local datasets are sorted
+  multi line regular expression given in ``file``. The history dataset is sorted
   before the comparison if the ``sort`` atrribute is set to ``true``.
 - ``contains``: check if each line in ``file`` is contained in the history data set.
   The allowed number of lines that are not contained in the history dataset
