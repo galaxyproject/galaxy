@@ -164,10 +164,11 @@ as for running Galaxy. Thus its possible that tools modify data in Galaxy's
 
 Note that the tool only knows the paths to inputs and outputs, but if using the default configuration for other paths (e.g. configuration directory) also these paths are easily accessible.
 
-There are two approaches to protect Galaxy against this:
+There are three approaches to protect Galaxy against this:
 
 - Use different credentials for running tools. This can be configured using the ``real_system_username`` config variable.
 - Configure Galaxy to run jobs in a container and enable ``outputs_to_working_directory``. Then the tool will in an environment that allows write access only for the job working dir. All other paths will be accessible read only. 
+- Use pulsar to stage inputs and outputs
 
 For both more information can be found in the [job configuration](jobs.md) documentatiion and see also [using a compute cluster](cluster.md).
 
