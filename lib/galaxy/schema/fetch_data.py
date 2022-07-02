@@ -187,7 +187,7 @@ CompositeDataElement.update_forward_refs()
 
 
 class NestedElement(BaseDataElement):
-    items: List["AnyElement"] = Field(..., alias="elements")
+    items: List[Union["AnyElement", "NestedElement"]] = Field(..., alias="elements")
 
 
 AnyElement = Annotated[

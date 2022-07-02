@@ -40,16 +40,25 @@ function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
     console.debug(`Starting chunked upload for ${uploadable.name} [chunkSize=${chunkSize}].`);
     const upload = new tus.Upload(uploadable, {
         endpoint: tusEndpoint,
+        retryDelays: [0, 3000, 10000],
         fingerprint: buildFingerprint(cnf),
         chunkSize: chunkSize,
         metadata: data.payload,
-        onError: function (error) {
-            console.log("Failed because: " + error);
-            cnf.error(error);
+        onError: function (err) {
+            const status = err.originalResponse?.getStatus();
+            if (status == 403) {
+                console.error(`Failed because of missing authorization: ${err}`);
+                cnf.error(err);
+            } else {
+                // 🎵 Never gonna give you up 🎵
+                console.log(`Failed because: ${err}\n, will retry in 10 seconds`);
+
+                setTimeout(() => startTusUpload(upload), 10000);
+            }
         },
-        onProgress: function (bytesUploaded, bytesTotal) {
-            var percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2);
-            console.log(bytesUploaded, bytesTotal, percentage + "%");
+        onChunkComplete: function (chunkSize, bytesAccepted, bytesTotal) {
+            const percentage = ((bytesAccepted / bytesTotal) * 100).toFixed(2);
+            console.log(bytesAccepted, bytesTotal, percentage + "%");
             cnf.progress(percentage);
         },
         onSuccess: function () {
@@ -63,6 +72,10 @@ function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
             tusUpload(uploadables, index + 1, data, tusEndpoint, cnf);
         },
     });
+    startTusUpload(upload);
+}
+
+function startTusUpload(upload) {
     // Check if there are any previous uploads to continue.
     upload.findPreviousUploads().then(function (previousUploads) {
         // Found previous uploads so we select the first one.

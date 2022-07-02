@@ -143,11 +143,13 @@ export async function secureHistory(history) {
 /**
  * Content Current History
  */
-export async function getCurrentHistoryFromServer() {
+export async function getCurrentHistoryFromServer(since) {
     const url = "history/current_history_json";
-    const response = await axios.get(prependPath(url));
+    const response = await axios.get(prependPath(url), { params: { since: since } });
     const props = doResponse(response);
-    return new History(props);
+    if (props) {
+        return new History(props);
+    }
 }
 
 export async function setCurrentHistoryOnServer(history_id) {
