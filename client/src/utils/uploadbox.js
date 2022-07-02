@@ -47,7 +47,7 @@ function tusUpload(data, index, tusEndpoint, cnf) {
             const status = err.originalResponse?.getStatus();
             if (status == 403) {
                 console.error(`Failed because of missing authorization: ${err}`);
-                cnf.error(error);
+                cnf.error(err);
             } else {
                 // 🎵 Never gonna give you up 🎵
                 console.log(`Failed because: ${err}\n, will retry in 10 seconds`);
