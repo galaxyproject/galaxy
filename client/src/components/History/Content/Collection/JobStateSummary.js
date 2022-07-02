@@ -71,19 +71,39 @@ export class JobStateSummary extends Map {
         return this.get("ok");
     }
 
+    get okCountText() {
+        return `${this.okCount} OK`;
+    }
+
     get jobCount() {
         return this.get("all_jobs");
+    }
+
+    get jobCountText() {
+        return `${this.jobCount} Total Jobs`;
     }
 
     get errorCount() {
         return (this.get("error") || 0) + (this.get("failed") || 0) + (this.get("deleted") || 0);
     }
 
+    get errorCountText() {
+        return `${this.errorCount} Error`;
+    }
+
     get runningCount() {
         return this.get("running");
     }
 
+    get runningCountText() {
+        return `${this.runningCount} Running`;
+    }
+
     get waitingCount() {
         return (this.get("queued") || 0) + (this.get("waiting") || 0) + (this.get("paused") || 0);
+    }
+
+    get waitingCountText() {
+        return `${this.waitingCount} Waiting`;
     }
 }

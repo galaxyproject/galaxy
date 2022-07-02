@@ -6,24 +6,24 @@ model, so probably has to go eventually.-->
         <b-progress v-if="!summary.isTerminal" :max="summary.jobCount">
             <b-progress-bar
                 v-if="summary.errorCount"
+                v-b-tooltip.hover="summary.errorCountText"
                 :value="summary.errorCount"
-                variant="danger"
-                v-b-tooltip.hover="summary.errorCount" />
+                variant="danger" />
             <b-progress-bar
                 v-if="summary.okCount"
+                v-b-tooltip.hover="summary.okCountText"
                 :value="summary.okCount"
-                variant="success"
-                v-b-tooltip.hover="summary.okCount" />
+                variant="success" />
             <b-progress-bar
                 v-if="summary.runningCount"
+                v-b-tooltip.hover="summary.runningCountText"
                 :value="summary.runningCount"
-                variant="warning"
-                v-b-tooltip.hover="summary.runningCount" />
+                variant="warning" />
             <b-progress-bar
                 v-if="summary.waitingCount"
+                v-b-tooltip.hover="summary.waitingCountText"
                 :value="summary.waitingCount"
-                variant="secondary"
-                v-b-tooltip.hover="summary.waitingCount" />
+                variant="secondary" />
         </b-progress>
     </div>
 </template>
