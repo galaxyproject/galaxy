@@ -299,21 +299,24 @@ export default {
         },
     },
     watch: {
-        annotation: function (newAnnotation, oldAnnotation) {
+        annotation(newAnnotation, oldAnnotation) {
             if (newAnnotation != oldAnnotation) {
                 this.hasChanges = true;
             }
         },
-        name: function (newName, oldName) {
+        name(newName, oldName) {
             if (newName != oldName) {
                 this.hasChanges = true;
             }
         },
-        steps: function (newSteps, oldSteps) {
+        steps(newSteps, oldSteps) {
             this.hasChanges = true;
         },
-        nodes: function (newNodes, oldNodes) {
+        nodes(newNodes, oldNodes) {
             this.hasChanges = true;
+        },
+        hasChanges() {
+            this.$emit("update:confirmation", this.hasChanges);
         },
     },
     created() {
@@ -326,13 +329,6 @@ export default {
             this.canvasManager = new WorkflowCanvas(this, this.$refs.canvas);
             this._loadCurrent(this.id, this.version);
         });
-
-        // Notify user if workflow has not been saved yet
-        window.onbeforeunload = () => {
-            if (this.hasChanges) {
-                return "There are unsaved changes to your workflow which will be lost.";
-            }
-        };
         hide_modal();
     },
     methods: {
@@ -427,7 +423,7 @@ export default {
             this.showInPanel = "attributes";
         },
         onEditSubworkflow(contentId) {
-            const editUrl = `${getAppRoot()}workflow/editor?workflow_id=${contentId}`;
+            const editUrl = `/workflows/edit?id=${contentId}`;
             this.onNavigate(editUrl);
         },
         async onClone(node) {
@@ -528,21 +524,14 @@ export default {
             this.markdownText = markdown;
         },
         onRun() {
-            const runUrl = `${getAppRoot()}workflows/run?id=${this.id}`;
+            const runUrl = `/workflows/run?id=${this.id}`;
             this.onNavigate(runUrl);
         },
-        onNavigate(url, force = false) {
-            if (!force && this.hasChanges) {
-                this.onSave(true).then(() => {
-                    window.location = url;
-                });
-            } else {
-                if (this.hasChanges) {
-                    window.onbeforeunload = false;
-                    this.hideModal();
-                }
-                window.location = url;
-            }
+        onNavigate(url) {
+            this.onSave(true).then(() => {
+                this.hasChanges = false;
+                this.$router.push(url);
+            });
         },
         onZoom(zoomLevel) {
             this.zoomLevel = this.canvasManager.setZoom(zoomLevel);
@@ -616,8 +605,10 @@ export default {
         },
         _loadCurrent(id, version) {
             this.onWorkflowMessage("Loading workflow...", "progress");
-            loadWorkflow(this, id, version)
+            this.lastQueue
+                .enqueue(loadWorkflow, { id, version, workflow: this })
                 .then((data) => {
+                    console.debug("Editor - Loading workflow:", id);
                     this._loadEditorData(data);
                 })
                 .catch((response) => {

@@ -83,7 +83,7 @@
 </template>
 
 <script>
-import { backboneRoute, iframeAdd } from "components/plugins/legacyNavigation";
+import { iframeAdd } from "components/plugins/legacyNavigation";
 import { StatelessTags } from "components/Tags";
 import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./model/states";
 import CollectionDescription from "./Collection/CollectionDescription";
@@ -181,9 +181,9 @@ export default {
         },
         onEdit() {
             if (this.item.collection_type) {
-                backboneRoute(`collection/edit/${this.item.id}`);
+                this.$router.push(`/collection/edit/${this.item.id}`);
             } else {
-                backboneRoute("datasets/edit", { dataset_id: this.item.id });
+                this.$router.push(`/datasets/edit/${this.item.id}`);
             }
         },
         onTags(newTags) {

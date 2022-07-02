@@ -17,9 +17,6 @@
                                 Switch to this history
                             </button>
                         </span>
-                        <button id="show-structure" class="btn btn-secondary" @click="showStructure">
-                            Show structure
-                        </button>
                     </span>
                 </div>
                 <div class="float-right">
@@ -39,11 +36,7 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
-import Vue from "vue";
-import DisplayStructure from "components/DisplayStructured.vue";
-import QueryStringParsing from "utils/query-string-parsing";
 import HistoryView from "mvc/history/history-view";
-import { getGalaxyInstance } from "app";
 
 export default {
     props: {
@@ -94,13 +87,6 @@ export default {
                 ? { location: "mvc/history/history-view-edit", className: "HistoryViewEdit" }
                 : { location: "mvc/history/history-view", className: "HistoryView" };
             return HistoryView.historyEntry(options);
-        },
-        showStructure: function () {
-            const Galaxy = getGalaxyInstance();
-            const displayStructureInstance = Vue.extend(DisplayStructure);
-            const mountView = document.createElement("div");
-            Galaxy.page.center.display(mountView);
-            new displayStructureInstance({ propsData: { id: QueryStringParsing.get("id") } }).$mount(mountView);
         },
         switchHistory: function () {
             const url = getAppRoot() + "history/switch_to_history?hist_id=" + this.historyHistory["id"];

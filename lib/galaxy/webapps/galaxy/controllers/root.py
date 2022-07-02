@@ -67,7 +67,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             unencoded_id = trans.security.decode_id(history_id)
             history = self.history_manager.get_owned(unencoded_id, trans.user)
             trans.set_history(history)
-
         return self._bootstrapped_client(trans)
 
     @web.expose

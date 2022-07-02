@@ -129,13 +129,17 @@ export default {
         },
     },
     created() {
-        this.eventHub.$on("openToolSection", (sectionId) => {
+        this.eventHub.$on("openToolSection", this.openToolSection);
+    },
+    beforeDestroy() {
+        this.eventHub.$off("openToolSection", this.openToolSection);
+    },
+    methods: {
+        openToolSection(sectionId) {
             if (this.isSection && sectionId == this.category?.id) {
                 this.toggleMenu(true);
             }
-        });
-    },
-    methods: {
+        },
         checkFilter() {
             return !this.disableFilter && !!this.queryFilter;
         },

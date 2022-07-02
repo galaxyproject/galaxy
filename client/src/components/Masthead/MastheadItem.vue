@@ -14,7 +14,7 @@
         @click="open(tab, $event)">
         <template v-if="tab.icon">
             <span :class="iconClasses" />
-            <span v-if="tab.show_note" :class="['nav-note', tab.note_cls]">{{ tab.note }}</span>
+            <span v-if="toggle" class="nav-note fa fa-check" />
         </template>
         <template v-else>
             {{ tab.title }}
@@ -68,9 +68,15 @@ export default {
     props: {
         tab: {
             type: Object,
+            default: null,
+        },
+        toggle: {
+            type: Boolean,
+            default: false,
         },
         activeTab: {
             type: String,
+            default: null,
         },
     },
     computed: {
@@ -90,7 +96,7 @@ export default {
         linkClasses() {
             return {
                 "nav-icon": this.tab.icon,
-                toggle: this.tab.toggle,
+                toggle: this.toggle,
             };
         },
         iconClasses() {
@@ -122,9 +128,10 @@ export default {
         },
         open(tab, event) {
             if (tab.onclick) {
-                return this.propogateClick(tab, event);
-            }
-            if (tab.disabled) {
+                event.preventDefault();
+                tab.onclick();
+                this.$emit("click");
+            } else if (tab.disabled) {
                 event.preventDefault();
                 this.$root.$emit("bv::hide::tooltip");
                 this.$root.$emit("bv::show::popover", tab.id);
@@ -133,21 +140,19 @@ export default {
                 }, 3000);
             } else if (!tab.menu) {
                 event.preventDefault();
-                const galaxy = getGalaxyInstance();
-                if (tab.target === "__use_router__" && typeof galaxy.page !== "undefined") {
-                    galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
+                const Galaxy = getGalaxyInstance();
+                if (tab.target === "__use_router__" && this.$router) {
+                    this.$router.push(`/${tab.url}`);
+                } else if (tab.target === "__use_router__" && typeof Galaxy.page !== "undefined") {
+                    Galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
                 } else {
                     try {
-                        galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });
+                        Galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });
                     } catch (err) {
                         console.warn("Missing frame element on galaxy instance", err);
                     }
                 }
             }
-        },
-        propogateClick(tab, event) {
-            event.preventDefault();
-            tab.onclick();
         },
         formatUrl(url) {
             if (typeof url === "string" && url.indexOf("//") === -1 && url.charAt(0) != "/") {

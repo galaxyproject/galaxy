@@ -11,8 +11,8 @@
                 v-show="!(tab.hidden === undefined ? false : tab.hidden)"
                 :key="`tab-${idx}`"
                 :tab="tab"
-                :active-tab="activeTab">
-            </masthead-item>
+                :active-tab="activeTab" />
+            <masthead-item :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
         </b-navbar-nav>
         <div ref="quota-meter-container" class="quota-meter-container" />
     </b-navbar>
@@ -68,9 +68,11 @@ export default {
     },
     data() {
         return {
-            activeTab: null,
+            activeTab: this.initialActiveTab,
             baseTabs: [],
             extensionTabs: [],
+            windowTab: this.mastheadState.windowManager.getTab(),
+            windowToggle: false,
         };
     },
     computed: {
@@ -82,13 +84,11 @@ export default {
             return brandTitle;
         },
         tabs() {
-            const windowTabs = [this.mastheadState.windowManager.buttonActive];
-            const tabs = [].concat(this.baseTabs, this.extensionTabs, windowTabs);
+            const tabs = [].concat(this.baseTabs, this.extensionTabs);
             return tabs.map(this._tabToJson);
         },
     },
     created() {
-        this.activeTab = this.initialActiveTab;
         this.baseTabs = fetchMenu(this.menuOptions);
         loadWebhookMenuItems(this.extensionTabs);
     },
@@ -102,6 +102,9 @@ export default {
         },
         highlight(activeTab) {
             this.activeTab = activeTab;
+        },
+        onWindowToggle() {
+            this.windowToggle = !this.windowToggle;
         },
         _tabToJson(el) {
             const defaults = {

@@ -74,6 +74,7 @@ export function fetchMenu(options = {}) {
         tooltip: _l("Tools and Current History"),
         icon: "fa-home",
     });
+
     //
     // Workflow tab.
     //

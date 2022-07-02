@@ -60,7 +60,7 @@
 </template>
 
 <script>
-import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
+import { iframeAdd } from "components/plugins/legacyNavigation";
 import { copy as sendToClipboard } from "utils/clipboard";
 import { absPath } from "utils/redirect";
 import { downloadUrlMixin } from "./mixins.js";
@@ -70,7 +70,7 @@ export default {
     components: {
         DatasetDownload,
     },
-    mixins: [legacyNavigationMixin, downloadUrlMixin],
+    mixins: [downloadUrlMixin],
     props: {
         item: { type: Object, required: true },
         showHighlight: { type: Boolean, default: false },
@@ -107,26 +107,21 @@ export default {
             window.location.href = resource;
         },
         onError() {
-            this.backboneRoute("datasets/error", { dataset_id: this.item.id });
+            this.$router.push(`/datasets/${this.item.id}/error`);
         },
         onInfo() {
-            this.backboneRoute(`datasets/${this.item.id}/details`);
+            this.$router.push(`/datasets/${this.item.id}/details`);
         },
         onRerun() {
-            this.backboneRoute(`root?job_id=${this.item.creating_job}`);
+            this.$router.push(`/root?job_id=${this.item.creating_job}`);
         },
         onVisualize() {
-            const name = this.item.name || "";
-            const title = `Visualization of ${name}`;
-            const path = `visualizations?dataset_id=${this.item.id}`;
-            const redirectParams = {
-                path: path,
-                title: title,
-                tryIframe: false,
-            };
-            if (!this.iframeAdd(redirectParams)) {
-                this.backboneRoute(path);
-            }
+            const name = this.item.name || "...";
+            iframeAdd({
+                title: `Visualization of ${name}`,
+                path: `/visualizations?dataset_id=${this.item.id}`,
+                $router: this.$router,
+            });
         },
         onHighlight() {
             this.$emit("toggleHighlights");

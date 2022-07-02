@@ -164,8 +164,7 @@ export default {
             }
         },
         openManageCustomBuilds() {
-            const Galaxy = getGalaxyInstance();
-            Galaxy.page.router.push(`${getAppRoot()}custom_builds`);
+            this.$router.push(`/custom_builds`);
         },
         makeDataPrivate() {
             const Galaxy = getGalaxyInstance();

@@ -66,16 +66,6 @@ describe("Index", () => {
         expect(wrapper.canvasManager).not.toBeNull();
     });
 
-    it("routes to run to URL and respects Galaxy prefix", async () => {
-        mountAndWaitForCreated();
-        Object.defineProperty(window, "location", {
-            value: "original",
-            writable: true,
-        });
-        wrapper.vm.onRun();
-        expect(window.location).toBe("prefix/workflows/run?id=workflow_id");
-    });
-
     it("routes to run to download URL and respects Galaxy prefix", async () => {
         mountAndWaitForCreated();
         Object.defineProperty(window, "location", {
@@ -88,7 +78,7 @@ describe("Index", () => {
 
     it("tracks changes to annotations", async () => {
         mountAndWaitForCreated();
-        expect(wrapper.hasChanges).toBeFalsy();
+        expect(wrapper.vm.hasChanges).toBeFalsy();
         await wrapper.setData({ annotation: "original annotation" });
         expect(wrapper.vm.hasChanges).toBeTruthy();
 
@@ -125,8 +115,9 @@ describe("Index", () => {
 
     it("prevents navigation only if hasChanges", async () => {
         mountAndWaitForCreated();
-        expect(window.onbeforeunload()).toBeFalsy();
-        wrapper.vm.onChange();
-        expect(window.onbeforeunload()).toBeTruthy();
+        expect(wrapper.vm.hasChanges).toBeFalsy();
+        await wrapper.vm.onChange();
+        const confirmationRequired = wrapper.emitted()["update:confirmation"][0][0];
+        expect(confirmationRequired).toBeTruthy();
     });
 });

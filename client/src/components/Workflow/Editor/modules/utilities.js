@@ -11,7 +11,7 @@ export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
     const _copy_into_workflow_ajax = () => {
         // Load workflow definition
         workflow.onWorkflowMessage("Importing workflow", "progress");
-        loadWorkflow(workflow, id, null, true).then((data) => {
+        loadWorkflow({ workflow, id, appendData: true }).then((data) => {
             // Determine if any parameters were 'upgraded' and provide message
             const insertedStateMessages = getStateUpgradeMessages(data);
             workflow.onInsertedStateMessages(insertedStateMessages);
@@ -79,7 +79,7 @@ export function saveAs(workflow) {
                 },
             })
                 .done((id) => {
-                    workflow.onNavigate(`${getAppRoot()}workflow/editor?id=${id}`, true);
+                    workflow.onNavigate(`${getAppRoot()}workflows/edit?id=${id}`, true);
                 })
                 .fail((err) => {
                     console.debug(err);

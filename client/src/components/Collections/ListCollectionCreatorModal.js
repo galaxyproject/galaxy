@@ -7,8 +7,8 @@ function listCollectionCreatorModal(elements, options) {
     options.title = _l("Create a collection from a list of datasets");
     const { promise, showEl } = collectionCreatorModalSetup(options);
     return import(/* webpackChunkName: "ListCollectionCreator" */ "./ListCollectionCreator.vue").then((module) => {
-        var listCollectionCreatorInstance = Vue.extend(module.default);
-        var vm = document.createElement("div");
+        const listCollectionCreatorInstance = Vue.extend(module.default);
+        const vm = document.createElement("div");
         showEl(vm);
         new listCollectionCreatorInstance({
             propsData: {
@@ -28,7 +28,7 @@ function listCollectionCreatorModal(elements, options) {
  */
 function createListCollection(contents, defaultHideSourceItems) {
     const elements = contents.toJSON();
-    var copyElements;
+    let copyElements;
     const promise = listCollectionCreatorModal(elements, {
         defaultHideSourceItems: defaultHideSourceItems,
         creationFn: function (elements, name, hideSourceItems) {
