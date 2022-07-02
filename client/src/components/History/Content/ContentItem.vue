@@ -51,7 +51,6 @@
                     :is-dataset="isDataset"
                     :is-deleted="item.deleted"
                     :is-history-item="isHistoryItem"
-                    :is-purged="item.purged"
                     :is-visible="item.visible"
                     :state="state"
                     @delete="$emit('delete')"
