@@ -25,13 +25,16 @@ export async function watchHistoryOnce(store) {
     // "Reset" watchTimeout so we don't queue up watchHistory calls in rewatchHistory.
     watchTimeout = null;
     // get current history
-    const history = await getCurrentHistoryFromServer();
-    const historyId = history.id;
     const checkForUpdate = new Date();
+    const history = await getCurrentHistoryFromServer(lastUpdateTime);
     store.commit("setLastCheckedTime", { checkForUpdate });
+    if (!history) {
+        return;
+    }
 
     // continue if the history update time has changed
     if (!lastUpdateTime || lastUpdateTime < history.update_time) {
+        const historyId = history.id;
         lastUpdateTime = history.update_time;
         // execute request to obtain recently changed items
         const params = {
