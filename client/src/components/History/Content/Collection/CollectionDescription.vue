@@ -3,7 +3,7 @@
         <h6 class="description mt-1">
             a {{ collectionLabel }} with {{ elementCount }}<b>{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
         </h6>
-        <CollectionProgress :summary="jobStateSummary" />
+        <CollectionProgress v-if="jobStateSummary.size != 0" :summary="jobStateSummary" />
     </div>
 </template>
 
