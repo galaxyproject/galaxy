@@ -93,7 +93,7 @@ jobs:
       - run: tox -e validate_test_tools
   js_lint:
     docker:
-      - image: cimg/node:16.13.2
+      - image: cimg/node:16.15.1
     <<: *set_workdir
     steps:
       - *restore_yarn_cache
