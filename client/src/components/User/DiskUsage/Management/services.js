@@ -9,6 +9,8 @@ const isDeleted = "q=deleted-eq&qv=True";
 const isNotPurged = "q=purged-eq&qv=False";
 const maxItemsToFetch = 500;
 const discardedDatasetsQueryParams = `${isDataset}&${isDeleted}&${isNotPurged}&limit=${maxItemsToFetch}`;
+
+const historyKeys = "id,name,size,update_time";
 const discardedHistoriesQueryParams = `&${isDeleted}&${isNotPurged}&limit=${maxItemsToFetch}`;
 
 /**
@@ -133,7 +135,7 @@ export async function fetchDiscardedHistories(options = {}) {
     if (options.offset) {
         params += `offset=${options.offset}&`;
     }
-    const url = `${getAppRoot()}api/histories?keys=${datasetKeys}&${discardedHistoriesQueryParams}&${params}`;
+    const url = `${getAppRoot()}api/histories?keys=${historyKeys}&${discardedHistoriesQueryParams}&${params}`;
     try {
         const { data } = await axios.get(url);
         return data;
