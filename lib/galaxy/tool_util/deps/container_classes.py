@@ -450,16 +450,3 @@ CONTAINER_CLASSES = dict(
     docker=DockerContainer,
     singularity=SingularityContainer,
 )
-
-
-class NullContainer:
-    def __init__(self):
-        pass
-
-    def __bool__(self):
-        return False
-
-    __nonzero__ = __bool__
-
-
-NULL_CONTAINER = NullContainer()

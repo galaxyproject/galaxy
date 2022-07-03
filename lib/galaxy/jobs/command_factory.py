@@ -1,9 +1,11 @@
+import typing
 from logging import getLogger
 from os import getcwd
 from os.path import (
     abspath,
     join,
 )
+from typing import Optional
 
 from galaxy import util
 from galaxy.job_execution.output_collect import default_exit_code_file
@@ -11,7 +13,14 @@ from galaxy.jobs.runners.util.job_script import (
     INTEGRITY_INJECTION,
     write_script,
 )
-from galaxy.tool_util.deps.container_classes import TRAP_KILL_CONTAINER
+from galaxy.tool_util.deps.container_classes import (
+    Container,
+    TRAP_KILL_CONTAINER,
+)
+
+if typing.TYPE_CHECKING:
+    from galaxy.jobs import MinimalJobWrapper
+    from galaxy.jobs.runners import BaseJobRunner
 
 log = getLogger(__name__)
 
@@ -30,16 +39,16 @@ cd working"""
 
 
 def build_command(
-    runner,
-    job_wrapper,
-    container=None,
-    modify_command_for_container=True,
-    include_metadata=False,
-    include_work_dir_outputs=True,
-    create_tool_working_directory=True,
+    runner: "BaseJobRunner",
+    job_wrapper: "MinimalJobWrapper",
+    container: Optional[Container] = None,
+    modify_command_for_container: bool = True,
+    include_metadata: bool = False,
+    include_work_dir_outputs: bool = True,
+    create_tool_working_directory: bool = True,
     remote_command_params=None,
     remote_job_directory=None,
-    stream_stdout_stderr=False,
+    stream_stdout_stderr: bool = False,
 ):
     """
     Compose the sequence of commands necessary to execute a job. This will
@@ -129,7 +138,12 @@ def build_command(
 
 
 def __externalize_commands(
-    job_wrapper, shell, commands_builder, remote_command_params, script_name="tool_script.sh", container=None
+    job_wrapper: "MinimalJobWrapper",
+    shell,
+    commands_builder,
+    remote_command_params,
+    script_name="tool_script.sh",
+    container: Optional[Container] = None,
 ):
     local_container_script = join(job_wrapper.working_directory, script_name)
     tool_commands = commands_builder.build()
@@ -175,8 +189,8 @@ def __externalize_commands(
     return commands
 
 
-def __handle_remote_command_line_building(commands_builder, job_wrapper, for_pulsar=False):
-    if getattr(job_wrapper, "remote_command_line", False):
+def __handle_remote_command_line_building(commands_builder, job_wrapper: "MinimalJobWrapper", for_pulsar=False):
+    if job_wrapper.remote_command_line:
         sep = "" if for_pulsar else "&&"
         command = 'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" python "$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py'
         if for_pulsar:
@@ -186,20 +200,23 @@ def __handle_remote_command_line_building(commands_builder, job_wrapper, for_pul
         commands_builder.prepend_command(command, sep=sep)
 
 
-def __handle_task_splitting(commands_builder, job_wrapper):
+def __handle_task_splitting(commands_builder, job_wrapper: "MinimalJobWrapper"):
     # prepend getting input files (if defined)
-    if getattr(job_wrapper, "prepare_input_files_cmds", None):
-        commands_builder.prepend_commands(job_wrapper.prepare_input_files_cmds)
+    prepare_input_files_cmds = getattr(job_wrapper, "prepare_input_files_cmds", None)
+    if prepare_input_files_cmds:
+        commands_builder.prepend_commands(prepare_input_files_cmds)
 
 
-def __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params):
+def __handle_dependency_resolution(commands_builder, job_wrapper: "MinimalJobWrapper", remote_command_params):
     local_dependency_resolution = remote_command_params.get("dependency_resolution", "local") == "local"
     # Prepend dependency injection
     if local_dependency_resolution and job_wrapper.dependency_shell_commands:
         commands_builder.prepend_commands(job_wrapper.dependency_shell_commands)
 
 
-def __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params):
+def __handle_work_dir_outputs(
+    commands_builder, job_wrapper: "MinimalJobWrapper", runner: "BaseJobRunner", remote_command_params
+):
     # Append commands to copy job outputs based on from_work_dir attribute.
     work_dir_outputs_kwds = {}
     if "working_directory" in remote_command_params:
@@ -210,7 +227,9 @@ def __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_comm
         commands_builder.append_commands(copy_commands)
 
 
-def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params):
+def __handle_metadata(
+    commands_builder, job_wrapper: "MinimalJobWrapper", runner: "BaseJobRunner", remote_command_params
+):
     # Append metadata setting commands, we don't want to overwrite metadata
     # that was copied over in init_meta(), as per established behavior
     metadata_kwds = remote_command_params.get("metadata_kwds", {})

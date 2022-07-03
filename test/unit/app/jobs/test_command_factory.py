@@ -234,6 +234,7 @@ class MockJobWrapper:
         self.shell = "/bin/sh"
         self.use_metadata_binary = False
         self.job_id = 1
+        self.remote_command_line = False
 
     def get_command_line(self):
         return self.command_line

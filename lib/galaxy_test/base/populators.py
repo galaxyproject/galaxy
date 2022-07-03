@@ -2116,8 +2116,8 @@ class CwlPopulator:
         job: Optional[Dict] = None,
         test_data_directory: Optional[str] = None,
         history_id: Optional[str] = None,
-        assert_ok=True,
-    ):
+        assert_ok: bool = True,
+    ) -> CwlRun:
         """
         :param artifact: CWL tool id, or (absolute or relative) path to a CWL
           tool or workflow file
