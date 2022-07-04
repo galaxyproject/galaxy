@@ -147,6 +147,7 @@ class MockJobWrapper:
         self.use_metadata_binary = False
         self.guest_ports = []
         self.metadata_strategy = "directory"
+        self.remote_command_line = False
 
         # Cruft for setting metadata externally, axe at some point.
         self.external_output_metadata: Optional[bunch.Bunch] = bunch.Bunch(
@@ -223,3 +224,7 @@ class MockJobWrapper:
 
     def reclaim_ownership(self):
         pass
+
+    @property
+    def is_cwl_job(self):
+        return False

@@ -252,7 +252,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                 script_path = os.path.join(metadata_dir, "set.py")
                 with open(script_path, "w") as f:
                     f.write(SET_METADATA_SCRIPT)
-                return 'python "metadata/set.py"'
+                return "python metadata/set.py"
         else:
             # return args to galaxy_ext.metadata.set_metadata required to build
             return ""

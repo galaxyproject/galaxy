@@ -47,6 +47,7 @@ from galaxy.util.monitors import Monitors
 from .state_handler_factory import build_state_handlers
 
 if typing.TYPE_CHECKING:
+    from galaxy.app import GalaxyManagerApplication
     from galaxy.jobs import (
         JobDestination,
         JobWrapper,
@@ -86,7 +87,7 @@ class BaseJobRunner:
     start_methods = ["_init_monitor_thread", "_init_worker_threads"]
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
-    def __init__(self, app, nworkers: int, **kwargs):
+    def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs):
         """Start the job runner"""
         self.app = app
         self.redact_email_in_job_name = self.app.config.redact_email_in_job_name

@@ -26,6 +26,7 @@ CP_WORK_DIR_OUTPUTS = '; \nif [ -f "foo" ] ; then cp "foo" "bar" ; fi'
 
 class TestCommandFactory(TestCase):
 
+    maxDiff = None
     stream_stdout_stderr = False
     TEE_LOG = " "
     CAPTURE_AND_REDIRECT = f"> '../outputs/tool_stdout' 2> '../outputs/tool_stderr'{RETURN_CODE_CAPTURE}"
@@ -126,7 +127,7 @@ class TestCommandFactory(TestCase):
         self.include_work_dir_outputs = False
         self.job_wrapper.metadata_line = TEST_METADATA_LINE
         expected_command = self._surround_command(
-            MOCK_COMMAND_LINE, f"; cd '{self.job_dir}'; {SETUP_GALAXY_FOR_METADATA}{TEST_METADATA_LINE}"
+            MOCK_COMMAND_LINE, f"; cd '{self.job_dir}'; {SETUP_GALAXY_FOR_METADATA}; {TEST_METADATA_LINE}"
         )
         self._assert_command_is(expected_command)
 
@@ -234,6 +235,7 @@ class MockJobWrapper:
         self.shell = "/bin/sh"
         self.use_metadata_binary = False
         self.job_id = 1
+        self.remote_command_line = False
 
     def get_command_line(self):
         return self.command_line
@@ -252,3 +254,7 @@ class MockJobWrapper:
     @property
     def job_io(self):
         return Bunch(get_output_fnames=lambda: ["output1"], check_job_script_integrity=False)
+
+    @property
+    def is_cwl_job(self):
+        return False
