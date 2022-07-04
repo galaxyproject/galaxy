@@ -5845,7 +5845,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         db_session = object_session(self)
         if db_session and self.id:
             statement = self._get_nested_collection_attributes(return_entities=(HistoryDatasetAssociation,))
-            return db_session.execute(statement).all()
+            return db_session.execute(statement).scalars().all()
         else:
             # Sessionless context
             instances = []
