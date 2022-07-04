@@ -1,3 +1,4 @@
+import json
 import typing
 from logging import getLogger
 from os import getcwd
@@ -27,8 +28,7 @@ log = getLogger(__name__)
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 SETUP_GALAXY_FOR_METADATA = """
-[ "$GALAXY_VIRTUAL_ENV" = "None" ] && GALAXY_VIRTUAL_ENV="$_GALAXY_VIRTUAL_ENV"; _galaxy_setup_environment True
-"""
+[ "$GALAXY_VIRTUAL_ENV" = "None" ] && GALAXY_VIRTUAL_ENV="$_GALAXY_VIRTUAL_ENV"; _galaxy_setup_environment True"""
 PREPARE_DIRS = """mkdir -p working outputs configs
 if [ -d _working ]; then
     rm -rf working/ outputs/ configs/; cp -R _working working; cp -R _outputs outputs; cp -R _configs configs
@@ -126,6 +126,24 @@ def build_command(
 
     working_directory = remote_job_directory or job_wrapper.working_directory
     commands_builder.capture_return_code(default_exit_code_file(working_directory, job_wrapper.job_id))
+
+    if job_wrapper.is_cwl_job:
+        # Minimal metadata needed by the relocate script
+        cwl_metadata_params = {
+            "job_metadata": join("working", job_wrapper.tool.provided_metadata_file),
+            "job_id_tag": job_wrapper.get_id_tag(),
+        }
+        cwl_metadata_params_path = join(job_wrapper.working_directory, "cwl_params.json")
+        with open(cwl_metadata_params_path, "w") as f:
+            json.dump(cwl_metadata_params, f)
+
+        relocate_script_file = join(job_wrapper.working_directory, "relocate_dynamic_outputs.py")
+        relocate_contents = (
+            "from galaxy_ext.cwl.handle_outputs import relocate_dynamic_outputs; relocate_dynamic_outputs()"
+        )
+        write_script(relocate_script_file, relocate_contents, job_wrapper.job_io)
+        commands_builder.append_command(SETUP_GALAXY_FOR_METADATA)
+        commands_builder.append_command(f"python '{relocate_script_file}'")
 
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
@@ -262,7 +280,8 @@ def __handle_metadata(
     metadata_command = metadata_command.strip()
     if metadata_command:
         # Place Galaxy and its dependencies in environment for metadata regardless of tool.
-        metadata_command = f"{SETUP_GALAXY_FOR_METADATA}{metadata_command}"
+        if not job_wrapper.is_cwl_job:
+            commands_builder.append_command(SETUP_GALAXY_FOR_METADATA)
         commands_builder.append_command(metadata_command)
 
 
