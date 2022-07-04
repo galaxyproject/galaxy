@@ -1146,7 +1146,7 @@ class GalaxyRBACAgent(RBACAgent):
         private_role = self.get_private_user_role(trans.user)
         access_roles = dataset.get_access_roles(self)
 
-        if len(access_roles) != 1:
+        if len(access_roles) != 1 or private_role is None:
             return False
         else:
             if access_roles[0].id == private_role.id:
