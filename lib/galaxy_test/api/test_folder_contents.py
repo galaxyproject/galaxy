@@ -157,6 +157,40 @@ class FolderContentsApiTestCase(ApiTestCase):
             for content in contents:
                 assert search_text.casefold() in content["name"].casefold()
 
+    def test_index_permissions(self):
+        folder_name = "Test Folder Contents Index permissions"
+        folder_id = self._create_folder_in_library(folder_name)
+        dataset_id = self._create_dataset_in_folder(folder_id)
+
+        self.dataset_populator.make_private(self.history_id, dataset_id)
+
+        # Owner can access
+        response = self._get(f"folders/{folder_id}/contents")
+        self._assert_index_count_is_correct(response, expected_contents_count=1)
+
+        # Admins can access
+        response = self._get(f"folders/{folder_id}/contents", admin=True)
+        self._assert_index_count_is_correct(response, expected_contents_count=1)
+
+        # Other users can't access
+        with self._different_user():
+            # Without access to the parent library the user gets a 404... should it be a 403 instead?
+            response = self._get(f"folders/{folder_id}/contents")
+            self._assert_status_code_is(response, 404)
+
+            # Grant library access to this user
+            different_user_role_id = self.dataset_populator.user_private_role_id()
+            self._allow_library_access_to_user_role(different_user_role_id)  # Runs as admin
+
+            # The user can access the library folder but not the private dataset in it
+            response = self._get(f"folders/{folder_id}/contents")
+            self._assert_index_count_is_correct(response, expected_contents_count=0)
+
+            # Grant access to this user
+            self._allow_dataset_access(dataset_id)
+            response = self._get(f"folders/{folder_id}/contents")
+            self._assert_index_count_is_correct(response, expected_contents_count=1)
+
     def test_index_permissions_include_deleted(self):
         folder_name = "Test Folder Contents Index permissions include deleted"
         folder_id = self._create_folder_in_library(folder_name)
@@ -206,9 +240,8 @@ class FolderContentsApiTestCase(ApiTestCase):
         with self._different_user():
             different_user_role_id = self.dataset_populator.user_private_role_id()
 
-        self._allow_library_access_to_user_role(different_user_role_id)
+            self._allow_library_access_to_user_role(different_user_role_id)  # Runs as admin
 
-        with self._different_user():
             response = self._get(f"folders/{folder_id}/contents?include_deleted={include_deleted}")
             self._assert_index_count_is_correct(response, expected_contents_count=num_non_deleted)
 
@@ -280,3 +313,8 @@ class FolderContentsApiTestCase(ApiTestCase):
         }
         response = self._post(f"libraries/{library_id}/permissions?action={action}", data=data, admin=True, json=True)
         self._assert_status_code_is(response, 200)
+
+    def _allow_dataset_access(self, dataset_id: str):
+        payload = {"action": "remove_restrictions"}
+        update_response = self._put(f"datasets/{dataset_id}/permissions", payload, admin=True, json=True)
+        self._assert_status_code_is_ok(update_response)
