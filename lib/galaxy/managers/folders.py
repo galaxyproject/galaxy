@@ -463,12 +463,20 @@ class FolderManager:
             # We check against the actual dataset and not the ldda (for now?)
             associated_dataset = aliased(model.Dataset)
             dataset_permission = aliased(model.DatasetPermissions)
+            is_public_dataset = not_(
+                sa_session.query(model.DatasetPermissions)
+                .filter(
+                    model.DatasetPermissions.dataset_id == associated_dataset.id,
+                    model.DatasetPermissions.action == access_action,
+                )
+                .exists()
+            )
             query = query.outerjoin(ldda.dataset.of_type(associated_dataset))
             query = query.outerjoin(associated_dataset.actions.of_type(dataset_permission))
             query = query.filter(
                 or_(
                     # The dataset is public
-                    not_(dataset_permission.action == access_action),
+                    is_public_dataset,
                     # The user has explicit access
                     and_(
                         dataset_permission.action == access_action,
