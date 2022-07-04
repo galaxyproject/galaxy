@@ -41,11 +41,16 @@
                     <span>:</span>
                     <span class="content-title name">{{ name }}</span>
                 </span>
+                <span v-if="item.purged" class="align-self-start btn-group p-1">
+                    <b-badge variant="secondary" title="This dataset has been permanently deleted">
+                        <icon icon="burn" /> Purged
+                    </b-badge>
+                </span>
                 <ContentOptions
+                    v-else
                     :is-dataset="isDataset"
                     :is-deleted="item.deleted"
                     :is-history-item="isHistoryItem"
-                    :is-purged="item.purged"
                     :is-visible="item.visible"
                     :state="state"
                     @delete="$emit('delete')"
