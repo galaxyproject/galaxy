@@ -24,7 +24,7 @@ import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { jobStore } from "./jobStore";
 import { collectionAttributesStore } from "./collectionAttributesStore";
-import { genomeStore } from "./genomeStore";
+import { dbKeyStore } from "./dbKeyStore";
 import { datatypeStore } from "./datatypeStore";
 import { panelStore } from "./panelStore";
 
@@ -62,7 +62,7 @@ export function createStore() {
             informationStore: jobStore,
             invocations: invocationStore,
             jobMetrics: jobMetricsStore,
-            genomeStore: genomeStore,
+            dbkeyStore: dbKeyStore,
             gridSearch: gridSearchStore,
             history: historyStore,
             historyItems: historyItemsStore,

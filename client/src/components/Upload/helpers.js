@@ -127,9 +127,9 @@ export const commonProps = {
         type: String,
         default: "",
     },
-    defaultGenome: {
+    defaultDbKey: {
         type: String,
-        default: UploadUtils.DEFAULT_GENOME,
+        default: UploadUtils.DEFAULT_DBKEY,
     },
     defaultExtension: {
         type: String,

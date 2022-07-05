@@ -72,7 +72,7 @@ export default {
     data() {
         return {
             extension: "_select_",
-            genome: this.app.defaultGenome,
+            genome: this.app.defaultDbKey,
             listExtensions: [],
             listGenomes: [],
             running: false,
@@ -179,7 +179,7 @@ export default {
             if (this.collection.where({ status: "running" }).length == 0) {
                 this.collection.reset();
                 this.extension = this.app.defaultExtension;
-                this.genome = this.app.defaultGenome;
+                this.genome = this.app.defaultDbKey;
                 this.renderNonReactiveComponents();
             }
         },

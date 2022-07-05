@@ -1184,10 +1184,10 @@ export default {
                 });
 
             // TODO: provider...
-            UploadUtils.getUploadGenomes(UploadUtils.DEFAULT_GENOME)
-                .then((genomes) => {
-                    this.genomes = genomes;
-                    this.genome = UploadUtils.DEFAULT_GENOME;
+            UploadUtils.getUploadDbKeys(UploadUtils.DEFAULT_DBKEY)
+                .then((dbKeys) => {
+                    this.genomes = dbKeys;
+                    this.genome = UploadUtils.DEFAULT_DBKEY;
                 })
                 .catch((err) => {
                     console.log("Error in RuleCollectionBuilder, unable to load genomes", err);
@@ -1254,7 +1254,7 @@ export default {
                 if (this.extension !== UploadUtils.DEFAULT_EXTENSION) {
                     asJson.extension = this.extension;
                 }
-                if (this.genome !== UploadUtils.DEFAULT_GENOME) {
+                if (this.genome !== UploadUtils.DEFAULT_DBKEY) {
                     asJson.genome = this.genome;
                 }
             }

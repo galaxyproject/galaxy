@@ -48,7 +48,7 @@ export const SimpleProviderMixin = {
     },
 };
 
-export const GenomeProvider = {
+export const DbKeyProvider = {
     mixins: [SimpleProviderMixin],
     props: {
         id: null,
@@ -57,20 +57,20 @@ export const GenomeProvider = {
         await this.load();
     },
     methods: {
-        ...mapCacheActions(["fetchUploadGenomes"]),
+        ...mapCacheActions(["fetchUploadDbKeys"]),
         async load() {
             this.loading = true;
-            let genomes = this.getUploadGenomes();
-            if (genomes == null || genomes.length == 0) {
-                await this.fetchUploadGenomes();
-                genomes = this.getUploadGenomes();
+            let dbKeys = this.getUploadDbKeys();
+            if (dbKeys == null || dbKeys.length == 0) {
+                await this.fetchUploadDbKeys();
+                dbKeys = this.getUploadDbKeys();
             }
-            this.item = genomes;
+            this.item = dbKeys;
             this.loading = false;
         },
     },
     computed: {
-        ...mapGetters(["getUploadGenomes"]),
+        ...mapGetters(["getUploadDbKeys"]),
     },
 };
 

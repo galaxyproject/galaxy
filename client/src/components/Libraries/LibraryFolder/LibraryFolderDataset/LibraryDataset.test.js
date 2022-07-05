@@ -29,7 +29,7 @@ const mockDatatypesProvider = {
         });
     },
 };
-const mockGenomeProvider = {
+const mockDbKeyProvider = {
     render() {
         return this.$scopedSlots.default({
             loading: false,
@@ -72,7 +72,7 @@ async function mountLibraryDatasetWrapper(localVue, expectDatasetId, isAdmin = f
         propsData,
         stubs: {
             DatatypesProvider: mockDatatypesProvider,
-            GenomeProvider: mockGenomeProvider,
+            DbKeyProvider: mockDbKeyProvider,
             CurrentUser: {
                 render() {
                     return this.$scopedSlots.default({
