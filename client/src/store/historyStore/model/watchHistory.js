@@ -11,7 +11,7 @@ import { getCurrentHistoryFromServer } from "./queries";
 import { getGalaxyInstance } from "app";
 
 const limit = 1000;
-const throttlePeriod = 3000;
+let throttlePeriod = 3000;
 
 let watchTimeout = null;
 
@@ -20,6 +20,16 @@ let lastUpdateTime = null;
 
 // last time changed history items have been requested
 let lastRequestDate = new Date();
+
+document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") {
+        // Poll every 3 seconds when visible
+        throttlePeriod = 3000;
+    } else {
+        // Poll every 60 seconds when hidden/backgrounded
+        throttlePeriod = 60000;
+    }
+});
 
 export async function watchHistoryOnce(store) {
     // "Reset" watchTimeout so we don't queue up watchHistory calls in rewatchHistory.
