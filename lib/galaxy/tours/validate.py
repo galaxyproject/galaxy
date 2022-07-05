@@ -26,7 +26,7 @@ def main(argv=None):
         tour_id = get_tour_id_from_path(tour_path)
 
         def warn(msg):
-            print(f"Tour '{tour_id}' warning: {msg}")
+            print(f"Tour '{tour_id}' warning: {msg}")  # noqa: B023
 
         message = None
         tour = None

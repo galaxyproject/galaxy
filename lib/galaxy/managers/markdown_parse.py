@@ -64,21 +64,29 @@ WHITE_SPACE_ONLY_PATTERN = re.compile(r"^[\s]+$")
 
 def validate_galaxy_markdown(galaxy_markdown, internal=True):
     """Validate the supplied markdown and throw an ValueError with reason if invalid."""
+
+    def invalid_line(template, line_no, **kwd):
+        if "line" in kwd:
+            kwd["line"] = kwd["line"].rstrip("\r\n")
+        raise ValueError("Invalid line %d: %s" % (line_no + 1, template.format(**kwd)))
+
+    def _validate_arg(arg_str, valid_args, line_no):
+        if arg_str is not None:
+            arg_name = arg_str.split("=", 1)[0].strip()
+            if arg_name not in valid_args:
+                invalid_line("Invalid argument to Galaxy directive [{argument}]", line_no, argument=arg_name)
+
     expecting_container_close_for = None
     last_line_no = 0
     function_calls = 0
     for (line, fenced, open_fence, line_no) in _split_markdown_lines(galaxy_markdown):
         last_line_no = line_no
 
-        def invalid_line(template, **kwd):
-            if "line" in kwd:
-                kwd["line"] = line.rstrip("\r\n")
-            raise ValueError("Invalid line %d: %s" % (line_no + 1, template.format(**kwd)))
-
         expecting_container_close = expecting_container_close_for is not None
         if not fenced and expecting_container_close:
             invalid_line(
                 "[{line}] is not expected close line for [{expected_for}]",
+                line_no,
                 line=line,
                 expected_for=expecting_container_close_for,
             )
@@ -94,6 +102,7 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
                 if not VALID_CONTAINER_END_PATTERN.match(line):
                     invalid_line(
                         "Invalid command close line [{line}] for [{expected_for}]",
+                        line_no,
                         line=line,
                         expected_for=expecting_container_close_for,
                     )
@@ -109,7 +118,7 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
             if func_call_match:
                 function_calls += 1
                 if function_calls > 1:
-                    invalid_line("Only one Galaxy directive is allowed per fenced Galaxy block (```galaxy)")
+                    invalid_line("Only one Galaxy directive is allowed per fenced Galaxy block (```galaxy)", line_no)
                 container = func_call_match.group("container")
                 valid_args_raw = VALID_ARGUMENTS[container]
                 if isinstance(valid_args_raw, DynamicArguments):
@@ -118,13 +127,7 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
 
                 first_arg_call = func_call_match.group("firstargcall")
 
-                def _validate_arg(arg_str):
-                    if arg_str is not None:
-                        arg_name = arg_str.split("=", 1)[0].strip()
-                        if arg_name not in valid_args:
-                            invalid_line("Invalid argument to Galaxy directive [{argument}]", argument=arg_name)
-
-                _validate_arg(first_arg_call)
+                _validate_arg(first_arg_call, valid_args, line_no)
                 rest = func_call_match.group("restargcalls")
                 while rest:
                     rest = rest.strip().split(",", 1)[1]
@@ -132,12 +135,12 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
                     if not arg_match:
                         break
                     first_arg_call = arg_match.group("firstargcall")
-                    _validate_arg(first_arg_call)
+                    _validate_arg(first_arg_call, valid_args, line_no)
                     rest = arg_match.group("restargcalls")
 
                 continue
             else:
-                invalid_line("Invalid embedded Galaxy markup line [{line}]", line=line)
+                invalid_line("Invalid embedded Galaxy markup line [{line}]", line_no, line=line)
 
         # Markdown unrelated to Galaxy object containers.
         continue

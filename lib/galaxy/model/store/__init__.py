@@ -323,36 +323,35 @@ class ModelImportStore(metaclass=abc.ABCMeta):
     def _import_datasets(self, object_import_tracker, datasets_attrs, history, new_history, job):
         object_key = self.object_key
 
-        for dataset_attrs in datasets_attrs:
+        def handle_dataset_object_edit(dataset_instance, dataset_attrs):
+            if "dataset" in dataset_attrs:
+                assert self.import_options.allow_dataset_object_edit
+                dataset_attributes = [
+                    "state",
+                    "deleted",
+                    "purged",
+                    "external_filename",
+                    "_extra_files_path",
+                    "file_size",
+                    "object_store_id",
+                    "total_size",
+                    "created_from_basename",
+                    "uuid",
+                ]
 
+                for attribute in dataset_attributes:
+                    if attribute in dataset_attrs["dataset"]:
+                        setattr(dataset_instance.dataset, attribute, dataset_attrs["dataset"][attribute])
+                self._attach_dataset_hashes(dataset_attrs["dataset"], dataset_instance)
+                self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
+                if "id" in dataset_attrs["dataset"] and self.import_options.allow_edit:
+                    dataset_instance.dataset.id = dataset_attrs["dataset"]["id"]
+                if job:
+                    dataset_instance.dataset.job_id = job.id
+
+        for dataset_attrs in datasets_attrs:
             if "state" not in dataset_attrs:
                 self.dataset_state_serialized = False
-
-            def handle_dataset_object_edit(dataset_instance):
-                if "dataset" in dataset_attrs:
-                    assert self.import_options.allow_dataset_object_edit
-                    dataset_attributes = [
-                        "state",
-                        "deleted",
-                        "purged",
-                        "external_filename",
-                        "_extra_files_path",
-                        "file_size",
-                        "object_store_id",
-                        "total_size",
-                        "created_from_basename",
-                        "uuid",
-                    ]
-
-                    for attribute in dataset_attributes:
-                        if attribute in dataset_attrs["dataset"]:
-                            setattr(dataset_instance.dataset, attribute, dataset_attrs["dataset"][attribute])
-                    self._attach_dataset_hashes(dataset_attrs["dataset"], dataset_instance)
-                    self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
-                    if "id" in dataset_attrs["dataset"] and self.import_options.allow_edit:
-                        dataset_instance.dataset.id = dataset_attrs["dataset"]["id"]
-                    if job:
-                        dataset_instance.dataset.job_id = job.id
 
             if "id" in dataset_attrs and self.import_options.allow_edit and not self.sessionless:
                 dataset_instance = self.sa_session.query(getattr(model, dataset_attrs["model_class"])).get(
@@ -378,7 +377,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                             value = replace_metadata_file(value, dataset_instance, self.sa_session)
                         setattr(dataset_instance, attribute, value)
 
-                handle_dataset_object_edit(dataset_instance)
+                handle_dataset_object_edit(dataset_instance, dataset_attrs)
             else:
                 metadata_deferred = dataset_attrs.get("metadata_deferred", False)
                 metadata = dataset_attrs.get("metadata")
@@ -467,7 +466,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 # Otherwise, we will check for "file" information instead of dataset information - currently this includes
                 # "file_name", "extra_files_path".
                 if "dataset" in dataset_attrs:
-                    handle_dataset_object_edit(dataset_instance)
+                    handle_dataset_object_edit(dataset_instance, dataset_attrs)
                 else:
                     file_name = dataset_attrs.get("file_name")
                     if file_name:
@@ -888,7 +887,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
             def attach_workflow_step(imported_object, attrs):
                 order_index = attrs["order_index"]
-                imported_object.workflow_step = workflow.step_by_index(order_index)
+                imported_object.workflow_step = workflow.step_by_index(order_index)  # noqa: B023
 
             for step_attrs in invocation_attrs["steps"]:
                 imported_invocation_step = model.WorkflowInvocationStep()

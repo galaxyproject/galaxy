@@ -90,13 +90,13 @@ class Tree(BaseTree):
     def _walk_collections(self, collection_dict):
         for index, (_identifier, substructure) in enumerate(self.children):
 
-            def element(collection):
-                return collection[index]
+            def get_element(collection):
+                return collection[index]  # noqa: B023
 
             if substructure.is_leaf:
-                yield dict_map(element, collection_dict)
+                yield dict_map(get_element, collection_dict)
             else:
-                sub_collections = dict_map(lambda collection: element(collection).child_collection, collection_dict)
+                sub_collections = dict_map(lambda collection: get_element(collection).child_collection, collection_dict)
                 for element in substructure._walk_collections(sub_collections):
                     yield element
 

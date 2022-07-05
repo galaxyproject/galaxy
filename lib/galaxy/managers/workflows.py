@@ -1107,12 +1107,12 @@ class WorkflowContentsManager(UsesAnnotations):
 
                 def callback(input, prefixed_name, **kwargs):
                     if isinstance(input, DataToolParameter) or isinstance(input, DataCollectionToolParameter):
-                        data_input_names[prefixed_name] = True
-                        multiple_input[prefixed_name] = input.multiple
+                        data_input_names[prefixed_name] = True  # noqa: B023
+                        multiple_input[prefixed_name] = input.multiple  # noqa: B023
                         if isinstance(input, DataToolParameter):
-                            input_connections_type[input.name] = "dataset"
+                            input_connections_type[input.name] = "dataset"  # noqa: B023
                         if isinstance(input, DataCollectionToolParameter):
-                            input_connections_type[input.name] = "dataset_collection"
+                            input_connections_type[input.name] = "dataset_collection"  # noqa: B023
 
                 visit_input_values(module.tool.inputs, module.state.inputs, callback)
                 # post_job_actions
@@ -1414,7 +1414,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
                 def callback(input, prefixed_name, **kwargs):
                     if isinstance(input, DataToolParameter) or isinstance(input, DataCollectionToolParameter):
-                        data_input_names[prefixed_name] = True
+                        data_input_names[prefixed_name] = True  # noqa: B023
 
                 # FIXME: this updates modules silently right now; messages from updates should be provided.
                 module.check_and_update_state()
