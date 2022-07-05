@@ -12,11 +12,6 @@ exit $exit_code
     <tests>
         <test expect_exit_code="0" expect_failure="true">
             <param name="exit_code" value="0"/>
-            <!-- <output name="out_file1">
-                <assert_contents>
-                    <has_size value="0"/>
-                </assert_contents>
-            </output> -->
         </test>
         <test expect_exit_code="1" expect_failure="true">
             <param name="exit_code" value="1"/>
