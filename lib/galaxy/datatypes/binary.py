@@ -221,6 +221,7 @@ class CompressedArchive(Binary):
 
     file_ext = "compressed_archive"
     compressed = True
+    is_binary = "maybe"  # type: ignore[assignment]  # https://github.com/python/mypy/issues/8796
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
