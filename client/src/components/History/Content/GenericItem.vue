@@ -8,6 +8,7 @@
                 :name="item.name"
                 :expand-dataset="expandDataset"
                 :is-dataset="item.history_content_type == 'dataset'"
+                :is-history-item="false"
                 @update:expand-dataset="expandDataset = $event"
                 @view-collection="viewCollection = !viewCollection"
                 @delete="onDelete"
