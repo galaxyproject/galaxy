@@ -70,13 +70,13 @@
             </b-row>
         </ConfigProvider>
         <p class="mt-2">
-            {{ titleYouAreUsing }} <strong>{{ diskUsage }}</strong> {{ titleOfDiskSpace }}
-            <span v-html="quotaUsageString"></span>
-            {{ titleIsYourUsage }}
-            <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank"
-                ><b v-localize>documentation</b></a
-            >
-            {{ titleForTipsOnHow }}
+            You are using <strong>{{ diskUsage }}</strong> of disk space in this Galaxy instance.
+            <span v-if="enableQuotas">
+                Your disk quota is: <strong>{{ diskQuota }}</strong
+                >.
+            </span>
+            Is your usage more than expected? Review your
+            <b-link :href="storageDashboardUrl">Storage Dashboard</b-link>.
         </p>
     </b-container>
 </template>
@@ -114,7 +114,8 @@ export default {
         return {
             email: "",
             diskUsage: "",
-            quotaUsageString: "",
+            diskQuota: "",
+            storageDashboardUrl: `${getAppRoot()}storage`,
             baseUrl: `${getAppRoot()}user`,
             messageVariant: null,
             message: null,
@@ -122,10 +123,6 @@ export default {
             nameState: null,
             deleteError: "",
             submittedNames: [],
-            titleYouAreUsing: _l("You are using"),
-            titleOfDiskSpace: _l("of disk space in this Galaxy instance."),
-            titleIsYourUsage: _l("Is your usage more than expected? See the"),
-            titleForTipsOnHow: _l("for tips on how to find all of the data in your account."),
             titleLoggedInAs: _l("You are logged in as"),
         };
     },
@@ -170,9 +167,7 @@ export default {
         axios.get(`${getAppRoot()}api/users/${this.userId}`).then((response) => {
             this.email = response.data.email;
             this.diskUsage = response.data.nice_total_disk_usage;
-            this.quotaUsageString = this.enableQuotas
-                ? `Your disk quota is: <strong>${response.data.quota}</strong>.`
-                : "";
+            this.diskQuota = response.data.quota;
         });
     },
     methods: {
