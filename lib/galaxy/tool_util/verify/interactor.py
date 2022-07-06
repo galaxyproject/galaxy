@@ -303,21 +303,22 @@ class GalaxyInteractorApi:
 
                     def compare(val, expected):
                         if str(val) != str(expected):
-                            msg = f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}]. Dataset API value was [{dataset}]."
-                            raise Exception(msg)
+                            raise Exception(
+                                f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}]. Dataset API value was [{dataset}]."  # noqa: B023
+                            )
 
                     if isinstance(dataset_value, list):
                         value = str(value).split(",")
                         if len(value) != len(dataset_value):
-                            msg = f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}], lists differ in length. Dataset API value was [{dataset}]."
-                            raise Exception(msg)
+                            raise Exception(
+                                f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}], lists differ in length. Dataset API value was [{dataset}]."
+                            )
                         for val, expected in zip(dataset_value, value):
                             compare(val, expected)
                     else:
                         compare(dataset_value, value)
                 except KeyError:
-                    msg = f"Failed to verify dataset metadata, metadata key [{key}] was not found."
-                    raise Exception(msg)
+                    raise Exception(f"Failed to verify dataset metadata, metadata key [{key}] was not found.")
 
     def wait_for_job(self, job_id, history_id=None, maxseconds=DEFAULT_TOOL_TEST_WAIT):
         self.wait_for(lambda: self.__job_ready(job_id, history_id), maxseconds=maxseconds)

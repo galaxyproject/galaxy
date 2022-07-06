@@ -170,7 +170,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             key = name
 
             def _metadata_path(what):
-                return os.path.join(metadata_dir, f"metadata_{what}_{key}")
+                return os.path.join(metadata_dir, f"metadata_{what}_{key}")  # noqa: B023
 
             _initialize_metadata_inputs(
                 dataset, _metadata_path, tmp_dir, kwds, real_metadata_object=self.write_object_store_conf

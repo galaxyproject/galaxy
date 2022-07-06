@@ -591,7 +591,7 @@ class SubWorkflowModule(WorkflowModule):
                         return
 
                     if is_runtime_value(value) and runtime_to_json(value)["__class__"] != "ConnectedValue":
-                        input_name = "%d|%s" % (step.order_index, prefixed_name)
+                        input_name = f"{step.order_index}|{prefixed_name}"  # noqa: B023
                         inputs[input_name] = InputProxy(input, input_name)
 
                 visit_input_values(tool.inputs, tool_inputs.inputs, callback)
@@ -1116,7 +1116,7 @@ class InputParameterModule(WorkflowModule):
                 tool_inputs = module.tool.inputs  # may not be set, but we're catching the Exception below.
 
                 def callback(input, prefixed_name, context, **kwargs):
-                    if prefixed_name == connection.input_name and hasattr(input, "get_options"):
+                    if prefixed_name == connection.input_name and hasattr(input, "get_options"):  # noqa: B023
                         static_options.append(input.get_options(self.trans, {}))
 
                 visit_input_values(tool_inputs, module.state.inputs, callback)
@@ -1890,18 +1890,20 @@ class ToolModule(WorkflowModule):
 
                 replacement: Union[model.Dataset, NoReplacement] = NO_REPLACEMENT
                 dataset_instance: Optional[model.Dataset] = None
-                if iteration_elements and prefixed_name in iteration_elements:
-                    dataset_instance = getattr(iteration_elements[prefixed_name], "dataset_instance", None)
+                if iteration_elements and prefixed_name in iteration_elements:  # noqa: B023
+                    dataset_instance = getattr(
+                        iteration_elements[prefixed_name], "dataset_instance", None  # noqa: B023
+                    )
                     if isinstance(input, DataToolParameter) and dataset_instance:
                         # Pull out dataset instance (=HDA) from element and set a temporary element_identifier attribute
                         # See https://github.com/galaxyproject/galaxy/pull/1693 for context.
                         replacement = dataset_instance
-                        temp = iteration_elements[prefixed_name]
+                        temp = iteration_elements[prefixed_name]  # noqa: B023
                         if hasattr(temp, "element_identifier") and temp.element_identifier:
                             replacement.element_identifier = temp.element_identifier  # type: ignore[union-attr]
                     else:
                         # If collection - just use element model object.
-                        replacement = iteration_elements[prefixed_name]
+                        replacement = iteration_elements[prefixed_name]  # noqa: B023
                 else:
                     replacement = progress.replacement_for_input(step, input_dict)
 
@@ -1912,7 +1914,7 @@ class ToolModule(WorkflowModule):
                         if getattr(dataset2, "extension", None) == "expression.json":
                             with open(dataset2.file_name) as f:
                                 replacement = json.load(f)
-                    found_replacement_keys.add(prefixed_name)
+                    found_replacement_keys.add(prefixed_name)  # noqa: B023
 
                 return replacement
 

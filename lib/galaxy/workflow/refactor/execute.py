@@ -276,7 +276,7 @@ class WorkflowRefactorExecutor:
                     return NO_REPLACEMENT
 
                 if value == target_value:
-                    target_tool_inputs.append((step.order_index, input, prefixed_name))
+                    target_tool_inputs.append((step.order_index, input, prefixed_name))  # noqa: B023
                     replace_tool_state = True
                     return runtime_to_json(ConnectedValue())
                 else:
