@@ -100,6 +100,7 @@
                                 <template v-slot:item="{ item, currentOffset }">
                                     <ContentItem
                                         v-if="!invisible[item.hid]"
+                                        is-history-item
                                         :id="item.hid"
                                         :item="item"
                                         :name="item.name"
