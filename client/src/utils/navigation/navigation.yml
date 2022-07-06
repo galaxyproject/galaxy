@@ -164,7 +164,7 @@ history_panel:
       _: '.history-index .content-item${suffix}'
       title: '${_} .content-title'
       details: '${_} .details'
-      summary: '${_} .summary'
+      summary: '${_} .not-loading .summary'
 
       hid: '${_} .hid'
       name: '${_} .name'
