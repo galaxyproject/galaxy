@@ -21,7 +21,9 @@ def check_compare_attribs(element, lint_ctx, test_idx):
     compare = element.get("compare", "diff")
     for attrib in COMPARE_COMPATIBILITY:
         if attrib in element.attrib and compare not in COMPARE_COMPATIBILITY[attrib]:
-            lint_ctx.error(f'Test {test_idx}: Attribute {attrib} is incompatible with compare="{compare}".', node=element)
+            lint_ctx.error(
+                f'Test {test_idx}: Attribute {attrib} is incompatible with compare="{compare}".', node=element
+            )
 
 
 def lint_tests(tool_xml, lint_ctx):
