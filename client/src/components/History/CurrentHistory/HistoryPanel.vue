@@ -105,7 +105,6 @@
                                         :name="item.name"
                                         :expand-dataset="isExpanded(item)"
                                         :is-dataset="isDataset(item)"
-                                        is-hist-panel
                                         :highlight="getHighlight(item)"
                                         :selected="isSelected(item)"
                                         :selectable="showSelection"

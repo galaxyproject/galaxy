@@ -80,7 +80,7 @@
             <DatasetDetails
                 v-if="expandDataset"
                 :dataset="item"
-                :show-highlight="isHistoryItem && isHistPanel"
+                :show-highlight="isHistoryItem"
                 @edit="onEdit"
                 @toggleHighlights="toggleHighlights" />
         </b-collapse>
@@ -116,7 +116,6 @@ export default {
         id: { type: Number, required: true },
         isDataset: { type: Boolean, default: true },
         isHistoryItem: { type: Boolean, default: true },
-        isHistPanel: { type: Boolean, default: false },
         item: { type: Object, required: true },
         name: { type: String, required: true },
         selected: { type: Boolean, default: false },
