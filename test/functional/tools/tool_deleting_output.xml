@@ -1,6 +1,6 @@
 <tool id="tool_deleting_output" name="tool_deleting_output" version="0.1.0" license="AFL-3.0" profile="21.09">
     <command><![CDATA[
-rm '$out_file1' &&
+rm '$out_file1';  ## don't use && since otherwise the framework test fails 
 exit $exit_code
     ]]></command>
     <inputs>
