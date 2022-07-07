@@ -10,7 +10,7 @@ export function initializeUploadDefaults(propsData = {}) {
         chunkUploadSize: Galaxy.config.chunk_upload_size,
         fileSourcesConfigured: Galaxy.config.file_sources_configured,
         ftpUploadSite: Galaxy.config.ftp_upload_site,
-        defaultGenome: Galaxy.config.default_genome,
+        defaultDbKey: Galaxy.config.default_genome,
         defaultExtension: Galaxy.config.default_extension,
         selectable: false,
     };

@@ -356,10 +356,7 @@ export default {
         },
         updateGenome: function (genome, defaults_only) {
             this.collection.each((model) => {
-                if (
-                    model.get("status") == "init" &&
-                    (model.get("genome") == this.app.defaultGenome || !defaults_only)
-                ) {
+                if (model.get("status") == "init" && (model.get("genome") == this.app.defaultDbKey || !defaults_only)) {
                     model.set("genome", genome);
                 }
             });

@@ -135,7 +135,7 @@ export default {
             topInfo: "",
             showHelper: true,
             extension: this.app.defaultExtension,
-            genome: this.app.defaultGenome,
+            genome: this.app.defaultDbKey,
             collectionType: "list",
             listExtensions: [],
             listGenomes: [],
@@ -290,7 +290,7 @@ export default {
                 this.counterRunning = 0;
                 this.uploadbox.reset();
                 this.extension = this.app.defaultExtension;
-                this.genome = this.app.defaultGenome;
+                this.genome = this.app.defaultDbKey;
                 this.appModel.set("percentage", 0);
                 this._updateStateForCounters();
             }
