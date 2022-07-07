@@ -26,6 +26,7 @@ from galaxy import util
 from galaxy.exceptions import (
     AuthenticationFailed,
     ConfigurationError,
+    MalformedId,
     MessageException,
 )
 from galaxy.managers import context
@@ -485,10 +486,21 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             # Decode the cookie value to get the session_key
             try:
                 session_key = self.security.decode_guid(secure_id)
-                if session_key:
-                    galaxy_session = self.session_manager.get_session_from_session_key(session_key=session_key)
-            except Exception:
-                # We'll end up creating a new galaxy_session
+            except MalformedId:
+                # Invalid session key, we're going to create a new one.
+                # IIRC we did this when we switched to python 3 and clients
+                # were sending sessioncookies that started with a stringified
+                # bytestring, e.g 'b"0123456789abcdef"'. Maybe we need to drop
+                # this exception catching, but then it'd be tricky to invalidate
+                # a faulty session key
+                log.debug("Received invalid session key '{secure_id}', setting a new session key")
+                session_key = None
+
+            if session_key:
+                # We do NOT catch exceptions here, if the database is down the request should fail,
+                # and we should not generate a new session.
+                galaxy_session = self.session_manager.get_session_from_session_key(session_key=session_key)
+            if not galaxy_session:
                 session_key = None
         # If remote user is in use it can invalidate the session and in some
         # cases won't have a cookie set above, so we need to check some things
