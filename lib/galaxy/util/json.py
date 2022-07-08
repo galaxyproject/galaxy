@@ -67,7 +67,7 @@ def safe_dumps(obj, **kwargs):
     """
     This is a wrapper around dumps that encodes Infinity and NaN values.  It's a
     fairly rare case (which will be low in request volume).  Basically, we tell
-    json.dumps to blow up if it encounters Infinity/NaN, or Decimal values,
+    json.dumps to blow up if it encounters Infinity/NaN, or Decimal values
     and we 'fix' it before re-encoding.
     """
     try:
