@@ -2,6 +2,7 @@ from typing import (
     Any,
     List,
     Optional,
+    Tuple,
 )
 
 from galaxy_test.base.populators import (
@@ -58,8 +59,8 @@ class FolderContentsApiTestCase(ApiTestCase):
         folder_id = self._create_folder_in_library(folder_name)
 
         sub_folder_id = self._create_subfolder_in(folder_id)
-        hda_id = self._create_dataset_in_folder(folder_id)
-        self._delete_library_dataset(hda_id)
+        ldda_id, _ = self._create_dataset_in_folder(folder_id)
+        self._delete_library_dataset(ldda_id)
         self._delete_subfolder(sub_folder_id)
 
         response = self._get(f"folders/{folder_id}/contents")
@@ -160,9 +161,9 @@ class FolderContentsApiTestCase(ApiTestCase):
     def test_index_permissions(self):
         folder_name = "Test Folder Contents Index permissions"
         folder_id = self._create_folder_in_library(folder_name)
-        dataset_id = self._create_dataset_in_folder(folder_id)
+        _, hda_id = self._create_dataset_in_folder(folder_id)
 
-        self.dataset_populator.make_private(self.history_id, dataset_id)
+        self._make_dataset_private(hda_id)
 
         # Owner can access
         response = self._get(f"folders/{folder_id}/contents")
@@ -187,7 +188,7 @@ class FolderContentsApiTestCase(ApiTestCase):
             self._assert_index_count_is_correct(response, expected_contents_count=0)
 
             # Grant access to this user
-            self._allow_dataset_access(dataset_id)
+            self._allow_dataset_access(hda_id)
             response = self._get(f"folders/{folder_id}/contents")
             self._assert_index_count_is_correct(response, expected_contents_count=1)
 
@@ -199,8 +200,8 @@ class FolderContentsApiTestCase(ApiTestCase):
         subfolder_ids: List[str] = []
         deleted_subfolder_ids: List[str] = []
         for index in range(num_subfolders):
-            id = self._create_subfolder_in(folder_id, name=f"Folder_{index}")
-            subfolder_ids.append(id)
+            ldda_id = self._create_subfolder_in(folder_id, name=f"Folder_{index}")
+            subfolder_ids.append(ldda_id)
 
         for index, subfolder_id in enumerate(subfolder_ids):
             if index % 2 == 0:
@@ -208,19 +209,19 @@ class FolderContentsApiTestCase(ApiTestCase):
                 deleted_subfolder_ids.append(subfolder_id)
 
         num_datasets = 5
-        datasets_ids: List[str] = []
-        deleted_datasets_ids: List[str] = []
+        ldda_ids: List[str] = []
+        deleted_ldda_ids: List[str] = []
         for _ in range(num_datasets):
-            id = self._create_dataset_in_folder(folder_id)
-            datasets_ids.append(id)
+            ldda_id, _ = self._create_dataset_in_folder(folder_id)
+            ldda_ids.append(ldda_id)
 
-        for index, ldda_id in enumerate(datasets_ids):
+        for index, ldda_id in enumerate(ldda_ids):
             if index % 2 == 0:
                 self._delete_library_dataset(ldda_id)
-                deleted_datasets_ids.append(ldda_id)
+                deleted_ldda_ids.append(ldda_id)
 
         num_total_contents = num_subfolders + num_datasets
-        num_non_deleted = num_total_contents - len(deleted_subfolder_ids) - len(deleted_datasets_ids)
+        num_non_deleted = num_total_contents - len(deleted_subfolder_ids) - len(deleted_ldda_ids)
 
         # Verify deleted contents are not listed
         include_deleted = False
@@ -272,13 +273,14 @@ class FolderContentsApiTestCase(ApiTestCase):
         folder = create_response.json()
         return folder["id"]
 
-    def _create_dataset_in_folder(self, folder_id: str, name: Optional[str] = None) -> str:
+    def _create_dataset_in_folder(self, folder_id: str, name: Optional[str] = None) -> Tuple[str, str]:
+        """Returns a tuple with the LDDA ID and the underlying HDA ID"""
         hda_id = self._create_hda(name)
         data = {
             "from_hda_id": hda_id,
         }
         ldda = self._create_content_in_folder_with_payload(folder_id, data)
-        return ldda["id"]
+        return ldda["id"], hda_id
 
     def _create_content_in_folder_with_payload(self, folder_id: str, payload) -> Any:
         create_response = self._post(f"folders/{folder_id}/contents", data=payload, json=True)
@@ -317,4 +319,9 @@ class FolderContentsApiTestCase(ApiTestCase):
     def _allow_dataset_access(self, dataset_id: str):
         payload = {"action": "remove_restrictions"}
         update_response = self._put(f"datasets/{dataset_id}/permissions", payload, admin=True, json=True)
+        self._assert_status_code_is_ok(update_response)
+
+    def _make_dataset_private(self, dataset_id: str):
+        payload = {"action": "make_private"}
+        update_response = self._put(f"datasets/{dataset_id}/permissions", payload, json=True)
         self._assert_status_code_is_ok(update_response)
