@@ -2,7 +2,7 @@ import logging
 import os
 import unittest
 
-from testfixtures import log_capture
+from testfixtures.logcapture import log_capture
 
 import galaxy.jobs.dynamic_tool_destination as dt
 from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
