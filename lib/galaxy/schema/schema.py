@@ -1110,7 +1110,7 @@ class JobIndexQueryPayload(Model):
     tool_ids: Optional[List[str]] = None
     tool_ids_like: Optional[List[str]] = None
     date_range_min: Optional[datetime] = None
-    date_range_max: Optional[str] = None
+    date_range_max: Optional[datetime] = None
     history_id: Optional[DecodedDatabaseIdField] = None
     workflow_id: Optional[DecodedDatabaseIdField] = None
     invocation_id: Optional[DecodedDatabaseIdField] = None
