@@ -82,14 +82,14 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
 
     @uses_test_history(require_new=True)
     def test_index_date_filter(self, history_id):
-        self.__history_with_new_dataset(history_id)
         two_weeks_ago = (datetime.datetime.utcnow() - datetime.timedelta(14)).isoformat()
         last_week = (datetime.datetime.utcnow() - datetime.timedelta(7)).isoformat()
         next_week = (datetime.datetime.utcnow() + datetime.timedelta(7)).isoformat()
         today = datetime.datetime.utcnow().isoformat()
         tomorrow = (datetime.datetime.utcnow() + datetime.timedelta(1)).isoformat()
+        self.__history_with_new_dataset(history_id)
 
-        jobs = self.__jobs_index(data={"date_range_min": today[0:10], "date_range_max": tomorrow[0:10]})
+        jobs = self.__jobs_index(data={"date_range_min": today, "date_range_max": tomorrow})
         assert len(jobs) > 0
         today_job_id = jobs[0]["id"]
 
