@@ -10,7 +10,6 @@ from markupsafe import escape
 
 from galaxy import (
     datatypes,
-    model,
     util,
     web,
 )
@@ -87,16 +86,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         return (allow_admin and trans.user_is_admin) or trans.app.security_agent.can_access_dataset(
             roles, dataset_association.dataset
         )
-
-    @web.expose
-    def errors(self, trans, id):
-        hda = trans.sa_session.query(model.HistoryDatasetAssociation).get(self.decode_id(id))
-
-        if not hda or not self._can_access_dataset(trans, hda):
-            return trans.show_error_message(
-                "Either this dataset does not exist or you do not have permission to access it."
-            )
-        return trans.fill_template("dataset/errors.mako", hda=hda)
 
     @web.expose
     def stdout(self, trans, dataset_id=None, **kwargs):
