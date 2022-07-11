@@ -17,6 +17,7 @@
             :selectable="true"
             :sort-by.sync="sortBy"
             :sort-desc.sync="sortDesc"
+            :sort-compare="currentFirstSortCompare"
             select-mode="single"
             selected-variant="success"
             @row-selected="switchToHistory"
@@ -95,6 +96,17 @@ export default {
         onFiltered(filteredItems) {
             this.totalRows = filteredItems.length;
             this.currentPage = 1;
+        },
+        /** Make the current history appear always first when sorting. */
+        currentFirstSortCompare(a, b, key, sortDesc) {
+            if (a.id == this.currentHistoryId) {
+                return sortDesc ? 1 : -1;
+            } else if (b.id == this.currentHistoryId) {
+                return sortDesc ? -1 : 1;
+            } else {
+                // Fallback to default sorting
+                return false;
+            }
         },
     },
 };
