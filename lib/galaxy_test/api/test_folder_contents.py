@@ -246,6 +246,85 @@ class FolderContentsApiTestCase(ApiTestCase):
             response = self._get(f"folders/{folder_id}/contents?include_deleted={include_deleted}")
             self._assert_index_count_is_correct(response, expected_contents_count=num_non_deleted)
 
+    def test_index_order_by(self):
+        folder_name = "Test Folder Contents Index Order By"
+        folder_id = self._create_folder_in_library(folder_name)
+
+        subfolder_names = ["Folder_A", "Folder_B", "Folder_C"]
+        subfolder_descriptions = ["Description Z", "Description Y", "Description X"]
+        for index, name in enumerate(subfolder_names):
+            self._create_subfolder_in(folder_id, name, subfolder_descriptions[index])
+
+        dataset_names = ["a", "b", "c"]
+        ldda_messages = ["Message Z", "Message Y", "Message X"]
+        dataset_sizes = [50, 100, 10]
+        file_types = ["txt", "csv", "txt"]
+        for index, name in enumerate(dataset_names):
+            self._create_dataset_in_folder(
+                folder_id,
+                name,
+                content=f"{'0'*dataset_sizes[index]}",
+                ldda_message=ldda_messages[index],
+                file_type=file_types[index],
+            )
+
+        # Wait for datasets to finish upload
+        self.dataset_populator.wait_for_history(self.history_id)
+
+        # Folders always have priority (they show-up before any dataset regardless of the sorting) and they
+        # can only be sorted by name, description and update_time, the other sorting attributes are ignored
+        sort_desc = False
+        order_by = "name"
+        expected_order_by_name = ["Folder_A", "Folder_B", "Folder_C", "a", "b", "c"]
+        self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
+
+        order_by = "description"
+        expected_order_by_name = ["Folder_C", "Folder_B", "Folder_A", "c", "b", "a"]
+        self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
+
+        order_by = "type"
+        expected_order_by_name = ["Folder_A", "Folder_B", "Folder_C", "b", "a", "c"]
+        self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
+
+        order_by = "size"
+        expected_order_by_name = ["Folder_A", "Folder_B", "Folder_C", "c", "a", "b"]
+        self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
+
+        order_by = "update_time"
+        expected_order_by_name = ["Folder_A", "Folder_B", "Folder_C", "a", "b", "c"]
+        self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
+
+        sort_desc = True
+        order_by = "name"
+        expected_order_by_name = ["Folder_C", "Folder_B", "Folder_A", "c", "b", "a"]
+        self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
+
+        order_by = "description"
+        expected_order_by_name = ["Folder_A", "Folder_B", "Folder_C", "a", "b", "c"]
+        self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
+
+        order_by = "type"
+        expected_order_by_name = ["Folder_A", "Folder_B", "Folder_C", "a", "c", "b"]
+        self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
+
+        order_by = "size"
+        expected_order_by_name = ["Folder_A", "Folder_B", "Folder_C", "b", "a", "c"]
+        self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
+
+        order_by = "update_time"
+        expected_order_by_name = ["Folder_C", "Folder_B", "Folder_A", "c", "b", "a"]
+        self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
+
+    def _assert_folder_order_by_is_expected(
+        self, folder_id: str, order_by: str, sort_desc: str, expected_order_by_name: List[str]
+    ):
+        response = self._get(f"folders/{folder_id}/contents?order_by={order_by}&sort_desc={sort_desc}")
+        index_response = self._assert_index_count_is_correct(
+            response, expected_contents_count=len(expected_order_by_name)
+        )
+        for index, item in enumerate(index_response["folder_contents"]):
+            assert item["name"] == expected_order_by_name[index]
+
     def _assert_index_count_is_correct(
         self, raw_response, expected_contents_count: int, expected_total_count: Optional[int] = None
     ) -> dict:
@@ -263,21 +342,31 @@ class FolderContentsApiTestCase(ApiTestCase):
         root_folder_id = self.library["root_folder_id"]
         return self._create_subfolder_in(root_folder_id, name)
 
-    def _create_subfolder_in(self, folder_id: str, name: Optional[str] = "Test Folder") -> str:
+    def _create_subfolder_in(
+        self, folder_id: str, name: Optional[str] = None, description: Optional[str] = None
+    ) -> str:
         data = {
-            "name": name,
-            "description": f"The description of {name}",
+            "name": name or "Test Folder",
+            "description": description or f"The description of {name}",
         }
         create_response = self._post(f"folders/{folder_id}", data=data, json=True)
         self._assert_status_code_is(create_response, 200)
         folder = create_response.json()
         return folder["id"]
 
-    def _create_dataset_in_folder(self, folder_id: str, name: Optional[str] = None) -> Tuple[str, str]:
+    def _create_dataset_in_folder(
+        self,
+        folder_id: str,
+        name: Optional[str] = None,
+        content: Optional[str] = None,
+        ldda_message: Optional[str] = None,
+        **kwds,
+    ) -> Tuple[str, str]:
         """Returns a tuple with the LDDA ID and the underlying HDA ID"""
-        hda_id = self._create_hda(name)
+        hda_id = self._create_hda(name, content, **kwds)
         data = {
             "from_hda_id": hda_id,
+            "ldda_message": ldda_message or "Test msg",
         }
         ldda = self._create_content_in_folder_with_payload(folder_id, data)
         return ldda["id"], hda_id
@@ -287,8 +376,8 @@ class FolderContentsApiTestCase(ApiTestCase):
         self._assert_status_code_is(create_response, 200)
         return create_response.json()
 
-    def _create_hda(self, name: Optional[str] = None) -> str:
-        hda = self.dataset_populator.new_dataset(self.history_id, name=name)
+    def _create_hda(self, name: Optional[str] = None, content: Optional[str] = None, **kwds) -> str:
+        hda = self.dataset_populator.new_dataset(self.history_id, name=name, content=content, **kwds)
         hda_id = hda["id"]
         return hda_id
 
