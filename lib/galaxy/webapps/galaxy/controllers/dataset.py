@@ -25,6 +25,7 @@ from galaxy.managers.hdas import (
     HDAManager,
 )
 from galaxy.managers.histories import HistoryManager
+from galaxy.model import Dataset
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -152,11 +153,17 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return trans.show_error_message("You are not allowed to access this dataset")
         if data.purged:
             return trans.show_error_message("The dataset you are attempting to view has been purged.")
-        if data.deleted and not (trans.user_is_admin or (data.history and trans.get_user() == data.history.user)):
+        elif data.deleted and not (trans.user_is_admin or (data.history and trans.get_user() == data.history.user)):
             return trans.show_error_message("The dataset you are attempting to view has been deleted.")
-        if data.state == trans.model.Dataset.states.UPLOAD:
+        elif data.state == Dataset.states.UPLOAD:
             return trans.show_error_message(
                 "Please wait until this dataset finishes uploading before attempting to view it."
+            )
+        elif data.state == Dataset.states.DISCARDED:
+            return trans.show_error_message("The dataset you are attempting to view has been discarded.")
+        elif data.state == Dataset.states.DEFERRED:
+            return trans.show_error_message(
+                "The dataset you are attempting to view has deferred data. You can only use this dataset as input for jobs."
             )
         return data
 
