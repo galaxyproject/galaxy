@@ -138,7 +138,13 @@ Release Testing Team
 
 A special thanks to the release testing team for testing many of the new features and reporting many bugs:
 
-<team members go here>
+- `Ahmed Awan <https://github.com/ahmedhamidawan>`
+- `Catherine Bromhead <https://github.com/cat-bro>`
+- `Fabio Cumbo <https://github.com/cumbof>`
+- `Jennifer Hillman-Jackson <https://github.com/jennaj>`
+- `John Davis <https://github.com/jdavcs>`
+- `Simon Bray <https://github.com/simonbray>`
+- `Tyler Collins <https://github.com/tcollins2011>`
 
 Release Notes
 ===========================================================
