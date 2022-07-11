@@ -15,6 +15,8 @@
             :per-page="perPage"
             :current-page="currentPage"
             :selectable="true"
+            :sort-by.sync="sortBy"
+            :sort-desc.sync="sortDesc"
             select-mode="single"
             selected-variant="success"
             @row-selected="switchToHistory"
@@ -58,6 +60,8 @@ export default {
             filter: null,
             currentPage: 1,
             totalRows: 0,
+            sortBy: "update_time",
+            sortDesc: true,
         };
     },
     computed: {
