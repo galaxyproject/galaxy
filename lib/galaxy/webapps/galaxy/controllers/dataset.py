@@ -10,7 +10,6 @@ from markupsafe import escape
 
 from galaxy import (
     datatypes,
-    model,
     util,
     web,
 )
@@ -87,16 +86,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         return (allow_admin and trans.user_is_admin) or trans.app.security_agent.can_access_dataset(
             roles, dataset_association.dataset
         )
-
-    @web.expose
-    def errors(self, trans, id):
-        hda = trans.sa_session.query(model.HistoryDatasetAssociation).get(self.decode_id(id))
-
-        if not hda or not self._can_access_dataset(trans, hda):
-            return trans.show_error_message(
-                "Either this dataset does not exist or you do not have permission to access it."
-            )
-        return trans.fill_template("dataset/errors.mako", hda=hda)
 
     @web.expose
     def stdout(self, trans, dataset_id=None, **kwargs):
@@ -713,6 +702,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         **kwds,
     ):
         """Access to external display applications"""
+        if None in [app_name, link_name]:
+            return trans.show_error_message("A display application name and link name must be provided.")
+        app_name = unquote_plus(app_name)
+        link_name = unquote_plus(link_name)
         # Build list of parameters to pass in to display application logic (app_kwds)
         app_kwds = {}
         for name, value in dict(kwds).items():  # clone kwds because we remove stuff as we go.
@@ -734,10 +727,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         else:
             user_roles = []
         # Decode application name and link name
-        app_name = unquote_plus(app_name)
-        link_name = unquote_plus(link_name)
-        if None in [app_name, link_name]:
-            return trans.show_error_message("A display application name and link name must be provided.")
         if self._can_access_dataset(trans, data, additional_roles=user_roles):
             msg = []
             preparable_steps = []

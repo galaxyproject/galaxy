@@ -75,7 +75,7 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                     display: `datasets/${id}/display/?preview=True`,
                     edit: `datasets/edit?dataset_id=${id}`,
                     download: `api/datasets/${id}/display${this._downloadQueryParameters()}`,
-                    report_error: `dataset/errors?id=${id}`,
+                    report_error: `datasets/error?dataset_id=${id}`,
                     rerun: `tool_runner/rerun?id=${id}`,
                     show_params: `datasets/${id}/details`,
                     visualization: "visualization",

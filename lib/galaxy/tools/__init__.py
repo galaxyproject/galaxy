@@ -120,7 +120,10 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.form_builder import SelectField
-from galaxy.util.json import safe_loads
+from galaxy.util.json import (
+    safe_loads,
+    swap_inf_nan,
+)
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import (
     fill_template,
@@ -2461,7 +2464,7 @@ class Tool(Dictifiable):
                 "enctype": self.enctype,
             }
         )
-        return tool_model
+        return swap_inf_nan(tool_model)
 
     def populate_model(self, request_context, inputs, state_inputs, group_inputs, other_values=None):
         """

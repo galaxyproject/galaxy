@@ -653,9 +653,11 @@ class DiskObjectStore(ConcreteObjectStore):
             if entire_dir and (extra_dir or obj_dir):
                 shutil.rmtree(path)
                 return True
-            if self._exists(obj, **kwargs):
-                os.remove(path)
-                return True
+            os.remove(path)
+            return True
+        except FileNotFoundError:
+            # Absolutely possible that a delete request races, but that's "fine".
+            return True
         except OSError as ex:
             log.critical(f"{self.__get_filename(obj, **kwargs)} delete error {ex}")
         return False

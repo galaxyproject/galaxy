@@ -86,6 +86,9 @@ export default {
         isLast() {
             return this.currentIndex === this.steps.length - 1;
         },
+        hasBegun() {
+            return this.currentIndex >= 1;
+        },
     },
     beforeDestroy() {
         window.removeEventListener("keyup", this.handleKeyup);
@@ -105,12 +108,15 @@ export default {
             }
         },
         loginRequired(user) {
-            return this.requirements.indexOf("logged_in") >= 0 && user.isAnonymous;
+            return !this.hasBegun && this.requirements.indexOf("logged_in") >= 0 && user.isAnonymous;
         },
         adminRequired(user) {
-            return this.requirements.indexOf("admin") >= 0 && !user.is_admin;
+            return !this.hasBegun && this.requirements.indexOf("admin") >= 0 && !user.is_admin;
         },
         newHistoryRequired(history) {
+            if (this.hasBegun) {
+                return false;
+            }
             const hasNewNistoryRequirement = this.requirements.indexOf("new_history") >= 0;
             if (!hasNewNistoryRequirement) {
                 return false;

@@ -1,6 +1,7 @@
 import json
 import logging
 import typing
+from datetime import datetime
 
 from boltons.iterutils import remap
 from pydantic import (
@@ -107,7 +108,7 @@ class JobManager:
 
         def build_and_apply_filters(query, objects, filter_func):
             if objects is not None:
-                if isinstance(objects, str):
+                if isinstance(objects, str) or isinstance(objects, datetime):
                     query = query.filter(filter_func(objects))
                 elif isinstance(objects, list):
                     t = []

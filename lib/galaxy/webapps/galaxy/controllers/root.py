@@ -106,8 +106,9 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         if "authz_method" in kwd:
             authz_method = kwd["authz_method"]
         if data:
-            current_user_roles = trans.get_current_user_roles()
-            if authz_method == "rbac" and trans.app.security_agent.can_access_dataset(current_user_roles, data):
+            if authz_method == "rbac" and trans.app.security_agent.can_access_dataset(
+                trans.get_current_user_roles(), data.dataset
+            ):
                 trans.response.set_content_type(data.get_mime())
                 trans.log_event(f"Formatted dataset id {str(id)} for display at {display_app}")
                 return data.as_display_type(display_app, **kwd)
