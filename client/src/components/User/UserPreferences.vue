@@ -76,7 +76,8 @@
                 >.
             </span>
             Is your usage more than expected? Review your
-            <b-link :href="storageDashboardUrl">Storage Dashboard</b-link>.
+            <b-link :href="storageDashboardUrl"><b>Storage Dashboard</b></b-link
+            >.
         </p>
     </b-container>
 </template>
