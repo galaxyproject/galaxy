@@ -76,9 +76,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         tag_manager = tags.GalaxyTagHandler(trans.sa_session)
 
         folder_contents = []
-        contents, total_rows = self.folder_manager.get_contents(
-            trans, folder, payload.include_deleted, payload.search_text, payload.offset, payload.limit
-        )
+        contents, total_rows = self.folder_manager.get_contents(trans, folder, payload)
         for content_item in contents:
             if isinstance(content_item, model.LibraryFolder):
                 serialized_item = self._serialize_library_folder(user_permissions, content_item)
