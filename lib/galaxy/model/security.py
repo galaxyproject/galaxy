@@ -500,7 +500,7 @@ class GalaxyRBACAgent(RBACAgent):
     def item_permission_map_for_add(self, trans, user_roles, libitems):
         return self.allow_action_on_libitems(trans, user_roles, self.permitted_actions.LIBRARY_ADD, libitems)
 
-    def can_access_dataset(self, user_roles, dataset):
+    def can_access_dataset(self, user_roles, dataset: galaxy.model.Dataset):
         # SM: dataset_is_public will access dataset.actions, which is a
         # backref that causes a query to be made to DatasetPermissions
         retval = self.dataset_is_public(dataset) or self.allow_action(
@@ -1122,7 +1122,7 @@ class GalaxyRBACAgent(RBACAgent):
             if not dataset.purged and not self.dataset_is_public(dataset):
                 self.make_dataset_public(dataset)
 
-    def dataset_is_public(self, dataset):
+    def dataset_is_public(self, dataset: galaxy.model.Dataset):
         """
         A dataset is considered public if there are no "access" actions
         associated with it.  Any other actions ( 'manage permissions',
