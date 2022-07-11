@@ -57,10 +57,11 @@ export class TagService {
         if (!tag.valid) {
             throw new Error("Invalid tag");
         }
-        const url = `${getAppRoot()}tag/add_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&new_tag=${
-            tag.text
-        }`;
-        const response = await axios.get(url);
+        const url = `${getAppRoot()}tag/add_tag_async`;
+        const config = {
+            params: { item_id: id, item_class: itemClass, context: context, new_tag: tag.text },
+        };
+        const response = await axios.get(url, config);
         if (response.status !== 200) {
             throw new Error(`Unable to save tag: ${tag}`);
         }
@@ -75,10 +76,9 @@ export class TagService {
     async delete(rawTag) {
         const { id, itemClass, context } = this;
         const tag = createTag(rawTag);
-        const url = `${getAppRoot()}tag/remove_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&tag_name=${
-            tag.text
-        }`;
-        const response = await axios.get(url);
+        const url = `${getAppRoot()}tag/remove_tag_async`;
+        const config = { params: { item_id: id, item_class: itemClass, context: context, tag_name: tag.text } };
+        const response = await axios.get(url, config);
         if (response.status !== 200) {
             throw new Error(`Unable to delete tag: ${tag}`);
         }
@@ -92,8 +92,9 @@ export class TagService {
      */
     async autocomplete(searchText) {
         const { id, itemClass } = this;
-        const url = `${getAppRoot()}tag/tag_autocomplete_data?item_id=${id}&item_class=${itemClass}&q=${searchText}`;
-        const response = await axios.get(url);
+        const url = `${getAppRoot()}tag/tag_autocomplete_data`;
+        const config = { params: { item_id: id, item_class: itemClass, q: searchText } };
+        const response = await axios.get(url, config);
         if (response.status !== 200) {
             throw new Error(`Unable to retrieve autocomplete tags for search string: ${searchText}`);
         }
