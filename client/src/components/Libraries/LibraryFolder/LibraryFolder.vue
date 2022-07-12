@@ -4,7 +4,7 @@
             <FolderTopBar
                 :folder-contents="folderContents"
                 :include-deleted.sync="includeDeleted"
-                :folder_id="current_folder_id"
+                :folder_id="currentFolderId"
                 :selected="selected"
                 :metadata="folder_metadata"
                 :unselected="unselected"
@@ -324,7 +324,7 @@ export default {
             ...initialFolderState(),
             ...{
                 currentPage: null,
-                current_folder_id: null,
+                currentFolderId: null,
                 error: null,
                 isBusy: false,
                 folder_metadata: {},
@@ -353,7 +353,7 @@ export default {
     },
     methods: {
         getFolder(folder_id, page) {
-            this.current_folder_id = folder_id;
+            this.currentFolderId = folder_id;
             this.currentPage = page;
             this.resetData();
             this.fetchFolderContents();
@@ -366,7 +366,7 @@ export default {
             this.setBusy(true);
             this.services
                 .getFolderContents(
-                    this.current_folder_id,
+                    this.currentFolderId,
                     this.includeDeleted,
                     this.perPage,
                     (this.currentPage - 1) * this.perPage,
@@ -535,7 +535,7 @@ export default {
             } else {
                 this.services.newFolder(
                     {
-                        parent_id: this.current_folder_id,
+                        parent_id: this.currentFolderId,
                         name: folder.name,
                         description: folder.description,
                     },
