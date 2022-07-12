@@ -1,6 +1,6 @@
-<tool id="interactive_tool_jupyter_notebook" tool_type="interactive" name="Interactive JupyTool and notebook" version="0.3" profile="22.01">
+<tool id="interactive_tool_jupyter_notebook" tool_type="interactive" name="Interactive JupyTool and notebook" version="1.0.0" profile="22.01">
     <requirements>
-        <container type="docker">quay.io/bgruening/docker-jupyter-notebook:ie2</container>
+        <container type="docker">quay.io/bgruening/docker-jupyter-notebook:2021-03-05</container>
     </requirements>
     <entry_points>
         <entry_point name="JupyTool interactive tool" requires_domain="True">
@@ -75,7 +75,7 @@ except FileNotFoundError:
         ]]>
     </configfile>
     </configfiles>
-    <command detect_errors="aggressive"><![CDATA[
+    <command><![CDATA[
         python staging_script.py &&
         export GALAXY_WORKING_DIR=`pwd` &&
         mkdir -p ./jupyter/outputs/collection &&
@@ -87,25 +87,29 @@ except FileNotFoundError:
         export PATH=/home/jovyan/.local/bin:\$PATH &&
         cp '${galaxy_input_startup_script}' /home/jovyan/.ipython/profile_default/startup/00-load.py &&
 
+        #set $output_notebook_name = 'ipython_galaxy_notebook.ipynb'
         #if $mode.mode_select == 'scratch':
             ## copy default notebook
-            cp '$__tool_directory__/default_notebook.ipynb' ./ipython_galaxy_notebook.ipynb &&
-            jupyter trust ./ipython_galaxy_notebook.ipynb &&
+            cp '$__tool_directory__/default_notebook.ipynb' ${output_notebook_name} &&
+            jupyter trust ${output_notebook_name} &&
             jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
-            cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
         #else:
             #import re
             #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($mode.ipynb.element_identifier))
-            cp '$mode.ipynb' ./${cleaned_name}.ipynb &&
-            jupyter trust ./${cleaned_name}.ipynb &&
+            #if not $cleaned_name.endswith(".ipynb"):
+                #set $cleaned_name = "%s.ipynb" % $cleaned_name
+            #end if
+            cp '$mode.ipynb' '${cleaned_name}' &&
+            jupyter trust '${cleaned_name}' &&
 
             #if $mode.run_it:
-                jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
+                jupyter nbconvert --to notebook --execute --output '${output_notebook_name}' --allow-errors '${cleaned_name}' &&
             #else:
+                #set $output_notebook_name = $cleaned_name
                 jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
             #end if
-            cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
         #end if
+        cp '${output_notebook_name}' '$jupyter_notebook'
     ]]>
     </command>
     <inputs>
