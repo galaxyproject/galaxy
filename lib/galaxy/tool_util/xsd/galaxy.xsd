@@ -3761,6 +3761,7 @@ Name | Description
 ``$__app__`` | The ``galaxy.app.UniverseApplication`` instance, gives access to all other configuration file variables (e.g. $__app__.config.output_size_limit). Should be used as a last resort, may go away in future releases.
 ``$__target_datatype__`` | Only available in converter tools when run internally by Galaxy. Contains the target datatype of the conversion
 
+
 Additional runtime properties are available as environment variables. Since these
 are not Cheetah variables (the values aren't available until runtime) these should likely
 be escaped with a backslash (``\``) when appearing in ``command`` or ``configfile`` elements.
@@ -5468,6 +5469,11 @@ based on inputs, as shown below:
 </data>
 ```
 
+Note that the value given in ``when`` tags needs to be the python string representation
+of the value of the referred parameter, e.g. ``True`` or ``False`` if the referred
+parameter is a boolean.
+
+
 ### Unconditional Actions and Column Names
 
 For a static file that contains a fixed number of columns, it is straight forward:
@@ -5692,7 +5698,8 @@ of this directive.
     <xs:attribute name="value" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Value to match conditional input value
-against.</xs:documentation>
+against. This needs to be the python string representation of the parameter value,
+e.g. ``True`` or ``False`` if the referred parameter is a boolean.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="datatype_isinstance" type="xs:string" use="optional">
