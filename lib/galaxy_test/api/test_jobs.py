@@ -84,20 +84,24 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
     def test_index_date_filter(self, history_id):
         two_weeks_ago = (datetime.datetime.utcnow() - datetime.timedelta(14)).isoformat()
         last_week = (datetime.datetime.utcnow() - datetime.timedelta(7)).isoformat()
-        next_week = (datetime.datetime.utcnow() + datetime.timedelta(7)).isoformat()
-        today = datetime.datetime.utcnow().isoformat()
-        tomorrow = (datetime.datetime.utcnow() + datetime.timedelta(1)).isoformat()
+        before = datetime.datetime.utcnow().isoformat()
+        today = before[:10]
+        tomorrow = (datetime.datetime.utcnow() + datetime.timedelta(1)).isoformat()[:10]
         self.__history_with_new_dataset(history_id)
+        after = datetime.datetime.utcnow().isoformat()
 
+        # Test using dates
         jobs = self.__jobs_index(data={"date_range_min": today, "date_range_max": tomorrow})
         assert len(jobs) > 0
-        today_job_id = jobs[0]["id"]
+        today_job = jobs[0]
+        today_job_id = today_job["id"]
+
+        # Test using datetimes
+        jobs = self.__jobs_index(data={"date_range_min": before, "date_range_max": after})
+        assert today_job_id in map(itemgetter("id"), jobs), f"before: {before}, after: {after}, job: {today_job}"
 
         jobs = self.__jobs_index(data={"date_range_min": two_weeks_ago, "date_range_max": last_week})
         assert today_job_id not in map(itemgetter("id"), jobs)
-
-        jobs = self.__jobs_index(data={"date_range_min": last_week, "date_range_max": next_week})
-        assert today_job_id in map(itemgetter("id"), jobs)
 
     @uses_test_history(require_new=True)
     def test_index_history(self, history_id):
