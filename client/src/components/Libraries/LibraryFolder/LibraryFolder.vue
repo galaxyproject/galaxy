@@ -3,7 +3,7 @@
         <div>
             <FolderTopBar
                 :folder-contents="folderContents"
-                :include_deleted="include_deleted"
+                :include-deleted.sync="includeDeleted"
                 :folder_id="current_folder_id"
                 :selected="selected"
                 :metadata="folder_metadata"
@@ -292,7 +292,7 @@ function initialFolderState() {
         unselected: [],
         expandedMessage: [],
         folderContents: [],
-        include_deleted: false,
+        includeDeleted: false,
         search_text: "",
         isAllSelectedMode: false,
     };
@@ -340,8 +340,11 @@ export default {
     watch: {
         perPage: {
             handler: function (value) {
-                this.fetchFolderContents(this.include_deleted);
+                this.fetchFolderContents();
             },
+        },
+        includeDeleted() {
+            this.fetchFolderContents();
         },
     },
     created() {
@@ -353,19 +356,18 @@ export default {
             this.current_folder_id = folder_id;
             this.currentPage = page;
             this.resetData();
-            this.fetchFolderContents(this.include_deleted);
+            this.fetchFolderContents();
         },
         resetData() {
             const data = initialFolderState();
             Object.keys(data).forEach((k) => (this[k] = data[k]));
         },
-        fetchFolderContents(include_deleted = false) {
-            this.include_deleted = include_deleted;
+        fetchFolderContents() {
             this.setBusy(true);
             this.services
                 .getFolderContents(
                     this.current_folder_id,
-                    include_deleted,
+                    this.includeDeleted,
                     this.perPage,
                     (this.currentPage - 1) * this.perPage,
                     this.search_text
@@ -393,7 +395,7 @@ export default {
         updateSearchValue(value) {
             this.search_text = value;
             this.folderContents = [];
-            this.fetchFolderContents(this.include_deleted);
+            this.fetchFolderContents();
         },
         selectAllRenderedRows() {
             this.$refs.folder_content_table.items.forEach((row, index) => {
@@ -413,7 +415,7 @@ export default {
             this.$refs.folder_content_table.refresh();
         },
         refreshTableContent() {
-            this.fetchFolderContents(this.include_deleted);
+            this.fetchFolderContents();
         },
         deleteFromTable(deletedItem) {
             this.folderContents = this.folderContents.filter((element) => {

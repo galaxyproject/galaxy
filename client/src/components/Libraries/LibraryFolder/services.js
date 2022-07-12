@@ -7,10 +7,10 @@ export class Services {
         this.root = options.root || getAppRoot();
     }
 
-    async getFolderContents(id, include_deleted, limit, offset, search_text = false) {
+    async getFolderContents(id, includeDeleted, limit, offset, search_text = false) {
         const url = `${
             this.root
-        }api/folders/${id}/contents?include_deleted=${include_deleted}&limit=${limit}&offset=${offset}${this.getSearchQuery(
+        }api/folders/${id}/contents?include_deleted=${includeDeleted}&limit=${limit}&offset=${offset}${this.getSearchQuery(
             search_text
         )}`;
         try {
