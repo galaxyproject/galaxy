@@ -165,6 +165,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return trans.show_error_message(
                 "The dataset you are attempting to view has deferred data. You can only use this dataset as input for jobs."
             )
+        elif data.state == Dataset.states.PAUSED:
+            return trans.show_error_message(
+                "The dataset you are attempting to view is in paused state. One of the inputs for the job that creates this dataset has failed."
+            )
         return data
 
     @web.expose
