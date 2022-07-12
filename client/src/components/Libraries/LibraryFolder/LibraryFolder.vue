@@ -293,7 +293,7 @@ function initialFolderState() {
         expandedMessage: [],
         folderContents: [],
         includeDeleted: false,
-        search_text: "",
+        searchText: "",
         isAllSelectedMode: false,
     };
 }
@@ -370,7 +370,7 @@ export default {
                     this.includeDeleted,
                     this.perPage,
                     (this.currentPage - 1) * this.perPage,
-                    this.search_text
+                    this.searchText
                 )
                 .then((response) => {
                     this.folderContents = response.folder_contents;
@@ -393,7 +393,7 @@ export default {
                 });
         },
         updateSearchValue(value) {
-            this.search_text = value;
+            this.searchText = value;
             this.folderContents = [];
             this.fetchFolderContents();
         },

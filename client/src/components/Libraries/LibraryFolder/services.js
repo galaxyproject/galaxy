@@ -7,11 +7,11 @@ export class Services {
         this.root = options.root || getAppRoot();
     }
 
-    async getFolderContents(id, includeDeleted, limit, offset, search_text = false) {
+    async getFolderContents(id, includeDeleted, limit, offset, searchText = false) {
         const url = `${
             this.root
         }api/folders/${id}/contents?include_deleted=${includeDeleted}&limit=${limit}&offset=${offset}${this.getSearchQuery(
-            search_text
+            searchText
         )}`;
         try {
             const response = await axios.get(url);
@@ -21,15 +21,15 @@ export class Services {
         }
     }
 
-    async getFilteredFolderContents(id, excluded, search_text) {
-        const contents = await axios.get(`${this.root}api/folders/${id}/contents?${this.getSearchQuery(search_text)}`);
+    async getFilteredFolderContents(id, excluded, searchText) {
+        const contents = await axios.get(`${this.root}api/folders/${id}/contents?${this.getSearchQuery(searchText)}`);
         return contents.data.folder_contents.filter((item) => {
             return !excluded.some((exc) => exc.id === item.id);
         });
     }
 
-    getSearchQuery(search_text) {
-        return search_text ? `&search_text=${encodeURI(search_text.trim())}` : "";
+    getSearchQuery(searchText) {
+        return searchText ? `&search_text=${encodeURI(searchText.trim())}` : "";
     }
 
     updateFolder(item, onSucess, onError) {

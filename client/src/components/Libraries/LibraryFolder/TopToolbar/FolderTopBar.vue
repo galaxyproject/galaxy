@@ -240,7 +240,7 @@ export default {
                 const selected = await this.services.getFilteredFolderContents(
                     this.folder_id,
                     this.unselected,
-                    this.$parent.search_text
+                    this.$parent.searchText
                 );
                 this.$emit("setBusy", false);
                 return selected;
