@@ -32,7 +32,7 @@ def _next_worker_id(server):
     if server._worker_id_overload:
         return server._worker_id_overload.pop()
 
-    in_use = set(w._worker_id for w in tuple(server.WORKERS.values()) if w.alive)
+    in_use = {w._worker_id for w in tuple(server.WORKERS.values()) if w.alive}
     free = set(range(1, server._worker_id_current_workers + 1)) - in_use
 
     return free.pop()

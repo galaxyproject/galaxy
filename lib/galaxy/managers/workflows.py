@@ -146,7 +146,7 @@ class WorkflowsManager(sharable.SharableModelManager):
             filters.append(model.StoredWorkflowUserShareAssociation.user == user)
 
         if show_published or user is None and show_published is None:
-            filters.append((model.StoredWorkflow.published == true()))
+            filters.append(model.StoredWorkflow.published == true())
 
         query = trans.sa_session.query(model.StoredWorkflow)
         if show_shared:

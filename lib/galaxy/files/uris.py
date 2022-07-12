@@ -36,7 +36,7 @@ def stream_url_to_str(
 ) -> str:
     tmp_file = stream_url_to_file(path, file_sources=file_sources, prefix=prefix)
     try:
-        with open(tmp_file, "r") as f:
+        with open(tmp_file) as f:
             return f.read()
     finally:
         os.remove(tmp_file)

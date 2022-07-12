@@ -85,13 +85,13 @@ class JobFilesIntegerationTestCase(integration_util.IntegrationTestCase):
         post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
         response = requests.post(post_url, data=data, files=files())
         api_asserts.assert_status_code_is_ok(response)
-        assert open(path, "r").read() == "some initial text data"
+        assert open(path).read() == "some initial text data"
 
         work_dir_file = os.path.join(working_directory, "work")
         data = {"path": work_dir_file, "job_key": job_key}
         response = requests.post(post_url, data=data, files=files())
         api_asserts.assert_status_code_is_ok(response)
-        assert open(work_dir_file, "r").read() == "some initial text data"
+        assert open(work_dir_file).read() == "some initial text data"
 
         # set job state to finished and ensure the file is no longer
         # readable

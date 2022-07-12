@@ -1,9 +1,10 @@
 import abc
 import os
 import time
-from typing import Set
-
-from typing_extensions import ClassVar
+from typing import (
+    ClassVar,
+    Set,
+)
 
 from galaxy.exceptions import (
     ConfigurationError,

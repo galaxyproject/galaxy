@@ -2257,7 +2257,7 @@ def source_to_import_store(
             delete = True
         target_path = source_uri
         if target_path.endswith(".json"):
-            with open(target_path, "r") as f:
+            with open(target_path) as f:
                 store_dict = load(f)
             assert isinstance(store_dict, dict)
             model_import_store = get_import_model_store_for_dict(

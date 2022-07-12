@@ -1382,7 +1382,7 @@ class ExtendedXYZ(XYZ):
             if properties is None:  # re.search returned None
                 raise ValueError(f"Could not find column properties in line: {comment}")
             properties = [s.split(":") for s in re.findall(r"[a-zA-Z]+:[SIRL]:[0-9]+", properties.group(1))]
-            total_columns = sum([int(s[2]) for s in properties])
+            total_columns = sum(int(s[2]) for s in properties)
 
             for _ in range(n_atoms):
                 atom_dict = {}
