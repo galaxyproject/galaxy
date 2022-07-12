@@ -170,8 +170,6 @@ class Data(metaclass=DataMeta):
     )
     # Stores the set of display applications, and viewing methods, supported by this datatype
     supported_display_apps: Dict[str, Any] = {}
-    # If False, the peek is regenerated whenever a dataset of this type is copied
-    copy_safe_peek = True
     # The dataset contains binary data --> do not space_to_tab or convert newlines, etc.
     # Allow binary file uploads of this type when True.
     is_binary: Union[bool, Literal["maybe"]] = True

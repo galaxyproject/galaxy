@@ -4521,10 +4521,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         hda.copy_tags_to(copy_tags)
         object_session(self).add(hda)
         hda.metadata = self.metadata
-        # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        if not self.datatype.copy_safe_peek:
-            object_session(self).flush([self])
-            hda.set_peek()
         if flush:
             object_session(self).flush()
         return hda
@@ -4589,9 +4585,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             )
             trans.sa_session.add(dp)
         # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
-        flushed = False
         if self.set_metadata_requires_flush:
-            flushed = True
             object_session(self).flush()
         ldda.metadata = self.metadata
         # TODO: copy #tags from history
@@ -4601,11 +4595,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             target_folder.add_library_dataset(library_dataset, genome_build=ldda.dbkey)
             object_session(self).add(target_folder)
         object_session(self).add(library_dataset)
-        if not self.datatype.copy_safe_peek:
-            # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-            if not flushed:
-                object_session(self).flush()
-            ldda.set_peek()
         object_session(self).flush()
         return ldda
 
@@ -5237,8 +5226,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         hda.metadata = self.metadata  # need to set after flushed, as MetadataFiles require dataset.id
         if add_to_history and target_history:
             target_history.add_dataset(hda)
-        if not self.datatype.copy_safe_peek:
-            hda.set_peek()  # in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         sa_session.flush()
         return hda
 
@@ -5268,9 +5255,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         sa_session.flush()
         # Need to set after flushed, as MetadataFiles require dataset.id
         ldda.metadata = self.metadata
-        if not self.datatype.copy_safe_peek:
-            # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-            ldda.set_peek()
         sa_session.flush()
         return ldda
 
