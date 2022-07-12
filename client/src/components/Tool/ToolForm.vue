@@ -45,7 +45,7 @@
                         itemtype="https://schema.org/CreativeWork">
                         <template v-slot:body>
                             <FormDisplay
-                                :id="formConfig.id"
+                                :id="toolId"
                                 :inputs="formConfig.inputs"
                                 :validation-scroll-to="validationScrollTo"
                                 @onChange="onChange"
@@ -184,6 +184,12 @@ export default {
     computed: {
         toolName() {
             return this.formConfig.name;
+        },
+        toolId() {
+            // ensure version is included in tool id, otherwise form inputs are
+            // not re-rendered when versions change.
+            const { id, version } = this.formConfig;
+            return id.endsWith(version) ? id : `${id}/${version}`;
         },
         tooltip() {
             return `Execute: ${this.formConfig.name} (${this.formConfig.version})`;
