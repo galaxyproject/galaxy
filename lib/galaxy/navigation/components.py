@@ -4,9 +4,11 @@ from abc import (
     ABCMeta,
     abstractproperty,
 )
+from enum import Enum
 from typing import (
     Dict,
     List,
+    NamedTuple,
     Optional,
     Tuple,
     Union,
@@ -15,22 +17,27 @@ from typing import (
 from galaxy.util.bunch import Bunch
 
 
-class By:
-    """
-    Set of supported locator strategies.
-    """
-
+class ComponentBy(str, Enum):
     ID = "id"
     XPATH = "xpath"
-    LINK_TEXT = "link text"
-    PARTIAL_LINK_TEXT = "partial link text"
-    NAME = "name"
-    TAG_NAME = "tag name"
-    CLASS_NAME = "class name"
     CSS_SELECTOR = "css selector"
+    LABEL = "label"
+    TEXT = "text"
 
 
-LocatorT = Tuple[By, str]
+class LocatorT(NamedTuple):
+    by: ComponentBy
+    locator: str
+
+    @property
+    def selenium_by(self) -> str:
+        by = self.by
+        if by == ComponentBy.LABEL:
+            return "link text"
+        elif by == ComponentBy.TEXT:
+            return "partial link text"
+        else:
+            return str(by.value)
 
 
 class Target(metaclass=ABCMeta):
@@ -39,8 +46,17 @@ class Target(metaclass=ABCMeta):
         """Return a plain-text description of the browser target for logging/messages."""
 
     @abstractproperty
-    def element_locator(self) -> LocatorT:
+    def component_locator(self) -> LocatorT:
         """Return a (by, selector) Selenium elment locator tuple for this selector."""
+
+    @property
+    def selenium_locator(self) -> Tuple[str, str]:
+        element_locator: LocatorT = self.component_locator
+        return (element_locator.selenium_by, element_locator.locator)
+
+    @property
+    def element_locator(self):
+        return self.selenium_locator
 
 
 class SelectorTemplate(Target):
@@ -95,7 +111,7 @@ class SelectorTemplate(Target):
             children=self._children,
         )
 
-    def descendant(self, has_selector):
+    def descendant(self, has_selector) -> "SelectorTemplate":
         assert self.selector_type == "css"
         if hasattr(has_selector, "selector"):
             selector = has_selector.selector
@@ -114,7 +130,7 @@ class SelectorTemplate(Target):
         )
 
     @property
-    def description(self):
+    def description(self) -> str:
         if self.selector_type == "css":
             template = "CSS selector [%s]"
         elif self.selector_type == "xpath":
@@ -124,7 +140,7 @@ class SelectorTemplate(Target):
         return template % self.selector
 
     @property
-    def selector(self):
+    def selector(self) -> str:
         raw_selector = self._selector
         if self.__kwds is not None:
             if isinstance(raw_selector, list):
@@ -150,30 +166,30 @@ class SelectorTemplate(Target):
         return selector
 
     @property
-    def element_locator(self):
+    def component_locator(self) -> LocatorT:
         if self.selector_type == "css":
-            by = By.CSS_SELECTOR
+            by = ComponentBy.CSS_SELECTOR
         elif self.selector_type == "xpath":
-            by = By.XPATH
+            by = ComponentBy.XPATH
         elif self.selector_type == "id":
-            by = By.ID
+            by = ComponentBy.ID
         else:
             raise Exception(f"Unknown selector type {self.selector_type}")
-        return (by, self.selector)
+        return LocatorT(by, self.selector)
 
     @property
-    def as_css_class(self):
+    def as_css_class(self) -> str:
         assert self.selector_type == "css"
         selector = self._selector
         assert isinstance(selector, str)
         assert re.compile(r"\.\w+").match(selector)
         return selector[1:]
 
-    def resolve_element_locator(self, path: Optional[str] = None) -> LocatorT:
+    def resolve_component_locator(self, path: Optional[str] = None) -> LocatorT:
         if path:
-            return self[path].element_locator
+            return self[path].component_locator
         else:
-            return self.element_locator
+            return self.component_locator
 
     def __getattr__(self, name):
         if name in self._children:
@@ -193,8 +209,8 @@ class Label(Target):
         return f"Link text [{self.text}]"
 
     @property
-    def element_locator(self):
-        return (By.LINK_TEXT, self.text)
+    def component_locator(self) -> LocatorT:
+        return LocatorT(ComponentBy.LABEL, self.text)
 
 
 class Text(Target):
@@ -206,8 +222,8 @@ class Text(Target):
         return f"Text containing [{self.text}]"
 
     @property
-    def element_locator(self):
-        return (By.PARTIAL_LINK_TEXT, self.text)
+    def component_locator(self) -> LocatorT:
+        return LocatorT(ComponentBy.TEXT, self.text)
 
 
 HasText = Union[Label, Text]
@@ -234,9 +250,9 @@ class Component:
         else:
             raise Exception(f"No _ selector for [{self}]")
 
-    def resolve_element_locator(self, path: Optional[str] = None) -> LocatorT:
+    def resolve_component_locator(self, path: Optional[str] = None) -> LocatorT:
         if not path:
-            return self._selectors["_"].resolve_element_locator()
+            return self._selectors["_"].resolve_component_locator()
 
         def arguments() -> Tuple[str, Optional[Dict[str, str]], Optional[str]]:
             assert path
@@ -263,14 +279,14 @@ class Component:
         component_name, parameters, rest = arguments()
         if not rest:
             if parameters:
-                return getattr(self, component_name)(**parameters).resolve_element_locator()
+                return getattr(self, component_name)(**parameters).resolve_component_locator()
             else:
-                return getattr(self, component_name).resolve_element_locator()
+                return getattr(self, component_name).resolve_component_locator()
         else:
             if parameters:
-                return getattr(self, component_name)(**parameters).resolve_element_locator(rest)
+                return getattr(self, component_name)(**parameters).resolve_component_locator(rest)
             else:
-                return getattr(self, component_name).resolve_element_locator(rest)
+                return getattr(self, component_name).resolve_component_locator(rest)
 
     @staticmethod
     def from_dict(name, raw_value):

@@ -1,4 +1,4 @@
-from .components import (
+from galaxy.navigation.components import (
     Component,
     Target,
 )
@@ -7,7 +7,8 @@ from .components import (
 class SmartComponent:
     """Wrap a Component with driver aware methods.
 
-    Allows smarter selectors that know how to wait for themselves, test themselves,
+    Adapts Galaxy's component locators more tightly to Selenium - including a Selenium
+    runtime. Allows smarter selectors that know how to wait for themselves, test themselves,
     click themselves, etc.... More "magic", but much cleaner usage.
     """
 

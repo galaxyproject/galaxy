@@ -26,13 +26,13 @@ import yaml
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
-from . import sizzle
-from .components import (
+from galaxy.navigation.components import (
     Component,
     HasText,
 )
-from .data import load_root_component
+from galaxy.navigation.data import load_root_component
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from . import sizzle
 from .has_driver import (
     exception_indicates_click_intercepted,
     exception_indicates_not_clickable,
@@ -1938,7 +1938,7 @@ class NavigatesGalaxy(HasDriver):
         if element_str is None:
             component = step.get("component", None)
             if component is not None:
-                element_str = self.components.resolve_element_locator(component)[1]
+                element_str = self.components.resolve_component_locator(component).locator
 
         preclick = step.get("preclick", [])
         if preclick is True:

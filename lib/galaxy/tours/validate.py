@@ -4,7 +4,7 @@ import sys
 import yaml
 from pydantic.error_wrappers import ValidationError
 
-from galaxy.selenium.data import load_root_component
+from galaxy.navigation.data import load_root_component
 from ._impl import (
     get_tour_id_from_path,
     load_tour_from_path,
@@ -52,7 +52,7 @@ def main(argv=None):
                 if "component" in tour_step:
                     component = tour_step["component"]
                     try:
-                        root_component.resolve_element_locator(component)
+                        root_component.resolve_component_locator(component)
                     except Exception as e:
                         message = f"Tour '{tour_id}' - failed to resolve component {component}. [{e}]"
         if message:
