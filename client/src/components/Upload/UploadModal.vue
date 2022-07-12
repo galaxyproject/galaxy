@@ -52,6 +52,11 @@ export default {
             modalShow: false,
         };
     },
+    watch: {
+        modalShow() {
+            this.setIframeEvents(this.modalShow);
+        },
+    },
     mounted() {
         this.show();
         // handles subsequent external requests to re-open a re-used modal
@@ -69,6 +74,15 @@ export default {
                 this.$root.$emit("uploadResult", result);
             }
             this.hide();
+        },
+        /** Disable mouse events in iframe to prevent interference with uploader drop box */
+        setIframeEvents(disableEvents) {
+            const element = document.getElementById("galaxy_main");
+            if (element) {
+                element.style["pointer-events"] = disableEvents ? "none" : "auto";
+            } else {
+                console.warn("UploadModal::setIframeEvents - `galaxy_main` not found.");
+            }
         },
     },
 };
