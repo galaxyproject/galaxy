@@ -337,6 +337,6 @@ def _assert_2_bed_metadata(hda: HistoryDatasetAssociation) -> None:
 
 
 def _assert_path_contains_2_bed(path) -> None:
-    with open(path, "r") as f:
+    with open(path) as f:
         contents = f.read()
     assert contents == CONTENTS_2_BED

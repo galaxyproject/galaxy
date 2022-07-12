@@ -244,7 +244,7 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
 
     def _load_metadata(self, target_directory: Path, meta_name: str):
         meta_path = target_directory / f"{meta_name}.json"
-        with open(meta_path, "r") as f:
+        with open(meta_path) as f:
             return json.load(f)
 
     def _directory(self, target: Union[str, ShortTermStorageTarget]) -> Path:
