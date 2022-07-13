@@ -53,6 +53,7 @@
                     :is-history-item="isHistoryItem"
                     :is-visible="item.visible"
                     :state="state"
+                    :item-urls="itemUrls"
                     @delete="$emit('delete')"
                     @display="onDisplay"
                     @edit="onEdit"
@@ -81,6 +82,7 @@
                 v-if="expandDataset"
                 :dataset="item"
                 :show-highlight="isHistoryItem"
+                :item-urls="itemUrls"
                 @edit="onEdit"
                 @toggleHighlights="toggleHighlights" />
         </b-collapse>
@@ -99,8 +101,11 @@ import { JobStateSummary } from "./Collection/JobStateSummary";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowCircleUp, faMinusCircle, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import { getAppRoot } from "onload/loadConfig";
 
 library.add(faArrowCircleUp, faMinusCircle, faCheckCircle);
+
+const root = getAppRoot();
 
 export default {
     components: {
@@ -165,6 +170,25 @@ export default {
         tagsDisabled() {
             return !this.expandDataset || !this.isHistoryItem;
         },
+        isCollection() {
+            return "collection_type" in this.item;
+        },
+        itemUrls() {
+            const id = this.item.id;
+            if (this.isCollection) {
+                return {
+                    edit: `${root}collection/edit/${id}`,
+                };
+            }
+            return {
+                display: `${root}datasets/${id}/display/?preview=True`,
+                edit: `${root}datasets/edit?dataset_id=${id}`,
+                showDetails: `${root}datasets/${id}/details`,
+                reportError: `${root}datasets/error?dataset_id=${id}`,
+                rerun: `${root}tool_runner/rerun?id=${id}`,
+                visualize: `visualizations?dataset_id=${id}`,
+            };
+        },
     },
     methods: {
         onClick() {
@@ -175,8 +199,7 @@ export default {
             }
         },
         onDisplay() {
-            const url = `datasets/${this.item.id}/display/?preview=True`;
-            iframeAdd({ path: url, title: this.name });
+            iframeAdd({ path: this.itemUrls.display, title: this.name });
         },
         onDragStart(evt) {
             evt.dataTransfer.dropEffect = "move";
@@ -184,11 +207,7 @@ export default {
             evt.dataTransfer.setData("text", JSON.stringify([this.item]));
         },
         onEdit() {
-            if (this.item.collection_type) {
-                backboneRoute(`collection/edit/${this.item.id}`);
-            } else {
-                backboneRoute("datasets/edit", { dataset_id: this.item.id });
-            }
+            backboneRoute(this.itemUrls.edit);
         },
         onTags(newTags) {
             this.$emit("tag-change", this.item, newTags);

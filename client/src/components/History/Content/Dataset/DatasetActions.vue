@@ -2,7 +2,14 @@
     <div class="dataset-actions mb-1">
         <div class="clearfix">
             <div class="btn-group float-left">
-                <b-button v-if="showError" class="px-1" title="Error" size="sm" variant="link" @click.stop="onError">
+                <b-button
+                    v-if="showError"
+                    class="px-1"
+                    title="Error"
+                    size="sm"
+                    variant="link"
+                    :href="itemUrls.reportError"
+                    @click.prevent.stop="onError">
                     <span class="fa fa-bug" />
                 </b-button>
                 <dataset-download v-if="showDownloads" :item="item" @on-download="onDownload" />
@@ -21,7 +28,8 @@
                     title="Dataset Details"
                     size="sm"
                     variant="link"
-                    @click.stop="onInfo">
+                    :href="itemUrls.showDetails"
+                    @click.prevent.stop="onInfo">
                     <span class="fa fa-info-circle" />
                 </b-button>
                 <b-button
@@ -30,7 +38,8 @@
                     title="Run Job Again"
                     size="sm"
                     variant="link"
-                    @click.stop="onRerun">
+                    :href="itemUrls.rerun"
+                    @click.prevent.stop="onRerun">
                     <span class="fa fa-redo" />
                 </b-button>
                 <b-button
@@ -39,7 +48,8 @@
                     title="Visualize"
                     size="sm"
                     variant="link"
-                    @click.stop="onVisualize">
+                    :href="itemUrls.visualize"
+                    @click.prevent.stop="onVisualize">
                     <span class="fa fa-bar-chart-o" />
                 </b-button>
                 <b-button
@@ -74,6 +84,7 @@ export default {
     props: {
         item: { type: Object, required: true },
         showHighlight: { type: Boolean, default: false },
+        itemUrls: { type: Object, required: true },
     },
     computed: {
         showDownloads() {
@@ -107,10 +118,10 @@ export default {
             window.location.href = resource;
         },
         onError() {
-            this.backboneRoute("datasets/error", { dataset_id: this.item.id });
+            this.backboneRoute(this.itemUrls.reportError);
         },
         onInfo() {
-            this.backboneRoute(`datasets/${this.item.id}/details`);
+            this.backboneRoute(this.itemUrls.showDetails);
         },
         onRerun() {
             this.backboneRoute(`root?job_id=${this.item.creating_job}`);
@@ -118,7 +129,7 @@ export default {
         onVisualize() {
             const name = this.item.name || "";
             const title = `Visualization of ${name}`;
-            const path = `visualizations?dataset_id=${this.item.id}`;
+            const path = this.itemUrls.visualize;
             const redirectParams = {
                 path: path,
                 title: title,

@@ -7,7 +7,8 @@
             class="px-1"
             size="sm"
             variant="link"
-            @click.stop="$emit('display')">
+            :href="itemUrls.display"
+            @click.prevent.stop="$emit('display')">
             <icon icon="eye" />
         </b-button>
         <b-button
@@ -17,7 +18,8 @@
             class="px-1"
             size="sm"
             variant="link"
-            @click.stop="$emit('edit')">
+            :href="itemUrls.edit"
+            @click.prevent.stop="$emit('edit')">
             <icon icon="pen" />
         </b-button>
         <b-button
@@ -58,6 +60,7 @@ export default {
         isHistoryItem: { type: Boolean, required: true },
         isVisible: { type: Boolean, default: true },
         state: { type: String, default: "" },
+        itemUrls: { type: Object, required: true },
     },
     computed: {
         displayButtonTitle() {
