@@ -25,6 +25,8 @@ const modulesExcludedFromLibs = [
     "citeproc",
 ].join("|");
 
+const buildDate = new Date();
+
 module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
     const targetEnv = process.env.NODE_ENV == "production" || argv.mode == "production" ? "production" : "development";
@@ -194,7 +196,7 @@ module.exports = (env = {}, argv = {}) => {
             }),
             new webpack.DefinePlugin({
                 __targetEnv__: JSON.stringify(targetEnv),
-                __buildTimestamp__: JSON.stringify(new Date().toISOString()),
+                __buildTimestamp__: JSON.stringify(buildDate.toISOString()),
             }),
             new VueLoaderPlugin(),
             new MiniCssExtractPlugin({
@@ -206,7 +208,7 @@ module.exports = (env = {}, argv = {}) => {
                 prepare: (stats) => ({
                     // add any other information you need to dump
                     hash: stats.hash,
-                    epoch: Date.now(),
+                    epoch: Date.parse(buildDate),
                 }),
             }),
         ],
