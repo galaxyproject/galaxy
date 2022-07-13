@@ -143,7 +143,7 @@ class JobToolConfiguration(Bunch):
 
 def config_exception(e, file):
     abs_path = os.path.abspath(file)
-    message = f"Problem parsing the XML in file {abs_path}, "
+    message = f"Problem parsing file '{abs_path}', "
     message += "please correct the indicated portion of the file and restart Galaxy. "
     message += unicodify(e)
     log.exception(message)
