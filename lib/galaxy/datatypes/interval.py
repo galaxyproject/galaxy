@@ -27,6 +27,7 @@ from galaxy.datatypes.util.gff_util import (
     parse_gff3_attributes,
     parse_gff_attributes,
 )
+from galaxy.model import DatasetInstance
 from galaxy.util import compression_utils
 from . import (
     data,
@@ -167,10 +168,11 @@ class Interval(Tabular):
                     else:
                         empty_line_count += 1
 
-    def displayable(self, dataset):
+    def displayable(self, dataset: DatasetInstance):
         try:
             return (
-                dataset.has_data()
+                not dataset.dataset.purged
+                and dataset.has_data()
                 and dataset.state == dataset.states.OK
                 and dataset.metadata.columns > 0
                 and dataset.metadata.data_lines != 0
