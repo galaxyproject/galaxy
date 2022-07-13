@@ -120,7 +120,13 @@ class LegacyScripts:
     def __init__(self, argv: List[str], cwd: Optional[str] = None) -> None:
         self.argv = argv
         self.cwd = cwd or os.getcwd()
-        self.database = self.DEFAULT_DB_ARG
+        self._database = None  # Do not assign default value: `None` means we don't know yet.
+
+    @property
+    def database(self):
+        if self._database is None:
+            raise LegacyScriptsException("Attempt to access identifier of database before processing the script arguments")
+        return self._database
 
     def run(self) -> None:
         """
@@ -147,8 +153,9 @@ class LegacyScripts:
         If last argument is a valid database name, pop and assign it; otherwise assign default.
         """
         arg = self.argv[-1]
+        self._database = self.DEFAULT_DB_ARG
         if arg in ["galaxy", "install"]:
-            self.database = self.argv.pop()
+            self._database = self.argv.pop()
 
     def rename_config_argument(self) -> None:
         """

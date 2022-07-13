@@ -145,3 +145,15 @@ class TestLegacyScripts:
         argv = ["caller", "--alembic-config", "path-to-alembic", "downgrade"]
         with pytest.raises(LegacyScriptsException):
             LegacyScripts(argv).convert_args()
+
+    def test_access_database_id(self):
+        db = "galaxy"
+        argv = ["caller", "--alembic-config", "path-to-alembic", "upgrade", db]
+        ls = LegacyScripts(argv)
+        ls.run()
+        assert ls.database == db
+
+    def test_access_database_id_before_processing_script_args_raises_error(self):
+        argv = ["caller", "--alembic-config", "path-to-alembic", "upgrade"]
+        with pytest.raises(LegacyScriptsException):
+            LegacyScripts(argv).database
