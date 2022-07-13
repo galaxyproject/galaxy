@@ -29,6 +29,7 @@
                 selectable
                 no-select-on-click
                 show-empty
+                @sort-changed="onSort"
                 @row-clicked="onRowClick">
                 <template v-slot:empty>
                     <div v-if="isBusy" class="text-center my-2">
@@ -293,7 +294,6 @@ function initialFolderState() {
         expandedMessage: [],
         folderContents: [],
         includeDeleted: false,
-        searchText: "",
         isAllSelectedMode: false,
     };
 }
@@ -323,7 +323,10 @@ export default {
         return {
             ...initialFolderState(),
             ...{
-                currentPage: null,
+                currentPage: 1,
+                sortBy: "name",
+                sortDesc: false,
+                searchText: "",
                 currentFolderId: null,
                 error: null,
                 isBusy: false,
@@ -338,12 +341,16 @@ export default {
         };
     },
     watch: {
-        perPage: {
-            handler: function (value) {
-                this.fetchFolderContents();
-            },
+        perPage() {
+            this.fetchFolderContents();
         },
         includeDeleted() {
+            this.fetchFolderContents();
+        },
+        sortBy() {
+            this.fetchFolderContents();
+        },
+        sortDesc() {
             this.fetchFolderContents();
         },
     },
@@ -362,12 +369,18 @@ export default {
             const data = initialFolderState();
             Object.keys(data).forEach((k) => (this[k] = data[k]));
         },
+        onSort(props) {
+            this.sortBy = props.sortBy;
+            this.sortDesc = props.sortDesc;
+        },
         fetchFolderContents() {
             this.setBusy(true);
             this.services
                 .getFolderContents(
                     this.currentFolderId,
                     this.includeDeleted,
+                    this.sortBy,
+                    this.sortDesc,
                     this.perPage,
                     (this.currentPage - 1) * this.perPage,
                     this.searchText

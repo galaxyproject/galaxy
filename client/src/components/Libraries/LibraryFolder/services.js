@@ -7,14 +7,23 @@ export class Services {
         this.root = options.root || getAppRoot();
     }
 
-    async getFolderContents(id, includeDeleted, limit, offset, searchText = false) {
-        const url = `${
-            this.root
-        }api/folders/${id}/contents?include_deleted=${includeDeleted}&limit=${limit}&offset=${offset}${this.getSearchQuery(
-            searchText
-        )}`;
+    async getFolderContents(folderId, includeDeleted, sortBy, sortDesc, limit, offset, searchText) {
+        const url = `${this.root}api/folders/${folderId}/contents`;
+        const config = {
+            params: {
+                include_deleted: includeDeleted,
+                sort_by: sortBy,
+                sort_desc: sortDesc,
+                limit,
+                offset,
+            },
+        };
+        searchText = searchText.trim();
+        if (searchText) {
+            config.params.search_text = searchText;
+        }
         try {
-            const response = await axios.get(url);
+            const response = await axios.get(url, config);
             return response.data;
         } catch (e) {
             rethrowSimple(e);
