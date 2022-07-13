@@ -253,6 +253,12 @@ class LegacyScripts:
                 elif self.database == "install":
                     self.argv.append("tsi@head")
 
+    def get_db_url(self):
+        if self.database in ["galaxy", self.DEFAULT_DB_ARG]:
+            return self.gxy_url
+        elif self.database == "install":
+            return self.tsi_url
+
     def _rename_arg(self, old_name, new_name) -> None:
         pos = self.argv.index(old_name)
         self.argv[pos] = new_name
