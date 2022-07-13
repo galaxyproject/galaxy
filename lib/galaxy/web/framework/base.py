@@ -2,6 +2,7 @@
 A simple WSGI application/framework.
 """
 import io
+import json
 import logging
 import os
 import socket
@@ -25,11 +26,17 @@ import webob.exc as httpexceptions
 from paste.response import HeaderDict
 
 from galaxy.util import smart_str
+from galaxy.util.resources import resource_string
 
 log = logging.getLogger(__name__)
 
 #: time of the most recent server startup
 server_starttime = int(time.time())
+try:
+    meta_json = json.loads(resource_string(__package__, "meta.json"))
+    server_starttime = meta_json.get("epoch") or server_starttime
+except Exception:
+    meta_json = {}
 
 
 def __resource_with_deleted(self, member_name, collection_name, **kwargs):
@@ -567,6 +574,7 @@ __all__ = (
     "httpexceptions",
     "lazy_property",
     "routes",
+    "server_starttime",
     "walk_controller_modules",
     "WebApplication",
 )

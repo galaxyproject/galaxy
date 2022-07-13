@@ -5,6 +5,7 @@ const VueLoaderPlugin = require("vue-loader/lib/plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const DuplicatePackageCheckerPlugin = require("@cerner/duplicate-package-checker-webpack-plugin");
+const { DumpMetaPlugin } = require("dumpmeta-webpack-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
@@ -200,6 +201,14 @@ module.exports = (env = {}, argv = {}) => {
                 filename: "[name].css",
             }),
             new DuplicatePackageCheckerPlugin(),
+            new DumpMetaPlugin({
+                filename: path.join(__dirname, "../lib/galaxy/web/framework/meta.json"),
+                prepare: (stats) => ({
+                    // add any other information you need to dump
+                    hash: stats.hash,
+                    epoch: Date.now(),
+                }),
+            }),
         ],
         devServer: {
             client: {

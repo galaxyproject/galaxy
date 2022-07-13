@@ -3855,6 +3855,13 @@ dot-case@^3.0.4:
     no-case "^3.0.4"
     tslib "^2.0.3"
 
+dumpmeta-webpack-plugin@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/dumpmeta-webpack-plugin/-/dumpmeta-webpack-plugin-0.2.0.tgz#c3a9da7d163ad3bb1d0373fb2c0bf5bb9b626b8f"
+  integrity sha512-9oxLTPvYVtk7HOmOq2rGQlvajCNiXtIKLInIrdNpdgzeoMMELaAsRsRBZfm6xf0JuwyBfytdJxsmtM6luTeqzA==
+  dependencies:
+    webpack ">=4.0.0 <6.0.0"
+
 duplexify@^3.6.0:
   version "3.7.1"
   resolved "https://registry.yarnpkg.com/duplexify/-/duplexify-3.7.1.tgz#2a4df5317f6ccfd91f86d6fd25d8d8a103b88309"
