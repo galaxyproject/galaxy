@@ -168,7 +168,7 @@ class LegacyScripts:
     def __init__(self, argv: List[str], cwd: Optional[str] = None) -> None:
         self.argv = argv
         self.cwd = cwd or os.getcwd()
-        self._database = None  # Do not assign default value: `None` means we don't know yet.
+        self._database: Optional[str] = None  # Do not assign default value: `None` means we don't know yet.
 
     @property
     def database(self):
