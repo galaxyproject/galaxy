@@ -101,9 +101,9 @@ export default {
             return `/workflows/${this.workflow.id}/invocations`;
         },
         urlViewShared() {
-            return `${getAppRoot()}workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${
-                this.workflow.slug
-            }`;
+            return `${getAppRoot()}workflow/display_by_username_and_slug?username=${
+                this.workflow.owner
+            }&slug=${encodeURIComponent(this.workflow.slug)}`;
         },
         readOnly() {
             return !!this.workflow.shared;

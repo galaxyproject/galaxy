@@ -9,6 +9,7 @@ from pydantic import (
     BaseModel,
     Extra,
     Field,
+    ValidationError,
 )
 
 from galaxy import exceptions
@@ -254,4 +255,10 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             return result
 
         rval = [serialize_element(el) for el in contents]
-        return DatasetCollectionContentElements.parse_obj(rval)
+        try:
+            return DatasetCollectionContentElements.parse_obj(rval)
+        except ValidationError:
+            log.exception(
+                f"Serializing DatasetCollectionContentsElements failed. Collection is populated: {hdca.collection.populated}"
+            )
+            raise

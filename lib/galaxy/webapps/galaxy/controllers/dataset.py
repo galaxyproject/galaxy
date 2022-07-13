@@ -25,6 +25,7 @@ from galaxy.managers.hdas import (
     HDAManager,
 )
 from galaxy.managers.histories import HistoryManager
+from galaxy.model import Dataset
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -147,16 +148,26 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             except Exception:
                 data = None
         if not data:
-            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable(f"Invalid reference dataset id: {str(hda_id)}.")
+            raise web.httpexceptions.HTTPNotFound(f"Invalid reference dataset id: {str(hda_id)}.")
         if not self._can_access_dataset(trans, data):
             return trans.show_error_message("You are not allowed to access this dataset")
         if data.purged:
             return trans.show_error_message("The dataset you are attempting to view has been purged.")
-        if data.deleted and not (trans.user_is_admin or (data.history and trans.get_user() == data.history.user)):
+        elif data.deleted and not (trans.user_is_admin or (data.history and trans.get_user() == data.history.user)):
             return trans.show_error_message("The dataset you are attempting to view has been deleted.")
-        if data.state == trans.model.Dataset.states.UPLOAD:
+        elif data.state == Dataset.states.UPLOAD:
             return trans.show_error_message(
                 "Please wait until this dataset finishes uploading before attempting to view it."
+            )
+        elif data.state == Dataset.states.DISCARDED:
+            return trans.show_error_message("The dataset you are attempting to view has been discarded.")
+        elif data.state == Dataset.states.DEFERRED:
+            return trans.show_error_message(
+                "The dataset you are attempting to view has deferred data. You can only use this dataset as input for jobs."
+            )
+        elif data.state == Dataset.states.PAUSED:
+            return trans.show_error_message(
+                "The dataset you are attempting to view is in paused state. One of the inputs for the job that creates this dataset has failed."
             )
         return data
 
@@ -563,55 +574,51 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     @web.expose
     def display_by_username_and_slug(self, trans, username, slug, filename=None, preview=True):
         """Display dataset by username and slug; because datasets do not yet have slugs, the slug is the dataset's id."""
-        id = slug
-        decoded_id = self.decode_id(id)
-        dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
-        dataset = self.hda_manager.error_if_uploading(dataset)
-        if dataset:
-            # Filename used for composite types.
-            if filename:
-                return self.display(trans, dataset_id=slug, filename=filename)
+        dataset = self._check_dataset(trans, slug)
+        if not isinstance(dataset, trans.app.model.DatasetInstance):
+            return dataset
+        # Filename used for composite types.
+        if filename:
+            return self.display(trans, dataset_id=slug, filename=filename)
 
-            truncated, dataset_data = self.hda_manager.text_data(dataset, preview)
-            dataset.annotation = self.get_item_annotation_str(trans.sa_session, dataset.history.user, dataset)
+        truncated, dataset_data = self.hda_manager.text_data(dataset, preview)
+        dataset.annotation = self.get_item_annotation_str(trans.sa_session, dataset.history.user, dataset)
 
-            # If dataset is chunkable, get first chunk.
-            first_chunk = None
-            if dataset.datatype.CHUNKABLE:
-                first_chunk = dataset.datatype.get_chunk(trans, dataset, 0)
+        # If dataset is chunkable, get first chunk.
+        first_chunk = None
+        if dataset.datatype.CHUNKABLE:
+            first_chunk = dataset.datatype.get_chunk(trans, dataset, 0)
 
-            # If data is binary or an image, stream without template; otherwise, use display template.
-            # TODO: figure out a way to display images in display template.
-            if (
-                isinstance(dataset.datatype, datatypes.binary.Binary)
-                or isinstance(dataset.datatype, datatypes.images.Image)
-                or isinstance(dataset.datatype, datatypes.text.Html)
-            ):
-                trans.response.set_content_type(dataset.get_mime())
-                return open(dataset.file_name, "rb")
-            else:
-                # Get rating data.
-                user_item_rating = 0
-                if trans.get_user():
-                    user_item_rating = self.get_user_item_rating(trans.sa_session, trans.get_user(), dataset)
-                    if user_item_rating:
-                        user_item_rating = user_item_rating.rating
-                    else:
-                        user_item_rating = 0
-                ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, dataset)
-
-                return trans.fill_template_mako(
-                    "/dataset/display.mako",
-                    item=dataset,
-                    item_data=dataset_data,
-                    truncated=truncated,
-                    user_item_rating=user_item_rating,
-                    ave_item_rating=ave_item_rating,
-                    num_ratings=num_ratings,
-                    first_chunk=first_chunk,
-                )
+        # If data is binary or an image, stream without template; otherwise, use display template.
+        # TODO: figure out a way to display images in display template.
+        if (
+            isinstance(dataset.datatype, datatypes.binary.Binary)
+            or isinstance(dataset.datatype, datatypes.images.Image)
+            or isinstance(dataset.datatype, datatypes.text.Html)
+        ):
+            trans.response.set_content_type(dataset.get_mime())
+            return open(dataset.file_name, "rb")
         else:
-            raise web.httpexceptions.HTTPNotFound()
+            # Get rating data.
+            user_item_rating = 0
+            if trans.get_user():
+                user_item_rating = self.get_user_item_rating(trans.sa_session, trans.get_user(), dataset)
+                if user_item_rating:
+                    user_item_rating = user_item_rating.rating
+                else:
+                    user_item_rating = 0
+            ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, dataset)
+
+            return trans.fill_template_mako(
+                "/dataset/display.mako",
+                item=dataset,
+                item_data=dataset_data,
+                truncated=truncated,
+                user_item_rating=user_item_rating,
+                ave_item_rating=ave_item_rating,
+                num_ratings=num_ratings,
+                first_chunk=first_chunk,
+            )
 
     @web.expose
     def get_item_content_async(self, trans, id):
