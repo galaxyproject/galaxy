@@ -4,7 +4,7 @@
             v-if="isDataset"
             :disabled="displayDisabled"
             :title="displayButtonTitle"
-            class="px-1"
+            class="display-btn px-1"
             size="sm"
             variant="link"
             :href="itemUrls.display"
@@ -15,7 +15,7 @@
             v-if="isHistoryItem"
             :disabled="editDisabled"
             :title="editButtonTitle"
-            class="px-1"
+            class="edit-btn px-1"
             size="sm"
             variant="link"
             :href="itemUrls.edit"
@@ -24,7 +24,7 @@
         </b-button>
         <b-button
             v-if="isHistoryItem && !isDeleted"
-            class="px-1"
+            class="delete-btn px-1"
             title="Delete"
             size="sm"
             variant="link"
@@ -33,7 +33,7 @@
         </b-button>
         <b-button
             v-if="isHistoryItem && isDeleted"
-            class="px-1"
+            class="undelete-btn px-1"
             title="Undelete"
             size="sm"
             variant="link"
@@ -42,7 +42,7 @@
         </b-button>
         <b-button
             v-if="isHistoryItem && !isVisible"
-            class="px-1"
+            class="unhide-btn px-1"
             title="Unhide"
             size="sm"
             variant="link"
