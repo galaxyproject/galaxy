@@ -19,8 +19,6 @@ from urllib.parse import urlparse
 import mako.lookup
 import mako.runtime
 from apispec import APISpec
-from babel import Locale
-from babel.support import Translations
 from sqlalchemy import (
     and_,
     true,
