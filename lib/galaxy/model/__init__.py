@@ -2409,6 +2409,42 @@ class UserGroupAssociation(Base, RepresentById):
         self.group = group
 
 
+class Notification(Base, Dictifiable, RepresentById):
+    __tablename__ = "notification_push"
+
+    id = Column(Integer, primary_key=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    message_text = Column(String, index=True, unique=True)
+    deleted = Column(Boolean, index=True, default=False)
+
+    dict_collection_visible_keys = ["id", "message_text"]
+    dict_element_visible_keys = ["id", "message_text"]
+
+    def __init__(self, message_text=None):
+        self.message_text = message_text
+        self.deleted = False
+
+
+class UserNotificationAssociation(Base, RepresentById):
+    __tablename__ = "user_notification_association"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    notification_id = Column(Integer, ForeignKey("notification_push.id"), index=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
+    user = relationship("User", backref="all_notifications")
+    notification = relationship("Notification", backref="user_notification_associations")
+    status_seen = Column(Boolean, index=True, default=False)
+
+    def __init__(self, user, notification):
+        self.user_id = user.id
+        self.notification_id = notification.id
+        self.user = user
+        self.notification = notification
+
+
 def is_hda(d):
     return isinstance(d, HistoryDatasetAssociation)
 
