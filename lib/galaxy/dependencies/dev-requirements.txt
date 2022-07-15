@@ -62,7 +62,7 @@ docutils==0.16; (python_version >= "2.7" and python_full_version < "3.0.0") or (
 ecdsa==0.17.0; python_version >= "2.6" and python_full_version < "3.0.0" or python_full_version >= "3.3.0"
 edam-ontology==1.25.2
 fastapi-utils==0.2.1; python_version >= "3.6" and python_version < "4.0"
-fastapi==0.78.0; python_full_version >= "3.6.1"
+fastapi==0.79.0; python_full_version >= "3.6.1"
 fluent-logger==0.10.0; python_version >= "3.5"
 fonttools==4.33.3; python_version >= "3.7"
 fs==2.4.16
