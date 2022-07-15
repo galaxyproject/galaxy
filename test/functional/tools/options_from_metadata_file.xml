@@ -38,7 +38,7 @@ echo '${species_2}' >> '${output}'
     <test>
       <param name="input" value="3.maf" ftype="maf"/>
       <param name="species" value="hg17,canFam1"/>
-      <param name="species_comma" value="hg17,chr7"/>
+      <param name="species_comma" value="hg17&#009;chr7"/>
       <param name="input_2">
         <collection type="list">
           <element name="e1" value="3.maf"/>
