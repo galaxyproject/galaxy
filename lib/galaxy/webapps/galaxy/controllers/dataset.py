@@ -151,7 +151,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             raise web.httpexceptions.HTTPNotFound(f"Invalid reference dataset id: {str(hda_id)}.")
         if not self._can_access_dataset(trans, data):
             return trans.show_error_message("You are not allowed to access this dataset")
-        if data.purged:
+        if data.purged or data.dataset.purged:
             return trans.show_error_message("The dataset you are attempting to view has been purged.")
         elif data.deleted and not (trans.user_is_admin or (data.history and trans.get_user() == data.history.user)):
             return trans.show_error_message("The dataset you are attempting to view has been deleted.")
