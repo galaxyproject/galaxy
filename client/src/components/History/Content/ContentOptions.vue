@@ -7,7 +7,7 @@
             class="display-btn px-1"
             size="sm"
             variant="link"
-            :href="itemUrls.display"
+            :href="displayUrl"
             @click.prevent.stop="$emit('display')">
             <icon icon="eye" />
         </b-button>
@@ -18,7 +18,7 @@
             class="edit-btn px-1"
             size="sm"
             variant="link"
-            :href="itemUrls.edit"
+            :href="editUrl"
             @click.prevent.stop="$emit('edit')">
             <icon icon="pen" />
         </b-button>
@@ -53,6 +53,7 @@
 </template>
 
 <script>
+import { prependPath } from "utils/redirect.js";
 export default {
     props: {
         isDataset: { type: Boolean, required: true },
@@ -80,6 +81,12 @@ export default {
         },
         editDisabled() {
             return ["discarded", "new", "upload", "queued", "running", "waiting"].includes(this.state);
+        },
+        displayUrl() {
+            return prependPath(this.itemUrls.display);
+        },
+        editUrl() {
+            return prependPath(this.itemUrls.edit);
         },
     },
 };

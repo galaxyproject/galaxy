@@ -101,11 +101,8 @@ import { JobStateSummary } from "./Collection/JobStateSummary";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowCircleUp, faMinusCircle, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
-import { getAppRoot } from "onload/loadConfig";
 
 library.add(faArrowCircleUp, faMinusCircle, faCheckCircle);
-
-const root = getAppRoot();
 
 export default {
     components: {
@@ -173,19 +170,20 @@ export default {
         isCollection() {
             return "collection_type" in this.item;
         },
+        /** Relative URLs for history item actions */
         itemUrls() {
             const id = this.item.id;
             if (this.isCollection) {
                 return {
-                    edit: `${root}collection/edit/${id}`,
+                    edit: `collection/edit/${id}`,
                 };
             }
             return {
-                display: `${root}datasets/${id}/display/?preview=True`,
-                edit: `${root}datasets/edit?dataset_id=${id}`,
-                showDetails: `${root}datasets/${id}/details`,
-                reportError: `${root}datasets/error?dataset_id=${id}`,
-                rerun: `${root}tool_runner/rerun?id=${id}`,
+                display: `datasets/${id}/display/?preview=True`,
+                edit: `datasets/edit?dataset_id=${id}`,
+                showDetails: `datasets/${id}/details`,
+                reportError: `datasets/error?dataset_id=${id}`,
+                rerun: `tool_runner/rerun?id=${id}`,
                 visualize: `visualizations?dataset_id=${id}`,
             };
         },
