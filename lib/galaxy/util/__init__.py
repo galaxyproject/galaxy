@@ -1173,7 +1173,7 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors="strict")
 
 def strip_control_characters(s):
     """Strip unicode control characters from a string."""
-    return "".join(c for c in unicodify(s) if unicodedata.category(c) != "Cc")
+    return " ".join(c for c in unicodify(s) if unicodedata.category(c) != "Cc")
 
 
 def object_to_string(obj):
