@@ -25,7 +25,7 @@
             Import
         </a>
     %else:
-        <a href="${switch_url}" class="btn btn-secondary float-right" title="${_('Switch to this history')}">
+        <a href="${switch_url}" class="btn btn-secondary float-right" title="Switch to this history">
             <span class="fa fa-exchange"></span>
             Switch
         </a>

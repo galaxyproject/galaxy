@@ -19,8 +19,6 @@ from urllib.parse import urlparse
 import mako.lookup
 import mako.runtime
 from apispec import APISpec
-from babel import Locale
-from babel.support import Translations
 from sqlalchemy import (
     and_,
     true,
@@ -281,7 +279,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.user_manager = app[UserManager]
         self.session_manager = app[GalaxySessionManager]
         base.DefaultWebTransaction.__init__(self, environ)
-        self.setup_i18n()
         self.expunge_all()
         config = self.app.config
         self.debug = asbool(config.get("debug", False))
@@ -368,22 +365,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
     @property
     def url_builder(self):
         return url_builder
-
-    def setup_i18n(self):
-        locales = []
-        if "HTTP_ACCEPT_LANGUAGE" in self.environ:
-            # locales looks something like: ['en', 'en-us;q=0.7', 'ja;q=0.3']
-            client_locales = self.environ["HTTP_ACCEPT_LANGUAGE"].split(",")
-            for locale in client_locales:
-                try:
-                    locales.append(Locale.parse(locale.split(";")[0].strip(), sep="-").language)
-                except Exception as e:
-                    log.debug("Error parsing locale '%s'. %s: %s", locale, type(e), e)
-        if not locales:
-            # Default to English
-            locales = "en"
-        t = Translations.load(dirname="locale", locales=locales, domain="ginga")
-        self.template_context.update(dict(_=t.ugettext, n_=t.ugettext, N_=t.ungettext))
 
     def set_cors_allow(self, name=None, value=None):
         acr = "Access-Control-Request-"
