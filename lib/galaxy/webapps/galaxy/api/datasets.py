@@ -38,6 +38,7 @@ from galaxy.schema.schema import (
     DatasetSourceType,
     UpdateDatasetPermissionsPayload,
 )
+from galaxy.util import str_as_bool
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
@@ -93,7 +94,10 @@ class FastAPIDatasets:
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
     ) -> List[AnyHistoryContentItem]:
-        return self.service.index(trans, history_id, serialization_params, filter_query_params)
+        if str_as_bool(trans.app.config.get("show_datasets", "True")):
+            return self.service.index(trans, history_id, serialization_params, filter_query_params)
+        else:
+            raise Exception("This should not happen!")
 
     @router.get(
         "/api/datasets/{dataset_id}/storage",

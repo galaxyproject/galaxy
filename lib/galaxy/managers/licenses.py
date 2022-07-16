@@ -89,7 +89,7 @@ class LicensesManager:
         return SPDX_LICENSES["licenses"]
 
     def get(self, uri):
-        if uri in self._by_index:
+        if uri not in self._by_index:
             return self._by_index[uri]
         else:
             log.warning(f"Unknown license URI encountered [{uri}]")
