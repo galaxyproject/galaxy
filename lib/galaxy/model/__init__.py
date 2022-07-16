@@ -3568,18 +3568,21 @@ class Dataset(Base, StorableObject, Serializable, _HasTable):
         else:
             return self.object_store.size(self)
 
-    def get_size(self, nice_size=False):
+    def get_size(self, nice_size=False, calculate_size=True):
         """Returns the size of the data on disk"""
         if self.file_size:
             if nice_size:
                 return galaxy.util.nice_size(self.file_size)
             else:
                 return self.file_size
-        else:
+        elif calculate_size:
+            # Hopefully we only reach this branch in sessionless mode
             if nice_size:
                 return galaxy.util.nice_size(self._calculate_size())
             else:
                 return self._calculate_size()
+        else:
+            return self.file_size or 0
 
     def set_size(self, no_extra_files=False):
         """Sets the size of the data on disk.
@@ -4018,11 +4021,11 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
         self.clear_associated_files()
         _get_datatypes_registry().change_datatype(self, new_ext)
 
-    def get_size(self, nice_size=False):
+    def get_size(self, nice_size=False, calculate_size=True):
         """Returns the size of the data on disk"""
         if nice_size:
-            return galaxy.util.nice_size(self.dataset.get_size())
-        return self.dataset.get_size()
+            return galaxy.util.nice_size(self.dataset.get_size(calculate_size=calculate_size))
+        return self.dataset.get_size(calculate_size=calculate_size)
 
     def set_size(self, **kwds):
         """Sets and gets the size of the data on disk"""

@@ -128,7 +128,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                         current_user_roles, content_item.library_dataset_dataset_association.dataset
                     )
                 )
-                raw_size = int(content_item.library_dataset_dataset_association.get_size())
+                raw_size = int(content_item.library_dataset_dataset_association.get_size(calculate_size=False))
                 nice_size = util.nice_size(raw_size)
                 update_time = content_item.library_dataset_dataset_association.update_time.isoformat()
 

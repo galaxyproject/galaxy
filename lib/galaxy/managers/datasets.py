@@ -190,7 +190,7 @@ class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.Purgable
             "extra_files_path": self.serialize_extra_files_path,
             "permissions": self.serialize_permissions,
             "total_size": lambda item, key, **context: int(item.get_total_size()),
-            "file_size": lambda item, key, **context: int(item.get_size()),
+            "file_size": lambda item, key, **context: int(item.get_size(calculate_size=False)),
         }
         self.serializers.update(serializers)
 
@@ -522,9 +522,9 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
             "extra_files_path": self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_extra_files_path),
             "permissions": self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_permissions),
             # TODO: do the sizes proxy accurately/in the same way?
-            "size": lambda item, key, **context: int(item.get_size()),
+            "size": lambda item, key, **context: int(item.get_size(calculate_size=False)),
             "file_size": lambda item, key, **context: self.serializers["size"](item, key, **context),
-            "nice_size": lambda item, key, **context: item.get_size(nice_size=True),
+            "nice_size": lambda item, key, **context: item.get_size(nice_size=True, calculate_size=False),
             # common to lddas and hdas - from mapping.py
             "copied_from_history_dataset_association_id": self.serialize_id,
             "copied_from_library_dataset_dataset_association_id": self.serialize_id,
