@@ -86,6 +86,39 @@ class DatasetsApiTestCase(ApiTestCase):
         result = self._get("datasets", payload).json()
         assert len(result) == 0
 
+    def test_search_by_extension(self):
+        self.dataset_populator.new_dataset(self.history_id, wait=True)
+        payload = {
+            "q": ["extension"],
+            "qv": ["txt"],
+            "history_id": self.history_id,
+        }
+        assert len(self._get("datasets", payload).json()) == 1
+        payload = {
+            "q": ["extension"],
+            "qv": ["bam"],
+            "history_id": self.history_id,
+        }
+        assert len(self._get("datasets", payload).json()) == 0
+        payload = {
+            "q": ["extension-in"],
+            "qv": ["bam,txt"],
+            "history_id": self.history_id,
+        }
+        assert len(self._get("datasets", payload).json()) == 1
+        payload = {
+            "q": ["extension-like"],
+            "qv": ["t%t"],
+            "history_id": self.history_id,
+        }
+        assert len(self._get("datasets", payload).json()) == 1
+        payload = {
+            "q": ["extension-like"],
+            "qv": ["b%m"],
+            "history_id": self.history_id,
+        }
+        assert len(self._get("datasets", payload).json()) == 0
+
     def test_invalid_search(self):
         payload = {'limit': 10, 'offset': 0, 'q': ['history_content_type', 'tag-invalid_op'], 'qv': ['dataset', 'notag']}
         index_response = self._get("datasets", payload)
