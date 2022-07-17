@@ -11,12 +11,15 @@ from typing import (
 
 from sqlalchemy import (
     asc,
+    cast,
     desc,
     false,
     func,
+    Integer,
     literal,
     nullsfirst,
     nullslast,
+    select,
     sql,
     true,
 )
@@ -186,21 +189,30 @@ class HistoryContentsManager(base.SortableManager):
         Note: counts for deleted and hidden overlap; In other words, a dataset that's
         both deleted and hidden will be added to both totals.
         """
-        returned = dict(deleted=0, hidden=0, active=0)
-        contents_subquery = self._union_of_contents_query(history).subquery()
-        columns = [sql.column("deleted"), sql.column("visible"), func.count("*")]
-        statement = (
-            sql.select(columns).select_from(contents_subquery).group_by(sql.column("deleted"), sql.column("visible"))
+        hda_select = self._active_counts_statement(model.HistoryDatasetAssociation, history.id)
+        hdca_select = self._active_counts_statement(model.HistoryDatasetCollectionAssociation, history.id)
+        subquery = hda_select.union_all(hdca_select).subquery()
+        statement = select(
+            cast(func.sum(subquery.c.deleted), Integer).label("deleted"),
+            cast(func.sum(subquery.c.hidden), Integer).label("hidden"),
+            cast(func.sum(subquery.c.active), Integer).label("active"),
         )
-        groups = self.app.model.context.execute(statement).fetchall()
-        for deleted, visible, count in groups:
-            if deleted:
-                returned["deleted"] += count
-            if not visible:
-                returned["hidden"] += count
-            if not deleted and visible:
-                returned["active"] += count
-        return returned
+        returned = self.app.model.context.execute(statement).one()
+        return dict(returned)
+
+    def _active_counts_statement(self, model_class, history_id):
+        deleted_attr = model_class.deleted
+        visible_attr = model_class.visible
+        table_attr = model_class.table
+        return (
+            select(
+                func.sum(cast(deleted_attr, Integer)).label("deleted"),
+                func.sum(cast(visible_attr == false(), Integer)).label("hidden"),
+                func.sum(func.abs(cast(visible_attr, Integer) * (cast(deleted_attr, Integer) - 1))).label("active"),
+            )
+            .select_from(table_attr)
+            .filter_by(history_id=history_id)
+        )
 
     def map_datasets(self, history, fn, **kwargs):
         """
