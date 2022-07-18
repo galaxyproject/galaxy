@@ -1,7 +1,13 @@
 <template>
     <div>
         <DatasetProvider :id="datasetId" v-slot="{ result: dataset }">
-            <b-alert v-if="dataset?.display_apps?.length > 0 || dataset?.display_types?.length > 0" variant="info" show>
+            <b-alert
+                v-if="
+                    (dataset && dataset.display_apps && dataset.display_apps.length > 0) ||
+                    (dataset && dataset.display_types && dataset.display_types.length > 0)
+                "
+                variant="info"
+                show>
                 You can display your dataset with the following links:
                 <div class="p-2">
                     <ol>
