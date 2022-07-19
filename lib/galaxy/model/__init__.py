@@ -584,6 +584,7 @@ class User(Base, Dictifiable, RepresentById):
     stored_workflows = relationship(
         "StoredWorkflow", back_populates="user", primaryjoin=(lambda: User.id == StoredWorkflow.user_id)  # type: ignore[has-type]
     )
+    all_notifications = relationship("UserNotificationAssociation", back_populates="user", primaryjoin=(lambda: User.id == UserNotificationAssociation.user_id))
     non_private_roles = relationship(
         "UserRoleAssociation",
         viewonly=True,
@@ -2417,6 +2418,7 @@ class Notification(Base, Dictifiable, RepresentById):
     update_time = Column(DateTime, default=now, onupdate=now)
     message_text = Column(String, index=True, unique=True)
     deleted = Column(Boolean, index=True, default=False)
+    user_notification_associations = relationship("UserNotificationAssociation", back_populates="notification")
 
     dict_collection_visible_keys = ["id", "message_text"]
     dict_element_visible_keys = ["id", "message_text"]
@@ -2434,8 +2436,10 @@ class UserNotificationAssociation(Base, RepresentById):
     notification_id = Column(Integer, ForeignKey("notification_push.id"), index=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    user = relationship("User", backref="all_notifications")
-    notification = relationship("Notification", backref="user_notification_associations")
+    # user = relationship("User", backref="all_notifications")
+    user = relationship("User", back_populates="all_notifications", primaryjoin=(lambda: User.id == UserNotificationAssociation.user_id))
+    # notification = relationship("Notification", backref="user_notification_associations")
+    notification = relationship("Notification", back_populates="user_notification_associations")
     status_seen = Column(Boolean, index=True, default=False)
 
     def __init__(self, user, notification):
