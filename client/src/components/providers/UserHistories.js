@@ -47,8 +47,10 @@ export default {
         // when user changes reload histories
         user: {
             immediate: true,
-            handler() {
-                this.loadHistories();
+            handler(newVal, oldVal) {
+                if (oldVal?.id != newVal?.id) {
+                    this.loadHistories();
+                }
             },
         },
 
