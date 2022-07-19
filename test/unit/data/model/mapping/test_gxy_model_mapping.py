@@ -48,7 +48,7 @@ class TestPlanet(BaseTest):  # BaseTest is a base class; we need it to get the t
     def test_relationships(self, session, cls_, star, satellite):  # satellite is a fixture for Satellite
         obj = cls_(name=name)  # use minimal possible constructor
         obj.star = star  # assign test values to test relationship-mapped attributes (not passed to constructor)
-        obj.satellites.append(satellite)  # add a related object
+     class Notification   obj.satellites.append(satellite)  # add a related object
 
         with dbcleanup(session, obj) as obj_id:  # same as in previous test: store, then retrieve
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -1317,6 +1317,73 @@ class TestGroupRoleAssociation(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.group.id == group.id
             assert stored_obj.role.id == role.id
+
+
+class TestNotification(BaseTest):
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == "notification_push"
+
+    def test_columns(self, session, cls_):
+        create_time = now()
+        update_time = create_time + timedelta(hours=1)
+        message_text = get_unique_value()
+        deleted = True
+
+        obj = cls_()
+        obj.create_time = create_time
+        obj.update_time = update_time
+        obj.message_text = message_text
+        obj.deleted = deleted
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.message_text == message_text
+            assert stored_obj.deleted == deleted
+
+    def test_relationships(
+        self,
+        session,
+        cls_,
+        user_notification_association
+    ):
+        obj = cls_(message_text=get_unique_value())
+        obj.user_notification_associations.append(user_notification_association)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert collection_consists_of_objects(stored_obj.user_notification_associations, user_notification_association)
+
+
+class TestUserNotificationAssociation(BaseTest):
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == "user_notification_association"
+
+    def test_columns(self, session, cls_, user, notification):
+        create_time = now()
+        update_time = create_time + timedelta(hours=1)
+        obj = cls_(user, notification)
+        obj.create_time = create_time
+        obj.update_time = update_time
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.id == obj_id
+            assert stored_obj.user_id == user.id
+            assert stored_obj.notification_id == notification.id
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+
+    def test_relationships(self, session, cls_, user, notification):
+        obj = cls_(user, notification)
+
+        with dbcleanup(session, obj) as obj_id:
+            stored_obj = get_stored_obj(session, cls_, obj_id)
+            assert stored_obj.user.id == group.id
+            assert stored_obj.notification.id == notification.id
 
 
 class TestHistory(BaseTest):
@@ -4777,6 +4844,7 @@ class TestUser(BaseTest):
         user_role_association_factory,
         stored_workflow,
         stored_workflow_menu_entry_factory,
+        notifications,
     ):
         cleanup = []
 
@@ -4801,6 +4869,7 @@ class TestUser(BaseTest):
         obj.galaxy_sessions.append(galaxy_session)
         obj.quotas.append(user_quota_association)
         obj.social_auth.append(user_authnz_token)
+        obj.all_notifications.append(notifications)
 
         _private_role = role_factory(name=obj.email)
         cleanup.append(_private_role)
@@ -4851,6 +4920,7 @@ class TestUser(BaseTest):
             assert collection_consists_of_objects(stored_obj.roles, private_user_role, non_private_user_role)
             assert collection_consists_of_objects(stored_obj.non_private_roles, non_private_user_role)
             assert collection_consists_of_objects(stored_obj.stored_workflows, stored_workflow)
+            assert collection_consists_of_objects(stored_obj.all_notifications, notifications)
 
         delete_from_database(session, cleanup)
 
