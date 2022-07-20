@@ -8,7 +8,7 @@
             class="rounded-0 text-decoration-none"
             @click="onDashboard">
             <icon icon="database" />
-            <span>{{ history.size | niceFileSize }}</span>
+            <span>{{ historySize | niceFileSize }}</span>
         </b-button>
         <b-button-group>
             <b-button
@@ -19,10 +19,10 @@
                 class="rounded-0 text-decoration-none"
                 @click="setFilter('')">
                 <span class="fa fa-map-marker" />
-                <span>{{ history.contents_active.active }}</span>
+                <span>{{ numItemsActive }}</span>
             </b-button>
             <b-button
-                v-if="history.contents_active.deleted"
+                v-if="numItemsDeleted"
                 v-b-tooltip.hover
                 title="Show deleted"
                 variant="link"
@@ -30,10 +30,10 @@
                 class="rounded-0 text-decoration-none"
                 @click="setFilter('deleted:true')">
                 <icon icon="trash" />
-                <span>{{ history.contents_active.deleted }}</span>
+                <span>{{ numItemsDeleted }}</span>
             </b-button>
             <b-button
-                v-if="history.contents_active.hidden"
+                v-if="numItemsHidden"
                 v-b-tooltip.hover
                 title="Show hidden"
                 variant="link"
@@ -41,7 +41,7 @@
                 class="rounded-0 text-decoration-none"
                 @click="setFilter('visible:false')">
                 <icon icon="eye-slash" />
-                <span>{{ history.contents_active.hidden }}</span>
+                <span>{{ numItemsHidden }}</span>
             </b-button>
             <b-button
                 v-b-tooltip.hover
@@ -60,6 +60,7 @@
 import { backboneRoute } from "components/plugins/legacyNavigation";
 import prettyBytes from "pretty-bytes";
 import { formatDistanceToNowStrict } from "date-fns";
+import { usesDetailedHistoryMixin } from "./usesDetailedHistoryMixin.js";
 
 export default {
     filters: {
@@ -67,6 +68,7 @@ export default {
             return prettyBytes(rawSize);
         },
     },
+    mixins: [usesDetailedHistoryMixin],
     props: {
         history: { type: Object, required: true },
         lastChecked: { type: Date, default: null },

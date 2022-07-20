@@ -39,6 +39,14 @@ function formData(fields = {}) {
  */
 const stdHistoryParams = {
     view: "summary",
+};
+
+/**
+ * Extended history request parameters.
+ * Retrieves additional details which are usually more "expensive".
+ */
+const extendedHistoryParams = {
+    view: "summary",
     keys: "size,contents_active",
 };
 
@@ -58,7 +66,7 @@ export async function getHistoryList() {
  */
 export async function getHistoryById(id) {
     const path = `api/histories/${id}`;
-    const response = await axios.get(prependPath(path), { params: stdHistoryParams });
+    const response = await axios.get(prependPath(path), { params: extendedHistoryParams });
     const props = doResponse(response);
     return new History(props);
 }
