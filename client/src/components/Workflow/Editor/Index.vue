@@ -524,7 +524,7 @@ export default {
             this.markdownText = markdown;
         },
         onRun() {
-            const runUrl = `/workflows/run?id=${this.id}`;
+            const runUrl = `/workflows/run?workflow_id=${this.id}`;
             this.onNavigate(runUrl);
         },
         onNavigate(url) {

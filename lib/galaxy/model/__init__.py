@@ -7706,6 +7706,8 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
                 # Should this maybe also be by label ? Would break backwards compatibility though
                 inputs[str(input_item_association.workflow_step.order_index)] = {
                     "id": item.id,
+                    "hid": item.hid,
+                    "name": item.name,
                     "src": src,
                     "label": input_item_association.workflow_step.label,
                     "workflow_step_id": input_item_association.workflow_step_id,

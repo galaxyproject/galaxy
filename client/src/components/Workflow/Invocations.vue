@@ -65,7 +65,13 @@
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
             <template v-slot:cell(execute)="data">
-                <WorkflowRunButton :id="getWorkflowByInstanceId(data.item.workflow_id).id" :root="root" />
+                <WorkflowRunButton :workflow-id="getWorkflowByInstanceId(data.item.workflow_id).id" :root="root" />
+            </template>
+            <template v-slot:cell(rerun)="data">
+                <WorkflowRerunButton
+                    :workflow-id="getWorkflowByInstanceId(data.item.workflow_id).id"
+                    :invocation-id="data.item.id"
+                    :root="root" />
             </template>
         </b-table>
         <b-pagination
@@ -82,6 +88,7 @@ import { getGalaxyInstance } from "app";
 import { invocationsProvider } from "components/providers/InvocationsProvider";
 import { WorkflowInvocationState } from "components/WorkflowInvocationState";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
+import WorkflowRerunButton from "./WorkflowRerunButton.vue";
 import UtcDate from "components/UtcDate";
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
@@ -92,6 +99,7 @@ export default {
         UtcDate,
         WorkflowInvocationState,
         WorkflowRunButton,
+        WorkflowRerunButton,
     },
     mixins: [paginationMixin],
     props: {
@@ -111,6 +119,7 @@ export default {
             { key: "update_time", label: "Updated", class: "col-small", sortable: true },
             { key: "state", class: "col-small" },
             { key: "execute", label: "", class: "col-button" },
+            { key: "rerun", label: "", class: "col-button" },
         ];
         return {
             tableId: "invocation-list-table",

@@ -140,7 +140,7 @@ export default {
                     return {
                         id: menuEntry.id,
                         title: menuEntry.name,
-                        href: `${getAppRoot()}workflows/run?id=${menuEntry.id}`,
+                        href: `${getAppRoot()}workflows/run?workflow_id=${menuEntry.id}`,
                     };
                 }),
             ];

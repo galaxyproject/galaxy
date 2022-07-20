@@ -22,6 +22,22 @@ export async function getRunData(workflowId) {
 }
 
 /**
+ * Get data on a previously run workflow invocation, containing the information needed
+ * to render the UI for a rerun
+ *
+ * @param {String} invocationId - Invocation ID to fetch data for.
+ */
+export async function getInvocationData(invocationId) {
+    const url = `${getAppRoot()}api/invocations/${invocationId}`;
+    try {
+        const response = await axios.get(url);
+        return response.data;
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
+
+/**
  * Invoke the specified workflow using the supplied data.
  *
  * @param {String} workflowId - (Stored?) Workflow ID to fetch data for.

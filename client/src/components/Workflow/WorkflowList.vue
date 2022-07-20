@@ -50,7 +50,7 @@
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
             <template v-slot:cell(execute)="row">
-                <WorkflowRunButton :id="row.item.id" :root="root" />
+                <WorkflowRunButton :workflow-id="row.item.id" :root="root" />
             </template>
         </b-table>
         <b-pagination

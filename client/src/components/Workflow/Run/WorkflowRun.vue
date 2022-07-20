@@ -1,5 +1,9 @@
 <template>
     <span>
+        <b-alert v-if="invocationId" variant="success" show>
+            You are rerunning invocation {{ invocationId }}. Please be aware that parameters which are unlabelled or not
+            explicitly defined have been reset to their default values.
+        </b-alert>
         <b-alert v-if="error" variant="danger" show>
             <h5>Workflow cannot be executed. Please resolve the following issue:</h5>
             {{ error }}
@@ -45,7 +49,7 @@
 </template>
 
 <script>
-import { getRunData } from "./services";
+import { getRunData, getInvocationData } from "./services";
 import LoadingSpan from "components/LoadingSpan";
 import WorkflowRunSuccess from "./WorkflowRunSuccess";
 import WorkflowRunForm from "./WorkflowRunForm";
@@ -77,6 +81,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        invocationId: {
+            type: String,
+            default: "",
+        },
     },
     data() {
         return {
@@ -92,8 +100,77 @@ export default {
         };
     },
     created() {
-        getRunData(this.workflowId)
-            .then((runData) => {
+        var invDataPromise;
+        var runDataPromise = getRunData(this.workflowId);
+        if (this.invocationId) {
+            invDataPromise = getInvocationData(this.invocationId);
+        } else {
+            invDataPromise = Promise.resolve();
+        }
+
+        Promise.all([runDataPromise, invDataPromise])
+            .then((data) => {
+                const runData = data[0];
+                const invocationData = data[1];
+                if (this.invocationId) {
+                    Object.keys(runData.steps).forEach(function (step) {
+                        Object.keys(invocationData.inputs).every(function (inv_input) {
+                            if (invocationData.inputs[inv_input].workflow_step_id == runData.steps[step].step_id) {
+                                var value = {
+                                    id: invocationData.inputs[inv_input].id,
+                                    hid: invocationData.inputs[inv_input].hid,
+                                    name: invocationData.inputs[inv_input].name,
+                                    src: invocationData.inputs[inv_input].src,
+                                    keep: "false",
+                                };
+                                runData.steps[step].inputs[0].value = {
+                                    values: [value],
+                                }; // multiple values are not possible for invocations
+                                if (invocationData.inputs[inv_input].src == "hda") {
+                                    Object.keys(runData.steps[step].inputs[0].options.hda).every(function (hda) {
+                                        if (
+                                            runData.steps[step].inputs[0].options.hda[hda].id ==
+                                            invocationData.inputs[inv_input].id
+                                        ) {
+                                            runData.steps[step].inputs[0].options.hda.splice(hda, 1);
+                                            runData.steps[step].inputs[0].options.hda.splice(0, 0, value);
+                                            return false;
+                                        }
+                                        return true;
+                                    });
+                                    return false;
+                                }
+                                if (invocationData.inputs[inv_input].src == "hdca") {
+                                    Object.keys(runData.steps[step].inputs[0].options.hdca).every(function (hdca) {
+                                        if (
+                                            runData.steps[step].inputs[0].options.hdca[hdca].id ==
+                                            invocationData.inputs[inv_input].id
+                                        ) {
+                                            runData.steps[step].inputs[0].options.hdca.splice(hdca, 1);
+                                            runData.steps[step].inputs[0].options.hdca.splice(0, 0, value);
+                                            return false;
+                                        }
+                                        return true;
+                                    });
+                                }
+                                return false;
+                            }
+                            Object.keys(invocationData.input_step_parameters).every(function (inv_param) {
+                                if (
+                                    invocationData.input_step_parameters[inv_param].workflow_step_id ==
+                                    runData.steps[step].step_id
+                                ) {
+                                    runData.steps[step].inputs[0].value =
+                                        invocationData.input_step_parameters[inv_param].parameter_value;
+                                    return false;
+                                }
+                                return true;
+                            });
+                            return true;
+                        });
+                    });
+                }
+
                 this.loading = false;
                 const model = new WorkflowRunModel(runData);
                 let simpleForm = this.preferSimpleForm;

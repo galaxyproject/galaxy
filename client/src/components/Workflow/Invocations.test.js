@@ -150,7 +150,7 @@ describe("Invocations.vue", () => {
 
         it("calls executeWorkflow", async () => {
             await wrapper.find(".workflow-run").trigger("click");
-            expect(window.location).toBeAt("workflows/run?id=workflowId");
+            expect(window.location).toBeAt("workflows/run?workflow_id=workflowId");
         });
     });
 });

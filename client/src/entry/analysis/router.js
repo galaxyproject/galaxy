@@ -382,7 +382,10 @@ export function getRouter(Galaxy) {
                         component: Home,
                         props: (route) => ({
                             config: Galaxy.config,
-                            query: { workflow_id: route.query.id },
+                            query: {
+                                workflow_id: route.query.workflow_id,
+                                invocation_id: route.query.invocation_id,
+                            },
                         }),
                     },
                     {
