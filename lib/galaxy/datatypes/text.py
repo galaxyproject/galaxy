@@ -1248,3 +1248,60 @@ class CTLresult(Text):
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
+
+
+class PithyaProperty(Text):
+    """Pithya CTL property format"""
+
+    file_ext = "pithya.property"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .pithya.property format
+        """
+        content = open(file_prefix.filename, "r").read()
+        if re.search(":\?[a-zA-Z0-9_]+[ ]*=", content) is not None:
+            return True
+        return False
+
+
+class PithyaModel(Text):
+    """Pithya model format"""
+
+    file_ext = 'pithya.model'
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .pithya.model format
+        """
+        content = open(file_prefix.filename, "r").read()
+        keywords = ["VARS", "EQ", "THRES"]
+        if all(keyword in content for keyword in keywords):
+            return True
+        return False
+
+
+class PithyaResult(Json):
+    """Pithya result format"""
+
+    file_ext = "pithya.result"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .pithya.result format
+        """
+        is_pithya_result = False
+        if self._looks_like_json(file_prefix):
+            is_pithya_result = self._looks_like_pithya_result(file_prefix)
+        return is_pithya_result
+
+    def _looks_like_pithya_result(self, file_prefix: FilePrefix):
+        content = open(file_prefix.filename, "r").read()
+        keywords = ['"variables":', '"states":', '"parameter_values":', '"results":']
+        if all(keyword in content for keyword in keywords):
+            try:
+                json.load(open(file_prefix.filename, "r"))
+                return True
+            except Exception:
+                return False
+        return False
