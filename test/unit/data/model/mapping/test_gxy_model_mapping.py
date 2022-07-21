@@ -48,7 +48,7 @@ class TestPlanet(BaseTest):  # BaseTest is a base class; we need it to get the t
     def test_relationships(self, session, cls_, star, satellite):  # satellite is a fixture for Satellite
         obj = cls_(name=name)  # use minimal possible constructor
         obj.star = star  # assign test values to test relationship-mapped attributes (not passed to constructor)
-     class Notification   obj.satellites.append(satellite)  # add a related object
+        obj.satellites.append(satellite)  # add a related object
 
         with dbcleanup(session, obj) as obj_id:  # same as in previous test: store, then retrieve
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -1343,19 +1343,16 @@ class TestNotification(BaseTest):
             assert stored_obj.message_text == message_text
             assert stored_obj.deleted == deleted
 
-    def test_relationships(
-        self,
-        session,
-        cls_,
-        user_notification_association
-    ):
+    def test_relationships(self, session, cls_, user_notification_association):
         obj = cls_(message_text=get_unique_value())
         obj.user_notification_associations.append(user_notification_association)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.id == obj_id
-            assert collection_consists_of_objects(stored_obj.user_notification_associations, user_notification_association)
+            assert collection_consists_of_objects(
+                stored_obj.user_notification_associations, user_notification_association
+            )
 
 
 class TestUserNotificationAssociation(BaseTest):
@@ -1382,7 +1379,7 @@ class TestUserNotificationAssociation(BaseTest):
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.user.id == group.id
+            assert stored_obj.user.id == user.id
             assert stored_obj.notification.id == notification.id
 
 
@@ -4844,7 +4841,7 @@ class TestUser(BaseTest):
         user_role_association_factory,
         stored_workflow,
         stored_workflow_menu_entry_factory,
-        notifications,
+        user_notification_association,
     ):
         cleanup = []
 
@@ -4869,7 +4866,7 @@ class TestUser(BaseTest):
         obj.galaxy_sessions.append(galaxy_session)
         obj.quotas.append(user_quota_association)
         obj.social_auth.append(user_authnz_token)
-        obj.all_notifications.append(notifications)
+        obj.all_notifications.append(user_notification_association)
 
         _private_role = role_factory(name=obj.email)
         cleanup.append(_private_role)
@@ -4920,7 +4917,7 @@ class TestUser(BaseTest):
             assert collection_consists_of_objects(stored_obj.roles, private_user_role, non_private_user_role)
             assert collection_consists_of_objects(stored_obj.non_private_roles, non_private_user_role)
             assert collection_consists_of_objects(stored_obj.stored_workflows, stored_workflow)
-            assert collection_consists_of_objects(stored_obj.all_notifications, notifications)
+            assert collection_consists_of_objects(stored_obj.all_notifications, user_notification_association)
 
         delete_from_database(session, cleanup)
 
@@ -6518,3 +6515,17 @@ def _run_average_rating_test(session, obj, user, obj_rating_association_factory)
     assert obj.average_rating == 3.0  # Expect average after ratings added.
     # Cleanup: remove ratings from database
     delete_from_database(session, to_cleanup)
+
+
+@pytest.fixture
+def notification() -> model.Notification:
+    new_notification = model.Notification(message_text="new_message")
+    return new_notification
+
+
+@pytest.fixture
+def user_notification_association() -> model.UserNotificationAssociation:
+    user = model.User(email="test" + "@test.com", password="abcde", username="notification_user")
+    new_notification = model.Notification(message_text="new_message")
+    una = model.UserNotificationAssociation(user, new_notification)
+    return una
