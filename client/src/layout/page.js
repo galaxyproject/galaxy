@@ -22,6 +22,11 @@ const View = Backbone.View.extend({
             inactivity_box_content: "",
             hide_panels: false,
             hide_masthead: false,
+            masthead_show_analysis: true,
+            masthead_show_workflows: true,
+            masthead_show_activities: false,
+            masthead_show_scratchbook: true,
+            masthead_show_shared_data: true,
         });
 
         // attach global objects, build mastheads
@@ -44,6 +49,7 @@ const View = Backbone.View.extend({
                 this.masthead.highlight(view.active_tab);
             }
             this.center.display(view, noPadding);
+            this.masthead.refreshMenu();
         };
 
         // build page template
@@ -142,6 +148,14 @@ const View = Backbone.View.extend({
             this.$inactivebox.hide();
         }
         return this;
+    },
+
+    hidePanels: function () {
+        _.each(this._panelids, (panel_id) => {
+            this.panels[panel_id] = null;
+            this.$center.css(panel_id, 0);
+            this.$(`#${panel_id}`).hide();
+        });
     },
 
     /** Render panels */

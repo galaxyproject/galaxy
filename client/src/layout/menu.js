@@ -68,24 +68,34 @@ export function fetchMenu(options = {}) {
     //
     // Analyze data tab.
     //
-    menu.push({
-        id: "analysis",
-        url: "",
-        tooltip: _l("Tools and Current History"),
-        icon: "fa-home",
-    });
+    if (options.masthead_show_analysis) {
+        menu.push({
+            id: "analysis",
+            url: "",
+            tooltip: _l("Tools and Current History"),
+            icon: "fa-home",
+        });
+    }
 
-    //
-    // Workflow tab.
-    //
-    menu.push({
-        id: "workflow",
-        title: _l("Workflow"),
-        tooltip: _l("Chain tools into workflows"),
-        disabled: !Galaxy.user.id,
-        url: "workflows/list",
-        target: "__use_router__",
-    });
+    if (options.masthead_show_activities) {
+        menu.push({
+            id: "activities",
+            title: _l("Activities"),
+            url: "activities",
+            tooltip: _l("Run and monitor workflows"),
+        });
+    }
+
+    if (options.masthead_show_workflows) {
+        menu.push({
+            id: "workflow",
+            title: _l("Workflow"),
+            tooltip: _l("Chain tools into workflows"),
+            disabled: !Galaxy.user.id,
+            url: "workflows/list",
+            target: "__use_router__",
+        });
+    }
 
     //
     // Visualization tab.
@@ -106,48 +116,50 @@ export function fetchMenu(options = {}) {
     //
     // 'Shared Items' or Libraries tab.
     //
-    if (Galaxy.config.single_user) {
-        // Single user can still use libraries, especially as we may grow that
-        // functionality as a representation for external data.  The rest is
-        // hidden though.
-        menu.push({
-            title: _l("Data Libraries"),
-            url: "libraries",
-            id: "libraries",
-        });
-    } else {
-        menu.push({
-            id: "shared",
-            title: _l("Shared Data"),
-            url: "javascript:void(0)",
-            tooltip: _l("Access published resources"),
-            menu: [
-                {
-                    title: _l("Data Libraries"),
-                    url: "libraries",
-                },
-                {
-                    title: _l("Histories"),
-                    url: "histories/list_published",
-                    target: "__use_router__",
-                },
-                {
-                    title: _l("Workflows"),
-                    url: "workflows/list_published",
-                    target: "__use_router__",
-                },
-                {
-                    title: _l("Visualizations"),
-                    url: "visualizations/list_published",
-                    target: "__use_router__",
-                },
-                {
-                    title: _l("Pages"),
-                    url: "pages/list_published",
-                    target: "__use_router__",
-                },
-            ],
-        });
+    if (options.masthead_show_shared_data) {
+        if (Galaxy.config.single_user) {
+            // Single user can still use libraries, especially as we may grow that
+            // functionality as a representation for external data.  The rest is
+            // hidden though.
+            menu.push({
+                title: _l("Data Libraries"),
+                url: "libraries",
+                id: "libraries",
+            });
+        } else {
+            menu.push({
+                id: "shared",
+                title: _l("Shared Data"),
+                url: "javascript:void(0)",
+                tooltip: _l("Access published resources"),
+                menu: [
+                    {
+                        title: _l("Data Libraries"),
+                        url: "libraries",
+                    },
+                    {
+                        title: _l("Histories"),
+                        url: "histories/list_published",
+                        target: "__use_router__",
+                    },
+                    {
+                        title: _l("Workflows"),
+                        url: "workflows/list_published",
+                        target: "__use_router__",
+                    },
+                    {
+                        title: _l("Visualizations"),
+                        url: "visualizations/list_published",
+                        target: "__use_router__",
+                    },
+                    {
+                        title: _l("Pages"),
+                        url: "pages/list_published",
+                        target: "__use_router__",
+                    },
+                ],
+            });
+        }
     }
 
     //

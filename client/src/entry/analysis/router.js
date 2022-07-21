@@ -7,6 +7,16 @@ import { getGalaxyInstance } from "app";
 import Analysis from "entry/analysis/modules/Analysis";
 import Home from "entry/analysis/modules/Home";
 import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
+// TODO: Make this a module like the worklfow editor to recover this old hacking...
+//         show_activities: function () {
+//    this.page.hidePanels();
+//    this.page.config.masthead_show_activities = true;
+//    this.page.config.masthead_show_workflows = false;
+//    this.page.config.masthead_show_scratchbook = false;
+//    this.page.config.masthead_show_analysis = false;
+//    this.page.config.masthead_show_shared_data = false;
+//    this._display_vue_helper(WorkflowHome);
+import WorkflowHome from "components/WorkflowHome";
 
 // child components
 import Citations from "components/Citation/Citations";
@@ -100,6 +110,11 @@ export function getRouter(Galaxy) {
                         path: "custom_builds",
                         component: CustomBuilds,
                         redirect: redirectAnon(),
+                    },
+                    {
+                        path: "activties",
+                        component: WorkflowHome,
+                        props: true,
                     },
                     {
                         path: "collection/edit/:collection_id",

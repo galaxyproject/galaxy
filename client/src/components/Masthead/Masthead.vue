@@ -65,6 +65,9 @@ export default {
             type: Object,
             default: null,
         },
+        refreshMenu() {
+            this.baseTabs = fetchMenu(this.menuOptions);
+        },
     },
     data() {
         return {
