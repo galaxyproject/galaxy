@@ -1091,3 +1091,160 @@ class Yaml(Text):
             except yaml.YAMLError:
                 return False
             return False
+
+
+class BCSLmodel(Text):
+    """BioChemical Space Language model file"""
+
+    file_ext = "bcsl.model"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .bcsl.model format
+        """
+        content = open(file_prefix.filename, "r").read()
+        keywords = ["#! rules", "#! inits", "#! definitions"]
+        return any(keyword in content for keyword in keywords)
+
+
+class BCSLts(Json):
+    """BioChemical Space Language transition system file"""
+
+    file_ext = "bcsl.ts"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .bcsl.ts format
+        """
+        is_bcsl_ts = False
+        if self._looks_like_json(file_prefix):
+            is_bcsl_ts = self._looks_like_bcsl_ts(file_prefix)
+        return is_bcsl_ts
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            lines = "States: {}\nTransitions: {}\nUnique agents: {}\nInitial state: {}"
+            ts = json.load(open(dataset.file_name, "r"))
+            dataset.peek = lines.format(len(ts["nodes"]), len(ts["edges"]), len(ts["ordering"]), ts["initial"])
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def _looks_like_bcsl_ts(self, file_prefix: FilePrefix):
+        content = open(file_prefix.filename, "r").read()
+        keywords = ['"edges":', '"nodes":', '"ordering":', '"initial":']
+        if all(keyword in content for keyword in keywords):
+            try:
+                json.load(open(file_prefix.filename, "r"))
+                return True
+            except Exception:
+                return False
+        return False
+
+
+class StormRegions(Text):
+    """
+    Storm PCTL parameter synthesis result file
+    containing partitioning of the given parameter space.
+    """
+
+    file_ext = "storm.regions"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .storm.regions format
+        """
+        content = open(file_prefix.filename, "r").read()
+        keywords = ["Storm-pars", "Region results"]
+        return all(keyword in content for keyword in keywords)
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            dataset.peek = "Storm-pars region results."
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+
+class StormSample(Text):
+    """
+    Storm PCTL parameter synthesis result file
+    containing probability function of parameters.
+    """
+
+    file_ext = "storm.sample"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .storm.sample format
+        """
+        content = open(file_prefix.filename, "r").read()
+        keywords = ["Storm-pars", "Result (initial states)"]
+        return all(keyword in content for keyword in keywords)
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            dataset.peek = "Storm-pars sample results."
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+
+class StormCheck(Text):
+    """
+    Storm PCTL model checking result file
+    containing boolean or numerical result.
+    """
+
+    file_ext = "storm.check"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .storm.check format
+        """
+        content = open(file_prefix.filename, "r").read()
+        keywords = ["Storm ", "Result (for initial states)"]
+        return all(keyword in content for keyword in keywords)
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            result = open(dataset.file_name, "r")
+            answer = ""
+            for line in result.readlines():
+                if "Result (for initial states):" in line:
+                    answer = line.split()[-1]
+            dataset.peek = "Model checking result: {}".format(answer)
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+
+class CTLresult(Text):
+    """CTL model checking result"""
+
+    file_ext = "ctl.result"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .ctl.result format
+        """
+        content = open(file_prefix.filename, "r").read()
+        keywords = ["Result:", "Number of satisfying states:"]
+        return all(keyword in content for keyword in keywords)
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            result = open(dataset.file_name, "r")
+            answer = ""
+            for line in result.readlines():
+                if "Result:" in line:
+                    answer = line.split()[-1]
+            dataset.peek = "Model checking result: {}".format(answer)
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
