@@ -11,7 +11,7 @@
                     :help-html="helpHtml">
                 </index-filter>
             </b-col>
-            <b-col>
+            <b-col v-if="!simplified">
                 <WorkflowIndexActions :root="root" class="float-right"> </WorkflowIndexActions>
             </b-col>
         </b-row>
@@ -103,6 +103,23 @@ returned. So <code>name:'RNAseq'</code> would show only workflows named exactly 
 </div>
 `;
 
+const NAME_FIELD = { key: "name", label: _l("Name"), sortable: true };
+const TAGS_FIELD = { key: "tags", tags: _l("Tags"), sortable: true };
+const BOOKMARK_FIELD = { key: "show_in_tool_panel", label: _l("Bookmarked"), sortable: false };
+const EXECUTE_FIELD = { key: "execute", label: "" };
+const UPDATED_FIELD = {
+    label: _l("Updated"),
+    key: "update_time",
+    sortable: true,
+};
+const SHARING_FIELD = {
+    label: _l("Sharing"),
+    key: "published",
+    sortable: false,
+};
+const SIMPLIFIED_FIELDS = [NAME_FIELD, TAGS_FIELD, EXECUTE_FIELD];
+const FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, SHARING_FIELD, BOOKMARK_FIELD, EXECUTE_FIELD];
+
 export default {
     components: {
         UtcDate,
@@ -119,41 +136,15 @@ export default {
             type: Number,
             default: 500,
         },
+        simplified: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
             tableId: "workflow-table",
-            fields: [
-                {
-                    key: "name",
-                    label: _l("Name"),
-                    sortable: true,
-                },
-                {
-                    key: "tags",
-                    label: _l("Tags"),
-                    sortable: false,
-                },
-                {
-                    label: _l("Updated"),
-                    key: "update_time",
-                    sortable: true,
-                },
-                {
-                    label: _l("Sharing"),
-                    key: "published",
-                    sortable: false,
-                },
-                {
-                    label: _l("Bookmarked"),
-                    key: "show_in_tool_panel",
-                    sortable: false,
-                },
-                {
-                    key: "execute",
-                    label: "",
-                },
-            ],
+            fields: this.simplified ? SIMPLIFIED_FIELDS : FIELDS,
             titleSearch: _l("Search Workflows"),
             workflowItemsModel: [],
             workflowItems: [],

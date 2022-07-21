@@ -1,9 +1,9 @@
 <template>
     <div class="invocations-list">
-        <h2 class="mb-3">
+        <h2 class="mb-3" v-if="showTitle">
             <span id="invocations-title">{{ title }}</span>
         </h2>
-        <b-alert v-if="headerMessage" variant="info" show>
+        <b-alert v-if="headerMessage && showTitle" variant="info" show>
             {{ headerMessage }}
         </b-alert>
         <b-alert class="index-grid-message" :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
@@ -87,6 +87,23 @@ import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
 import paginationMixin from "./paginationMixin";
 
+const WORKFLOW_FIELD = { key: "workflow_id", label: "Workflow", class: "col-name" };
+const HISTORY_FIELD = { key: "history_id", label: "History", class: "col-history" };
+const STATE_FIELD = { key: "state", class: "col-small" };
+const UPDATE_TIME_FIELD = { key: "update_time", label: "Updated" };
+const CREATE_TIME_FIELD = { key: "create_time", label: "Invoked", complex: true };
+const EXECUTE_FIELD = { key: "execute", label: "", class: "col-button" };
+const EXPAND_FIELD = { key: "expand", label: "", class: "col-button" };
+const FIELDS = [
+    EXPAND_FIELD,
+    WORKFLOW_FIELD,
+    HISTORY_FIELD,
+    STATE_FIELD,
+    UPDATE_TIME_FIELD,
+    CREATE_TIME_FIELD,
+    EXECUTE_FIELD,
+];
+
 export default {
     components: {
         UtcDate,
@@ -101,17 +118,11 @@ export default {
         userId: { type: String, default: null },
         storedWorkflowId: { type: String, default: null },
         storedWorkflowName: { type: String, default: null },
+        showTitle: { type: Boolean, default: true },
+        simplified: { type: Boolean, default: false },
     },
     data() {
-        const fields = [
-            { key: "expand", label: "", class: "col-button" },
-            { key: "workflow_id", label: "Workflow", class: "col-name" },
-            { key: "history_id", label: "History", class: "col-history" },
-            { key: "create_time", label: "Invoked", class: "col-small", sortable: true },
-            { key: "update_time", label: "Updated", class: "col-small", sortable: true },
-            { key: "state", class: "col-small" },
-            { key: "execute", label: "", class: "col-button" },
-        ];
+        const fields = FIELDS.filter((field) => (!this.simplified || !field.complex ? true : false));
         return {
             tableId: "invocation-list-table",
             invocationItems: [],
