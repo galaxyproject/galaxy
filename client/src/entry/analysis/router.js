@@ -16,7 +16,7 @@ import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
 //    this.page.config.masthead_show_analysis = false;
 //    this.page.config.masthead_show_shared_data = false;
 //    this._display_vue_helper(WorkflowHome);
-import WorkflowHome from "components/WorkflowHome";
+import WorkflowHome from "entry/analysis/modules/WorkflowHome";
 
 // child components
 import Citations from "components/Citation/Citations";
@@ -110,11 +110,6 @@ export function getRouter(Galaxy) {
                         path: "custom_builds",
                         component: CustomBuilds,
                         redirect: redirectAnon(),
-                    },
-                    {
-                        path: "activties",
-                        component: WorkflowHome,
-                        props: true,
                     },
                     {
                         path: "collection/edit/:collection_id",
@@ -431,6 +426,7 @@ export function getRouter(Galaxy) {
                 ],
             },
             { path: "/workflows/edit", component: WorkflowEditorModule },
+            { path: "/activties", component: WorkflowHome },
         ],
     });
 }
