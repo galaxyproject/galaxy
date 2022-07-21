@@ -249,6 +249,13 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         workflows_url = self._api_url(f"workflows/{workflow_id}/download")
         assert get(workflows_url).status_code == 403
 
+    def test_anon_can_download_importable_workflow(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_downloadable", importable=True)
+        workflows_url = self._api_url(f"workflows/{workflow_id}/download")
+        response = get(workflows_url)
+        response.raise_for_status()
+        assert response.json()["a_galaxy_workflow"] == "true"
+
     def test_anon_can_download_public_workflow(self):
         workflow_id = self.workflow_populator.simple_workflow("test_downloadable", publish=True)
         workflows_url = self._api_url(f"workflows/{workflow_id}/download")

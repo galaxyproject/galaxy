@@ -116,8 +116,13 @@ class WorkflowsManager:
         stored_workflow = self.get_stored_workflow(trans, workflow_id, by_stored_id=by_stored_id)
 
         # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin and not stored_workflow.published:
-            if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
+        if stored_workflow.user != trans.user and not trans.user_is_admin and not stored_workflow.importable:
+            if (
+                trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation)
+                .filter_by(user=trans.user, stored_workflow=stored_workflow)
+                .count()
+                == 0
+            ):
                 message = "Workflow is not owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
 
