@@ -1189,8 +1189,8 @@ class StormSample(Text):
             dataset.peek = "Storm-pars sample results."
             dataset.blurb = nice_size(dataset.get_size())
         else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
 
 
 class StormCheck(Text):
@@ -1268,7 +1268,7 @@ class PithyaProperty(Text):
 class PithyaModel(Text):
     """Pithya model format"""
 
-    file_ext = 'pithya.model'
+    file_ext = "pithya.model"
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
