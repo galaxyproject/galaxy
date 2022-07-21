@@ -13,6 +13,8 @@ from typing import (
     Tuple,
 )
 
+import packaging.version
+
 from galaxy.util.path import safe_walk
 from .util import _parse_name
 
@@ -27,7 +29,7 @@ class ToolSource(metaclass=ABCMeta):
     language: str
 
     @abstractmethod
-    def parse_id(self):
+    def parse_id(self) -> Optional[str]:
         """Parse an ID describing the abstract tool. This is not the
         GUID tracked by the tool shed but the simple id (there may be
         multiple tools loaded in Galaxy with this same simple id).
@@ -239,7 +241,7 @@ class ToolSource(metaclass=ABCMeta):
         """Return license corresponding to tool wrapper."""
 
     @abstractmethod
-    def parse_python_template_version(self):
+    def parse_python_template_version(self) -> Optional[packaging.version.Version]:
         """
         Return minimum python version that the tool template has been developed against.
         """
@@ -276,6 +278,10 @@ class ToolSource(metaclass=ABCMeta):
             as_str = f"{self.__class__.__name__}[In-memory]"
         return as_str
 
+    @abstractmethod
+    def to_string(self) -> str:
+        """Return the tool source as a string"""
+
 
 class PagesSource:
     """Contains a list of Pages - each a list of InputSources -
@@ -290,15 +296,6 @@ class PagesSource:
     @property
     def inputs_defined(self):
         return True
-
-
-class PageSource(metaclass=ABCMeta):
-    def parse_display(self):
-        return None
-
-    @abstractmethod
-    def parse_input_sources(self) -> List:
-        """Return a list of InputSource objects."""
 
 
 class InputSource(metaclass=ABCMeta):
@@ -333,6 +330,10 @@ class InputSource(metaclass=ABCMeta):
         """
         return _parse_name(self.get("name"), self.get("argument"))
 
+    @abstractmethod
+    def parse_input_type(self) -> str:
+        """Return the type of this input."""
+
     def parse_help(self):
         return self.get("help")
 
@@ -351,7 +352,7 @@ class InputSource(metaclass=ABCMeta):
         return []
 
     def parse_optional(self, default=None):
-        """Return boolean indicating wheter parameter is optional."""
+        """Return boolean indicating whether parameter is optional."""
         if default is None:
             default = self.default_optional
         return self.get_bool("optional", default)
@@ -374,12 +375,21 @@ class InputSource(metaclass=ABCMeta):
         # For repeats
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
-    def parse_test_input_source(self):
+    def parse_test_input_source(self) -> "InputSource":
         # For conditionals
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     def parse_when_input_sources(self):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+
+class PageSource(metaclass=ABCMeta):
+    def parse_display(self):
+        return None
+
+    @abstractmethod
+    def parse_input_sources(self) -> List[InputSource]:
+        """Return a list of InputSource objects."""
 
 
 class TestCollectionDef:
