@@ -1260,7 +1260,7 @@ class PithyaProperty(Text):
         Determines whether the file is in .pithya.property format
         """
         content = open(file_prefix.filename, "r").read()
-        if re.search(":\?[a-zA-Z0-9_]+[ ]*=", content) is not None:
+        if re.search(r":\?[a-zA-Z0-9_]+[ ]*=", content) is not None:
             return True
         return False
 
