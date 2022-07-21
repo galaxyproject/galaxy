@@ -44,6 +44,7 @@ from galaxy import (
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.managers import sharable
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.model import StoredWorkflow
 from galaxy.model.index_filter_util import (
     append_user_filter,
     raw_text_column_filter,
@@ -228,7 +229,7 @@ class WorkflowsManager(sharable.SharableModelManager):
             query = query.offset(payload.offset)
         return query, total_matches
 
-    def get_stored_workflow(self, trans, workflow_id, by_stored_id=True):
+    def get_stored_workflow(self, trans, workflow_id, by_stored_id=True) -> StoredWorkflow:
         """Use a supplied ID (UUID or encoded stored workflow ID) to find
         a workflow.
         """
@@ -276,7 +277,7 @@ class WorkflowsManager(sharable.SharableModelManager):
         stored_workflow = self.get_stored_workflow(trans, workflow_id, by_stored_id=by_stored_id)
 
         # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin and not stored_workflow.published:
+        if stored_workflow.user != trans.user and not trans.user_is_admin and not stored_workflow.importable:
             if (
                 trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation)
                 .filter_by(user=trans.user, stored_workflow=stored_workflow)
