@@ -27,6 +27,7 @@ from galaxy import (
     util
 )
 from galaxy.job_execution.actions.post import ActionBox
+from galaxy.model import StoredWorkflow
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.parameters import (
@@ -74,8 +75,8 @@ class WorkflowsManager:
     def __init__(self, app: MinimalManagerApp):
         self.app = app
 
-    def get_stored_workflow(self, trans, workflow_id, by_stored_id=True):
-        """ Use a supplied ID (UUID or encoded stored workflow ID) to find
+    def get_stored_workflow(self, trans, workflow_id, by_stored_id=True) -> StoredWorkflow:
+        """Use a supplied ID (UUID or encoded stored workflow ID) to find
         a workflow.
         """
         if util.is_uuid(workflow_id):

@@ -28,6 +28,7 @@ from galaxy.workflow.trs_proxy import TrsProxy
 
 if TYPE_CHECKING:
     from galaxy.jobs import JobConfiguration
+    from galaxy.managers.workflows import WorkflowsManager
     from galaxy.tools.data import ToolDataTableManager
 
 
@@ -123,7 +124,7 @@ class StructuredApp(MinimalManagerApp):
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
     history_manager: Any  # 'galaxy.managers.histories.HistoryManager'
     hda_manager: Any  # 'galaxy.managers.hdas.HDAManager'
-    workflow_manager: Any  # 'galaxy.managers.workflows.WorkflowsManager'
+    workflow_manager: "WorkflowsManager"
     workflow_contents_manager: Any  # 'galaxy.managers.workflows.WorkflowContentsManager'
     library_folder_manager: Any  # 'galaxy.managers.folders.FolderManager'
     library_manager: Any  # 'galaxy.managers.libraries.LibraryManager'
