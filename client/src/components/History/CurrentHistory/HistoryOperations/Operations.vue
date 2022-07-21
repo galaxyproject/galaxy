@@ -13,16 +13,16 @@
             <b-dropdown-text id="history-op-all-content">
                 <span v-localize>With entire history...</span>
             </b-dropdown-text>
-            <b-dropdown-item v-if="history.contents_active.active" data-description="copy datasets" @click="onCopy">
+            <b-dropdown-item v-if="numItemsActive" data-description="copy datasets" @click="onCopy">
                 <span v-localize>Copy Datasets</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="history.contents_active.hidden" v-b-modal:show-all-hidden-content>
+            <b-dropdown-item v-if="numItemsHidden" v-b-modal:show-all-hidden-content>
                 <span v-localize>Unhide All Hidden Content</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="history.contents_active.hidden" v-b-modal:delete-all-hidden-content>
+            <b-dropdown-item v-if="numItemsHidden" v-b-modal:delete-all-hidden-content>
                 <span v-localize>Delete All Hidden Content</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="history.contents_active.deleted" v-b-modal:purge-all-deleted-content>
+            <b-dropdown-item v-if="numItemsDeleted" v-b-modal:purge-all-deleted-content>
                 <span v-localize>Purge All Deleted Content</span>
             </b-dropdown-item>
         </b-dropdown>
@@ -43,8 +43,10 @@
 <script>
 import { unhideAllHiddenContent, deleteAllHiddenContent, purgeAllDeletedContent } from "components/History/model/crud";
 import { iframeRedirect } from "components/plugins/legacyNavigation";
+import { usesDetailedHistoryMixin } from "../usesDetailedHistoryMixin.js";
 
 export default {
+    mixins: [usesDetailedHistoryMixin],
     props: {
         history: { type: Object, required: true },
     },
