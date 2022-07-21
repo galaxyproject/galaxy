@@ -3,11 +3,7 @@ import random
 import pytest
 
 from galaxy.managers.notification import NotificationManager
-from galaxy.model import (
-    Notification,
-    User,
-    UserNotificationAssociation,
-)
+from galaxy.model import User
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 
@@ -22,12 +18,6 @@ def sa_session():
 def create_notification_mananger(sa_session: galaxy_scoped_session):
     notificationManager = NotificationManager(sa_session)
     return notificationManager
-
-
-def test_create_notification(sa_session: galaxy_scoped_session):
-    notificationManager = create_notification_mananger(sa_session)
-    notification = notificationManager.create(message="New notification")
-    assert notification.id is not None
 
 
 def test_update_notification(sa_session: galaxy_scoped_session):
