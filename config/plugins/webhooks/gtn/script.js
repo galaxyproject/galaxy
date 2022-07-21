@@ -138,7 +138,7 @@
                         if (tool_id === "upload1" || tool_id === "upload") {
                             document.getElementById("tool-panel-upload-button").click();
                         } else {
-                            Galaxy.router.push("/", { tool_id: tool_id });
+                            Galaxy.router.push("/", { tool_id: encodeURI(tool_id) });
                         }
                         removeOverlay();
                     });
