@@ -13,7 +13,7 @@ export const getUserPreferencesModel = (user_id) => {
             url: `api/users/${user_id}/information/inputs`,
             icon: "fa-user",
             redirect: "user",
-            shouldRender: !config.use_remote_user && config.enable_account_interface,
+            shouldRender: !config.use_remote_user,
         },
         password: {
             title: _l("Change Password"),
