@@ -69,7 +69,7 @@ export const getUserPreferencesModel = (user_id) => {
             icon: "fa-cloud",
             submitTitle: "Create a new Key",
             submitIcon: "fa-check",
-            shouldRender: config.enable_account_interface,
+            shouldRender: true,
         },
         toolbox_filters: {
             title: _l("Manage Toolbox Filters"),
