@@ -1093,6 +1093,7 @@ class Yaml(Text):
             return False
 
 
+@build_sniff_from_prefix
 class BCSLmodel(Text):
     """BioChemical Space Language model file"""
 
@@ -1107,6 +1108,7 @@ class BCSLmodel(Text):
         return any(keyword in content for keyword in keywords)
 
 
+@build_sniff_from_prefix
 class BCSLts(Json):
     """BioChemical Space Language transition system file"""
 
@@ -1143,6 +1145,7 @@ class BCSLts(Json):
         return False
 
 
+@build_sniff_from_prefix
 class StormRegions(Text):
     """
     Storm PCTL parameter synthesis result file
@@ -1168,6 +1171,7 @@ class StormRegions(Text):
             dataset.blurb = "file purged from disk"
 
 
+@build_sniff_from_prefix
 class StormSample(Text):
     """
     Storm PCTL parameter synthesis result file
@@ -1193,6 +1197,7 @@ class StormSample(Text):
             dataset.blurb = "file purged from disk"
 
 
+@build_sniff_from_prefix
 class StormCheck(Text):
     """
     Storm PCTL model checking result file
@@ -1223,6 +1228,7 @@ class StormCheck(Text):
             dataset.blurb = "file purged from disk"
 
 
+@build_sniff_from_prefix
 class CTLresult(Text):
     """CTL model checking result"""
 
@@ -1250,6 +1256,7 @@ class CTLresult(Text):
             dataset.blurb = "file purged from disk"
 
 
+@build_sniff_from_prefix
 class PithyaProperty(Text):
     """Pithya CTL property format"""
 
@@ -1265,6 +1272,7 @@ class PithyaProperty(Text):
         return False
 
 
+@build_sniff_from_prefix
 class PithyaModel(Text):
     """Pithya model format"""
 
@@ -1281,6 +1289,7 @@ class PithyaModel(Text):
         return False
 
 
+@build_sniff_from_prefix
 class PithyaResult(Json):
     """Pithya result format"""
 
