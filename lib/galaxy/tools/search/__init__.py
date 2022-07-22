@@ -31,6 +31,7 @@ from whoosh.qparser import (
 )
 from whoosh.scoring import (
     BM25F,
+    Frequency,
     MultiWeighting,
 )
 from whoosh.writing import AsyncWriter
@@ -213,13 +214,13 @@ class ToolPanelViewSearch:
         # Change field boosts for searcher
         self.searcher = self.index.searcher(
             weighting=MultiWeighting(
-                BM25F(),
-                old_id=BM25F(old_id_B=float(tool_id_boost)),
-                name=BM25F(name_B=float(tool_name_boost)),
-                section=BM25F(section_B=float(tool_section_boost)),
-                description=BM25F(description_B=float(tool_description_boost)),
-                labels=BM25F(labels_B=float(tool_label_boost)),
-                stub=BM25F(stub_B=float(tool_stub_boost)),
+                Frequency(),
+                # name=Frequency(name_B=float(tool_name_boost)),
+                # old_id=Frequency(old_id_B=float(tool_id_boost)),
+                # section=Frequency(section_B=float(tool_section_boost)),
+                # description=Frequency(description_B=float(tool_description_boost)),
+                # labels=Frequency(labels_B=float(tool_label_boost)),
+                # stub=Frequency(stub_B=float(tool_stub_boost)),
                 help=BM25F(help_B=float(tool_help_boost)),
             )
         )
