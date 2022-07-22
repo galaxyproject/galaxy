@@ -6,6 +6,7 @@ through the library docs at https://whoosh.readthedocs.io.
 """
 import logging
 import os
+import pprint
 import re
 from typing import (
     Dict,
@@ -234,18 +235,42 @@ class ToolPanelViewSearch:
         # Adding the FuzzyTermPlugin to account for misspellings and typos, using a max distance of 2
         og = OrGroup.factory(0.9)
         self.parser = MultifieldParser(
-            ["name", "old_id", "description", "section", "help", "labels", "stub"], schema=self.schema, group=og
+            [
+                "name",
+                "old_id",
+                "description",
+                "section",
+                "help",
+                "labels",
+                "stub",
+            ], schema=self.schema, group=og
         )
 
         cleaned_query = q.lower()
-        if tool_enable_ngram_search is True:
-            rval = self._search_ngrams(cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit)
-            return rval
+        if tool_enable_ngram_search:
+            hits = self._search_ngrams(cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit)
+            return hits
         else:
             cleaned_query = " ".join(token.text for token in self.rex(cleaned_query))
             # Use asterisk Whoosh wildcard so e.g. 'bow' easily matches 'bowtie'
             parsed_query = self.parser.parse(f"*{cleaned_query}*")
-            hits = self.searcher.search(parsed_query, limit=float(tool_search_limit), sortedby="")
+            hits = self.searcher.search(parsed_query, limit=float(tool_search_limit), sortedby="", terms=True)
+
+            # !!! log match scores --------------------------------------------
+            scores = [
+                x[0] for x in hits.top_n
+            ][:tool_search_limit]
+
+            log.info(pprint.pformat([
+                {
+                    'score': score,
+                    'details': hit['id'],
+                    'matched_terms': hit.matched_terms(),
+                }
+                for hit, score in zip(hits[:tool_search_limit], scores)
+            ]))
+            # !!! -------------------------------------------------------------
+
             return [hit["id"] for hit in hits]
 
     def _search_ngrams(
