@@ -8,6 +8,7 @@ import logging
 import os
 import pprint
 import re
+import shutil
 from typing import (
     Dict,
     List,
@@ -25,6 +26,7 @@ from whoosh.fields import (
     KEYWORD,
     Schema,
     TEXT,
+    NGRAMWORDS,
 )
 from whoosh.qparser import (
     MultifieldParser,
@@ -39,11 +41,15 @@ from whoosh.writing import AsyncWriter
 
 from galaxy.util import ExecutionTimer
 from galaxy.web.framework.helpers import to_unicode
+from galaxy.config import GalaxyAppConfiguration
 
 log = logging.getLogger(__name__)
 
 CanConvertToFloat = Union[str, int, float]
 CanConvertToInt = Union[str, int, float]
+
+# This should be in galaxy.yml
+TOOL_NGRAM_FACTOR = 0.2
 
 
 def get_or_create_index(index_dir: str, schema: Schema) -> index.Index:
@@ -56,6 +62,10 @@ def get_or_create_index(index_dir: str, schema: Schema) -> index.Index:
             return idx
         except AssertionError:
             log.warning("Index at '%s' uses outdated schema, creating new index", index_dir)
+
+    # Delete the old index if schema has changed
+    shutil.rmtree(index_dir)
+    os.makedirs(index_dir)
     return index.create_in(index_dir, schema=schema)
 
 
@@ -70,7 +80,9 @@ class ToolBoxSearch:
         for panel_view in toolbox.panel_views():
             panel_view_id = panel_view.id
             panel_index_dir = os.path.join(index_dir, panel_view_id)
-            panel_searches[panel_view_id] = ToolPanelViewSearch(panel_view_id, panel_index_dir, index_help=index_help)
+            panel_searches[panel_view_id] = ToolPanelViewSearch(
+                panel_view_id, panel_index_dir, index_help=index_help,
+                config=toolbox.app.config)
         self.panel_searches = panel_searches
         # We keep track of how many times the tool index has been rebuilt.
         # We start at -1, so that after the first index the count is at 0,
@@ -97,17 +109,51 @@ class ToolPanelViewSearch:
     the Whoosh search library.
     """
 
-    def __init__(self, panel_view_id: str, index_dir: str, index_help: bool = True):
-        self.schema = Schema(
-            id=ID(stored=True, unique=True),
-            old_id=ID,
-            stub=KEYWORD,
-            name=TEXT(analyzer=analysis.SimpleAnalyzer()),
-            description=TEXT,
-            section=TEXT,
-            help=TEXT,
-            labels=KEYWORD,
-        )
+    def __init__(
+        self,
+        panel_view_id: str,
+        index_dir: str,
+        config: GalaxyAppConfiguration,
+        index_help: bool = True
+    ):
+        schema_conf = {
+            # The ID field is currently not searchable!?
+            # Can't fix, spent hours trying
+            'id': ID(stored=True, unique=True),
+            'name': TEXT(
+                field_boost=float(config.tool_name_boost),
+                analyzer=analysis.SimpleAnalyzer()
+            ),
+            'stub': KEYWORD(field_boost=float(config.tool_stub_boost)),
+            'description': TEXT(field_boost=float(config.tool_description_boost)),
+            'section': TEXT(field_boost=float(config.tool_section_boost)),
+            'help': TEXT(field_boost=float(config.tool_help_boost)),
+            'labels': KEYWORD(field_boost=float(config.tool_label_boost)),
+        }
+
+        if config.tool_enable_ngram_search:
+            schema_conf.update({
+                'name_ngrams': NGRAMWORDS(
+                    stored=True,
+                    minsize=config.tool_ngram_minsize,
+                    maxsize=config.tool_ngram_maxsize,
+                    field_boost=(
+                        float(config.tool_name_boost)
+                        * TOOL_NGRAM_FACTOR
+                    ),
+                ),
+                'description_ngrams': NGRAMWORDS(
+                    stored=True,
+                    minsize=config.tool_ngram_minsize,
+                    maxsize=config.tool_ngram_maxsize,
+                    field_boost=(
+                        float(config.tool_description_boost)
+                        * TOOL_NGRAM_FACTOR
+                    ),
+                ),
+            })
+
+        self.schema = Schema(**schema_conf)
         self.rex = analysis.RegexTokenizer()
         self.index_dir = index_dir
         self.panel_view_id = panel_view_id
@@ -117,9 +163,10 @@ class ToolPanelViewSearch:
         return get_or_create_index(index_dir=self.index_dir, schema=self.schema)
 
     def build_index(self, tool_cache, toolbox, index_help: bool = True) -> None:
-        """
-        Prepare search index for tools loaded in toolbox.
-        Use `tool_cache` to determine which tools need indexing and which tools should be expired.
+        """Prepare search index for tools loaded in toolbox.
+
+        Use `tool_cache` to determine which tools need indexing and which tools
+        should be expired.
         """
         log.debug(f"Starting to build toolbox index of panel {self.panel_view_id}.")
         execution_timer = ExecutionTimer()
@@ -156,16 +203,27 @@ class ToolPanelViewSearch:
                                 continue
                         else:
                             continue
-                    add_doc_kwds = self._create_doc(tool_id=tool_id, tool=tool, index_help=index_help)
+                    add_doc_kwds = self._create_doc(
+                        tool_id=tool_id,
+                        tool=tool,
+                        index_help=index_help,
+                        config=toolbox.app.config,
+                    )
                     writer.update_document(**add_doc_kwds)
         log.debug(f"Toolbox index of panel {self.panel_view_id} finished {execution_timer}")
 
-    def _create_doc(self, tool_id: str, tool, index_help: bool = True) -> Dict[str, str]:
+    def _create_doc(
+        self,
+        tool_id: str,
+        tool,
+        index_help: bool = True,
+        config: GalaxyAppConfiguration = None,
+    ) -> Dict[str, str]:
         #  Do not add data managers to the public index
         if tool.tool_type == "manage_data":
             return {}
         add_doc_kwds = {
-            "id": tool_id,
+            "id": to_unicode(tool_id),
             "description": to_unicode(tool.description),
             "section": to_unicode(tool.get_panel_section()[1] if len(tool.get_panel_section()) == 2 else ""),
             "help": to_unicode(""),
@@ -192,6 +250,11 @@ class ToolPanelViewSearch:
                 except Exception:
                     # Don't fail to build index just because help can't be converted.
                     pass
+
+        if config.tool_enable_ngram_search:
+            add_doc_kwds["name_ngrams"] = add_doc_kwds["name"]
+            add_doc_kwds["description_ngrams"] = add_doc_kwds["description"]
+
         return add_doc_kwds
 
     def search(
@@ -216,34 +279,26 @@ class ToolPanelViewSearch:
         self.searcher = self.index.searcher(
             weighting=MultiWeighting(
                 Frequency(),
-                # name=Frequency(name_B=float(tool_name_boost)),
-                # old_id=Frequency(old_id_B=float(tool_id_boost)),
-                # section=Frequency(section_B=float(tool_section_boost)),
-                # description=Frequency(description_B=float(tool_description_boost)),
-                # labels=Frequency(labels_B=float(tool_label_boost)),
-                # stub=Frequency(stub_B=float(tool_stub_boost)),
-                help=BM25F(help_B=float(tool_help_boost)),
+                help=BM25F(),
             )
         )
-        # Use OrGroup to change the default operation for joining multiple terms to logical OR.
-        # This means e.g. for search 'bowtie of king arthur' a document that only has 'bowtie' will be a match.
-        # https://whoosh.readthedocs.io/en/latest/api/qparser.html#whoosh.qparser.MultifieldPlugin
-        # However this changes scoring i.e. searching 'bowtie of king arthur' a document with 'arthur arthur arthur'
-        # would have a higher score than a document with 'bowtie arthur' which is usually unexpected for a user.
-        # Hence we introduce a bonus on multi-hits using the 'factory()' method using a scaling factor between 0-1.
-        # https://whoosh.readthedocs.io/en/latest/parsing.html#searching-for-any-terms-instead-of-all-terms-by-default
-        # Adding the FuzzyTermPlugin to account for misspellings and typos, using a max distance of 2
-        og = OrGroup.factory(0.9)
+        fields = [
+            "id",
+            "name",
+            "description",
+            "section",
+            "help",
+            "labels",
+            "stub",
+        ]
+        if tool_enable_ngram_search:
+            fields += [
+                "name_ngrams",
+                "description_ngrams",
+            ]
         self.parser = MultifieldParser(
-            [
-                "name",
-                "old_id",
-                "description",
-                "section",
-                "help",
-                "labels",
-                "stub",
-            ], schema=self.schema, group=og
+            fields,
+            schema=self.schema,
         )
 
         cleaned_query = q.lower()
@@ -272,42 +327,3 @@ class ToolPanelViewSearch:
             # !!! -------------------------------------------------------------
 
             return [hit["id"] for hit in hits]
-
-    def _search_ngrams(
-        self,
-        cleaned_query: str,
-        tool_ngram_minsize: CanConvertToInt,
-        tool_ngram_maxsize: CanConvertToInt,
-        tool_search_limit: CanConvertToFloat,
-    ) -> List[str]:
-        """
-        Break tokens into ngrams and search on those instead.
-        This should make searching more resistant to typos and unfinished words.
-        See docs at https://whoosh.readthedocs.io/en/latest/ngrams.html
-        """
-        hits_with_score: Dict[str, float] = {}
-        token_analyzer = StandardAnalyzer() | analysis.NgramFilter(
-            minsize=int(tool_ngram_minsize), maxsize=int(tool_ngram_maxsize)
-        )
-        ngrams = [token.text for token in token_analyzer(cleaned_query)]
-        for query in ngrams:
-            # Get the tool list with respective scores for each qgram
-            curr_hits = self.searcher.search(self.parser.parse(f"*{query}*"), limit=float(tool_search_limit))
-            for i, curr_hit in enumerate(curr_hits):
-                is_present = False
-                for prev_hit in hits_with_score:
-                    # Check if the tool appears again for the next qgram search
-                    if curr_hit["id"] == prev_hit:
-                        is_present = True
-                        # Add the current score with the previous one if the
-                        # tool appears again for the next qgram
-                        hits_with_score[prev_hit] = curr_hits.score(i) + hits_with_score[prev_hit]
-                # Add the tool if not present to the collection with its score
-                if not is_present:
-                    hits_with_score[curr_hit["id"]] = curr_hits.score(i)
-        # Sort the results based on aggregated BM25 score in decreasing order of scores
-        hits_with_score_list: List[Tuple[str, float]] = sorted(
-            hits_with_score.items(), key=lambda x: x[1], reverse=True
-        )
-        # Return the tool ids
-        return [item[0] for item in hits_with_score_list[0 : int(tool_search_limit)]]
