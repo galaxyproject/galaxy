@@ -1006,7 +1006,7 @@ def asbool(obj):
     return bool(obj)
 
 
-def string_as_bool(string: str) -> bool:
+def string_as_bool(string: typing.Any) -> bool:
     if str(string).lower() in ("true", "yes", "on", "1"):
         return True
     else:
