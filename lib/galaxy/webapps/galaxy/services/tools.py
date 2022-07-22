@@ -252,7 +252,7 @@ class ToolsService(ServiceBase):
         tool_stub_boost = self.config.get("tool_stub_boost", 5)
         tool_help_boost = self.config.get("tool_help_boost", 0.5)
         tool_search_limit = self.config.get("tool_search_limit", 20)
-        tool_enable_ngram_search = self.config.get("tool_enable_ngram_search", False)
+        tool_enable_ngram_search = self.config.tool_enable_ngram_search
         tool_ngram_minsize = self.config.get("tool_ngram_minsize", 3)
         tool_ngram_maxsize = self.config.get("tool_ngram_maxsize", 4)
 
