@@ -1,12 +1,20 @@
 import collections
 import logging
 import os
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.util import (
     asbool,
     plugin_config,
 )
 from .container_classes import (
+    Container,
     CONTAINER_CLASSES,
     DOCKER_CONTAINER_TYPE,
     NULL_CONTAINER,
@@ -26,6 +34,14 @@ from .container_resolvers.mulled import (
     MulledSingularityContainerResolver,
 )
 from .requirements import ContainerDescription
+
+if TYPE_CHECKING:
+    from beaker.cache import Cache
+
+    from .dependencies import (
+        AppInfo,
+        ToolInfo,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -218,7 +234,12 @@ class NullContainerFinder:
 class ContainerRegistry:
     """Loop through enabled ContainerResolver plugins and find first match."""
 
-    def __init__(self, app_info, destination_info=None, mulled_resolution_cache=None):
+    def __init__(
+        self,
+        app_info: "AppInfo",
+        destination_info: Optional[Dict[str, Any]] = None,
+        mulled_resolution_cache: Optional["Cache"] = None,
+    ) -> None:
         self.resolver_classes = self.__resolvers_dict()
         self.enable_mulled_containers = app_info.enable_mulled_containers
         self.app_info = app_info
@@ -292,7 +313,9 @@ class ContainerRegistry:
             cache.mulled_resolution_cache = self.mulled_resolution_cache
         return cache
 
-    def find_best_container_description(self, enabled_container_types, tool_info, **kwds):
+    def find_best_container_description(
+        self, enabled_container_types: List[str], tool_info: "ToolInfo", **kwds: Any
+    ) -> Optional[ContainerDescription]:
         """Yield best container description of supplied types matching tool info."""
         try:
             resolved_container_description = self.resolve(enabled_container_types, tool_info, **kwds)
