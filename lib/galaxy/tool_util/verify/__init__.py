@@ -370,6 +370,7 @@ def files_re_match(file1, file2, attributes=None):
     )
     if attributes.get("sort", False):
         history_data.sort()
+        local_file.sort()
     lines_diff = int(attributes.get("lines_diff", 0))
     line_diff_count = 0
     diffs = []
@@ -403,6 +404,7 @@ def files_re_match_multiline(file1, file2, attributes=None):
             local_file = fh.read()
     if attributes.get("sort", False):
         history_data.sort()
+        local_file.sort()
     history_data = join_char.join(history_data)
     # lines_diff not applicable to multiline matching
     assert re.match(local_file, history_data, re.MULTILINE), "Multiline Regular expression did not match data file"
