@@ -315,7 +315,7 @@ class ToolPanelViewSearch:
             x[0] for x in hits.top_n
         ][:config.tool_search_limit]
 
-        log.info(pprint.pformat([
+        log.debug(pprint.pformat([
             {
                 'score': score,
                 'details': hit['id'],
