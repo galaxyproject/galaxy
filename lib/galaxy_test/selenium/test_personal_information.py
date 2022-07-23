@@ -88,7 +88,7 @@ class ManageInformationTestCase(SeleniumTestCase):
     @selenium_test
     def test_user_address(self):
         def get_address_form():
-            return self.driver.find_element(self.by.CSS_SELECTOR, "div.ui-portlet-section > div.portlet-content")
+            return self.find_element_by_selector("div.ui-portlet-section > div.portlet-content")
 
         self.register(self._get_random_email())
         self.navigate_to_manage_information()

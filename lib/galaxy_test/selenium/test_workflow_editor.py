@@ -1,7 +1,6 @@
 import json
 
 import yaml
-from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
 from galaxy_test.base.workflow_fixtures import (
@@ -668,8 +667,8 @@ steps:
 
     def workflow_editor_connect(self, source, sink, screenshot_partial=None):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
-        source_element = self.driver.find_element(By.CSS_SELECTOR, f"#{source_id}")
-        sink_element = self.driver.find_element(By.CSS_SELECTOR, f"#{sink_id}")
+        source_element = self.find_element_by_selector(f"#{source_id}")
+        sink_element = self.find_element_by_selector(f"#{sink_id}")
 
         ac = self.action_chains()
         ac = ac.move_to_element(source_element).click_and_hold()
