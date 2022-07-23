@@ -323,4 +323,4 @@ class ToolPanelViewSearch:
         ]))
         # !!! -------------------------------------------------------------
 
-        return [hit["id"] for hit in hits]
+        return [hit["id"] for hit in hits[:config.tool_search_limit]]
