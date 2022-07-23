@@ -1,5 +1,6 @@
 """ Galaxy job runners to use Amazon AWS native compute resources, such as AWS Batch.
 """
+import bisect
 import hashlib
 import json
 import logging
@@ -548,20 +549,17 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             max_vcpu = self.FARGATE_VCPUS[-1]
             max_memory = self.FARGATE_RESOURCES[max_vcpu][-1]
             if vcpu <= max_vcpu and memory <= max_memory:  # type: ignore[operator]
-                new_vcpu, new_memory = None, None
-                for c in self.FARGATE_VCPUS:
-                    if c < vcpu:  # type: ignore[operator]
-                        continue
-                    for m in self.FARGATE_RESOURCES[c]:
-                        if m >= memory:  # type: ignore[operator]
-                            new_vcpu = c
-                            new_memory = m
-                            break
-                    if new_memory:
+                c_ix = bisect.bisect_left(self.FARGATE_VCPUS, vcpu)  # type: ignore[type-var]
+                length = len(self.FARGATE_VCPUS)
+                while c_ix < length:
+                    c = self.FARGATE_VCPUS[c_ix]
+                    m_ix = bisect.bisect_left(self.FARGATE_RESOURCES[c], memory)  # type: ignore[type-var]
+                    if m_ix < len(self.FARGATE_RESOURCES[c]):
                         platform = "FARGATE"
-                        parsed_params["vcpu"] = new_vcpu
-                        parsed_params["memory"] = new_memory
+                        parsed_params["vcpu"] = c
+                        parsed_params["memory"] = self.FARGATE_RESOURCES[c][m_ix]
                         break
+                    c_ix += 1
             # parse JOB QUEUE
             job_queues = parsed_params.get("job_queue").split(",")  # type: ignore[union-attr]
             if len(job_queues) < 2:
