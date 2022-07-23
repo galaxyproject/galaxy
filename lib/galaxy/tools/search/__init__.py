@@ -185,6 +185,10 @@ class ToolPanelViewSearch:
                 if latest_version and latest_version.hidden:
                     continue
             tool_ids_to_remove.add(indexed_tool_id)
+
+        JSON_INDEX = '/tmp/tool_search_index.json'
+        index_data = {}
+
         with AsyncWriter(self.index) as writer:
             for tool_id in tool_ids_to_remove:
                 writer.delete_by_term("id", tool_id)
@@ -210,6 +214,12 @@ class ToolPanelViewSearch:
                         config=toolbox.app.config,
                     )
                     writer.update_document(**add_doc_kwds)
+                    index_data[tool_id] = add_doc_kwds
+
+        with open(JSON_INDEX, 'w') as f:
+            import json
+            json.dump(index_data, f)
+
         log.debug(f"Toolbox index of panel {self.panel_view_id} finished {execution_timer}")
 
     def _create_doc(
