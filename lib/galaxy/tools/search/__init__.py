@@ -50,6 +50,7 @@ CanConvertToInt = Union[str, int, float]
 
 # This should be in galaxy.yml
 TOOL_NGRAM_FACTOR = 0.2
+TOOL_NAME_EXACT_MULTIPLIER = 10
 
 
 def get_or_create_index(index_dir: str, schema: Schema) -> index.Index:
@@ -121,13 +122,17 @@ class ToolPanelViewSearch:
             # Can't fix, spent hours trying
             'id': ID(stored=True, unique=True),
             'name': TEXT(
-                field_boost=float(config.tool_name_boost),
-                analyzer=analysis.SimpleAnalyzer()
+                field_boost=config.tool_name_boost * TOOL_NAME_EXACT_MULTIPLIER,
+                analyzer=analysis.IDTokenizer() | analysis.LowercaseFilter(),
             ),
             'stub': KEYWORD(field_boost=float(config.tool_stub_boost)),
-            'description': TEXT(field_boost=float(config.tool_description_boost)),
             'section': TEXT(field_boost=float(config.tool_section_boost)),
-            'help': TEXT(field_boost=float(config.tool_help_boost)),
+            'description': TEXT(
+                field_boost=config.tool_description_boost,
+                analyzer=analysis.StemmingAnalyzer()),
+            'help': TEXT(
+                field_boost=config.tool_help_boost,
+                analyzer=analysis.StemmingAnalyzer()),
             'labels': KEYWORD(field_boost=float(config.tool_label_boost)),
         }
 
@@ -318,7 +323,7 @@ class ToolPanelViewSearch:
         else:
             cleaned_query = " ".join(token.text for token in self.rex(cleaned_query))
             # Use asterisk Whoosh wildcard so e.g. 'bow' easily matches 'bowtie'
-            parsed_query = self.parser.parse(f"*{cleaned_query}*")
+            parsed_query = self.parser.parse(cleaned_query)
             hits = self.searcher.search(parsed_query, limit=float(tool_search_limit), sortedby="", terms=True)
 
             # !!! log match scores --------------------------------------------
