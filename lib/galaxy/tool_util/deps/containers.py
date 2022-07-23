@@ -3,6 +3,7 @@ import logging
 import os
 from typing import (
     Any,
+    Dict,
     List,
     Optional,
     TYPE_CHECKING,
@@ -34,6 +35,8 @@ from .container_resolvers.mulled import (
 from .requirements import ContainerDescription
 
 if TYPE_CHECKING:
+    from beaker.cache import Cache
+
     from .dependencies import (
         AppInfo,
         ToolInfo,
@@ -233,8 +236,8 @@ class ContainerRegistry:
     def __init__(
         self,
         app_info: "AppInfo",
-        destination_info: Optional["AppInfo"] = None,
-        mulled_resolution_cache: Optional[ResolutionCache] = None,
+        destination_info: Optional[Dict[str, Any]] = None,
+        mulled_resolution_cache: Optional["Cache"] = None,
     ) -> None:
         self.resolver_classes = self.__resolvers_dict()
         self.enable_mulled_containers = app_info.enable_mulled_containers

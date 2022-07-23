@@ -62,7 +62,7 @@ class ToolInfo:
         guest_ports=None,
         tool_id: Optional[str] = None,
         tool_version: Optional[str] = None,
-        profile: int = -1,
+        profile: float = -1,
     ):
         if env_pass_through is None:
             env_pass_through = ["GALAXY_SLOTS", "GALAXY_MEMORY_MB", "GALAXY_MEMORY_MB_PER_SLOT"]

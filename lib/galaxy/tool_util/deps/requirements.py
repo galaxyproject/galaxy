@@ -125,7 +125,7 @@ class ToolRequirements:
             self.tool_requirements = OrderedSet()
 
     @staticmethod
-    def from_list(requirements: List[ToolRequirement]) -> "ToolRequirements":
+    def from_list(requirements: Union[List[ToolRequirement], Dict[str, Any]]) -> "ToolRequirements":
         return ToolRequirements(requirements)
 
     @property
