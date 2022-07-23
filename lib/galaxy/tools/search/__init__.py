@@ -45,10 +45,6 @@ log = logging.getLogger(__name__)
 CanConvertToFloat = Union[str, int, float]
 CanConvertToInt = Union[str, int, float]
 
-# This should be in galaxy.yml
-TOOL_NGRAM_FACTOR = 0.2
-TOOL_NAME_EXACT_MULTIPLIER = 10
-
 
 def get_or_create_index(index_dir: str, schema: Schema) -> index.Index:
     if not os.path.exists(index_dir):
@@ -119,7 +115,9 @@ class ToolPanelViewSearch:
             # Can't fix, spent hours trying
             'id': ID(stored=True, unique=True),
             'name': TEXT(
-                field_boost=config.tool_name_boost * TOOL_NAME_EXACT_MULTIPLIER,
+                field_boost=(
+                    config.tool_name_boost
+                    * config.tool_name_exact_multiplier),
                 analyzer=analysis.IDTokenizer() | analysis.LowercaseFilter(),
             ),
             'stub': KEYWORD(field_boost=float(config.tool_stub_boost)),
@@ -141,16 +139,7 @@ class ToolPanelViewSearch:
                     maxsize=config.tool_ngram_maxsize,
                     field_boost=(
                         float(config.tool_name_boost)
-                        * TOOL_NGRAM_FACTOR
-                    ),
-                ),
-                'description_ngrams': NGRAMWORDS(
-                    stored=True,
-                    minsize=config.tool_ngram_minsize,
-                    maxsize=config.tool_ngram_maxsize,
-                    field_boost=(
-                        float(config.tool_description_boost)
-                        * TOOL_NGRAM_FACTOR
+                        * config.tool_ngram_factor
                     ),
                 ),
             })
@@ -275,31 +264,20 @@ class ToolPanelViewSearch:
 
         if config.tool_enable_ngram_search:
             add_doc_kwds["name_ngrams"] = add_doc_kwds["name"]
-            add_doc_kwds["description_ngrams"] = add_doc_kwds["description"]
 
         return add_doc_kwds
 
     def search(
         self,
         q: str,
-        tool_name_boost: CanConvertToFloat,
-        tool_id_boost: CanConvertToFloat,
-        tool_section_boost: CanConvertToFloat,
-        tool_description_boost: CanConvertToFloat,
-        tool_label_boost: CanConvertToFloat,
-        tool_stub_boost: CanConvertToFloat,
-        tool_help_boost: CanConvertToFloat,
-        tool_search_limit: CanConvertToFloat,
-        tool_enable_ngram_search: bool,
-        tool_ngram_minsize: CanConvertToInt,
-        tool_ngram_maxsize: CanConvertToInt,
+        config: GalaxyAppConfiguration = None,
     ) -> List[str]:
         """Perform search on the in-memory index."""
         # Change field boosts for searcher
         self.searcher = self.index.searcher(
             weighting=MultiWeighting(
                 Frequency(),
-                help=BM25F(),
+                help=BM25F(K1=config.tool_help_bm25f_k1),
             )
         )
         fields = [
@@ -311,10 +289,9 @@ class ToolPanelViewSearch:
             "labels",
             "stub",
         ]
-        if tool_enable_ngram_search:
+        if config.tool_enable_ngram_search:
             fields += [
                 "name_ngrams",
-                "description_ngrams",
             ]
         self.parser = MultifieldParser(
             fields,
