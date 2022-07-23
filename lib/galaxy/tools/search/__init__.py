@@ -110,10 +110,17 @@ class ToolPanelViewSearch:
         config: GalaxyAppConfiguration,
         index_help: bool = True
     ):
+        """Build the schema and validate against the index."""
         schema_conf = {
             # The ID field is currently not searchable!?
             # Can't fix, spent hours trying
             'id': ID(stored=True, unique=True),
+            'id_exact': TEXT(
+                field_boost=(
+                    config.tool_id_boost
+                    * config.tool_name_exact_multiplier),
+                analyzer=analysis.IDTokenizer() | analysis.LowercaseFilter(),
+            ),
             'name': TEXT(
                 field_boost=(
                     config.tool_name_boost
@@ -227,6 +234,7 @@ class ToolPanelViewSearch:
             return {}
         add_doc_kwds = {
             "id": to_unicode(tool_id),
+            "id_exact": to_unicode(tool_id),
             "description": to_unicode(tool.description),
             "section": to_unicode(
                 tool.get_panel_section()[1]
@@ -282,6 +290,7 @@ class ToolPanelViewSearch:
         )
         fields = [
             "id",
+            "id_exact",
             "name",
             "description",
             "section",
