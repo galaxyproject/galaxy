@@ -12,7 +12,6 @@ import shutil
 from typing import (
     Dict,
     List,
-    Tuple,
     Union,
 )
 
@@ -20,7 +19,6 @@ from whoosh import (
     analysis,
     index,
 )
-from whoosh.analysis import StandardAnalyzer
 from whoosh.fields import (
     ID,
     KEYWORD,
@@ -30,7 +28,6 @@ from whoosh.fields import (
 )
 from whoosh.qparser import (
     MultifieldParser,
-    OrGroup,
 )
 from whoosh.scoring import (
     BM25F,
@@ -173,7 +170,8 @@ class ToolPanelViewSearch:
         Use `tool_cache` to determine which tools need indexing and which tools
         should be expired.
         """
-        log.debug(f"Starting to build toolbox index of panel {self.panel_view_id}.")
+        log.debug(
+            f"Starting to build toolbox index of panel {self.panel_view_id}.")
         execution_timer = ExecutionTimer()
         with self.index.reader() as reader:
             # Index ocasionally contains empty stored fields
@@ -224,8 +222,9 @@ class ToolPanelViewSearch:
         with open(JSON_INDEX, 'w') as f:
             import json
             json.dump(index_data, f)
-
-        log.debug(f"Toolbox index of panel {self.panel_view_id} finished {execution_timer}")
+        log.debug(
+            f"Toolbox index of panel {self.panel_view_id}"
+            f" finished {execution_timer}")
 
     def _create_doc(
         self,
@@ -240,19 +239,27 @@ class ToolPanelViewSearch:
         add_doc_kwds = {
             "id": to_unicode(tool_id),
             "description": to_unicode(tool.description),
-            "section": to_unicode(tool.get_panel_section()[1] if len(tool.get_panel_section()) == 2 else ""),
+            "section": to_unicode(
+                tool.get_panel_section()[1]
+                if len(tool.get_panel_section()) == 2
+                else ""
+            ),
             "help": to_unicode(""),
         }
         if tool.name.find("-") != -1:
-            # Replace hyphens, since they are wildcards in Whoosh causing false positives
-            add_doc_kwds["name"] = (" ").join(token.text for token in self.rex(to_unicode(tool.name)))
+            # Replace hyphens since they are wildcards in Whoosh
+            add_doc_kwds["name"] = (" ").join(
+                token.text for token in self.rex(to_unicode(tool.name))
+            )
         else:
             add_doc_kwds["name"] = to_unicode(tool.name)
         if tool.guid:
             # Create a stub consisting of owner, repo, and tool from guid
             slash_indexes = [m.start() for m in re.finditer("/", tool.guid)]
-            id_stub = tool.guid[(slash_indexes[1] + 1) : slash_indexes[4]]
-            add_doc_kwds["stub"] = (" ").join(token.text for token in self.rex(to_unicode(id_stub)))
+            id_stub = tool.guid[(slash_indexes[1] + 1):slash_indexes[4]]
+            add_doc_kwds["stub"] = (" ").join(
+                token.text for token in self.rex(to_unicode(id_stub))
+            )
         else:
             add_doc_kwds["stub"] = to_unicode(id)
         if tool.labels:
@@ -263,7 +270,7 @@ class ToolPanelViewSearch:
                 try:
                     add_doc_kwds["help"] = to_unicode(raw_help)
                 except Exception:
-                    # Don't fail to build index just because help can't be converted.
+                    # Don't fail to build index when help fails to parse
                     pass
 
         if config.tool_enable_ngram_search:
@@ -287,9 +294,7 @@ class ToolPanelViewSearch:
         tool_ngram_minsize: CanConvertToInt,
         tool_ngram_maxsize: CanConvertToInt,
     ) -> List[str]:
-        """
-        Perform search on the in-memory index. Weight in the given boosts.
-        """
+        """Perform search on the in-memory index."""
         # Change field boosts for searcher
         self.searcher = self.index.searcher(
             weighting=MultiWeighting(
@@ -315,30 +320,30 @@ class ToolPanelViewSearch:
             fields,
             schema=self.schema,
         )
+        cleaned_query = " ".join(
+            token.text for token in self.rex(q.lower())
+        )
+        parsed_query = self.parser.parse(cleaned_query)
+        hits = self.searcher.search(
+            parsed_query,
+            limit=float(config.tool_search_limit),
+            sortedby="",
+            terms=True,
+        )
 
-        cleaned_query = q.lower()
-        if tool_enable_ngram_search:
-            hits = self._search_ngrams(cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit)
-            return hits
-        else:
-            cleaned_query = " ".join(token.text for token in self.rex(cleaned_query))
-            # Use asterisk Whoosh wildcard so e.g. 'bow' easily matches 'bowtie'
-            parsed_query = self.parser.parse(cleaned_query)
-            hits = self.searcher.search(parsed_query, limit=float(tool_search_limit), sortedby="", terms=True)
+        # !!! log match scores --------------------------------------------
+        scores = [
+            x[0] for x in hits.top_n
+        ][:config.tool_search_limit]
 
-            # !!! log match scores --------------------------------------------
-            scores = [
-                x[0] for x in hits.top_n
-            ][:tool_search_limit]
+        log.info(pprint.pformat([
+            {
+                'score': score,
+                'details': hit['id'],
+                'matched_terms': hit.matched_terms(),
+            }
+            for hit, score in zip(hits[:config.tool_search_limit], scores)
+        ]))
+        # !!! -------------------------------------------------------------
 
-            log.info(pprint.pformat([
-                {
-                    'score': score,
-                    'details': hit['id'],
-                    'matched_terms': hit.matched_terms(),
-                }
-                for hit, score in zip(hits[:tool_search_limit], scores)
-            ]))
-            # !!! -------------------------------------------------------------
-
-            return [hit["id"] for hit in hits]
+        return [hit["id"] for hit in hits]
