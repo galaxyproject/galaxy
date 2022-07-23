@@ -1569,13 +1569,17 @@ galaxy:
   # higher the boost, the more importance the scoring algorithm gives to
   # the given field.  Section refers to the tool group in the tool
   # panel.  Rest of the fields are tool's attributes.
-  #tool_name_boost: 9.0
+  #tool_name_boost: 20.0
+
+  # If a search query exactly matches a tool name, the score will be
+  # multiplied by this factor.
+  #tool_name_exact_multiplier: 10.0
 
   # Boosts are used to customize this instance's toolbox search. The
   # higher the boost, the more importance the scoring algorithm gives to
   # the given field.  Section refers to the tool group in the tool
   # panel.  Rest of the fields are tool's attributes.
-  #tool_id_boost: 9.0
+  #tool_id_boost: 20.0
 
   # Boosts are used to customize this instance's toolbox search. The
   # higher the boost, the more importance the scoring algorithm gives to
@@ -1587,7 +1591,7 @@ galaxy:
   # higher the boost, the more importance the scoring algorithm gives to
   # the given field.  Section refers to the tool group in the tool
   # panel.  Rest of the fields are tool's attributes.
-  #tool_description_boost: 2.0
+  #tool_description_boost: 8.0
 
   # Boosts are used to customize this instance's toolbox search. The
   # higher the boost, the more importance the scoring algorithm gives to
@@ -1595,25 +1599,34 @@ galaxy:
   # panel.  Rest of the fields are tool's attributes.
   #tool_label_boost: 1.0
 
-  # Boosts are used to customize this instance's toolbox search. The
-  # higher the boost, the more importance the scoring algorithm gives to
-  # the given field.  Section refers to the tool group in the tool
-  # panel.  Rest of the fields are tool's attributes.
-  #tool_stub_boost: 5.0
+  # A stub is parsed from the GUID as "owner/repo/tool_id". Boosts are
+  # used to customize this instance's toolbox search. The higher the
+  # boost, the more importance the scoring algorithm gives to the given
+  # field.  Section refers to the tool group in the tool panel.  Rest of
+  # the fields are tool's attributes.
+  #tool_stub_boost: 2.0
 
   # Boosts are used to customize this instance's toolbox search. The
   # higher the boost, the more importance the scoring algorithm gives to
   # the given field.  Section refers to the tool group in the tool
   # panel.  Rest of the fields are tool's attributes.
-  #tool_help_boost: 0.5
+  #tool_help_boost: 1
+
+  # The lower this parameter, the greater the diminishing reward for
+  # term frequency in the help text. A higher K1 increases the level of
+  # reward for additional occurences of a term. The default will provide
+  # a small increase in score for the first, second and third occurrence
+  # and then little reward thereafter.
+  #tool_help_bm25f_k1: 0.5
 
   # Limits the number of results in toolbox search.  Can be used to
   # tweak how many results will appear.
   #tool_search_limit: 20
 
-  # Enable/ disable Ngram-search for tools. It makes tool search results
-  # tolerant for spelling mistakes in the query by dividing the query
-  # into multiple ngrams and search for each ngram
+  # Disabling this will prevent partial matching on tool names (not
+  # recommended). Enable/ disable Ngram-search for tools. It makes tool
+  # search results tolerant for spelling mistakes in the query by
+  # dividing the query into multiple ngrams and search for each ngram.
   #tool_enable_ngram_search: true
 
   # Set minimum size of ngrams
@@ -1621,6 +1634,11 @@ galaxy:
 
   # Set maximum size of ngrams
   #tool_ngram_maxsize: 4
+
+  # Ngram matched scores will be multiplied by this factor. Should
+  # always be below 1, because an ngram match is a partial match of a
+  # search term.
+  #tool_ngram_factor: 0.2
 
   # Set tool test data directory. The test framework sets this value to
   # 'test-data,https://github.com/galaxyproject/galaxy-test-data.git'

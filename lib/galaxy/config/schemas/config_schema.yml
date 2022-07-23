@@ -2206,7 +2206,7 @@ mapping:
 
       tool_name_boost:
         type: float
-        default: 9.0
+        default: 20.0
         required: false
         reloadable: true
         desc: |
@@ -2215,9 +2215,18 @@ mapping:
           given field.  Section refers to the tool group in the tool panel.  Rest of
           the fields are tool's attributes.
 
+      tool_name_exact_multiplier:
+        type: float
+        default: 10.0
+        required: false
+        reloadable: true
+        desc: |
+          If a search query exactly matches a tool name, the score will be
+          multiplied by this factor.
+
       tool_id_boost:
         type: float
-        default: 9.0
+        default: 20.0
         required: false
         reloadable: true
         desc: |
@@ -2239,7 +2248,7 @@ mapping:
 
       tool_description_boost:
         type: float
-        default: 2.0
+        default: 8.0
         required: false
         reloadable: true
         desc: |
@@ -2261,7 +2270,19 @@ mapping:
 
       tool_stub_boost:
         type: float
-        default: 5.0
+        default: 2.0
+        required: false
+        reloadable: true
+        desc: |
+          A stub is parsed from the GUID as "owner/repo/tool_id".
+          Boosts are used to customize this instance's toolbox search.
+          The higher the boost, the more importance the scoring algorithm gives to the
+          given field.  Section refers to the tool group in the tool panel.  Rest of
+          the fields are tool's attributes.
+
+      tool_help_boost:
+        type: float
+        default: 1
         required: false
         reloadable: true
         desc: |
@@ -2270,16 +2291,17 @@ mapping:
           given field.  Section refers to the tool group in the tool panel.  Rest of
           the fields are tool's attributes.
 
-      tool_help_boost:
+      tool_help_bm25f_k1:
         type: float
         default: 0.5
         required: false
         reloadable: true
         desc: |
-          Boosts are used to customize this instance's toolbox search.
-          The higher the boost, the more importance the scoring algorithm gives to the
-          given field.  Section refers to the tool group in the tool panel.  Rest of
-          the fields are tool's attributes.
+          The lower this parameter, the greater the diminishing reward for
+          term frequency in the help text. A higher K1 increases the level
+          of reward for additional occurences of a term. The default will
+          provide a small increase in score for the first, second and third
+          occurrence and then little reward thereafter.
 
       tool_search_limit:
         type: int
@@ -2296,10 +2318,12 @@ mapping:
         required: false
         reloadable: true
         desc: |
+          Disabling this will prevent partial matching on tool names
+          (not recommended).
           Enable/ disable Ngram-search for tools. It makes tool
           search results tolerant for spelling mistakes in the query
           by dividing the query into multiple ngrams and search for
-          each ngram
+          each ngram.
 
       tool_ngram_minsize:
         type: int
@@ -2316,6 +2340,15 @@ mapping:
         reloadable: true
         desc: |
           Set maximum size of ngrams
+
+      tool_ngram_factor:
+        type: float
+        default: 0.2
+        required: false
+        reloadable: true
+        desc: |
+          Ngram matched scores will be multiplied by this factor. Should always
+          be below 1, because an ngram match is a partial match of a search term.
 
       tool_test_data_directories:
         type: str
