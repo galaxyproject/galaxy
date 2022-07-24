@@ -14,7 +14,6 @@ from galaxy.util import (
     plugin_config,
 )
 from .container_classes import (
-    Container,
     CONTAINER_CLASSES,
     DOCKER_CONTAINER_TYPE,
     NULL_CONTAINER,
