@@ -186,8 +186,6 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         },
     }
 
-    FARGATE_VCPUS = [0.25, 0.5, 1, 2, 4]
-
     # fmt: off
     FARGATE_RESOURCES = {
         0.25: [512, 1024, 2048],
@@ -546,13 +544,14 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         if fargate_version and not auto_platform:
             platform = "FARGATE"
         if auto_platform:
-            max_vcpu = self.FARGATE_VCPUS[-1]
+            fargate_vcpus = list(self.FARGATE_RESOURCES.keys())
+            max_vcpu = fargate_vcpus[-1]
             max_memory = self.FARGATE_RESOURCES[max_vcpu][-1]
             if vcpu <= max_vcpu and memory <= max_memory:  # type: ignore[operator]
-                c_ix = bisect.bisect_left(self.FARGATE_VCPUS, vcpu)  # type: ignore[type-var]
-                length = len(self.FARGATE_VCPUS)
+                c_ix = bisect.bisect_left(fargate_vcpus, vcpu)  # type: ignore[type-var]
+                length = len(fargate_vcpus)
                 while c_ix < length:
-                    c = self.FARGATE_VCPUS[c_ix]
+                    c = fargate_vcpus[c_ix]
                     m_ix = bisect.bisect_left(self.FARGATE_RESOURCES[c], memory)  # type: ignore[type-var]
                     if m_ix < len(self.FARGATE_RESOURCES[c]):
                         platform = "FARGATE"
