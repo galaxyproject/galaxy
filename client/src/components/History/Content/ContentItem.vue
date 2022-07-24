@@ -53,6 +53,7 @@
                     :is-history-item="isHistoryItem"
                     :is-visible="item.visible"
                     :state="state"
+                    :item-urls="itemUrls"
                     @delete="$emit('delete')"
                     @display="onDisplay"
                     @edit="onEdit"
@@ -81,6 +82,7 @@
                 v-if="expandDataset"
                 :dataset="item"
                 :show-highlight="isHistoryItem"
+                :item-urls="itemUrls"
                 @edit="onEdit"
                 @toggleHighlights="toggleHighlights" />
         </b-collapse>
@@ -165,6 +167,26 @@ export default {
         tagsDisabled() {
             return !this.expandDataset || !this.isHistoryItem;
         },
+        isCollection() {
+            return "collection_type" in this.item;
+        },
+        /** Relative URLs for history item actions */
+        itemUrls() {
+            const id = this.item.id;
+            if (this.isCollection) {
+                return {
+                    edit: `collection/edit/${id}`,
+                };
+            }
+            return {
+                display: `datasets/${id}/display/?preview=True`,
+                edit: `datasets/edit?dataset_id=${id}`,
+                showDetails: `datasets/${id}/details`,
+                reportError: `datasets/error?dataset_id=${id}`,
+                rerun: `tool_runner/rerun?id=${id}`,
+                visualize: `visualizations?dataset_id=${id}`,
+            };
+        },
     },
     methods: {
         onClick() {
@@ -175,8 +197,7 @@ export default {
             }
         },
         onDisplay() {
-            const url = `datasets/${this.item.id}/display/?preview=True`;
-            iframeAdd({ path: url, title: this.name });
+            iframeAdd({ path: this.itemUrls.display, title: this.name });
         },
         onDragStart(evt) {
             evt.dataTransfer.dropEffect = "move";
@@ -184,11 +205,7 @@ export default {
             evt.dataTransfer.setData("text", JSON.stringify([this.item]));
         },
         onEdit() {
-            if (this.item.collection_type) {
-                backboneRoute(`collection/edit/${this.item.id}`);
-            } else {
-                backboneRoute("datasets/edit", { dataset_id: this.item.id });
-            }
+            backboneRoute(this.itemUrls.edit);
         },
         onTags(newTags) {
             this.$emit("tag-change", this.item, newTags);
