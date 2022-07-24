@@ -928,69 +928,12 @@ def split_step_references(step_references, workflow_id=None, multiple=True):
         return split_references[0]
 
 
-def build_step_proxy(workflow_proxy, step, index):
+def build_step_proxy(workflow_proxy: WorkflowProxy, step, index):
     step_type = step.embedded_tool.tool["class"]
     if step_type == "Workflow":
         return SubworkflowStepProxy(workflow_proxy, step, index)
     else:
         return ToolStepProxy(workflow_proxy, step, index)
-
-
-class BaseStepProxy:
-    def __init__(self, workflow_proxy, step, index):
-        self._workflow_proxy = workflow_proxy
-        self._step = step
-        self._index = index
-        self._uuid = str(uuid4())
-        self._input_proxies = None
-
-    @property
-    def step_class(self):
-        return self.cwl_tool_object.tool["class"]
-
-    @property
-    def cwl_id(self):
-        return self._step.id
-
-    @property
-    def cwl_workflow_id(self):
-        return self._workflow_proxy.cwl_id
-
-    @property
-    def requirements(self):
-        return self._step.requirements
-
-    @property
-    def hints(self):
-        return self._step.hints
-
-    @property
-    def label(self):
-        label = self._workflow_proxy.jsonld_id_to_label(self._step.id)
-        return label
-
-    def galaxy_workflow_outputs_list(self):
-        return self._workflow_proxy.get_outputs_for_label(self.label)
-
-    @property
-    def cwl_tool_object(self):
-        return self._step.embedded_tool
-
-    @property
-    def input_proxies(self):
-        if self._input_proxies is None:
-            input_proxies = []
-            cwl_inputs = self._step.tool["inputs"]
-            for cwl_input in cwl_inputs:
-                input_proxies.append(InputProxy(self, cwl_input))
-            self._input_proxies = input_proxies
-        return self._input_proxies
-
-    def inputs_to_dicts(self):
-        inputs_as_dicts = []
-        for input_proxy in self.input_proxies:
-            inputs_as_dicts.append(input_proxy.to_dict())
-        return inputs_as_dicts
 
 
 class InputProxy:
@@ -1039,6 +982,54 @@ class InputProxy:
         if "default" in self._cwl_input:
             as_dict["default"] = self._cwl_input["default"]
         return as_dict
+
+
+class BaseStepProxy:
+    def __init__(self, workflow_proxy: WorkflowProxy, step, index):
+        self._workflow_proxy = workflow_proxy
+        self._step = step
+        self._index = index
+        self._uuid = str(uuid4())
+        cwl_inputs = self._step.tool["inputs"]
+        self.input_proxies = [InputProxy(self, cwl_input) for cwl_input in cwl_inputs]
+
+    @property
+    def step_class(self):
+        return self.cwl_tool_object.tool["class"]
+
+    @property
+    def cwl_id(self):
+        return self._step.id
+
+    @property
+    def cwl_workflow_id(self):
+        return self._workflow_proxy.cwl_id
+
+    @property
+    def requirements(self):
+        return self._step.requirements
+
+    @property
+    def hints(self):
+        return self._step.hints
+
+    @property
+    def label(self):
+        label = self._workflow_proxy.jsonld_id_to_label(self._step.id)
+        return label
+
+    def galaxy_workflow_outputs_list(self):
+        return self._workflow_proxy.get_outputs_for_label(self.label)
+
+    @property
+    def cwl_tool_object(self):
+        return self._step.embedded_tool
+
+    def inputs_to_dicts(self):
+        inputs_as_dicts = []
+        for input_proxy in self.input_proxies:
+            inputs_as_dicts.append(input_proxy.to_dict())
+        return inputs_as_dicts
 
 
 class ToolStepProxy(BaseStepProxy):
