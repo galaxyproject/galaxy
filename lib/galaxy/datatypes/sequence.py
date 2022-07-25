@@ -989,7 +989,7 @@ class Maf(Alignment):
         optional=True,
     )
 
-    def init_meta(self, dataset, copy_from=None):
+    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         Alignment.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(

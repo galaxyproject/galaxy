@@ -502,7 +502,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         """
         pysam.merge("-O", "BAM", output_file, *split_files)
 
-    def init_meta(self, dataset, copy_from=None):
+    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         Binary.init_meta(self, dataset, copy_from=copy_from)
 
     def sniff(self, filename):
@@ -2251,7 +2251,7 @@ class SQlite(Binary):
     file_ext = "sqlite"
     edam_format = "format_3621"
 
-    def init_meta(self, dataset, copy_from=None):
+    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         Binary.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:

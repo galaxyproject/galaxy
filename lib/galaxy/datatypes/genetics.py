@@ -15,6 +15,10 @@ import logging
 import os
 import re
 import sys
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 from urllib.parse import quote_plus
 
 from markupsafe import escape
@@ -35,6 +39,9 @@ from galaxy.util import (
     nice_size,
     unicodify,
 )
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 gal_Log = logging.getLogger(__name__)
 verbose = False
@@ -816,7 +823,7 @@ class RexpBase(Html):
             f.write("\n".join(rval))
             f.write("\n")
 
-    def init_meta(self, dataset, copy_from=None):
+    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         if copy_from:
             dataset.metadata = copy_from.metadata
 

@@ -856,7 +856,7 @@ class Pileup(Tabular):
     MetadataElement(name="endCol", default=2, desc="End column", param=metadata.ColumnParameter)
     MetadataElement(name="baseCol", default=3, desc="Reference base column", param=metadata.ColumnParameter)
 
-    def init_meta(self, dataset, copy_from=None):
+    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
     def display_peek(self, dataset):
