@@ -1,8 +1,28 @@
 """
-Module for building and searching the index of tools
-installed within this Galaxy. Before changing index-building
-or searching related parts it is deeply recommended to read
-through the library docs at https://whoosh.readthedocs.io.
+Module for building and searching the index of installed tools.
+
+Before changing index-building or searching related parts it is highly
+recommended to read the docs at https://whoosh.readthedocs.io.
+
+Schema - this is how we define the index, both for building and searching. A
+    field is created for each data element that we want to add e.g. tool name,
+    tool ID, description. The type of field and its attributes define how
+    entries for that field will be indexed and ultimately how they can be
+    searched. Score weighting (boost) is added here on a per-field bases, to
+    allow matches to important fields like "name" to receive a higher score.
+
+Tokenizers - these take an attribute (e.g. name) and parse it into "tokens" to
+    be stored in the index. Can be done in many ways for different search
+    functionality. For example, the IDTokenizer creates one token for an entire
+    entry, resulting in an index field that requires a full-field match. The
+    default tokenizer will break an entry into words, so that single word
+    matches are possible.
+
+Filters - various filters are available for processing content as the index is
+    built. A StopFilter removes common articles 'a', 'for', 'and' etc. A
+    StemmingFilter removes suffixes from words to create a 'base work' e.g.
+    stemming -> stem; opened -> open; philosophy -> philosoph.
+
 """
 import logging
 import os
