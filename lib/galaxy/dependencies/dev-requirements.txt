@@ -190,7 +190,7 @@ routes==2.5.1
 rsa==4.9; python_version >= "3.6" and python_version < "4"
 ruamel.yaml.clib==0.2.6; platform_python_implementation == "CPython" and python_version < "3.10" and python_version >= "3.6"
 ruamel.yaml==0.17.17
-schema-salad==8.3.20220721194857; python_version >= "3.6" and python_version < "4"
+schema-salad==8.3.20220717184004; python_version >= "3.6" and python_version < "4"
 scipy==1.7.3; python_version >= "3.7" and python_version < "3.11"
 selenium==4.3.0; python_version >= "3.7" and python_version < "4.0"
 setuptools-scm==5.0.2; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4" and python_version >= "3.7"
