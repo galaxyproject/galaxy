@@ -128,6 +128,7 @@ from galaxy.util import (
     XML,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.compression_utils import get_fileobj_raw
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.form_builder import SelectField
@@ -3380,7 +3381,8 @@ class FilterFailedDatasetsTool(FilterDatasetsTool):
     tool_type = "filter_failed_datasets_collection"
     require_dataset_ok = False
 
-    def element_is_valid(self, element):
+    @staticmethod
+    def element_is_valid(element: model.DatasetCollectionElement):
         return element.element_object.is_ok
 
 
@@ -3388,8 +3390,16 @@ class FilterEmptyDatasetsTool(FilterDatasetsTool):
     tool_type = "filter_empty_datasets_collection"
     require_dataset_ok = False
 
-    def element_is_valid(self, element):
-        return element.element_object.has_data()
+    @staticmethod
+    def element_is_valid(element: model.DatasetCollectionElement):
+        dataset_instance: model.DatasetInstance = element.element_object
+        if dataset_instance.has_data():
+            # We have data, but it might just be a compressed archive of nothing
+            file_name = dataset_instance.file_name
+            _, fh = get_fileobj_raw(file_name, mode="rb")
+            if len(fh.read(1)):
+                return True
+        return False
 
 
 class FlattenTool(DatabaseOperationTool):
