@@ -87,15 +87,15 @@ class DatatypeValidation:
         self.message = message
 
     @staticmethod
-    def validated():
+    def validated() -> DatatypeValidation:
         return DatatypeValidation("ok", "Dataset validated by datatype validator.")
 
     @staticmethod
-    def invalid(message: str):
+    def invalid(message: str) -> DatatypeValidation:
         return DatatypeValidation("invalid", message)
 
     @staticmethod
-    def unvalidated():
+    def unvalidated() -> DatatypeValidation:
         return DatatypeValidation("unknown", "Dataset validation unimplemented for this datatype.")
 
     def __repr__(self) -> str:
@@ -697,7 +697,7 @@ class Data(metaclass=DataMeta):
         """Returns display types available"""
         return list(self.supported_display_apps.keys())
 
-    def get_display_label(self, type) -> str:
+    def get_display_label(self, type: str) -> str:
         """Returns primary label for display app"""
         try:
             return self.supported_display_apps[type]["label"]
@@ -839,7 +839,7 @@ class Data(metaclass=DataMeta):
             files[key] = value
         return files
 
-    def get_writable_files_for_dataset(self, dataset):
+    def get_writable_files_for_dataset(self, dataset: Bunch) -> Dict[str, Bunch]:
         files = {}
         if self.composite_type != "auto_primary_file":
             files[self.primary_file_name] = self.__new_composite_file(self.primary_file_name)
