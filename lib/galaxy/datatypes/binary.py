@@ -545,7 +545,7 @@ class BamNative(CompressedArchive, _BamOrSam):
             file_paths.append(dataset.metadata.bam_index.file_name)
         return zip(file_paths, rel_paths)
 
-    def groom_dataset_content(self, file_name):
+    def groom_dataset_content(self, file_name: str) -> None:
         """
         Ensures that the BAM file contents are coordinate-sorted.  This function is called
         on an output dataset after the content is initially generated.
@@ -568,7 +568,7 @@ class BamNative(CompressedArchive, _BamOrSam):
             [f"-@{slots}", file_name, "-T", tmp_sorted_dataset_file_name_prefix, "-O", "BAM", "-o", sorted_file_name]
         )
         try:
-            pysam.sort(*sort_args)
+            pysam.sort(*sort_args)  # type: ignore [attr-defined]
         except Exception:
             shutil.rmtree(tmp_dir, ignore_errors=True)
             raise
