@@ -142,7 +142,10 @@ class ToolPanelViewSearch:
                     * config.tool_name_exact_multiplier),
                 analyzer=analysis.IDTokenizer() | analysis.LowercaseFilter(),
             ),
-            'name': TEXT(
+            # The primary name field is searchable by exact match only, and is
+            # eligible for massive score boosting. A secondary ngram or text
+            # field for name is added below
+            'name_exact': TEXT(
                 field_boost=(
                     config.tool_name_boost
                     * config.tool_name_exact_multiplier),
@@ -161,14 +164,19 @@ class ToolPanelViewSearch:
 
         if config.tool_enable_ngram_search:
             schema_conf.update({
-                'name_ngrams': NGRAMWORDS(
-                    stored=True,
+                'name': NGRAMWORDS(
                     minsize=config.tool_ngram_minsize,
                     maxsize=config.tool_ngram_maxsize,
                     field_boost=(
                         float(config.tool_name_boost)
                         * config.tool_ngram_factor
                     ),
+                ),
+            })
+        else:
+            schema_conf.update({
+                'name': TEXT(
+                    field_boost=float(config.tool_name_boost),
                 ),
             })
 
@@ -243,12 +251,22 @@ class ToolPanelViewSearch:
         index_help: bool = True,
         config: GalaxyAppConfiguration = None,
     ) -> Dict[str, str]:
-        #  Do not add data managers to the public index
+        def clean(string):
+            """Remove hyphens as they are Whoosh wildcards."""
+            if '-' in string:
+                return (" ").join(
+                    token.text for token in self.rex(to_unicode(tool.name))
+                )
+            else:
+                return string
+
         if tool.tool_type == "manage_data":
+            #  Do not add data managers to the public index
             return {}
         add_doc_kwds = {
-            "id": to_unicode(tool_id),
-            "id_exact": to_unicode(tool_id),
+            "id": to_unicode(tool.id),
+            "id_exact": to_unicode(tool.id),
+            "name": clean(tool.name),
             "description": to_unicode(tool.description),
             "section": to_unicode(
                 tool.get_panel_section()[1]
@@ -284,8 +302,7 @@ class ToolPanelViewSearch:
                     # Don't fail to build index when help fails to parse
                     pass
 
-        if config.tool_enable_ngram_search:
-            add_doc_kwds["name_ngrams"] = add_doc_kwds["name"]
+        add_doc_kwds["name_exact"] = add_doc_kwds["name"]
 
         return add_doc_kwds
 
@@ -306,16 +323,13 @@ class ToolPanelViewSearch:
             "id",
             "id_exact",
             "name",
+            "name_exact",
             "description",
             "section",
             "help",
             "labels",
             "stub",
         ]
-        if config.tool_enable_ngram_search:
-            fields += [
-                "name_ngrams",
-            ]
         self.parser = MultifieldParser(
             fields,
             schema=self.schema,
