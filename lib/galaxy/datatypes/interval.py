@@ -179,7 +179,7 @@ class Interval(Tabular):
                     else:
                         empty_line_count += 1
 
-    def displayable(self, dataset: DatasetInstance):
+    def displayable(self, dataset: "DatasetInstance"):
         try:
             return (
                 not dataset.dataset.purged
