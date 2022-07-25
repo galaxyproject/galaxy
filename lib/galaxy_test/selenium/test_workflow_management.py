@@ -1,3 +1,5 @@
+from selenium.webdriver.common.by import By
+
 from .framework import (
     EXAMPLE_WORKFLOW_URL_1,
     retry_assertion_during_transitions,
@@ -20,7 +22,7 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkfl
         table_elements = self.workflow_index_table_elements()
         assert len(table_elements) == 1
 
-        new_workflow = table_elements[0].find_element_by_css_selector(".workflow-dropdown")
+        new_workflow = table_elements[0].find_element(By.CSS_SELECTOR, ".workflow-dropdown")
         assert "TestWorkflow1 (imported from URL)" in new_workflow.text, new_workflow.text
 
     @selenium_test
@@ -32,7 +34,7 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkfl
         self.driver.back()
         self.components.workflows.external_link.wait_for_visible()
         # font-awesome title handling broken... https://github.com/FortAwesome/vue-fontawesome/issues/63
-        # title_element = external_link_icon.find_element_by_tag_name("title")
+        # title_element = external_link_icon.find_element(By.TAG_NAME, "title")
         # assert EXAMPLE_WORKFLOW_URL_1 in title_element.text
         self.workflow_index_click_option("View")
         workflow_show = self.components.workflow_show

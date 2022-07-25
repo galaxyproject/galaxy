@@ -1657,9 +1657,9 @@ def test_linting_cwl_tool(lint_ctx):
         tool_source = tool_sources[0][1]
         lint_tool_source_with(lint_ctx, tool_source)
     assert "Tool defines a version [0.0.1]." in lint_ctx.valid_messages
-    assert "Tool defines a name [tool]." in lint_ctx.valid_messages
-    assert "Tool defines an id [tool]." in lint_ctx.valid_messages
-    assert "Tool specifies profile version [16.04]." in lint_ctx.valid_messages
+    assert "Tool defines a name [tool.cwl]." in lint_ctx.valid_messages
+    assert "Tool defines an id [tool.cwl]." in lint_ctx.valid_messages
+    assert "Tool specifies profile version [17.09]." in lint_ctx.valid_messages
     assert "CWL appears to be valid." in lint_ctx.info_messages
     assert "Description of tool is empty or absent." in lint_ctx.warn_messages
     assert "Tool does not specify a DockerPull source." in lint_ctx.warn_messages

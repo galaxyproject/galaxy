@@ -1,8 +1,14 @@
+import json
 import logging
 import math
-import os
+from typing import Optional
 
-from galaxy.tool_util.cwl.parser import tool_proxy
+import packaging.version
+
+from galaxy.tool_util.cwl.parser import (
+    tool_proxy,
+    ToolProxy,
+)
 from galaxy.tool_util.deps import requirements
 from .interface import (
     PageSource,
@@ -24,9 +30,8 @@ class CwlToolSource(ToolSource):
 
     language = "yaml"
 
-    def __init__(self, tool_file, strict_cwl_validation=True, tool_id=None, tool_proxy=None):
+    def __init__(self, tool_file=None, strict_cwl_validation=True, tool_proxy: Optional[ToolProxy] = None):
         self._cwl_tool_file = tool_file
-        self._id = tool_id or os.path.splitext(os.path.basename(tool_file))[0]
         self._tool_proxy = tool_proxy
         self._source_path = tool_file
         self._strict_cwl_validation = strict_cwl_validation
@@ -36,7 +41,7 @@ class CwlToolSource(ToolSource):
         return self._source_path
 
     @property
-    def tool_proxy(self):
+    def tool_proxy(self) -> ToolProxy:
         if self._tool_proxy is None:
             self._tool_proxy = tool_proxy(self._source_path, strict_cwl_validation=self._strict_cwl_validation)
         return self._tool_proxy
@@ -45,7 +50,7 @@ class CwlToolSource(ToolSource):
         return "cwl"
 
     def parse_id(self):
-        return self._id
+        return self.tool_proxy.galaxy_id()
 
     def parse_name(self):
         return self.tool_proxy.label() or self.parse_id()
@@ -160,13 +165,16 @@ class CwlToolSource(ToolSource):
         )
 
     def parse_profile(self):
-        return "16.04"
+        return "17.09"
 
     def parse_license(self):
         return None
 
     def parse_python_template_version(self):
-        return "3.5"
+        return packaging.version.Version("3.5")
+
+    def to_string(self):
+        return json.dumps(self.tool_proxy.to_persistent_representation())
 
 
 class CwlPageSource(PageSource):

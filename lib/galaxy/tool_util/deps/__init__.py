@@ -6,6 +6,13 @@ import json
 import logging
 import os.path
 import shutil
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.util import (
     hash_util,
@@ -26,14 +33,20 @@ from .resolvers import (
 )
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
 
+if TYPE_CHECKING:
+    from galaxy.jobs import JobDestination
+
 log = logging.getLogger(__name__)
 
 CONFIG_VAL_NOT_FOUND = object()
 
 
 def build_dependency_manager(
-    app_config_dict=None, resolution_config_dict=None, conf_file=None, default_tool_dependency_dir=None
-):
+    app_config_dict: Optional[Dict[str, Any]] = None,
+    resolution_config_dict: Optional[Dict[str, Any]] = None,
+    conf_file: Optional[str] = None,
+    default_tool_dependency_dir: Optional[str] = None,
+) -> "DependencyManager":
     """Build a DependencyManager object from app and/or resolution config.
 
     If app_config_dict is specified, it should be application configuration information
@@ -88,13 +101,9 @@ def build_dependency_manager(
             "app_config": app_config_dict,
         }
         if string_as_bool(app_config_dict.get("use_cached_dependency_manager")):
-            dependency_manager = CachedDependencyManager(**dependency_manager_kwds)
-        else:
-            dependency_manager = DependencyManager(**dependency_manager_kwds)
-    else:
-        dependency_manager = NullDependencyManager()
-
-    return dependency_manager
+            return CachedDependencyManager(**dependency_manager_kwds)
+        return DependencyManager(**dependency_manager_kwds)
+    return NullDependencyManager()
 
 
 class DependencyManager:
@@ -111,7 +120,9 @@ class DependencyManager:
 
     cached = False
 
-    def __init__(self, default_base_path, conf_file=None, app_config=None):
+    def __init__(
+        self, default_base_path: str, conf_file: Optional[str] = None, app_config: Optional[Dict[str, Any]] = None
+    ) -> None:
         """
         Create a new dependency manager looking for packages under the paths listed
         in `base_paths`.  The default base path is app.config.tool_dependency_dir.
@@ -133,8 +144,8 @@ class DependencyManager:
         else:
             plugin_source = self.__build_dependency_resolvers_plugin_source(conf_file)
         self.dependency_resolvers = self.__parse_resolver_conf_plugins(plugin_source)
-        self._enabled_container_types = []
-        self._destination_for_container_type = {}
+        self._enabled_container_types: List[str] = []
+        self._destination_for_container_type: Dict[str, Dict[str, "JobDestination"]] = {}
 
     def set_enabled_container_types(self, container_types_to_destinations):
         """Set the union of all enabled container types."""
@@ -184,7 +195,7 @@ class DependencyManager:
     def precache(self):
         return string_as_bool(self.get_app_option("precache_dependencies", True))
 
-    def dependency_shell_commands(self, requirements, **kwds):
+    def dependency_shell_commands(self, requirements: ToolRequirements, **kwds: Any) -> List[str]:
         requirements_to_dependencies = self.requirements_to_dependencies(requirements, **kwds)
         ordered_dependencies = OrderedSet(requirements_to_dependencies.values())
         return [

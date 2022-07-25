@@ -1775,7 +1775,7 @@ class ToolModule(WorkflowModule):
         input_connections = kwds.get("input_connections", {})
         expected_replacement_keys = input_connections.keys()
 
-        def augment(expected_replacement_key, inputs, inputs_state):
+        def augment(expected_replacement_key, inputs, inputs_states):
             if "|" not in expected_replacement_key:
                 return
 

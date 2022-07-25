@@ -192,7 +192,7 @@ class UserModel(Model):
     email: str = Field(title="Email", description="User email")
     active: bool = Field(title="Active", description="User is active")
     deleted: bool = Field(title="Deleted", description="User is deleted")
-    last_password_change: datetime = Field(title="Last password change", description="")
+    last_password_change: Optional[datetime] = Field(title="Last password change", description="")
     model_class: str = ModelClassField(USER_MODEL_CLASS_NAME)
 
 

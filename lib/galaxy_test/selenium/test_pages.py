@@ -31,7 +31,7 @@ class PagesTestCase(SeleniumTestCase):
         self.components.pages.editor.embed_dataset.wait_for_and_click()
         saved_datasets_element = self.components.pages.editor.dataset_selector.wait_for_and_click()
         self.screenshot("pages_editor_embed_dataset_dialog")
-        checkboxes = saved_datasets_element.find_elements_by_css_selector("input[type='checkbox']")
+        checkboxes = saved_datasets_element.find_elements(self.by.CSS_SELECTOR, "input[type='checkbox']")
         assert len(checkboxes) > 0
         checkboxes[0].click()
         self.components.pages.editor.embed_dialog_add_button.wait_for_and_click()

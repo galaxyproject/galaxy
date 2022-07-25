@@ -1,3 +1,5 @@
+from selenium.webdriver.support.ui import Select
+
 from galaxy.navigation.components import (
     Component,
     Target,
@@ -64,6 +66,9 @@ class SmartTarget:
 
     def wait_for_visible(self, **kwds):
         return self._has_driver.wait_for_visible(self._target, **kwds)
+
+    def wait_for_select(self, **kwds):
+        return Select(self.wait_for_visible(**kwds))
 
     def wait_for_clickable(self, **kwds):
         return self._has_driver.wait_for_clickable(self._target, **kwds)

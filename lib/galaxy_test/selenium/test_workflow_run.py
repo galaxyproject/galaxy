@@ -1,3 +1,5 @@
+from selenium.webdriver.common.by import By
+
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
@@ -137,7 +139,7 @@ steps:
         self.workflow_run_ensure_expanded()
         workflow_run = self.components.workflow_run
         input_div_element = workflow_run.input_div(label="input_int").wait_for_visible()
-        input_element = input_div_element.find_element_by_css_selector("input")
+        input_element = input_div_element.find_element(By.CSS_SELECTOR, "input")
         input_element.clear()
         input_element.send_keys("12345")
 
@@ -263,7 +265,7 @@ steps:
     def _set_num_lines_to_3(self, element_id):
         # for random_lines num_lines parameter as runtime parameter in workflow form.
         div = self.tool_parameter_div(element_id)
-        input_element = div.find_element_by_css_selector("input")
+        input_element = div.find_element(By.CSS_SELECTOR, "input")
         # runtime parameters not being set to tool default value:
         # https://github.com/galaxyproject/galaxy/pull/7157
         # initial_value = input_element.get_attribute("value")
@@ -274,7 +276,7 @@ steps:
     def _set_replacement_parameter(self, element_id, value):
         # for random_lines num_lines parameter as runtime parameter in workflow form.
         div = self.tool_parameter_div(element_id)
-        input_element = div.find_element_by_css_selector("input")
+        input_element = div.find_element(By.CSS_SELECTOR, "input")
         initial_value = input_element.get_attribute("value")
         assert initial_value == "", initial_value
         input_element.clear()

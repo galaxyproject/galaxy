@@ -123,6 +123,7 @@ from galaxy.web import (
     legacy_url_for,
     url_for,
 )
+from galaxy.web.framework.base import server_starttime
 from galaxy.web.proxy import ProxyManager
 from galaxy.web.short_term_storage import (
     ShortTermStorageAllocator,
@@ -739,7 +740,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.url_for = url_for
         self.legacy_url_for = legacy_url_for
 
-        self.server_starttime = int(time.time())  # used for cachebusting
+        self.server_starttime = server_starttime  # used for cachebusting
         # Limit lifetime of tool shed repository cache to app startup
         self.tool_shed_repository_cache = None
         self.api_spec = None

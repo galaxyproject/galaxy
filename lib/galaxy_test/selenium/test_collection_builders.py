@@ -113,14 +113,15 @@ class CollectionBuildersTestCase(SeleniumTestCase):
                 self.navigation.history_panel.multi_operations.labels.build_list_pairs
             )
 
-        self.wait_for_and_click(self.navigation.collection_builders.selectors.clear_filters)
+        collection_builders = self.components.collection_builders
 
-        forward_column = self.wait_for_visible(self.navigation.collection_builders.selectors.forward_datasets)
-        first_datset_forward = forward_column.find_elements_by_css_selector("li")[0]
+        collection_builders.clear_filters.wait_for_and_click()
+        forward_column = collection_builders.forward_datasets.wait_for_visible()
+        first_datset_forward = forward_column.find_elements(self.by.CSS_SELECTOR, "li")[0]
         first_datset_forward.click()
 
-        reverse_column = self.wait_for_visible(self.navigation.collection_builders.selectors.reverse_datasets)
-        second_dataset_reverse = reverse_column.find_elements_by_css_selector("li")[1]
+        reverse_column = collection_builders.reverse_datasets.wait_for_visible()
+        second_dataset_reverse = reverse_column.find_elements(self.by.CSS_SELECTOR, "li")[1]
         second_dataset_reverse.click()
 
         self.collection_builder_hide_originals()

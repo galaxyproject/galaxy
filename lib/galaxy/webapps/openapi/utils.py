@@ -32,7 +32,6 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.openapi.constants import (
     METHODS_WITH_BODY,
     REF_PREFIX,
-    STATUS_CODES_WITH_NO_BODY,
 )
 from fastapi.openapi.models import OpenAPI
 from fastapi.params import (
@@ -44,6 +43,7 @@ from fastapi.utils import (
     deep_dict_update,
     generate_operation_id_for_path,
     get_model_definitions,
+    is_body_allowed_for_status_code,
 )
 from pydantic import BaseModel
 from pydantic.fields import (
@@ -266,7 +266,7 @@ def get_openapi_path(
             operation.setdefault("responses", {}).setdefault(status_code, {})[
                 "description"
             ] = route.response_description
-            if route_response_media_type and route.status_code not in STATUS_CODES_WITH_NO_BODY:
+            if route_response_media_type and is_body_allowed_for_status_code(route.status_code):
                 response_schema = {"type": "string"}
                 if lenient_issubclass(current_response_class, JSONResponse):
                     if route.response_field:
