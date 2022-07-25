@@ -212,7 +212,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         selector = ".title .name"
         if self.is_beta_history():
             selector = ".content-title"
-        titles = [de.find_element_by_css_selector(selector).text for de in dataset_elements]
+        titles = [de.find_element(self.by.CSS_SELECTOR, selector).text for de in dataset_elements]
         assert titles == ["forward", "reverse"]
         self.screenshot("history_panel_collection_view_paired")
 
@@ -237,7 +237,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
             selector = ".title .name"
             if self.is_beta_history():
                 selector = ".content-title"
-            title_elements = [de.find_element_by_css_selector(selector).text for de in dataset_elements]
+            title_elements = [de.find_element(self.by.CSS_SELECTOR, selector).text for de in dataset_elements]
             assert title_elements == ["data1", "data2", "data3", "data4"]
 
         check_four_datasets_shown()

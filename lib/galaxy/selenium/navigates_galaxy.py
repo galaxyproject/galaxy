@@ -23,6 +23,7 @@ from typing import (
 
 import requests
 import yaml
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 
@@ -531,8 +532,8 @@ class NavigatesGalaxy(HasDriver):
     def click_grid_popup_option(self, item_name, option_label):
         item_button = None
         grid = self.components.grids.body.wait_for_visible()
-        for row in grid.find_elements_by_tag_name("tr"):
-            name_cell = row.find_elements_by_tag_name("td")[1]
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            name_cell = row.find_elements(By.TAG_NAME, "td")[1]
             if name_cell.text == item_name:
                 item_button = name_cell
                 break
@@ -540,9 +541,9 @@ class NavigatesGalaxy(HasDriver):
         if item_button is None:
             raise AssertionError(f"Failed to find item with name [{item_name}]")
 
-        popup_menu_button = item_button.find_element_by_css_selector(".dropdown-toggle")
+        popup_menu_button = item_button.find_element(By.CSS_SELECTOR, ".dropdown-toggle")
         popup_menu_button.click()
-        popup_option = self.driver.find_element_by_link_text(option_label)
+        popup_option = self.driver.find_element(By.LINK_TEXT, option_label)
         popup_option.click()
 
     def published_grid_search_for(self, search_term=None):
@@ -662,7 +663,7 @@ class NavigatesGalaxy(HasDriver):
             try:
                 username_element = self.components.masthead.username.wait_for_visible()
             except self.TimeoutException as e:
-                menu_items = user_menu.find_elements_by_css_selector("li a")
+                menu_items = user_menu.find_elements(By.CSS_SELECTOR, "li a")
                 menu_text = [mi.text for mi in menu_items]
                 message = f"Failed to find logged in message in menu items {', '.join(menu_text)}"
                 raise self.prepend_timeout_message(e, message)
@@ -695,7 +696,7 @@ class NavigatesGalaxy(HasDriver):
 
     def click_center(self):
         action_chains = self.action_chains()
-        center_element = self.driver.find_element_by_css_selector("#center")
+        center_element = self.driver.find_element(By.CSS_SELECTOR, "#center")
         action_chains.move_to_element(center_element).click().perform()
 
     def perform_upload(self, test_path, **kwd):
@@ -749,9 +750,11 @@ class NavigatesGalaxy(HasDriver):
         self.upload_set_footer_extension(ext, tab_id="composite")
 
         table = self.components.upload.composite.table().wait_for_visible()
-        source_select_buttons = table.find_elements_by_css_selector("div.dropdown button.btn")
-        paste_buttons = table.find_elements_by_css_selector(".upload-source .dropdown-menu .dropdown-item .fa-edit")
-        textareas = table.find_elements_by_css_selector("div.upload-text-column textarea.upload-text-content")
+        source_select_buttons = table.find_elements(self.by.CSS_SELECTOR, "div.dropdown button.btn")
+        paste_buttons = table.find_elements(
+            self.by.CSS_SELECTOR, ".upload-source .dropdown-menu .dropdown-item .fa-edit"
+        )
+        textareas = table.find_elements(self.by.CSS_SELECTOR, "div.upload-text-column textarea.upload-text-content")
 
         for i in range(len(paste_content)):
             source_select_buttons[i].click()
@@ -900,7 +903,7 @@ class NavigatesGalaxy(HasDriver):
         rule_builder = self.components.rule_builder
         rule_builder.menu_button_filter.wait_for_and_click()
         with self.rule_builder_rule_editor("add-filter-count") as editor_element:
-            filter_input = editor_element.find_element_by_css_selector("input[type='number']")
+            filter_input = editor_element.find_element(By.CSS_SELECTOR, "input[type='number']")
             filter_input.clear()
             filter_input.send_keys(f"{count}")
 
@@ -908,7 +911,7 @@ class NavigatesGalaxy(HasDriver):
         rule_builder = self.components.rule_builder
         rule_builder.menu_button_rules.wait_for_and_click()
         with self.rule_builder_rule_editor("sort") as editor_element:
-            column_elem = editor_element.find_element_by_css_selector(".rule-column-selector")
+            column_elem = editor_element.find_element(By.CSS_SELECTOR, ".rule-column-selector")
             self.select2_set_value(column_elem, column_label)
             self.screenshot_if(screenshot_name)
 
@@ -917,17 +920,17 @@ class NavigatesGalaxy(HasDriver):
         rule_builder.menu_button_column.wait_for_and_click()
         with self.rule_builder_rule_editor("add-column-regex") as editor_element:
 
-            column_elem = editor_element.find_element_by_css_selector(".rule-column-selector")
+            column_elem = editor_element.find_element(By.CSS_SELECTOR, ".rule-column-selector")
             self.select2_set_value(column_elem, column_label)
 
-            groups_elem = editor_element.find_element_by_css_selector("input[type='radio'][value='groups']")
+            groups_elem = editor_element.find_element(By.CSS_SELECTOR, "input[type='radio'][value='groups']")
             groups_elem.click()
 
-            regex_elem = editor_element.find_element_by_css_selector("input.rule-regular-expression")
+            regex_elem = editor_element.find_element(By.CSS_SELECTOR, "input.rule-regular-expression")
             regex_elem.clear()
             regex_elem.send_keys(regex)
 
-            filter_input = editor_element.find_element_by_css_selector("input[type='number']")
+            filter_input = editor_element.find_element(By.CSS_SELECTOR, "input[type='number']")
             filter_input.clear()
             filter_input.send_keys(f"{group_count}")
 
@@ -938,17 +941,17 @@ class NavigatesGalaxy(HasDriver):
         rule_builder.menu_button_column.wait_for_and_click()
         with self.rule_builder_rule_editor("add-column-regex") as editor_element:
 
-            column_elem = editor_element.find_element_by_css_selector(".rule-column-selector")
+            column_elem = editor_element.find_element(By.CSS_SELECTOR, ".rule-column-selector")
             self.select2_set_value(column_elem, column_label)
 
-            groups_elem = editor_element.find_element_by_css_selector("input[type='radio'][value='replacement']")
+            groups_elem = editor_element.find_element(By.CSS_SELECTOR, "input[type='radio'][value='replacement']")
             groups_elem.click()
 
-            regex_elem = editor_element.find_element_by_css_selector("input.rule-regular-expression")
+            regex_elem = editor_element.find_element(By.CSS_SELECTOR, "input.rule-regular-expression")
             regex_elem.clear()
             regex_elem.send_keys(regex)
 
-            filter_input = editor_element.find_element_by_css_selector("input.rule-replacement")
+            filter_input = editor_element.find_element(By.CSS_SELECTOR, "input.rule-replacement")
             filter_input.clear()
             filter_input.send_keys(f"{replacement}")
 
@@ -958,7 +961,7 @@ class NavigatesGalaxy(HasDriver):
         rule_builder = self.components.rule_builder
         rule_builder.menu_button_column.wait_for_and_click()
         with self.rule_builder_rule_editor("add-column-value") as editor_element:
-            filter_input = editor_element.find_element_by_css_selector("input[type='text']")
+            filter_input = editor_element.find_element(By.CSS_SELECTOR, "input[type='text']")
             filter_input.clear()
             filter_input.send_keys(value)
 
@@ -968,7 +971,7 @@ class NavigatesGalaxy(HasDriver):
         rule_builder = self.components.rule_builder
         rule_builder.menu_button_rules.wait_for_and_click()
         with self.rule_builder_rule_editor("remove-columns") as filter_editor_element:
-            column_elem = filter_editor_element.find_element_by_css_selector(".rule-column-selector")
+            column_elem = filter_editor_element.find_element(By.CSS_SELECTOR, ".rule-column-selector")
             for column_label in column_labels:
                 self.select2_set_value(column_elem, column_label)
             self.screenshot_if(screenshot_name)
@@ -977,9 +980,9 @@ class NavigatesGalaxy(HasDriver):
         rule_builder = self.components.rule_builder
         rule_builder.menu_button_column.wait_for_and_click()
         with self.rule_builder_rule_editor("add-column-concatenate") as filter_editor_element:
-            column_elems = filter_editor_element.find_elements_by_css_selector(".rule-column-selector")
+            column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
             self.select2_set_value(column_elems[0], column_label_1)
-            column_elems = filter_editor_element.find_elements_by_css_selector(".rule-column-selector")
+            column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
             self.select2_set_value(column_elems[1], column_label_2)
             self.screenshot_if(screenshot_name)
 
@@ -987,13 +990,13 @@ class NavigatesGalaxy(HasDriver):
         rule_builder = self.components.rule_builder
         rule_builder.menu_button_rules.wait_for_and_click()
         with self.rule_builder_rule_editor("split-columns") as filter_editor_element:
-            column_elems = filter_editor_element.find_elements_by_css_selector(".rule-column-selector")
+            column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
             clear = True
             for column_label_1 in column_labels_1:
                 self.select2_set_value(column_elems[0], column_label_1, clear_value=clear)
                 clear = False
 
-            column_elems = filter_editor_element.find_elements_by_css_selector(".rule-column-selector")
+            column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
             clear = True
             for column_label_2 in column_labels_2:
                 self.select2_set_value(column_elems[1], column_label_2, clear_value=clear)
@@ -1005,9 +1008,9 @@ class NavigatesGalaxy(HasDriver):
         rule_builder = self.components.rule_builder
         rule_builder.menu_button_rules.wait_for_and_click()
         with self.rule_builder_rule_editor("swap-columns") as filter_editor_element:
-            column_elems = filter_editor_element.find_elements_by_css_selector(".rule-column-selector")
+            column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
             self.select2_set_value(column_elems[0], column_label_1)
-            column_elems = filter_editor_element.find_elements_by_css_selector(".rule-column-selector")
+            column_elems = filter_editor_element.find_elements(By.CSS_SELECTOR, ".rule-column-selector")
             self.select2_set_value(column_elems[1], column_label_2)
             self.screenshot_if(screenshot_name)
 
@@ -1057,7 +1060,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_editor_click_option(self, option_label):
         self.workflow_editor_click_options()
         menu_element = self.workflow_editor_options_menu_element()
-        option_elements = menu_element.find_elements_by_css_selector("a")
+        option_elements = menu_element.find_elements(By.CSS_SELECTOR, "a")
         assert len(option_elements) > 0, "Failed to find workflow editor options"
         self.sleep_for(WAIT_TYPES.UX_RENDER)
         found_option = False
@@ -1130,19 +1133,19 @@ class NavigatesGalaxy(HasDriver):
     def libraries_open_with_name(self, name):
         self.libraries_open()
         self.libraries_index_search_for(name)
-        self.libraries_index_table_elements()[0].find_element_by_css_selector("td a").click()
+        self.libraries_index_table_elements()[0].find_element(By.CSS_SELECTOR, "td a").click()
 
     @retry_during_transitions
     def libraries_index_table_elements(self):
         container = self.components.libraries._.wait_for_visible()
 
-        elements = container.find_elements_by_css_selector("tbody")
+        elements = container.find_elements(By.CSS_SELECTOR, "tbody")
         if not elements:
             return []
         else:
             assert len(elements) == 1
             element = elements[0]
-            return element.find_elements_by_css_selector("tr")  # [style='display: table-row']
+            return element.find_elements(By.CSS_SELECTOR, "tr")  # [style='display: table-row']
 
     def libraries_index_create(self, name):
         self.components.libraries.create_new_library_btn.wait_for_and_click()
@@ -1195,7 +1198,7 @@ class NavigatesGalaxy(HasDriver):
             found = False
             for history_element in history_elements:
                 if to_select_item in history_element.text:
-                    history_element.find_element_by_css_selector("input").click()
+                    history_element.find_element(By.CSS_SELECTOR, "input").click()
                     found = True
                     break
 
@@ -1210,7 +1213,7 @@ class NavigatesGalaxy(HasDriver):
 
     def libraries_table_elements(self):
         tbody_element = self.wait_for_selector_visible("#folder_list_body > tbody")
-        return tbody_element.find_elements_by_css_selector("tr:not(.b-table-empty-row)")
+        return tbody_element.find_elements(By.CSS_SELECTOR, "tr:not(.b-table-empty-row)")
 
     def populate_library_folder_from_import_dir(self, library_name, filenames):
         self.libraries_open_with_name(library_name)
@@ -1228,7 +1231,7 @@ class NavigatesGalaxy(HasDriver):
 
     def clear_tooltips(self):
         action_chains = self.action_chains()
-        center_element = self.driver.find_element_by_css_selector("#center")
+        center_element = self.driver.find_element(By.CSS_SELECTOR, "#center")
         action_chains.move_to_element(center_element).perform()
         self.wait_for_selector_absent_or_hidden(".b-tooltip", wait_type=WAIT_TYPES.UX_POPUP)
 
@@ -1248,7 +1251,7 @@ class NavigatesGalaxy(HasDriver):
     @retry_during_transitions
     def workflow_index_column_text(self, column_index, workflow_index=0):
         row_element = self.workflow_index_table_row(workflow_index=workflow_index)
-        columns = row_element.find_elements_by_css_selector("td")
+        columns = row_element.find_elements(By.CSS_SELECTOR, "td")
         return columns[column_index].text
 
     def workflow_index_click_search(self):
@@ -1275,18 +1278,18 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_name(self, workflow_index=0):
         """Get workflow name for workflow_index'th row."""
         row_element = self.workflow_index_table_row(workflow_index=workflow_index)
-        workflow_button = row_element.find_element_by_css_selector(".workflow-dropdown")
+        workflow_button = row_element.find_element(By.CSS_SELECTOR, ".workflow-dropdown")
         return workflow_button.text
 
     @retry_during_transitions
     def workflow_click_option(self, workflow_selector, workflow_index=0):
         workflow_row = self.workflow_index_table_row(workflow_index=workflow_index)
-        workflow_button = workflow_row.find_element_by_css_selector(workflow_selector)
+        workflow_button = workflow_row.find_element(By.CSS_SELECTOR, workflow_selector)
         workflow_button.click()
 
     def select_dropdown_item(self, option_title):
         menu_element = self.wait_for_selector_visible(".dropdown-menu.show")
-        menu_options = menu_element.find_elements_by_css_selector("a.dropdown-item")
+        menu_options = menu_element.find_elements(By.CSS_SELECTOR, "a.dropdown-item")
         for menu_option in menu_options:
             if option_title in menu_option.text:
                 menu_option.click()
@@ -1299,7 +1302,7 @@ class NavigatesGalaxy(HasDriver):
 
     def workflow_index_click_tag_display(self, workflow_index=0):
         workflow_row_element = self.workflow_index_table_row(workflow_index)
-        tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
+        tag_display = workflow_row_element.find_element(By.CSS_SELECTOR, ".tags-display")
         tag_display.click()
 
     def workflow_index_add_tag(self, tag: str, workflow_index: int = 0):
@@ -1317,8 +1320,8 @@ class NavigatesGalaxy(HasDriver):
     @retry_during_transitions
     def workflow_index_tag_elements(self, workflow_index=0):
         workflow_row_element = self.workflow_index_table_row(workflow_index)
-        tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
-        tag_spans = tag_display.find_elements_by_css_selector(".tag-name")
+        tag_display = workflow_row_element.find_element(By.CSS_SELECTOR, ".tags-display")
+        tag_spans = tag_display.find_elements(By.CSS_SELECTOR, ".tag-name")
         return tag_spans
 
     @retry_during_transitions
@@ -1433,7 +1436,7 @@ class NavigatesGalaxy(HasDriver):
 
     def tool_parameter_edit_rules(self):
         rules_div_element = self.tool_parameter_div("rules")
-        edit_button_element = rules_div_element.find_element_by_css_selector("i.fa-edit")
+        edit_button_element = rules_div_element.find_element(By.CSS_SELECTOR, "i.fa-edit")
         edit_button_element.click()
 
     def tool_set_value(self, expanded_parameter_id, value, expected_type=None):
@@ -1443,7 +1446,7 @@ class NavigatesGalaxy(HasDriver):
             div_selector = f"div.ui-form-element[id$='form-element-{expanded_parameter_id}']"
             self.select2_set_value(div_selector, value)
         else:
-            input_element = div_element.find_element_by_css_selector("input")
+            input_element = div_element.find_element(By.CSS_SELECTOR, "input")
             # Clear default value
             input_element.clear()
             input_element.send_keys(value)
@@ -1577,8 +1580,8 @@ class NavigatesGalaxy(HasDriver):
         self.sleep_for(self.wait_types.UX_RENDER)
         names = []
         grid = self.wait_for_selector("#grid-table-body")
-        for row in grid.find_elements_by_tag_name("tr"):
-            td = row.find_elements_by_tag_name("td")
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            td = row.find_elements(By.TAG_NAME, "td")
             name = td[1].text if td[0].text == "" else td[0].text
             if name != "No items" and not name.startswith("No matching entries found"):
                 names.append(name)
@@ -1649,7 +1652,7 @@ class NavigatesGalaxy(HasDriver):
         @retry_during_transitions
         def _click_action_in_menu():
             menu_element = self.wait_for_visible(self.navigation.history_panel.multi_operations.selectors.action_menu)
-            menu_element.find_element_by_link_text(action.text).click()
+            menu_element.find_element(By.LINK_TEXT, action.text).click()
 
         _click_action_in_menu()
 
@@ -1698,7 +1701,7 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_item_available_visualizations_elements(self, hid):
         # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu
         viz_menu_selectors = f"{self.history_panel_item_selector(hid)} a.visualization-link"
-        return self.driver.find_elements_by_css_selector(viz_menu_selectors)
+        return self.driver.find_elements(By.CSS_SELECTOR, viz_menu_selectors)
 
     def history_panel_item_get_tags(self, hid):
         item_component = self.history_panel_item_component(hid=hid)
@@ -1789,7 +1792,7 @@ class NavigatesGalaxy(HasDriver):
     def collection_builder_click_paired_item(self, forward_or_reverse, item):
         assert forward_or_reverse in ["forward", "reverse"]
         forward_column = self.wait_for_selector_visible(f".{forward_or_reverse}-column .column-datasets")
-        first_datset_forward = forward_column.find_elements_by_css_selector("li")[item]
+        first_datset_forward = forward_column.find_elements(By.CSS_SELECTOR, "li")[item]
         first_datset_forward.click()
 
     def logout_if_needed(self):
@@ -2029,12 +2032,12 @@ class NavigatesGalaxy(HasDriver):
         # doesn't seem to work with the tool form for some reason.
         if hasattr(container_selector_or_elem, "selector"):
             container_selector_or_elem = container_selector_or_elem.selector
-        if not hasattr(container_selector_or_elem, "find_element_by_css_selector"):
+        if not hasattr(container_selector_or_elem, "find_element"):
             container_elem = self.wait_for_selector(container_selector_or_elem)
         else:
             container_elem = container_selector_or_elem
 
-        text_element = container_elem.find_element_by_css_selector("input[type='text']")
+        text_element = container_elem.find_element(By.CSS_SELECTOR, "input[type='text']")
         if clear_value:
             self.send_backspace(text_element)
             self.send_backspace(text_element)
@@ -2047,7 +2050,7 @@ class NavigatesGalaxy(HasDriver):
             # Wait for select2 options to load and then click to add this one.
             self.send_enter(text_element)
         else:
-            select_elem = drop_elem.find_elements_by_css_selector(".select2-result-label")[0]
+            select_elem = drop_elem.find_elements(By.CSS_SELECTOR, ".select2-result-label")[0]
             action_chains = self.action_chains()
             action_chains.move_to_element(select_elem).click().perform()
         self.wait_for_selector_absent_or_hidden("#select2-drop")
