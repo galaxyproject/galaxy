@@ -33,11 +33,11 @@ class AnvioComposite(Html):
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
         """
-        defined_files = self.get_composite_files(dataset=dataset).items()
+        defined_files = self.get_composite_files(dataset=dataset)
         rval = [f"<html><head><title>Files for Anvi'o Composite Dataset ({self.file_ext})</title></head>"]
         if defined_files:
             rval.append("<p/>This composite dataset is composed of the following defined files:<p/><ul>")
-            for composite_name, composite_file in defined_files:
+            for composite_name, composite_file in defined_files.items():
                 opt_text = ""
                 if composite_file.optional:
                     opt_text = " (optional)"
@@ -46,7 +46,6 @@ class AnvioComposite(Html):
                     missing_text = " (missing)"
                 rval.append(f'<li><a href="{composite_name}">{composite_name}</a>{opt_text}{missing_text}</li>')
             rval.append("</ul>")
-        defined_files = map(lambda x: x[0], defined_files)
         extra_files = []
         for dirpath, _dirnames, filenames in os.walk(dataset.extra_files_path, followlinks=True):
             for filename in filenames:

@@ -847,7 +847,7 @@ class Data(metaclass=DataMeta):
             files[key] = value
         return files
 
-    def get_composite_files(self, dataset: Optional[Bunch] = None):
+    def get_composite_files(self, dataset: Optional[Bunch] = None)-> Dict[str, Bunch]:
         def substitute_composite_key(key, composite_file):
             if composite_file.substitute_name_with_metadata:
                 if dataset:
