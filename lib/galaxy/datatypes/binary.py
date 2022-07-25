@@ -390,7 +390,7 @@ class _BamOrSam:
             # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
             dataset.metadata.reference_names = list(bam_file.references)
             dataset.metadata.reference_lengths = list(bam_file.lengths)
-            dataset.metadata.bam_header = dict(bam_file.header.items())
+            dataset.metadata.bam_header = dict(bam_file.header.items())  # type: ignore[attr-defined]
             dataset.metadata.read_groups = [
                 read_group["ID"] for read_group in dataset.metadata.bam_header.get("RG", []) if "ID" in read_group
             ]
@@ -750,9 +750,9 @@ class Bam(BamNative):
             )
         if index_flag == "-b":
             # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
-            pysam.index(dataset.file_name, index_file.file_name)
+            pysam.index(dataset.file_name, index_file.file_name)  # type: ignore[attr-defined]
         else:
-            pysam.index(index_flag, dataset.file_name, index_file.file_name)
+            pysam.index(index_flag, dataset.file_name, index_file.file_name)  # type: ignore[attr-defined]
         dataset.metadata.bam_index = index_file
 
     def sniff(self, file_name):
@@ -945,7 +945,7 @@ class CRAM(Binary):
 
     def set_index_file(self, dataset, index_file):
         try:
-            pysam.index(dataset.file_name, index_file.file_name)
+            pysam.index(dataset.file_name, index_file.file_name)  # type: ignore[attr-defined]
             return True
         except Exception as exc:
             log.warning("%s, set_index_file Exception: %s", self, exc)
