@@ -6,6 +6,7 @@ import math
 import sys
 import tempfile
 from typing import (
+    List,
     Optional,
     TYPE_CHECKING,
 )
@@ -38,7 +39,10 @@ from . import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
+    from galaxy.model import (
+        DatasetInstance,
+        HistoryDatasetAssociation,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -349,7 +353,7 @@ class Interval(Tabular):
                 except StopIteration:
                     return DatatypeValidation.valid()
 
-    def repair_methods(self, dataset):
+    def repair_methods(self, dataset: "HistoryDatasetAssociation") -> List:
         """Return options for removing errors along with a description"""
         return [("lines", "Remove erroneous lines")]
 

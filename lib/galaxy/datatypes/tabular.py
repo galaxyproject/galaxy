@@ -44,7 +44,10 @@ from galaxy.util.markdown import MarkdownFormatHelpers
 from . import dataproviders
 
 if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
+    from galaxy.model import (
+        DatasetInstance,
+        HistoryDatasetAssociation,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -865,7 +868,7 @@ class Pileup(Tabular):
             dataset, column_parameter_alias={"chromCol": "Chrom", "startCol": "Start", "baseCol": "Base"}
         )
 
-    def repair_methods(self, dataset):
+    def repair_methods(self, dataset: "HistoryDatasetAssociation") -> List:
         """Return options for removing errors along with a description"""
         return [("lines", "Remove erroneous lines")]
 

@@ -640,9 +640,9 @@ class Data(metaclass=DataMeta):
         except Exception:
             return "info unavailable"
 
-    def repair_methods(self, dataset: "HistoryDatasetAssociation") -> None:
+    def repair_methods(self, dataset: "HistoryDatasetAssociation") -> List:
         """Unimplemented method, returns dict with method/option for repairing errors"""
-        return None
+        raise NotImplementedError
 
     def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
