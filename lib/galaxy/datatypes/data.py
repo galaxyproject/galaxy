@@ -7,6 +7,7 @@ import tempfile
 from inspect import isclass
 from typing import (
     Any,
+    Callable,
     cast,
     Dict,
     Generator,
@@ -87,15 +88,15 @@ class DatatypeValidation:
         self.message = message
 
     @staticmethod
-    def validated() -> DatatypeValidation:
+    def validated() -> "DatatypeValidation":
         return DatatypeValidation("ok", "Dataset validated by datatype validator.")
 
     @staticmethod
-    def invalid(message: str) -> DatatypeValidation:
+    def invalid(message: str) -> "DatatypeValidation":
         return DatatypeValidation("invalid", message)
 
     @staticmethod
-    def unvalidated() -> DatatypeValidation:
+    def unvalidated() -> "DatatypeValidation":
         return DatatypeValidation("unknown", "Dataset validation unimplemented for this datatype.")
 
     def __repr__(self) -> str:
@@ -847,7 +848,7 @@ class Data(metaclass=DataMeta):
             files[key] = value
         return files
 
-    def get_composite_files(self, dataset: Optional[Bunch] = None)-> Dict[str, Bunch]:
+    def get_composite_files(self, dataset: Optional[Bunch] = None) -> Dict[str, Bunch]:
         def substitute_composite_key(key, composite_file):
             if composite_file.substitute_name_with_metadata:
                 if dataset:
@@ -916,7 +917,7 @@ class Data(metaclass=DataMeta):
             return self.dataproviders[data_format](self, dataset, **settings)
         raise p_dataproviders.exceptions.NoProviderAvailable(self, data_format)
 
-    def validate(self, dataset: "DatasetInstance", **kwd):
+    def validate(self, dataset: "DatasetInstance", **kwd) -> DatatypeValidation:
         return DatatypeValidation.unvalidated()
 
     @p_dataproviders.decorators.dataprovider_factory("base")
@@ -970,7 +971,7 @@ class Text(Data):
         no_value=0,
     )
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "text/plain"
 
@@ -980,7 +981,7 @@ class Text(Data):
         """
         dataset.metadata.data_lines = self.count_data_lines(dataset)
 
-    def estimate_file_lines(self, dataset):
+    def estimate_file_lines(self, dataset: "DatasetInstance") -> Optional[int]:
         """
         Perform a rough estimate by extrapolating number of lines from a small read.
         """
@@ -994,7 +995,7 @@ class Text(Data):
             log.error(f"Unable to estimate lines in file {dataset.file_name}")
             return None
 
-    def count_data_lines(self, dataset):
+    def count_data_lines(self, dataset: "DatasetInstance") -> Optional[int]:
         """
         Count the number of lines of data in dataset,
         skipping all blank lines and comments.
@@ -1015,7 +1016,15 @@ class Text(Data):
                 return None
         return data_lines
 
-    def set_peek(self, dataset, line_count=None, WIDTH=256, skipchars=None, line_wrap=True, **kwd):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """
         Set the peek.  This method is used by various subclasses of Text.
         """
@@ -1051,7 +1060,7 @@ class Text(Data):
             dataset.blurb = "file purged from disk"
 
     @classmethod
-    def split(cls, input_datasets, subdir_generator_function, split_params):
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
         """
         Split the input files by line.
         """
@@ -1123,7 +1132,9 @@ class Text(Data):
 
     # ------------- Dataproviders
     @p_dataproviders.decorators.dataprovider_factory("line", p_dataproviders.line.FilteredLineDataProvider.settings)
-    def line_dataprovider(self, dataset, **settings):
+    def line_dataprovider(
+        self, dataset: "DatasetInstance", **settings
+    ) -> p_dataproviders.line.FilteredLineDataProvider:
         """
         Returns an iterator over the dataset's lines (that have been stripped)
         optionally excluding blank lines and lines that start with a comment character.
@@ -1132,7 +1143,9 @@ class Text(Data):
         return p_dataproviders.line.FilteredLineDataProvider(dataset_source, **settings)
 
     @p_dataproviders.decorators.dataprovider_factory("regex-line", p_dataproviders.line.RegexLineDataProvider.settings)
-    def regex_line_dataprovider(self, dataset, **settings):
+    def regex_line_dataprovider(
+        self, dataset: "DatasetInstance", **settings
+    ) -> p_dataproviders.line.RegexLineDataProvider:
         """
         Returns an iterator over the dataset's lines
         optionally including/excluding lines that match one or more regex filters.
@@ -1167,11 +1180,11 @@ class Newick(Text):
     edam_format = "format_1910"
     file_ext = "newick"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """Returning false as the newick format is too general and cannot be sniffed."""
         return False
 
-    def get_visualizations(self):
+    def get_visualizations(self) -> List[str]:
         """
         Returns a list of visualizations for datatype.
         """
@@ -1186,11 +1199,11 @@ class Nexus(Text):
     edam_format = "format_1912"
     file_ext = "nex"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """All Nexus Files Simply puts a '#NEXUS' in its first line"""
         return file_prefix.string_io().read(6).upper() == "#NEXUS"
 
-    def get_visualizations(self):
+    def get_visualizations(self) -> List[str]:
         """
         Returns a list of visualizations for datatype.
         """
@@ -1205,14 +1218,16 @@ class Nexus(Text):
 nice_size = util.nice_size
 
 
-def get_test_fname(fname):
+def get_test_fname(fname: str) -> str:
     """Returns test data filename"""
     path = os.path.dirname(__file__)
     full_path = os.path.join(path, "test", fname)
     return full_path
 
 
-def get_file_peek(file_name, WIDTH=256, LINE_COUNT=5, skipchars=None, line_wrap=True):
+def get_file_peek(
+    file_name: str, WIDTH: int = 256, LINE_COUNT: int = 5, skipchars: Optional[List[str]] = None, line_wrap: bool = True
+) -> str:
     """
     Returns the first LINE_COUNT lines wrapped to WIDTH.
 
