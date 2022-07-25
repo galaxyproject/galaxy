@@ -67,23 +67,6 @@ CanConvertToFloat = Union[str, int, float]
 CanConvertToInt = Union[str, int, float]
 
 
-def get_or_create_index(index_dir: str, schema: Schema) -> index.Index:
-    if not os.path.exists(index_dir):
-        os.makedirs(index_dir)
-    if index.exists_in(index_dir):
-        idx = index.open_dir(index_dir)
-        try:
-            assert idx.schema == schema
-            return idx
-        except AssertionError:
-            log.warning("Index at '%s' uses outdated schema, creating new index", index_dir)
-
-    # Delete the old index if schema has changed
-    shutil.rmtree(index_dir)
-    os.makedirs(index_dir)
-    return index.create_in(index_dir, schema=schema)
-
-
 class ToolBoxSearch:
     """Support searching across all fixed panel views in a toolbox.
 
@@ -105,10 +88,16 @@ class ToolBoxSearch:
         # reindexing if the index count is equal to the toolbox reload count.
         self.index_count = -1
 
-    def build_index(self, tool_cache, toolbox, index_help: bool = True) -> None:
+    def build_index(
+        self,
+        tool_cache,
+        toolbox,
+        index_help: bool = True
+    ) -> None:
         self.index_count += 1
         for panel_search in self.panel_searches.values():
-            panel_search.build_index(tool_cache, toolbox, index_help=index_help)
+            panel_search.build_index(
+                tool_cache, toolbox, index_help=index_help)
 
     def search(self, *args, **kwd) -> List[str]:
         panel_view = kwd.pop("panel_view")
@@ -133,9 +122,9 @@ class ToolPanelViewSearch:
     ):
         """Build the schema and validate against the index."""
         schema_conf = {
-            # The ID field is currently not searchable!?
-            # Can't fix, spent hours trying
+            # The stored ID field is not searchable
             'id': ID(stored=True, unique=True),
+            # This exact field is searchable by exact matches only
             'id_exact': TEXT(
                 field_boost=(
                     config.tool_id_boost
@@ -151,11 +140,15 @@ class ToolPanelViewSearch:
                     * config.tool_name_exact_multiplier),
                 analyzer=analysis.IDTokenizer() | analysis.LowercaseFilter(),
             ),
+            # The owner/repo/tool_id parsed from the GUID
             'stub': KEYWORD(field_boost=float(config.tool_stub_boost)),
+            # The section where the tool is listed in the tool panel
             'section': TEXT(field_boost=float(config.tool_section_boost)),
+            # Short description defined in the tool XML
             'description': TEXT(
                 field_boost=config.tool_description_boost,
                 analyzer=analysis.StemmingAnalyzer()),
+            # Help text parsed from the tool XML
             'help': TEXT(
                 field_boost=config.tool_help_boost,
                 analyzer=analysis.StemmingAnalyzer()),
@@ -187,24 +180,74 @@ class ToolPanelViewSearch:
         self.index = self._index_setup()
 
     def _index_setup(self) -> index.Index:
-        return get_or_create_index(index_dir=self.index_dir, schema=self.schema)
+        """Get or create a reference to the index."""
+        if not os.path.exists(self.index_dir):
+            os.makedirs(self.index_dir)
+        if index.exists_in(self.index_dir):
+            idx = index.open_dir(self.index_dir)
+            if idx.schema == self.schema:
+                return idx
+        log.warning(
+            f"Index at '{self.index_dir}' uses outdated schema, creating a"
+            " new index")
 
-    def build_index(self, tool_cache, toolbox, index_help: bool = True) -> None:
+        # Delete the old index and return a new index reference
+        shutil.rmtree(self.index_dir)
+        os.makedirs(self.index_dir)
+        return index.create_in(self.index_dir, schema=self.schema)
+
+    def build_index(
+        self,
+        tool_cache,
+        toolbox,
+        index_help: bool = True
+    ) -> None:
         """Prepare search index for tools loaded in toolbox.
 
-        Use `tool_cache` to determine which tools need indexing and which tools
-        should be expired.
+        Use `tool_cache` to determine which tools need indexing and which
+        should be removed.
         """
         log.debug(
             f"Starting to build toolbox index of panel {self.panel_view_id}.")
         execution_timer = ExecutionTimer()
+
         with self.index.reader() as reader:
             # Index ocasionally contains empty stored fields
-            indexed_tool_ids = {f["id"] for f in reader.all_stored_fields() if f}
-        tool_ids_to_remove = (indexed_tool_ids - set(tool_cache._tool_paths_by_id.keys())).union(
-            tool_cache._removed_tool_ids
+            self.indexed_tool_ids = {
+                f["id"]
+                for f in reader.all_stored_fields()
+                if f
+            }
+
+        tool_ids_to_remove = self._get_tools_to_remove(tool_cache)
+        tools_to_index = self._get_tool_list(
+            toolbox,
+            tool_cache,
         )
-        for indexed_tool_id in indexed_tool_ids:
+
+        with AsyncWriter(self.index) as writer:
+            for tool_id in tool_ids_to_remove:
+                writer.delete_by_term("id", tool_id)
+            for tool in tools_to_index:
+                add_doc_kwds = self._create_doc(
+                    tool=tool,
+                    index_help=index_help,
+                    config=toolbox.app.config,
+                )
+                # Add tool document to index (or overwrite if existing)
+                writer.update_document(**add_doc_kwds)
+
+        log.debug(
+            f"Toolbox index of panel {self.panel_view_id}"
+            f" finished {execution_timer}")
+
+    def _get_tools_to_remove(self, tool_cache):
+        """Return list of tool IDs to be removed from index."""
+        tool_ids_to_remove = (
+            self.indexed_tool_ids - set(tool_cache._tool_paths_by_id.keys())
+        ).union(tool_cache._removed_tool_ids)
+
+        for indexed_tool_id in self.indexed_tool_ids:
             indexed_tool = tool_cache.get_tool_by_id(indexed_tool_id)
             if indexed_tool:
                 if indexed_tool.is_latest_version:
@@ -214,39 +257,35 @@ class ToolPanelViewSearch:
                     continue
             tool_ids_to_remove.add(indexed_tool_id)
 
-        with AsyncWriter(self.index) as writer:
-            for tool_id in tool_ids_to_remove:
-                writer.delete_by_term("id", tool_id)
-            for tool_id in tool_cache._new_tool_ids - indexed_tool_ids:
-                tool = toolbox.get_tool(tool_id)
-                if tool and tool.is_latest_version and toolbox.panel_has_tool(tool, self.panel_view_id):
-                    if tool.hidden:
-                        # we check if there is an older tool we can return
-                        if tool.lineage:
-                            for tool_version in reversed(tool.lineage.get_versions()):
-                                tool = tool_cache.get_tool_by_id(tool_version.id)
-                                if tool and not tool.hidden:
-                                    tool_id = tool.id
-                                    break
-                            else:
-                                continue
-                        else:
-                            continue
-                    add_doc_kwds = self._create_doc(
-                        tool_id=tool_id,
-                        tool=tool,
-                        index_help=index_help,
-                        config=toolbox.app.config,
-                    )
-                    writer.update_document(**add_doc_kwds)
+        return tool_ids_to_remove
 
-        log.debug(
-            f"Toolbox index of panel {self.panel_view_id}"
-            f" finished {execution_timer}")
+    def _get_tool_list(self, toolbox, tool_cache) -> tuple:
+        """Return list of tools to add and remove from index."""
+        tools_to_index = []
+
+        for tool_id in tool_cache._new_tool_ids - self.indexed_tool_ids:
+            tool = toolbox.get_tool(tool_id)
+            if (
+                tool
+                and tool.is_latest_version
+                and toolbox.panel_has_tool(tool, self.panel_view_id)
+            ):
+                if tool.hidden:
+                    # Check if there is an older tool we can return
+                    if tool.lineage:
+                        tool_versions = reversed(tool.lineage.get_versions())
+                        for tool_version in tool_versions:
+                            tool = tool_cache.get_tool_by_id(tool_version.id)
+                            if tool and not tool.hidden:
+                                break
+                    else:
+                        continue
+                tools_to_index.append(tool)
+
+        return tools_to_index
 
     def _create_doc(
         self,
-        tool_id: str,
         tool,
         index_help: bool = True,
         config: GalaxyAppConfiguration = None,
@@ -275,20 +314,11 @@ class ToolPanelViewSearch:
             ),
             "help": to_unicode(""),
         }
-        if tool.name.find("-") != -1:
-            # Replace hyphens since they are wildcards in Whoosh
-            add_doc_kwds["name"] = (" ").join(
-                token.text for token in self.rex(to_unicode(tool.name))
-            )
-        else:
-            add_doc_kwds["name"] = to_unicode(tool.name)
         if tool.guid:
             # Create a stub consisting of owner, repo, and tool from guid
             slash_indexes = [m.start() for m in re.finditer("/", tool.guid)]
             id_stub = tool.guid[(slash_indexes[1] + 1):slash_indexes[4]]
-            add_doc_kwds["stub"] = (" ").join(
-                token.text for token in self.rex(to_unicode(id_stub))
-            )
+            add_doc_kwds["stub"] = clean(id_stub)
         else:
             add_doc_kwds["stub"] = to_unicode(id)
         if tool.labels:
