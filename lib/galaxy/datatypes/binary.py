@@ -696,7 +696,7 @@ class Bam(BamNative):
             pass
         return index_flag
 
-    def dataset_content_needs_grooming(self, file_name):
+    def dataset_content_needs_grooming(self, file_name: str) -> bool:
         """
         Check if file_name is a coordinate-sorted BAM file
         """
@@ -866,7 +866,7 @@ class BamInputSorted(BamNative):
         # We never want to sniff to this datatype
         return False
 
-    def dataset_content_needs_grooming(self, file_name):
+    def dataset_content_needs_grooming(self, file_name: str) -> bool:
         """
         Groom if the file is coordinate sorted
         """
@@ -874,7 +874,7 @@ class BamInputSorted(BamNative):
         # is to actually index them.
         with pysam.AlignmentFile(filename=file_name) as f:
             # The only sure thing we know here is that the sort order can't be coordinate
-            return f.header.get("HD", {}).get("SO") == "coordinate"
+            return f.header.get("HD", {}).get("SO") == "coordinate"  # type: ignore [attr-defined]
 
 
 class BamQuerynameSorted(BamInputSorted):
@@ -886,14 +886,14 @@ class BamQuerynameSorted(BamInputSorted):
     def sniff(self, file_name):
         return BamNative().sniff(file_name) and not self.dataset_content_needs_grooming(file_name)
 
-    def dataset_content_needs_grooming(self, file_name):
+    def dataset_content_needs_grooming(self, file_name: str) -> bool:
         """
         Check if file_name is a queryname-sorted BAM file
         """
         # The best way to ensure that BAM files are coordinate-sorted and indexable
         # is to actually index them.
         with pysam.AlignmentFile(filename=file_name) as f:
-            return f.header.get("HD", {}).get("SO") != "queryname"
+            return f.header.get("HD", {}).get("SO") != "queryname"  # type: ignore [attr-defined]
 
 
 class CRAM(Binary):
