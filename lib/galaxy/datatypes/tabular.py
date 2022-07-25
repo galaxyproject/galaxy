@@ -39,7 +39,6 @@ from galaxy.datatypes.sniff import (
     iter_headers,
     validate_tabular,
 )
-from galaxy.model import DatasetInstance
 from galaxy.util import compression_utils
 from galaxy.util.markdown import MarkdownFormatHelpers
 from . import dataproviders
@@ -100,7 +99,7 @@ class TabularData(data.Text):
         if dataset.metadata.comment_lines:
             dataset.blurb = f"{dataset.blurb}, {util.commaify(str(dataset.metadata.comment_lines))} comments"
 
-    def displayable(self, dataset: DatasetInstance):
+    def displayable(self, dataset: "DatasetInstance"):
         try:
             return (
                 not dataset.dataset.purged

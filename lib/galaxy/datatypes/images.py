@@ -4,12 +4,11 @@ Image classes
 import base64
 import json
 import logging
-import zipfile
 from typing import (
     Optional,
     TYPE_CHECKING,
 )
-from urllib.parse import quote_plus
+
 import mrcfile
 import numpy as np
 import tifffile
