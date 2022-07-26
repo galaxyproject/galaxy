@@ -122,14 +122,6 @@ class Ply:
                             element_tuple = (items[1], int(items[2]))
                             dataset.metadata.other_elements.append(element_tuple)
 
-    def set_peek(self, dataset):
-        if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = f"Faces: {str(dataset.metadata.face)}, Vertices: {str(dataset.metadata.vertex)}"
-        else:
-            dataset.peek = "File does not exist"
-            dataset.blurb = "File purged from disc"
-
     def display_peek(self, dataset):
         try:
             return dataset.peek
@@ -154,6 +146,22 @@ class PlyAscii(Ply, data.Text):  # type: ignore[misc]
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
 
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.blurb = f"Faces: {str(dataset.metadata.face)}, Vertices: {str(dataset.metadata.vertex)}"
+        else:
+            dataset.peek = "File does not exist"
+            dataset.blurb = "File purged from disc"
+
 
 class PlyBinary(Ply, Binary):  # type: ignore[misc]
     file_ext = "plybinary"
@@ -161,6 +169,14 @@ class PlyBinary(Ply, Binary):  # type: ignore[misc]
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
+
+    def set_peek(self, dataset: "DatasetInstance") -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.blurb = f"Faces: {str(dataset.metadata.face)}, Vertices: {str(dataset.metadata.vertex)}"
+        else:
+            dataset.peek = "File does not exist"
+            dataset.blurb = "File purged from disc"
 
 
 @build_sniff_from_prefix
