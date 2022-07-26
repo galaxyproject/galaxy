@@ -3,7 +3,6 @@
 import datetime
 import random
 import unittest
-from typing import cast
 
 from sqlalchemy import (
     column,
@@ -19,7 +18,6 @@ from galaxy.managers import (
     history_contents,
 )
 from galaxy.managers.histories import HistoryManager
-from galaxy.structured_app import MinimalManagerApp
 from .base import (
     BaseTestCase,
     CreatesCollectionsMixin,
@@ -340,7 +338,7 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
 class HistoryContentsFilterParserTestCase(HistoryAsContainerBaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
-        self.filter_parser = history_contents.HistoryContentsFilters(cast(MinimalManagerApp, self.app))
+        self.filter_parser = history_contents.HistoryContentsFilters(self.app)
 
     def test_date_parser(self):
         # -- seconds and milliseconds from epoch

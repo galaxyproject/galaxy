@@ -1,5 +1,4 @@
 import unittest
-from typing import cast
 from unittest import mock
 
 from galaxy.managers import (
@@ -9,7 +8,6 @@ from galaxy.managers import (
 )
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.histories import HistoryManager
-from galaxy.structured_app import StructuredApp
 from .base import (
     BaseTestCase,
     CreatesCollectionsMixin,
@@ -64,7 +62,7 @@ def testable_url_for(*a, **k):
 class HDCASerializerTestCase(HDCATestCase):
     def set_up_managers(self):
         super().set_up_managers()
-        self.hdca_serializer = hdcas.HDCASerializer(cast(StructuredApp, self.app))
+        self.hdca_serializer = hdcas.HDCASerializer(self.app)
 
     def test_views(self):
         serializer = self.hdca_serializer

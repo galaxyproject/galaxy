@@ -453,8 +453,10 @@ class ConfiguresGalaxyMixin:
         return self.toolbox.dependency_manager.default_base_path
 
 
-class MinimalGalaxyApplication(BasicSharedApp, ConfiguresGalaxyMixin, HaltableContainer, SentryClientMixin):  # type: ignore[misc]
+class MinimalGalaxyApplication(BasicSharedApp, ConfiguresGalaxyMixin, HaltableContainer, SentryClientMixin):
     """Encapsulates the state of a minimal Galaxy application"""
+
+    model: GalaxyModelMapping
 
     def __init__(self, fsmon=False, **kwargs) -> None:
         super().__init__()
@@ -505,8 +507,10 @@ class MinimalGalaxyApplication(BasicSharedApp, ConfiguresGalaxyMixin, HaltableCo
         self.model.engine.dispose()
 
 
-class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):  # type: ignore[misc]
+class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     """Extends the MinimalGalaxyApplication with most managers that are not tied to a web or job handling context."""
+
+    model: GalaxyModelMapping
 
     def __init__(self, configure_logging=True, use_converters=True, use_display_applications=True, **kwargs):
         super().__init__(**kwargs)
@@ -588,8 +592,10 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):  # 
         self.configure_sentry_client()
 
 
-class UniverseApplication(StructuredApp, GalaxyManagerApplication):  # type: ignore[misc]
+class UniverseApplication(StructuredApp, GalaxyManagerApplication):
     """Encapsulates the state of a Universe application"""
+
+    model: GalaxyModelMapping
 
     def __init__(self, **kwargs) -> None:
         startup_timer = ExecutionTimer()
@@ -803,12 +809,9 @@ class ExecutionTimerFactory:
     def __init__(self, config):
         statsd_host = getattr(config, "statsd_host", None)
         if statsd_host:
-            from galaxy.web.statsd_client import (
-                GalaxyStatsdClient,
-                VanillaGalaxyStatsdClient,
-            )
+            from galaxy.web.statsd_client import GalaxyStatsdClient
 
-            self.galaxy_statsd_client: Optional[VanillaGalaxyStatsdClient] = GalaxyStatsdClient(
+            self.galaxy_statsd_client: Optional[GalaxyStatsdClient] = GalaxyStatsdClient(
                 statsd_host,
                 getattr(config, "statsd_port", 8125),
                 getattr(config, "statsd_prefix", "galaxy"),

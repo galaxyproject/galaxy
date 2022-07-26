@@ -5,10 +5,7 @@ import os
 import string
 import time
 import unittest
-from typing import (
-    cast,
-    Optional,
-)
+from typing import Optional
 
 import pytest
 import routes
@@ -18,7 +15,6 @@ from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
-from galaxy.structured_app import StructuredApp
 from galaxy.tool_util.unittest_utils import mock_trans
 from galaxy.tool_util.unittest_utils.sample_data import (
     SIMPLE_MACRO,
@@ -52,14 +48,11 @@ DEFAULT_TEST_REPO = REPO_TYPE("github.com", "galaxyproject", "example", "1", "1"
 
 
 class SimplifiedToolBox(ToolBox):
-    def __init__(self, test_case):
+    def __init__(self, test_case: "BaseToolBoxTestCase"):
         app = test_case.app
         app.watchers.tool_config_watcher.reload_callback = lambda: reload_callback(test_case)
         # Handle app/config stuff needed by toolbox but not by tools.
         app.tool_cache = ToolCache() if not hasattr(app, "tool_cache") else app.tool_cache
-        app.job_config.get_tool_resource_parameters = lambda tool_id: None
-        app.config.update_integrated_tool_panel = True
-        app.config.schema.defaults = {"tool_dependency_dir": "dependencies"}
         config_files = test_case.config_files
         tool_root_dir = test_case.test_directory
         super().__init__(
@@ -100,7 +93,7 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesTools):
         self.app.reindex_tool_search = self.__reindex  # type: ignore[assignment]
         itp_config = os.path.join(self.test_directory, "integrated_tool_panel.xml")
         self.app.config.integrated_tool_panel_config = itp_config
-        self.app.watchers = ConfigWatchers(cast(StructuredApp, self.app))
+        self.app.watchers = ConfigWatchers(self.app)
         self._toolbox = None
         self.config_files = []
 

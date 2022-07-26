@@ -1,5 +1,4 @@
 from galaxy.managers import hdas
-from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.util import unicodify
@@ -16,15 +15,13 @@ class TagHandlerTestCase(BaseTestCase):
         super().set_up_managers()
         self.app.hda_manager = self.app[hdas.HDAManager]
         self.app.history_manager = self.app[HistoryManager]
-        self.app.dataset_manager = self.app[DatasetManager]
         self.tag_handler = self.app[GalaxyTagHandler]
         self.user = self.user_manager.create(**user2_data)
 
     def _create_vanilla_hda(self, user=None):
         owner = user or self.user
         history1 = self.app.history_manager.create(name="history1", user=owner)
-        dataset1 = self.app.dataset_manager.create()
-        return self.app.hda_manager.create(history=history1, dataset=dataset1)
+        return self.app.hda_manager.create(history=history1)
 
     def _check_tag_list(self, tags, expected_tags):
         self.assertEqual(len(tags), len(expected_tags))

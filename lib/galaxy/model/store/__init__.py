@@ -101,7 +101,7 @@ class StoreAppProtocol(Protocol):
     datatypes_registry: Registry
     object_store: ObjectStore
     security: IdEncodingHelper
-    model: Union[GalaxyModelMapping, model.base.SharedModelMapping]
+    model: GalaxyModelMapping
     file_sources: ConfiguredFileSources
     workflow_contents_manager: "WorkflowContentsManager"
 
