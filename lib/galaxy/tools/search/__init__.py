@@ -67,6 +67,24 @@ CanConvertToFloat = Union[str, int, float]
 CanConvertToInt = Union[str, int, float]
 
 
+def get_or_create_index(index_dir, schema):
+    """Get or create a reference to the index."""
+    if not os.path.exists(index_dir):
+        os.makedirs(index_dir)
+    if index.exists_in(index_dir):
+        idx = index.open_dir(index_dir)
+        if idx.schema == schema:
+            return idx
+    log.warning(
+        f"Index at '{index_dir}' uses outdated schema, creating a"
+        " new index")
+
+    # Delete the old index and return a new index reference
+    shutil.rmtree(index_dir)
+    os.makedirs(index_dir)
+    return index.create_in(index_dir, schema=schema)
+
+
 class ToolBoxSearch:
     """Support searching across all fixed panel views in a toolbox.
 
@@ -181,20 +199,7 @@ class ToolPanelViewSearch:
 
     def _index_setup(self) -> index.Index:
         """Get or create a reference to the index."""
-        if not os.path.exists(self.index_dir):
-            os.makedirs(self.index_dir)
-        if index.exists_in(self.index_dir):
-            idx = index.open_dir(self.index_dir)
-            if idx.schema == self.schema:
-                return idx
-        log.warning(
-            f"Index at '{self.index_dir}' uses outdated schema, creating a"
-            " new index")
-
-        # Delete the old index and return a new index reference
-        shutil.rmtree(self.index_dir)
-        os.makedirs(self.index_dir)
-        return index.create_in(self.index_dir, schema=self.schema)
+        return get_or_create_index()
 
     def build_index(
         self,
