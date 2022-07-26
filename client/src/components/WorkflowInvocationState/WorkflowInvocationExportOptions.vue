@@ -8,15 +8,27 @@
                 bioinformatics verification protocols.
             </p>
             <p>Learn more about <a href="https://biocomputeobject.org/" target="_blank">BioCompute Objects</a>.</p>
+            <p>
+                Instructions for
+                <a href="https://w3id.org/biocompute/tutorials/galaxy_quick_start" target="_blank"
+                    >creating a BCO using Galaxy</a
+                >.
+            </p>
             <b-tabs lazy>
                 <b-tab title="Download">
                     <a class="bco-json" :href="bcoDownloadLink"><b>Download BCO</b></a>
                 </b-tab>
                 <b-tab title="Submit To BCODB">
                     <div>
+                        <p>
+                            To submit to a BCODB you need to already have an authenticated account. Instructions on
+                            submitting a BCO from Galaxy are available
+                            <a href="https://w3id.org/biocompute/tutorials/galaxy_quick_start/" target="_blank">here</a
+                            >.
+                        </p>
                         <form @submit.prevent="submitForm">
                             <div class="form-group">
-                                <label for="fetch">BCO DB Root URL</label>
+                                <label for="fetch">BCO DB URL (example: https://biocomputeobject.org)</label>
                                 <input
                                     id="fetch"
                                     v-model="form.fetch"
@@ -30,8 +42,8 @@
                                 <input
                                     id="authorization"
                                     v-model="form.authorization"
-                                    type="text"
-                                    class="form-control" 
+                                    type="password"
+                                    class="form-control"
                                     required />
                             </div>
                             <div class="form-group">
@@ -41,7 +53,7 @@
                                     v-model="form.table"
                                     type="text"
                                     class="form-control"
-                                    placeholder="GALXY"
+                                    placeholder="BCO"
                                     required />
                             </div>
                             <div class="form-group">
@@ -60,7 +72,6 @@
                     </div>
                 </b-tab>
             </b-tabs>
-            
         </b-card>
         <!-- Add more export plugins here -->
     </b-card-group>
@@ -81,7 +92,7 @@ export default {
             required: true,
         },
     },
-     data() {
+    data() {
         return {
             bco: {
                 type: Object,
@@ -148,7 +159,7 @@ export default {
                     }
                 })
                 .catch(function (error) {
-                    console.log("Error", {...error});
+                    console.log("Error", { ...error });
                     if (error.response.status == 401) {
                         alert(error.response.data.detail);
                         console.log("Error response: ", error);
