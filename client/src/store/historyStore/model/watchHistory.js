@@ -58,12 +58,9 @@ export async function watchHistoryOnce(store) {
             v: "dev",
             view: "detailed",
         };
-        const paramsString = Object.entries(params)
-            .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
-            .join("&");
-        const url = `api/histories/${historyId}/contents?${paramsString}`;
+        const url = `api/histories/${historyId}/contents`;
         lastRequestDate = new Date();
-        const payload = await urlData({ url });
+        const payload = await urlData({ url, params });
         // show warning that not all changes have been obtained
         if (payload && payload.length == limit) {
             console.debug(`Reached limit of monitored changes (limit=${limit}).`);
