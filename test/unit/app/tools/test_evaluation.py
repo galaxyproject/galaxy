@@ -1,4 +1,5 @@
 import os
+from typing import cast
 from unittest import TestCase
 
 from galaxy.app_unittest_utils.tools_support import UsesApp
@@ -13,6 +14,7 @@ from galaxy.model import (
     JobToInputDatasetAssociation,
     JobToOutputDatasetAssociation,
 )
+from galaxy.structured_app import MinimalToolApp
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.evaluation import ToolEvaluator
 
@@ -45,7 +47,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         self.job.history = History()
         self.job.history.id = 42
         self.job.parameters = [JobParameter(name="thresh", value="4")]
-        self.evaluator = ToolEvaluator(self.app, self.tool, self.job, self.test_directory)
+        self.evaluator = ToolEvaluator(cast(MinimalToolApp, self.app), self.tool, self.job, self.test_directory)
 
     def tearDown(self):
         self.tear_down_app()

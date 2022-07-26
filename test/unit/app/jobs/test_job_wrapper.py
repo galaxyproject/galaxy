@@ -2,6 +2,7 @@ import abc
 import os
 from contextlib import contextmanager
 from typing import (
+    cast,
     Dict,
     Type,
 )
@@ -18,6 +19,7 @@ from galaxy.model import (
     Task,
     User,
 )
+from galaxy.tools import ToolBox
 from galaxy.util.bunch import Bunch
 
 TEST_TOOL_ID = "cufftest"
@@ -37,7 +39,7 @@ class BaseWrapperTestCase(UsesApp):
         self.model_objects: Dict[Type[Base], Dict[int, Base]] = {Job: {345: job}}
         self.app.model.session = MockContext(self.model_objects)
 
-        self.app.toolbox = MockToolbox(MockTool(self))
+        self.app.toolbox = cast(ToolBox, MockToolbox(MockTool(self)))
         self.working_directory = os.path.join(self.test_directory, "working")
         self.app.object_store = MockObjectStore(self.working_directory)
 

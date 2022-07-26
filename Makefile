@@ -45,6 +45,9 @@ format:  ## Format Python code base
 	$(IN_VENV) isort .
 	$(IN_VENV) black .
 
+remove-unused-imports:  ## Remove unused imports in Python code base
+	$(IN_VENV) autoflake --in-place --remove-all-unused-imports --recursive --verbose lib/ test/
+
 list-dependency-updates: setup-venv
 	$(IN_VENV) pip list --outdated --format=columns
 

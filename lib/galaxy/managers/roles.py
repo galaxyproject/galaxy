@@ -17,7 +17,7 @@ from galaxy.util import unicodify
 log = logging.getLogger(__name__)
 
 
-class RoleManager(base.ModelManager):
+class RoleManager(base.ModelManager[model.Role]):
     """
     Business logic for roles.
     """
@@ -28,7 +28,7 @@ class RoleManager(base.ModelManager):
     user_assoc = model.UserRoleAssociation
     group_assoc = model.GroupRoleAssociation
 
-    def get(self, trans: ProvidesUserContext, decoded_role_id):
+    def get(self, trans: ProvidesUserContext, decoded_role_id) -> model.Role:
         """
         Method loads the role from the DB based on the given role id.
 

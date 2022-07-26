@@ -3,6 +3,10 @@ from datetime import (
     datetime,
     timedelta,
 )
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
 from unittest import TestCase
 
 from galaxy import model
@@ -10,6 +14,10 @@ from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.managers.users import UserManager
 from galaxy.security.passwords import check_password
 from galaxy.webapps.galaxy.controllers.user import User
+
+if TYPE_CHECKING:
+    from galaxy.structured_app import StructuredApp
+
 
 admin_email = "admin@admin.admin"
 admin_users = admin_email
@@ -38,7 +46,7 @@ class LoginControllerTestCase(TestCase):
         self.assertEqual(user2.email, user2_data["email"])
         self.assertTrue(check_password(default_password, user2.password))
 
-        controller = User(self.app)
+        controller = User(cast("StructuredApp", self.app))
         response = json.loads(controller.login(self.trans))
         self.assertEqual(response["err_msg"], "Please specify a username and password.")
         response = json.loads(

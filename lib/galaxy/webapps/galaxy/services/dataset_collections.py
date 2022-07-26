@@ -3,6 +3,8 @@ from typing import (
     List,
     Optional,
     Set,
+    TYPE_CHECKING,
+    Union,
 )
 
 from pydantic import (
@@ -39,6 +41,12 @@ from galaxy.schema.schema import (
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.base.controller import UsesLibraryMixinItems
 from galaxy.webapps.galaxy.services.base import ServiceBase
+
+if TYPE_CHECKING:
+    from galaxy.model import (
+        HistoryDatasetCollectionAssociation,
+        LibraryDatasetCollectionAssociation,
+    )
 
 log = getLogger(__name__)
 
@@ -155,7 +163,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         Returns dbkey/extension for collection elements
         """
         dataset_collection_instance = self.collection_manager.get_dataset_collection_instance(
-            trans, id=id, instance_type=instance_type, check_ownership=True
+            trans, instance_type, id, check_ownership=True
         )
         rval = dataset_collection_instance.to_dict(view="dbkeysandextensions")
         return rval
@@ -181,14 +189,16 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         """
         Returns information about a particular dataset collection.
         """
-        dataset_collection_instance = self.collection_manager.get_dataset_collection_instance(
-            trans,
-            id=id,
-            instance_type=instance_type,
-        )
+        dataset_collection_instance: Union["HistoryDatasetCollectionAssociation", "LibraryDatasetCollectionAssociation"]
         if instance_type == DatasetCollectionInstanceType.history:
+            dataset_collection_instance = self.collection_manager.get_dataset_collection_instance(
+                trans, DatasetCollectionInstanceType.history, id
+            )
             parent = dataset_collection_instance.history
         elif instance_type == DatasetCollectionInstanceType.library:
+            dataset_collection_instance = self.collection_manager.get_dataset_collection_instance(
+                trans, DatasetCollectionInstanceType.library, id
+            )
             parent = dataset_collection_instance.folder
         else:
             raise exceptions.RequestParameterInvalidException()
@@ -227,8 +237,12 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         """
         # validate HDCA for current user, will throw error if not permitted
         # TODO: refactor get_dataset_collection_instance
-        hdca = self.collection_manager.get_dataset_collection_instance(
-            trans, id=hdca_id, check_ownership=True, instance_type=instance_type
+        if instance_type != DatasetCollectionInstanceType.history:
+            raise exceptions.RequestParameterInvalidException(
+                "Parameter instance_type not bein 'history' is not yet implemented."
+            )
+        hdca: "HistoryDatasetCollectionAssociation" = self.collection_manager.get_dataset_collection_instance(
+            trans, DatasetCollectionInstanceType.history, hdca_id, check_ownership=True
         )
 
         # check to make sure the dsc is part of the validated hdca

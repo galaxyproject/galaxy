@@ -3809,8 +3809,10 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
 
     states = Dataset.states
+    _state: str
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
+    purged: bool
 
     class validated_states(str, Enum):
         UNKNOWN = "unknown"

@@ -45,7 +45,7 @@ class HistoryManagerTestCase(BaseTestCase):
         user3 = self.user_manager.create(**user3_data)
 
         self.log("should be able to create a new history")
-        history1 = self.history_manager.create(name="history1", user=user2)
+        history1: model.History = self.history_manager.create(name="history1", user=user2)
         self.assertIsInstance(history1, model.History)
         self.assertEqual(history1.name, "history1")
         self.assertEqual(history1.user, user2)

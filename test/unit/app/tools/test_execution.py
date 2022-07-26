@@ -1,12 +1,14 @@
 """ Test Tool execution and state handling logic.
 """
 from collections import OrderedDict
+from typing import cast
 from unittest import TestCase
 
 import webob.exc
 
 import galaxy.model
 from galaxy.app_unittest_utils import tools_support
+from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.util.bunch import Bunch
 
@@ -38,7 +40,7 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesTools):
         self.setup_app()
         self.history = galaxy.model.History()
         self.trans = MockTrans(self.app, self.history)
-        self.app.dataset_collection_manager = MockCollectionService()
+        self.app.dataset_collection_manager = cast(DatasetCollectionManager, MockCollectionService())
         self.tool_action = MockAction(self.trans)
 
     def tearDown(self):

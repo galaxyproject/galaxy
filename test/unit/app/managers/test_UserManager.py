@@ -5,6 +5,7 @@ Executable directly using: python -m test.unit.managers.test_UserManager
 """
 import unittest
 from datetime import datetime
+from typing import cast
 
 from sqlalchemy import desc
 
@@ -18,6 +19,7 @@ from galaxy.managers import (
     users,
 )
 from galaxy.security.passwords import check_password
+from galaxy.structured_app import MinimalManagerApp
 from .base import BaseTestCase
 
 # =============================================================================
@@ -225,7 +227,7 @@ class UserManagerTestCase(BaseTestCase):
 class UserSerializerTestCase(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
-        self.user_serializer = users.UserSerializer(self.app)
+        self.user_serializer = users.UserSerializer(cast(MinimalManagerApp, self.app))
 
     def test_views(self):
         user = self.user_manager.create(**user2_data)
@@ -288,7 +290,7 @@ class CurrentUserSerializerTestCase(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.history_manager = self.app[histories.HistoryManager]
-        self.user_serializer = users.CurrentUserSerializer(self.app)
+        self.user_serializer = users.CurrentUserSerializer(cast(MinimalManagerApp, self.app))
 
     def test_anonymous(self):
         anonym = None
@@ -314,7 +316,7 @@ class CurrentUserSerializerTestCase(BaseTestCase):
 class UserDeserializerTestCase(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
-        self.deserializer = users.UserDeserializer(self.app)
+        self.deserializer = users.UserDeserializer(cast(MinimalManagerApp, self.app))
 
     def _assertRaises_and_return_raised(self, exception_class, fn, *args, **kwargs):
         try:
@@ -367,7 +369,7 @@ class UserDeserializerTestCase(BaseTestCase):
 class AdminUserFilterParserTestCase(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
-        self.filter_parser = users.AdminUserFilterParser(self.app)
+        self.filter_parser = users.AdminUserFilterParser(cast(MinimalManagerApp, self.app))
 
     def test_parsable(self):
         self.log("the following filters should be parsable")

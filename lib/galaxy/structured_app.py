@@ -40,6 +40,8 @@ if TYPE_CHECKING:
     from galaxy.jobs import JobConfiguration
     from galaxy.managers.workflows import WorkflowsManager
     from galaxy.tools.data import ToolDataTableManager
+    from galaxy.tools.error_reports import ErrorReports
+    from galaxy.visualization.genomes import Genomes
 
 
 class BasicApp(Container):
@@ -56,7 +58,7 @@ class BasicSharedApp(BasicApp):
     """
 
     application_stack: ApplicationStack
-    model: SharedModelMapping
+    model: Union[GalaxyModelMapping, SharedModelMapping]
     security: IdEncodingHelper
     auth_manager: AuthManager
     toolbox: Any  # 'galaxy.tools.ToolBox'
@@ -76,7 +78,6 @@ class MinimalToolApp(BasicApp):
 class MinimalApp(BasicSharedApp):
     is_webapp: bool  # is_webapp will be set to true when building WSGI app
     tag_handler: GalaxyTagHandler
-    model: GalaxyModelMapping
     install_model: ModelMapping
     security_agent: GalaxyRBACAgent
     host_security_agent: HostAgent
@@ -101,6 +102,8 @@ class MinimalManagerApp(MinimalApp):
     job_manager: Any  # galaxy.jobs.manager.JobManager
     job_metrics: "JobMetrics"
     dynamic_tool_manager: Any  # 'galaxy.managers.tools.DynamicToolManager'
+    genomes: "Genomes"
+    error_reports: "ErrorReports"
 
     @property
     def is_job_handler(self) -> bool:
@@ -127,7 +130,7 @@ class StructuredApp(MinimalManagerApp):
     file_sources: ConfiguredFileSources
     genome_builds: GenomeBuilds
     job_metrics: JobMetrics
-    model: GalaxyModelMapping
+    model: Union[GalaxyModelMapping, SharedModelMapping]
     install_model: ModelMapping
     security_agent: GalaxyRBACAgent
     host_security_agent: HostAgent

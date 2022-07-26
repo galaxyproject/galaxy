@@ -70,31 +70,31 @@ def create_additional_database_objects(engine):
 
 
 def configure_model_mapping(
-    file_path,
+    file_path: str,
     object_store,
     use_pbkdf2,
     engine,
     map_install_models,
     thread_local_log,
-):
+) -> GalaxyModelMapping:
     _configure_model(file_path, object_store, use_pbkdf2)
     return _build_model_mapping(engine, map_install_models, thread_local_log)
 
 
-def _configure_model(file_path, object_store, use_pbkdf2):
+def _configure_model(file_path: str, object_store, use_pbkdf2) -> None:
     model.Dataset.file_path = file_path
     model.Dataset.object_store = object_store
     model.User.use_pbkdf2 = use_pbkdf2
 
 
-def _build_model_mapping(engine, map_install_models, thread_local_log):
+def _build_model_mapping(engine, map_install_models, thread_local_log) -> GalaxyModelMapping:
     model_modules = [model]
     if map_install_models:
         from galaxy.model import tool_shed_install
 
         model_modules.append(tool_shed_install)
 
-    model_mapping = GalaxyModelMapping(model_modules, engine=engine)
+    model_mapping = GalaxyModelMapping(model_modules, engine)
     model_mapping.security_agent = GalaxyRBACAgent(model_mapping)
     model_mapping.thread_local_log = thread_local_log
     return model_mapping

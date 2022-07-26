@@ -5,7 +5,10 @@ import os
 import string
 import time
 import unittest
-from typing import Optional
+from typing import (
+    cast,
+    Optional,
+)
 
 import pytest
 import routes
@@ -15,6 +18,7 @@ from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
+from galaxy.structured_app import StructuredApp
 from galaxy.tool_util.unittest_utils import mock_trans
 from galaxy.tool_util.unittest_utils.sample_data import (
     SIMPLE_MACRO,
@@ -93,10 +97,10 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesTools):
         install_model = mapping.init("sqlite:///:memory:", create_tables=True)
         self.app.tool_cache = ToolCache()
         self.app.install_model = install_model
-        self.app.reindex_tool_search = self.__reindex
+        self.app.reindex_tool_search = self.__reindex  # type: ignore[assignment]
         itp_config = os.path.join(self.test_directory, "integrated_tool_panel.xml")
         self.app.config.integrated_tool_panel_config = itp_config
-        self.app.watchers = ConfigWatchers(self.app)
+        self.app.watchers = ConfigWatchers(cast(StructuredApp, self.app))
         self._toolbox = None
         self.config_files = []
 
