@@ -46,7 +46,7 @@ SNIFF_PREFIX_BYTES = int(os.environ.get("GALAXY_SNIFF_PREFIX_BYTES", None) or 2*
 BINARY_MIMETYPES = {"application/pdf", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
 
 
-def get_test_fname(fname):
+def get_test_fname(fname: str) -> str:
     """Returns test data filename"""
     path, name = os.path.split(__file__)
     full_path = os.path.join(path, "test", fname)
