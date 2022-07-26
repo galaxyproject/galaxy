@@ -2282,7 +2282,7 @@ mapping:
 
       tool_help_boost:
         type: float
-        default: 1
+        default: 1.0
         required: false
         reloadable: true
         desc: |
