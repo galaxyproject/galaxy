@@ -76,8 +76,7 @@ def get_or_create_index(index_dir, schema):
         if idx.schema == schema:
             return idx
     log.warning(
-        f"Index at '{index_dir}' uses outdated schema, creating a"
-        " new index")
+        f"Index at '{index_dir}' uses outdated schema, creating a new index")
 
     # Delete the old index and return a new index reference
     shutil.rmtree(index_dir)
