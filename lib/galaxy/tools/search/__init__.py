@@ -261,7 +261,7 @@ class ToolPanelViewSearch:
                     continue
             tool_ids_to_remove.add(indexed_tool_id)
 
-        return tool_ids_to_remove
+        return list(tool_ids_to_remove)
 
     def _get_tool_list(self, toolbox, tool_cache) -> list:
         """Return list of tools to add and remove from index."""
