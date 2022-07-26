@@ -3,6 +3,11 @@ Triple format classes
 """
 import logging
 import re
+from typing import (
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -14,6 +19,9 @@ from . import (
     text,
     xml,
 )
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -36,15 +44,6 @@ class Triples(data.Data):
         """
         return False
 
-    def set_peek(self, dataset):
-        """Set the peek and blurb text"""
-        if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
-            dataset.blurb = "Triple data"
-        else:
-            dataset.peek = "file does not exist"
-            dataset.blurb = "file purged from disk"
-
 
 @build_sniff_from_prefix
 class NTriples(data.Text, Triples):
@@ -61,7 +60,15 @@ class NTriples(data.Text, Triples):
             return True
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -85,7 +92,15 @@ class N3(data.Text, Triples):
         """
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -113,7 +128,15 @@ class Turtle(data.Text, Triples):
             return True
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -142,7 +165,15 @@ class Rdf(xml.GenericXml, Triples):
             return True
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -168,7 +199,15 @@ class Jsonld(text.Json, Triples):
                 return True
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -191,7 +230,7 @@ class HDT(binary.Binary, Triples):
             if f.read(4) == b"$HDT":
                 return True
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
