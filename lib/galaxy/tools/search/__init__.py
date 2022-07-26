@@ -237,7 +237,6 @@ class ToolPanelViewSearch:
                 add_doc_kwds = self._create_doc(
                     tool=tool,
                     index_help=index_help,
-                    config=toolbox.app.config,
                 )
                 # Add tool document to index (or overwrite if existing)
                 writer.update_document(**add_doc_kwds)
@@ -293,7 +292,6 @@ class ToolPanelViewSearch:
         self,
         tool,
         index_help: bool = True,
-        config: GalaxyAppConfiguration = None,
     ) -> Dict[str, str]:
         def clean(string):
             """Remove hyphens as they are Whoosh wildcards."""
