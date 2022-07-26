@@ -789,7 +789,9 @@ class Sam(Tabular, _BamOrSam):
         return super().line_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("regex-line", dataproviders.line.RegexLineDataProvider.settings)
-    def regex_line_dataprovider(self, dataset, **settings):
+    def regex_line_dataprovider(
+        self, dataset: "DatasetInstance", **settings
+    ) -> dataproviders.line.RegexLineDataProvider:
         settings["comment_char"] = "@"
         return super().regex_line_dataprovider(dataset, **settings)
 

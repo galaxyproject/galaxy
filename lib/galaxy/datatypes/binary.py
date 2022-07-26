@@ -776,7 +776,9 @@ class Bam(BamNative):
         return dataproviders.line.FilteredLineDataProvider(samtools_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("regex-line", dataproviders.line.RegexLineDataProvider.settings)
-    def regex_line_dataprovider(self, dataset, **settings):
+    def regex_line_dataprovider(
+        self, dataset: "DatasetInstance", **settings
+    ) -> dataproviders.line.RegexLineDataProvider:
         samtools_source = dataproviders.dataset.SamtoolsDataProvider(dataset)
         settings["comment_char"] = "@"
         return dataproviders.line.RegexLineDataProvider(samtools_source, **settings)
