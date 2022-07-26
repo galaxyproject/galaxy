@@ -342,7 +342,7 @@ class ToolPanelViewSearch:
     def search(
         self,
         q: str,
-        config: GalaxyAppConfiguration = None,
+        config: GalaxyAppConfiguration,
     ) -> List[str]:
         """Perform search on the in-memory index."""
         # Change field boosts for searcher
