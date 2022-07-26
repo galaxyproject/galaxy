@@ -470,14 +470,6 @@ class Vtk:
             blurb += str(dataset.metadata.dataset_type)
         return blurb or "VTK data"
 
-    def set_peek(self, dataset):
-        if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = self.get_blurb(dataset)
-        else:
-            dataset.peek = "File does not exist"
-            dataset.blurb = "File purged from disc"
-
     def display_peek(self, dataset):
         try:
             return dataset.peek
@@ -502,6 +494,22 @@ class VtkAscii(Vtk, data.Text):  # type: ignore[misc]
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
 
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.blurb = self.get_blurb(dataset)
+        else:
+            dataset.peek = "File does not exist"
+            dataset.blurb = "File purged from disc"
+
 
 class VtkBinary(Vtk, Binary):  # type: ignore[misc]
     """
@@ -519,6 +527,14 @@ class VtkBinary(Vtk, Binary):  # type: ignore[misc]
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
+
+    def set_peek(self, dataset: "DatasetInstance") -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.blurb = self.get_blurb(dataset)
+        else:
+            dataset.peek = "File does not exist"
+            dataset.blurb = "File purged from disc"
 
 
 class STL(data.Data):
