@@ -199,7 +199,7 @@ class ToolPanelViewSearch:
 
     def _index_setup(self) -> index.Index:
         """Get or create a reference to the index."""
-        return get_or_create_index()
+        return get_or_create_index(self.index_dir, self.schema)
 
     def build_index(
         self,
