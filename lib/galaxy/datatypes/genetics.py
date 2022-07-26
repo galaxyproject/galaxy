@@ -787,17 +787,16 @@ class RexpBase(Html):
             p = [f"##failed to find {pp}"]
         return "".join(p[:5])
 
-    def get_file_peek(self, filename):
+    def get_file_peek(self, filename: str) -> str:
         """
         can't really peek at a filename - need the extra_files_path and such?
         """
-        h = "## rexpression get_file_peek: no file found"
         try:
             with open(filename) as f:
-                h = f.readlines()
+                lines = f.readlines()
+                return "".join(lines[:5])
         except Exception:
-            pass
-        return "".join(h[:5])
+            return "## rexpression get_file_peek: no file found"
 
     def regenerate_primary_file(self, dataset):
         """
