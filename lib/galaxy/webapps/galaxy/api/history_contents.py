@@ -9,11 +9,13 @@ from typing import (
     List,
     Optional,
     Set,
+    Union,
 )
 
 from fastapi import (
     Body,
     Depends,
+    Header,
     Path,
     Query,
     Request,
@@ -29,27 +31,40 @@ from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
+    ValueFilterQueryParams,
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHistoryContentItem,
     AnyJobStateSummary,
+    AsyncFile,
+    AsyncTaskResultSummary,
     DatasetAssociationRoles,
+    DatasetSourceType,
     DeleteHistoryContentPayload,
     DeleteHistoryContentResult,
+    HistoryContentBulkOperationPayload,
+    HistoryContentBulkOperationResult,
     HistoryContentsArchiveDryRunResult,
     HistoryContentsResult,
+    HistoryContentsWithStatsResult,
     HistoryContentType,
+    MaterializeDatasetInstanceAPIRequest,
+    MaterializeDatasetInstanceRequest,
+    StoreExportPayload,
     UpdateDatasetPermissionsPayload,
     UpdateHistoryContentsBatchPayload,
     UpdateHistoryContentsPayload,
+    WriteStoreToPayload,
 )
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
     get_update_permission_payload,
+    get_value_filter_query_params,
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.history_contents import (
+    CreateHistoryContentFromStore,
     CreateHistoryContentPayload,
     DatasetDetailsType,
     DirectionOptions,
@@ -87,12 +102,26 @@ ContentTypeQueryParam = Query(
     example=HistoryContentType.dataset,
 )
 
+CONTENT_DELETE_RESPONSES = {
+    200: {
+        "description": "Request has been executed.",
+        "model": DeleteHistoryContentResult,
+    },
+    202: {
+        "description": "Request accepted, processing will finish later.",
+        "model": DeleteHistoryContentResult,
+    },
+}
+
 
 def get_index_query_params(
     v: Optional[str] = Query(  # Should this be deprecated at some point and directly use the latest version by default?
         default=None,
         title="Version",
-        description="Only `dev` value is allowed. Set it to use the latest version of this endpoint.",
+        description=(
+            "Only `dev` value is allowed. Set it to use the latest version of this endpoint. "
+            "**All parameters marked as `deprecated` will be ignored when this parameter is set.**"
+        ),
         example="dev",
     ),
     dataset_details: Optional[str] = Query(
@@ -137,7 +166,7 @@ def get_legacy_index_query_params(
         ),
         deprecated=True,
     ),
-    types: Optional[str] = Query(
+    types: Optional[List[str]] = Query(
         default=None,
         title="Types",
         description=(
@@ -149,8 +178,7 @@ def get_legacy_index_query_params(
     ),
     type: Optional[str] = Query(
         default=None,
-        title="Type",
-        description="Legacy name for the `types` parameter.",
+        include_in_schema=False,
         deprecated=True,
     ),
     details: Optional[str] = Query(
@@ -176,8 +204,7 @@ def get_legacy_index_query_params(
     correctly"""
     return parse_legacy_index_query_params(
         ids=ids,
-        types=types,
-        type=type,
+        types=types or type,
         details=details,
         deleted=deleted,
         visible=visible,
@@ -186,8 +213,7 @@ def get_legacy_index_query_params(
 
 def parse_legacy_index_query_params(
     ids: Optional[str] = None,
-    types: Optional[str] = None,
-    type: Optional[str] = None,
+    types: Optional[Union[List[str], str]] = None,
     details: Optional[str] = None,
     deleted: Optional[bool] = None,
     visible: Optional[bool] = None,
@@ -195,9 +221,11 @@ def parse_legacy_index_query_params(
 ) -> LegacyHistoryContentsIndexParams:
     """Parses (legacy) query parameters for the history contents `index` operation
     and returns a model containing the values in the correct type."""
-    types = types or type
     if types:
-        content_types = util.listify(types)
+        if isinstance(types, list) and len(types) == 1:  # Support ?types=dataset,dataset_collection
+            content_types = util.listify(types[0])
+        else:  # Support ?types=dataset&types=dataset_collection
+            content_types = util.listify(types)
     else:
         content_types = [e.value for e in HistoryContentType]
 
@@ -306,6 +334,23 @@ class FastAPIHistoryContents:
         "/api/histories/{history_id}/contents",
         name="history_contents",
         summary="Returns the contents of the given history.",
+        responses={
+            200: {
+                "description": ("The contents of the history that match the query."),
+                "content": {
+                    "application/json": {
+                        "schema": {  # HistoryContentsResult.schema(),
+                            "ref": "#/components/schemas/HistoryContentsResult"
+                        },
+                    },
+                    HistoryContentsWithStatsResult.__accept_type__: {
+                        "schema": {  # HistoryContentsWithStatsResult.schema(),
+                            "ref": "#/components/schemas/HistoryContentsWithStatsResult"
+                        },
+                    },
+                },
+            },
+        },
     )
     def index(
         self,
@@ -315,7 +360,8 @@ class FastAPIHistoryContents:
         legacy_params: LegacyHistoryContentsIndexParams = Depends(get_legacy_index_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
-    ):
+        accept: str = Header(default="application/json", include_in_schema=False),
+    ) -> Union[HistoryContentsResult, HistoryContentsWithStatsResult]:
         """
         Return a list of `HDA`/`HDCA` data for the history with the given ``ID``.
 
@@ -331,6 +377,7 @@ class FastAPIHistoryContents:
             legacy_params,
             serialization_params,
             filter_query_params,
+            accept,
         )
         return items
 
@@ -407,6 +454,44 @@ class FastAPIHistoryContents:
             fuzzy_count=fuzzy_count,
         )
 
+    @router.post(
+        "/api/histories/{history_id}/contents/{type}s/{id}/prepare_store_download",
+        summary="Prepare a dataset or dataset collection for export-style download.",
+    )
+    def prepare_store_download(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+        type: HistoryContentType = ContentTypeQueryParam,
+        payload: StoreExportPayload = Body(...),
+    ) -> AsyncFile:
+        return self.service.prepare_store_download(
+            trans,
+            id,
+            contents_type=type,
+            payload=payload,
+        )
+
+    @router.post(
+        "/api/histories/{history_id}/contents/{type}s/{id}/write_store",
+        summary="Prepare a dataset or dataset collection for export-style download and write to supplied URI.",
+    )
+    def write_store(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+        type: HistoryContentType = ContentTypeQueryParam,
+        payload: WriteStoreToPayload = Body(...),
+    ) -> AsyncTaskResultSummary:
+        return self.service.write_store(
+            trans,
+            id,
+            contents_type=type,
+            payload=payload,
+        )
+
     @router.get(
         "/api/histories/{history_id}/jobs_summary",
         summary="Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.",
@@ -432,7 +517,7 @@ class FastAPIHistoryContents:
         response_class=StreamingResponse,
     )
     @router.get(
-        "/api/dataset_collection/{id}/download",
+        "/api/dataset_collections/{id}/download",
         summary="Download the content of a dataset collection as a `zip` archive.",
         response_class=StreamingResponse,
         tags=["dataset collections"],
@@ -440,14 +525,44 @@ class FastAPIHistoryContents:
     def download_dataset_collection(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        history_id: Optional[EncodedDatabaseIdField] = Query(
+            default=None,
+            description="The encoded database identifier of the History.",
+        ),
         id: EncodedDatabaseIdField = HistoryHDCAIDPathParam,
     ):
         """Download the content of a history dataset collection as a `zip` archive
         while maintaining approximate collection structure.
         """
         archive = self.service.get_dataset_collection_archive_for_download(trans, id)
-        return StreamingResponse(archive.get_iterator(), headers=archive.get_headers())
+        return StreamingResponse(archive.response(), headers=archive.get_headers())
+
+    @router.post(
+        "/api/histories/{history_id}/contents/dataset_collections/{id}/prepare_download",
+        summary="Prepare an short term storage object that the collection will be downloaded to.",
+        responses={
+            200: {
+                "description": "Short term storage reference for async monitoring of this download.",
+            },
+            501: {"description": "Required asynchronous tasks required for this operation not available."},
+        },
+    )
+    @router.post(
+        "/api/dataset_collections/{id}/prepare_download",
+        summary="Prepare an short term storage object that the collection will be downloaded to.",
+        tags=["dataset collections"],
+    )
+    def prepare_collection_download(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: EncodedDatabaseIdField = HistoryHDCAIDPathParam,
+    ) -> AsyncFile:
+        """The history dataset collection will be written as a `zip` archive to the
+        returned short term storage object. Progress tracking this file's creation
+        can be tracked with the short_term_storage API.
+        """
+        return self.service.prepare_collection_download(trans, id)
 
     @router.post(
         "/api/histories/{history_id}/contents/{type}s",
@@ -472,7 +587,7 @@ class FastAPIHistoryContents:
         ),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: CreateHistoryContentPayload = Body(...),
-    ) -> AnyHistoryContentItem:
+    ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
         """Create a new `HDA` or `HDCA` in the given History."""
         payload.type = type or payload.type
         return self.service.create(trans, history_id, payload, serialization_params)
@@ -516,6 +631,23 @@ class FastAPIHistoryContents:
         return HistoryContentsResult.parse_obj(result)
 
     @router.put(
+        "/api/histories/{history_id}/contents/bulk",
+        summary="Executes an operation on a set of items contained in the given History.",
+    )
+    def bulk_operation(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        filter_query_params: ValueFilterQueryParams = Depends(get_value_filter_query_params),
+        payload: HistoryContentBulkOperationPayload = Body(...),
+    ) -> HistoryContentBulkOperationResult:
+        """Executes an operation on a set of items contained in the given History.
+
+        The items to be processed can be explicitly set or determined by a dynamic query.
+        """
+        return self.service.bulk_operation(trans, history_id, filter_query_params, payload)
+
+    @router.put(
         "/api/histories/{history_id}/contents/{id}/validate",
         summary="Validates the metadata associated with a dataset within a History.",
     )
@@ -554,13 +686,16 @@ class FastAPIHistoryContents:
     @router.delete(
         "/api/histories/{history_id}/contents/{type}s/{id}",
         summary="Delete the history content with the given ``ID`` and specified type.",
+        responses=CONTENT_DELETE_RESPONSES,
     )
     @router.delete(
         "/api/histories/{history_id}/contents/{id}",
         summary="Delete the history dataset with the given ``ID``.",
+        responses=CONTENT_DELETE_RESPONSES,
     )
     def delete(
         self,
+        response: Response,
         trans: ProvidesHistoryContext = DependsOnTrans,
         history_id: EncodedDatabaseIdField = HistoryIDPathParam,
         id: EncodedDatabaseIdField = HistoryItemIDPathParam,
@@ -578,8 +713,14 @@ class FastAPIHistoryContents:
             description="When deleting a dataset collection, whether to also delete containing datasets.",
             deprecated=True,
         ),
+        stop_job: Optional[bool] = Query(
+            default=False,
+            title="Stop Job",
+            description="Whether to stop the creating job if all outputs of the job have been deleted.",
+            deprecated=True,
+        ),
         payload: DeleteHistoryContentPayload = Body(None),
-    ) -> DeleteHistoryContentResult:
+    ):
         """
         Delete the history content with the given ``ID`` and specified type (defaults to dataset).
 
@@ -590,6 +731,7 @@ class FastAPIHistoryContents:
             payload = DeleteHistoryContentPayload()
         payload.purge = payload.purge or purge is True
         payload.recursive = payload.recursive or recursive is True
+        payload.stop_job = payload.stop_job or stop_job is True
         rval = self.service.delete(
             trans,
             id=id,
@@ -597,6 +739,9 @@ class FastAPIHistoryContents:
             contents_type=type,
             payload=payload,
         )
+        async_result = rval.pop("async_result", None)
+        if async_result:
+            response.status_code = status.HTTP_202_ACCEPTED
         return rval
 
     @router.get(
@@ -632,9 +777,23 @@ class FastAPIHistoryContents:
         archive = self.service.archive(trans, history_id, filter_query_params, filename, dry_run)
         if isinstance(archive, HistoryContentsArchiveDryRunResult):
             return archive
-        if archive.upstream_mod_zip:
-            return StreamingResponse(archive.response(), headers=archive.get_headers())
-        return StreamingResponse(archive.get_iterator(), headers=archive.get_headers(), media_type="application/zip")
+        return StreamingResponse(archive.response(), headers=archive.get_headers())
+
+    @router.post("/api/histories/{history_id}/contents_from_store", summary="Create contents from store.")
+    def create_from_store(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        create_payload: CreateHistoryContentFromStore = Body(...),
+    ) -> List[AnyHistoryContentItem]:
+        """
+        Create history contents from model store.
+        Input can be a tarfile created with build_objects script distributed
+        with galaxy-data, from an exported history with files stripped out,
+        or hand-crafted JSON dictionary.
+        """
+        return self.service.create_from_store(trans, history_id, create_payload, serialization_params)
 
     @router.get(
         "/api/histories/{history_id}/contents/{direction}/{hid}/{limit}",
@@ -721,3 +880,37 @@ class FastAPIHistoryContents:
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         response.headers.update(result.stats.to_headers())
         return result.contents
+
+    @router.post(
+        "/api/histories/{history_id}/contents/datasets/{id}/materialize",
+        summary="Materialize a deferred dataset into real, usable dataset.",
+    )
+    def materialize_dataset(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+    ) -> AsyncTaskResultSummary:
+        materializae_request = MaterializeDatasetInstanceRequest(
+            history_id=history_id,
+            source=DatasetSourceType.hda,
+            content=id,
+        )
+        rval = self.service.materialize(trans, materializae_request)
+        return rval
+
+    @router.post(
+        "/api/histories/{history_id}/materialize",
+        summary="Materialize a deferred library or HDA dataset into real, usable dataset in specified history.",
+    )
+    def materialize_to_history(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        materialize_api_payload: MaterializeDatasetInstanceAPIRequest = Body(...),
+    ) -> AsyncTaskResultSummary:
+        materializae_request: MaterializeDatasetInstanceRequest = MaterializeDatasetInstanceRequest(
+            history_id=history_id, **materialize_api_payload.dict()
+        )
+        rval = self.service.materialize(trans, materializae_request)
+        return rval

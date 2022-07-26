@@ -5,10 +5,10 @@
             <span v-b-tooltip.hover :title="editTitle" class="fa fa-edit mr-1" @click="edit"></span>
             <span v-b-tooltip.hover :title="removeTitle" class="fa fa-times map" @click="remove"></span>
         </span>
-        <span class="rule-warning" v-if="rule.warn">
+        <span v-if="rule.warn" class="rule-warning">
             {{ rule.warn }}
         </span>
-        <span class="rule-error" v-if="rule.error">
+        <span v-if="rule.error" class="rule-error">
             <span class="alert-message">{{ rule.error }}</span>
         </span>
     </li>

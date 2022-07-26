@@ -8,6 +8,7 @@
     <tool file="param_text_option.xml" />
     <tool file="column_param.xml" />
   </section>
+  <tool file="ucsc_tablebrowser.xml"/>
   <tool file="test_data_source.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="color_param.xml" />
@@ -28,6 +29,7 @@
   <tool file="multi_output_assign_primary.xml" />
   <tool file="multi_output_assign_primary_ext_dbkey.xml" />
   <tool file="multi_output_recurse.xml" />
+  <tool file="multi_output_recurse_collection.xml" />
   <tool file="tool_provided_metadata_1.xml" />
   <tool file="tool_provided_metadata_2.xml" />
   <tool file="tool_provided_metadata_3.xml" />
@@ -52,6 +54,7 @@
   <tool file="filter_static_regexp.xml" />
   <tool file="select_from_dataset.xml" />
   <tool file="select_from_dataset_optional.xml" />
+  <tool file="drill_down.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
   <tool file="dbkey_filter_collection.xml" />
@@ -204,6 +207,7 @@
   <tool file="model_attributes.xml" />
   <tool file="python_environment_problem.xml" />
   <tool file="config_vars.xml" />
+  <tool file="expect_num_outputs.xml" />
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v01galaxy6.xml" />

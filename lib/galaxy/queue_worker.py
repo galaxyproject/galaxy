@@ -23,6 +23,9 @@ from kombu.pools import producers
 import galaxy.queues
 from galaxy import util
 from galaxy.config import reload_config_options
+from galaxy.tools import ToolBox
+from galaxy.tools.data_manager.manager import DataManagers
+from galaxy.tools.special_tools import load_lib_tools
 
 logging.getLogger("kombu").setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
@@ -171,12 +174,9 @@ def _get_new_toolbox(app, save_integrated_tool_panel=True):
     Generate a new toolbox, by constructing a toolbox from the config files,
     and then adding pre-existing data managers from the old toolbox to the new toolbox.
     """
-    from galaxy import tools
-    from galaxy.tools.special_tools import load_lib_tools
-
     tool_configs = app.config.tool_configs
 
-    new_toolbox = tools.ToolBox(
+    new_toolbox = ToolBox(
         tool_configs, app.config.tool_path, app, save_integrated_tool_panel=save_integrated_tool_panel
     )
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
@@ -190,7 +190,6 @@ def _get_new_toolbox(app, save_integrated_tool_panel=True):
 
 def reload_data_managers(app, **kwargs):
     reload_timer = util.ExecutionTimer()
-    from galaxy.tools.data_manager.manager import DataManagers
 
     log.debug("Executing data managers reload on '%s'", app.config.server_name)
     app._configure_tool_data_tables(from_shed_config=False)

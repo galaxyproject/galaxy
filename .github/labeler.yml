@@ -4,6 +4,9 @@ area/admin:
   - doc/source/admin/**/*
 area/API:
   - lib/galaxy/webapps/galaxy/api/**/*
+area/auth:
+  - lib/galaxy/auth/**/*
+  - lib/galaxy/authnz/**/*
 area/client:
   - client/*
 area/datatypes:

@@ -69,8 +69,6 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec')
     >>> '\\nuptime\\n' in script
     True
-    >>> 'echo $? > ec' in script
-    True
     >>> 'GALAXY_LIB="None"' in script
     True
     >>> script.startswith('#!/bin/sh\\n#PBS -test\\n')

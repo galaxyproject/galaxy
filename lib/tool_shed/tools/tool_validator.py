@@ -89,12 +89,9 @@ class ToolValidator(GalaxyToolValidator):
                         # 'ncbi_blastp_wrapper.xml' was moved to 'tools/ncbi_blast_plus/ncbi_blastp_wrapper.xml',
                         # so keep looking for the file until we find the new location.
                         continue
-                    fh = tempfile.NamedTemporaryFile("wb", prefix="tmp-toolshed-gltcrfrm")
-                    tmp_filename = fh.name
-                    fh.close()
-                    fh = open(tmp_filename, "wb")
-                    fh.write(fctx.data())
-                    fh.close()
+                    with tempfile.NamedTemporaryFile("wb", prefix="tmp-toolshed-gltcrfrm", delete=False) as fh:
+                        tmp_filename = fh.name
+                        fh.write(fctx.data())
                     return tmp_filename
         return None
 

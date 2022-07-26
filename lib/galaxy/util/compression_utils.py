@@ -107,6 +107,7 @@ def get_fileobj_raw(
         fh: Union[gzip.GzipFile, bz2.BZ2File, IO[bytes]] = gzip.GzipFile(filename, mode)
         compressed_format = "gzip"
     elif "bz2" in compressed_formats and is_bz2(filename):
+        mode = cast(Literal["a", "ab", "r", "rb", "w", "wb", "x", "xb"], mode)
         fh = bz2.BZ2File(filename, mode)
         compressed_format = "bz2"
     elif "zip" in compressed_formats and zipfile.is_zipfile(filename):
@@ -115,7 +116,7 @@ def get_fileobj_raw(
         # since it always opens files in binary mode.
         # For emulating text mode, we will be returning the binary fh in a
         # TextIOWrapper.
-        zf_mode = mode.replace("b", "")
+        zf_mode = cast(Literal["r", "w"], mode.replace("b", ""))
         with zipfile.ZipFile(filename, zf_mode) as zh:
             fh = zh.open(zh.namelist()[0], zf_mode)
         compressed_format = "zip"
@@ -311,6 +312,7 @@ class CompressedFile:
         return tarfile.open(filepath, mode, errorlevel=0)
 
     def open_zip(self, filepath: str, mode: str) -> zipfile.ZipFile:
+        mode = cast(Literal["a", "r", "w", "x"], mode)
         return zipfile.ZipFile(filepath, mode)
 
     def zipfile_ok(self, path_to_archive: str) -> bool:

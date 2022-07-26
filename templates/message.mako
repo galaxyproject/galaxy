@@ -63,5 +63,5 @@
         if status not in ("danger", "info", "success", "warning"):
             status = "info"
     %>
-    <div class="message mt-2 alert alert-${status}">${_(sanitize_html(msg))}</div>
+    <div class="message mt-2 alert alert-${status}">${sanitize_html(msg)}</div>
 </%def>

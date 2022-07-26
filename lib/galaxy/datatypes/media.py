@@ -2,6 +2,7 @@
 import json
 import subprocess
 import wave
+from functools import lru_cache
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import (
@@ -11,12 +12,17 @@ from galaxy.datatypes.metadata import (
 from galaxy.util import which
 
 
-def ffprobe(path):
-    data = json.loads(
-        subprocess.check_output(
-            ["ffprobe", "-loglevel", "quiet", "-show_format", "-show_streams", "-of", "json", path]
-        ).decode("utf-8")
+@lru_cache(maxsize=128)
+def _ffprobe(path):
+    return subprocess.run(
+        ["ffprobe", "-loglevel", "quiet", "-show_format", "-show_streams", "-of", "json", path], capture_output=True
     )
+
+
+def ffprobe(path):
+    completed_process = _ffprobe(path)
+    completed_process.check_returncode()
+    data = json.loads(completed_process.stdout.decode("utf-8"))
     return data["format"], data["streams"]
 
 

@@ -12,7 +12,6 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   galaxy.job_metrics.collectl
    galaxy.job_metrics.instrumenters
 
 Submodules

@@ -121,7 +121,34 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
    automatically started by GitHub using e.g. Travis CI.
 
 10. Your pull request will be handled according to [some
-   rules](doc/source/project/organization.rst#handling-pull-requests).
+    rules](doc/source/project/organization.rst#handling-pull-requests).
+
+11. If, before your pull request is merged, conflicts arise between your branch
+    and the target branch (because other commits were pushed to the target
+    branch), you need to either:
+
+    1) [rebase your branch](https://git-scm.com/docs/git-rebase) on top of the
+       target branch, or
+    2) merge the target branch into your branch.
+
+    We recommend the first approach (i.e. rebasing) because it produces cleaner
+    git histories, which are easier to bisect. If your branch is called
+    `feature_branch` and your target branch is `dev`, you can rebase your branch
+    with the following commands:
+
+    ```
+    $ git checkout feature_branch
+    $ git pull
+    $ git fetch upstream
+    $ git rebase upstream/dev
+    ```
+
+    Once you have resolved the conflicts in all commits of your branch, you can
+    force-push the rebased branch to update the pull request:
+
+    ```
+    $ git push --force
+    ```
 
 ## Style guidelines
 

@@ -13,7 +13,7 @@ import ActiveInvocations from "components/admin/ActiveInvocations.vue";
 import Landing from "components/admin/Dependencies/Landing.vue";
 import AdminHome from "components/admin/Home.vue";
 import DataManager from "components/admin/DataManager";
-import Register from "components/login/Register.vue";
+import RegisterForm from "components/login/RegisterForm.vue";
 import ErrorStack from "components/admin/ErrorStack.vue";
 import DisplayApplications from "components/admin/DisplayApplications.vue";
 import ResetMetadata from "components/admin/ResetMetadata.vue";
@@ -69,7 +69,7 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         show_users_create: function () {
-            this._display_vue_helper(Register, {
+            this._display_vue_helper(RegisterForm, {
                 redirect: "/admin/users",
                 registration_warning_message: options.config.registration_warning_message,
                 mailing_join_addr: options.config.mailing_join_addr,

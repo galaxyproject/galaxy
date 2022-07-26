@@ -8,16 +8,9 @@ to interact with each other.
     <!-- if main history selected -->
     <CurrentHistory :history="history">
 
-        <!-- for the right-hand side history we show some
-        optional nav elements -->
-        <slot:nav>
-            <HistorySelector />
-            <HistoryMenu />
-        </slot:nav>
-
         <!-- Data providers do the heavy-lifting of mixing params, history, and 
         scroll position to deliver the content for the scroller -->
-        <UrlDataProvider>
+        <StoreProvider>
             <HistoryNavigation />
             <HistoryDetails />
             <HistoryMessages />
@@ -35,13 +28,13 @@ to interact with each other.
                     <!-- Is shown for datasets upon expansion, can be inefficent in comparison to the ContentItem component. -->
                     <DatasetDetails />
             </Listing>
-        </UrlDataProvider>
+        </StoreProvider>
     </CurrentHistory>
 
     <!-- When a collection is selected for viewing, send in a 
     breadcrumbs list of collections the user has selected -->
     <CurrentCollection :selected-collections="breadcrumbs">
-        <UrlDataProvider>
+        <StoreProvider>
             <CollectionNavigation />
             <CollectionDetails />
             <CollectionOperations />
@@ -51,7 +44,7 @@ to interact with each other.
                 (<ContentItem />)
                     <DatasetDetails />
             </Listing>
-        </UrlDataProvider>
+        </StoreProvider>
     </CurrentCollection>
 </Index>
 ```

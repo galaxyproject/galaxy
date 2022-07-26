@@ -22,9 +22,9 @@ from galaxy import (
     web,
 )
 from galaxy.datatypes.interval import ChromatinInteractions
-from galaxy.managers import api_keys
-from galaxy.managers import base as managers_base
 from galaxy.managers import (
+    api_keys,
+    base as managers_base,
     configuration,
     users,
     workflows,
@@ -199,10 +199,8 @@ class BaseAPIController(BaseController):
                 deleted=deleted,
             )
 
-        except exceptions.ItemDeletionException as e:
-            raise HTTPBadRequest(detail=f"Invalid {class_name} id ( {str(id)} ) specified: {util.unicodify(e)}")
-        except exceptions.MessageException as e:
-            raise HTTPBadRequest(detail=e.err_msg)
+        except exceptions.MessageException:
+            raise
         except Exception as e:
             log.exception("Exception in get_object check for %s %s.", class_name, str(id))
             raise HTTPInternalServerError(comment=util.unicodify(e))
@@ -522,7 +520,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         trans.sa_session.flush()
         ldda_dict = ldda.to_dict()
         rval = trans.security.encode_dict_ids(ldda_dict)
-        update_time = ldda.update_time.strftime("%Y-%m-%d %I:%M %p")
+        update_time = ldda.update_time.isoformat()
         rval["update_time"] = update_time
         return rval
 

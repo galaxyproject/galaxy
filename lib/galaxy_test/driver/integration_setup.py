@@ -49,12 +49,15 @@ class PosixFileSourceSetup:
     include_test_data_dir: ClassVar[bool] = False
 
     @classmethod
-    def handle_galaxy_config_kwds(cls, config):
+    def handle_galaxy_config_kwds(cls, config, clazz_=None):
         temp_dir = os.path.realpath(mkdtemp())
-        cls._test_driver.temp_directories.append(temp_dir)
-        cls.root_dir = os.path.join(temp_dir, "root")
+        clazz_ = clazz_ or cls
+        clazz_._test_driver.temp_directories.append(temp_dir)
+        clazz_.root_dir = os.path.join(temp_dir, "root")
 
-        file_sources_config_file = create_file_source_config_file_on(temp_dir, cls.root_dir, cls.include_test_data_dir)
+        file_sources_config_file = create_file_source_config_file_on(
+            temp_dir, clazz_.root_dir, clazz_.include_test_data_dir
+        )
         config["file_sources_config_file"] = file_sources_config_file
 
         # Disable all stock plugins

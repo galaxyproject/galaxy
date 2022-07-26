@@ -28,31 +28,31 @@
             </p>
         </header>
 
-        <div class="external-subheading" v-if="items.length">
+        <div v-if="items.length" class="external-subheading">
             <h3>Connected External Identities</h3>
             <b-button
-                @click="onDisconnect(item)"
-                aria-label="Disconnect External Identity"
-                title="Disconnect External Identity"
                 v-for="item in items"
                 :key="item.email"
-                class="d-block mt-3">
+                aria-label="Disconnect External Identity"
+                title="Disconnect External Identity"
+                class="d-block mt-3"
+                @click="onDisconnect(item)">
                 Disconnect {{ item.provider.charAt(0).toUpperCase() + item.provider.slice(1) }} - {{ item.email }}
             </b-button>
 
             <b-modal
-                centered
                 id="disconnectIDModal"
                 ref="deleteModal"
+                centered
                 title="Disconnect Identity?"
                 size="sm"
                 @ok="disconnectID"
                 @cancel="doomedItem = null"></b-modal>
 
             <b-modal
-                centered
                 id="disconnectAndResetModal"
                 ref="deleteAndResetModal"
+                centered
                 title="Deleting last external identity"
                 @ok="disconnectAndReset"
                 @cancel="doomedItem = null">
@@ -74,7 +74,7 @@
             >
         </div>
 
-        <div class="external-subheading" v-if="enable_oidc">
+        <div v-if="enable_oidc" class="external-subheading">
             <h3>Connect Other External Identities</h3>
             <external-login :login_page="false" />
         </div>
@@ -124,6 +124,9 @@ export default {
         showDeleted(deleted) {
             this.loadIdentities({ deleted });
         },
+    },
+    created() {
+        this.loadIdentities();
     },
     methods: {
         loadIdentities() {
@@ -188,9 +191,6 @@ export default {
                 console.warn(err);
             };
         },
-    },
-    created() {
-        this.loadIdentities();
     },
 };
 </script>

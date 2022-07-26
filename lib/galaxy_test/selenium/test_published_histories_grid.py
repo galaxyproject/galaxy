@@ -1,3 +1,5 @@
+from selenium.webdriver.common.by import By
+
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -84,8 +86,8 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
         tags = None
         grid = self.wait_for_selector("#grid-table-body")
-        for row in grid.find_elements_by_tag_name("tr"):
-            td = row.find_elements_by_tag_name("td")
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            td = row.find_elements(By.TAG_NAME, "td")
             name = td[0].text
             if name == self.history1_name:
                 tags = td[4]
@@ -95,7 +97,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
             raise AssertionError(f"Failed to find history with name [{self.history1_name}]")
 
         tag_button_selector = "div.tag-name"
-        tag_buttons = tags.find_elements_by_css_selector(tag_button_selector)
+        tag_buttons = tags.find_elements(By.CSS_SELECTOR, tag_button_selector)
         tag_button_text = None
         target_tag_button_text = self.history1_tags[0]
         for tag_button in tag_buttons:
@@ -112,8 +114,8 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         names = []
         grid = self.wait_for_selector("#grid-table-body")
-        for row in grid.find_elements_by_tag_name("tr"):
-            cell = row.find_elements_by_tag_name("td")[0]  # Name
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            cell = row.find_elements(By.TAG_NAME, "td")[0]  # Name
             names.append(cell.text)
         return names
 
@@ -196,7 +198,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.history_panel_create_new_with_name(name)
 
     def publish_current_history(self):
-        self.click_history_option("Share or Publish")
+        self.click_history_option_sharing()
         self.make_accessible_and_publishable()
 
     def navigate_to_published_histories_page(self):

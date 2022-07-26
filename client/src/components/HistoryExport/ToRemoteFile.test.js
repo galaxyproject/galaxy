@@ -27,27 +27,7 @@ describe("ToRemoteFile.vue", () => {
         });
     });
 
-    it("should render a form with export disable because inputs empty", async () => {
-        expect(wrapper.find(".export-button").exists()).toBeTruthy();
-        expect(wrapper.find(".export-button").attributes("disabled")).toBeTruthy();
-        expect(wrapper.vm.canExport).toBeFalsy();
-    });
-
-    it("should allow export when name and directory available", async () => {
-        await wrapper.setData({
-            name: "export.tar.gz",
-            directory: "gxfiles://",
-        });
-        expect(wrapper.vm.directory).toEqual("gxfiles://");
-        expect(wrapper.vm.name).toEqual("export.tar.gz");
-        expect(wrapper.vm.canExport).toBeTruthy();
-    });
-
     it("should issue export PUT request on export", async () => {
-        await wrapper.setData({
-            name: "export.tar.gz",
-            directory: "gxfiles://",
-        });
         let request;
         axiosMock.onPut(TEST_EXPORTS_URL).reply((request_) => {
             request = request_;
@@ -58,7 +38,7 @@ describe("ToRemoteFile.vue", () => {
                 then({ state: "ok" });
             })
         );
-        wrapper.vm.doExport();
+        wrapper.vm.doExport("gxfiles://", "export.tar.gz");
         await flushPromises();
         const putData = JSON.parse(request.data);
         expect(putData.directory_uri).toEqual("gxfiles://");

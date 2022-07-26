@@ -3,24 +3,24 @@
         <b-card-header v-if="!embedded">
             <span class="float-right">
                 <b-button
+                    v-b-tooltip.hover
                     :href="downloadUrl"
                     variant="link"
                     size="sm"
                     role="button"
                     title="Download Workflow"
                     type="button"
-                    class="py-0 px-1"
-                    v-b-tooltip.hover>
+                    class="py-0 px-1">
                     <span class="fa fa-download" />
                 </b-button>
                 <b-button
+                    v-b-tooltip.hover
                     :href="importUrl"
                     role="button"
                     variant="link"
                     title="Import Workflow"
                     type="button"
-                    class="py-0 px-1"
-                    v-b-tooltip.hover>
+                    class="py-0 px-1">
                     <span class="fa fa-file-import" />
                 </b-button>
             </span>
@@ -71,12 +71,6 @@ export default {
             loading: true,
         };
     },
-    created() {
-        this.getContent().then((data) => {
-            this.itemContent = data;
-            this.loading = false;
-        });
-    },
     computed: {
         workflowName() {
             const workflow = this.workflows[this.args.workflow_id];
@@ -91,6 +85,12 @@ export default {
         itemUrl() {
             return `${getAppRoot()}api/workflows/${this.args.workflow_id}/download?style=preview`;
         },
+    },
+    created() {
+        this.getContent().then((data) => {
+            this.itemContent = data;
+            this.loading = false;
+        });
     },
     methods: {
         async getContent() {

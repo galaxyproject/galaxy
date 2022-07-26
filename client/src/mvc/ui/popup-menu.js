@@ -66,7 +66,7 @@ const PopupMenu = Backbone.View.extend({
     },
 
     template: function (id, options) {
-        return `<div id="${id}-menu" class="dropdown-menu">
+        return `<div id="${id}-menu" class="dropdown-menu ${id}-menu">
                     ${this._templateOptions(options)}
                 </div>`;
     },

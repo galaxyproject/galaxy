@@ -17,15 +17,15 @@ export default {
     data() {
         return { decoded_id: null };
     },
-    created: function () {
-        this.decodeId(this.id);
-    },
     computed: {
         isAdmin() {
             // window.parent.Galaxy is needed when instance is mounted in mako
             const Galaxy = getGalaxyInstance() || window.parent.Galaxy;
             return Galaxy?.user?.isAdmin() || false;
         },
+    },
+    created: function () {
+        this.decodeId(this.id);
     },
     methods: {
         decodeId: async function (id) {

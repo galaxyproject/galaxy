@@ -5,11 +5,27 @@ const VueLoaderPlugin = require("vue-loader/lib/plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const DuplicatePackageCheckerPlugin = require("@cerner/duplicate-package-checker-webpack-plugin");
+const { DumpMetaPlugin } = require("dumpmeta-webpack-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
 const libsBase = path.join(scriptsBase, "libs");
 const styleBase = path.join(scriptsBase, "style");
+
+const modulesExcludedFromLibs = [
+    "jspdf",
+    "canvg",
+    "prismjs",
+    "html2canvas",
+    "handsontable",
+    "pikaday",
+    "moment",
+    "elkjs",
+    "@citation-js",
+    "citeproc",
+].join("|");
+
+const buildDate = new Date();
 
 module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
@@ -43,8 +59,6 @@ module.exports = (env = {}, argv = {}) => {
                 jqueryVendor$: `${libsBase}/jquery/jquery.js`,
                 storemodern$: "store/dist/store.modern.js",
                 "popper.js": path.resolve(__dirname, "node_modules/popper.js/"),
-                moment: path.resolve(__dirname, "node_modules/moment"),
-                uuid: path.resolve(__dirname, "node_modules/uuid"),
                 underscore: path.resolve(__dirname, "node_modules/underscore"),
                 // client-side application config
                 config$: path.join(scriptsBase, "config", targetEnv) + ".js",
@@ -61,7 +75,7 @@ module.exports = (env = {}, argv = {}) => {
                     },
                     libs: {
                         name: "libs",
-                        test: /node_modules[\\/](?!(jspdf|canvg|html2canvas|handsontable|pikaday|moment|elkjs)[\\/])|galaxy\/scripts\/libs/,
+                        test: new RegExp(`node_modules[\\/](?!(${modulesExcludedFromLibs})[\\/])|galaxy/scripts/libs`),
                         chunks: "all",
                         priority: -10,
                     },
@@ -80,23 +94,6 @@ module.exports = (env = {}, argv = {}) => {
                     test: /\.mjs$/,
                     include: /node_modules/,
                     type: "javascript/auto",
-                },
-                {
-                    test: /\.js$/,
-                    /*
-                     * Babel transpile excludes for:
-                     * - all node_modules except for handsontable, bootstrap-vue
-                     * - statically included libs (like old jquery plugins, etc.)
-                     */
-                    exclude: [/(node_modules\/(?!(handsontable|bootstrap-vue)\/))/, libsBase],
-                    loader: "babel-loader",
-                    options: {
-                        cacheDirectory: true,
-                        cacheCompression: false,
-                        presets: [["@babel/preset-env", { modules: false }]],
-                        plugins: ["transform-vue-template", "@babel/plugin-syntax-dynamic-import"],
-                        ignore: ["i18n.js", "utils/localization.js", "nls/*"],
-                    },
                 },
                 {
                     test: `${libsBase}/jquery.custom.js`,
@@ -197,11 +194,23 @@ module.exports = (env = {}, argv = {}) => {
                 Buffer: ["buffer", "Buffer"],
                 process: "process/browser",
             }),
+            new webpack.DefinePlugin({
+                __targetEnv__: JSON.stringify(targetEnv),
+                __buildTimestamp__: JSON.stringify(buildDate.toISOString()),
+            }),
             new VueLoaderPlugin(),
             new MiniCssExtractPlugin({
                 filename: "[name].css",
             }),
             new DuplicatePackageCheckerPlugin(),
+            new DumpMetaPlugin({
+                filename: path.join(__dirname, "../lib/galaxy/web/framework/meta.json"),
+                prepare: (stats) => ({
+                    // add any other information you need to dump
+                    hash: stats.hash,
+                    epoch: Date.parse(buildDate),
+                }),
+            }),
         ],
         devServer: {
             client: {
@@ -209,7 +218,11 @@ module.exports = (env = {}, argv = {}) => {
                     errors: true,
                     warnings: false,
                 },
+                webSocketURL: {
+                    port: process.env.GITPOD_WORKSPACE_ID ? 443 : undefined,
+                },
             },
+            allowedHosts: process.env.GITPOD_WORKSPACE_ID ? "all" : "auto",
             devMiddleware: {
                 publicPath: "/static/dist",
             },

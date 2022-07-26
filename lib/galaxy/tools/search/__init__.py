@@ -68,9 +68,7 @@ class ToolBoxSearch:
         for panel_view in toolbox.panel_views():
             panel_view_id = panel_view.id
             panel_index_dir = os.path.join(index_dir, panel_view_id)
-            panel_searches[panel_view_id] = ToolPanelViewSearch(
-                toolbox, panel_view_id, panel_index_dir, index_help=index_help
-            )
+            panel_searches[panel_view_id] = ToolPanelViewSearch(panel_view_id, panel_index_dir, index_help=index_help)
         self.panel_searches = panel_searches
         # We keep track of how many times the tool index has been rebuilt.
         # We start at -1, so that after the first index the count is at 0,
@@ -78,10 +76,10 @@ class ToolBoxSearch:
         # reindexing if the index count is equal to the toolbox reload count.
         self.index_count = -1
 
-    def build_index(self, tool_cache, index_help: bool = True) -> None:
+    def build_index(self, tool_cache, toolbox, index_help: bool = True) -> None:
         self.index_count += 1
         for panel_search in self.panel_searches.values():
-            panel_search.build_index(tool_cache, index_help=index_help)
+            panel_search.build_index(tool_cache, toolbox, index_help=index_help)
 
     def search(self, *args, **kwd) -> List[str]:
         panel_view = kwd.pop("panel_view")
@@ -97,7 +95,7 @@ class ToolPanelViewSearch:
     the Whoosh search library.
     """
 
-    def __init__(self, toolbox, panel_view_id: str, index_dir: str, index_help: bool = True):
+    def __init__(self, panel_view_id: str, index_dir: str, index_help: bool = True):
         self.schema = Schema(
             id=ID(stored=True, unique=True),
             old_id=ID,
@@ -110,14 +108,13 @@ class ToolPanelViewSearch:
         )
         self.rex = analysis.RegexTokenizer()
         self.index_dir = index_dir
-        self.toolbox = toolbox
         self.panel_view_id = panel_view_id
         self.index = self._index_setup()
 
     def _index_setup(self) -> index.Index:
         return get_or_create_index(index_dir=self.index_dir, schema=self.schema)
 
-    def build_index(self, tool_cache, index_help: bool = True) -> None:
+    def build_index(self, tool_cache, toolbox, index_help: bool = True) -> None:
         """
         Prepare search index for tools loaded in toolbox.
         Use `tool_cache` to determine which tools need indexing and which tools should be expired.
@@ -143,8 +140,8 @@ class ToolPanelViewSearch:
             for tool_id in tool_ids_to_remove:
                 writer.delete_by_term("id", tool_id)
             for tool_id in tool_cache._new_tool_ids - indexed_tool_ids:
-                tool = self.toolbox.get_tool(tool_id)
-                if tool and tool.is_latest_version and self.toolbox.panel_has_tool(tool, self.panel_view_id):
+                tool = toolbox.get_tool(tool_id)
+                if tool and tool.is_latest_version and toolbox.panel_has_tool(tool, self.panel_view_id):
                     if tool.hidden:
                         # we check if there is an older tool we can return
                         if tool.lineage:

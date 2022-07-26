@@ -34,6 +34,12 @@ from galaxy.tools.data import ToolDataTableManager
 from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.web.short_term_storage import (
+    ShortTermStorageAllocator,
+    ShortTermStorageConfiguration,
+    ShortTermStorageManager,
+    ShortTermStorageMonitor,
+)
 from galaxy.web_stack import ApplicationStack
 
 
@@ -80,6 +86,10 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self.name = kwargs.get("name", "galaxy")
         self[SharedModelMapping] = self.model
         self[GalaxyModelMapping] = self.model
+        sts_config = ShortTermStorageConfiguration(short_term_storage_directory=os.path.join(config.data_dir, "sts"))
+        sts_manager = ShortTermStorageManager(sts_config)
+        self[ShortTermStorageAllocator] = sts_manager
+        self[ShortTermStorageMonitor] = sts_manager
         self[galaxy_scoped_session] = self.model.context
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagHandler(self.model.context)
@@ -97,7 +107,6 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self.auth_manager = AuthManager(self.config)
         self.user_manager = UserManager(self)
         self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
-        self.file_sources = Bunch(to_dict=lambda *args, **kwargs: {})
         self.interactivetool_manager = Bunch(create_interactivetool=lambda *args, **kwargs: None)
         self.is_job_handler = False
         self.biotools_metadata_source = None
@@ -141,6 +150,9 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
 
         self.expose_dataset_path = True
         self.allow_user_dataset_purge = True
+        self.allow_user_creation = True
+        self.email_domain_allowlist_content = None
+        self.email_domain_blocklist_content = None
         self.enable_old_display_applications = True
         self.redact_username_in_logs = False
         self.auth_config_file = "config/auth_conf.xml.sample"

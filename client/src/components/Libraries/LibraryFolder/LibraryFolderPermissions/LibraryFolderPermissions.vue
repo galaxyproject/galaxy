@@ -56,16 +56,16 @@ Vue.use(BootstrapVue);
 initPermissionsIcons();
 
 export default {
+    components: {
+        PermissionsInputField,
+        PermissionsHeader,
+        FontAwesomeIcon,
+    },
     props: {
         folder_id: {
             type: String,
             required: true,
         },
-    },
-    components: {
-        PermissionsInputField,
-        PermissionsHeader,
-        FontAwesomeIcon,
     },
     data() {
         return {

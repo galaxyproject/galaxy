@@ -23,10 +23,10 @@
             <template v-slot:buttons>
                 <b-button
                     id="workflow-canvas-button"
+                    v-b-tooltip.hover.bottom
                     title="Return to Workflow"
                     variant="link"
                     role="button"
-                    v-b-tooltip.hover.bottom
                     @click="onEdit">
                     <span class="fa fa-times" />
                 </b-button>
@@ -53,17 +53,28 @@
                     </div>
                 </div>
                 <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
-                    <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoom" />
+                    <ZoomControl v-if="!checkWheeled" :zoom-level="zoomLevel" @onZoom="onZoom" />
+                    <b-button
+                        v-else
+                        v-b-tooltip.hover
+                        class="reset-wheel"
+                        variant="light"
+                        title="Show Zoom Buttons"
+                        size="sm"
+                        aria-label="Show Zoom Buttons"
+                        @click="resetWheel">
+                        Zoom Controls
+                    </b-button>
                     <div id="canvas-viewport">
-                        <div ref="canvas" id="canvas-container">
+                        <div id="canvas-container" ref="canvas">
                             <WorkflowNode
                                 v-for="(step, key) in steps"
                                 :id="key"
+                                :key="key"
                                 :name="step.name"
                                 :type="step.type"
                                 :content-id="step.content_id"
                                 :step="step"
-                                :key="key"
                                 :datatypes-mapper="datatypesMapper"
                                 :get-manager="getManager"
                                 :get-canvas-manager="getCanvasManager"
@@ -79,7 +90,7 @@
                     <div class="workflow-overview" aria-hidden="true">
                         <div class="workflow-overview-body">
                             <div id="overview-container">
-                                <canvas width="0" height="0" id="overview-canvas" />
+                                <canvas id="overview-canvas" width="0" height="0" />
                                 <div id="overview-viewport" />
                             </div>
                         </div>
@@ -105,7 +116,7 @@
                                     @onUpgrade="onUpgrade" />
                             </div>
                         </div>
-                        <div class="unified-panel-body workflow-right" ref="right-panel">
+                        <div ref="right-panel" class="unified-panel-body workflow-right">
                             <div class="m-2">
                                 <FormTool
                                     v-if="hasActiveNodeTool"
@@ -260,6 +271,8 @@ export default {
             messageIsError: false,
             version: this.initialVersion,
             showInPanel: "attributes",
+            isWheeled: false,
+            canvasManager: null,
         };
     },
     computed: {
@@ -278,6 +291,33 @@ export default {
         hasActiveNodeTool() {
             return this.activeNode && this.activeNode.type == "tool";
         },
+        checkWheeled() {
+            if (this.canvasManager != null) {
+                return this.canvasManager.isWheeled;
+            }
+            return this.isWheeled;
+        },
+    },
+    watch: {
+        annotation(newAnnotation, oldAnnotation) {
+            if (newAnnotation != oldAnnotation) {
+                this.hasChanges = true;
+            }
+        },
+        name(newName, oldName) {
+            if (newName != oldName) {
+                this.hasChanges = true;
+            }
+        },
+        steps(newSteps, oldSteps) {
+            this.hasChanges = true;
+        },
+        nodes(newNodes, oldNodes) {
+            this.hasChanges = true;
+        },
+        hasChanges() {
+            this.$emit("update:confirmation", this.hasChanges);
+        },
     },
     created() {
         this.lastQueue = new LastQueue();
@@ -289,32 +329,7 @@ export default {
             this.canvasManager = new WorkflowCanvas(this, this.$refs.canvas);
             this._loadCurrent(this.id, this.version);
         });
-
-        // Notify user if workflow has not been saved yet
-        window.onbeforeunload = () => {
-            if (this.hasChanges) {
-                return "There are unsaved changes to your workflow which will be lost.";
-            }
-        };
         hide_modal();
-    },
-    watch: {
-        annotation: function (newAnnotation, oldAnnotation) {
-            if (newAnnotation != oldAnnotation) {
-                this.hasChanges = true;
-            }
-        },
-        name: function (newName, oldName) {
-            if (newName != oldName) {
-                this.hasChanges = true;
-            }
-        },
-        steps: function (newSteps, oldSteps) {
-            this.hasChanges = true;
-        },
-        nodes: function (newNodes, oldNodes) {
-            this.hasChanges = true;
-        },
     },
     methods: {
         onActivate(node) {
@@ -408,7 +423,7 @@ export default {
             this.showInPanel = "attributes";
         },
         onEditSubworkflow(contentId) {
-            const editUrl = `${getAppRoot()}workflow/editor?workflow_id=${contentId}`;
+            const editUrl = `/workflows/edit?id=${contentId}`;
             this.onNavigate(editUrl);
         },
         async onClone(node) {
@@ -509,24 +524,21 @@ export default {
             this.markdownText = markdown;
         },
         onRun() {
-            const runUrl = `${getAppRoot()}workflows/run?id=${this.id}`;
+            const runUrl = `/workflows/run?id=${this.id}`;
             this.onNavigate(runUrl);
         },
-        onNavigate(url, force = false) {
-            if (!force && this.hasChanges) {
-                this.onSave(true).then(() => {
-                    window.location = url;
-                });
-            } else {
-                if (this.hasChanges) {
-                    window.onbeforeunload = false;
-                    this.hideModal();
-                }
-                window.location = url;
-            }
+        onNavigate(url) {
+            this.onSave(true).then(() => {
+                this.hasChanges = false;
+                this.$router.push(url);
+            });
         },
         onZoom(zoomLevel) {
             this.zoomLevel = this.canvasManager.setZoom(zoomLevel);
+        },
+        resetWheel() {
+            this.zoomLevel = this.canvasManager.zoomLevel;
+            this.canvasManager.isWheeled = false;
         },
         onSave(hideProgress = false) {
             !hideProgress && this.onWorkflowMessage("Saving workflow...", "progress");
@@ -593,8 +605,10 @@ export default {
         },
         _loadCurrent(id, version) {
             this.onWorkflowMessage("Loading workflow...", "progress");
-            loadWorkflow(this, id, version)
+            this.lastQueue
+                .enqueue(loadWorkflow, { id, version, workflow: this })
                 .then((data) => {
+                    console.debug("Editor - Loading workflow:", id);
                     this._loadEditorData(data);
                 })
                 .catch((response) => {
@@ -637,5 +651,12 @@ export default {
 <style scoped>
 .workflow-markdown-editor {
     right: 0px !important;
+}
+.reset-wheel {
+    position: absolute;
+    left: 1rem;
+    bottom: 1rem;
+    cursor: pointer;
+    z-index: 1002;
 }
 </style>

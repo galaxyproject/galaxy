@@ -7,40 +7,40 @@
                 <b-button
                     title="Download dataset"
                     class="mr-1 mb-2"
-                    @click="download(datasetDownloadFormat, dataset_id)"
-                    data-test-id="download-btn">
+                    data-test-id="download-btn"
+                    @click="download(datasetDownloadFormat, dataset_id)">
                     <font-awesome-icon icon="download" />
                     Download
                 </b-button>
                 <b-button
-                    @click="importToHistory"
                     title="Import dataset into history"
                     class="mr-1 mb-2"
-                    data-test-id="import-history-btn">
+                    data-test-id="import-history-btn"
+                    @click="importToHistory">
                     <font-awesome-icon icon="book" />
                     to History
                 </b-button>
                 <span v-if="dataset.can_user_modify">
                     <b-button
-                        @click="isEditMode = true"
                         title="Modify library item"
                         class="mr-1 mb-2"
-                        data-test-id="modify-btn">
+                        data-test-id="modify-btn"
+                        @click="isEditMode = true">
                         <font-awesome-icon icon="pencil-alt" />
                         Modify
                     </b-button>
                     <b-button
                         title="Attempt to detect the format of dataset"
-                        @click="detectDatatype"
                         class="mr-1 mb-2"
-                        data-test-id="auto-detect-btn">
+                        data-test-id="auto-detect-btn"
+                        @click="detectDatatype">
                         <font-awesome-icon icon="redo" />
                         Auto-detect datatype
                     </b-button>
                 </span>
                 <b-button
-                    title="Manage permissions"
                     v-if="user.is_admin"
+                    title="Manage permissions"
                     class="mr-1 mb-2"
                     :to="{
                         name: 'LibraryFolderDatasetPermissions',
@@ -75,8 +75,8 @@
                     <div v-if="isEditMode">
                         <b-form-input
                             v-if="row.item.name === fieldTitles.name"
-                            :value="row.item.value"
-                            v-model="modifiedDataset.name" />
+                            v-model="modifiedDataset.name"
+                            :value="row.item.value" />
                         <DatatypesProvider
                             v-else-if="row.item.name === fieldTitles.file_ext"
                             v-slot="{ item: datatypes, loading: loadingDatatypes }">
@@ -87,24 +87,24 @@
                                 :current-item-id="dataset.file_ext"
                                 @update:selected-item="onSelectedDatatype" />
                         </DatatypesProvider>
-                        <GenomeProvider
+                        <db-key-provider
                             v-else-if="row.item.name === fieldTitles.genome_build"
-                            v-slot="{ item: genomes, loading: loadingGenomes }">
+                            v-slot="{ item: dbkeys, loading: loadingDbKeys }">
                             <SingleItemSelector
-                                collection-name="Genomes"
-                                :loading="loadingGenomes"
-                                :items="genomes"
+                                collection-name="Database/Builds"
+                                :loading="loadingDbKeys"
+                                :items="dbkeys"
                                 :current-item-id="dataset.genome_build"
-                                @update:selected-item="onSelectedGenome" />
-                        </GenomeProvider>
+                                @update:selected-item="onSelectedDbKey" />
+                        </db-key-provider>
                         <b-form-input
                             v-else-if="row.item.name === fieldTitles.message"
-                            :value="row.item.value"
-                            v-model="modifiedDataset.message" />
+                            v-model="modifiedDataset.message"
+                            :value="row.item.value" />
                         <b-form-input
                             v-else-if="row.item.name === fieldTitles.misc_info"
-                            :value="row.item.value"
-                            v-model="modifiedDataset.misc_info" />
+                            v-model="modifiedDataset.misc_info"
+                            :value="row.item.value" />
                         <div v-else>{{ row.item.value }}</div>
                     </div>
                     <div v-else>
@@ -114,17 +114,17 @@
             </b-table>
             <!-- Edit Controls -->
             <div v-if="isEditMode">
-                <b-button @click="isEditMode = false" class="mr-1 mb-2">
+                <b-button class="mr-1 mb-2" @click="isEditMode = false">
                     <font-awesome-icon :icon="['fas', 'times']" />
                     Cancel
                 </b-button>
-                <b-button @click="updateDataset" class="mr-1 mb-2">
+                <b-button class="mr-1 mb-2" @click="updateDataset">
                     <font-awesome-icon :icon="['far', 'save']" />
                     Save
                 </b-button>
             </div>
             <!-- Peek View -->
-            <div v-if="dataset.peek" v-html="dataset.peek" data-test-id="peek-view" />
+            <div v-if="dataset.peek" data-test-id="peek-view" v-html="dataset.peek" />
         </div>
     </CurrentUser>
 </template>
@@ -141,7 +141,7 @@ import download from "components/Libraries/LibraryFolder/TopToolbar/download";
 import CopyToClipboard from "components/CopyToClipboard";
 import { Toast } from "ui/toast";
 import { fieldTitles } from "components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
-import { GenomeProvider, DatatypesProvider } from "components/providers";
+import { DbKeyProvider, DatatypesProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { buildFields } from "components/Libraries/library-utils";
 import CurrentUser from "components/providers/CurrentUser";
@@ -149,6 +149,15 @@ import CurrentUser from "components/providers/CurrentUser";
 library.add(faUsers, faRedo, faBook, faDownload, faPencilAlt, faTimes, faSave);
 
 export default {
+    components: {
+        LibraryBreadcrumb,
+        CopyToClipboard,
+        FontAwesomeIcon,
+        DbKeyProvider,
+        DatatypesProvider,
+        SingleItemSelector,
+        CurrentUser,
+    },
     props: {
         dataset_id: {
             type: String,
@@ -158,15 +167,6 @@ export default {
             type: String,
             required: true,
         },
-    },
-    components: {
-        LibraryBreadcrumb,
-        CopyToClipboard,
-        FontAwesomeIcon,
-        GenomeProvider,
-        DatatypesProvider,
-        SingleItemSelector,
-        CurrentUser,
     },
     data() {
         return {
@@ -180,11 +180,6 @@ export default {
             table_items: [],
             fields: [{ key: "name" }, { key: "value" }],
         };
-    },
-    async created() {
-        this.services = new Services({ root: this.root });
-        const datasetResponse = await this.services.getDataset(this.dataset_id);
-        this.populateDatasetDetailsTable(datasetResponse);
     },
     computed: {
         datasetChanges() {
@@ -202,6 +197,11 @@ export default {
             }
             return false;
         },
+    },
+    async created() {
+        this.services = new Services({ root: this.root });
+        const datasetResponse = await this.services.getDataset(this.dataset_id);
+        this.populateDatasetDetailsTable(datasetResponse);
     },
     methods: {
         populateDatasetDetailsTable(data) {
@@ -239,7 +239,7 @@ export default {
                 selected: { dataset_ids: [this.dataset_id] },
             });
         },
-        onSelectedGenome(genome) {
+        onSelectedDbKey(genome) {
             this.modifiedDataset.genome_build = genome.id;
         },
         onSelectedDatatype(datatype) {

@@ -13,7 +13,7 @@ class CustomDatatypeLoader:
     def __init__(self, app):
         self.app = app
 
-    def alter_config_and_load_prorietary_datatypes(
+    def alter_config_and_load_proprietary_datatypes(
         self, datatypes_config, relative_install_dir, deactivate=False, override=True
     ):
         """
@@ -159,7 +159,7 @@ class CustomDatatypeLoader:
         repository_dict = None
         datatypes_config = get_config_from_disk(DATATYPES_CONFIG_FILENAME, relative_install_dir)
         if datatypes_config:
-            converter_path, display_path = self.alter_config_and_load_prorietary_datatypes(
+            converter_path, display_path = self.alter_config_and_load_proprietary_datatypes(
                 datatypes_config, relative_install_dir, deactivate=deactivate
             )
             if converter_path or display_path:

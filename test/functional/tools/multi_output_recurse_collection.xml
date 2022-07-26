@@ -1,0 +1,57 @@
+<!--essentially the same as multi_output_recurse_collection, but:
+  - test collection and generated order in the collection
+-->
+<tool id="multi_output_recurse_collection" name="multi_output_recurse_collection" version="0.1.0" profile="22.01">
+  <macros>
+    <xml name="outelem" tokens="number" token_path="">
+      <element name="@PATH@@NUMBER@" ftype="txt">
+        <assert_contents>
+          <has_text text="@NUMBER@"/>
+        </assert_contents>
+      </element>
+    </xml>
+  </macros>
+  <command><![CDATA[
+    mkdir 1;
+    echo "3" > 1/3.txt;
+    echo "4" > 1/4.txt;
+    mkdir 2;
+    echo "1" > 2/1.txt;
+    echo "2" > 2/2.txt;
+    mkdir 3;
+    echo "5" > 3/5.txt;
+    mkdir 3/1;
+    echo "0" > 3/1/0.txt;
+    ]]></command>
+  <inputs>
+    <param type="boolean" name="match_relative"/>
+  </inputs>
+  <outputs>
+    <collection type="list" name="output">
+      <discover_datasets directory="./" recurse="true" pattern="__designation_and_ext__"/>
+    </collection>
+    <collection type="list" name="output_relative">
+      <discover_datasets directory="./" recurse="true" pattern="__designation_and_ext__" match_relative_path="true"/>
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <output_collection name="output" count="6">
+        <expand macro="outelem" number="0"/>
+        <expand macro="outelem" number="1"/>
+        <expand macro="outelem" number="2"/>
+        <expand macro="outelem" number="3"/>
+        <expand macro="outelem" number="4"/>
+        <expand macro="outelem" number="5"/>
+      </output_collection>
+      <output_collection name="output_relative" count="6">
+        <expand macro="outelem" path="1/" number="3"/>
+        <expand macro="outelem" path="1/" number="4"/>
+        <expand macro="outelem" path="2/" number="1"/>
+        <expand macro="outelem" path="2/" number="2"/>
+        <expand macro="outelem" path="3/" number="5"/>
+        <expand macro="outelem" path="3/1/" number="0"/>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

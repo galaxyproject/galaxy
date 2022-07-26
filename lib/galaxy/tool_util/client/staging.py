@@ -7,6 +7,7 @@ import abc
 import json
 import logging
 import os
+import warnings
 
 import yaml
 
@@ -27,7 +28,7 @@ DEFAULT_FILE_TYPE = "auto"
 DEFAULT_DBKEY = "?"
 
 
-class StagingInterace(metaclass=abc.ABCMeta):
+class StagingInterface(metaclass=abc.ABCMeta):
     """Client that parses a job input and populates files into the Galaxy API.
 
     Abstract class that must override _post (and optionally other things such
@@ -259,7 +260,13 @@ class StagingInterace(metaclass=abc.ABCMeta):
         """Return true is this should use (modern) data fetch API."""
 
 
-class InteractorStaging(StagingInterace):
+class StagingInterace(StagingInterface):
+    """For backward compatibility with previous class name"""
+
+    warnings.warn("StagingInterace is deprecated, use StagingInterface instead", DeprecationWarning)
+
+
+class InteractorStaging(StagingInterface):
     def __init__(self, galaxy_interactor, use_fetch_api=DEFAULT_USE_FETCH_API):
         self.galaxy_interactor = galaxy_interactor
         self._use_fetch_api = use_fetch_api

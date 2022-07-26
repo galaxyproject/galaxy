@@ -30,6 +30,7 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
 )
+from galaxy.schema.fetch_data import FilesPayload
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
     dbkeys,
@@ -615,6 +616,9 @@ class FileToolParameter(ToolParameter):
     def from_json(self, value, trans=None, other_values=None):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
+        if isinstance(value, FilesPayload):
+            # multi-part upload handled and persisted in service layer
+            return value.dict()
         if type(value) == dict:
             if "session_id" in value:
                 # handle api upload
@@ -1374,13 +1378,13 @@ class ColumnListParameter(SelectToolParameter):
         Generate a select list containing the columns of the associated
         dataset (if found).
         """
-        # Get the value of the associated data reference (a dataset)
-        dataset = other_values.get(self.data_ref)
+        # Get the value of the associated data reference (one or more datasets)
+        datasets = other_values.get(self.data_ref)
         # Check if a dataset is selected
-        if not dataset:
+        if not datasets:
             return []
         column_list = None
-        for dataset in util.listify(dataset):
+        for dataset in util.listify(datasets):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
@@ -1683,7 +1687,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                         recurse_option(option_list, opt)
 
             rval: List[str] = []
-            recurse_option(rval, get_base_option(value, self.get_options(other_values=other_values)))
+            base_option = get_base_option(value, self.get_options(other_values=other_values))
+            recurse_option(rval, base_option)
             return rval or [value]
 
         if value is None:
@@ -1695,6 +1700,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
             for val in value:
                 options = get_options_list(val)
                 rval.extend(options)
+            rval = list(dict.fromkeys(rval))
         if len(rval) > 1 and not self.multiple:
             raise ParameterValueError(
                 "multiple values provided but parameter is not expecting multiple values", self.name

@@ -85,6 +85,7 @@ PATH_CONFIG_PROPERTIES = [
     "shed_tool_config_file",
     "shed_tool_data_path",
     "shed_tool_data_table_config",
+    "short_term_storage_dir",
     "template_cache_path",
     "tool_data_path",
     "tool_dependency_cache_dir",
@@ -177,6 +178,7 @@ DO_NOT_TEST = [
     "disable_library_comptypes",  # broken: default overridden with empty string
     "enable_per_request_sql_debugging",  # overridden for tests
     "expose_dataset_path",  # broken: default overridden
+    "fetch_url_allowlist",  # specified in driver_util to allow history export tests to target localhost
     "ftp_upload_purge",  # broken: default overridden
     "ftp_upload_dir_template",  # dynamically sets os.path.sep
     "galaxy_data_manager_data_path",  # broken: review config/, possibly refactor
@@ -186,7 +188,9 @@ DO_NOT_TEST = [
     "id_secret",  # broken: default overridden
     "job_config",  # no obvious testable defaults
     "job_config_file",  # broken: remove 'config/' prefix from schema
+    "job_handler_monitor_sleep",  # configured in driver_util
     "job_metrics_config_file",
+    "job_runner_monitor_sleep",  # configured in driver_util
     "job_working_directory",  # broken; may or may not be able to test
     "library_import_dir",  # broken: default overridden
     "logging",  # mapping loaded in config/
@@ -216,6 +220,7 @@ DO_NOT_TEST = [
     "user_tool_label_filters",  # broken: default overridden
     "user_tool_section_filters",  # broken: default overridden
     "webhooks_dir",  # broken; also remove 'config/' prefix from schema
+    "workflow_monitor_sleep",  # configured in driver_util
     "workflow_resource_params_mapper",  # broken: remove 'config/' prefix from schema
 ]
 

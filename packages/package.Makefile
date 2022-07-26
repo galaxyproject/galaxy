@@ -8,7 +8,7 @@ UPSTREAM?=galaxyproject
 SOURCE_DIR?=galaxy
 BUILD_SCRIPTS_DIR=scripts
 DEV_RELEASE?=0
-VERSION?=$(shell DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/print_version_for_release.py $(SOURCE_DIR) $(DEV_RELEASE))
+VERSION?=$(shell DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/print_version_for_release.py)
 PROJECT_NAME?=galaxy-$(shell basename $(CURDIR))
 PROJECT_NAME:=$(subst _,-,$(PROJECT_NAME))
 BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
@@ -22,7 +22,7 @@ help:
 	@echo "clean-build - remove build artifacts"
 	@echo "clean-pyc - remove Python file artifacts"
 	@echo "clean-test - remove test and coverage artifacts"
-	@echo "setup-venv - setup a development virutalenv in current directory."
+	@echo "setup-venv - setup a development virtualenv in current directory."
 	@echo "lint-dist - twine check dist results, including validating README content"
 	@echo "dist - package project for PyPI distribution"
 
@@ -53,7 +53,7 @@ develop:
 	python setup.py develop
 
 dist: clean
-	$(IN_VENV) python setup.py sdist bdist_wheel
+	$(IN_VENV) python -m build
 	ls -l dist
 
 _twine-exists: ; @which twine > /dev/null
@@ -78,10 +78,10 @@ _release-artifacts:
 release-artifacts: release-test-artifacts _release-artifacts
 
 commit-version:
-	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/commit_version.py $(SOURCE_DIR) $(VERSION)
+	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/commit_version.py $(VERSION)
 
 new-version:
-	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/new_version.py $(SOURCE_DIR) $(VERSION)
+	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/new_version.py $(VERSION)
 
 release-local: commit-version release-artifacts new-version
 
@@ -93,4 +93,4 @@ push-release:
 release: release-local push-release
 
 mypy:
-	mypy $(SOURCE_DIR) $(TEST_DIR)
+	mypy .

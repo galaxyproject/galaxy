@@ -2,7 +2,7 @@
 <%namespace file="/galaxy_client_app.mako" name="galaxy_client"/>
 
 <%def name="title()">
-    ${_( 'Histories' )}
+    Histories
 </%def>
 
 <%def name="center_panel()"></%def>

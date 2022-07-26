@@ -374,7 +374,11 @@ def main(argv=None):
         argv = sys.argv[1:]
 
     args = arg_parser().parse_args(argv)
-    run_tests(args)
+    try:
+        run_tests(args)
+    except Exception as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        sys.exit(1)
 
 
 def run_tests(args, test_filters=None, log=None):

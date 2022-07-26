@@ -2,6 +2,7 @@ import logging
 from typing import (
     Any,
     Dict,
+    List,
     Optional,
     Union,
 )
@@ -16,6 +17,7 @@ from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.roles import RoleManager
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
+    CreateLibrariesFromStore,
     CreateLibraryPayload,
     LibraryAvailablePermissions,
     LibraryCurrentPermissions,
@@ -26,12 +28,15 @@ from galaxy.schema.schema import (
     UpdateLibraryPayload,
 )
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.webapps.galaxy.services.base import ServiceBase
+from galaxy.webapps.galaxy.services.base import (
+    ConsumesModelStores,
+    ServiceBase,
+)
 
 log = logging.getLogger(__name__)
 
 
-class LibrariesService(ServiceBase):
+class LibrariesService(ServiceBase, ConsumesModelStores):
     """
     Common interface/service logic for interactions with libraries (top level) in the context of the API.
 
@@ -106,8 +111,18 @@ class LibrariesService(ServiceBase):
         :raises: RequestParameterMissingException
         """
         library = self.library_manager.create(trans, payload.name, payload.description, payload.synopsis)
-        library_dict = self.library_manager.get_library_dict(trans, library)
-        return LibrarySummary.parse_obj(library_dict)
+        return self._to_summary(trans, library)
+
+    def create_from_store(self, trans, payload: CreateLibrariesFromStore) -> List[LibrarySummary]:
+        object_tracker = self.create_objects_from_store(
+            trans,
+            payload,
+            for_library=True,
+        )
+        rval = []
+        for library in object_tracker.libraries_by_key.values():
+            rval.append(self._to_summary(trans, library))
+        return rval
 
     def update(self, trans, id: EncodedDatabaseIdField, payload: UpdateLibraryPayload) -> LibrarySummary:
         """Updates the library defined by an ``encoded_id`` with the data in the payload.
@@ -154,8 +169,7 @@ class LibrariesService(ServiceBase):
         """
         library = self.library_manager.get(trans, trans.security.decode_id(id, object_name="library"))
         library = self.library_manager.delete(trans, library, undelete)
-        library_dict = self.library_manager.get_library_dict(trans, library)
-        return LibrarySummary.parse_obj(library_dict)
+        return self._to_summary(trans, library)
 
     def get_permissions(
         self,
@@ -366,3 +380,7 @@ class LibrariesService(ServiceBase):
             view="element", value_mapper={"id": trans.security.encode_id, "root_folder_id": trans.security.encode_id}
         )
         return LibraryLegacySummary.parse_obj(item)
+
+    def _to_summary(self, trans, library) -> LibrarySummary:
+        library_dict = self.library_manager.get_library_dict(trans, library)
+        return LibrarySummary.parse_obj(library_dict)

@@ -25,7 +25,6 @@ from galaxy.managers import (
     users,
 )
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.util.checkers import check_binary
 
 log = logging.getLogger(__name__)
 
@@ -264,6 +263,16 @@ class DatasetAssociationManager(
         # defer to the dataset
         return self.dataset_manager.is_accessible(dataset_assoc.dataset, user, **kwargs)
 
+    def delete(self, item, flush: bool = True, stop_job: bool = False, **kwargs):
+        """
+        Marks this dataset association as deleted.
+        If `stop_job` is True, will stop the creating job if all other outputs are deleted.
+        """
+        super().delete(item, flush=flush)
+        if stop_job:
+            self.stop_creating_job(item, flush=flush)
+        return item
+
     def purge(self, dataset_assoc, flush=True):
         """
         Purge this DatasetInstance and the dataset underlying it.
@@ -272,13 +281,14 @@ class DatasetAssociationManager(
         # TODO: this check may belong in the controller
         self.dataset_manager.error_unless_dataset_purge_allowed()
 
-        # We need to ignore a potential flush=False here and force the flush
+        # We need to ignore a potential flush=False here if jobs are not tracked in the database,
         # so that job cleanup associated with stop_creating_job will see
         # the dataset as purged.
-        super().purge(dataset_assoc, flush=True)
+        flush_required = not self.app.config.track_jobs_in_database
+        super().purge(dataset_assoc, flush=flush or flush_required)
 
         # stop any jobs outputing the dataset_assoc
-        self.stop_creating_job(dataset_assoc)
+        self.stop_creating_job(dataset_assoc, flush=True)
 
         # more importantly, purge underlying dataset as well
         if dataset_assoc.dataset.user_can_purge:
@@ -301,7 +311,7 @@ class DatasetAssociationManager(
             break
         return job
 
-    def stop_creating_job(self, dataset_assoc):
+    def stop_creating_job(self, dataset_assoc, flush=False):
         """
         Stops an dataset_assoc's creating job if all the job's other outputs are deleted.
         """
@@ -321,6 +331,8 @@ class DatasetAssociationManager(
                     job.mark_deleted(track_jobs_in_database)
                     if not track_jobs_in_database:
                         self.app.job_manager.stop(job)
+                    if flush:
+                        self.session().flush()
                     return True
         return False
 
@@ -370,46 +382,56 @@ class DatasetAssociationManager(
             rval["modify_item_roles"] = modify_item_role_list
         return rval
 
+    def ensure_can_change_datatype(self, dataset: model.DatasetInstance, raiseException: bool = True) -> bool:
+        if not dataset.datatype.is_datatype_change_allowed():
+            if not raiseException:
+                return False
+            raise exceptions.InsufficientPermissionsException(
+                f'Changing datatype "{dataset.extension}" is not allowed.'
+            )
+        return True
+
+    def ensure_can_set_metadata(self, dataset: model.DatasetInstance, raiseException: bool = True) -> bool:
+        if not dataset.ok_to_edit_metadata():
+            if not raiseException:
+                return False
+            raise exceptions.ItemAccessibilityException(
+                "This dataset is currently being used as input or output. You cannot change datatype until the jobs have completed or you have canceled them."
+            )
+        return True
+
     def detect_datatype(self, trans, dataset_assoc):
         """Sniff and assign the datatype to a given dataset association (ldda or hda)"""
         data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
-        if data.datatype.is_datatype_change_allowed():
-            if not data.ok_to_edit_metadata():
-                raise exceptions.ItemAccessibilityException(
-                    "This dataset is currently being used as input or output. You cannot change datatype until the jobs have completed or you have canceled them."
-                )
-            else:
-                path = data.dataset.file_name
-                is_binary = check_binary(path)
-                datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order, is_binary=is_binary)
-                trans.app.datatypes_registry.change_datatype(data, datatype)
-                trans.sa_session.flush()
-                self.set_metadata(trans, dataset_assoc)
-        else:
-            raise exceptions.InsufficientPermissionsException(f'Changing datatype "{data.extension}" is not allowed.')
+        self.ensure_can_change_datatype(data)
+        self.ensure_can_set_metadata(data)
+        path = data.dataset.file_name
+        datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order)
+        trans.app.datatypes_registry.change_datatype(data, datatype)
+        trans.sa_session.flush()
+        self.set_metadata(trans, dataset_assoc)
 
     def set_metadata(self, trans, dataset_assoc, overwrite=False, validate=True):
         """Trigger a job that detects and sets metadata on a given dataset association (ldda or hda)"""
         data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
-        if not data.ok_to_edit_metadata():
-            raise exceptions.ItemAccessibilityException(
-                "This dataset is currently being used as input or output. You cannot edit metadata until the jobs have completed or you have canceled them."
-            )
-        else:
-            if overwrite:
-                for name, spec in data.metadata.spec.items():
-                    # We need to be careful about the attributes we are resetting
-                    if name not in ["name", "info", "dbkey", "base_name"]:
-                        if spec.get("default"):
-                            setattr(data.metadata, name, spec.unwrap(spec.get("default")))
+        self.ensure_can_set_metadata(data)
+        if overwrite:
+            self.overwrite_metadata(data)
 
-            job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
-                self.app.datatypes_registry.set_external_metadata_tool,
-                trans,
-                incoming={"input1": data, "validate": validate},
-                overwrite=overwrite,
-            )
-            self.app.job_manager.enqueue(job, tool=self.app.datatypes_registry.set_external_metadata_tool)
+        job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+            self.app.datatypes_registry.set_external_metadata_tool,
+            trans,
+            incoming={"input1": data, "validate": validate},
+            overwrite=overwrite,
+        )
+        self.app.job_manager.enqueue(job, tool=self.app.datatypes_registry.set_external_metadata_tool)
+
+    def overwrite_metadata(self, data):
+        for name, spec in data.metadata.spec.items():
+            # We need to be careful about the attributes we are resetting
+            if name not in ["name", "info", "dbkey", "base_name"]:
+                if spec.get("default"):
+                    setattr(data.metadata, name, spec.unwrap(spec.get("default")))
 
     def update_permissions(self, trans, dataset_assoc, **kwd):
         action = kwd.get("action", "set_permissions")

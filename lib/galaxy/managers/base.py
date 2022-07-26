@@ -53,7 +53,8 @@ from galaxy import (
     model,
 )
 from galaxy.model import tool_shed_install
-from galaxy.schema import FilterQueryParams
+from galaxy.schema import ValueFilterQueryParams
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import (
     BasicSharedApp,
@@ -141,7 +142,10 @@ def get_class(class_name):
 def decode_id(app: BasicSharedApp, id: Any):
     # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
     #   resulting in error for valid id
-    return decode_with_security(app.security, id)
+    if isinstance(id, DecodedDatabaseIdField):
+        return int(id)
+    else:
+        return decode_with_security(app.security, id)
 
 
 def decode_with_security(security: IdEncodingHelper, id: Any):
@@ -1020,7 +1024,7 @@ class ModelFilterParser(HasAModelManager):
                 "id": {"op": ("in")},
                 "encoded_id": {"column": "id", "op": ("in"), "val": self.parse_id_list},
                 # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
-                "extension": {"op": ("eq", "like", "in")},
+                "extension": {"op": ("eq", "like", "in"), "val": {"in": lambda v: v.split(",")}},
                 "create_time": {"op": ("le", "ge", "lt", "gt"), "val": self.parse_date},
                 "update_time": {"op": ("le", "ge", "lt", "gt"), "val": self.parse_date},
             }
@@ -1028,7 +1032,7 @@ class ModelFilterParser(HasAModelManager):
 
     def build_filter_params(
         self,
-        query_params: FilterQueryParams,
+        query_params: ValueFilterQueryParams,
         filter_attr_key: str = "q",
         filter_value_key: str = "qv",
         attr_op_split_char: str = "-",
@@ -1064,8 +1068,8 @@ class ModelFilterParser(HasAModelManager):
         #   (instead of relying on zip to shorten)
         return list(zip(attrs, ops, values))
 
-    def parse_query_filters(self, query_filters: FilterQueryParams):
-        """Convenience function to parse a FilterQueryParams object into a collection of filtering criteria."""
+    def parse_query_filters(self, query_filters: ValueFilterQueryParams):
+        """Convenience function to parse a ValueFilterQueryParams object into a collection of filtering criteria."""
         filter_params = self.build_filter_params(query_filters)
         return self.parse_filters(filter_params)
 
@@ -1115,7 +1119,7 @@ class ModelFilterParser(HasAModelManager):
         """
         Attempt to parse a non-ORM filter function.
         """
-        # fn_filter_list is a dict: fn_filter_list[ attr ] = { 'opname1' : opfn1, 'opname2' : opfn2, etc. }
+        # fn_filter_parsers is a dict: fn_filter_parsers[attr] = {"opname1": opfn1, "opname2": opfn2, etc. }
 
         # attr, op is a nested dictionary pointing to the filter fn
         attr_map = self.fn_filter_parsers.get(attr, None)
@@ -1135,13 +1139,13 @@ class ModelFilterParser(HasAModelManager):
         return self.parsed_filter(filter_type="function", filter=lambda i: filter_fn(i, val))
 
     # ---- ORM filters
-    def _parse_orm_filter(self, attr, op, val):
+    def _parse_orm_filter(self, attr, op, val) -> Optional[ParsedFilter]:
         """
         Attempt to parse a ORM-based filter.
 
         Using SQLAlchemy, this would yield a sql.elements.BinaryExpression.
         """
-        # orm_filter_list is a dict: orm_filter_list[ attr ] = <list of allowed ops>
+        # orm_filter_parsers is a dict: orm_filter_parsers[attr] = <column map>
         column_map = self.orm_filter_parsers.get(attr, None)
         if not column_map:
             # no column mapping (not allowlisted)
@@ -1164,16 +1168,20 @@ class ModelFilterParser(HasAModelManager):
         allowed_ops = column_map["op"]
         if op not in allowed_ops:
             return None
-        op = self._convert_op_string_to_fn(column, op)
-        if not op:
+        converted_op = self._convert_op_string_to_fn(column, op)
+        if not converted_op:
             return None
 
         # parse the val from string using the 'val' parser if present (otherwise, leave as string)
-        val_parser = column_map.get("val", None)
+        val_parser = column_map.get("val")
+        # val_parser can be a dictionary indexed by the operations, in case different functions
+        # need to be called depending on the operation
+        if isinstance(val_parser, dict):
+            val_parser = val_parser.get(op)
         if val_parser:
             val = val_parser(val)
 
-        orm_filter = op(val)
+        orm_filter = converted_op(val)
         return self.parsed_filter(filter_type="orm", filter=orm_filter)
 
     #: these are the easier/shorter string equivalents to the python operator fn names that need '__' around them
@@ -1211,7 +1219,7 @@ class ModelFilterParser(HasAModelManager):
     # TODO: These should go somewhere central - we've got ~6 parser modules/sections now
     def parse_id_list(self, id_list_string, sep=","):
         """
-        Split `id_list_string` at `sep`.
+        Split `id_list_string` at `sep` and decode as ids.
         """
         # TODO: move id decoding out
         id_list = [self.app.security.decode_id(id_) for id_ in id_list_string.split(sep)]
@@ -1246,15 +1254,19 @@ class ModelFilterParser(HasAModelManager):
             return date_string
         raise ValueError("datetime strings must be in the ISO 8601 format and in the UTC")
 
+    def contains_non_orm_filter(self, filters: List[ParsedFilter]) -> bool:
+        """Whether the list of filters contains any non-orm filter."""
+        return any(filter.filter_type == "function" for filter in filters)
+
 
 def parse_bool(bool_string: Union[str, bool]) -> bool:
     """
     Parse a boolean from a string.
     """
     # Be strict here to remove complexity of options (but allow already parsed).
-    if bool_string in ("True", True):
+    if bool_string in ("True", "true", True):
         return True
-    if bool_string in ("False", False):
+    if bool_string in ("False", "false", False):
         return False
     raise ValueError(f"invalid boolean: {bool_string}")
 

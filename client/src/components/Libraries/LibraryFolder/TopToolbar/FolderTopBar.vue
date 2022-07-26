@@ -81,10 +81,10 @@
                         </div>
                     </div>
                     <div
+                        v-if="dataset_manipulation"
                         title="Download items as archive"
-                        class="dropdown dataset-manipulation mr-1"
-                        v-if="dataset_manipulation">
-                        <button type="button" id="download--btn" class="primary-button" @click="downloadData('zip')">
+                        class="dropdown dataset-manipulation mr-1">
+                        <button id="download--btn" type="button" class="primary-button" @click="downloadData('zip')">
                             <font-awesome-icon icon="download" />
                             Download
                         </button>
@@ -99,13 +99,13 @@
                         <font-awesome-icon icon="trash" />
                         Delete
                     </button>
-                    <FolderDetails class="mr-1" :id="folder_id" :metadata="metadata" />
-                    <div class="form-check logged-dataset-manipulation mr-1" v-if="canDelete">
+                    <FolderDetails :id="folder_id" class="mr-1" :metadata="metadata" />
+                    <div v-if="canDelete" class="form-check logged-dataset-manipulation mr-1">
                         <b-form-checkbox
                             id="checkbox-1"
                             :checked="include_deleted"
-                            @input="toggle_include_deleted($event)"
-                            name="checkbox-1">
+                            name="checkbox-1"
+                            @input="toggle_include_deleted($event)">
                             include deleted
                         </b-form-checkbox>
                     </div>
@@ -144,6 +144,12 @@ Vue.use(BootstrapVue);
 
 export default {
     name: "FolderTopBar",
+    components: {
+        SearchField,
+        FontAwesomeIcon,
+        LibraryBreadcrumb,
+        FolderDetails,
+    },
     props: {
         folder_id: {
             type: String,
@@ -174,12 +180,6 @@ export default {
             required: true,
         },
     },
-    components: {
-        SearchField,
-        FontAwesomeIcon,
-        LibraryBreadcrumb,
-        FolderDetails,
-    },
     data() {
         return {
             is_admin: false,
@@ -201,16 +201,6 @@ export default {
             },
         };
     },
-    created() {
-        const Galaxy = getGalaxyInstance();
-        this.services = new Services();
-        this.is_admin = Galaxy.user.attributes.is_admin;
-        this.user_library_import_dir_available = Galaxy.config.user_library_import_dir_available;
-        this.library_import_dir = Galaxy.config.library_import_dir;
-        this.allow_library_path_paste = Galaxy.config.allow_library_path_paste;
-
-        this.fetchExtAndGenomes();
-    },
     computed: {
         contains_file_or_folder: function () {
             return this.folderContents.find((el) => el.type === "folder" || el.type === "file");
@@ -223,6 +213,16 @@ export default {
             // logic from legacy code
             return !!(this.contains_file_or_folder && Galaxy.user);
         },
+    },
+    created() {
+        const Galaxy = getGalaxyInstance();
+        this.services = new Services();
+        this.is_admin = Galaxy.user.attributes.is_admin;
+        this.user_library_import_dir_available = Galaxy.config.user_library_import_dir_available;
+        this.library_import_dir = Galaxy.config.library_import_dir;
+        this.allow_library_path_paste = Galaxy.config.allow_library_path_paste;
+
+        this.fetchExtAndGenomes();
     },
     methods: {
         updateSearch: function (value) {

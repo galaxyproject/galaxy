@@ -1,5 +1,5 @@
 """
-This script is intended to be invoked by the legacy manage_db.sh script.
+This script is intended to be invoked by the manage_db.sh script.
 It translates the arguments supplied to manage_db.sh into the format used
 by migrate_db.py.
 

@@ -18,9 +18,9 @@ from tool_shed.util import (
     hg_util,
     metadata_util,
     repository_util,
+    shed_util_common as suc,
+    tool_util,
 )
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_util
 
 log = logging.getLogger(__name__)
 

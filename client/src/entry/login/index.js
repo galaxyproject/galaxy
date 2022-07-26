@@ -1,7 +1,7 @@
 import { standardInit, addInitialization } from "onload";
 import Page from "layout/page";
-import Index from "components/login/Index.vue";
-import Password from "components/login/Password.vue";
+import LoginIndex from "components/login/LoginIndex.vue";
+import ChangePassword from "components/login/ChangePassword.vue";
 import Vue from "vue";
 
 export function initLoginView(Galaxy, { options }) {
@@ -9,7 +9,7 @@ export function initLoginView(Galaxy, { options }) {
     Galaxy.page = new Page.View(options);
     const vm = document.createElement("div");
     Galaxy.display(vm);
-    const component = Galaxy.params.token || Galaxy.params.expired_user ? Password : Index;
+    const component = Galaxy.params.token || Galaxy.params.expired_user ? ChangePassword : LoginIndex;
     const loginInstance = Vue.extend(component);
     new loginInstance({
         propsData: {

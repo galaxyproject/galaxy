@@ -1,1 +1,2 @@
 include *.rst *.txt LICENSE
+graft galaxy/web/proxy/js/

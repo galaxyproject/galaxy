@@ -15,9 +15,9 @@
                         <div class="mt-2">
                             <b-button
                                 id="dataset-attributes-default-save"
-                                @click="submit('attribute', 'attributes')"
                                 variant="primary"
-                                class="mr-1">
+                                class="mr-1"
+                                @click="submit('attribute', 'attributes')">
                                 <font-awesome-icon icon="save" class="mr-1" />{{ "Save" | l }}
                             </b-button>
                             <b-button @click="submit('attribute', 'autodetect')">
@@ -31,7 +31,7 @@
                         </template>
                         <FormDisplay :inputs="result['conversion_inputs']" @onChange="onConversion" />
                         <div class="mt-2">
-                            <b-button @click="submit('conversion', 'conversion')" variant="primary">
+                            <b-button variant="primary" @click="submit('conversion', 'conversion')">
                                 <font-awesome-icon icon="exchange-alt" class="mr-1" />{{ "Create Dataset" | l }}
                             </b-button>
                         </div>
@@ -42,7 +42,7 @@
                         </template>
                         <FormDisplay :inputs="result['datatype_inputs']" @onChange="onDatatype" />
                         <div class="mt-2">
-                            <b-button @click="submit('datatype', 'datatype')" variant="primary" class="mr-1">
+                            <b-button variant="primary" class="mr-1" @click="submit('datatype', 'datatype')">
                                 <font-awesome-icon icon="save" class="mr-1" />{{ "Save" | l }}
                             </b-button>
                             <b-button @click="submit('datatype', 'datatype_detect')">
@@ -56,7 +56,7 @@
                         </template>
                         <FormDisplay :inputs="result['permission_inputs']" @onChange="onPermission" />
                         <div class="mt-2">
-                            <b-button @click="submit('permission', 'permission')" variant="primary">
+                            <b-button variant="primary" @click="submit('permission', 'permission')">
                                 <font-awesome-icon icon="save" class="mr-1" />{{ "Save" | l }}
                             </b-button>
                         </div>

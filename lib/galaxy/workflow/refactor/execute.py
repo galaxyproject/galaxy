@@ -83,7 +83,9 @@ class WorkflowRefactorExecutor:
 
     def _apply_update_step_position(self, action: UpdateStepPositionAction, execution: RefactorActionExecution):
         step = self._find_step_for_action(action)
-        step["position"] = action.position.to_dict()
+        position_update = action.position_shift.to_dict()
+        step["position"]["left"] = step["position"].get("left", 0) + position_update["left"]
+        step["position"]["top"] = step["position"].get("top", 0) + position_update["top"]
 
     def _apply_update_output_label(self, action: UpdateOutputLabelAction, execution: RefactorActionExecution):
         output_reference = action.output
@@ -274,7 +276,7 @@ class WorkflowRefactorExecutor:
                     return NO_REPLACEMENT
 
                 if value == target_value:
-                    target_tool_inputs.append((step.order_index, input, prefixed_name))
+                    target_tool_inputs.append((step.order_index, input, prefixed_name))  # noqa: B023
                     replace_tool_state = True
                     return runtime_to_json(ConnectedValue())
                 else:

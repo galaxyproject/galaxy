@@ -11,6 +11,8 @@ from typing import (
     NamedTuple,
 )
 
+import pytest
+
 from galaxy.security.ssh_util import generate_ssh_keys
 from galaxy_test.base.populators import skip_without_tool
 from galaxy_test.driver import integration_util
@@ -134,6 +136,7 @@ class BaseCliIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
         assert job_env.some_env == "42"
 
 
+@pytest.mark.xfail(reason="Container entrypoint occasionally fails to set default queue")
 class OpenPBSSetup:
     job_plugin = "OpenPBS"
     image = "mvdbeek/galaxy-integration-docker-images:openpbs-22.01"

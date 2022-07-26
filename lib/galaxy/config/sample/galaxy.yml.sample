@@ -1,21 +1,21 @@
 # Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
-#
+# 
 #  https://docs.galaxyproject.org/en/master/admin/production.html
-#
+# 
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
-#
+# 
 # Examples of many of these options are explained in more detail in the Galaxy
 # Community Hub.
-#
+# 
 #   https://galaxyproject.org/admin/config
-#
+# 
 # Config hackers are encouraged to check there before asking for help.
-#
+# 
 # Configuration for Gravity process manager.
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
@@ -25,7 +25,7 @@ gravity:
   # galaxy_root:
 
   # Set to a directory that should contain log files for the processes controlled by Gravity.
-  # If not specified defaults to ``<state_dir>/logs``.
+  # If not specified defaults to ``<state_dir>/log``.
   # log_dir:
 
   # Set to Galaxy's virtualenv directory.
@@ -46,6 +46,9 @@ gravity:
   # Configuration for Gunicorn.
   gunicorn:
 
+    # Enable Galaxy gunicorn server.
+    # enable: true
+
     # The socket to bind. A string of the form: ``HOST``, ``HOST:PORT``, ``unix:PATH``, ``fd://FD``. An IP is a valid HOST.
     # bind: localhost:8080
 
@@ -64,11 +67,21 @@ gravity:
     # extra_args:
 
     # Use Gunicorn's --preload option to fork workers after loading the Galaxy Application.
-    # Consumes less memory when multiple processes are configured.
-    # preload: true
+    # Consumes less memory when multiple processes are configured. Default is ``false`` if using unicornherder, else ``true``.
+    # preload:
+
+    # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
+    # names.
+    # environment: {}
 
   # Configuration for Celery Processes.
   celery:
+
+    # Enable Celery distributed task queue.
+    # enable: true
+
+    # Enable Celery Beat periodic task runner.
+    # enable_beat: true
 
     # Number of Celery Workers to start.
     # concurrency: 2
@@ -77,8 +90,19 @@ gravity:
     # Valid options are: DEBUG, INFO, WARNING, ERROR
     # loglevel: DEBUG
 
+    # Queues to join
+    # queues: celery,galaxy.internal,galaxy.external
+
+    # Pool implementation
+    # Valid options are: prefork, eventlet, gevent, solo, processes, threads
+    # pool: threads
+
     # Extra arguments to pass to Celery command line.
     # extra_args:
+
+    # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
+    # names.
+    # environment: {}
 
   # Configuration for gx-it-proxy.
   gx_it_proxy:
@@ -111,6 +135,10 @@ gravity:
     # This is an advanced option that is only needed when proxying to remote interactive tool container that cannot be reached through the local network.
     # reverse_proxy: false
 
+    # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
+    # names.
+    # environment: {}
+
   # Configuration for tusd server (https://github.com/tus/tusd).
   # The ``tusd`` binary must be installed manually and made available on PATH (e.g in galaxy's .venv/bin directory).
   tusd:
@@ -118,6 +146,9 @@ gravity:
     # Enable tusd server.
     # If enabled, you also need to set up your proxy as outlined in https://docs.galaxyproject.org/en/latest/admin/nginx.html#receiving-files-via-the-tus-protocol.
     # enable: false
+
+    # Path to tusd binary
+    # tusd_path: tusd
 
     # Host to bind the tusd server to
     # host: localhost
@@ -131,6 +162,10 @@ gravity:
 
     # Extra arguments to pass to tusd command line.
     # extra_args:
+
+    # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
+    # names.
+    # environment: {}
 
   # Configure dynamic handlers in this section.
   # See https://docs.galaxyproject.org/en/latest/admin/scaling.html#dynamically-defined-handlers for details.
@@ -456,6 +491,31 @@ galaxy:
   # option.
   #watch_tours: 'false'
 
+  # Location of files available for a short time as downloads (short
+  # term storage). This directory is exclusively used for serving
+  # dynamically generated downloadable content. Galaxy may uses the
+  # new_file_path parameter as a general temporary directory and that
+  # directory should be monitored by a tool such as tmpwatch in
+  # production environments. short_term_storage_dir on the other hand is
+  # monitored by Galaxy's task framework and should not require such
+  # external tooling.
+  # The value of this option will be resolved with respect to
+  # <cache_dir>.
+  #short_term_storage_dir: short_term_web_storage
+
+  # Default duration before short term web storage files will be cleaned
+  # up by Galaxy tasks (in seconds). The default duration is 1 day.
+  #short_term_storage_default_duration: 86400
+
+  # The maximum duration short term storage files can hosted before they
+  # will be marked for clean up.  The default setting of 0 indicates no
+  # limit here.
+  #short_term_storage_maximum_duration: 0
+
+  # How many seconds between instances of short term storage being
+  # cleaned up in default Celery task configuration.
+  #short_term_storage_cleanup_interval: 3600
+
   # Configured FileSource plugins.
   # The value of this option will be resolved with respect to
   # <config_dir>.
@@ -749,6 +809,10 @@ galaxy:
   # <cache_dir>.
   #mulled_resolution_cache_lock_dir: mulled/locks
 
+  # Seconds until the beaker cache is considered old and a new value is
+  # created.
+  #mulled_resolution_cache_expire: 3600
+
   # Configuration file for the object store If this is set and exists,
   # it overrides any other objectstore settings.
   # The value of this option will be resolved with respect to
@@ -1013,6 +1077,11 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <config_dir>.
   #trs_servers_config_file: trs_servers_conf.yml
+
+  # Server-wide default selection to use the legacy history during the
+  # transition period, after which this option will disappear.  Users
+  # will remain able to swap back and forth per their preference.
+  #use_legacy_history: false
 
   # Location of the configuration file containing extra user
   # preferences.
@@ -1630,6 +1699,10 @@ galaxy:
   # page (even if require_login is true).
   #show_welcome_with_login: false
 
+  # Controls the order of the login page to prefer Custos-based login
+  # and registration.
+  #prefer_custos_login: false
+
   # Allow unregistered users to create new accounts (otherwise, they
   # will have to be created by an admin).
   #allow_user_creation: true
@@ -1845,8 +1918,13 @@ galaxy:
 
   # When the simplified workflow run form is rendered, should the
   # invocation outputs be sent to the 'current' history or a 'new'
-  # history.
-  #simplified_workflow_run_ui_target_history: current
+  # history. If the user should be presented and option between these -
+  # set this to 'prefer_current' or 'prefer_new' to display a runtime
+  # setting with the corresponding default. The default is to provide
+  # the user this option and default it to the current history (the
+  # traditional behavior of Galaxy for years) - this corresponds to the
+  # setting 'prefer_current'.
+  #simplified_workflow_run_ui_target_history: prefer_current
 
   # When the simplified workflow run form is rendered, should the
   # invocation use job caching. This isn't a boolean so an option for
@@ -2016,13 +2094,23 @@ galaxy:
   # allowed.
   #job_runner_monitor_sleep: 1.0
 
-  # Determines how metadata will be set. Valid values are `directory`
-  # and `extended`. In extended mode jobs will decide if a tool run
-  # failed, the object stores configuration is serialized and made
-  # available to the job and is used for writing output datasets to the
-  # object store as part of the job and dynamic output discovery (e.g.
-  # discovered datasets <discover_datasets>, unpopulated collections,
-  # etc) happens as part of the job.
+  # Each Galaxy workflow handler process runs one thread responsible for
+  # checking the state of active workflow invocations.  This thread
+  # operates in a loop and sleeps for the given number of seconds at the
+  # end of each iteration. This can be decreased if extremely high job
+  # throughput is necessary, but doing so can increase CPU usage of
+  # handler processes. Float values are allowed.
+  #workflow_monitor_sleep: 1.0
+
+  # Determines how metadata will be set. Valid values are `directory`,
+  # `extended`, `directory_celery` and `extended_celery`. In extended
+  # mode jobs will decide if a tool run failed, the object stores
+  # configuration is serialized and made available to the job and is
+  # used for writing output datasets to the object store as part of the
+  # job and dynamic output discovery (e.g. discovered datasets
+  # <discover_datasets>, unpopulated collections, etc) happens as part
+  # of the job. In `directory_celery` and `extended_celery` metadata
+  # will be set within a celery task.
   #metadata_strategy: directory
 
   # Although it is fairly reliable, setting metadata can occasionally
@@ -2268,7 +2356,7 @@ galaxy:
   # For example, when reloading the toolbox or locking job execution,
   # the process that handled that particular request will tell all
   # others to also reload, lock jobs, etc. For connection examples, see
-  # http://docs.celeryproject.org/projects/kombu/en/latest/userguide/connections.html
+  # https://docs.celeryq.dev/projects/kombu/en/stable/userguide/connections.html
   # Without specifying anything here, galaxy will first attempt to use
   # your specified database_connection above.  If that's not specified
   # either, Galaxy will automatically create and use a separate sqlite
@@ -2359,3 +2447,4 @@ galaxy:
 
   # Display built-in converters in the tool panel.
   #display_builtin_converters: true
+

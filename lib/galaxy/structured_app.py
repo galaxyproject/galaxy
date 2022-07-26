@@ -37,6 +37,8 @@ from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
 
 if TYPE_CHECKING:
+    from galaxy.jobs import JobConfiguration
+    from galaxy.managers.workflows import WorkflowsManager
     from galaxy.tools.data import ToolDataTableManager
 
 
@@ -66,8 +68,9 @@ class MinimalToolApp(BasicApp):
     sa_session: Union[galaxy_scoped_session, SessionlessContext]
     datatypes_registry: Registry
     object_store: ObjectStore
-    tool_data_table_manager: "ToolDataTableManager"
+    tool_data_tables: "ToolDataTableManager"
     file_sources: ConfiguredFileSources
+    security: IdEncodingHelper
 
 
 class MinimalApp(BasicSharedApp):
@@ -81,6 +84,7 @@ class MinimalApp(BasicSharedApp):
 
 
 class MinimalManagerApp(MinimalApp):
+    # Minimal App that is sufficient to run Celery tasks
     file_sources: ConfiguredFileSources
     genome_builds: GenomeBuilds
     dataset_collection_manager: Any  # 'galaxy.managers.collections.DatasetCollectionManager'
@@ -93,8 +97,10 @@ class MinimalManagerApp(MinimalApp):
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
     installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
     user_manager: Any
-    job_config: Any  # 'galaxy.jobs.JobConfiguration'
+    job_config: "JobConfiguration"
     job_manager: Any  # galaxy.jobs.manager.JobManager
+    job_metrics: "JobMetrics"
+    dynamic_tool_manager: Any  # 'galaxy.managers.tools.DynamicToolManager'
 
     @property
     def is_job_handler(self) -> bool:
@@ -132,12 +138,11 @@ class StructuredApp(MinimalManagerApp):
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
     history_manager: Any  # 'galaxy.managers.histories.HistoryManager'
     hda_manager: Any  # 'galaxy.managers.hdas.HDAManager'
-    workflow_manager: Any  # 'galaxy.managers.workflows.WorkflowsManager'
+    workflow_manager: "WorkflowsManager"
     workflow_contents_manager: Any  # 'galaxy.managers.workflows.WorkflowContentsManager'
     library_folder_manager: Any  # 'galaxy.managers.folders.FolderManager'
     library_manager: Any  # 'galaxy.managers.libraries.LibraryManager'
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
-    dynamic_tool_manager: Any  # 'galaxy.managers.tools.DynamicToolManager'
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'
     tool_data_tables: "ToolDataTableManager"
     genomes: Any  # 'galaxy.visualization.genomes.Genomes'
@@ -148,7 +153,7 @@ class StructuredApp(MinimalManagerApp):
     installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
     interactivetool_manager: Any
-    job_config: Any  # 'galaxy.jobs.JobConfiguration'
+    job_config: "JobConfiguration"
     job_manager: Any  # galaxy.jobs.manager.JobManager
     user_manager: Any
     api_keys_manager: Any  # 'galaxy.managers.api_keys.ApiKeyManager'

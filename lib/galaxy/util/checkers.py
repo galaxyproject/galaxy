@@ -9,8 +9,8 @@ from io import (
     StringIO,
 )
 from typing import (
+    Dict,
     IO,
-    List,
     Tuple,
 )
 
@@ -195,11 +195,11 @@ def check_image(file_path: str):
     return False
 
 
-COMPRESSION_CHECK_FUNCTIONS: List[Tuple[str, CompressionChecker]] = [
-    ("gz", check_gzip),
-    ("bz2", check_bz2),
-    ("zip", check_zip),
-]
+COMPRESSION_CHECK_FUNCTIONS: Dict[str, CompressionChecker] = {
+    "gzip": check_gzip,
+    "bz2": check_bz2,
+    "zip": check_zip,
+}
 
 
 __all__ = (

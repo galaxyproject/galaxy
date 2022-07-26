@@ -8,11 +8,7 @@ from galaxy.datatypes import (
     data,
     sniff,
 )
-from galaxy.util.checkers import (
-    check_binary,
-    is_single_file_zip,
-    is_zip,
-)
+from galaxy.util.checkers import is_single_file_zip
 
 
 class UploadProblemException(Exception):
@@ -47,15 +43,16 @@ def handle_upload(
     converted_path = None
     multi_file_zip = False
 
-    # Does the first 1K contain a null?
-    is_binary = check_binary(path)
+    # Does the first 1MB look like binary content?
+    file_prefix = sniff.FilePrefix(path, auto_decompress=auto_decompress)
+    is_binary = file_prefix.binary
 
     converted_newlines, converted_spaces = False, False
 
     # Decompress if needed/desired and determine/validate filetype. If a keep-compressed datatype is explicitly selected
     # or if autodetection is selected and the file sniffs as a keep-compressed datatype, it will not be decompressed.
     if not link_data_only:
-        if auto_decompress and is_zip(path) and not is_single_file_zip(path):
+        if auto_decompress and file_prefix.compressed_format == "zip" and not is_single_file_zip(path):
             multi_file_zip = True
         try:
             (
@@ -65,15 +62,13 @@ def handle_upload(
                 converted_newlines,
                 converted_spaces,
             ) = sniff.handle_uploaded_dataset_file_internal(
-                path,
+                file_prefix,
                 registry,
                 ext=requested_ext,
                 tmp_prefix=tmp_prefix,
                 tmp_dir=tmp_dir,
                 in_place=in_place,
                 check_content=check_content,
-                is_binary=is_binary,
-                auto_decompress=auto_decompress,
                 uploaded_file_ext=os.path.splitext(name)[1].lower().lstrip("."),
                 convert_to_posix_lines=convert_to_posix_lines,
                 convert_spaces_to_tabs=convert_spaces_to_tabs,
@@ -81,7 +76,7 @@ def handle_upload(
         except sniff.InappropriateDatasetContentError as exc:
             raise UploadProblemException(exc)
     elif requested_ext == "auto":
-        ext = sniff.guess_ext(path, registry.sniff_order, is_binary=is_binary)
+        ext = sniff.guess_ext(file_prefix, registry.sniff_order)
     else:
         ext = requested_ext
 

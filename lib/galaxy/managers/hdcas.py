@@ -34,6 +34,11 @@ def stream_dataset_collection(dataset_collection_instance, upstream_mod_zip=Fals
         upstream_mod_zip=upstream_mod_zip,
         upstream_gzip=upstream_gzip,
     )
+    write_dataset_collection(dataset_collection_instance, archive)
+    return archive
+
+
+def write_dataset_collection(dataset_collection_instance, archive):
     names, hdas = get_hda_and_element_identifiers(dataset_collection_instance)
     for name, hda in zip(names, hdas):
         if hda.state != hda.states.OK:

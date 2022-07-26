@@ -156,6 +156,7 @@ class ConfigSerializer(base.ModelSerializer):
             "single_user": _config_is_truthy,
             "enable_oidc": _use_config,
             "oidc": _use_config,
+            "prefer_custos_login": _use_config,
             "enable_quotas": _use_config,
             "remote_user_logout_href": _use_config,
             "datatypes_disable_auto": _use_config,
@@ -168,6 +169,7 @@ class ConfigSerializer(base.ModelSerializer):
             "matomo_site_id": _use_config,
             "enable_unique_workflow_defaults": _use_config,
             "enable_beta_markdown_export": _use_config,
+            "use_legacy_history": _use_config,
             "simplified_workflow_run_ui": _use_config,
             "simplified_workflow_run_ui_target_history": _use_config,
             "simplified_workflow_run_ui_job_cache": _use_config,
@@ -205,6 +207,7 @@ class ConfigSerializer(base.ModelSerializer):
             "release_doc_base_url": _use_config,
             "expose_user_email": _use_config,
             "enable_tool_source_display": _use_config,
+            "enable_celery_tasks": _use_config,
             "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
             "welcome_directory": _use_config,
         }

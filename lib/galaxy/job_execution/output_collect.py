@@ -29,11 +29,9 @@ from galaxy.model.store.discover import (
     discover_target_directory,
     DiscoveredFile,
     JsonCollectedDatasetMatch,
-)
-from galaxy.model.store.discover import MetadataSourceProvider as AbstractMetadataSourceProvider
-from galaxy.model.store.discover import ModelPersistenceContext
-from galaxy.model.store.discover import PermissionProvider as AbstractPermissionProvider
-from galaxy.model.store.discover import (
+    MetadataSourceProvider as AbstractMetadataSourceProvider,
+    ModelPersistenceContext,
+    PermissionProvider as AbstractPermissionProvider,
     persist_elements_to_folder,
     persist_elements_to_hdca,
     persist_hdas,
@@ -51,6 +49,7 @@ from galaxy.tool_util.parser.output_objects import (
     ToolOutput,
     ToolOutputCollection,
 )
+from galaxy.tool_util.provided_metadata import BaseToolProvidedMetadata
 from galaxy.util import (
     shrink_and_unicodify,
     unicodify,
@@ -189,31 +188,33 @@ def collect_dynamic_outputs(
         job_context.add_dataset_collection(has_collection)
 
 
-class BaseJobContext:
+class BaseJobContext(ModelPersistenceContext):
 
     max_discovered_files: Union[int, float]
+    tool_provided_metadata: BaseToolProvidedMetadata
+    job_working_directory: str
 
     def add_dataset_collection(self, collection):
         pass
 
-    def find_files(self, output_name, collection, dataset_collectors):
-        filenames = {}
+    def find_files(self, output_name, collection, dataset_collectors) -> list:
+        discovered_files = []
         for discovered_file in discover_files(
             output_name, self.tool_provided_metadata, dataset_collectors, self.job_working_directory, collection
         ):
             self.increment_discovered_file_count()
-            filenames[discovered_file.path] = discovered_file
-        return filenames
+            discovered_files.append(discovered_file)
+        return discovered_files
 
     def get_job_id(self):
         return None  # overwritten in subclasses
 
 
-class JobContext(ModelPersistenceContext, BaseJobContext):
+class JobContext(BaseJobContext):
     def __init__(
         self,
         tool,
-        tool_provided_metadata,
+        tool_provided_metadata: BaseToolProvidedMetadata,
         job,
         job_working_directory,
         permission_provider,
@@ -393,7 +394,7 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
     def __init__(
         self,
         metadata_params,
-        tool_provided_metadata,
+        tool_provided_metadata: BaseToolProvidedMetadata,
         object_store,
         export_store,
         import_store,
@@ -440,7 +441,7 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
             for collection_dataset in hdca.dataset_instances:
                 include_files = True
                 self.export_store.add_dataset(collection_dataset, include_files=include_files)
-                self.export_store.collection_datasets[collection_dataset.id] = True
+                self.export_store.collection_datasets.add(collection_dataset.id)
 
         return hdca
 
@@ -449,7 +450,7 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         for collection_dataset in collection.dataset_instances:
             include_files = True
             self.export_store.add_dataset(collection_dataset, include_files=include_files)
-            self.export_store.collection_datasets[collection_dataset.id] = True
+            self.export_store.collection_datasets.add(collection_dataset.id)
 
     def add_output_dataset_association(self, name, dataset_instance):
         self.export_store.add_job_output_dataset_associations(self.get_job_id(), name, dataset_instance)
@@ -547,6 +548,7 @@ def collect_primary_datasets(job_context: Union[JobContext, SessionlessJobContex
             outdata.init_meta()
             outdata.set_meta()
             outdata.set_peek()
+            outdata.discovered = True
             sa_session = job_context.sa_session
             if sa_session:
                 sa_session.add(outdata)
@@ -592,27 +594,29 @@ def walk_over_extra_files(target_dir, extra_file_collector, job_working_director
     match the given collector's match criteria. If the collector has the
     recurse flag enabled, will also recursively descend into child folders.
     """
-    matches = []
     parent_paths = parent_paths or []
-    directory = discover_target_directory(target_dir, job_working_directory)
-    if os.path.isdir(directory):
-        for filename in os.listdir(directory):
-            path = os.path.join(directory, filename)
-            if os.path.isdir(path):
-                if extra_file_collector.recurse:
-                    new_parent_paths = parent_paths[:]
-                    new_parent_paths.append(filename)
-                    # The current directory is already validated, so use that as the next job_working_directory when recursing
-                    for match in walk_over_extra_files(
-                        filename, extra_file_collector, directory, matchable, parent_paths=new_parent_paths
-                    ):
-                        yield match
-            else:
-                match = extra_file_collector.match(matchable, filename, path=path, parent_paths=parent_paths)
-                if match:
-                    matches.append(match)
 
-    for match in extra_file_collector.sort(matches):
+    def _walk(target_dir, extra_file_collector, job_working_directory, matchable, parent_paths):
+        directory = discover_target_directory(target_dir, job_working_directory)
+        if os.path.isdir(directory):
+            for filename in os.listdir(directory):
+                path = os.path.join(directory, filename)
+                if os.path.isdir(path):
+                    if extra_file_collector.recurse:
+                        new_parent_paths = parent_paths[:]
+                        new_parent_paths.append(filename)
+                        # The current directory is already validated, so use that as the next job_working_directory when recursing
+                        yield from _walk(
+                            filename, extra_file_collector, directory, matchable, parent_paths=new_parent_paths
+                        )
+                else:
+                    match = extra_file_collector.match(matchable, filename, path=path, parent_paths=parent_paths)
+                    if match:
+                        yield match
+
+    for match in extra_file_collector.sort(
+        _walk(target_dir, extra_file_collector, job_working_directory, matchable, parent_paths)
+    ):
         yield match
 
 

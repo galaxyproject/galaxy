@@ -133,7 +133,7 @@ class RegexValidator(Validator):
 
     def __init__(self, message, expression, negate):
         if message is None:
-            message = f"Value '%s' does {'not ' if negate == 'false' else ''}match regular expression '{expression}'"
+            message = f"Value '%s' does {'not ' if negate == 'false' else ''}match regular expression '{expression.replace('%', '%%')}'"
         super().__init__(message, negate)
         # Compile later. RE objects used to not be thread safe. Not sure about
         # the sre module.
@@ -150,45 +150,6 @@ class RegexValidator(Validator):
 class ExpressionValidator(Validator):
     """
     Validator that evaluates a python expression using the value
-
-    >>> from galaxy.util import XML
-    >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="text" value="10">
-    ...     <validator type="expression" message="Not gonna happen">value.lower() == "foo"</validator>
-    ... </param>
-    ... '''))
-    >>> t = p.validate("Foo")
-    >>> t = p.validate("foo")
-    >>> t = p.validate("Fop")
-    Traceback (most recent call last):
-        ...
-    ValueError: Not gonna happen
-    >>>
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="text" value="10">
-    ...     <validator type="expression" message="Not gonna happen" negate="true">value.lower() == "foo"</validator>
-    ... </param>
-    ... '''))
-    >>> t = p.validate("Foo")
-    Traceback (most recent call last):
-        ...
-    ValueError: Not gonna happen
-    >>> t = p.validate("foo")
-    Traceback (most recent call last):
-        ...
-    ValueError: Not gonna happen
-    >>> t = p.validate("Fop")
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="text" value="10">
-    ...     <validator type="expression" message="Not gonna happen">value</validator>
-    ... </param>
-    ... '''))
-    >>> p.validate("Foo")
-    >>> p.validate("")
-    Traceback (most recent call last):
-        ...
-    ValueError: Not gonna happen
     """
 
     @classmethod
@@ -199,14 +160,15 @@ class ExpressionValidator(Validator):
         if message is None:
             message = f"Value '%s' does not evaluate to {'True' if negate == 'false' else 'False'} for '{expression}'"
         super().__init__(message, negate)
+        self.expression = expression
         # Save compiled expression, code objects are thread safe (right?)
-        self.expression = compile(expression, "<string>", "eval")
+        self.compiled_expression = compile(expression, "<string>", "eval")
 
     def validate(self, value, trans=None):
         try:
-            evalresult = eval(self.expression, dict(value=value))
+            evalresult = eval(self.compiled_expression, dict(value=value))
         except Exception:
-            super().validate(False, value, f"Validator '{self.expression}' could not be evaluated on '%s'")
+            super().validate(False, message=f"Validator '{self.expression}' could not be evaluated on '{value}'")
         super().validate(bool(evalresult), value_to_show=value)
 
 

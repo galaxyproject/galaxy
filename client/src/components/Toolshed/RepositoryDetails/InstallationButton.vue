@@ -5,7 +5,7 @@
             <b-button v-if="uninstallState" :class="buttonClass" variant="danger" @click="onUninstall">
                 Uninstall
             </b-button>
-            <b-button v-else :class="buttonClass" @click="onCancel" variant="info">
+            <b-button v-else :class="buttonClass" variant="info" @click="onCancel">
                 <span v-if="!errorState" class="fa fa-spinner fa-spin" />
                 <span>{{ status }}</span>
             </b-button>

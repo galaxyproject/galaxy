@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from galaxy import (
     exceptions,
@@ -8,13 +9,17 @@ from galaxy.managers import base as managers_base
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.model import tags
+from galaxy.schema.schema import (
+    CreateLibraryFilePayload,
+    LibraryFolderContentsIndexQueryPayload,
+    LibraryFolderContentsIndexResult,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.base.controller import UsesLibraryMixinItems
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
 
-TIME_FORMAT = "%Y-%m-%d %I:%M %p"
 FOLDER_TYPE_NAME = "folder"
 FILE_TYPE_NAME = "file"
 
@@ -37,39 +42,18 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted
         )
 
-    def index(self, trans, folder_id, limit=None, offset=None, search_text=None, include_deleted=False):
+    def index(
+        self, trans, folder_id, payload: LibraryFolderContentsIndexQueryPayload
+    ) -> LibraryFolderContentsIndexResult:
         """
         Displays a collection (list) of a folder's contents (files and folders). Encoded folder ID is prepended
         with 'F' if it is a folder as opposed to a data set which does not have it. Full path is provided in
         response as a separate object providing data for breadcrumb path building.
-
-        ..example:
-            limit and offset can be combined. Skip the first two and return five:
-                '?offset=2&limit=5'
-
-        :param  folder_id: encoded ID of the folder which contents should be library_dataset_dict
-        :type   folder_id: encoded string
-
-        :param  offset: number of folder contents to skip
-        :type   offset: optional int
-
-        :param  limit: maximum number of folder contents to return
-        :type   limit: optional int
-
-        :param  include_deleted: whether to include deleted items in the results
-        :type   include_deleted: optional bool (default False)
-
-        :returns: dictionary containing all items and metadata
-        :type:    dict
-
-        :raises: MalformedId, InconsistentDatabase, ObjectNotFound,
-             InternalServerError
         """
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
 
-        decoded_folder_id = self.folder_manager.cut_and_decode(trans, folder_id)
-        folder = self.folder_manager.get(trans, decoded_folder_id)
+        folder = self.folder_manager.get(trans, folder_id)
 
         # Special level of security on top of libraries.
         if trans.app.security_agent.can_access_library(current_user_roles, folder.parent_library) or is_admin:
@@ -77,25 +61,25 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         else:
             if trans.user:
                 log.warning(
-                    f"SECURITY: User (id: {trans.user.id}) without proper access rights is trying to load folder with ID of {decoded_folder_id}"
+                    f"SECURITY: User (id: {trans.user.id}) without proper access rights is trying to load folder with ID of {folder_id}"
                 )
             else:
-                log.warning(
-                    f"SECURITY: Anonymous user is trying to load restricted folder with ID of {decoded_folder_id}"
-                )
-            raise exceptions.ObjectNotFound(f"Folder with the id provided ( {folder_id} ) was not found")
+                log.warning(f"SECURITY: Anonymous user is trying to load restricted folder with ID of {folder_id}")
+            raise exceptions.ObjectNotFound(
+                f"Folder with the id provided ( F{self.encode_id(folder_id)} ) was not found"
+            )
 
         folder_contents = []
         update_time = ""
         create_time = ""
 
-        folders, datasets = self._apply_preferences(folder, include_deleted, search_text)
+        folders, datasets = self._apply_preferences(folder, payload.include_deleted, payload.search_text)
 
         #  Go through every accessible item (folders, datasets) in the folder and include its metadata.
-        for content_item in self._load_folder_contents(trans, folders, datasets, offset, limit):
+        for content_item in self._load_folder_contents(trans, folders, datasets, payload.offset, payload.limit):
             return_item = {}
             encoded_id = trans.security.encode_id(content_item.id)
-            create_time = content_item.create_time.strftime(TIME_FORMAT)
+            create_time = content_item.create_time.isoformat()
 
             if content_item.api_type == FOLDER_TYPE_NAME:
                 encoded_id = f"F{encoded_id}"
@@ -105,7 +89,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                 can_manage = is_admin or (
                     trans.user and trans.app.security_agent.can_manage_library_item(current_user_roles, folder)
                 )
-                update_time = content_item.update_time.strftime(TIME_FORMAT)
+                update_time = content_item.update_time.isoformat()
                 return_item.update(dict(can_modify=can_modify, can_manage=can_manage))
                 if content_item.description:
                     return_item.update(dict(description=content_item.description))
@@ -131,7 +115,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
                 )
                 raw_size = int(content_item.library_dataset_dataset_association.get_size())
                 nice_size = util.nice_size(raw_size)
-                update_time = content_item.library_dataset_dataset_association.update_time.strftime(TIME_FORMAT)
+                update_time = content_item.library_dataset_dataset_association.update_time.isoformat()
 
                 library_dataset_dict = content_item.to_dict()
                 encoded_ldda_id = trans.security.encode_id(content_item.library_dataset_dataset_association.id)
@@ -199,50 +183,26 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             folder_description=folder.description,
             parent_library_id=parent_library_id,
         )
-        folder_container = dict(metadata=metadata, folder_contents=folder_contents)
-        return folder_container
+        return LibraryFolderContentsIndexResult.construct(metadata=metadata, folder_contents=folder_contents)
 
-    def create(self, trans, encoded_folder_id, payload, **kwd):
+    def create(self, trans, folder_id, payload: CreateLibraryFilePayload):
         """
-        Create a new library file from an HDA.
-
-        :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
-        :type   encoded_folder_id:      an encoded id string
-        :param  payload:    dictionary structure containing:
-            :param from_hda_id:         (optional) the id of an accessible HDA to copy into the library
-            :type  from_hda_id:         encoded id
-            :param from_hdca_id:         (optional) the id of an accessible HDCA to copy into the library
-            :type  from_hdca_id:         encoded id
-            :param ldda_message:        (optional) the new message attribute of the LDDA created
-            :type   ldda_message:       str
-            :param extended_metadata:   (optional) dub-dictionary containing any extended metadata to associate with the item
-            :type  extended_metadata:   dict
-        :type   payload:    dict
-
-        :returns:   a dictionary describing the new item if ``from_hda_id`` is supplied or a list of
-                    such dictionaries describing the new items if ``from_hdca_id`` is supplied.
-        :rtype:     object
-
-        :raises:    ObjectAttributeInvalidException,
-            InsufficientPermissionsException, ItemAccessibilityException,
-            InternalServerError
+        Create a new library file from an HDA/HDCA.
         """
         if trans.user_is_bootstrap_admin:
             raise exceptions.RealUserRequiredException("Only real users can create a new library file.")
-        encoded_folder_id_16 = self.__decode_library_content_id(trans, encoded_folder_id)
-        from_hda_id = payload.pop("from_hda_id", None)
-        from_hdca_id = payload.pop("from_hdca_id", None)
-        ldda_message = payload.pop("ldda_message", "")
+        self.check_user_is_authenticated(trans)
+        decoded_hda_id = payload.from_hda_id
+        decoded_hdca_id = payload.from_hdca_id
+        ldda_message = payload.ldda_message
         try:
-            if from_hda_id:
-                decoded_hda_id = self.decode_id(from_hda_id)
+            if decoded_hda_id:
                 return self._copy_hda_to_library_folder(
-                    trans, self.hda_manager, decoded_hda_id, encoded_folder_id_16, ldda_message
+                    trans, self.hda_manager, decoded_hda_id, folder_id, ldda_message
                 )
-            if from_hdca_id:
-                decoded_hdca_id = self.decode_id(from_hdca_id)
+            if decoded_hdca_id:
                 return self._copy_hdca_to_library_folder(
-                    trans, self.hda_manager, decoded_hdca_id, encoded_folder_id_16, ldda_message
+                    trans, self.hda_manager, decoded_hdca_id, folder_id, ldda_message
                 )
         except Exception as exc:
             # TODO handle exceptions better within the mixins
@@ -255,25 +215,6 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             else:
                 log.exception(exc)
                 raise exc
-
-    def __decode_library_content_id(self, trans, encoded_folder_id):
-        """
-        Identify whether the id provided is properly encoded LibraryFolder.
-
-        :param  encoded_folder_id:  encoded id of Galaxy LibraryFolder
-        :type   encoded_folder_id:  encoded string
-
-        :returns:   encoded id of Folder (had 'F' prepended)
-        :type:  string
-
-        :raises:    MalformedId
-        """
-        if (len(encoded_folder_id) % 16 == 1) and encoded_folder_id.startswith("F"):
-            return encoded_folder_id[1:]
-        else:
-            raise exceptions.MalformedId(
-                f"Malformed folder id ( {str(encoded_folder_id)} ) specified, unable to decode."
-            )
 
     def _build_path(self, trans, folder):
         """
@@ -361,7 +302,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             paginated_items = items[offset:]
         return paginated_items
 
-    def _apply_preferences(self, folder, include_deleted: bool, search_text: str):
+    def _apply_preferences(self, folder, include_deleted: Optional[bool], search_text: Optional[str]):
         def check_deleted(array, include_deleted):
             if include_deleted:
                 result_array = array

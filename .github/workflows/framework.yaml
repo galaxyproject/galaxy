@@ -17,7 +17,7 @@ env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
 concurrency:
-  group: framework-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   test:
@@ -40,10 +40,10 @@ jobs:
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
           echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: 'galaxy root'
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
       - name: Get full Python version
@@ -51,12 +51,12 @@ jobs:
         shell: bash
         run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
       - name: Cache pip dir
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
       - name: Cache galaxy venv
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-framework
@@ -67,7 +67,7 @@ jobs:
         with:
           flags: framework
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: Framework test results (${{ matrix.python-version }})

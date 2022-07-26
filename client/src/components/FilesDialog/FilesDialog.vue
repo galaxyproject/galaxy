@@ -4,7 +4,7 @@
         :options-show="optionsShow"
         :modal-show="modalShow"
         :hide-modal="() => (modalShow = false)"
-        :back-func="load"
+        :back-func="goBack"
         :undo-show="undoShow">
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
@@ -37,18 +37,18 @@
                 @toggleSelectAll="toggleSelectAll" />
         </template>
         <template v-slot:buttons>
-            <b-btn id="back-btn" size="sm" class="float-left" v-if="undoShow" @click="load()">
+            <b-btn v-if="undoShow" id="back-btn" size="sm" class="float-left" @click="load()">
                 <font-awesome-icon :icon="['fas', 'caret-left']" />
                 Back
             </b-btn>
             <b-btn
                 v-if="multiple || !fileMode"
+                id="ok-btn"
                 size="sm"
                 class="float-right ml-1 file-dialog-modal-ok"
                 variant="primary"
-                id="ok-btn"
-                @click="fileMode ? finalize() : selectLeaf(currentDirectory)"
-                :disabled="(fileMode && !hasValue) || isBusy || (!fileMode && urlTracker.atRoot())">
+                :disabled="(fileMode && !hasValue) || isBusy || (!fileMode && urlTracker.atRoot())"
+                @click="fileMode ? finalize() : selectLeaf(currentDirectory)">
                 {{ fileMode ? "Ok" : "Select this folder" }}
             </b-btn>
         </template>
@@ -70,6 +70,9 @@ import { faCaretLeft } from "@fortawesome/free-solid-svg-icons";
 
 library.add(faCaretLeft);
 export default {
+    components: {
+        FontAwesomeIcon,
+    },
     mixins: [SelectionDialogMixin],
     props: {
         multiple: {
@@ -85,9 +88,6 @@ export default {
             type: Boolean,
             default: false,
         },
-    },
-    components: {
-        FontAwesomeIcon,
     },
     data() {
         return {
@@ -110,16 +110,16 @@ export default {
             oidcEnabled: getGalaxyInstance()?.config?.enable_oidc,
         };
     },
+    computed: {
+        fileMode() {
+            return this.mode == "file";
+        },
+    },
     created: function () {
         this.services = new Services();
         this.urlTracker = new UrlTracker("");
         this.model = new Model({ multiple: this.multiple });
         this.load();
-    },
-    computed: {
-        fileMode() {
-            return this.mode == "file";
-        },
     },
     methods: {
         /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
@@ -329,6 +329,10 @@ export default {
                         this.errorMessage = errorMessage;
                     });
             }
+        },
+        goBack() {
+            // Loading without a record navigates back one level
+            this.load();
         },
         parseItemFileMode(item) {
             const result = {

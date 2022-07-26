@@ -151,7 +151,7 @@ export default Backbone.View.extend({
         } else {
             options.onremove(model_index);
             $icon.addClass(options.class_add);
-            this.ftp_index[ftp_file.path] = undefined;
+            delete this.ftp_index[ftp_file.path];
         }
     },
 

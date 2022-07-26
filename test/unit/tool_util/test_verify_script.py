@@ -7,9 +7,9 @@ from galaxy.tool_util.verify.script import (
     arg_parser,
     build_case_references,
     Results,
+    test_tools as run,
+    TestReference,
 )
-from galaxy.tool_util.verify.script import test_tools as run
-from galaxy.tool_util.verify.script import TestReference
 
 VT_PATH = "galaxy.tool_util.verify.script.verify_tool"
 NEW_HISTORY = object()

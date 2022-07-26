@@ -1,0 +1,13 @@
+{
+    "name": "pca_3dplot",
+    "version": "1.0.0",
+    "license": "MIT",
+    "dependencies": {
+        "plotly.js": "^2.11.1",
+        "pca-js": "^1.0.2",
+        "d3": "^7.4.4"
+    },
+    "scripts": {
+        "build": "mkdir -p static/dist && cp node_modules/pca-js/pca.min.js node_modules/plotly.js/dist/plotly.min.js node_modules/d3/dist/d3.min.js static/dist"
+    }
+}

@@ -1,9 +1,16 @@
 import time
+from typing import ClassVar
+from unittest import SkipTest
 from uuid import uuid4
 
 from requests import put
 
+from galaxy.model.unittest_utils.store_fixtures import (
+    history_model_store_dict,
+    TEST_HISTORY_NAME,
+)
 from galaxy_test.api.sharable import SharingApiTests
+from galaxy_test.base.api_asserts import assert_has_keys
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -27,6 +34,12 @@ class BaseHistories:
         self._assert_has_keys(create_response, "name", "id")
         self.assertEqual(create_response["name"], name)
         return create_response
+
+    def _assert_history_length(self, history_id, n):
+        contents_response = self._get(f"histories/{history_id}/contents")
+        self._assert_status_code_is(contents_response, 200)
+        contents = contents_response.json()
+        assert len(contents) == n, contents
 
 
 class HistoriesApiTestCase(ApiTestCase, BaseHistories):
@@ -80,6 +93,15 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         self._assert_has_keys(state_details, *states)
         self._assert_has_keys(state_ids, *states)
 
+    def test_show_history_returns_expected_urls(self):
+        # This test can be dropped when the URL attributes become deprecated
+        history_id = self._create_history("TestHistoryForUrls")["id"]
+        show_response = self._show(history_id)
+        self._assert_has_key(show_response, "id", "url", "contents_url")
+
+        assert show_response["url"] == f"/api/histories/{history_id}"
+        assert show_response["contents_url"] == f"/api/histories/{history_id}/contents"
+
     def test_show_most_recently_used(self):
         history_id = self._create_history("TestHistoryRecent")["id"]
         show_response = self._get("histories/most_recently_used").json()
@@ -91,6 +113,28 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         index_response = self._get("histories").json()
         assert index_response[0]["id"] == newer_history_id
         assert index_response[1]["id"] == slightly_older_history_id
+
+    def test_index_query(self):
+        expected_history_name = f"TestHistoryThatMatchQuery_{uuid4()}"
+        expected_history_id = self._create_history(expected_history_name)["id"]
+        self._create_history("TestHistoryThatDoesNotMatchQuery")
+        # Filter by name
+        query = f"?q=name&qv={expected_history_name}"
+        index_response = self._get(f"histories{query}").json()
+        assert len(index_response) == 1
+        assert index_response[0]["name"] == expected_history_name
+
+        # Filter by name and deleted
+        query = f"?q=name&qv={expected_history_name}&q=deleted&qv=True"
+        index_response = self._get(f"histories{query}").json()
+        assert len(index_response) == 0  # Not deleted yet
+
+        # Delete the history
+        self._delete(f"histories/{expected_history_id}")
+        # Now it should match the query
+        index_response = self._get(f"histories{query}").json()
+        assert len(index_response) == 1
+        assert index_response[0]["name"] == expected_history_name
 
     def test_delete(self):
         # Setup a history and ensure it is in the index
@@ -245,8 +289,32 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         assert source_hda["history_id"] != copied_hda["history_id"]
         assert source_hda["hid"] == copied_hda["hid"] == 2
 
+    # TODO: (CE) test_create_from_copy
+    def test_import_from_model_store_dict(self):
+        response = self.dataset_populator.create_from_store(store_dict=history_model_store_dict())
+        assert_has_keys(response, "name", "id")
+        assert response["name"] == TEST_HISTORY_NAME
+        self._assert_history_length(response["id"], 1)
+
+    def test_anonymous_can_import_published(self):
+        history_name = f"for_importing_by_anonymous_{uuid4()}"
+        history_id = self.dataset_populator.new_history(name=history_name)
+        self.dataset_collection_populator.create_list_of_pairs_in_history(history_id)
+        self.dataset_populator.make_public(history_id)
+
+        with self._different_user(anon=True):
+            imported_history_name = f"imported_by_anonymous_{uuid4()}"
+            import_data = {
+                "archive_type": "url",
+                "history_id": history_id,
+                "name": imported_history_name,
+            }
+            self.dataset_populator.import_history(import_data)
+
 
 class ImportExportTests(BaseHistories):
+    task_based: ClassVar[bool]
+
     def _set_up_populators(self):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
@@ -257,7 +325,7 @@ class ImportExportTests(BaseHistories):
         imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=2)
 
         def upload_job_check(job):
-            assert job["tool_id"] == "upload1"
+            assert job["tool_id"] == "__DATA_FETCH__"
 
         def check_discarded(hda):
             assert hda["deleted"]
@@ -292,12 +360,12 @@ class ImportExportTests(BaseHistories):
         self.dataset_populator.delete_dataset(history_id, deleted_hda["id"])
 
         imported_history_id = self._reimport_history(
-            history_id, history_name, wait_on_history_length=2, export_kwds={"include_deleted": "True"}
+            history_id, history_name, wait_on_history_length=2, export_kwds={"include_deleted": True}
         )
         self._assert_history_length(imported_history_id, 2)
 
         def upload_job_check(job):
-            assert job["tool_id"] == "upload1"
+            assert job["tool_id"] == "__DATA_FETCH__"
 
         def check_deleted_not_purged(hda):
             assert hda["state"] == "ok", hda
@@ -323,7 +391,7 @@ class ImportExportTests(BaseHistories):
         self.dataset_populator.wait_for_history(history_id, assert_ok=False)
 
         imported_history_id = self._reimport_history(
-            history_id, history_name, assert_ok=False, wait_on_history_length=4, export_kwds={"include_deleted": "True"}
+            history_id, history_name, assert_ok=False, wait_on_history_length=4, export_kwds={"include_deleted": True}
         )
         self._assert_history_length(imported_history_id, 4)
 
@@ -338,6 +406,8 @@ class ImportExportTests(BaseHistories):
         )
 
     def test_import_metadata_regeneration(self):
+        if self.task_based:
+            raise SkipTest("skipping test_import_metadata_regeneration for task based...")
         history_name = f"for_import_metadata_regeneration_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.new_dataset(
@@ -370,7 +440,7 @@ class ImportExportTests(BaseHistories):
         history_name = f"for_export_with_collections_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_collection_populator.create_list_in_history(
-            history_id, contents=["Hello", "World"], direct_upload=True
+            history_id, contents=["Hello", "World"], direct_upload=True, wait=True
         )
 
         imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=3)
@@ -395,7 +465,8 @@ class ImportExportTests(BaseHistories):
     def test_import_export_nested_collection(self):
         history_name = f"for_export_with_nested_collections_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
-        self.dataset_collection_populator.create_list_of_pairs_in_history(history_id)
+        fetch_response = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id, wait=True).json()
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
 
         imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=3)
         self._assert_history_length(imported_history_id, 3)
@@ -411,7 +482,10 @@ class ImportExportTests(BaseHistories):
             assert element0["collection_type"] == "paired"
 
         self._check_imported_collection(
-            imported_history_id, hid=1, collection_type="list:paired", elements_checker=check_elements
+            imported_history_id,
+            hid=dataset_collection["hid"],
+            collection_type="list:paired",
+            elements_checker=check_elements,
         )
 
     def _reimport_history(
@@ -426,6 +500,7 @@ class ImportExportTests(BaseHistories):
             history_name,
             wait_on_history_length=wait_on_history_length,
             export_kwds=export_kwds,
+            task_based=self.task_based,
         )
 
     def _import_history_and_wait(self, import_data, history_name, wait_on_history_length=None):
@@ -436,12 +511,6 @@ class ImportExportTests(BaseHistories):
             self.dataset_populator.wait_on_history_length(imported_history_id, wait_on_history_length)
 
         return imported_history_id
-
-    def _assert_history_length(self, history_id, n):
-        contents_response = self._get(f"histories/{history_id}/contents")
-        self._assert_status_code_is(contents_response, 200)
-        contents = contents_response.json()
-        assert len(contents) == n, contents
 
     def _check_imported_dataset(
         self, history_id, hid, assert_ok=True, has_job=True, hda_checker=None, job_checker=None
@@ -488,6 +557,8 @@ class ImportExportTests(BaseHistories):
 
 
 class ImportExportHistoryTestCase(ApiTestCase, ImportExportTests):
+    task_based = False
+
     def setUp(self):
         super().setUp()
         self._set_up_populators()

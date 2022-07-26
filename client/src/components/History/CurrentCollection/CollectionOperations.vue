@@ -2,7 +2,12 @@
     <section>
         <nav class="content-operations d-flex justify-content-between bg-secondary">
             <b-button-group>
-                <b-button title="Download Collection" size="sm" variant="link" download :href="downloadUrl">
+                <b-button
+                    title="Download Collection"
+                    class="rounded-0 text-decoration-none"
+                    size="sm"
+                    variant="link"
+                    @click="onDownload">
                     <Icon class="mr-1" icon="download" />
                     <span>Download</span>
                 </b-button>
@@ -20,6 +25,11 @@ export default {
         /** @return {String} */
         downloadUrl() {
             return `${this.dsc.url}/download`;
+        },
+    },
+    methods: {
+        onDownload() {
+            window.location.href = this.downloadUrl;
         },
     },
 };

@@ -20,6 +20,7 @@ lib/galaxy.egg-info
 lib/galaxy/web/framework/static/maps
 lib/galaxy/web/framework/static/scripts
 lib/galaxy/web/framework/static/style
+lib/galaxy/web/framework/meta.json
 
 # Database stuff
 /database/

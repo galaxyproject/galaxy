@@ -55,7 +55,6 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
 
     def collection_export(self, is_new_history=False, collection_option=None):
         random_name = self._get_random_name()
-
         self.prepare_library_for_data_export(["1.bam", "1.bed"], random_name if is_new_history else None)
         self.components.libraries.folder.export_to_history_options.wait_for_and_click()
 

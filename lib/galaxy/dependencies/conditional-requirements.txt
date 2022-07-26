@@ -7,10 +7,12 @@ pbs_python
 drmaa
 statsd
 azure-storage==0.32.0
-python-irodsclient==1.0.0
+python-irodsclient==1.1.3
 python-ldap==3.4.0
 python-pam
 galaxycloudrunner
+pkce
+total-perspective-vortex<2
 
 # For file sources plugins
 fs.webdavfs>=0.4.2  # type: webdav
@@ -45,7 +47,7 @@ pygithub
 influxdb
 
 # Deep learning packages for tool recommendation
-tensorflow==2.5.3
+tensorflow==2.7.2
 
 # weasyprint has problematic requirements so make it optional (i.e. cairo)
 # xref https://github.com/galaxyproject/galaxy/pull/9651

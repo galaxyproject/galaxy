@@ -19,8 +19,6 @@ from urllib.parse import urlparse
 import mako.lookup
 import mako.runtime
 from apispec import APISpec
-from babel import Locale
-from babel.support import Translations
 from sqlalchemy import (
     and_,
     true,
@@ -31,6 +29,7 @@ from galaxy import util
 from galaxy.exceptions import (
     AuthenticationFailed,
     ConfigurationError,
+    MalformedId,
     MessageException,
 )
 from galaxy.managers import context
@@ -76,6 +75,8 @@ UCSC_SERVERS = (
     "hgw7.soe.ucsc.edu",
     "hgw8.soe.ucsc.edu",
 )
+
+TOOL_RUNNER_SESSION_COOKIE = "galaxytoolrunnersession"
 
 
 class WebApplication(base.WebApplication):
@@ -278,7 +279,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.user_manager = app[UserManager]
         self.session_manager = app[GalaxySessionManager]
         base.DefaultWebTransaction.__init__(self, environ)
-        self.setup_i18n()
         self.expunge_all()
         config = self.app.config
         self.debug = asbool(config.get("debug", False))
@@ -366,22 +366,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
     def url_builder(self):
         return url_builder
 
-    def setup_i18n(self):
-        locales = []
-        if "HTTP_ACCEPT_LANGUAGE" in self.environ:
-            # locales looks something like: ['en', 'en-us;q=0.7', 'ja;q=0.3']
-            client_locales = self.environ["HTTP_ACCEPT_LANGUAGE"].split(",")
-            for locale in client_locales:
-                try:
-                    locales.append(Locale.parse(locale.split(";")[0].strip(), sep="-").language)
-                except Exception as e:
-                    log.debug("Error parsing locale '%s'. %s: %s", locale, type(e), e)
-        if not locales:
-            # Default to English
-            locales = "en"
-        t = Translations.load(dirname="locale", locales=locales, domain="ginga")
-        self.template_context.update(dict(_=t.ugettext, n_=t.ugettext, N_=t.ungettext))
-
     def set_cors_allow(self, name=None, value=None):
         acr = "Access-Control-Request-"
         if name is None:
@@ -443,7 +427,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
     def set_user(self, user):
         """Set the current user."""
         if self.galaxy_session:
-            if user.bootstrap_admin_user:
+            if user and not user.bootstrap_admin_user:
                 self.galaxy_session.user = user
                 self.sa_session.add(self.galaxy_session)
                 self.sa_session.flush()
@@ -458,14 +442,40 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             if name in self.response.cookies:
                 return self.response.cookies[name].value
             else:
+                if name not in self.request.cookies and TOOL_RUNNER_SESSION_COOKIE in self.request.cookies:
+                    # TOOL_RUNNER_SESSION_COOKIE value is the encoded galaxysession cookie.
+                    # We decode it here and pretend it's the galaxysession
+                    tool_runner_path = url_for(controller="tool_runner")
+                    if self.request.path.startswith(tool_runner_path):
+                        return self.security.decode_guid(self.request.cookies[TOOL_RUNNER_SESSION_COOKIE].value)
                 return self.request.cookies[name].value
         except Exception:
             return None
 
     def set_cookie(self, value, name="galaxysession", path="/", age=90, version="1"):
+        self._set_cookie(value, name=name, path=path, age=age, version=version)
+        if name == "galaxysession":
+            # Set an extra sessioncookie that will only be sent and be accepted on the tool_runner path.
+            # Use the id_secret to encode the sessioncookie, so if a malicious site
+            # obtains the sessioncookie they can only run tools.
+            self._set_cookie(
+                value,
+                name=TOOL_RUNNER_SESSION_COOKIE,
+                path=url_for(controller="tool_runner"),
+                age=age,
+                version=version,
+                encode_value=True,
+            )
+            tool_runner_cookie = self.response.cookies[TOOL_RUNNER_SESSION_COOKIE]
+            tool_runner_cookie["SameSite"] = "None"
+            tool_runner_cookie["secure"] = True
+
+    def _set_cookie(self, value, name="galaxysession", path="/", age=90, version="1", encode_value=False):
         """Convenience method for setting a session cookie"""
         # The galaxysession cookie value must be a high entropy 128 bit random number encrypted
         # using a server secret key.  Any other value is invalid and could pose security issues.
+        if encode_value:
+            value = self.security.encode_guid(value)
         self.response.cookies[name] = unicodify(value)
         self.response.cookies[name]["path"] = path
         self.response.cookies[name]["max-age"] = 3600 * 24 * age  # 90 days
@@ -531,10 +541,21 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             # Decode the cookie value to get the session_key
             try:
                 session_key = self.security.decode_guid(secure_id)
-                if session_key:
-                    galaxy_session = self.session_manager.get_session_from_session_key(session_key=session_key)
-            except Exception:
-                # We'll end up creating a new galaxy_session
+            except MalformedId:
+                # Invalid session key, we're going to create a new one.
+                # IIRC we did this when we switched to python 3 and clients
+                # were sending sessioncookies that started with a stringified
+                # bytestring, e.g 'b"0123456789abcdef"'. Maybe we need to drop
+                # this exception catching, but then it'd be tricky to invalidate
+                # a faulty session key
+                log.debug("Received invalid session key '{secure_id}', setting a new session key")
+                session_key = None
+
+            if session_key:
+                # We do NOT catch exceptions here, if the database is down the request should fail,
+                # and we should not generate a new session.
+                galaxy_session = self.session_manager.get_session_from_session_key(session_key=session_key)
+            if not galaxy_session:
                 session_key = None
         # If remote user is in use it can invalidate the session and in some
         # cases won't have a cookie set above, so we need to check some things

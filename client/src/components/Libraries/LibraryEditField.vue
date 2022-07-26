@@ -3,7 +3,7 @@
         <div class="text-field">
             <!-- edit mode -->
             <div v-if="isEditMode">
-                <b-form-textarea class="form-control" :value="text" @change="updateValue" rows="3" no-resize />
+                <b-form-textarea class="form-control" :value="text" rows="3" no-resize @change="updateValue" />
             </div>
             <!-- shrink long text -->
             <div v-else-if="text.length > maxDescriptionLength && !isExpanded">
@@ -13,7 +13,7 @@
                     v-html="linkify(text.substring(0, maxDescriptionLength))">
                 </span>
                 <span :title="text">...</span>
-                <a class="more-text-btn" @click="toggleDescriptionExpand" href="javascript:void(0)">(more) </a>
+                <a class="more-text-btn" href="javascript:void(0)" @click="toggleDescriptionExpand">(more) </a>
             </div>
             <!-- Regular -->
             <div v-else>
@@ -22,8 +22,8 @@
                 <a
                     v-if="text.length > maxDescriptionLength"
                     class="more-text-btn"
-                    @click="toggleDescriptionExpand"
                     href="javascript:void(0)"
+                    @click="toggleDescriptionExpand"
                     >(less)
                 </a>
             </div>

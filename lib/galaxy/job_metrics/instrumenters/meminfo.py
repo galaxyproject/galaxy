@@ -4,6 +4,7 @@ import re
 from galaxy import util
 from . import InstrumentPlugin
 from .. import formatting
+from ..safety import Safety
 
 MEMINFO_LINE = re.compile(r"(\w+)\s*\:\s*(\d+) kB")
 
@@ -24,6 +25,7 @@ class MemInfoPlugin(InstrumentPlugin):
 
     plugin_type = "meminfo"
     formatter = MemInfoFormatter()
+    default_safety = Safety.SAFE
 
     def __init__(self, **kwargs):
         self.verbose = util.asbool(kwargs.get("verbose", False))

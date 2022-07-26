@@ -15,14 +15,12 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from galaxy.datatypes import (
-    data,
-    sniff,
-)
+from galaxy.datatypes import data
 from galaxy.exceptions import (
     AdminRequiredException,
     ConfigDoesNotAllowException,
 )
+from galaxy.files.uris import stream_to_file
 from galaxy.util import (
     asbool,
     inflector,
@@ -44,6 +42,7 @@ URI_PREFIXES = [f"{x}://" for x in ["http", "https", "ftp", "file", "gxfiles", "
 class Group(Dictifiable):
 
     dict_collection_visible_keys = ["name", "type"]
+    type: str
 
     def __init__(self):
         self.name = None
@@ -656,7 +655,7 @@ class UploadDataset(Group):
             dataset.name = self.get_composite_dataset_name(context)
             if dataset.datatype.composite_type == "auto_primary_file":
                 # replace sniff here with just creating an empty file
-                temp_name = sniff.stream_to_file(
+                temp_name = stream_to_file(
                     io.StringIO(d_type.generate_primary_file(dataset)), prefix="upload_auto_primary_file"
                 )
                 dataset.primary_file = temp_name

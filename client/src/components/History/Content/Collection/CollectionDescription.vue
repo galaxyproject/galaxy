@@ -1,34 +1,69 @@
 <template>
-    <h6 class="description mt-1">
-        <span>a {{ collectionLabel | localize }}</span>
-        <span v-if="elementCount == 1">with 1 item</span>
-        <span v-else-if="elementCount > 1">with {{ elementCount }} items</span>
-    </h6>
+    <div>
+        <h6 class="description mt-1">
+            a {{ collectionLabel }} with {{ elementCount }}<b>{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
+        </h6>
+        <CollectionProgress v-if="jobStateSummary.size != 0" :summary="jobStateSummary" />
+    </div>
 </template>
 
 <script>
+import CollectionProgress from "./CollectionProgress";
+import { JobStateSummary } from "./JobStateSummary";
+
 export default {
+    components: { CollectionProgress },
     props: {
-        item: { type: Object, required: true },
+        jobStateSummary: { type: JobStateSummary, required: true },
+        collectionType: { type: String, required: true },
+        elementCount: { type: Number, required: false, default: undefined },
+        elementsDatatypes: { type: Array, required: false, default: () => [] },
     },
     data() {
         return {
             labels: {
                 list: "list",
-                paired: "dataset pair",
-                "list:paired": "list of pairs",
+                "list:paired": "list",
+                "list:list": "list",
+                paired: "pair",
             },
         };
     },
     computed: {
+        /**@return {String} */
         collectionLabel() {
             return this.labels[this.collectionType] || "nested list";
         },
-        collectionType() {
-            return this.item.collection_type;
+        /**@return {Boolean} */
+        hasSingleElement() {
+            return this.elementCount === 1;
         },
-        elementCount() {
-            return this.item.element_count;
+        /**@return {Boolean} */
+        isHomogeneous() {
+            return this.elementsDatatypes.length === 1;
+        },
+        /**@return {String} */
+        homogeneousDatatype() {
+            return this.isHomogeneous ? ` ${this.elementsDatatypes[0]}` : "";
+        },
+        /**@return {String} */
+        pluralizedItem() {
+            if (this.collectionType === "list:list") {
+                return this.pluralize("list");
+            }
+            if (this.collectionType === "list:paired") {
+                return this.pluralize("pair");
+            }
+            if (!Object.keys(this.labels).includes(this.collectionType)) {
+                //Any other kind of nested collection
+                return this.pluralize("dataset collection");
+            }
+            return this.pluralize("dataset");
+        },
+    },
+    methods: {
+        pluralize(word) {
+            return this.hasSingleElement ? word : `${word}s`;
         },
     },
 };

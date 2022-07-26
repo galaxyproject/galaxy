@@ -1,6 +1,9 @@
 include *.rst *.txt LICENSE
 include galaxy/datatypes/set_metadata_tool.xml
 include galaxy/datatypes/converters/*.xml
-include galaxy/datatypes/test/*
+graft galaxy/datatypes/display_applications/configs/
+graft galaxy/datatypes/display_applications/xsd/
 include galaxy/model/migrations/alembic.ini
+recursive-include galaxy/model/migrations/alembic/ *.py
+include galaxy/model/migrations/README.md
 include galaxy/model/migrations/alembic/script.py.mako

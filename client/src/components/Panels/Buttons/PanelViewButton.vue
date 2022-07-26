@@ -1,25 +1,21 @@
 <template>
     <b-dropdown
-        no-caret
+        v-b-tooltip.hover
         right
         role="button"
-        title="Panel Views"
+        title="Show panel options"
         variant="link"
         aria-label="View all tool panel configurations"
-        class="tool-panel-dropdown float-right"
-        toggle-class="panel-header-button-toolbox float-right"
-        size="sm"
-        v-b-tooltip.hover>
-        <template v-slot:button-content>
-            <span class="fa fa-list" />
-            <!-- Maybe cog? -->
-        </template>
+        class="tool-panel-dropdown"
+        size="sm">
         <PanelViewMenuItem
             :current-panel-view="currentPanelView"
             :panel-view="defaultPanelView"
             @onSelect="updatePanelView" />
-        <b-dropdown-divider></b-dropdown-divider>
-        <b-dropdown-group v-for="group in groupedPanelViews" :key="group.type" :id="group.type" :header="group.title">
+        <b-dropdown-group v-for="group in groupedPanelViews" :id="group.type" :key="group.type">
+            <template v-slot:header>
+                <small class="font-weight-bold">{{ group.title }}</small>
+            </template>
             <PanelViewMenuItem
                 v-for="(panelView, key) in group.panelViews"
                 :key="key"
@@ -27,7 +23,7 @@
                 :panel-view="panelView"
                 @onSelect="updatePanelView" />
         </b-dropdown-group>
-        <b-dropdown-divider v-if="groupedPanelViews.length > 0"></b-dropdown-divider>
+        <b-dropdown-divider v-if="ungroupedPanelViews.length > 0" />
         <PanelViewMenuItem
             v-for="(panelView, key) in ungroupedPanelViews"
             :key="key"
@@ -41,10 +37,10 @@
 import PanelViewMenuItem from "./PanelViewMenuItem";
 
 const groupsDefinitions = [
-    { type: "ontology", title: "... by Ontology" },
-    { type: "activity", title: "... for Activity" },
-    { type: "publication", title: "... from Publication" },
-    { type: "training", title: "... for Training" },
+    { type: "ontology", title: "...by Ontology" },
+    { type: "activity", title: "...for Activity" },
+    { type: "publication", title: "...from Publication" },
+    { type: "training", title: "...for Training" },
 ];
 
 export default {

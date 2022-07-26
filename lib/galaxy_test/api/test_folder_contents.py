@@ -234,7 +234,7 @@ class FolderContentsApiTestCase(ApiTestCase):
 
     def _create_hdca_with_contents(self, contents: List[str]) -> str:
         hdca = self.dataset_collection_populator.create_list_in_history(
-            self.history_id, contents=contents, direct_upload=True
+            self.history_id, contents=contents, direct_upload=True, wait=True
         ).json()["outputs"][0]
         hdca_id = hdca["id"]
         return hdca_id

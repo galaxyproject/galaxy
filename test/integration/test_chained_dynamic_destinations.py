@@ -13,6 +13,7 @@ CHAINED_DYNDESTS_JOB_CONFIG = os.path.join(SCRIPT_DIRECTORY, "chained_dyndest_jo
 class ChainedDynamicDestinationIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls.jobs_directory = tempfile.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = CHAINED_DYNDESTS_JOB_CONFIG

@@ -1,7 +1,7 @@
 import { default as Masthead } from "./Masthead.vue";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
-import Scratchbook from "layout/scratchbook";
+import { WindowManager } from "layout/window-manager";
 import { fetchMenu } from "layout/menu";
 import { loadWebhookMenuItems } from "./_webhooks";
 
@@ -12,7 +12,7 @@ jest.mock("./_webhooks");
 describe("Masthead.vue", () => {
     let wrapper;
     let localVue;
-    let scratchbook;
+    let windowManager;
     let quotaRendered;
     let quotaEl;
     let tabs;
@@ -71,15 +71,15 @@ describe("Masthead.vue", () => {
         ];
         const initialActiveTab = "shared";
 
-        // scratchbook assumes this is a Backbone collection - mock that out.
+        // window manager assumes this is a Backbone collection - mock that out.
         tabs.add = (x) => {
             tabs.push(x);
             return x;
         };
-        scratchbook = new Scratchbook({});
+        windowManager = new WindowManager({});
         const mastheadState = {
             quotaMeter,
-            frame: scratchbook,
+            windowManager,
         };
 
         wrapper = mount(Masthead, {
@@ -105,7 +105,7 @@ describe("Masthead.vue", () => {
     });
 
     it("should render simple tab item links", () => {
-        expect(wrapper.findAll("li.nav-item").length).toBe(6);
+        expect(wrapper.findAll("li.nav-item").length).toBe(5);
         // Ensure specified link title respected.
         expect(wrapper.find("#analysis a").text()).toBe("Analyze");
         expect(wrapper.find("#analysis a").attributes("href")).toBe("/root");
@@ -132,11 +132,11 @@ describe("Masthead.vue", () => {
         expect(wrapper.find("#shared").classes("active")).toBe(true);
     });
 
-    it("should display scratchbook button", async () => {
-        expect(wrapper.find("#enable-scratchbook a span").classes("fa-th")).toBe(true);
-        expect(scratchbook.active).toBe(false);
-        await wrapper.find("#enable-scratchbook a").trigger("click");
-        expect(scratchbook.active).toBe(true);
+    it("should display window manager button", async () => {
+        expect(wrapper.find("#enable-window-manager a span").classes("fa-th")).toBe(true);
+        expect(windowManager.active).toBe(false);
+        await wrapper.find("#enable-window-manager a").trigger("click");
+        expect(windowManager.active).toBe(true);
     });
 
     it("should load webhooks on creation", async () => {

@@ -34,11 +34,8 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
     def test_generate_tour_with_data(self):
         """Ensure a tour with data populates history."""
         self._ensure_tdt_available()
-
         self.tool_open("md5sum")
-
         self.tool_form_generate_tour()
-
         self.history_panel_wait_for_hid_ok(1)
 
         popover_component = self.components.tour.popover._
@@ -49,7 +46,6 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
         self.screenshot("tool_describing_tour_0_start")
 
         popover_component.next.wait_for_and_click()
-
         self.sleep_for(self.wait_types.UX_RENDER)
 
         text = popover_component.content.wait_for_visible().text
@@ -57,7 +53,6 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
         self.screenshot("tool_describing_tour_1_select")
 
         popover_component.next.wait_for_and_click()
-
         self.sleep_for(self.wait_types.UX_RENDER)
 
         title = popover_component.title.wait_for_visible().text

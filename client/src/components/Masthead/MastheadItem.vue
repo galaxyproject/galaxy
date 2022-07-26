@@ -1,47 +1,47 @@
 <template>
     <b-nav-item
         v-if="!menu"
+        :id="tab.id"
+        v-b-tooltip.hover.bottom
+        v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
         :class="classes"
         :style="styles"
-        :id="tab.id"
         :href="formatUrl(tab.url)"
         :target="tab.target || '_parent'"
         role="menuitem"
         :link-classes="linkClasses"
-        v-b-tooltip.hover.bottom
         :title="tab.tooltip"
-        v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
         @click="open(tab, $event)">
         <template v-if="tab.icon">
             <span :class="iconClasses" />
-            <span v-if="tab.show_note" :class="['nav-note', tab.note_cls]">{{ tab.note }}</span>
+            <span v-if="toggle" class="nav-note fa fa-check" />
         </template>
         <template v-else>
             {{ tab.title }}
         </template>
     </b-nav-item>
     <b-nav-item-dropdown
-        ref="dropdown"
         v-else
+        :id="tab.id"
+        ref="dropdown"
+        v-b-tooltip.hover.bottom
+        v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
         :class="classes"
         :style="styles"
         :text="tab.title"
-        :id="tab.id"
         href="#"
-        v-b-tooltip.hover.bottom
         :title="tab.tooltip"
-        v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
         @show="open(tab, $event)">
         <template v-for="(item, idx) in tab.menu">
-            <div v-if="item.divider" class="dropdown-divider" :key="`divider-${idx}`" />
+            <div v-if="item.divider" :key="`divider-${idx}`" class="dropdown-divider" />
             <b-dropdown-item
                 v-else-if="item.hidden !== true"
-                :href="formatUrl(item.url)"
                 :key="`item-${idx}`"
+                :href="formatUrl(item.url)"
                 :target="item.target || '_parent'"
                 role="menuitem"
-                @click="open(item, $event)"
-                :disabled="item.disabled === true">
+                :disabled="item.disabled === true"
+                @click="open(item, $event)">
                 {{ item.title }}
             </b-dropdown-item>
         </template>
@@ -68,9 +68,15 @@ export default {
     props: {
         tab: {
             type: Object,
+            default: null,
+        },
+        toggle: {
+            type: Boolean,
+            default: false,
         },
         activeTab: {
             type: String,
+            default: null,
         },
     },
     computed: {
@@ -90,7 +96,7 @@ export default {
         linkClasses() {
             return {
                 "nav-icon": this.tab.icon,
-                toggle: this.tab.toggle,
+                toggle: this.toggle,
             };
         },
         iconClasses() {
@@ -122,9 +128,10 @@ export default {
         },
         open(tab, event) {
             if (tab.onclick) {
-                return this.propogateClick(tab, event);
-            }
-            if (tab.disabled) {
+                event.preventDefault();
+                tab.onclick();
+                this.$emit("click");
+            } else if (tab.disabled) {
                 event.preventDefault();
                 this.$root.$emit("bv::hide::tooltip");
                 this.$root.$emit("bv::show::popover", tab.id);
@@ -133,23 +140,18 @@ export default {
                 }, 3000);
             } else if (!tab.menu) {
                 event.preventDefault();
-                const galaxy = getGalaxyInstance();
-                if (tab.target === "__use_router__" && typeof galaxy.page !== "undefined") {
-                    galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
+                const Galaxy = getGalaxyInstance();
+                if (tab.target === "__use_router__" && this.$router) {
+                    this.$router.push(`/${tab.url}`);
+                } else if (tab.target === "__use_router__" && typeof Galaxy.page !== "undefined") {
+                    Galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
                 } else {
                     try {
-                        galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });
+                        Galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });
                     } catch (err) {
                         console.warn("Missing frame element on galaxy instance", err);
                     }
                 }
-            }
-        },
-        propogateClick(tab, event) {
-            event.preventDefault();
-            tab.onclick();
-            if (tab.id === "enable-scratchbook") {
-                this.$emit("updateScratchbookTab", tab);
             }
         },
         formatUrl(url) {

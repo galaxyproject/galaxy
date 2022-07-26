@@ -2,7 +2,10 @@
 
 import json
 import re
-from datetime import datetime
+from datetime import (
+    date,
+    datetime,
+)
 from enum import Enum
 from typing import (
     Any,
@@ -22,6 +25,10 @@ from pydantic import (
     Field,
     Json,
     UUID4,
+)
+from typing_extensions import (
+    Annotated,
+    Literal,
 )
 
 from galaxy.model import (
@@ -185,7 +192,7 @@ class UserModel(Model):
     email: str = Field(title="Email", description="User email")
     active: bool = Field(title="Active", description="User is active")
     deleted: bool = Field(title="Deleted", description="User is deleted")
-    last_password_change: datetime = Field(title="Last password change", description="")
+    last_password_change: Optional[datetime] = Field(title="Last password change", description="")
     model_class: str = ModelClassField(USER_MODEL_CLASS_NAME)
 
 
@@ -783,8 +790,8 @@ class HistoryBase(BaseModel):
         extra = Extra.allow  # Allow any other extra fields
 
 
-class UpdateContentItem(HistoryBase):
-    """Used for updating a particular HDA. All fields are optional."""
+class HistoryContentItem(Model):
+    """Identifies a dataset or collection contained in a History."""
 
     history_content_type: HistoryContentType = Field(
         ...,
@@ -792,6 +799,14 @@ class UpdateContentItem(HistoryBase):
         description="The type of this item.",
     )
     id: EncodedDatabaseIdField = EncodedEntityIdField
+
+
+class UpdateContentItem(HistoryContentItem):
+    """Used for updating a particular history item. All fields are optional."""
+
+    class Config:
+        use_enum_values = True  # When using .dict()
+        extra = Extra.allow  # Allow any other extra fields
 
 
 class UpdateHistoryContentsBatchPayload(HistoryBase):
@@ -810,6 +825,60 @@ class UpdateHistoryContentsBatchPayload(HistoryBase):
                 "visible": False,
             }
         }
+
+
+class HistoryContentItemOperation(str, Enum):
+    hide = "hide"
+    unhide = "unhide"
+    delete = "delete"
+    undelete = "undelete"
+    purge = "purge"
+    change_datatype = "change_datatype"
+    change_dbkey = "change_dbkey"
+    add_tags = "add_tags"
+    remove_tags = "remove_tags"
+
+
+class BulkOperationParams(Model):
+    type: str
+
+
+class ChangeDatatypeOperationParams(BulkOperationParams):
+    type: Literal["change_datatype"]
+    datatype: str
+
+
+class ChangeDbkeyOperationParams(BulkOperationParams):
+    type: Literal["change_dbkey"]
+    dbkey: str
+
+
+class TagOperationParams(BulkOperationParams):
+    type: Union[Literal["add_tags"], Literal["remove_tags"]]
+    tags: List[str]
+
+
+AnyBulkOperationParams = Union[
+    ChangeDatatypeOperationParams,
+    ChangeDbkeyOperationParams,
+    TagOperationParams,
+]
+
+
+class HistoryContentBulkOperationPayload(Model):
+    operation: HistoryContentItemOperation
+    items: Optional[List[HistoryContentItem]]
+    params: Optional[AnyBulkOperationParams]
+
+
+class BulkOperationItemError(Model):
+    item: HistoryContentItem
+    error: str
+
+
+class HistoryContentBulkOperationResult(Model):
+    success_count: int
+    errors: List[BulkOperationItemError]
 
 
 class UpdateHistoryContentsPayload(HistoryBase):
@@ -1010,13 +1079,60 @@ class ExportHistoryArchivePayload(Model):
     )
 
 
-class SortByEnum(str, Enum):
+class WorkflowSortByEnum(str, Enum):
+    create_time = "create_time"
+    update_time = "update_time"
+    name = "name"
+    none = None
+
+
+class WorkflowIndexQueryPayload(Model):
+    show_deleted: bool = False
+    show_hidden: bool = False
+    show_published: Optional[bool] = None
+    show_shared: Optional[bool] = None
+    sort_by: Optional[WorkflowSortByEnum] = Field(title="Sort By", description="Sort workflows by this attribute")
+    sort_desc: Optional[bool] = Field(
+        title="Sort descending", description="Explicitly sort by descending if sort_by is specified."
+    )
+    limit: Optional[int] = Field(
+        default=None,
+        lt=1000,
+    )
+    offset: Optional[int] = Field(default=0, description="Number of workflows to skip")
+    search: Optional[str] = Field(default=None, title="Filter text", description="Freetext to search.")
+    skip_step_counts: bool = False
+
+
+class JobIndexSortByEnum(str, Enum):
+    create_time = "create_time"
+    update_time = "update_time"
+
+
+class JobIndexQueryPayload(Model):
+    states: Optional[List[str]] = None
+    user_details: bool = False
+    user_id: Optional[DecodedDatabaseIdField] = None
+    tool_ids: Optional[List[str]] = None
+    tool_ids_like: Optional[List[str]] = None
+    date_range_min: Optional[Union[datetime, date]] = None
+    date_range_max: Optional[Union[datetime, date]] = None
+    history_id: Optional[DecodedDatabaseIdField] = None
+    workflow_id: Optional[DecodedDatabaseIdField] = None
+    invocation_id: Optional[DecodedDatabaseIdField] = None
+    order_by: JobIndexSortByEnum = JobIndexSortByEnum.update_time
+    search: Optional[str] = None
+    limit: int = 500
+    offset: int = 0
+
+
+class InvocationSortByEnum(str, Enum):
     create_time = "create_time"
     update_time = "update_time"
     none = None
 
 
-class InvocationIndexPayload(Model):
+class InvocationIndexQueryPayload(Model):
     workflow_id: Optional[DecodedDatabaseIdField] = Field(
         title="Workflow ID", description="Return only invocations for this Workflow ID"
     )
@@ -1029,7 +1145,9 @@ class InvocationIndexPayload(Model):
     user_id: Optional[DecodedDatabaseIdField] = Field(
         title="User ID", description="Return invocations for this User ID"
     )
-    sort_by: Optional[SortByEnum] = Field(title="Sort By", description="Sort Workflow Invocations by this attribute")
+    sort_by: Optional[InvocationSortByEnum] = Field(
+        title="Sort By", description="Sort Workflow Invocations by this attribute"
+    )
     sort_desc: bool = Field(default=False, descritpion="Sort in descending order?")
     include_terminal: bool = Field(default=True, description="Set to false to only include terminal Invocations.")
     limit: Optional[int] = Field(
@@ -1037,7 +1155,22 @@ class InvocationIndexPayload(Model):
         lt=1000,
     )
     offset: Optional[int] = Field(default=0, description="Number of invocations to skip")
-    instance: bool = Field(default=False, description="Is provided workflow id for Workflow instead of StoredWorkflow?")
+
+
+class PageSortByEnum(str, Enum):
+    create_time = "create_time"
+    update_time = "update_time"
+
+
+class PageIndexQueryPayload(Model):
+    deleted: bool = False
+    user_id: Optional[DecodedDatabaseIdField] = None
+    sort_by: PageSortByEnum = PageSortByEnum.update_time
+    sort_desc: bool = Field(default=True, descritpion="Sort in descending order?")
+    show_published: bool = True
+    show_shared: bool = False
+    limit: int = 500
+    offset: int = 0
 
 
 class CreateHistoryPayload(Model):
@@ -1145,6 +1278,56 @@ class CreateNewCollectionPayload(Model):
     folder_id: Optional[EncodedDatabaseIdField] = Field(
         default=None,
         description="The ID of the history that will contain the collection. Required if `instance_type=library`.",
+    )
+
+
+class ModelStoreFormat(str, Enum):
+    """Available types of model stores for export."""
+
+    TGZ = "tgz"
+    TAR = "tar"
+    TAR_DOT_GZ = "tar.gz"
+    BAG_DOT_ZIP = "bag.zip"
+    BAG_DOT_TAR = "bag.tar"
+    BAG_DOT_TGZ = "bag.tgz"
+
+
+class StoreContentSource(Model):
+    store_content_uri: Optional[str]
+    store_dict: Optional[Dict[str, Any]]
+    model_store_format: Optional["ModelStoreFormat"] = None
+
+
+class CreateHistoryFromStore(StoreContentSource):
+    pass
+
+
+class StoreExportPayload(Model):
+    model_store_format: ModelStoreFormat = Field(
+        default=ModelStoreFormat.TAR_DOT_GZ,
+        description="format of model store to export",
+    )
+    include_files: bool = Field(
+        default=True,
+        description="include materialized files in export when available",
+    )
+    include_deleted: bool = Field(
+        default=False,
+        title="Include deleted",
+        description="Include file contents for deleted datasets (if include_files is True).",
+    )
+    include_hidden: bool = Field(
+        default=False,
+        title="Include hidden",
+        description="Include file contents for hidden datasets (if include_files is True).",
+    )
+
+
+class WriteStoreToPayload(StoreExportPayload):
+    target_uri: str = Field(
+        ...,
+        title="Target URI",
+        description="Galaxy Files URI to write mode store content to.",
     )
 
 
@@ -2100,6 +2283,10 @@ class CreateLibraryPayload(BaseModel):
     )
 
 
+class CreateLibrariesFromStore(StoreContentSource):
+    pass
+
+
 class UpdateLibraryPayload(BaseModel):
     name: Optional[str] = Field(
         None,
@@ -2347,6 +2534,82 @@ class LibraryFolderCurrentPermissions(BaseModel):
     )
 
 
+class LibraryFolderContentsIndexQueryPayload(Model):
+    limit: int = 10
+    offset: int = 0
+    search_text: Optional[str] = None
+    include_deleted: Optional[bool] = None
+
+
+class LibraryFolderItemBase(Model):
+    id: DecodedDatabaseIdField
+    name: str
+    type: str
+    create_time: datetime = CreateTimeField
+    update_time: datetime = UpdateTimeField
+    can_manage: bool
+    deleted: bool
+
+
+class FolderLibraryFolderItem(LibraryFolderItemBase):
+    type: Literal["folder"]
+    can_modify: bool
+    description: Optional[str] = FolderDescriptionField
+
+
+class FileLibraryFolderItem(LibraryFolderItemBase):
+    type: Literal["file"]
+    file_ext: str
+    date_uploaded: datetime
+    is_unrestricted: bool
+    is_private: bool
+    state: Dataset.states = DatasetStateField
+    file_size: str
+    raw_size: int
+    ldda_id: DecodedDatabaseIdField
+    tags: str
+    message: Optional[str]
+
+
+AnyLibraryFolderItem = Annotated[Union[FileLibraryFolderItem, FolderLibraryFolderItem], Field(discriminator="type")]
+
+
+class LibraryFolderMetadata(Model):
+    parent_library_id: DecodedDatabaseIdField
+    folder_name: str
+    folder_description: str
+    total_rows: int
+    can_modify_folder: bool
+    can_add_library_item: bool
+    full_path: List[List[str]]
+
+
+class LibraryFolderContentsIndexResult(Model):
+    metadata: LibraryFolderMetadata
+    folder_contents: List[AnyLibraryFolderItem]
+
+
+class CreateLibraryFilePayload(Model):
+    from_hda_id: Optional[DecodedDatabaseIdField] = Field(
+        default=None,
+        title="From HDA ID",
+        description="The ID of an accessible HDA to copy into the library.",
+    )
+    from_hdca_id: Optional[DecodedDatabaseIdField] = Field(
+        default=None,
+        title="From HDCA ID",
+        description=(
+            "The ID of an accessible HDCA to copy into the library. "
+            "Nested collections are not allowed, you must flatten the collection first."
+        ),
+    )
+    ldda_message: Optional[str] = Field(
+        default="",
+        title="LDDA Message",
+        description="The new message attribute of the LDDA created.",
+    )
+
+
 class DatasetAssociationRoles(Model):
     access_dataset_roles: List[RoleNameIdTuple] = Field(
         default=[],
@@ -2443,6 +2706,11 @@ class DeleteHistoryContentPayload(BaseModel):
         title="Recursive",
         description="When deleting a dataset collection, whether to also delete containing datasets.",
     )
+    stop_job: bool = Field(
+        default=False,
+        title="Stop Job",
+        description="Whether to stop the creating job if all the job's outputs are deleted.",
+    )
 
 
 class DeleteHistoryContentResult(CustomHistoryItem):
@@ -2481,6 +2749,14 @@ class HistoryContentsArchiveDryRunResult(BaseModel):
     __root__: List[List[str]]  # List[Tuple[str, str]]
 
 
+class HistoryContentStats(BaseModel):
+    total_matches: int = Field(
+        ...,
+        title="Total Matches",
+        description=("The total number of items that match the search query without any pagination"),
+    )
+
+
 class ContentsNearStats(BaseModel):
     """Stats used by the `contents_near` endpoint."""
 
@@ -2507,11 +2783,31 @@ class ContentsNearStats(BaseModel):
 
 
 class HistoryContentsResult(Model):
-    """Collection of history content items.
+    """List of history content items.
     Can contain different views and kinds of items.
     """
 
     __root__: List[AnyHistoryContentItem]
+
+
+class HistoryContentsWithStatsResult(BaseModel):
+    """Includes stats with items counting"""
+
+    stats: HistoryContentStats = Field(
+        ...,
+        title="Stats",
+        description=("Contains counting stats for the query."),
+    )
+    contents: List[AnyHistoryContentItem] = Field(
+        ...,
+        title="Contents",
+        description=(
+            "The items matching the search query. Only the items fitting in the current page limit will be returned."
+        ),
+    )
+
+    # This field is ignored and contains the content type associated with this model
+    __accept_type__ = "application/vnd.galaxy.history.contents.stats+json"
 
 
 class ContentsNearResult(BaseModel):
@@ -2699,6 +2995,27 @@ class PageSummaryBase(BaseModel):
     )
 
 
+class MaterializeDatasetInstanceAPIRequest(Model):
+    source: DatasetSourceType = Field(
+        None,
+        title="Source",
+        description="The source of the content. Can be other history element to be copied or library elements.",
+    )
+    content: EncodedDatabaseIdField = Field(
+        None,
+        title="Content",
+        description=(
+            "Depending on the `source` it can be:\n"
+            "- The encoded id of the source library dataset\n"
+            "- The encoded id of the the HDA\n"
+        ),
+    )
+
+
+class MaterializeDatasetInstanceRequest(MaterializeDatasetInstanceAPIRequest):
+    history_id: EncodedDatabaseIdField
+
+
 class CreatePagePayload(PageSummaryBase):
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
@@ -2716,6 +3033,32 @@ class CreatePagePayload(PageSummaryBase):
     class Config:
         use_enum_values = True  # When using .dict()
         extra = Extra.allow  # Allow any other extra fields
+
+
+class AsyncTaskResultSummary(BaseModel):
+    id: str = Field(
+        ...,
+        title="ID",
+        description="Celery AsyncResult ID for this task",
+    )
+    ignored: bool = Field(
+        ...,
+        title="Ignored",
+        description="Indicated whether the Celery AsyncResult will be available for retrieval",
+    )
+    name: Optional[str] = Field(
+        None,
+        title="Name of task being done derived from Celery AsyncResult",
+    )
+    queue: Optional[str] = Field(
+        None,
+        title="Queue of task being done derived from Celery AsyncResult",
+    )
+
+
+class AsyncFile(BaseModel):
+    storage_request_id: str
+    task: AsyncTaskResultSummary
 
 
 class PageSummary(PageSummaryBase):

@@ -2,9 +2,11 @@
 Provides mapping between extensions and datatypes, mime-types, etc.
 """
 
-import imp
+import importlib.util
 import logging
 import os
+import pkgutil
+from pathlib import Path
 from string import Template
 from typing import (
     Dict,
@@ -48,6 +50,7 @@ class Registry:
         self.log.addHandler(logging.NullHandler())
         self.config = config
         self.datatypes_by_extension = {}
+        self.datatypes_by_suffix_inferences = {}
         self.mimetypes_by_extension = {}
         self.datatype_converters = {}
         # Converters defined in local datatypes_conf.xml
@@ -108,10 +111,15 @@ class Registry:
         registry has been initialized at server startup, its contents cannot be overridden by newly introduced conflicting data types.
         """
 
-        def __import_module(full_path, datatype_module, datatype_class_name):
-            open_file_obj, file_name, description = imp.find_module(datatype_module, [full_path])
-            imported_module = imp.load_module(datatype_class_name, open_file_obj, file_name, description)
-            return imported_module
+        def __import_module(full_path: str, datatype_module: str):
+            path_entry_finder = pkgutil.get_importer(full_path)
+            assert path_entry_finder, "path_entry_finder is None"
+            spec = path_entry_finder.find_spec(datatype_module)
+            assert spec, "spec is None"
+            module = importlib.util.module_from_spec(spec)
+            assert spec.loader, "spec.loader is None"
+            spec.loader.exec_module(module)
+            return module
 
         if root_dir and config:
             # If handling_proprietary_datatypes is determined as True below, we'll have an elem that looks something like this:
@@ -123,7 +131,7 @@ class Registry:
             #           type="galaxy.datatypes.blast:BlastXml" />
             compressed_sniffers = {}
             handling_proprietary_datatypes = False
-            if isinstance(config, str):
+            if isinstance(config, (str, Path)):
                 # Parse datatypes_conf.xml
                 tree = galaxy.util.parse_xml(config)
                 root = tree.getroot()
@@ -260,9 +268,7 @@ class Registry:
                                     # TODO: previously comments suggested this needs to be locked because it modifies
                                     # the sys.path, probably true but the previous lock wasn't doing that.
                                     try:
-                                        imported_module = __import_module(
-                                            proprietary_path, proprietary_datatype_module, datatype_class_name
-                                        )
+                                        imported_module = __import_module(proprietary_path, proprietary_datatype_module)
                                         if imported_module not in self.imported_modules:
                                             self.imported_modules.append(imported_module)
                                         if hasattr(imported_module, datatype_class_name):
@@ -272,7 +278,7 @@ class Registry:
                                         self.log.debug(
                                             "Exception importing proprietary code file %s: %s",
                                             full_path,
-                                            galaxy.util.unicodify(e),
+                                            e,
                                         )
                                 # Either the above exception was thrown because the proprietary_datatype_module is not derived from a class
                                 # in the repository, or we are loading Galaxy's datatypes. In either case we'll look in the registry.
@@ -336,6 +342,16 @@ class Registry:
                                 self.datatypes_by_extension[extension].max_optional_metadata_filesize = elem.get(
                                     "max_optional_metadata_filesize", None
                                 )
+                                infer_from_suffixes = []
+                                # read from element instead of attribute so we can customize references to
+                                # compressed files in the future (e.g. maybe some day faz will be a compressed fasta
+                                # or something along those lines)
+                                for infer_from in elem.findall("infer_from"):
+                                    suffix = infer_from.get("suffix", None)
+                                    if suffix is None:
+                                        raise Exception("Failed to parse infer_from datatype element")
+                                    infer_from_suffixes.append(suffix)
+                                    self.datatypes_by_suffix_inferences[suffix] = datatype_instance
                                 for converter in elem.findall("converter"):
                                     # Build the list of datatype converters which will later be loaded into the calling app's toolbox.
                                     converter_config = converter.get("file", None)
@@ -377,9 +393,14 @@ class Registry:
                                     "description": description,
                                     "description_url": description_url,
                                 }
-                                composite_files = datatype_instance.composite_files
+                                composite_files = datatype_instance.get_composite_files()
                                 if composite_files:
-                                    datatype_info_dict["composite_files"] = [_.dict() for _ in composite_files.values()]
+                                    _composite_files = []
+                                    for name, composite_file in composite_files.items():
+                                        _composite_file = composite_file.dict()
+                                        _composite_file["name"] = name
+                                        _composite_files.append(_composite_file)
+                                    datatype_info_dict["composite_files"] = _composite_files
                                 self.datatype_info_dicts.append(datatype_info_dict)
 
                                 for auto_compressed_type in auto_compressed_types:
@@ -409,6 +430,10 @@ class Registry:
                                         compressed_datatype_class.edam_data = edam_data
                                     compressed_datatype_instance = compressed_datatype_class()
                                     self.datatypes_by_extension[compressed_extension] = compressed_datatype_instance
+                                    for suffix in infer_from_suffixes:
+                                        self.datatypes_by_suffix_inferences[
+                                            f"{suffix}.{auto_compressed_type}"
+                                        ] = compressed_datatype_instance
                                     if display_in_upload and compressed_extension not in self.upload_file_formats:
                                         self.upload_file_formats.append(compressed_extension)
                                     self.datatype_info_dicts.append(
@@ -626,6 +651,27 @@ class Registry:
                                     if sniffer_class is not None:
                                         if sniffer_class not in sniffer_elem_classes:
                                             self.sniffer_elems.append(elem)
+
+    def get_datatype_from_filename(self, name):
+        max_extension_parts = 3
+        generic_datatype_instance = self.get_datatype_by_extension("data")
+        if "." not in name:
+            return generic_datatype_instance
+        extension_parts = name.rsplit(".", max_extension_parts)[1:]
+        possible_extensions = []
+        for n, _ in enumerate(extension_parts):
+            possible_extensions.append(".".join(extension_parts[n:]))
+
+        infer_from = self.datatypes_by_suffix_inferences
+        for possible_extension in possible_extensions:
+            if possible_extension in infer_from:
+                return infer_from[possible_extension]
+
+        for possible_extension in possible_extensions:
+            if possible_extension in self.datatypes_by_extension:
+                return self.datatypes_by_extension[possible_extension]
+
+        return generic_datatype_instance
 
     def is_extension_unsniffable_binary(self, ext):
         datatype = self.get_datatype_by_extension(ext)
@@ -1008,9 +1054,8 @@ class Registry:
             ext = dataset_or_ext
             dataset = None
 
-        if self.get_datatype_by_extension(ext) is not None and self.get_datatype_by_extension(ext).matches_any(
-            accepted_formats
-        ):
+        datatype_by_extension = self.get_datatype_by_extension(ext)
+        if datatype_by_extension and datatype_by_extension.matches_any(accepted_formats):
             return True, None, None
 
         for convert_ext in self.get_converters_by_datatype(ext):
@@ -1109,6 +1154,23 @@ class Registry:
             )
             extension = extension.lower()
         return extension
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Don't pickle xml elements
+        unpickleable_attributes = [
+            "converter_tools",
+            "datatype_converters",
+            "datatype_elems",
+            "display_app_containers",
+            "display_applications",
+            "inherit_display_application_by_class",
+            "set_external_metadata_tool",
+            "sniffer_elems",
+        ]
+        for unpicklable in unpickleable_attributes:
+            state[unpicklable] = []
+        return state
 
 
 def example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=True):

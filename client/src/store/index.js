@@ -15,14 +15,8 @@ import { tagStore } from "./tagStore";
 import { jobMetricsStore } from "./jobMetricsStore";
 import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { invocationStore } from "./invocationStore";
-import {
-    collectionElementsStore,
-    datasetStore,
-    historyChangedItemsStore,
-    historyItemsStore,
-    historyStore,
-} from "./historyStore";
-import { userStore } from "./userStore";
+import { collectionElementsStore, datasetStore, historyItemsStore, historyStore } from "./historyStore";
+import { userStore, userFlagsStore } from "./userStore";
 import { configStore } from "./configStore";
 import { workflowStore } from "./workflowStore";
 import { toolStore } from "./toolStore";
@@ -30,12 +24,9 @@ import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { jobStore } from "./jobStore";
 import { collectionAttributesStore } from "./collectionAttributesStore";
-import { genomeStore } from "./genomeStore";
+import { dbKeyStore } from "./dbKeyStore";
 import { datatypeStore } from "./datatypeStore";
 import { panelStore } from "./panelStore";
-
-// beta features
-import { historyStore as betaHistoryStore } from "components/History/model/historyStore";
 
 // Syncs vuex to Galaxy store until Galaxy vals to not exist
 import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
@@ -53,36 +44,34 @@ galaxyStorage.config({
 const panelsPersistence = new VuexPersistence({
     storage: galaxyStorage,
     asyncStorage: true,
-    modules: ["panels"],
+    modules: ["panels", "userFlags"],
 });
 
 export function createStore() {
     const storeConfig = {
         plugins: [createCache(), panelsPersistence.plugin],
         modules: {
-            user: userStore,
-            config: configStore,
-            collectionElements: collectionElementsStore,
-            dataset: datasetStore,
-            betaHistory: betaHistoryStore,
-            panels: panelStore,
-            // TODO: please namespace all store modules
-            gridSearch: gridSearchStore,
-            histories: historyStore,
-            historyChangedItems: historyChangedItemsStore,
-            historyItems: historyItemsStore,
-            tags: tagStore,
-            jobMetrics: jobMetricsStore,
-            destinationParameters: jobDestinationParametersStore,
-            datasetPathDestination: datasetPathDestinationStore,
-            datasetExtFiles: datasetExtFilesStore,
-            invocations: invocationStore,
-            workflows: workflowStore,
-            informationStore: jobStore,
-            tools: toolStore,
             collectionAttributesStore: collectionAttributesStore,
-            genomeStore: genomeStore,
+            collectionElements: collectionElementsStore,
+            config: configStore,
+            destinationParameters: jobDestinationParametersStore,
+            dataset: datasetStore,
+            datasetExtFiles: datasetExtFilesStore,
+            datasetPathDestination: datasetPathDestinationStore,
             datatypeStore: datatypeStore,
+            informationStore: jobStore,
+            invocations: invocationStore,
+            jobMetrics: jobMetricsStore,
+            dbkeyStore: dbKeyStore,
+            gridSearch: gridSearchStore,
+            history: historyStore,
+            historyItems: historyItemsStore,
+            panels: panelStore,
+            tags: tagStore,
+            tools: toolStore,
+            user: userStore,
+            userFlags: userFlagsStore,
+            workflows: workflowStore,
         },
     };
 

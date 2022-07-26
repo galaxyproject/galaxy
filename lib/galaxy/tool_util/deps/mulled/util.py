@@ -3,6 +3,7 @@
 import collections
 import hashlib
 import logging
+import os
 import re
 import sys
 import tarfile
@@ -18,6 +19,16 @@ QUAY_REPOSITORY_API_ENDPOINT = "https://quay.io/api/v1/repository"
 BUILD_NUMBER_REGEX = re.compile(r"\d+$")
 PARSED_TAG = collections.namedtuple("PARSED_TAG", "tag version build_string build_number")
 MULLED_SOCKET_TIMEOUT = 12
+QUAY_VERSIONS_CACHE_EXPIRY = 300
+NAMESPACE_HAS_REPO_NAME_KEY = "galaxy.tool_util.deps.container_resolvers.mulled.util:namespace_repo_names"
+TAG_CACHE_KEY = "galaxy.tool_util.deps.container_resolvers.mulled.util:tag_cache"
+
+
+def default_mulled_conda_channels_from_env():
+    if "DEFAULT_MULLED_CONDA_CHANNELS" in os.environ:
+        return os.environ["DEFAULT_MULLED_CONDA_CHANNELS"].split(",")
+    else:
+        return None
 
 
 def create_repository(namespace, repo_name, oauth_token):
@@ -60,33 +71,36 @@ def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
     """
     Get all quay containers in the biocontainers repo
     """
-    cache_key = "galaxy.tool_util.deps.container_resolvers.mulled.util:namespace_repo_names"
-    if resolution_cache is not None and cache_key in resolution_cache:
-        repo_names = resolution_cache.get(cache_key)
-    else:
-        next_page = None
-        repo_names = []
-        repos_headers = {"Accept-encoding": "gzip", "Accept": "application/json"}
-        while True:
-            repos_parameters = {"public": "true", "namespace": namespace, "next_page": next_page}
-            repos_response = requests.get(
-                QUAY_REPOSITORY_API_ENDPOINT,
-                headers=repos_headers,
-                params=repos_parameters,
-                timeout=MULLED_SOCKET_TIMEOUT,
-            )
-            repos_response_json = repos_response.json()
-            repos = repos_response_json["repositories"]
-            repo_names += [r["name"] for r in repos]
-            next_page = repos_response_json.get("next_page")
-            if not next_page:
-                break
-        if resolution_cache is not None:
-            resolution_cache[cache_key] = repo_names
+    # resolution_cache.mulled_resolution_cache is the persistent variant of the resolution cache
+    resolution_cache = resolution_cache.mulled_resolution_cache or resolution_cache
+    cache_key = NAMESPACE_HAS_REPO_NAME_KEY
+    if resolution_cache is not None:
+        try:
+            return repo_name in resolution_cache.get(cache_key)
+        except KeyError:
+            pass
+    next_page = None
+    repo_names = []
+    repos_headers = {"Accept-encoding": "gzip", "Accept": "application/json"}
+    while True:
+        repos_parameters = {"public": "true", "namespace": namespace, "next_page": next_page}
+        repos_response = requests.get(
+            QUAY_REPOSITORY_API_ENDPOINT, headers=repos_headers, params=repos_parameters, timeout=MULLED_SOCKET_TIMEOUT
+        )
+        repos_response_json = repos_response.json()
+        repos = repos_response_json["repositories"]
+        repo_names += [r["name"] for r in repos]
+        next_page = repos_response_json.get("next_page")
+        if not next_page:
+            break
+    if resolution_cache is not None:
+        resolution_cache[cache_key] = repo_names
     return repo_name in repo_names
 
 
-def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None, session=None):
+def mulled_tags_for(
+    namespace, image, tag_prefix=None, resolution_cache=None, session=None, expire=QUAY_VERSIONS_CACHE_EXPIRY
+):
     """Fetch remote tags available for supplied image name.
 
     The result will be sorted so newest tags are first.
@@ -98,8 +112,13 @@ def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None, se
             log.info(f"skipping mulled_tags_for [{image}] no repository")
             return []
 
-    cache_key = "galaxy.tool_util.deps.container_resolvers.mulled.util:tag_cache"
+    cache_key = TAG_CACHE_KEY
     if resolution_cache is not None:
+        if resolution_cache.mulled_resolution_cache is not None:
+            # Use persistent cache if possible. Since tags query is lightweight use a relatively short expiry time.
+            resolution_cache = resolution_cache.mulled_resolution_cache._get_cache(
+                "mulled_tag_cache", {"expire": expire}
+            )
         if cache_key not in resolution_cache:
             resolution_cache[cache_key] = collections.defaultdict(dict)
         tag_cache = resolution_cache.get(cache_key)
@@ -107,10 +126,11 @@ def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None, se
         tag_cache = collections.defaultdict(dict)
 
     tags_cached = False
-    if namespace in tag_cache:
-        if image in tag_cache[namespace]:
-            tags = tag_cache[namespace][image]
-            tags_cached = True
+    try:
+        tags = tag_cache[namespace][image]
+        tags_cached = True
+    except KeyError:
+        pass
 
     if not tags_cached:
         tags = quay_versions(namespace, image, session)
@@ -312,8 +332,11 @@ def v2_image_name(targets, image_build=None, name_override=None):
 
 def get_file_from_recipe_url(url):
     """Downloads file at url and returns tarball"""
-    r = requests.get(url, timeout=MULLED_SOCKET_TIMEOUT)
-    return tarfile.open(mode="r:bz2", fileobj=BytesIO(r.content))
+    if url.startswith("file://"):
+        return tarfile.open(mode="r:bz2", name=url[7:])
+    else:
+        r = requests.get(url, timeout=MULLED_SOCKET_TIMEOUT)
+        return tarfile.open(mode="r:bz2", fileobj=BytesIO(r.content))
 
 
 def split_container_name(name):

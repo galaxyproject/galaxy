@@ -230,9 +230,9 @@ define({
     "Local data": "Données locales",
     "Form Definitions": "Définitions de formulaires",
 
-    // ---------------------------------------------------------------------------- Scratchbook
-    "Enable/Disable Scratchbook": "Activer/Désactiver la visu Scratchbook",
-    "Show/Hide Scratchbook": "Montrer/cacher la visu Scratchbook",
+    // ---------------------------------------------------------------------------- Window Manager
+    "Enable/Disable Window Manager": "Activer/Désactiver la visu Window Manager",
+    "Show/Hide Window Manager": "Montrer/cacher la visu Window Manager",
 
     // ---------------------------------------------------------------------------- misc. MVC
     Tags: "Mots-clés",
@@ -437,7 +437,7 @@ define({
     "Create new Build": false,
     "Delete custom build.": false,
     "Provide the data source.": false,
-    // ---------------------------------------------------------------------------- scratchbook
+    // ---------------------------------------------------------------------------- Window Manager
     "Next in History": false,
     "Previous in History": false,
     // ---------------------------------------------------------------------------- generic-nav-view

@@ -79,7 +79,7 @@ class PageListGrid(grids.Grid):
                 lambda item: dict(action="display_by_username_and_slug", username=item.user.username, slug=item.slug)
             ),
         ),
-        URLColumn("Public URL"),
+        URLColumn("Permalink"),
         grids.OwnerAnnotationColumn(
             "Annotation",
             key="annotation",

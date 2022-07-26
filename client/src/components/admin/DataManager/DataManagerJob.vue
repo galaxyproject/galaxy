@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-breadcrumb v-if="dataManager && jobId && !loading" :items="breadcrumbItems" id="breadcrumb" />
+        <b-breadcrumb v-if="dataManager && jobId && !loading" id="breadcrumb" :items="breadcrumbItems" />
         <Alert :message="message" :variant="status" />
         <Alert v-for="(error, index) in errorMessages" :key="index" :message="error" variant="error" />
         <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
@@ -9,11 +9,11 @@
             <b-row>
                 <b-col>
                     <b-card
+                        id="data-manager-card"
                         header-bg-variant="primary"
                         header-text-variant="white"
                         border-variant="primary"
-                        class="mb-3"
-                        id="data-manager-card">
+                        class="mb-3">
                         <template v-slot:header>
                             <b-container>
                                 <b-row align-v="center">
@@ -28,7 +28,7 @@
                                 </b-row>
                             </b-container>
                         </template>
-                        <b-card v-for="(hda, i) in hdaInfo" :key="i" class="mb-4" :id="'data-card-' + i">
+                        <b-card v-for="(hda, i) in hdaInfo" :id="'data-card-' + i" :key="i" class="mb-4">
                             <template v-slot:header>
                                 <b-table :fields="fields" :items="[hda]" caption-top small stacked>
                                     <template v-slot:table-caption>
@@ -137,11 +137,6 @@ export default {
             ];
         },
     },
-    methods: {
-        outputFields(output) {
-            return Object.keys(output).reduce((acc, c) => [...acc, { key: c, label: c }], []);
-        },
-    },
     created() {
         axios
             .get(`${getAppRoot()}data_manager/job_info?id=${this.id}`)
@@ -161,6 +156,11 @@ export default {
             .catch((error) => {
                 console.error(error);
             });
+    },
+    methods: {
+        outputFields(output) {
+            return Object.keys(output).reduce((acc, c) => [...acc, { key: c, label: c }], []);
+        },
     },
 };
 </script>

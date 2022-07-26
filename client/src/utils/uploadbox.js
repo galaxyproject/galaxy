@@ -15,44 +15,67 @@ function submitPayload(payload, cnf) {
             cnf.success(response.data);
         })
         .catch((error) => {
-            cnf.error(error.response.data.err_msg);
+            cnf.error(error.response?.data.err_msg || "Request failed.");
         });
 }
 
-function tusUpload(data, index, tusEndpoint, cnf) {
+function buildFingerprint(cnf) {
+    async function customFingerprint(file, options) {
+        return ["tus-br", file.name, file.type, file.size, file.lastModified, cnf.data.history_id].join("-");
+    }
+
+    return customFingerprint;
+}
+
+function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
+    // uploadables must be an array of files or blobs with a name property
     const startTime = performance.now();
     const chunkSize = cnf.chunkSize;
-    const file = data.files[index];
-    if (!file) {
-        // We've uploaded all files, delete files from data and submit fetch payload
+    const uploadable = uploadables[index];
+    if (!uploadable) {
+        // We've uploaded all files or blobs; delete files from data and submit fetch payload
         delete data["files"];
         return submitPayload(data, cnf);
     }
-    console.debug(`Starting chunked upload for ${file.name} [chunkSize=${chunkSize}].`);
-    const upload = new tus.Upload(file, {
+    console.debug(`Starting chunked upload for ${uploadable.name} [chunkSize=${chunkSize}].`);
+    const upload = new tus.Upload(uploadable, {
         endpoint: tusEndpoint,
+        retryDelays: [0, 3000, 10000],
+        fingerprint: buildFingerprint(cnf),
         chunkSize: chunkSize,
         metadata: data.payload,
-        onError: function (error) {
-            console.log("Failed because: " + error);
-            cnf.error(error);
+        onError: function (err) {
+            const status = err.originalResponse?.getStatus();
+            if (status == 403) {
+                console.error(`Failed because of missing authorization: ${err}`);
+                cnf.error(err);
+            } else {
+                // 🎵 Never gonna give you up 🎵
+                console.log(`Failed because: ${err}\n, will retry in 10 seconds`);
+
+                setTimeout(() => startTusUpload(upload), 10000);
+            }
         },
-        onProgress: function (bytesUploaded, bytesTotal) {
-            var percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2);
-            console.log(bytesUploaded, bytesTotal, percentage + "%");
+        onChunkComplete: function (chunkSize, bytesAccepted, bytesTotal) {
+            const percentage = ((bytesAccepted / bytesTotal) * 100).toFixed(2);
+            console.log(bytesAccepted, bytesTotal, percentage + "%");
             cnf.progress(percentage);
         },
         onSuccess: function () {
             console.log(
-                `Upload of ${upload.file.name} to ${upload.url} took ${(performance.now() - startTime) / 1000} seconds`
+                `Upload of ${uploadable.name} to ${upload.url} took ${(performance.now() - startTime) / 1000} seconds`
             );
             data[`files_${index}|file_data`] = {
                 session_id: upload.url.split("/").at(-1),
-                name: upload.file.name,
+                name: uploadable.name,
             };
-            tusUpload(data, index + 1, tusEndpoint, cnf);
+            tusUpload(uploadables, index + 1, data, tusEndpoint, cnf);
         },
     });
+    startTusUpload(upload);
+}
+
+function startTusUpload(upload) {
     // Check if there are any previous uploads to continue.
     upload.findPreviousUploads().then(function (previousUploads) {
         // Found previous uploads so we select the first one.
@@ -60,7 +83,6 @@ function tusUpload(data, index, tusEndpoint, cnf) {
             console.log("previous Upload", previousUploads);
             upload.resumeFromPreviousUpload(previousUploads[0]);
         }
-
         // Start the upload
         upload.start();
     });
@@ -91,12 +113,34 @@ export function submitUpload(config) {
         cnf.error(data.error_message);
         return;
     }
-    if (!data.files.length) {
-        // No files attached, don't need to use TUS uploader
-        return submitPayload(data, cnf);
-    }
     const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload/`;
-    tusUpload(data, 0, tusEndpoint, cnf);
+
+    if (hasFiles(data) || isComposite(data)) {
+        return tusUpload(data.files, 0, data, tusEndpoint, cnf);
+    } else {
+        if (data.targets.length && data.targets[0].elements.length) {
+            const pasted = data.targets[0].elements[0];
+            if (isUrl(pasted)) {
+                return submitPayload(data, cnf);
+            } else {
+                const blob = new Blob([pasted.paste_content]);
+                blob.name = data.targets[0].elements[0].name || "default";
+                return tusUpload([blob], 0, data, tusEndpoint, cnf);
+            }
+        }
+    }
+}
+
+function hasFiles(data) {
+    return data.files.length;
+}
+
+function isComposite(data) {
+    return data.targets.length && data.targets[0].items && data.targets[0].items[0].composite;
+}
+
+function isUrl(pasted_item) {
+    return pasted_item.src == "url";
 }
 
 (($) => {
@@ -245,13 +289,15 @@ export class UploadQueue {
                 }
             });
         }
+        // Returns last added file index.
+        return this.nextIndex - 1;
     }
 
-    // Remove file from queue
+    // Remove file from queue and file set by index
     remove(index) {
-        // Removes the item identified by index.
-        // Returns true if an item was removed, and false otherwise.
-        return this.queue.delete(index);
+        const file = this.queue.get(index);
+        const fileSetKey = file.name + file.size;
+        this.queue.delete(index) && this.fileSet.delete(fileSetKey);
     }
 
     get size() {

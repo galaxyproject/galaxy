@@ -1,11 +1,11 @@
 <template>
     <b-input
+        ref="input"
         v-model="slugInput"
+        class="d-inline w-auto h-auto px-1 py-0"
         @change="onChange"
         @keydown.enter="onChange"
-        @keydown.esc="onCancel"
-        class="d-inline w-auto h-auto px-1 py-0"
-        ref="input" />
+        @keydown.esc="onCancel" />
 </template>
 <script>
 import Vue from "vue";

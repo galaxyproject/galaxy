@@ -14,6 +14,7 @@ class DynamicEdamLoadingIntegrationTestCase(integration_util.IntegrationTestCase
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["biotools_content_directory"] = MOCK_BIOTOOLS_CONTENT
         config["biotools_use_api"] = False
 

@@ -243,8 +243,8 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         rval["folder_id"] = f"F{rval['folder_id']}"
         rval["full_path"] = full_path
         rval["file_size"] = util.nice_size(int(ldda.get_size()))
-        rval["date_uploaded"] = ldda.create_time.strftime("%Y-%m-%d %I:%M %p")
-        rval["update_time"] = ldda.update_time.strftime("%Y-%m-%d %I:%M %p")
+        rval["date_uploaded"] = ldda.create_time.isoformat()
+        rval["update_time"] = ldda.update_time.isoformat()
         rval["can_user_modify"] = trans.user_is_admin or trans.app.security_agent.can_modify_library_item(
             current_user_roles, ld
         )

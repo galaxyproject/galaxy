@@ -80,3 +80,10 @@ class DatasetSourceTransformSeleniumIntegrationTestCase(PosixFileSourceSetup, Se
     def setUp(self):
         super().setUp()
         self._write_file_fixtures()
+
+
+class DatasetSourceTransformInModelStoreSeleniumIntegrationTestCase(DatasetSourceTransformSeleniumIntegrationTestCase):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["metadata_strategy"] = "extended"

@@ -244,12 +244,15 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/datasets/{dataset_id}/show_params")
     webapp.add_client_route("/workflows/list")
     webapp.add_client_route("/workflows/list_published")
+    webapp.add_client_route("/workflows/edit")
     webapp.add_client_route("/workflows/create")
     webapp.add_client_route("/workflows/run")
     webapp.add_client_route("/workflows/import")
     webapp.add_client_route("/workflows/trs_import")
     webapp.add_client_route("/workflows/trs_search")
     webapp.add_client_route("/workflows/invocations")
+    webapp.add_client_route("/workflows/sharing")
+    webapp.add_client_route("/workflows/{stored_workflow_id}/invocations")
     webapp.add_client_route("/workflows/invocations/report")
     # webapp.add_client_route('/workflows/invocations/view_bco')
     webapp.add_client_route("/custom_builds")
@@ -261,6 +264,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     # Indicate that all configuration settings have been provided
     webapp.finalize_config()
     app.api_spec = webapp.build_apispec()
+    app.legacy_mapper = webapp.mapper
 
     # Wrap the webapp in some useful middleware
     if kwargs.get("middleware", True):
@@ -361,7 +365,6 @@ def populate_api_routes(webapp, app):
     # ====== TOOLS API ======
     # =======================
 
-    webapp.mapper.connect("/api/tools/fetch", action="fetch", controller="tools", conditions=dict(method=["POST"]))
     webapp.mapper.connect("/api/tools/all_requirements", action="all_requirements", controller="tools")
     webapp.mapper.connect("/api/tools/error_stack", action="error_stack", controller="tools")
     webapp.mapper.connect("/api/tools/{id:.+?}/build", action="build", controller="tools")
@@ -581,7 +584,9 @@ def populate_api_routes(webapp, app):
         "/api/workflows/{id}/refactor", action="refactor", controller="workflows", conditions=dict(method=["PUT"])
     )
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
+
     webapp.mapper.resource("search", "search", path_prefix="/api")
+
     # ---- visualizations registry ---- generic template renderer
     # @deprecated: this route should be considered deprecated
     webapp.add_route(
@@ -687,6 +692,14 @@ def populate_api_routes(webapp, app):
         controller="workflows",
         action="index_invocations",
         conditions=dict(method=["GET"]),
+    )
+
+    webapp.mapper.connect(
+        "create_invovactions_from_store",
+        "/api/invocations/from_store",
+        controller="workflows",
+        action="create_invocations_from_store",
+        conditions=dict(method=["POST"]),
     )
 
     # API refers to usages and invocations - these mean the same thing but the
@@ -1017,28 +1030,6 @@ def populate_api_routes(webapp, app):
         webapp, name_prefix="library_dataset_", path_prefix="/api/libraries/{library_id}/contents/{library_content_id}"
     )
 
-    # =======================
-    # ===== FOLDERS API =====
-    # =======================
-
-    webapp.mapper.connect(
-        "add_history_datasets_to_library",
-        "/api/folders/{encoded_folder_id}/contents",
-        controller="folder_contents",
-        action="create",
-        conditions=dict(method=["POST"]),
-    )
-
-    webapp.mapper.resource(
-        "content",
-        "contents",
-        controller="folder_contents",
-        name_prefix="folder_",
-        path_prefix="/api/folders/{folder_id}",
-        parent_resources=dict(member_name="folder", collection_name="folders"),
-        conditions=dict(method=["GET"]),
-    )
-
     webapp.mapper.resource("job", "jobs", path_prefix="/api")
     webapp.mapper.connect(
         "job_search", "/api/jobs/search", controller="jobs", action="search", conditions=dict(method=["POST"])
@@ -1075,6 +1066,13 @@ def populate_api_routes(webapp, app):
         "/api/jobs/{job_id}/destination_params",
         controller="jobs",
         action="destination_params",
+        conditions=dict(method=["GET"]),
+    )
+    webapp.mapper.connect(
+        "metrics",
+        "/api/jobs/{job_id}/metrics",
+        controller="jobs",
+        action="metrics",
         conditions=dict(method=["GET"]),
     )
     webapp.mapper.connect(
@@ -1375,10 +1373,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         from galaxy.web.framework.middleware.translogger import TransLogger
 
         app = wrap_if_allowed(app, stack, TransLogger)
-    # X-Forwarded-Host handling
-    app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
-    # Request ID middleware
-    app = wrap_if_allowed(app, stack, RequestIDMiddleware)
     # TUS upload middleware
     app = wrap_if_allowed(
         app,
@@ -1390,6 +1384,10 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
             "max_size": application_stack.config.maximum_upload_file_size,
         },
     )
+    # X-Forwarded-Host handling
+    app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
+    # Request ID middleware
+    app = wrap_if_allowed(app, stack, RequestIDMiddleware)
     if asbool(conf.get("enable_per_request_sql_debugging", False)):
         from galaxy.web.framework.middleware.sqldebug import SQLDebugMiddleware
 

@@ -74,6 +74,7 @@ export function fetchMenu(options = {}) {
         tooltip: _l("Tools and Current History"),
         icon: "fa-home",
     });
+
     //
     // Workflow tab.
     //
@@ -201,6 +202,11 @@ export function fetchMenu(options = {}) {
                 target: "_blank",
             },
             {
+                title: _l("Interactive Tours"),
+                url: "tours",
+                target: "__use_router__",
+            },
+            {
                 title: _l("Introduction to Galaxy"),
                 url: "welcome/new",
             },
@@ -239,7 +245,6 @@ export function fetchMenu(options = {}) {
                 cls: "loggedout-only",
                 tooltip: _l("Login"),
                 url: "login",
-                noscratchbook: true,
             };
         }
     } else {

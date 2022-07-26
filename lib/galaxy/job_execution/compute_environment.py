@@ -3,6 +3,10 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
+from typing import (
+    Any,
+    Dict,
+)
 
 from galaxy.job_execution.setup import JobIO
 from galaxy.model import Job
@@ -82,7 +86,7 @@ class ComputeEnvironment(metaclass=ABCMeta):
         """URL to access Galaxy API from for this compute environment."""
 
     @abstractmethod
-    def get_file_sources_dict(self):
+    def get_file_sources_dict(self) -> Dict[str, Any]:
         """Return file sources dict for current user."""
 
 
@@ -100,11 +104,14 @@ class SharedComputeEnvironment(SimpleComputeEnvironment, ComputeEnvironment):
     file systems.
     """
 
+    job_id: JobIO
+    job: Job
+
     def __init__(self, job_io: JobIO, job: Job):
         self.job_io = job_io
         self.job = job
 
-    def get_file_sources_dict(self):
+    def get_file_sources_dict(self) -> Dict[str, Any]:
         return self.job_io.file_sources_dict
 
     def output_names(self):

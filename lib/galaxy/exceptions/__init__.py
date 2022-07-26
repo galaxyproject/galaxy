@@ -59,6 +59,11 @@ class ObjectInvalid(Exception):
 # Please keep the exceptions ordered by status code
 
 
+class NoContentException(MessageException):
+    status_code = 204
+    err_code = error_codes_by_name["NO_CONTENT_GENERIC"]
+
+
 class ActionInputError(MessageException):
     status_code = 400
     err_code = error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"]

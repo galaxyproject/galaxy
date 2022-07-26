@@ -1,5 +1,6 @@
 import logging
 
+from dateutil.parser import isoparse
 from markupsafe import escape
 from sqlalchemy import (
     false,
@@ -993,9 +994,13 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
 
     @web.json
     @web.do_not_cache
-    def current_history_json(self, trans):
+    def current_history_json(self, trans, since=None):
         """Return the current user's current history in a serialized, dictionary form."""
         history = trans.get_history(most_recent=True, create=True)
+        if since and history.update_time <= isoparse(since):
+            # Should ideally be a 204 response, but would require changing web.json
+            # This endpoint should either give way to a proper API or a SSE loop
+            return
         return self.history_data(trans, history)
 
     @web.json

@@ -151,8 +151,8 @@ class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
     @skip_without_tool("multi_data_param")
     def test_extract_reduction_from_history(self):
         hdca = self.dataset_collection_populator.create_pair_in_history(
-            self.history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"]
-        ).json()
+            self.history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"], wait=True
+        ).json()["outputs"][0]
         hdca_id = hdca["id"]
         inputs1 = {"input": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]}, "num_lines": 2}
         implicit_hdca1, job_id1 = self._run_tool_get_collection_and_job_id(self.history_id, "random_lines1", inputs1)
@@ -406,8 +406,8 @@ test_data:
 
     def __run_random_lines_mapped_over_pair(self, history_id):
         hdca = self.dataset_collection_populator.create_pair_in_history(
-            history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"]
-        ).json()
+            history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"], wait=True
+        ).json()["outputs"][0]
         hdca_id = hdca["id"]
         inputs1 = {"input": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]}, "num_lines": 2}
         implicit_hdca1, job_id1 = self._run_tool_get_collection_and_job_id(history_id, "random_lines1", inputs1)
@@ -474,8 +474,10 @@ test_data:
         workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow, history_id=history_id)
         run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request)
         self._assert_status_code_is(run_workflow_response, 200)
-
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        invocation_response = run_workflow_response.json()
+        self.workflow_populator.wait_for_invocation_and_jobs(
+            history_id=history_id, workflow_id=workflow_id, invocation_id=invocation_response["id"]
+        )
         return self.__cat_job_id(history_id)
 
     def _assert_first_step_is_paired_input(self, downloaded_workflow):

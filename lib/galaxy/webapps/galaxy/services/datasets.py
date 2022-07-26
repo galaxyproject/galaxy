@@ -17,8 +17,8 @@ from pydantic import (
     Field,
 )
 
-from galaxy import exceptions as galaxy_exceptions
 from galaxy import (
+    exceptions as galaxy_exceptions,
     model,
     util,
     web,
@@ -95,6 +95,11 @@ class DatasetStorageDetails(Model):
     percent_used: Optional[float] = Field(
         description="The percentage indicating how full the store is.",
     )
+    dataset_state: str = Field(
+        description="The model state of the supplied dataset instance.",
+    )
+    hashes: List[dict] = Field(description="The file contents hashes associated with the supplied dataset instance.")
+    sources: List[dict] = Field(description="The file sources associated with the supplied dataset instance.")
 
 
 class DatasetInheritanceChainEntry(Model):
@@ -341,12 +346,20 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         except AttributeError:
             # not implemented on nestedobjectstores yet.
             percent_used = None
-
+        except FileNotFoundError:
+            # uninitalized directory (emtpy) disk object store can cause this...
+            percent_used = None
+        dataset_state = dataset.state
+        hashes = [h.to_dict() for h in dataset.hashes]
+        sources = [s.to_dict() for s in dataset.sources]
         return DatasetStorageDetails(
             object_store_id=object_store_id,
             name=name,
             description=description,
             percent_used=percent_used,
+            dataset_state=dataset_state,
+            hashes=hashes,
+            sources=sources,
         )
 
     def show_inheritance_chain(
@@ -411,7 +424,6 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self,
         trans: ProvidesHistoryContext,
         history_content_id: EncodedDatabaseIdField,
-        history_id: EncodedDatabaseIdField,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -443,9 +455,6 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         except galaxy_exceptions.MessageException:
             raise
         except Exception as e:
-            log.exception(
-                "Server error getting display data for dataset (%s) from history (%s)", history_content_id, history_id
-            )
             raise galaxy_exceptions.InternalServerError(f"Could not get display data for dataset: {util.unicodify(e)}")
         return rval, headers
 

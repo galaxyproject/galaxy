@@ -104,8 +104,13 @@ class IdEncodingHelper:
 
     def decode_guid(self, session_key):
         # Session keys are strings
-        decoded_session_key = codecs.decode(session_key, "hex")
-        return unicodify(self.id_cipher.decrypt(decoded_session_key)).lstrip("!")
+        try:
+            decoded_session_key = codecs.decode(session_key, "hex")
+            return unicodify(self.id_cipher.decrypt(decoded_session_key)).lstrip("!")
+        except TypeError:
+            raise galaxy.exceptions.MalformedId(f"Malformed guid '{session_key}' specified, unable to decode.")
+        except ValueError:
+            raise galaxy.exceptions.MalformedId(f"Wrong guid '{session_key}' specified, unable to decode.")
 
     def get_new_guid(self):
         # Generate a unique, high entropy 128 bit random number

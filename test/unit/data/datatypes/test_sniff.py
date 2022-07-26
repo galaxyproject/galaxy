@@ -2,6 +2,7 @@ import tempfile
 
 import pytest
 
+from galaxy.datatypes.registry import example_datatype_registry_for_sample
 from galaxy.datatypes.sniff import (
     convert_newlines,
     convert_newlines_sep2tabs,
@@ -97,3 +98,14 @@ def test_convert_sep2tabs_only():
     assert_converts_to_1234_convert_sep2tabs_only(b"1 2\r3 4", b"1\t2\r3\t4")
     assert_converts_to_1234_convert_sep2tabs_only(b"1 2\n3 4", b"1\t2\n3\t4")
     assert_converts_to_1234_convert_sep2tabs_only(b"1    2\n3    4", b"1\t2\n3\t4")
+
+
+def test_infer_from_filename():
+    datatypes_registry = example_datatype_registry_for_sample()
+    assert datatypes_registry.get_datatype_from_filename("mycool.fa").file_ext == "fasta"
+    assert datatypes_registry.get_datatype_from_filename("mycool.fasta").file_ext == "fasta"
+    assert datatypes_registry.get_datatype_from_filename("mycool.fasta.gz").file_ext == "fasta.gz"
+    assert datatypes_registry.get_datatype_from_filename("mycool.fa.gz").file_ext == "fasta.gz"
+    assert datatypes_registry.get_datatype_from_filename("mycool.fq").file_ext == "fastqsanger"
+    assert datatypes_registry.get_datatype_from_filename("mycool.fq.gz").file_ext == "fastqsanger.gz"
+    assert datatypes_registry.get_datatype_from_filename("mycool.fastq").file_ext == "fastqsanger"

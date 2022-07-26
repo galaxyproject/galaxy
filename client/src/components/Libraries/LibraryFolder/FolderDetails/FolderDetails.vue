@@ -1,9 +1,9 @@
 <template>
     <div>
         <b-button
+            v-b-modal.details-modal
             class="details-btn"
             title="Show location details"
-            v-b-modal.details-modal
             data-testid="loc-details-btn">
             <font-awesome-icon icon="info-circle" /> {{ detailsCaption }}
         </b-button>
@@ -12,9 +12,9 @@
             id="details-modal"
             :static="isStatic"
             :title="titleLocationDetails"
-            @show="getDetails"
             title-tag="h3"
-            ok-only>
+            ok-only
+            @show="getDetails">
             <div>
                 <b-alert :show="hasError" variant="danger" data-testid="error-alert"> {{ error }} </b-alert>
                 <div v-if="libraryDetails">

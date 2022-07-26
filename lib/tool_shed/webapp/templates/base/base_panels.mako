@@ -21,6 +21,8 @@
     <!--- base/base_panels.mako stylesheets() -->
     ${h.css(
         'bootstrap-tour',
+    )}
+    ${h.dist_css(
         'base'
     )}
 </%def>
@@ -117,7 +119,7 @@
 
 ## Document
 <html>
-    <!--base_panels.mako-->
+    <!-- toolshed webapp base_panels.mako-->
     ${self.init()}
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />

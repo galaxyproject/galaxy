@@ -5,9 +5,9 @@
             <span>{{ message | l }}</span>
         </h4>
         <p>
-            <a href="#" @click.prevent="openGlobalUploadModal" v-localize>You can load your own data</a>
+            <a v-localize href="#" @click.prevent="openGlobalUploadModal">You can load your own data</a>
             <span v-localize>or</span>
-            <a href="#" @click.prevent="clickDataLink" v-localize>get data from an external source</a>.
+            <a v-localize href="#" @click.prevent="clickDataLink">get data from an external source</a>.
         </p>
     </b-alert>
 </template>

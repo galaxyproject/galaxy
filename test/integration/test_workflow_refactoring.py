@@ -15,7 +15,7 @@ from galaxy.model import (
 )
 from galaxy.workflow.refactor.schema import RefactorActionExecutionMessageTypeEnum
 from galaxy_test.base.populators import WorkflowPopulator
-from galaxy_test.base.uses_shed import UsesShed
+from galaxy_test.base.uses_shed_api import UsesShedApi
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
@@ -38,7 +38,7 @@ steps:
 """
 
 
-class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCase, UsesShed):
+class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCase, UsesShedApi):
 
     framework_tool_and_types = True
 
@@ -85,14 +85,6 @@ class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCas
         self._refactor(actions)
         assert self._latest_workflow.step_by_index(0).label == "new_label"
 
-        actions = [
-            {"action_type": "update_step_position", "step": {"order_index": 0}, "position": {"left": 3, "top": 5}},
-        ]
-        self._refactor(actions)
-        assert self._latest_workflow.step_by_index(0).label == "new_label"
-        assert self._latest_workflow.step_by_index(0).position["left"] == 3
-        assert self._latest_workflow.step_by_index(0).position["top"] == 5
-
         # Build raw steps...
         actions = [
             {
@@ -108,6 +100,19 @@ class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCas
         assert self._latest_workflow.step_by_label("new_param").tool_inputs.get("optional", False) is False
         assert self._latest_workflow.step_by_label("new_param").position["left"] == 10
         assert self._latest_workflow.step_by_label("new_param").position["top"] == 50
+
+        # update new_param positions
+        actions = [
+            {
+                "action_type": "update_step_position",
+                "step": {"label": "new_param"},
+                "position_shift": {"left": 3, "top": 5},
+            },
+        ]
+        self._refactor(actions)
+        assert self._latest_workflow.step_by_index(1).label == "new_param"
+        assert self._latest_workflow.step_by_index(1).position["left"] == 13
+        assert self._latest_workflow.step_by_index(1).position["top"] == 55
 
         # Cleaner syntax for defining inputs...
         actions = [

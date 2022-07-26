@@ -6,31 +6,31 @@
                 <nav class="operations">
                     <ul>
                         <transition name="fade">
-                            <li class="save" v-if="expanded && credential.dirty">
+                            <li v-if="expanded && credential.dirty" class="save">
                                 <a
-                                    @click.prevent="$emit('save', credential)"
                                     v-b-tooltip.hover
                                     aria-label="Save Key"
-                                    title="Save Key">
+                                    title="Save Key"
+                                    @click.prevent="$emit('save', credential)">
                                     <span>Save Key</span>
                                 </a>
                             </li>
                         </transition>
                         <li class="delete">
                             <a
-                                @click.prevent="$emit('delete', credential)"
                                 v-b-tooltip.hover
                                 aria-label="Delete Key"
-                                title="Delete Key">
+                                title="Delete Key"
+                                @click.prevent="$emit('delete', credential)">
                                 <span>Delete Key</span>
                             </a>
                         </li>
                         <li class="details">
                             <a
-                                @click.prevent="expand()"
                                 v-b-tooltip.hover
                                 aria-label="Show Details"
-                                title="Show Details">
+                                title="Show Details"
+                                @click.prevent="expand()">
                                 <span>Details</span>
                             </a>
                         </li>
@@ -42,8 +42,8 @@
         <!-- eslint-disable vue/no-mutating-props-->
         <credential-form
             v-if="expanded"
-            class="border-top"
             v-model="credential"
+            class="border-top"
             @click.self="expand()"
             @save="$emit('save', credential)"
             @delete="$emit('delete', credential)" />

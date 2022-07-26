@@ -13,6 +13,7 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA_FRAC,
 )
 from galaxy.util import (
+    ElementTree,
     string_as_bool,
     xml_text,
     xml_to_string,
@@ -50,7 +51,7 @@ class XmlToolSource(ToolSource):
 
     language = "xml"
 
-    def __init__(self, xml_tree, source_path=None, macro_paths=None):
+    def __init__(self, xml_tree: ElementTree, source_path=None, macro_paths=None):
         self.xml_tree = xml_tree
         self.root = xml_tree.getroot()
         self._source_path = source_path
@@ -284,7 +285,7 @@ class XmlToolSource(ToolSource):
         return RequiredFiles.from_dict(as_dict)
 
     def parse_requirements_and_containers(self):
-        return requirements.parse_requirements_from_xml(self.root)
+        return requirements.parse_requirements_from_xml(self.root, parse_resources=True)
 
     def parse_input_pages(self):
         return XmlPagesSource(self.root)
@@ -561,9 +562,9 @@ class XmlToolSource(ToolSource):
         return self.root.get("license")
 
     def parse_python_template_version(self):
-        python_template_version = self.root.get("python_template_version", None)
+        python_template_version = self.root.get("python_template_version")
         if python_template_version is not None:
-            python_template_version = packaging.version.parse(python_template_version)
+            python_template_version = packaging.version.Version(python_template_version)
         return python_template_version
 
     def parse_creator(self):
@@ -623,7 +624,6 @@ def __parse_output_elem(output_elem):
     name = attrib.pop("name", None)
     if name is None:
         raise Exception("Test output does not have a 'name'")
-
     file, attributes = __parse_test_attributes(output_elem, attrib, parse_discovered_datasets=True)
     return name, file, attributes
 
@@ -688,6 +688,10 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
     attributes["delta_frac"] = float(attrib["delta_frac"]) if "delta_frac" in attrib else DEFAULT_DELTA_FRAC
     attributes["sort"] = string_as_bool(attrib.pop("sort", False))
     attributes["decompress"] = string_as_bool(attrib.pop("decompress", False))
+    try:
+        attributes["count"] = int(attrib.pop("count"))
+    except KeyError:
+        attributes["count"] = None
     extra_files = []
     if "ftype" in attrib:
         attributes["ftype"] = attrib["ftype"]

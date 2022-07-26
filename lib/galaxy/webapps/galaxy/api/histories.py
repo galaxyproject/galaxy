@@ -31,12 +31,12 @@ from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
-from galaxy.schema.fields import (
-    EncodedDatabaseIdField,
-    OrderParamField,
-)
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHistoryView,
+    AsyncFile,
+    AsyncTaskResultSummary,
+    CreateHistoryFromStore,
     CreateHistoryPayload,
     CustomBuildsMetadataResponse,
     ExportHistoryArchivePayload,
@@ -47,9 +47,14 @@ from galaxy.schema.schema import (
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
+    StoreExportPayload,
+    WriteStoreToPayload,
 )
 from galaxy.schema.types import LatestLiteral
-from galaxy.webapps.galaxy.api.common import query_serialization_params
+from galaxy.webapps.galaxy.api.common import (
+    get_filter_query_params,
+    query_serialization_params,
+)
 from galaxy.webapps.galaxy.services.histories import HistoriesService
 from . import (
     as_form,
@@ -77,13 +82,14 @@ JehaIDPathParam: Union[EncodedDatabaseIdField, LatestLiteral] = Path(
     example="latest",
 )
 
-
-class HistoryFilterQueryParams(FilterQueryParams):
-    order: Optional[str] = OrderParamField(default_order="create_time-dsc")
-
-
-class HistoryIndexParams(HistoryFilterQueryParams):
-    all: Optional[bool] = False
+AllHistoriesQueryParam = Query(
+    default=False,
+    title="All Histories",
+    description=(
+        "Whether all histories from other users in this Galaxy should be included. "
+        "Only admins are allowed to query all histories."
+    ),
+)
 
 
 class DeleteHistoryPayload(BaseModel):
@@ -108,16 +114,19 @@ class FastAPIHistories:
     def index(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        params: HistoryIndexParams = Depends(HistoryIndexParams),
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-        deleted: bool = Query(  # This is for backward compatibility but looks redundant
+        all: Optional[bool] = AllHistoriesQueryParam,
+        deleted: Optional[bool] = Query(  # This is for backward compatibility but looks redundant
             default=False,
             title="Deleted Only",
             description="Whether to return only deleted items.",
             deprecated=True,  # Marked as deprecated as it seems just like '/api/histories/deleted'
         ),
     ) -> List[AnyHistoryView]:
-        return self.service.index(trans, serialization_params, params, deleted_only=deleted, all_histories=params.all)
+        return self.service.index(
+            trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
+        )
 
     @router.get(
         "/api/histories/deleted",
@@ -126,10 +135,13 @@ class FastAPIHistories:
     def index_deleted(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        params: HistoryIndexParams = Depends(HistoryIndexParams),
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
+        all: Optional[bool] = AllHistoriesQueryParam,
     ) -> List[AnyHistoryView]:
-        return self.service.index(trans, serialization_params, params, deleted_only=True, all_histories=params.all)
+        return self.service.index(
+            trans, serialization_params, filter_query_params, deleted_only=True, all_histories=all
+        )
 
     @router.get(
         "/api/histories/published",
@@ -138,10 +150,10 @@ class FastAPIHistories:
     def published(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-        filter_params: HistoryFilterQueryParams = Depends(HistoryFilterQueryParams),
     ) -> List[AnyHistoryView]:
-        return self.service.published(trans, serialization_params, filter_params)
+        return self.service.published(trans, serialization_params, filter_query_params)
 
     @router.get(
         "/api/histories/shared_with_me",
@@ -150,10 +162,10 @@ class FastAPIHistories:
     def shared_with_me(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-        filter_params: HistoryFilterQueryParams = Depends(HistoryFilterQueryParams),
     ) -> List[AnyHistoryView]:
-        return self.service.shared_with_me(trans, serialization_params, filter_params)
+        return self.service.shared_with_me(trans, serialization_params, filter_query_params)
 
     @router.get(
         "/api/histories/most_recently_used",
@@ -168,6 +180,7 @@ class FastAPIHistories:
 
     @router.get(
         "/api/histories/{id}",
+        name="history",
         summary="Returns the history with the given ID.",
     )
     def show(
@@ -177,6 +190,38 @@ class FastAPIHistories:
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryView:
         return self.service.show(trans, serialization_params, id)
+
+    @router.post(
+        "/api/histories/{id}/prepare_store_download",
+        summary="Return a short term storage token to monitor download of the history.",
+    )
+    def prepare_store_download(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIDPathParam,
+        payload: StoreExportPayload = Body(...),
+    ) -> AsyncFile:
+        return self.service.prepare_download(
+            trans,
+            id,
+            payload=payload,
+        )
+
+    @router.post(
+        "/api/histories/{id}/write_store",
+        summary="Prepare history for export-style download and write to supplied URI.",
+    )
+    def write_store(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = HistoryIDPathParam,
+        payload: WriteStoreToPayload = Body(...),
+    ) -> AsyncTaskResultSummary:
+        return self.service.write_store(
+            trans,
+            id,
+            payload=payload,
+        )
 
     @router.get(
         "/api/histories/{id}/citations",
@@ -254,6 +299,29 @@ class FastAPIHistories:
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryView:
         return self.service.update(trans, id, payload, serialization_params)
+
+    @router.post(
+        "/api/histories/from_store",
+        summary="Create histories from a model store.",
+    )
+    def create_from_store(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        payload: CreateHistoryFromStore = Body(...),
+    ) -> AnyHistoryView:
+        return self.service.create_from_store(trans, payload, serialization_params)
+
+    @router.post(
+        "/api/histories/from_store_async",
+        summary="Launch a task to create histories from a model store.",
+    )
+    def create_from_store_async(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        payload: CreateHistoryFromStore = Body(...),
+    ) -> AnyHistoryView:
+        return self.service.create_from_store_async(trans, payload)
 
     @router.get(
         "/api/histories/{id}/exports",

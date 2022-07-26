@@ -41,6 +41,9 @@ export default {
         }
         this.ajaxCall(url);
     },
+    updated: function () {
+        this.makeHistoryView(this.historyJSON);
+    },
     methods: {
         ajaxCall: function (url) {
             axios
@@ -84,9 +87,6 @@ export default {
                 });
             });
         },
-    },
-    updated: function () {
-        this.makeHistoryView(this.historyJSON);
     },
 };
 </script>

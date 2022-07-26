@@ -24,7 +24,7 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 
 // galaxy sub-components
 @import "reports";
-@import "frame.scss";
+@import "windows.scss";
 @import "upload.scss";
 @import "ui.scss";
 @import "library.scss";
@@ -1043,6 +1043,20 @@ a.action-button {
 }
 .action-button:active {
     @extend .btn, .active;
+}
+
+// A content button is a button in content items
+
+.content-buttons {
+    .btn:hover,
+    .btn:active,
+    .btn:focus,
+    .btn:focus-visible {
+        @extend .text-info;
+        background-color: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+    }
 }
 
 // A menu button is a button that has an attached popup menu

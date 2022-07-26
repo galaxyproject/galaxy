@@ -139,11 +139,7 @@ class NicerConfigParser(ConfigParser):
     def __init__(self, filename, *args, **kw):
         ConfigParser.__init__(self, *args, **kw)
         self.filename = filename
-        if hasattr(self, "_interpolation"):
-            self._interpolation = self.InterpolateWrapper(self._interpolation)
-
-    read_file = getattr(ConfigParser, "read_file", ConfigParser.readfp)
-    read_file.__doc__ = ""
+        self._interpolation = self.InterpolateWrapper(self._interpolation)
 
     def defaults(self):
         """Return the defaults, with their values interpolated (with the
@@ -156,20 +152,7 @@ class NicerConfigParser(ConfigParser):
             defaults[key] = self.get("DEFAULT", key) or val
         return defaults
 
-    def _interpolate(self, section, option, rawval, vars):
-        # Python < 3.2
-        try:
-            return ConfigParser._interpolate(self, section, option, rawval, vars)
-        except Exception:
-            e = sys.exc_info()[1]
-            args = list(e.args)
-            args[0] = f"Error in file {self.filename}: {e}"
-            e.args = tuple(args)
-            e.message = args[0]
-            raise
-
     class InterpolateWrapper:
-        # Python >= 3.2
         def __init__(self, original):
             self._original = original
 

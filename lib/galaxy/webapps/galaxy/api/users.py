@@ -25,6 +25,7 @@ from galaxy import (
 from galaxy.exceptions import ObjectInvalid
 from galaxy.managers import (
     api_keys,
+    base as managers_base,
     users,
 )
 from galaxy.managers.context import ProvidesUserContext
@@ -175,36 +176,51 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return rval
 
     @expose_api_anonymous
-    def show(self, trans: ProvidesUserContext, id, deleted="False", **kwd):
+    def show(self, trans: ProvidesUserContext, id, **kwd):
         """
         GET /api/users/{encoded_id}
         GET /api/users/deleted/{encoded_id}
         GET /api/users/current
         Displays information about a user.
         """
+        user = self._get_user_full(trans, id, **kwd)
+        if user is not None:
+            return self.user_serializer.serialize_to_view(user, view="detailed")
+        else:
+            return self.anon_user_api_value(trans)
+
+    def _get_user_full(self, trans, user_id, **kwd):
+        """Return referenced user or None if anonymous user is referenced."""
+        deleted = kwd.get("deleted", "False")
         deleted = util.string_as_bool(deleted)
         try:
             # user is requesting data about themselves
-            if id == "current":
+            if user_id == "current":
                 # ...and is anonymous - return usage and quota (if any)
                 if not trans.user:
-                    item = self.anon_user_api_value(trans)
-                    return item
+                    return None
 
                 # ...and is logged in - return full
                 else:
                     user = trans.user
             else:
-                user = self.get_user(trans, id, deleted=deleted)
+                return managers_base.get_object(
+                    trans,
+                    user_id,
+                    "User",
+                    deleted=deleted,
+                )
             # check that the user is requesting themselves (and they aren't del'd) unless admin
             if not trans.user_is_admin:
-                assert trans.user == user
-                assert not user.deleted
-        except exceptions.ItemDeletionException:
+                if trans.user != user or user.deleted:
+                    raise exceptions.InsufficientPermissionsException(
+                        "You are not allowed to perform action on that user", id=user_id
+                    )
+            return user
+        except exceptions.MessageException:
             raise
         except Exception:
-            raise exceptions.RequestParameterInvalidException("Invalid user id specified", id=id)
-        return self.user_serializer.serialize_to_view(user, view="detailed")
+            raise exceptions.RequestParameterInvalidException("Invalid user id specified", id=user_id)
 
     @expose_api
     def create(self, trans: GalaxyWebTransaction, payload: dict, **kwd):
@@ -253,14 +269,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             the serialized item after any changes
         """
         current_user = trans.user
-        user_to_update = self.user_manager.by_id(self.decode_id(id))
-
-        # only allow updating other users if they're admin
-        editing_someone_else = current_user != user_to_update
-        is_admin = self.user_manager.is_admin(current_user)
-        if editing_someone_else and not is_admin:
-            raise exceptions.InsufficientPermissionsException("You are not allowed to update that user", id=id)
-
+        user_to_update = self._get_user_full(trans, id, **kwd)
         self.user_deserializer.deserialize(user_to_update, payload, user=current_user, trans=trans)
         return self.user_serializer.serialize_to_view(user_to_update, view="detailed")
 

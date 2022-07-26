@@ -19,15 +19,17 @@ env:
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
 concurrency:
-  group: api-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ['3.7']
+        chunk: [0, 1]
     services:
       postgres:
         image: postgres:13
@@ -42,10 +44,10 @@ jobs:
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
           echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: 'galaxy root'
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
       - name: Get full Python version
@@ -53,24 +55,24 @@ jobs:
         shell: bash
         run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
       - name: Cache pip dir
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
       - name: Cache galaxy venv
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-api
       - name: Run tests
-        run: ./run_tests.sh --coverage --skip_flakey_fails -api
+        run: ./run_tests.sh --coverage --skip_flakey_fails -api lib/galaxy_test/api -- --num-shards=2 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v2
         with:
           flags: api
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
-          name: API test results (${{ matrix.python-version }})
+          name: API test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/run_api_tests.html'

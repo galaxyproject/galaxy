@@ -1,14 +1,23 @@
 """Utilities related to formatting job metrics for human consumption."""
+from typing import (
+    Any,
+    NamedTuple,
+)
+
+
+class FormattedMetric(NamedTuple):
+    title: str
+    value: str
 
 
 class JobMetricFormatter:
     """Format job metric key-value pairs for human consumption in Web UI."""
 
-    def format(self, key, value):
-        return (str(key), str(value))
+    def format(self, key: Any, value: Any) -> FormattedMetric:
+        return FormattedMetric(str(key), str(value))
 
 
-def seconds_to_str(value):
+def seconds_to_str(value: int) -> str:
     """Convert seconds to a simple simple string describing the amount of time."""
     mins, secs = divmod(value, 60)
     hours, mins = divmod(mins, 60)

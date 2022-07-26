@@ -1,5 +1,5 @@
 <template>
-    <div v-if="hasMessages">
+    <div v-if="hasMessages" class="mx-3 my-2">
         <b-alert :show="history.isDeleted" variant="warning">
             {{ "This history has been deleted" | localize }}
         </b-alert>
@@ -13,21 +13,19 @@
 </template>
 
 <script>
-import { History } from "components/History/model";
-
 export default {
     props: {
-        history: { type: History, required: true },
-    },
-    computed: {
-        hasMessages() {
-            return this.userOverQuota || history.isDeleted;
-        },
+        history: { type: Object, required: true },
     },
     data() {
         return {
             userOverQuota: false,
         };
+    },
+    computed: {
+        hasMessages() {
+            return this.userOverQuota || history.isDeleted;
+        },
     },
 };
 </script>

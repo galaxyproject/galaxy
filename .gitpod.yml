@@ -16,19 +16,27 @@ github:
     addLabel: false
 image: gitpod/workspace-postgres
 tasks:
-  - init: >
+  - name: Setup Development Environment
+    init: >
       cp .vscode/settings_gitpod.json .vscode/settings.json &&
       cp .vscode/launch_gitpod.json .vscode/launch.json &&
+      python3 -m venv .venv &&
+      . .venv/bin/activate &&
       pip install psycopg2 &&
       pip install -r lib/galaxy/dependencies/dev-requirements.txt &&
-      createdb galaxy &&
-      make client
-  - command: cp config/galaxy.yml.sample config/galaxy.yml
-  - command: make client-watch
+      pip install tox &&
+      gp sync-done setup
+    command: createdb galaxy
+  - name: Setup Galaxy Configuration
+    command: cp config/galaxy.yml.sample config/galaxy.yml
+  - name: Watch Client with Webpack
+    init: gp sync-await setup
+    command: make client-watch
 # Ports to expose on workspace startup (optional)
 ports:
   - port: 8000
 vscode:
   extensions:
     - ms-python.python
-    - ms-python.vscode-pylance
+    # No longer seems to work.
+    # - ms-python.vscode-pylance

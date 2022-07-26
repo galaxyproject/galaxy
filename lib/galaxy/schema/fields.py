@@ -1,11 +1,6 @@
-import inspect
 import re
-from typing import Optional
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
+from pydantic import Field
 
 from galaxy.security.idencoding import IdEncodingHelper
 
@@ -95,36 +90,3 @@ def ModelClassField(class_name: str) -> str:
         description="The name of the database model class.",
         const=True,  # Make this field constant
     )
-
-
-def OrderParamField(default_order: str) -> Optional[str]:
-    return Field(
-        default=default_order,
-        title="Order",
-        description=(
-            "String containing one of the valid ordering attributes followed (optionally) "
-            "by '-asc' or '-dsc' for ascending and descending order respectively. "
-            "Orders can be stacked as a comma-separated list of values."
-        ),
-        example="name-dsc,create_time",
-    )
-
-
-def optional(*fields):
-    """Decorator function used to modify a pydantic model's fields to all be optional.
-    Alternatively, you can  also pass the field names that should be made optional as arguments
-    to the decorator.
-    Taken from https://github.com/samuelcolvin/pydantic/issues/1223#issuecomment-775363074
-    """
-
-    def dec(_cls):
-        for field in fields:
-            _cls.__fields__[field].required = False
-        return _cls
-
-    if fields and inspect.isclass(fields[0]) and issubclass(fields[0], BaseModel):
-        cls = fields[0]
-        fields = cls.__fields__
-        return dec(cls)
-
-    return dec

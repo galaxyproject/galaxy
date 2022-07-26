@@ -54,16 +54,16 @@ Vue.use(BootstrapVue);
 initPermissionsIcons();
 
 export default {
+    components: {
+        PermissionsHeader,
+        PermissionsInputField,
+        FontAwesomeIcon,
+    },
     props: {
         library_id: {
             type: String,
             required: true,
         },
-    },
-    components: {
-        PermissionsHeader,
-        PermissionsInputField,
-        FontAwesomeIcon,
     },
     data() {
         return {

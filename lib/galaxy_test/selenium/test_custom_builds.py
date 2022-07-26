@@ -9,21 +9,16 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
     @selenium_test
     def test_build_add(self):
         self._login()
-
         self.navigate_to_custom_builds_page()
-
         self.add_custom_build(self.build_name1, self.build_key1)
         self.assert_custom_builds_in_grid([self.build_name1])
 
     @selenium_test
     def test_build_delete(self):
         self._login()
-
         self.navigate_to_custom_builds_page()
-
         self.add_custom_build(self.build_name2, self.build_key2)
         self.assert_custom_builds_in_grid([self.build_name2])
-
         self.delete_custom_build(self.build_name2)
         self.assert_custom_builds_in_grid([self.build_name2], False)
 
@@ -60,11 +55,11 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
     def delete_custom_build(self, build_name):
         delete_button = None
         grid = self.wait_for_selector("table.grid > tbody")
-        for row in grid.find_elements_by_tag_name("tr"):
-            td = row.find_elements_by_tag_name("td")
+        for row in grid.find_elements(self.by.TAG_NAME, "tr"):
+            td = row.find_elements(self.by.TAG_NAME, "td")
             name = td[0].text
             if name == build_name:
-                delete_button = td[3].find_element_by_css_selector(".fa-trash-o")
+                delete_button = td[3].find_element(self.by.CSS_SELECTOR, ".fa-trash-o")
                 break
 
         if delete_button is None:
@@ -76,8 +71,8 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         builds = []
         grid = self.wait_for_selector("table.grid > tbody")
-        for row in grid.find_elements_by_tag_name("tr"):
-            name = row.find_elements_by_tag_name("td")[0].text
+        for row in grid.find_elements(self.by.TAG_NAME, "tr"):
+            name = row.find_elements(self.by.TAG_NAME, "td")[0].text
             builds.append(name)
         return builds
 

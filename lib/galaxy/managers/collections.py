@@ -5,6 +5,7 @@ from typing import (
     List,
     Union,
 )
+from zipfile import ZipFile
 
 from sqlalchemy.orm import (
     joinedload,
@@ -25,12 +26,18 @@ from galaxy.model.dataset_collections.registry import DATASET_COLLECTION_TYPES_R
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.schema.tasks import PrepareDatasetCollectionDownload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import validation
+from galaxy.web.short_term_storage import (
+    ShortTermStorageMonitor,
+    storage_context,
+)
 from .hdas import (
     HDAManager,
     HistoryDatasetAssociationNoHistoryException,
 )
+from .hdcas import write_dataset_collection
 from .histories import HistoryManager
 from .lddas import LDDAManager
 
@@ -56,11 +63,13 @@ class DatasetCollectionManager:
         history_manager: HistoryManager,
         tag_handler: GalaxyTagHandler,
         ldda_manager: LDDAManager,
+        short_term_storage_monitor: ShortTermStorageMonitor,
     ):
         self.type_registry = DATASET_COLLECTION_TYPES_REGISTRY
         self.collection_type_descriptions = COLLECTION_TYPE_DESCRIPTION_FACTORY
         self.model = model
         self.security = security
+        self.short_term_storage_monitor = short_term_storage_monitor
 
         self.hda_manager = hda_manager
         self.history_manager = history_manager
@@ -398,7 +407,7 @@ class DatasetCollectionManager:
         )
         dataset_collection_instance.deleted = True
         trans.sa_session.add(dataset_collection_instance)
-
+        async_result = None
         if recursive:
             for dataset in dataset_collection_instance.collection.dataset_instances:
                 try:
@@ -412,9 +421,10 @@ class DatasetCollectionManager:
                     dataset.deleted = True
 
                 if purge and not dataset.purged:
-                    self.hda_manager.purge(dataset)
+                    async_result = self.hda_manager.purge(dataset)
 
         trans.sa_session.flush()
+        return async_result
 
     def update(self, trans, instance_type, id, payload):
         dataset_collection_instance = self.get_dataset_collection_instance(
@@ -750,7 +760,7 @@ class DatasetCollectionManager:
         return data, sources
 
     def __get_history_collection_instance(self, trans, id, check_ownership=False, check_accessible=True):
-        instance_id = int(trans.app.security.decode_id(id))
+        instance_id = trans.app.security.decode_id(id) if isinstance(id, str) else id
         collection_instance = trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(
             instance_id
         )
@@ -802,3 +812,11 @@ class DatasetCollectionManager:
         if offset is not None:
             qry = qry.offset(int(offset))
         return qry
+
+    def write_dataset_collection(self, request: PrepareDatasetCollectionDownload):
+        short_term_storage_monitor = self.short_term_storage_monitor
+        instance_id = request.history_dataset_collection_association_id
+        with storage_context(request.short_term_storage_request_id, short_term_storage_monitor) as target:
+            collection_instance = self.model.context.query(model.HistoryDatasetCollectionAssociation).get(instance_id)
+            with ZipFile(target.path, "w") as zip_f:
+                write_dataset_collection(collection_instance, zip_f)

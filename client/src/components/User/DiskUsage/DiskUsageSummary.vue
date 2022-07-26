@@ -13,18 +13,18 @@
                             <QuotaUsageSummary v-else-if="quotaUsages" :quota-usages="quotaUsages" />
                         </QuotaUsageProvider>
                     </b-row>
-                    <h2 v-else class="text-center my-3" id="basic-disk-usage-summary">
+                    <h2 v-else id="basic-disk-usage-summary" class="text-center my-3">
                         You're using <b>{{ getTotalDiskUsage(user) }}</b> of disk space.
                     </h2>
                 </b-container>
                 <b-container class="text-center mb-5 w-75">
                     <button
                         title="Recalculate disk usage"
-                        @click="onRefresh"
                         :disabled="isRecalculating"
                         variant="outline-secondary"
                         size="sm"
-                        pill>
+                        pill
+                        @click="onRefresh">
                         <b-spinner v-if="isRecalculating" small />
                         <span v-else>Refresh</span>
                     </button>

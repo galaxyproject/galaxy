@@ -1,6 +1,9 @@
 import contextlib
 import os
 import threading
+from typing import Union
+
+from sqlalchemy.orm.scoping import scoped_session
 
 import galaxy.datatypes.registry
 import galaxy.model
@@ -11,8 +14,10 @@ from galaxy.model import (
     User,
 )
 from galaxy.model.metadata import MetadataTempFile
-from galaxy.objectstore.unittest_utils import Config as TestConfig
-from galaxy.objectstore.unittest_utils import DISK_TEST_CONFIG
+from galaxy.objectstore.unittest_utils import (
+    Config as TestConfig,
+    DISK_TEST_CONFIG,
+)
 from galaxy.util import ExecutionTimer
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
@@ -131,18 +136,29 @@ def _setup_mapping_and_user():
         yield test_config, object_store, model, h1
 
 
-def _create_hda(model, object_store, history, path, visible=True, include_metadata_file=False):
-    hda = HistoryDatasetAssociation(extension="bam", create_dataset=True, sa_session=model.context)
+def _create_hda(
+    has_session: Union[mapping.GalaxyModelMapping, scoped_session],
+    object_store,
+    history,
+    path,
+    visible=True,
+    include_metadata_file=False,
+):
+    if hasattr(has_session, "context"):
+        sa_session = has_session.context
+    else:
+        sa_session = has_session
+    hda = HistoryDatasetAssociation(extension="bam", create_dataset=True, sa_session=sa_session)
     hda.visible = visible
-    model.context.add(hda)
-    model.context.flush([hda])
+    sa_session.add(hda)
+    sa_session.flush([hda])
     object_store.update_from_file(hda, file_name=path, create=True)
     if include_metadata_file:
         hda.metadata.from_JSON_dict(json_dict={"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": path})})
         _check_metadata_file(hda)
     hda.set_size()
     history.add_dataset(hda)
-    hda.add_item_annotation(model.context, history.user, hda, "annotation #%d" % hda.hid)
+    hda.add_item_annotation(sa_session, history.user, hda, "annotation #%d" % hda.hid)
     return hda
 
 

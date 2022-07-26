@@ -22,9 +22,11 @@ from galaxy.tool_shed.galaxy_install.tools import (
     data_manager,
     tool_panel_manager,
 )
-from galaxy.tool_shed.util import repository_util
-from galaxy.tool_shed.util import shed_util_common as suc
-from galaxy.tool_shed.util import tool_dependency_util
+from galaxy.tool_shed.util import (
+    repository_util,
+    shed_util_common as suc,
+    tool_dependency_util,
+)
 from galaxy.tool_shed.util.container_util import generate_repository_dependencies_key_for_repository
 from galaxy.util.tool_shed import common_util
 from galaxy.util.tool_shed.xml_util import parse_xml

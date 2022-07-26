@@ -5,9 +5,11 @@ import unittest
 
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.util import clean_multiline_string
-from galaxy.visualization.plugins import plugin as vis_plugin
-from galaxy.visualization.plugins import resource_parser
-from galaxy.visualization.plugins import utils as vis_utils
+from galaxy.visualization.plugins import (
+    plugin as vis_plugin,
+    resource_parser,
+    utils as vis_utils,
+)
 from . import VisualizationsBase_TestCase
 
 

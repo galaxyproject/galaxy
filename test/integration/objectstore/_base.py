@@ -40,7 +40,7 @@ def start_minio(container_name):
         "--rm",
         "minio/minio:latest",
         "server",
-        "/tmp/data",
+        "/data",
     ]
     subprocess.check_call(minio_start_args)
 
@@ -96,6 +96,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
         cls.object_store_cache_path = f"{temp_directory}/object_store_cache"

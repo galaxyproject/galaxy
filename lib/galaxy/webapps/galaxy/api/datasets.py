@@ -2,6 +2,10 @@
 API operations on the contents of a history dataset.
 """
 import logging
+from io import (
+    BytesIO,
+    IOBase,
+)
 from typing import (
     Any,
     cast,
@@ -34,6 +38,7 @@ from galaxy.schema.schema import (
     DatasetSourceType,
     UpdateDatasetPermissionsPayload,
 )
+from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
     get_query_parameters_from_request_excluding,
@@ -195,9 +200,14 @@ class FastAPIDatasets:
         return self.service.extra_files(trans, history_content_id)
 
     @router.get(
+        "/api/datasets/{history_content_id}/display",
+        summary="Displays (preview) or downloads dataset content.",
+        response_class=StreamingResponse,
+    )
+    @router.get(
         "/api/histories/{history_id}/contents/{history_content_id}/display",
         name="history_contents_display",
-        summary="Displays dataset (preview) content.",
+        summary="Displays (preview) or downloads dataset content.",
         tags=["histories"],
         response_class=StreamingResponse,
     )
@@ -205,7 +215,10 @@ class FastAPIDatasets:
         self,
         request: Request,
         trans=DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        history_id: Optional[EncodedDatabaseIdField] = Query(
+            default=None,
+            description="The encoded database identifier of the History.",
+        ),
         history_content_id: EncodedDatabaseIdField = DatasetIDPathParam,
         preview: bool = Query(
             default=False,
@@ -234,11 +247,19 @@ class FastAPIDatasets:
             ),
         ),
     ):
-        """Streams the preview contents of a dataset to be displayed in a browser."""
+        """Streams the dataset for download or the contents preview to be displayed in a browser."""
         extra_params = get_query_parameters_from_request_excluding(request, {"preview", "filename", "to_ext", "raw"})
         display_data, headers = self.service.display(
-            trans, history_content_id, history_id, preview, filename, to_ext, raw, **extra_params
+            trans, history_content_id, preview, filename, to_ext, raw, **extra_params
         )
+        if isinstance(display_data, IOBase):
+            file_name = getattr(display_data, "name", None)
+            if file_name:
+                return FileResponse(file_name, headers=headers)
+        elif isinstance(display_data, ZipstreamWrapper):
+            return StreamingResponse(display_data.response(), headers=headers)
+        elif isinstance(display_data, bytes):
+            return StreamingResponse(BytesIO(display_data), headers=headers)
         return StreamingResponse(display_data, headers=headers)
 
     @router.get(
@@ -247,10 +268,18 @@ class FastAPIDatasets:
         tags=["histories"],
         response_class=FileResponse,
     )
+    @router.get(
+        "/api/datasets/{history_content_id}/metadata_file",
+        summary="Returns the metadata file associated with this history item.",
+        response_class=FileResponse,
+    )
     def get_metadata_file(
         self,
         trans=DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        history_id: Optional[EncodedDatabaseIdField] = Query(
+            default=None,
+            description="The encoded database identifier of the History.",
+        ),
         history_content_id: EncodedDatabaseIdField = DatasetIDPathParam,
         metadata_file: str = Query(
             ...,

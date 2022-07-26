@@ -15,7 +15,6 @@ import galaxy.tool_util.deps.requirements
 from galaxy import util
 from galaxy.tool_shed.util.shed_util_common import (
     can_eliminate_repository_dependency,
-    can_eliminate_tool_dependency,
     clean_dependency_relationships,
     generate_tool_guid,
     get_ctx_rev,
@@ -499,7 +498,6 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
 
 __all__ = (
     "can_eliminate_repository_dependency",
-    "can_eliminate_tool_dependency",
     "clean_dependency_relationships",
     "count_repositories_in_category",
     "generate_tool_guid",

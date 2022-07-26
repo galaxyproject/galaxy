@@ -1,4 +1,0 @@
-galaxy-data
-nose
-pytest
-

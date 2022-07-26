@@ -22,6 +22,7 @@ class MaximumWorkflowInvocationDurationTestCase(integration_util.IntegrationTest
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["maximum_workflow_invocation_duration"] = 20
 
     def test(self):
@@ -57,6 +58,7 @@ class MaximumWorkflowJobsPerSchedulingIterationTestCase(integration_util.Integra
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["maximum_workflow_jobs_per_scheduling_iteration"] = 1
 
     def test_collection_explicit_and_implicit(self):
@@ -80,15 +82,15 @@ steps:
 """
         )
         with self.dataset_populator.test_history() as history_id:
-            hdca1 = self.dataset_collection_populator.create_list_in_history(
+            fetch_response = self.dataset_collection_populator.create_list_in_history(
                 history_id, contents=["a\nb\nc\nd\n", "e\nf\ng\nh\n"]
             ).json()
+            hdca1 = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             inputs = {
                 "0": {"src": "hdca", "id": hdca1["id"]},
             }
-            invocation_id = self.workflow_populator.invoke_workflow(history_id, workflow_id, inputs)
-            self.workflow_populator.wait_for_workflow(history_id, workflow_id, invocation_id)
+            self.workflow_populator.invoke_workflow_and_wait(history_id, workflow_id, inputs)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             self.assertEqual(
                 "a\nc\nb\nd\ne\ng\nf\nh\n", self.dataset_populator.get_history_dataset_content(history_id, hid=0)

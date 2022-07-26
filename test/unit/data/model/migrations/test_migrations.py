@@ -20,6 +20,7 @@ from galaxy.model.migrations import (
     IncorrectVersionError,
     listify,
     load_metadata,
+    metadata_contains_only_kombu_tables,
     NoVersionTableError,
     OutdatedDatabaseError,
     scripts,
@@ -30,10 +31,10 @@ from galaxy.model.migrations import (
     verify_databases,
 )
 from galaxy.model.migrations.scripts import LegacyManageDb
-from .common import (  # noqa: F401  (url_factory is a fixture we have to import explicitly)
+from ..testing_utils import (  # noqa: F401  (url_factory is a fixture we have to import explicitly)
     create_and_drop_database,
     disposing_engine,
-    drop_database,
+    drop_existing_database,
     url_factory,
 )
 
@@ -213,6 +214,16 @@ class TestDatabaseStateCache:
                 load_sqlalchemymigrate_version(db_url, SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
                 assert DatabaseStateCache(engine).is_last_sqlalchemymigrate_version(SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
 
+    def test_only_contains_kombu_tables(self, url_factory, metadata_state0kombu):  # noqa: F811
+        db_url, metadata = url_factory(), metadata_state0kombu
+        with create_and_drop_database(db_url):
+            with disposing_engine(db_url) as engine:
+                assert DatabaseStateCache(engine).is_database_empty()
+                with engine.connect() as conn:
+                    metadata.create_all(bind=conn)
+                assert not DatabaseStateCache(engine).is_database_empty()
+                assert DatabaseStateCache(engine).contains_only_kombu_tables()
+
 
 # Database fixture tests
 
@@ -361,7 +372,7 @@ class TestDatabaseStates:
         # (we use `metadata_state6_{gxy|tsi|combined}` for final database schema)
         def test_combined_database(self, url_factory, metadata_state6_combined):  # noqa: F811
             db_url = url_factory()
-            with drop_database(db_url):
+            with drop_existing_database(db_url):
                 assert not database_exists(db_url)
                 with disposing_engine(db_url) as engine:
                     _verify_databases(engine)
@@ -372,7 +383,7 @@ class TestDatabaseStates:
             db1_url, db2_url = url_factory(), url_factory()
             assert not database_exists(db1_url)
             assert not database_exists(db2_url)
-            with drop_database(db1_url), drop_database(db2_url):
+            with drop_existing_database(db1_url), drop_existing_database(db2_url):
                 with disposing_engine(db1_url) as engine1, disposing_engine(db2_url) as engine2:
                     _verify_databases(engine1, engine2)
                     assert database_is_up_to_date(db1_url, metadata_state6_gxy, GXY)
@@ -386,7 +397,7 @@ class TestDatabaseStates:
             with create_and_drop_database(db_url):
                 with disposing_engine(db_url) as engine:
                     assert database_exists(db_url)
-                    assert database_is_empty(db_url)
+                    assert database_is_empty_or_contains_kombu_tables(db_url)
                     _verify_databases(engine)
                     assert database_is_up_to_date(db_url, metadata_state6_combined, GXY)
                     assert database_is_up_to_date(db_url, metadata_state6_combined, TSI)
@@ -397,11 +408,24 @@ class TestDatabaseStates:
                 with disposing_engine(db1_url) as engine1, disposing_engine(db2_url) as engine2:
                     assert database_exists(db1_url)
                     assert database_exists(db2_url)
-                    assert database_is_empty(db1_url)
-                    assert database_is_empty(db2_url)
+                    assert database_is_empty_or_contains_kombu_tables(db1_url)
+                    assert database_is_empty_or_contains_kombu_tables(db2_url)
                     _verify_databases(engine1, engine2)
                     assert database_is_up_to_date(db1_url, metadata_state6_gxy, GXY)
                     assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
+
+    class TestState0Kombu:
+        # Initial state: database contains kombu_message anad kombu_queue tables.
+        # (ref: https://github.com/galaxyproject/galaxy/issues/13689)
+        # Expect: database created, initialized, versioned w/alembic (same as empty db in state0).
+        def test_combined_database(self, db_state0kombu, metadata_state6_combined):  # noqa: F811
+            db_url = db_state0kombu
+            with disposing_engine(db_url) as engine:
+                assert database_exists(db_url)
+                assert database_is_empty_or_contains_kombu_tables(db_url)
+                _verify_databases(engine)
+                assert database_is_up_to_date(db_url, metadata_state6_combined, GXY)
+                assert database_is_up_to_date(db_url, metadata_state6_combined, TSI)
 
     class TestState1:
         # Initial state: non-empty database, no version table.
@@ -690,6 +714,7 @@ class AlembicManagerForTests(AlembicManager):
 def _get_paths_to_version_locations():
     # One does not simply use a relative path for both tests and package tests.
     basepath = os.path.abspath(os.path.dirname(__file__))
+    basepath = os.path.join(basepath, "testing_utils")
     basepath = os.path.join(basepath, "versions")
     path1 = os.path.join(basepath, "db1")
     path2 = os.path.join(basepath, "db2")
@@ -725,21 +750,34 @@ def test_get_last_sqlalchemymigrate_version():
     assert get_last_sqlalchemymigrate_version(TSI) == SQLALCHEMYMIGRATE_LAST_VERSION_TSI
 
 
-def database_is_empty(db_url):
+def database_is_empty_or_contains_kombu_tables(db_url):
+    """
+    Database is empty or contains 2 tables: kombu_message, kombu_queue.
+    (ref: https://github.com/galaxyproject/galaxy/issues/13689)
+    """
     with disposing_engine(db_url) as engine:
         with engine.connect() as conn:
             metadata = MetaData()
             metadata.reflect(bind=conn)
-            return not bool(metadata.tables)
+            return not bool(metadata.tables) or metadata_contains_only_kombu_tables(metadata)
 
 
 def test_database_is_empty(url_factory, metadata_state1_gxy):  # noqa F811
     db_url = url_factory()
     with create_and_drop_database(db_url):
         with disposing_engine(db_url) as engine:
-            assert database_is_empty(db_url)
+            assert database_is_empty_or_contains_kombu_tables(db_url)
             load_metadata(metadata_state1_gxy, engine)
-            assert not database_is_empty(db_url)
+            assert not database_is_empty_or_contains_kombu_tables(db_url)
+
+
+def test_database_with_kombu_is_empty(url_factory, metadata_state0kombu):  # noqa F811
+    db_url = url_factory()
+    with create_and_drop_database(db_url):
+        with disposing_engine(db_url) as engine:
+            assert database_is_empty_or_contains_kombu_tables(db_url)
+            load_metadata(metadata_state0kombu, engine)
+            assert database_is_empty_or_contains_kombu_tables(db_url)
 
 
 def database_is_up_to_date(db_url, current_state_metadata, model):
@@ -873,6 +911,19 @@ def test_load_metadata(url_factory, metadata_state1_gxy):  # noqa F811
 # 3. Inside the function, create database and load any state-specific data.
 
 
+# state 0 with kombu tables
+@pytest.fixture
+def db_state0kombu(url_factory, metadata_state0kombu):  # noqa F811
+    yield from _setup_db_state0kombu(url_factory(), metadata_state0kombu)
+
+
+def _setup_db_state0kombu(db_url, metadata):
+    with create_and_drop_database(db_url):
+        with disposing_engine(db_url) as engine:
+            load_metadata(metadata, engine)
+            yield db_url
+
+
 # state 1
 @pytest.fixture
 def db_state1_gxy(url_factory, metadata_state1_gxy):  # noqa F811
@@ -899,23 +950,24 @@ def _setup_db_state1(db_url, metadata):
 # state 2
 @pytest.fixture
 def db_state2_gxy(url_factory, metadata_state2_gxy):  # noqa F811
-    yield from _setup_db_state2(url_factory(), metadata_state2_gxy)
+    yield from _setup_db_state2(url_factory(), metadata_state2_gxy, SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
 
 
 @pytest.fixture
 def db_state2_tsi(url_factory, metadata_state2_tsi):  # noqa F811
-    yield from _setup_db_state2(url_factory(), metadata_state2_tsi)
+    yield from _setup_db_state2(url_factory(), metadata_state2_tsi, SQLALCHEMYMIGRATE_LAST_VERSION_TSI)
 
 
 @pytest.fixture
 def db_state2_combined(url_factory, metadata_state2_combined):  # noqa F811
-    yield from _setup_db_state2(url_factory(), metadata_state2_combined)
+    yield from _setup_db_state2(url_factory(), metadata_state2_combined, SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
 
 
-def _setup_db_state2(db_url, metadata):
+def _setup_db_state2(db_url, metadata, last_version):
     with create_and_drop_database(db_url):
         with disposing_engine(db_url) as engine:
             load_metadata(metadata, engine)
+            load_sqlalchemymigrate_version(db_url, last_version - 1)
             yield db_url
 
 

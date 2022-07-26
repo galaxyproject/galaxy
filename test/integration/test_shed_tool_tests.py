@@ -1,8 +1,8 @@
 import os
 
 from galaxy_test.base.populators import skip_if_toolshed_down
-from galaxy_test.base.uses_shed import UsesShed
 from galaxy_test.driver import integration_util
+from galaxy_test.driver.uses_shed import UsesShed
 
 
 class ToolShedToolTestIntegrationTestCase(integration_util.IntegrationTestCase, UsesShed):
@@ -13,6 +13,7 @@ class ToolShedToolTestIntegrationTestCase(integration_util.IntegrationTestCase, 
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls.configure_shed_and_conda(config)
 
     @skip_if_toolshed_down
@@ -29,6 +30,7 @@ class ToolShedDatatypeTestIntegrationTestCase(integration_util.IntegrationTestCa
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls.configure_shed(config)
 
     def handle_reconfigure_galaxy_config_kwds(self, config):

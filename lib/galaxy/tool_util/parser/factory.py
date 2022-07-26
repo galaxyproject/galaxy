@@ -33,9 +33,9 @@ def build_xml_tool_source(xml_string):
 
 
 def build_cwl_tool_source(yaml_string):
-    tool_proxy(tool_object=safe_load(yaml_string))
+    proxy = tool_proxy(tool_object=safe_load(yaml_string))
     # regular CwlToolSource sets basename as tool id, but that's not going to cut it in production
-    return CwlToolSource(tool_file=None, tool_id="serialized_cwl_tool", tool_proxy=tool_proxy)
+    return CwlToolSource(tool_proxy=proxy)
 
 
 def build_yaml_tool_source(yaml_string):

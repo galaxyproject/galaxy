@@ -5,3 +5,6 @@
 # Migrate code style to Prettier
 5b2928f851bd5ea3b9c2a04abf2cee9ff0bc54cc
 87873c5e2f4e6b97fe0f2084bfca0295fcd471de
+# vue/recommended standardization (attribute and property order)
+3bea88e761473b5d67d215d2faf732c86abd2091
+44ac26da4c53dedad3499cfef6d9d4cb61364a05

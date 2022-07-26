@@ -19,8 +19,10 @@ from sqlalchemy import (
     desc,
 )
 
-from galaxy import exceptions as glx_exceptions
-from galaxy import model
+from galaxy import (
+    exceptions as glx_exceptions,
+    model,
+)
 from galaxy.managers import (
     deletable,
     hdas,
@@ -480,9 +482,11 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             "size": lambda item, key, **context: int(item.disk_size),
             "nice_size": lambda item, key, **context: item.disk_nice_size,
             "state": self.serialize_history_state,
-            "url": lambda item, key, **context: self.url_for("history", id=self.app.security.encode_id(item.id)),
+            "url": lambda item, key, **context: self.url_for(
+                "history", id=self.app.security.encode_id(item.id), context=context
+            ),
             "contents_url": lambda item, key, **context: self.url_for(
-                "history_contents", history_id=self.app.security.encode_id(item.id)
+                "history_contents", history_id=self.app.security.encode_id(item.id), context=context
             ),
             "empty": lambda item, key, **context: (len(item.datasets) + len(item.dataset_collections)) <= 0,
             "count": lambda item, key, **context: len(item.datasets),
@@ -569,7 +573,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
                 state = states.QUEUED
             elif hda_state_counts[states.ERROR] > 0 or hda_state_counts[states.FAILED_METADATA] > 0:
                 state = states.ERROR
-            elif hda_state_counts[states.OK] == num_hdas:
+            elif (hda_state_counts[states.OK] + hda_state_counts[states.DEFERRED]) == num_hdas:
                 state = states.OK
 
         return state

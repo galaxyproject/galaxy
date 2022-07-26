@@ -5,7 +5,7 @@ Provides user and current history to modal because it currently has initializati
 
 <template>
     <CurrentUser v-slot="{ user }">
-        <UserHistories v-if="user" :user="user" v-slot="{ currentHistoryId }">
+        <UserHistories v-if="user" v-slot="{ currentHistoryId }" :user="user">
             <b-modal
                 v-model="modalShow"
                 :static="modalStatic"
@@ -52,6 +52,16 @@ export default {
             modalShow: false,
         };
     },
+    watch: {
+        modalShow() {
+            this.setIframeEvents(this.modalShow);
+        },
+    },
+    mounted() {
+        this.show();
+        // handles subsequent external requests to re-open a re-used modal
+        this.$root.$on("openUpload", this.show);
+    },
     methods: {
         show() {
             this.modalShow = true;
@@ -65,11 +75,15 @@ export default {
             }
             this.hide();
         },
-    },
-    mounted() {
-        this.show();
-        // handles subsequent external requests to re-open a re-used modal
-        this.$root.$on("openUpload", this.show);
+        /** Disable mouse events in iframe to prevent interference with uploader drop box */
+        setIframeEvents(disableEvents) {
+            const element = document.getElementById("galaxy_main");
+            if (element) {
+                element.style["pointer-events"] = disableEvents ? "none" : "auto";
+            } else {
+                console.warn("UploadModal::setIframeEvents - `galaxy_main` not found.");
+            }
+        },
     },
 };
 </script>

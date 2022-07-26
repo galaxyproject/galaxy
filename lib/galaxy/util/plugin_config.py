@@ -1,14 +1,34 @@
-import collections
+from pathlib import Path
+from types import ModuleType
+from typing import (
+    Any,
+    cast,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    NamedTuple,
+    Optional,
+    Type,
+    Union,
+)
 
 import yaml
 
 from galaxy.util import parse_xml
 from galaxy.util.submodules import import_submodules
 
-PluginConfigSource = collections.namedtuple("PluginConfigSource", ["type", "source"])
+PathT = Union[str, Path]
+PluginDictConfigT = Dict[str, Any]
+PluginConfigsT = Union[PluginDictConfigT, List[PluginDictConfigT]]
 
 
-def plugins_dict(module, plugin_type_identifier):
+class PluginConfigSource(NamedTuple):
+    type: str
+    source: Any
+
+
+def plugins_dict(module: ModuleType, plugin_type_identifier: str) -> Dict[str, Type]:
     """Walk through all classes in submodules of module and find ones labelled
     with specified plugin_type_identifier and throw in a dictionary to allow
     constructions from plugins by these types later on.
@@ -24,7 +44,13 @@ def plugins_dict(module, plugin_type_identifier):
     return plugin_dict
 
 
-def load_plugins(plugins_dict, plugin_source, extra_kwds=None, plugin_type_keys=("type",), dict_to_list_key=None):
+def load_plugins(
+    plugins_dict: Dict[str, Type],
+    plugin_source: PluginConfigSource,
+    extra_kwds: Optional[Dict[str, Any]] = None,
+    plugin_type_keys: Iterable[str] = ("type",),
+    dict_to_list_key: Optional[str] = None,
+) -> List[Any]:
     if extra_kwds is None:
         extra_kwds = {}
     if plugin_source.type == "xml":
@@ -39,7 +65,7 @@ def load_plugins(plugins_dict, plugin_source, extra_kwds=None, plugin_type_keys=
         )
 
 
-def __plugin_classes_in_module(plugin_module):
+def __plugin_classes_in_module(plugin_module: ModuleType) -> Generator[Type, None, None]:
     for clazz in getattr(plugin_module, "__all__", []):
         try:
             clazz = getattr(plugin_module, clazz)
@@ -48,7 +74,9 @@ def __plugin_classes_in_module(plugin_module):
         yield clazz
 
 
-def __load_plugins_from_element(plugins_dict, plugins_element, extra_kwds):
+def __load_plugins_from_element(
+    plugins_dict: Dict[str, Type], plugins_element, extra_kwds: Dict[str, Any]
+) -> List[Any]:
     plugins = []
 
     for plugin_element in plugins_element:
@@ -68,9 +96,16 @@ def __load_plugins_from_element(plugins_dict, plugins_element, extra_kwds):
     return plugins
 
 
-def __load_plugins_from_dicts(plugins_dict, configs, extra_kwds, plugin_type_keys, dict_to_list_key):
+def __load_plugins_from_dicts(
+    plugins_dict: Dict[str, Type],
+    configs: PluginConfigsT,
+    extra_kwds: Dict[str, Any],
+    plugin_type_keys: Iterable[str],
+    dict_to_list_key: Optional[str],
+) -> List[Any]:
     plugins = []
 
+    configs_as_list: List[PluginDictConfigT]
     if isinstance(configs, dict) and dict_to_list_key is not None:
         configs_as_list = []
         for key, value in configs.items():
@@ -78,7 +113,7 @@ def __load_plugins_from_dicts(plugins_dict, configs, extra_kwds, plugin_type_key
             config[dict_to_list_key] = key
             configs_as_list.append(config)
     else:
-        configs_as_list = configs
+        configs_as_list = cast(List[PluginDictConfigT], configs)
 
     for config in configs_as_list:
         plugin_type = None
@@ -97,18 +132,24 @@ def __load_plugins_from_dicts(plugins_dict, configs, extra_kwds, plugin_type_key
     return plugins
 
 
-def plugin_source_from_path(path):
-    if path.endswith(".yaml") or path.endswith(".yml") or path.endswith(".yaml.sample") or path.endswith(".yml.sample"):
+def plugin_source_from_path(path: PathT) -> PluginConfigSource:
+    filename = str(path)
+    if (
+        filename.endswith(".yaml")
+        or filename.endswith(".yml")
+        or filename.endswith(".yaml.sample")
+        or filename.endswith(".yml.sample")
+    ):
         return PluginConfigSource("dict", __read_yaml(path))
     else:
         return PluginConfigSource("xml", parse_xml(path, remove_comments=True).getroot())
 
 
-def plugin_source_from_dict(as_dict):
+def plugin_source_from_dict(as_dict: PluginConfigsT) -> PluginConfigSource:
     return PluginConfigSource("dict", as_dict)
 
 
-def __read_yaml(path):
+def __read_yaml(path: PathT):
     if yaml is None:
         raise ImportError("Attempting to read YAML configuration file - but PyYAML dependency unavailable.")
 

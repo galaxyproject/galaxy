@@ -1,5 +1,5 @@
 <template>
-    <div ref="webhook" id="webhook-view" />
+    <div id="webhook-view" ref="webhook" />
 </template>
 <script>
 import Webhooks from "mvc/webhooks";

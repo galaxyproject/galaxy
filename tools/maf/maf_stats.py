@@ -89,14 +89,14 @@ def __main__():
             for spec in maf_utilities.get_species_in_block(block):
                 if spec not in coverage:
                     coverage[spec] = BitSet(region_length)
-            for block in maf_utilities.iter_blocks_split_by_species(block):
-                if maf_utilities.component_overlaps_region(block.get_component_by_src(src), region):
-                    # need to chop and orient the block
-                    block = maf_utilities.orient_block_by_region(
-                        maf_utilities.chop_block_by_region(block, src, region), src, region, force_strand="+"
+            for splitted_block in maf_utilities.iter_blocks_split_by_species(block):
+                if maf_utilities.component_overlaps_region(splitted_block.get_component_by_src(src), region):
+                    # need to chop and orient the splitted_block
+                    oriented_chopped_splitted_block = maf_utilities.orient_block_by_region(
+                        maf_utilities.chop_block_by_region(splitted_block, src, region), src, region, force_strand="+"
                     )
                     start_offset, alignment = maf_utilities.reduce_block_by_primary_genome(
-                        block, dbkey, region.chrom, region.start
+                        oriented_chopped_splitted_block, dbkey, region.chrom, region.start
                     )
                     for i in range(len(alignment[dbkey])):
                         for spec, text in alignment.items():

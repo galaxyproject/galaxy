@@ -13,9 +13,11 @@ from typing import (
     Optional,
     Tuple,
     TYPE_CHECKING,
+    Union,
 )
 
 from markupsafe import escape
+from typing_extensions import Literal
 
 from galaxy import util
 from galaxy.datatypes.metadata import (
@@ -38,8 +40,10 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.zipstream import ZipstreamWrapper
-from . import dataproviders as p_dataproviders
-from . import metadata
+from . import (
+    dataproviders as p_dataproviders,
+    metadata,
+)
 
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance
@@ -166,11 +170,9 @@ class Data(metaclass=DataMeta):
     )
     # Stores the set of display applications, and viewing methods, supported by this datatype
     supported_display_apps: Dict[str, Any] = {}
-    # If False, the peek is regenerated whenever a dataset of this type is copied
-    copy_safe_peek = True
     # The dataset contains binary data --> do not space_to_tab or convert newlines, etc.
     # Allow binary file uploads of this type when True.
-    is_binary = True
+    is_binary: Union[bool, Literal["maybe"]] = True
     # Composite datatypes
     composite_type: Optional[str] = None
     composite_files: Dict[str, Any] = {}
@@ -358,7 +360,7 @@ class Data(metaclass=DataMeta):
                     continue
         if not error:
             headers.update(archive.get_headers())
-            return archive.response(), headers
+            return archive, headers
         return trans.show_error_message(msg), headers
 
     def __archive_extra_files_path(self, extra_files_path):
@@ -790,20 +792,13 @@ class Data(metaclass=DataMeta):
         kwds["is_binary"] = is_binary
         kwds["to_posix_lines"] = to_posix_lines
         kwds["space_to_tab"] = space_to_tab
-        return Bunch(**kwds)
+
+        composite_file = Bunch(**kwds)
+        return composite_file
 
     def add_composite_file(self, name, **kwds):
         # self.composite_files = self.composite_files.copy()
         self.composite_files[name] = self.__new_composite_file(name, **kwds)
-
-    def __substitute_composite_key(self, key, composite_file, dataset=None):
-        if composite_file.substitute_name_with_metadata:
-            if dataset:
-                meta_value = str(dataset.metadata.get(composite_file.substitute_name_with_metadata))
-            else:
-                meta_value = self.spec[composite_file.substitute_name_with_metadata].default  # type: ignore
-            return key % meta_value
-        return key
 
     @property
     def writable_files(self):
@@ -811,6 +806,14 @@ class Data(metaclass=DataMeta):
         if self.composite_type != "auto_primary_file":
             files[self.primary_file_name] = self.__new_composite_file(self.primary_file_name)
         for key, value in self.get_composite_files().items():
+            files[key] = value
+        return files
+
+    def get_writable_files_for_dataset(self, dataset):
+        files = {}
+        if self.composite_type != "auto_primary_file":
+            files[self.primary_file_name] = self.__new_composite_file(self.primary_file_name)
+        for key, value in self.get_composite_files(dataset).items():
             files[key] = value
         return files
 
@@ -910,6 +913,11 @@ class Data(metaclass=DataMeta):
 
     def handle_dataset_as_image(self, hda) -> str:
         raise Exception("Unimplemented Method")
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state.pop("display_applications", None)
+        return state
 
 
 @p_dataproviders.decorators.has_dataproviders

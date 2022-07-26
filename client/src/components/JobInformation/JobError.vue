@@ -4,7 +4,7 @@
             <div @click="showInfo = true">
                 <a href="#">See full job details <font-awesome-icon icon="info-circle" /></a>
             </div>
-            <div class="error-wrapper" v-if="job.stderr" @click="toggleExpanded">
+            <div v-if="job.stderr" class="error-wrapper" @click="toggleExpanded">
                 Job Standard Error
                 <pre :class="errorClasses">{{ job.stderr }}</pre>
                 <b v-if="!expanded">(Click to expand job standard error)</b>

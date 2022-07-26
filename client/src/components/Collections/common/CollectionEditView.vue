@@ -12,8 +12,8 @@
         <b-tabs content-class="mt-3">
             <b-tab @click="noQuotaIncrease = true">
                 <template v-slot:title> <font-awesome-icon icon="table" /> &nbsp; {{ l("Database/Build") }}</template>
-                <GenomeProvider v-slot="{ item, loading }">
-                    <div v-if="loading"><b-spinner label="Loading Genomes..."></b-spinner></div>
+                <db-key-provider v-slot="{ item, loading }">
+                    <div v-if="loading"><b-spinner label="Loading Database/Builds..."></b-spinner></div>
                     <div v-else>
                         <database-edit-tab
                             v-if="item && databaseKeyFromElements"
@@ -21,7 +21,7 @@
                             :genomes="item"
                             @clicked-save="clickedSave" />
                     </div>
-                </GenomeProvider>
+                </db-key-provider>
             </b-tab>
             <SuitableConvertersProvider :id="collection_id" v-slot="{ item }">
                 <b-tab v-if="item && item.length" @click="noQuotaIncrease = false">
@@ -41,7 +41,7 @@ import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
 import DatabaseEditTab from "./DatabaseEditTab";
 import SuitableConvertersTab from "./SuitableConvertersTab";
-import { GenomeProvider, SuitableConvertersProvider } from "../../providers";
+import { DbKeyProvider, SuitableConvertersProvider } from "../../providers";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDatabase, faTable, faBars, faUser, faCog } from "@fortawesome/free-solid-svg-icons";
@@ -50,15 +50,18 @@ library.add(faDatabase, faTable, faBars, faUser, faCog);
 
 Vue.use(BootstrapVue);
 export default {
-    created() {
-        this.getCollectionDataAndAttributes();
-    },
     components: {
         DatabaseEditTab,
         SuitableConvertersTab,
         FontAwesomeIcon,
-        GenomeProvider,
+        DbKeyProvider,
         SuitableConvertersProvider,
+    },
+    props: {
+        collection_id: {
+            type: String,
+            required: true,
+        },
     },
     data: function () {
         return {
@@ -67,12 +70,6 @@ export default {
             jobError: null,
             noQuotaIncrease: true,
         };
-    },
-    props: {
-        collection_id: {
-            type: String,
-            required: true,
-        },
     },
     computed: {
         databaseKeyFromElements: function () {
@@ -85,6 +82,9 @@ export default {
             }
             return newCollectionMessage;
         },
+    },
+    created() {
+        this.getCollectionDataAndAttributes();
     },
     methods: {
         getCollectionDataAndAttributes: async function () {

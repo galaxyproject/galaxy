@@ -1,7 +1,7 @@
 <template>
     <b-row>
         <b-col class="form-color-input">
-            <b-form-input class="cursor-pointer" :id="id" v-model="currentValue" type="color" size="sm" />
+            <b-form-input :id="id" v-model="currentValue" class="cursor-pointer" type="color" size="sm" />
         </b-col>
         <b-col class="pl-0">
             <label class="pt-1 cursor-pointer" :for="id">Select a color</label>

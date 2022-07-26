@@ -1,5 +1,5 @@
 import $ from "jquery";
-import Scratchbook from "layout/scratchbook";
+import { WindowManager } from "layout/window-manager";
 import QuotaMeter from "mvc/user/user-quotameter";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
@@ -13,17 +13,24 @@ export class MastheadState {
 
     constructor(Galaxy = null) {
         Galaxy = Galaxy || getGalaxyInstance();
-        Galaxy.frame = this.frame = new Scratchbook();
+        if (!Galaxy.frame) {
+            Galaxy.frame = new WindowManager();
+        }
+        this.windowManager = Galaxy.frame;
 
         // set up the quota meter (And fetch the current user data from trans)
         // add quota meter to masthead
-        Galaxy.quotaMeter = this.quotaMeter = new QuotaMeter.UserQuotaMeter({
-            model: Galaxy.user,
-            quotaUrl: Galaxy.config.quota_url,
-        });
+        if (!Galaxy.quotaMeter) {
+            Galaxy.quotaMeter = new QuotaMeter.UserQuotaMeter({
+                model: Galaxy.user,
+                quotaUrl: Galaxy.config.quota_url,
+            });
+        }
+        this.quotaMeter = Galaxy.quotaMeter;
 
         // loop through beforeunload functions if the user attempts to unload the page
         $(window)
+            .off()
             .on("click", (e) => {
                 const $download_link = $(e.target).closest("a[download]");
                 if ($download_link.length == 1) {
@@ -32,12 +39,6 @@ export class MastheadState {
                     }
                     $("iframe[id=download]").attr("src", $download_link.attr("href"));
                     e.preventDefault();
-                }
-            })
-            .on("beforeunload", () => {
-                const text = this.frame.beforeUnload();
-                if (text) {
-                    return text;
                 }
             });
     }

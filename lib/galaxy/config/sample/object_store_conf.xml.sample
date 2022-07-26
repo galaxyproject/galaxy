@@ -59,10 +59,16 @@
 
     In distributed and hierarchical world, you can choose that some backends are
     automatically unused whenever they become too full. Setting the maxpctfull
-    attribute (on top level object_store it behaves as a global default) enables
+    attribute (on top level backends tag it behaves as a global default) enables
     this, or it can be applied to individual backends to override a global
     setting. This only applies to disk based backends and not remote object
     stores.
+
+    By default, if a dataset should exist but its object_store_id is null, all
+    backends will be searched until it is found. This is to aid in Galaxy
+    servers moving from non-distributed to distributed object stores, but this
+    behavior can be disabled by setting search_for_missing="false" on the top
+    level backends tag.
 -->
 <!--
 <object_store type="distributed">

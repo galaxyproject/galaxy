@@ -3,6 +3,7 @@ API for updating Galaxy Pages
 """
 import io
 import logging
+from typing import Optional
 
 from fastapi import (
     Body,
@@ -16,8 +17,11 @@ from starlette.responses import StreamingResponse
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
+    AsyncFile,
     CreatePagePayload,
     PageDetails,
+    PageIndexQueryPayload,
+    PageSortByEnum,
     PageSummary,
     PageSummaryList,
     SetSlugPayload,
@@ -40,8 +44,38 @@ DeletedQueryParam: bool = Query(
     default=False, title="Display deleted", description="Whether to include deleted pages in the result."
 )
 
+UserIdQueryParam: Optional[EncodedDatabaseIdField] = Query(
+    default=None,
+    title="Encoded user ID to restrict query to, must be own id if not an admin user",
+)
+
 PageIdPathParam: EncodedDatabaseIdField = Path(
     ..., title="Page ID", description="The encoded database identifier of the Page."  # Required
+)
+
+ShowPublishedQueryParam: bool = Query(default=True, title="Include published pages.", description="")
+
+ShowSharedQueryParam: bool = Query(default=False, title="Include pages shared with authenticated user.", description="")
+
+
+SortByQueryParam: PageSortByEnum = Query(
+    default=PageSortByEnum.update_time,
+    title="Sort attribute",
+    description="Sort page index by this specified attribute on the page model",
+)
+
+
+SortDescQueryParam: bool = Query(
+    default=True,
+    title="Sort Descending",
+    description="Sort in descending order?",
+)
+
+LimitQueryParam: int = Query(default=100, lt=1000, title="Limit number of queries.")
+
+OffsetQueryParam: int = Query(
+    default=0,
+    title="Number of pages to skip in sorted query (to enable pagination).",
 )
 
 
@@ -58,9 +92,26 @@ class FastAPIPages:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: bool = DeletedQueryParam,
+        user_id: Optional[EncodedDatabaseIdField] = UserIdQueryParam,
+        show_published: bool = ShowPublishedQueryParam,
+        show_shared: bool = ShowSharedQueryParam,
+        sort_by: PageSortByEnum = SortByQueryParam,
+        sort_desc: bool = SortDescQueryParam,
+        limit: int = LimitQueryParam,
+        offset: int = OffsetQueryParam,
     ) -> PageSummaryList:
         """Get a list with summary information of all Pages available to the user."""
-        return self.service.index(trans, deleted)
+        payload = PageIndexQueryPayload(
+            deleted=deleted,
+            user_id=user_id,
+            show_published=show_published,
+            show_shared=show_shared,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            limit=limit,
+            offset=offset,
+        )
+        return self.service.index(trans, payload)
 
     @router.post(
         "/api/pages",
@@ -112,6 +163,27 @@ class FastAPIPages:
         """
         pdf_bytes = self.service.show_pdf(trans, id)
         return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf")
+
+    @router.post(
+        "/api/pages/{id}/prepare_download",
+        summary="Return a PDF document of the last revision of the Page.",
+        responses={
+            200: {
+                "description": "Short term storage reference for async monitoring of this download.",
+            },
+            501: {"description": "PDF conversion service not available."},
+        },
+    )
+    async def prepare_pdf(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = PageIdPathParam,
+    ) -> AsyncFile:
+        """Return a STS download link for this page to be downloaded as a PDF.
+
+        This feature may not be available in this Galaxy.
+        """
+        return self.service.prepare_pdf(trans, id)
 
     @router.get(
         "/api/pages/{id}",

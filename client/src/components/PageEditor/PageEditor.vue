@@ -20,6 +20,11 @@ import PageEditorHtml from "./PageEditorHtml";
 import PageEditorMarkdown from "./PageEditorMarkdown";
 
 export default {
+    components: {
+        PageEditorHtml,
+        PageEditorMarkdown,
+        LoadingSpan,
+    },
     props: {
         pageId: {
             required: true,
@@ -35,11 +40,6 @@ export default {
             publicUrl: null,
             loading: true,
         };
-    },
-    components: {
-        PageEditorHtml,
-        PageEditorMarkdown,
-        LoadingSpan,
     },
     created() {
         this.getPage(this.pageId)

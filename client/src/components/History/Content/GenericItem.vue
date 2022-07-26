@@ -1,18 +1,19 @@
 <template>
-    <component :is="providerComponent" :id="itemId" auto-refresh v-slot="{ result: item, loading }">
+    <component :is="providerComponent" :id="itemId" v-slot="{ result: item, loading }" auto-refresh>
         <loading-span v-if="loading" message="Loading dataset" />
         <div v-else>
             <ContentItem
-                :item="item"
+                is-history-item
                 :id="item.hid"
+                :item="item"
                 :name="item.name"
                 :expand-dataset="expandDataset"
                 :is-dataset="item.history_content_type == 'dataset'"
                 @update:expand-dataset="expandDataset = $event"
                 @view-collection="viewCollection = !viewCollection"
-                @delete="onDelete"
-                @undelete="onUndelete"
-                @unhide="onUnhide" />
+                @delete="onDelete(item)"
+                @undelete="onUndelete(item)"
+                @unhide="onUnhide(item)" />
             <div v-if="viewCollection">
                 <div v-for="(collectionItem, collectionIndex) in item.elements" :key="collectionIndex">
                     <GenericElement :item="collectionItem" />

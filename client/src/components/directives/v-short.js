@@ -6,5 +6,6 @@ export default Vue.directive("short", function (el, binding) {
     if (textContent.length > textLength) {
         textContent = `${textContent.substr(0, textLength)}...`;
     }
+    el.classList.add("text-break");
     el.textContent = textContent;
 });

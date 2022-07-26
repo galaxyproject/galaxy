@@ -199,6 +199,7 @@ class GunicornApplicationStack(ApplicationStack):
     postfork_functions: List[Callable] = []
     # Will be set to True by external hook
     late_postfork_event = threading.Event()
+    late_postfork_thread: threading.Thread
 
     @classmethod
     def register_postfork_function(cls, f, *args, **kwargs):
@@ -222,8 +223,8 @@ class GunicornApplicationStack(ApplicationStack):
     def late_postfork(cls):
         # We can't run postfork functions immediately, because this is before the gunicorn `post_fork` hook runs,
         # and we depend on the `post_fork` hook to set a worker id.
-        t = threading.Thread(target=cls.run_postfork)
-        t.start()
+        cls.late_postfork_thread = threading.Thread(target=cls.run_postfork)
+        cls.late_postfork_thread.start()
 
     def log_startup(self):
         msg = [f"Galaxy server instance '{self.config.server_name}' is running"]

@@ -106,7 +106,6 @@ from typing_extensions import Protocol
 
 import galaxy.exceptions
 import galaxy.model.metadata
-import galaxy.model.orm.now
 import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
@@ -186,7 +185,7 @@ else:
     _HasTable = object
 
 
-def get_uuid(uuid: Optional[Union[UUID, str]] = None):
+def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
     if isinstance(uuid, UUID):
         return uuid
     if not uuid:
@@ -456,7 +455,7 @@ class JobLike:
 
     def set_streams(self, tool_stdout, tool_stderr, job_stdout=None, job_stderr=None, job_messages=None):
         def shrink_and_unicodify(what, stream):
-            if len(stream) > galaxy.util.DATABASE_MAX_STRING_SIZE:
+            if stream and len(stream) > galaxy.util.DATABASE_MAX_STRING_SIZE:
                 log.info(
                     "%s for %s %d is greater than %s, only a portion will be logged to database",
                     what,
@@ -2037,7 +2036,6 @@ class JobStateHistory(Base, RepresentById):
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
     job_id = Column(Integer, ForeignKey("job.id"), index=True)
     state = Column(String(64), index=True)
     info = Column(TrimmedString(255))
@@ -2923,7 +2921,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             .distinct()
         )
         # postgres needs an alias on FROM
-        distinct_datasets_alias = aliased(distinct_datasets, name="datasets")
+        distinct_datasets_alias = aliased(distinct_datasets.subquery(), name="datasets")
         # then, bind as property of history using the cls.id
         size_query = (
             select([func.coalesce(func.sum(distinct_datasets_alias.c.dataset_size), 0)])
@@ -4559,10 +4557,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         hda.copy_tags_to(copy_tags)
         object_session(self).add(hda)
         hda.metadata = self.metadata
-        # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        if not self.datatype.copy_safe_peek:
-            object_session(self).flush([self])
-            hda.set_peek()
         if flush:
             object_session(self).flush()
         return hda
@@ -4627,9 +4621,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             )
             trans.sa_session.add(dp)
         # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
-        flushed = False
         if self.set_metadata_requires_flush:
-            flushed = True
             object_session(self).flush()
         ldda.metadata = self.metadata
         # TODO: copy #tags from history
@@ -4639,11 +4631,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             target_folder.add_library_dataset(library_dataset, genome_build=ldda.dbkey)
             object_session(self).add(target_folder)
         object_session(self).add(library_dataset)
-        if not self.datatype.copy_safe_peek:
-            # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-            if not flushed:
-                object_session(self).flush()
-            ldda.set_peek()
         object_session(self).flush()
         return ldda
 
@@ -5275,8 +5262,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         hda.metadata = self.metadata  # need to set after flushed, as MetadataFiles require dataset.id
         if add_to_history and target_history:
             target_history.add_dataset(hda)
-        if not self.datatype.copy_safe_peek:
-            hda.set_peek()  # in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         sa_session.flush()
         return hda
 
@@ -5306,9 +5291,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         sa_session.flush()
         # Need to set after flushed, as MetadataFiles require dataset.id
         ldda.metadata = self.metadata
-        if not self.datatype.copy_safe_peek:
-            # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-            ldda.set_peek()
         sa_session.flush()
         return ldda
 
@@ -6350,6 +6332,9 @@ class HistoryDatasetCollectionAssociation(
         """Checks to see that the indicated collection is a member of the
         hdca by using a recursive CTE sql query to find the collection's parents
         and checking to see if any of the parents are associated with this hdca"""
+        if collection_id == self.collection_id:
+            # collection_id is root collection
+            return True
 
         sa_session = object_session(self)
         DCE = DatasetCollectionElement
@@ -8957,8 +8942,8 @@ class PageRevision(Base, Dictifiable, RepresentById):
 
     def to_dict(self, view="element"):
         rval = super().to_dict(view=view)
-        rval["create_time"] = str(self.create_time)
-        rval["update_time"] = str(self.update_time)
+        rval["create_time"] = self.create_time.isoformat()
+        rval["update_time"] = self.update_time.isoformat()
         return rval
 
 

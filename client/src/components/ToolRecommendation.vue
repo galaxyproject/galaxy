@@ -35,9 +35,6 @@ export default {
             showMessage: false,
         };
     },
-    created() {
-        this.loadRecommendations();
-    },
     computed: {
         getToolId() {
             let toolId = this.toolId || "";
@@ -47,6 +44,9 @@ export default {
             }
             return toolId;
         },
+    },
+    created() {
+        this.loadRecommendations();
     },
     methods: {
         loadRecommendations() {

@@ -1,6 +1,6 @@
 <template>
     <loading-span v-if="license == null" message="Loading license information"> </loading-span>
-    <div class="text-muted" v-else-if="license.name">
+    <div v-else-if="license.name" class="text-muted">
         <link itemprop="license" :href="license.licenseId" />
         <span v-if="title">
             {{ title }}
@@ -51,6 +51,13 @@ export default {
             license: this.inputLicenseInfo,
         };
     },
+    watch: {
+        licenseId: function (newLicense, oldLicense) {
+            if (newLicense != oldLicense) {
+                this.fetchLicense();
+            }
+        },
+    },
     created() {
         if (this.license == null) {
             this.fetchLicense();
@@ -66,13 +73,6 @@ export default {
                 .then((data) => {
                     this.license = data;
                 });
-        },
-    },
-    watch: {
-        licenseId: function (newLicense, oldLicense) {
-            if (newLicense != oldLicense) {
-                this.fetchLicense();
-            }
         },
     },
 };

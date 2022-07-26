@@ -64,7 +64,7 @@ class CacheOperationTestCase(BaseSwiftObjectStoreIntegrationTestCase):
         shutil.rmtree(self.object_store_cache_path)
         os.mkdir(self.object_store_cache_path)
         assert files_count(self.object_store_cache_path) == 0
-        self.dataset_populator.delete_dataset(hda["history_id"], hda["id"], purge=True)
+        self.dataset_populator.delete_dataset(hda["history_id"], hda["id"], purge=True, wait_for_purge=True)
         # Don't wait for dataset, this uses the history state, which is new if there is no dataset ...
         with pytest.raises(AssertionError) as excinfo:
             self.dataset_populator.get_history_dataset_content(

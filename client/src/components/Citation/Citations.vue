@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-card class="citation-card" v-if="!simple" header-tag="nav">
+        <b-card v-if="!simple" class="citation-card" header-tag="nav">
             <template v-slot:header>
                 <b-nav card-header tabs>
                     <b-nav-item
@@ -22,11 +22,11 @@
             </div>
             <div class="citations-formatted">
                 <Citation
+                    v-for="(citation, index) in citations"
+                    :key="index"
                     class="formatted-reference"
                     :citation="citation"
-                    :output-format="outputFormat"
-                    v-for="(citation, index) in citations"
-                    :key="index" />
+                    :output-format="outputFormat" />
             </div>
         </b-card>
         <div v-else-if="citations.length">
@@ -40,11 +40,11 @@
                 @hidden="$emit('hidden')">
                 <b-card>
                     <Citation
+                        v-for="(citation, index) in citations"
+                        :key="index"
                         class="formatted-reference"
                         :citation="citation"
-                        :output-format="outputFormat"
-                        v-for="(citation, index) in citations"
-                        :key="index" />
+                        :output-format="outputFormat" />
                 </b-card>
             </b-collapse>
         </div>

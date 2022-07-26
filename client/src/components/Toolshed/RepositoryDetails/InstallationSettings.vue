@@ -1,5 +1,5 @@
 <template>
-    <b-modal id="repo-install-settings" :static="modalStatic" v-model="modalShow" @ok="onOk" @hide="onHide">
+    <b-modal id="repo-install-settings" v-model="modalShow" :static="modalStatic" @ok="onOk" @hide="onHide">
         <template v-slot:modal-header>
             <h4 class="title m-0">
                 {{ modalTitle }}
@@ -13,7 +13,7 @@
             v-if="requiresPanel"
             label="Target Section:"
             description="Choose an existing tool panel section or create a new section to contain the installed tools (optional).">
-            <b-form-input list="sectionSelect" v-model="toolSection" />
+            <b-form-input v-model="toolSection" list="sectionSelect" />
             <datalist id="sectionSelect">
                 <option v-for="section in toolSections" :key="section.id">
                     {{ section.name }}
@@ -26,9 +26,9 @@
                 <b-form-group v-if="showConfig" label="Tool Configuration:" description="Choose a tool configuration.">
                     <b-form-radio
                         v-for="filename in toolConfigs"
+                        :key="filename"
                         v-model="toolConfig"
-                        :value="filename"
-                        :key="filename">
+                        :value="filename">
                         {{ filename }}
                     </b-form-radio>
                 </b-form-group>

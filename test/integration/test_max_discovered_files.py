@@ -11,6 +11,7 @@ class MaxDiscoveredFilesTestCase(integration_util.IntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["max_discovered_files"] = cls.max_discovered_files
 
     def setUp(self):

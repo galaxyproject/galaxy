@@ -11,8 +11,8 @@ from galaxy.tool_shed.repository_type import (
     TOOL_DEPENDENCY_DEFINITION_FILENAME,
 )
 from galaxy.tool_shed.tools.tool_validator import ToolValidator
-from galaxy.tool_shed.util import shed_util_common as suc
 from galaxy.tool_shed.util import (
+    shed_util_common as suc,
     tool_dependency_util,
     tool_util,
 )

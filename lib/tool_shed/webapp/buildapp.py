@@ -48,7 +48,14 @@ def add_ui_controllers(webapp, app):
                     webapp.add_ui_controller(name, T(app))
 
 
-def app_factory(global_conf, load_app_kwds=None, **kwargs):
+def app_factory(*args, **kwargs):
+    """
+    Return a wsgi application serving the root object
+    """
+    return app_pair(*args, **kwargs)[0]
+
+
+def app_pair(global_conf, load_app_kwds=None, **kwargs):
     """Return a wsgi application serving the root object"""
     # Create the Galaxy tool shed application unless passed in
     load_app_kwds = load_app_kwds or {}
@@ -207,7 +214,7 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
         webapp = wrap_in_middleware(webapp, global_conf, app.application_stack, **kwargs)
     if asbool(kwargs.get("static_enabled", True)):
         webapp = wrap_if_allowed(webapp, app.application_stack, build_url_map, args=(global_conf,), kwargs=kwargs)
-    return webapp
+    return webapp, app
 
 
 def wrap_in_middleware(app, global_conf, application_stack, **local_conf):

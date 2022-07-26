@@ -3,10 +3,8 @@ from functools import partial
 import yaml
 
 from galaxy import model
+from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.managers.workflows import WorkflowsManager
-from galaxy.model import mapping
-from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.util import bunch
 from galaxy.workflow.modules import module_factory
 
 
@@ -32,15 +30,10 @@ class MockTrans:
         return self._user
 
 
-class MockApp:
+class MockApp(galaxy_mock.MockApp):
     def __init__(self):
-        self.config = bunch.Bunch(
-            tool_secret="awesome_secret",
-        )
-        self.model = mapping.init("/tmp", "sqlite:///:memory:", create_tables=True)
+        super().__init__()
         self.toolbox = MockToolbox()
-        self.datatypes_registry = MockDatatypesRegistry()
-        self.security = IdEncodingHelper(id_secret="testing")
         self.workflow_manager = WorkflowsManager(self)
 
 

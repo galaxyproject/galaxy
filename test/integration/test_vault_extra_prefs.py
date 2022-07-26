@@ -18,6 +18,7 @@ TEST_USER_EMAIL = "vault_test_user@bx.psu.edu"
 class ExtraUserPreferencesTestCase(integration_util.IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["vault_config_file"] = os.path.join(os.path.dirname(__file__), "vault_conf.yml")
         config["user_preferences_extra_conf_path"] = os.path.join(
             os.path.dirname(__file__), "user_preferences_extra_conf.yml"

@@ -9,7 +9,17 @@ import logging
 import re
 from html.entities import name2codepoint
 from html.parser import HTMLParser
-from typing import Callable
+from typing import (
+    Callable,
+    List,
+    Tuple,
+)
+
+from sqlalchemy import (
+    false,
+    or_,
+    true,
+)
 
 from galaxy import (
     exceptions,
@@ -19,13 +29,19 @@ from galaxy.managers import (
     base,
     sharable,
 )
-from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     ready_galaxy_markdown_for_import,
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.schema.schema import PageContentFormat
+from galaxy.schema.schema import (
+    PageContentFormat,
+    PageIndexQueryPayload,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
@@ -79,6 +95,44 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         """ """
         super().__init__(app)
         self.workflow_manager = app.workflow_manager
+
+    def index_query(self, trans: ProvidesUserContext, payload: PageIndexQueryPayload) -> Tuple[List[model.Page], int]:
+        deleted: bool = payload.deleted
+
+        query = trans.sa_session.query(model.Page)
+        is_admin = trans.user_is_admin
+        user = trans.user
+        if not is_admin:
+            filters = [model.Page.user == trans.user]
+            if payload.show_published:
+                filters.append(model.Page.published == true())
+
+            if user and payload.show_shared:
+                filters.append(model.PageUserShareAssociation.user == user)
+                query = query.outerjoin(model.Page.users_shared_with)
+
+            query = query.filter(or_(*filters))
+
+        if not deleted:
+            query = query.filter(model.Page.deleted == false())
+        elif not is_admin:
+            # non-admin query that should include deleted pages...
+            # don't let non-admins see other user's deleted pages...
+            query = query.filter(or_(model.Page.deleted == false(), model.Page.user == user))
+
+        if payload.user_id:
+            query = query.filter(model.Page.user_id == payload.user_id)
+
+        total_matches = query.count()
+        sort_column = getattr(model.Page, payload.sort_by)
+        if payload.sort_desc:
+            sort_column = sort_column.desc()
+        query = query.order_by(sort_column)
+        if payload.limit is not None:
+            query = query.limit(payload.limit)
+        if payload.offset is not None:
+            query = query.offset(payload.offset)
+        return query, total_matches
 
     def create(self, trans, payload):
         user = trans.get_user()

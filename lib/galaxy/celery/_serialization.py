@@ -36,7 +36,7 @@ def schema_decoder(obj):
             ), f"Invalid class str {clazz_str}"
             module_name, class_name = clazz_str.rsplit(".", 1)
             module = import_module(module_name)
-            clazz = getattr(module, class_name, None)
+            clazz = getattr(module, class_name)
             obj = clazz(**obj["__object__"])
             return obj
 

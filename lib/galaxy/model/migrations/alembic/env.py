@@ -1,3 +1,4 @@
+import logging
 import re
 from typing import (
     Callable,
@@ -17,6 +18,7 @@ from galaxy.model.migrations import (
 
 config = context.config
 target_metadata = None  # Not implemented: used for autogenerate, which we don't use here.
+log = logging.getLogger(__name__)
 
 
 def run_migrations_offline() -> None:
@@ -47,7 +49,14 @@ def _run_migrations_invoked_via_script(run_migrations: Callable[[str], None]) ->
     if _process_cmd_current(urls):
         return  # we're done
 
-    revision_str = config.cmd_opts.revision  # type: ignore[union-attr]
+    try:
+        revision_str = config.cmd_opts.revision  # type: ignore[union-attr]
+    except AttributeError:
+        revision_str = config.cmd_opts.revisions  # type: ignore[union-attr]
+        if revision_str:
+            if len(revision_str) > 1:
+                log.error("Please run the commmand for one revision at a time")
+            revision_str = revision_str[0]  # type: ignore[union-attr]
 
     if revision_str.startswith(f"{GXY}@"):
         url = urls[GXY]

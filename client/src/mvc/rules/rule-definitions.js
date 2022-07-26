@@ -820,7 +820,14 @@ const MAPPING_TARGETS = {
     url: {
         label: _l("URL"),
         modes: ["raw"],
-        help: _l("This should be a URL the file can be downloaded from."),
+        help: _l("This should be a URL (or Galaxy-aware URI) the file can be downloaded from."),
+    },
+    url_deferred: {
+        label: _l("Deferred URL"),
+        modes: ["raw"],
+        help: _l(
+            "This should be a URL (or Galaxy-aware URI) th efile can be downloaded from - the file will not be downloaded until it used by a tool."
+        ),
     },
     info: {
         label: _l("Info"),

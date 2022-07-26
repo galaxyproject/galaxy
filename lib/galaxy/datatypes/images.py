@@ -4,9 +4,6 @@ Image classes
 import base64
 import json
 import logging
-import zipfile
-from io import StringIO
-from urllib.parse import quote_plus
 
 import mrcfile
 import numpy as np
@@ -102,11 +99,13 @@ class OMETiff(Tiff):
         optional=True,
     )
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(self, dataset, overwrite=True, metadata_tmp_files_dir=None, **kwd):
         spec_key = "offsets"
         offsets_file = dataset.metadata.offsets
         if not offsets_file:
-            offsets_file = dataset.metadata.spec[spec_key].param.new_file(dataset=dataset)
+            offsets_file = dataset.metadata.spec[spec_key].param.new_file(
+                dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
+            )
         with tifffile.TiffFile(dataset.file_name) as tif:
             offsets = [page.offset for page in tif.pages]
         with open(offsets_file.file_name, "w") as f:
@@ -214,27 +213,6 @@ class Pdf(Image):
         """Determine if the file is in pdf format."""
         with open(filename, "rb") as fh:
             return fh.read(4) == b"%PDF"
-
-
-def create_applet_tag_peek(class_name, archive, params):
-    text = f"""
-<object classid="java:{class_name}"
-      type="application/x-java-applet"
-      height="30" width="200" align="center" >
-      <param name="archive" value="{archive}"/>"""
-    for name, value in params.items():
-        text += f"""<param name="{name}" value="{value}"/>"""
-    text += f"""
-<object classid="clsid:8AD9C840-044E-11D1-B3E9-00805F499D93"
-        height="30" width="200" >
-        <param name="code" value="{class_name}" />
-        <param name="archive" value="{archive}"/>"""
-    for name, value in params.items():
-        text += f"""<param name="{name}" value="{value}"/>"""
-    text += """<div class="errormessage">You must install and enable Java in your browser in order to access this applet.<div></object>
-</object>
-"""
-    return f"""<div><p align="center">{text}</p></div>"""
 
 
 @build_sniff_from_prefix
@@ -352,86 +330,25 @@ class Mrc2014(Binary):
     file_ext = "mrc"
 
     def sniff(self, filename):
-        # Handle the wierdness of mrcfile:
-        # https://github.com/ccpem/mrcfile/blob/master/mrcfile/validator.py#L88
         try:
             # An exception is thrown
             # if the file is not an
             # mrc2014 file.
-            if mrcfile.validate(filename, print_file=StringIO()):
-                return True
+            mrcfile.load_functions.open(filename, header_only=True)
+            return True
         except Exception:
             return False
-        return False
 
 
 class Gmaj(data.Data):
-    """Class describing a GMAJ Applet"""
+    """Deprecated class. Exists for limited backwards compatibility."""
 
     edam_format = "format_3547"
     file_ext = "gmaj.zip"
-    copy_safe_peek = False
-
-    def set_peek(self, dataset):
-        if not dataset.dataset.purged:
-            if hasattr(dataset, "history_id"):
-                params = {
-                    "bundle": f"display?id={dataset.id}&tofile=yes&toext=.zip",
-                    "buttonlabel": "Launch GMAJ",
-                    "nobutton": "false",
-                    "urlpause": "100",
-                    "debug": "false",
-                    "posturl": "history_add_to?%s"
-                    % "&".join(
-                        f"{x[0]}={quote_plus(str(x[1]))}"
-                        for x in [
-                            ("copy_access_from", dataset.id),
-                            ("history_id", dataset.history_id),
-                            ("ext", "maf"),
-                            ("name", f"GMAJ Output on data {dataset.hid}"),
-                            ("info", "Added by GMAJ"),
-                            ("dbkey", dataset.dbkey),
-                        ]
-                    ),
-                }
-                class_name = "edu.psu.bx.gmaj.MajApplet.class"
-                archive = "/static/gmaj/gmaj.jar"
-                dataset.peek = create_applet_tag_peek(class_name, archive, params)
-                dataset.blurb = "GMAJ Multiple Alignment Viewer"
-            else:
-                dataset.peek = "After you add this item to your history, you will be able to launch the GMAJ applet."
-                dataset.blurb = "GMAJ Multiple Alignment Viewer"
-        else:
-            dataset.peek = "file does not exist"
-            dataset.blurb = "file purged from disk"
-
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except Exception:
-            return "peek unavailable"
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return "application/zip"
-
-    def sniff(self, filename):
-        """
-        NOTE: the sniff.convert_newlines() call in the upload utility will keep Gmaj data types from being
-        correctly sniffed, but the files can be uploaded (they'll be sniffed as 'txt').  This sniff function
-        is here to provide an example of a sniffer for a zip file.
-        """
-        if not zipfile.is_zipfile(filename):
-            return False
-        contains_gmaj_file = False
-        with zipfile.ZipFile(filename, "r") as zip_file:
-            for name in zip_file.namelist():
-                if name.split(".")[1].strip().lower() == "gmaj":
-                    contains_gmaj_file = True
-                    break
-        if not contains_gmaj_file:
-            return False
-        return True
 
 
 class Analyze75(Binary):
@@ -618,35 +535,4 @@ class Html(HtmlFromText):
 
 
 class Laj(data.Text):
-    """Class describing a LAJ Applet"""
-
-    file_ext = "laj"
-    copy_safe_peek = False
-
-    def set_peek(self, dataset):
-        if not dataset.dataset.purged:
-            if hasattr(dataset, "history_id"):
-                params = {
-                    "alignfile1": f"display?id={dataset.id}",
-                    "buttonlabel": "Launch LAJ",
-                    "title": "LAJ in Galaxy",
-                    "posturl": quote_plus(
-                        f"history_add_to?{'&'.join(f'{key}={value}' for key, value in {'history_id': dataset.history_id, 'ext': 'lav', 'name': 'LAJ Output', 'info': 'Added by LAJ', 'dbkey': dataset.dbkey, 'copy_access_from': dataset.id}.items())}"
-                    ),
-                    "noseq": "true",
-                }
-                class_name = "edu.psu.cse.bio.laj.LajApplet.class"
-                archive = "/static/laj/laj.jar"
-                dataset.peek = create_applet_tag_peek(class_name, archive, params)
-            else:
-                dataset.peek = "After you add this item to your history, you will be able to launch the LAJ applet."
-                dataset.blurb = "LAJ Multiple Alignment Viewer"
-        else:
-            dataset.peek = "file does not exist"
-            dataset.blurb = "file purged from disk"
-
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except Exception:
-            return "peek unavailable"
+    """Deprecated class. Exists for limited backwards compatibility."""

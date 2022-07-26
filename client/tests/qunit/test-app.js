@@ -3,7 +3,6 @@
 
 // jQuery.fn.tooltip lives on one of these 2 libs
 import "bootstrap";
-import "@galaxyproject/bootstrap-tour";
 
 import sinon from "sinon";
 import Backbone from "backbone";

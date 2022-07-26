@@ -9,6 +9,7 @@ from pydantic import (
     BaseModel,
     Extra,
     Field,
+    ValidationError,
 )
 
 from galaxy import exceptions
@@ -232,7 +233,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
 
         # check to make sure the dsc is part of the validated hdca
         decoded_parent_id = self.decode_id(parent_id)
-        if parent_id != hdca_id and not hdca.contains_collection(decoded_parent_id):
+        if not hdca.contains_collection(decoded_parent_id):
             raise exceptions.ObjectNotFound(
                 "Requested dataset collection is not contained within indicated history content"
             )
@@ -254,4 +255,10 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             return result
 
         rval = [serialize_element(el) for el in contents]
-        return DatasetCollectionContentElements.parse_obj(rval)
+        try:
+            return DatasetCollectionContentElements.parse_obj(rval)
+        except ValidationError:
+            log.exception(
+                f"Serializing DatasetCollectionContentsElements failed. Collection is populated: {hdca.collection.populated}"
+            )
+            raise

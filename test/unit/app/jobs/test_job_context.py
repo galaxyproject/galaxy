@@ -8,6 +8,7 @@ from galaxy.job_execution.output_collect import (
 )
 from galaxy.model.dataset_collections import builder
 from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
+from galaxy.tool_util.provided_metadata import NullToolProvidedMetadata
 from ..tools.test_history_imp_exp import _mock_app
 
 
@@ -48,7 +49,7 @@ def test_job_context_discover_outputs_flushes_once(mocker):
     h = model.History(name="Test History", user=u)
 
     tool = Tool(app)
-    tool_provided_metadata = None
+    tool_provided_metadata = NullToolProvidedMetadata()
     job = model.Job()
     job.history = h
     sa_session.add(job)

@@ -17,6 +17,7 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         user_import_dir = cls.user_import_dir()
         config["user_library_import_dir"] = user_import_dir
 
@@ -107,6 +108,6 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
 
     @retry_assertion_during_transitions
     def select_add_items_permission_option(self, option_text):
-        el = self.components.libraries.add_items_permission_option.wait_for_visible()
+        el = self.components.libraries.add_items_permission_option.wait_for_clickable()
         assert option_text == el.text
         el.click()

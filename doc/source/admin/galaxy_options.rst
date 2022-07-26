@@ -664,6 +664,60 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``short_term_storage_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Location of files available for a short time as downloads (short
+    term storage). This directory is exclusively used for serving
+    dynamically generated downloadable content. Galaxy may uses the
+    new_file_path parameter as a general temporary directory and that
+    directory should be monitored by a tool such as tmpwatch in
+    production environments. short_term_storage_dir on the other hand
+    is monitored by Galaxy's task framework and should not require
+    such external tooling.
+    The value of this option will be resolved with respect to
+    <cache_dir>.
+:Default: ``short_term_web_storage``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``short_term_storage_default_duration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default duration before short term web storage files will be
+    cleaned up by Galaxy tasks (in seconds). The default duration is 1
+    day.
+:Default: ``86400``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``short_term_storage_maximum_duration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The maximum duration short term storage files can hosted before
+    they will be marked for clean up.  The default setting of 0
+    indicates no limit here.
+:Default: ``0``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``short_term_storage_cleanup_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    How many seconds between instances of short term storage being
+    cleaned up in default Celery task configuration.
+:Default: ``3600``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``file_sources_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1286,6 +1340,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``mulled_resolution_cache_expire``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Seconds until the beaker cache is considered old and a new value
+    is created.
+:Default: ``3600``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``object_store_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1877,6 +1942,18 @@
     <config_dir>.
 :Default: ``trs_servers_conf.yml``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``use_legacy_history``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Server-wide default selection to use the legacy history during the
+    transition period, after which this option will disappear.  Users
+    will remain able to swap back and forth per their preference.
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3266,6 +3343,17 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
+``prefer_custos_login``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Controls the order of the login page to prefer Custos-based login
+    and registration.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
 ``allow_user_creation``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -3720,8 +3808,13 @@
 :Description:
     When the simplified workflow run form is rendered, should the
     invocation outputs be sent to the 'current' history or a 'new'
-    history.
-:Default: ``current``
+    history. If the user should be presented and option between these
+    - set this to 'prefer_current' or 'prefer_new' to display a
+    runtime setting with the corresponding default. The default is to
+    provide the user this option and default it to the current history
+    (the traditional behavior of Galaxy for years) - this corresponds
+    to the setting 'prefer_current'.
+:Default: ``prefer_current``
 :Type: str
 
 
@@ -4082,18 +4175,35 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_monitor_sleep``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Each Galaxy workflow handler process runs one thread responsible
+    for checking the state of active workflow invocations.  This
+    thread operates in a loop and sleeps for the given number of
+    seconds at the end of each iteration. This can be decreased if
+    extremely high job throughput is necessary, but doing so can
+    increase CPU usage of handler processes. Float values are allowed.
+:Default: ``1.0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~~~~~~~
 ``metadata_strategy``
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Determines how metadata will be set. Valid values are `directory`
-    and `extended`. In extended mode jobs will decide if a tool run
-    failed, the object stores configuration is serialized and made
-    available to the job and is used for writing output datasets to
-    the object store as part of the job and dynamic output discovery
-    (e.g. discovered datasets <discover_datasets>, unpopulated
-    collections, etc) happens as part of the job.
+    Determines how metadata will be set. Valid values are `directory`,
+    `extended`, `directory_celery` and `extended_celery`. In extended
+    mode jobs will decide if a tool run failed, the object stores
+    configuration is serialized and made available to the job and is
+    used for writing output datasets to the object store as part of
+    the job and dynamic output discovery (e.g. discovered datasets
+    <discover_datasets>, unpopulated collections, etc) happens as part
+    of the job. In `directory_celery` and `extended_celery` metadata
+    will be set within a celery task.
 :Default: ``directory``
 :Type: str
 
@@ -4590,7 +4700,7 @@
     the process that handled that particular request will tell all
     others to also reload, lock jobs, etc. For connection examples,
     see
-    http://docs.celeryproject.org/projects/kombu/en/latest/userguide/connections.html
+    https://docs.celeryq.dev/projects/kombu/en/stable/userguide/connections.html
     Without specifying anything here, galaxy will first attempt to use
     your specified database_connection above.  If that's not specified
     either, Galaxy will automatically create and use a separate sqlite
@@ -4795,3 +4905,6 @@
     Display built-in converters in the tool panel.
 :Default: ``true``
 :Type: bool
+
+
+

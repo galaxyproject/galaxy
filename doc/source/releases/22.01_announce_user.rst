@@ -14,9 +14,7 @@ Do you use tools which require colour inputs, like Circos? Previously we had a r
 
 .. raw:: html
 
-   <video controls autoplay loop muted width="100%" alt="Gif of the colour selector in action, a mouse clicks on the colour selector and gone is the restricted 20 colour palette, now there is a colour field and you can select any possible RGB colour.">
-       <source src="../_static/22.01-colour.mp4" type="video/mp4">
-   </video>
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/DSnFa5012RE" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Gif of the colour selector in action, a mouse clicks on the colour selector and gone is the restricted 20 colour palette, now there is a colour field and you can select any possible RGB colour."></iframe>
 
 
 **Improved File Export**
@@ -25,9 +23,7 @@ If you've been exporting files from Galaxy lately, you've probably seen the amaz
 
 .. raw:: html
 
-   <video controls autoplay loop muted width="100%" alt="Video of a user exporting a file using the new file export, selecting a folder, creating some subdirectories, before changing their mind and choosing another location to export their file to.">
-       <source src="../_static/22.01-export.mp4" type="video/mp4">
-   </video>
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/KBFrgWGlPus" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video of a user exporting a file using the new file export, selecting a folder, creating some subdirectories, before changing their mind and choosing another location to export their file to."></iframe>
 
 **Improved File Uploads**
 
@@ -142,7 +138,7 @@ A special thanks to the release testing team for testing many of the new feature
 - `Natalie Kucher <https://github.com/nakucher>`_
 - `Alex Ostrovsky <https://github.com/astrovsky01>`_
 - `Enis Afgan <https://github.com/afgane>`_
- 
+
 Release Notes
 ===========================================================
 

@@ -6,8 +6,12 @@
         :show-annotation="false"
         @save="$emit('update:dsc', $event)">
         <template v-slot:name>
-            <h3 data-description="collection name display" v-short="dsc.name || 'Collection'" />
-            <CollectionDescription :item="dsc" />
+            <h3 v-short="dsc.name || 'Collection'" data-description="collection name display" />
+            <CollectionDescription
+                :job-state-summary="jobState"
+                :collection-type="dsc.collection_type"
+                :element-count="dsc.element_count"
+                :elements-datatypes="dsc.elements_datatypes" />
         </template>
     </Details>
 </template>
@@ -16,6 +20,7 @@
 import short from "components/directives/v-short";
 import Details from "components/History/Layout/Details";
 import CollectionDescription from "components/History/Content/Collection/CollectionDescription";
+import { JobStateSummary } from "components/History/Content/Collection/JobStateSummary";
 
 export default {
     components: {
@@ -28,6 +33,11 @@ export default {
     props: {
         dsc: { type: Object, required: true },
         writeable: { type: Boolean, required: true },
+    },
+    computed: {
+        jobState() {
+            return new JobStateSummary(this.dsc);
+        },
     },
 };
 </script>

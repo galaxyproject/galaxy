@@ -1,1 +1,3 @@
-include *.rst *.txt LICENSE galaxy_test/base/tool_sheds_conf.xml
+include *.rst *.txt LICENSE
+graft galaxy_test/base/data/
+include galaxy_test/base/tool_sheds_conf.xml
