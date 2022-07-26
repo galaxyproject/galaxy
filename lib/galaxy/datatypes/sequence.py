@@ -11,6 +11,7 @@ import string
 import subprocess
 from itertools import islice
 from typing import (
+    List,
     Optional,
     TYPE_CHECKING,
 )
@@ -63,7 +64,15 @@ class SequenceSplitLocations(data.Text):
 
     file_ext = "fqtoc"
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         if not dataset.dataset.purged:
             try:
                 parsed_data = json.load(open(dataset.file_name))
@@ -120,7 +129,15 @@ class Sequence(data.Text):
             dataset.metadata.data_lines = data_lines
             dataset.metadata.sequences = sequences
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:
@@ -652,7 +669,15 @@ class Fastg(Sequence):
             return
         return Sequence.set_meta(self, dataset, overwrite=overwrite, **kwd)
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:
@@ -1027,7 +1052,15 @@ class Maf(Alignment):
         indexes.write(open(index_file.file_name, "wb"))
         dataset.metadata.maf_index = index_file
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -1253,7 +1286,7 @@ class RNADotPlotMatrix(data.Data):
     edam_format = "format_3466"
     file_ext = "rna_eps"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "RNA Dot Plot format (Postscript derivative)"
             dataset.blurb = nice_size(dataset.get_size())

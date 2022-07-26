@@ -97,7 +97,15 @@ class TabularData(data.Text):
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         raise NotImplementedError
 
-    def set_peek(self, dataset, line_count=None, WIDTH=256, skipchars=None, line_wrap=False, **kwd):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = False,
+        **kwd,
+    ) -> None:
         super().set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
         if dataset.metadata.comment_lines:
             dataset.blurb = f"{dataset.blurb}, {util.commaify(str(dataset.metadata.comment_lines))} comments"
@@ -782,9 +790,7 @@ class Sam(Tabular, _BamOrSam):
     # sam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
     # TODO:?? seems like there should be an easier way to do this - metadata.comment_char?
     @dataproviders.decorators.dataprovider_factory("line", dataproviders.line.FilteredLineDataProvider.settings)
-    def line_dataprovider(
-        self, dataset: "DatasetInstance", **settings
-    ) -> dataproviders.line.FilteredLineDataProvider:
+    def line_dataprovider(self, dataset: "DatasetInstance", **settings) -> dataproviders.line.FilteredLineDataProvider:
         settings["comment_char"] = "@"
         return super().line_dataprovider(dataset, **settings)
 

@@ -1,5 +1,10 @@
 import logging
 import re
+from typing import (
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.datatypes.data import (
     get_file_peek,
@@ -14,6 +19,9 @@ from galaxy.datatypes.sniff import (
 from galaxy.datatypes.tabular import Tabular
 from galaxy.util import nice_size
 
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
+
 log = logging.getLogger(__name__)
 
 
@@ -27,7 +35,15 @@ class Smat(Text):
         except Exception:
             return f"ESTScan scores matrices ({nice_size(dataset.get_size())})"
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "ESTScan scores matrices"
@@ -141,7 +157,15 @@ class PlantTribesKsComponents(Tabular):
         if len(significant_components) > 0:
             dataset.metadata.number_comp = max(significant_components)
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.number_comp == 1:

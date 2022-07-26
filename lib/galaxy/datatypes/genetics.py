@@ -16,6 +16,7 @@ import os
 import re
 import sys
 from typing import (
+    List,
     Optional,
     TYPE_CHECKING,
 )
@@ -379,7 +380,15 @@ class SNPMatrix(Rgenetics):
 
     file_ext = "snpmatrix"
 
-    def set_peek(self, dataset, **kwd):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary RGenetics file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -762,7 +771,15 @@ class RexpBase(Html):
             p = []
         return "\n".join(p)
 
-    def set_peek(self, dataset, **kwd):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """
         expects a .pheno file in the extra_files_dir - ugh
         note that R is weird and does not include the row.name in

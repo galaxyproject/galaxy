@@ -6,6 +6,7 @@ import glob
 import logging
 import os
 from typing import (
+    List,
     Optional,
     TYPE_CHECKING,
 )
@@ -66,7 +67,15 @@ class AnvioComposite(Html):
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = "Anvio database (multiple files)"

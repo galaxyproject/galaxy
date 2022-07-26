@@ -2,9 +2,17 @@
 Datatype classes for tracks/track views within galaxy.
 """
 import logging
+from typing import (
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.datatypes.text import Html
 from . import binary
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +51,15 @@ class UCSCTrackHub(Html):
         rval.append("</ul></html>")
         return "\n".join(rval)
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Track Hub structure: Visualization in UCSC Track Hub"
         else:

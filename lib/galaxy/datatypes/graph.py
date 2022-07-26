@@ -2,6 +2,11 @@
 Graph content classes.
 """
 import logging
+from typing import (
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.util import simplegraph
 from . import (
@@ -10,6 +15,9 @@ from . import (
     tabular,
     xml,
 )
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -23,7 +31,15 @@ class Xgmml(xml.GenericXml):
 
     file_ext = "xgmml"
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """
         Set the peek and blurb text
         """
@@ -71,7 +87,15 @@ class Sif(tabular.Tabular):
 
     file_ext = "sif"
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """
         Set the peek and blurb text
         """

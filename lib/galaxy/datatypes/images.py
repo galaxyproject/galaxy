@@ -5,6 +5,7 @@ import base64
 import json
 import logging
 from typing import (
+    List,
     Optional,
     TYPE_CHECKING,
 )
@@ -55,7 +56,7 @@ class Image(data.Data):
         super().__init__(**kwd)
         self.image_formats = [self.file_ext.upper()]
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"Image in {dataset.extension} format"
             dataset.blurb = nice_size(dataset.get_size())
@@ -492,7 +493,15 @@ class Star(data.Text):
 
     file_ext = "star"
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)

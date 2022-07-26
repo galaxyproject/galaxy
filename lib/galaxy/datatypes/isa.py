@@ -11,6 +11,10 @@ import os.path
 import re
 import shutil
 import tempfile
+from typing import (
+    List,
+    TYPE_CHECKING,
+)
 
 # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
 logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
@@ -24,6 +28,9 @@ from galaxy import util
 from galaxy.datatypes import data
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.sanitize_html import sanitize_html
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 # CONSTANTS {{{1
 ################################################################
@@ -147,7 +154,7 @@ class _Isa(data.Data):
     # Set peek {{{2
     ################################################################
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         """Set the peek and blurb text. Get first lines of the main file and set it as the peek."""
 
         main_file = self._get_main_file(dataset)
@@ -157,7 +164,7 @@ class _Isa(data.Data):
 
         # Read first lines of main file
         with open(main_file, encoding="utf-8") as f:
-            data = []
+            data: List = []
             for line in f:
                 if len(data) < _MAX_LINES_HISTORY_PEEK:
                     data.append(line)

@@ -1,8 +1,12 @@
 """
 GIS classes
 """
+from typing import TYPE_CHECKING
 
 from galaxy.datatypes.binary import Binary
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 
 class Shapefile(Binary):
@@ -78,7 +82,7 @@ class Shapefile(Binary):
         rval.append("</ul></div></html>\n")
         return "\n".join(rval)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "Shapefile data"

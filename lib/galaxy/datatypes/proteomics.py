@@ -3,6 +3,11 @@ Proteomics Datatypes
 """
 import logging
 import re
+from typing import (
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
@@ -18,6 +23,9 @@ from galaxy.datatypes.tabular import (
 )
 from galaxy.datatypes.xml import GenericXml
 from galaxy.util import nice_size
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -94,7 +102,15 @@ class MzTab(Text):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -145,7 +161,15 @@ class MzTab2(MzTab):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -665,11 +689,19 @@ class ProteomicsXml(GenericXml):
         pattern = r"<(\w*:)?%s" % self.root
         return re.search(pattern, line) is not None
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
-            dataset.blurb = self.blurb
+            dataset.blurb = self.blurb  # type: ignore  #TODO: this is a bug: fix in next commit
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -834,7 +866,15 @@ class Mgf(Text):
     edam_format = "format_3651"
     file_ext = "mgf"
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -863,7 +903,15 @@ class MascotDat(Text):
     edam_format = "format_3713"
     file_ext = "mascotdat"
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -906,7 +954,7 @@ class ThermoRAW(Binary):
         except Exception:
             return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Thermo Finnigan RAW file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -948,7 +996,15 @@ class SPLibNoIndex(Text):
 
     file_ext = "splib_noindex"
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -990,7 +1046,15 @@ class SPLib(Msp):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)

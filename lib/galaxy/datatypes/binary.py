@@ -87,7 +87,7 @@ class Binary(data.Data):
     def register_unsniffable_binary_ext(ext):
         """Deprecated method."""
 
-    def set_peek(self, dataset, **kwd):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = "binary data"
@@ -108,7 +108,7 @@ class Ab1(Binary):
     edam_format = "format_3000"
     edam_data = "data_0924"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary ab1 sequence file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -198,7 +198,7 @@ class Cel(Binary):
         elif header_bytes.decode("utf8", errors="ignore").startswith("[CEL]"):
             dataset.metadata.version = "3"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.blurb = f"Cel version: {dataset.metadata.version}"
             dataset.peek = get_file_peek(dataset.file_name)
@@ -232,7 +232,7 @@ class CompressedArchive(Binary):
     compressed = True
     is_binary = "maybe"  # type: ignore[assignment]  # https://github.com/python/mypy/issues/8796
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Compressed binary file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -289,7 +289,7 @@ class Bref3(Binary):
     def sniff_prefix(self, sniff_prefix):
         return sniff_prefix.startswith_bytes(self._magic)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary bref3 file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -349,7 +349,7 @@ class CompressedZipArchive(CompressedArchive):
 
     file_ext = "zip"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Compressed zip file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -523,7 +523,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         except Exception:
             return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary bam alignments file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -768,9 +768,7 @@ class Bam(BamNative):
     # TODO:?? seems like there should be an easier way to do/inherit this - metadata.comment_char?
     # TODO: incorporate samtools options to control output: regions first, then flags, etc.
     @dataproviders.decorators.dataprovider_factory("line", dataproviders.line.FilteredLineDataProvider.settings)
-    def line_dataprovider(
-        self, dataset: "DatasetInstance", **settings
-    ) -> dataproviders.line.FilteredLineDataProvider:
+    def line_dataprovider(self, dataset: "DatasetInstance", **settings) -> dataproviders.line.FilteredLineDataProvider:
         samtools_source = dataproviders.dataset.SamtoolsDataProvider(dataset)
         settings["comment_char"] = "@"
         return dataproviders.line.FilteredLineDataProvider(samtools_source, **settings)
@@ -958,7 +956,7 @@ class CRAM(Binary):
             log.warning("%s, set_index_file Exception: %s", self, exc)
             return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "CRAM binary alignment file"
             dataset.blurb = "binary data"
@@ -1095,7 +1093,7 @@ class H5(Binary):
         except Exception:
             return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary HDF5 file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -1201,7 +1199,7 @@ class Loom(H5):
                     return True
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary Loom file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -1466,7 +1464,7 @@ class Anndata(H5):
             if dataset.metadata.shape is None:
                 dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             tmp = dataset.metadata
 
@@ -1539,7 +1537,7 @@ class Grib(Binary):
         except Exception:
             return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary GRIB file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -1582,7 +1580,7 @@ class GmxBinary(Binary):
         # The first 4 bytes of any GROMACS binary file containing the magic number
         return sniff_prefix.magic_header(">1i") == self.magic_number
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"Binary GROMACS {self.file_ext} file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -1742,7 +1740,7 @@ class Biom2(H5):
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, util.unicodify(e))
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             lines = ["Biom2 (HDF5) file"]
             try:
@@ -1802,7 +1800,7 @@ class Cool(H5):
                     return True
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Cool (HDF5) file for storing genomic interaction data."
             dataset.blurb = nice_size(dataset.get_size())
@@ -1862,7 +1860,7 @@ class MCool(H5):
                     return True
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Multi-resolution Cool (HDF5) file for storing genomic interaction data."
             dataset.blurb = nice_size(dataset.get_size())
@@ -1948,7 +1946,7 @@ class H5MLM(H5):
             log.warning("%s, get model configuration Except: %s", self, e)
             return ""
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             repr_ = self.get_repr(dataset.file_name)
             dataset.peek = repr_[: self.max_peek_size]
@@ -2085,7 +2083,7 @@ class HexrdMaterials(H5):
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             lines = ["Material SpaceGroup Lattice"]
             if dataset.metadata.materials:
@@ -2110,7 +2108,7 @@ class Scf(Binary):
     edam_data = "data_0924"
     file_ext = "scf"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary scf sequence file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -2138,7 +2136,7 @@ class Sff(Binary):
         # about the format, see http://www.ncbi.nlm.nih.gov/Traces/trace.cgi?cmd=show&f=formats&m=doc&s=format
         return sniff_prefix.startswith_bytes(b".sff")
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary sff file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -2175,7 +2173,7 @@ class BigWig(Binary):
     def sniff_prefix(self, sniff_prefix):
         return sniff_prefix.magic_header("I") == self._magic
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"Binary UCSC {self._name} file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -2216,7 +2214,7 @@ class TwoBit(Binary):
         magic = sniff_prefix.magic_header(">L")
         return magic == TWOBIT_MAGIC_NUMBER or magic == TWOBIT_MAGIC_NUMBER_SWAP
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary TwoBit format nucleotide file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -2318,7 +2316,7 @@ class SQlite(Binary):
             log.warning("%s, sniff Exception: %s", self, e)
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "SQLite Database"
             lines = ["SQLite Database"]
@@ -2403,7 +2401,7 @@ class GeminiSQLite(SQlite):
             return self.sniff_table_names(filename, table_names)
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or "unknown")
             dataset.blurb = nice_size(dataset.get_size())
@@ -2490,7 +2488,7 @@ class CuffDiffSQlite(SQlite):
             return self.sniff_table_names(filename, table_names)
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or "unknown")
             dataset.blurb = nice_size(dataset.get_size())
@@ -2820,7 +2818,7 @@ class IdpDB(SQlite):
             return self.sniff_table_names(filename, table_names)
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "IDPickerDB SQLite file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -2919,7 +2917,7 @@ class NcbiTaxonomySQlite(SQlite):
             return self.sniff_table_names(filename, table_names)
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "NCBI Taxonomy SQLite Database, version {} ({} taxons)".format(
                 getattr(dataset.metadata, "ncbitaxonomy_schema_version", "unknown"),
@@ -2966,7 +2964,7 @@ class ExcelXls(Binary):
         """Returns the mime type of the datatype"""
         return "application/vnd.ms-excel"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Microsoft Excel XLS file"
             dataset.blurb = data.nice_size(dataset.get_size())
@@ -2993,7 +2991,7 @@ class Sra(Binary):
         """
         return sniff_prefix.startswith_bytes(b"NCBI.sra")
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary sra file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -3389,7 +3387,7 @@ class PostgresqlArchive(CompressedArchive):
                 return "postgresql/db/PG_VERSION" in temptar.getnames()
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"PostgreSQL Archive ({nice_size(dataset.get_size())})"
             dataset.blurb = "PostgreSQL version %s" % (dataset.metadata.version or "unknown")
@@ -3443,7 +3441,7 @@ class Fast5Archive(CompressedArchive):
             log.warning("%s, sniff Exception: %s", self, e)
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"FAST5 Archive ({nice_size(dataset.get_size())})"
             dataset.blurb = "%s sequences" % (dataset.metadata.fast5_count or "unknown")
@@ -3552,7 +3550,7 @@ class SearchGuiArchive(CompressedArchive):
             log.warning("%s, sniff Exception: %s", self, e)
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or "unknown")
             dataset.blurb = nice_size(dataset.get_size())
@@ -3575,7 +3573,7 @@ class NetCDF(Binary):
     edam_format = "format_3650"
     edam_data = "data_0943"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary netCDF file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -3631,7 +3629,7 @@ class Dcd(Binary):
         except Exception:
             return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary CHARMM/NAMD dcd file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -3683,7 +3681,7 @@ class Vel(Binary):
         except Exception:
             return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary CHARMM velocity file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -3780,7 +3778,7 @@ class ICM(Binary):
     file_ext = "icm"
     edam_data = "data_0950"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary ICM (interpolated context model) file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -3855,7 +3853,7 @@ class BafTar(CompressedArchive):
     def get_type(self):
         return "Bruker BAF directory archive"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = self.get_type()
             dataset.blurb = nice_size(dataset.get_size())
@@ -3965,7 +3963,7 @@ class Pretext(Binary):
         # file contains binary data.
         return sniff_prefix.startswith_bytes(b"pstm")
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary pretext file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -4009,7 +4007,7 @@ class JP2(Binary):
         except Exception:
             return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary JPEG 2000 file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -4065,7 +4063,7 @@ class Npz(CompressedArchive):
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"Binary Numpy npz {dataset.metadata.nfiles} files ({nice_size(dataset.get_size())})"
             dataset.blurb = nice_size(dataset.get_size())
@@ -4138,7 +4136,7 @@ class HexrdImagesNpz(Npz):
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             lines = [
                 f"Binary Hexrd Image npz {dataset.metadata.nfiles} files ({nice_size(dataset.get_size())})",
@@ -4200,7 +4198,7 @@ class HexrdEtaOmeNpz(Npz):
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             lines = [
                 f"Binary Hexrd Eta-Ome npz {dataset.metadata.nfiles} files ({nice_size(dataset.get_size())})",

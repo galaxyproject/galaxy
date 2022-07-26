@@ -33,6 +33,11 @@ Covers the ``blastxml`` format and the BLAST databases.
 import logging
 import os
 from time import sleep
+from typing import (
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -46,6 +51,9 @@ from .data import (
 )
 from .xml import GenericXml
 
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
+
 log = logging.getLogger(__name__)
 
 
@@ -57,7 +65,15 @@ class BlastXml(GenericXml):
     edam_format = "format_3331"
     edam_data = "data_0857"
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
@@ -182,7 +198,7 @@ class BlastXml(GenericXml):
 class _BlastDb(Data):
     """Base class for BLAST database datatype."""
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "BLAST database (multiple files)"
@@ -340,7 +356,7 @@ class LastDb(Data):
     file_ext = "lastdb"
     composite_type = "basic"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "LAST database (multiple files)"

@@ -10,6 +10,8 @@ import subprocess
 import tempfile
 from typing import (
     IO,
+    List,
+    Optional,
     TYPE_CHECKING,
 )
 
@@ -49,7 +51,15 @@ class Html(Text):
     edam_format = "format_2331"
     file_ext = "html"
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "HTML file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -85,7 +95,15 @@ class Json(Text):
     edam_format = "format_3464"
     file_ext = "json"
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "JavaScript Object Notation (JSON)"
@@ -164,7 +182,15 @@ class ExpressionJson(Json):
 class Ipynb(Json):
     file_ext = "ipynb"
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Jupyter Notebook"
@@ -366,7 +392,15 @@ class Biom1(Json):
         no_value=[],
     )
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "Biological Observation Matrix v1"
@@ -465,7 +499,15 @@ class ImgtJson(Json):
 
     MetadataElement(name="taxon_names", default=[], desc="taxonID: names", readonly=True, visible=True, no_value=[])
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "IMGT Library"
@@ -531,7 +573,15 @@ class GeoJson(Json):
 
     file_ext = "geojson"
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "GeoJSON"
@@ -592,7 +642,15 @@ class Obo(Text):
     edam_format = "format_2549"
     file_ext = "obo"
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Open Biomedical Ontology (OBO)"
@@ -634,7 +692,15 @@ class Arff(Text):
     )
     MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=True, no_value=0)
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Attribute-Relation File Format (ARFF)"
@@ -886,13 +952,21 @@ class SnpSiftDbNSFP(Text):
                 unicodify(e),
             )
 
-        def set_peek(self, dataset):
-            if not dataset.dataset.purged:
-                dataset.peek = f"{dataset.metadata.reference_name} :  {','.join(dataset.metadata.annotation)}"
-                dataset.blurb = f"{dataset.metadata.reference_name}"
-            else:
-                dataset.peek = "file does not exist"
-                dataset.blurb = "file purged from disc"
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = f"{dataset.metadata.reference_name} :  {','.join(dataset.metadata.annotation)}"
+            dataset.blurb = f"{dataset.metadata.reference_name}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disc"
 
 
 @build_sniff_from_prefix

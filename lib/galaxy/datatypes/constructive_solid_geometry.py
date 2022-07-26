@@ -5,7 +5,11 @@ Constructive Solid Geometry file formats.
 """
 
 import abc
-from typing import List
+from typing import (
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy import util
 from galaxy.datatypes import data
@@ -20,6 +24,9 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
 )
 from galaxy.datatypes.tabular import Tabular
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 MAX_HEADER_LINES = 500
 MAX_LINE_LEN = 2000
@@ -556,7 +563,15 @@ class NeperTess(data.Text):
                     if i == 6:
                         dataset.metadata.cells = int(line)
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name, LINE_COUNT=7)
             dataset.blurb = f"format: {str(dataset.metadata.format)} dim: {str(dataset.metadata.dimension)} cells: {str(dataset.metadata.cells)}"
@@ -643,7 +658,7 @@ class NeperTesr(Binary):
                         dataset.metadata.cells = int(line)
                         break
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name, LINE_COUNT=9)
             dataset.blurb = f"format: {str(dataset.metadata.format)} dim: {str(dataset.metadata.dimension)} cells: {str(dataset.metadata.cells)}"
@@ -689,7 +704,15 @@ class NeperPoints(data.Text):
             return None
         return dim
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         data.Text.set_peek(self, dataset)
         if not dataset.dataset.purged:
             dataset.blurb += f" dim: {str(dataset.metadata.dimension)}"
@@ -712,7 +735,15 @@ class NeperPointsTabular(NeperPoints, Tabular):
             with open(dataset.file_name, errors="ignore") as fh:
                 dataset.metadata.dimension = self._get_dimension(fh)
 
-    def set_peek(self, dataset):
+    def set_peek(
+        self,
+        dataset: "DatasetInstance",
+        line_count: Optional[int] = None,
+        WIDTH: int = 256,
+        skipchars: Optional[List[str]] = None,
+        line_wrap: bool = True,
+        **kwd,
+    ) -> None:
         Tabular.set_peek(self, dataset)
         if not dataset.dataset.purged:
             dataset.blurb += f" dim: {str(dataset.metadata.dimension)}"
@@ -768,7 +799,7 @@ class GmshMsh(Binary):
                         if len(fields) > 1:
                             dataset.metadata.format = "ASCII" if fields[1] == "0" else "binary"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name, LINE_COUNT=3)
             dataset.blurb = f"Gmsh verion: {str(dataset.metadata.version)} {str(dataset.metadata.format)}"

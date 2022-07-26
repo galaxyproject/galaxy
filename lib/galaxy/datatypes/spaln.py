@@ -4,10 +4,14 @@ spaln Composite Dataset
 
 import logging
 import os.path
+from typing import TYPE_CHECKING
 
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.util import smart_str
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 verbose = True
@@ -87,7 +91,7 @@ class _SpalnDb(Data):
             f.write("\n".join(rval))
             f.write("\n")
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance") -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "spaln database (multiple files)"

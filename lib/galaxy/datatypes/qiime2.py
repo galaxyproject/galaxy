@@ -3,6 +3,7 @@ import html
 import io
 import uuid as _uuid
 import zipfile
+from typing import TYPE_CHECKING
 
 import yaml
 
@@ -10,6 +11,9 @@ from galaxy.datatypes.binary import CompressedZipArchive
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.datatypes.tabular import Tabular
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 
 class _QIIME2ResultBase(CompressedZipArchive):
@@ -29,7 +33,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         dataset.metadata.semantic_type_simple = _strip_properties(dataset.metadata.semantic_type)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset: "DatasetInstance", is_multi_byte=False) -> None:
         if dataset.metadata.semantic_type == "Visualization":
             dataset.blurb = "QIIME 2 Visualization"
         else:
