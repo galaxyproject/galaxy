@@ -261,9 +261,7 @@ class HistoryContentSource(str, Enum):
     new_collection = "new_collection"
 
 
-class DatasetCollectionInstanceType(str, Enum):
-    history = "history"
-    library = "library"
+DatasetCollectionInstanceType = Literal["history", "library"]
 
 
 class TagItem(ConstrainedStr):
@@ -1267,7 +1265,7 @@ class CreateNewCollectionPayload(Model):
         description="Whether to create a copy of the source HDAs for the new collection.",
     )
     instance_type: Optional[DatasetCollectionInstanceType] = Field(
-        default=DatasetCollectionInstanceType.history,
+        default="history",
         title="Instance Type",
         description="The type of the instance, either `history` (default) or `library`.",
     )

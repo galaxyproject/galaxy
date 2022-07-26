@@ -83,7 +83,6 @@ from galaxy.schema.schema import (
     ContentsNearStats,
     CreateNewCollectionPayload,
     DatasetAssociationRoles,
-    DatasetCollectionInstanceType,
     DeleteHistoryContentPayload,
     HistoryContentBulkOperationPayload,
     HistoryContentBulkOperationResult,
@@ -1289,7 +1288,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def __get_accessible_collection(self, trans, id: EncodedDatabaseIdField):
         return self.dataset_collection_manager.get_dataset_collection_instance(
             trans=trans,
-            instance_type=DatasetCollectionInstanceType.history,
+            instance_type="history",
             id=id,
         )
 
@@ -1533,7 +1532,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         )
         collections = [
             self.dataset_collection_manager.get_dataset_collection_instance(
-                trans, instance_type=DatasetCollectionInstanceType.history, id=collection_item.id, check_ownership=True
+                trans, instance_type="history", id=collection_item.id, check_ownership=True
             )
             for collection_item in collection_items
         ]

@@ -31,7 +31,6 @@ from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
     FetchDataPayload,
 )
-from galaxy.schema.schema import DatasetCollectionInstanceType
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
@@ -489,7 +488,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         else:
             if input_src == "hdca":
                 target_history = self.hdca_manager.get_dataset_collection_instance(
-                    trans, instance_type=DatasetCollectionInstanceType.history, id=input_id
+                    trans, instance_type="history", id=input_id
                 ).history
             elif input_src == "hda":
                 decoded_id = trans.app.security.decode_id(input_id)

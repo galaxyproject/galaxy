@@ -654,20 +654,14 @@ class DatasetCollectionManager:
 
     @overload
     def get_dataset_collection_instance(
-        self, trans, instance_type: Literal[DatasetCollectionInstanceType.history], id, **kwds: Any
+        self, trans, instance_type: Literal["history"], id, **kwds: Any
     ) -> model.HistoryDatasetCollectionAssociation:
         ...
 
     @overload
     def get_dataset_collection_instance(
-        self, trans, instance_type: Literal[DatasetCollectionInstanceType.library], id, **kwds: Any
+        self, trans, instance_type: Literal["library"], id, **kwds: Any
     ) -> model.LibraryDatasetCollectionAssociation:
-        ...
-
-    @overload
-    def get_dataset_collection_instance(
-        self, trans, instance_type: DatasetCollectionInstanceType, id, **kwds: Any
-    ) -> Union[model.HistoryDatasetCollectionAssociation, model.LibraryDatasetCollectionAssociation]:
         ...
 
     def get_dataset_collection_instance(
