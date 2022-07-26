@@ -245,7 +245,7 @@ class ToolPanelViewSearch:
             f"Toolbox index of panel {self.panel_view_id}"
             f" finished {execution_timer}")
 
-    def _get_tools_to_remove(self, tool_cache):
+    def _get_tools_to_remove(self, tool_cache) -> list:
         """Return list of tool IDs to be removed from index."""
         tool_ids_to_remove = (
             self.indexed_tool_ids - set(tool_cache._tool_paths_by_id.keys())
@@ -263,7 +263,7 @@ class ToolPanelViewSearch:
 
         return tool_ids_to_remove
 
-    def _get_tool_list(self, toolbox, tool_cache) -> tuple:
+    def _get_tool_list(self, toolbox, tool_cache) -> list:
         """Return list of tools to add and remove from index."""
         tools_to_index = []
 
