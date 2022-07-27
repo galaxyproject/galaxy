@@ -1294,6 +1294,14 @@ class BaseCSV(TabularData):
     See the Python module csv for documentation of dialect settings
     """
 
+    @property
+    def dialect(self):
+        raise NotImplementedError
+
+    @property
+    def strict_width(self):
+        raise NotImplementedError
+
     delimiter = ","
     peek_size = 1024  # File chunk used for sniffing CSV dialect
     big_peek_size = 10240  # Large File chunk used for sniffing CSV dialect
