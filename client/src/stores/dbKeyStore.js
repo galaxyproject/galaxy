@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import UploadUtils from "mvc/upload/upload-utils";
 
-export const useDbKeyStore = defineStore(" dbKeyStore", {
+export const useDbKeyStore = defineStore("dbKeyStore", {
     state: () => ({
         uploadDbKeys: [],
     }),
