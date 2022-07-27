@@ -4,6 +4,10 @@ import Vue, { provide } from "vue";
 import App from "./App.vue";
 import store from "store";
 import { getRouter } from "./router";
+import { createPinia, PiniaVuePlugin } from "pinia";
+
+Vue.use(PiniaVuePlugin);
+const pinia = createPinia();
 
 addInitialization((Galaxy) => {
     console.log("App setup");
@@ -16,6 +20,7 @@ addInitialization((Galaxy) => {
         },
         router: router,
         store: store,
+        pinia: pinia,
     });
 });
 
