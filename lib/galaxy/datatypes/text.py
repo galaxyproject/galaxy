@@ -67,7 +67,7 @@ class Html(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "text/html"
 
@@ -111,7 +111,7 @@ class Json(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "application/json"
 
@@ -1141,7 +1141,7 @@ class Yaml(Text):
         """
         return self._looks_like_yaml(file_prefix)
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "application/yaml"
 

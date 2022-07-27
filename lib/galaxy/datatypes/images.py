@@ -356,7 +356,7 @@ class Gmaj(data.Data):
     edam_format = "format_3547"
     file_ext = "gmaj.zip"
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "application/zip"
 

@@ -96,7 +96,7 @@ class Binary(data.Data):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "application/octet-stream"
 
@@ -2960,7 +2960,7 @@ class ExcelXls(Binary):
     def sniff_prefix(self, sniff_prefix):
         return sniff_prefix.mime_type == self.get_mime()
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "application/vnd.ms-excel"
 
