@@ -229,6 +229,7 @@ class HDT(binary.Binary, Triples):
         with open(filename, "rb") as f:
             if f.read(4) == b"$HDT":
                 return True
+        return False
 
     def set_peek(self, dataset: "DatasetInstance") -> None:
         """Set the peek and blurb text"""

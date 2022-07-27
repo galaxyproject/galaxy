@@ -894,6 +894,7 @@ class Mgf(Text):
                     return True
                 if i > max_lines:
                     return False
+        return False
 
 
 class MascotDat(Text):
@@ -931,6 +932,7 @@ class MascotDat(Text):
                     return True
                 if i > max_lines:
                     return False
+        return False
 
 
 class ThermoRAW(Binary):
