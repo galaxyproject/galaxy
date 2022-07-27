@@ -24,7 +24,6 @@ import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { jobStore } from "./jobStore";
 import { collectionAttributesStore } from "./collectionAttributesStore";
-import { datatypeStore } from "./datatypeStore";
 import { panelStore } from "./panelStore";
 
 // Syncs vuex to Galaxy store until Galaxy vals to not exist
@@ -64,7 +63,6 @@ export function createStore() {
             dataset: datasetStore,
             datasetExtFiles: datasetExtFilesStore,
             datasetPathDestination: datasetPathDestinationStore,
-            datatypeStore: datatypeStore,
             informationStore: jobStore,
             invocations: invocationStore,
             jobMetrics: jobMetricsStore,

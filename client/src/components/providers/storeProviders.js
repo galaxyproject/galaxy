@@ -7,6 +7,7 @@ import { HasAttributesMixin } from "./utils";
 
 import { useDbKeyStore } from "stores/dbKeyStore";
 import { mapActions, mapState } from "pinia";
+import { useDatatypeStore } from "../../stores/datatypeStore";
 
 export const SimpleProviderMixin = {
     props: {
@@ -86,20 +87,20 @@ export const DatatypesProvider = {
         await this.load();
     },
     methods: {
-        ...mapCacheActions(["fetchUploadDatatypes"]),
+        ...mapActions(useDatatypeStore, ["fetchUploadDatatypes"]),
         async load() {
             this.loading = true;
-            let datatypes = this.getUploadDatatypes();
+            let datatypes = this.getUploadDatatypes;
             if (datatypes == null || datatypes.length == 0) {
                 await this.fetchUploadDatatypes();
-                datatypes = this.getUploadDatatypes();
+                datatypes = this.getUploadDatatypes;
             }
             this.item = datatypes;
             this.loading = false;
         },
     },
     computed: {
-        ...mapGetters(["getUploadDatatypes"]),
+        ...mapState(useDatatypeStore, ["getUploadDatatypes"]),
     },
 };
 
