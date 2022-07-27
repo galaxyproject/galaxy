@@ -11,6 +11,8 @@ import string
 import subprocess
 from itertools import islice
 from typing import (
+    Callable,
+    Dict,
     List,
     Optional,
     TYPE_CHECKING,
@@ -411,7 +413,7 @@ class Fasta(Sequence):
         return False
 
     @classmethod
-    def split(cls, input_datasets, subdir_generator_function, split_params):
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
         """Split a FASTA file sequence by sequence.
 
         Note that even if split_mode="number_of_parts", the actual number of
@@ -798,7 +800,7 @@ class BaseFastq(Sequence):
             return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
 
     @classmethod
-    def split(cls, input_datasets, subdir_generator_function, split_params):
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
         """
         FASTQ files are split on cluster boundaries, in increments of 4 lines
         """
