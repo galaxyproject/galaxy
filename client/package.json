@@ -17,7 +17,8 @@
     "not baidu 7.12"
   ],
   "resolutions": {
-    "**/chokidar": "3.5.3"
+    "**/chokidar": "3.5.3",
+    "**/vue": "^2.7.8"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.15.4",

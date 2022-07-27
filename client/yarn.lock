@@ -10469,12 +10469,7 @@ vue-virtual-scroll-list@^2.3.3:
   resolved "https://registry.yarnpkg.com/vue-virtual-scroll-list/-/vue-virtual-scroll-list-2.3.3.tgz#290f0d04be814b93585f2ef232097b671141e5b1"
   integrity sha512-heuwlZ+lEdcVSp66CpVXnyNdsiHl/XU1cvqJb0yUHGlLv6DGK8OX16FH8I3w/wKNXtHSPF9itdBBGJFrXkyHeg==
 
-vue@^2.6.10:
-  version "2.6.14"
-  resolved "https://registry.yarnpkg.com/vue/-/vue-2.6.14.tgz#e51aa5250250d569a3fbad3a8a5a687d6036e235"
-  integrity sha512-x2284lgYvjOMj3Za7kqzRcUSxBboHqtgRE2zlos1qWaOye5yUmHn42LB1250NJBLRwEcdrB0JRwyPTEPhfQjiQ==
-
-vue@^2.7.8:
+vue@^2.6.10, vue@^2.7.8:
   version "2.7.8"
   resolved "https://registry.yarnpkg.com/vue/-/vue-2.7.8.tgz#34e06553137611d8cecc4b0cd78b7a59f80b1299"
   integrity sha512-ncwlZx5qOcn754bCu5/tS/IWPhXHopfit79cx+uIlLMyt3vCMGcXai5yCG5y+I6cDmEj4ukRYyZail9FTQh7lQ==
