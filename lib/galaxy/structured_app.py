@@ -100,6 +100,7 @@ class MinimalManagerApp(MinimalApp):
     job_manager: Any  # galaxy.jobs.manager.JobManager
     job_metrics: "JobMetrics"
     dynamic_tool_manager: Any  # 'galaxy.managers.tools.DynamicToolManager'
+    notification_manager: Any  # 'galaxy.managers.notification.NotificationManager'
 
     @property
     def is_job_handler(self) -> bool:
