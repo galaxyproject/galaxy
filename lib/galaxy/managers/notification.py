@@ -8,12 +8,14 @@ from sqlalchemy import false
 from galaxy import model
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.structured_app import MinimalManagerApp
 
 
 class NotificationManager:
     """Interface/service object shared by controllers for interacting with notifications."""
 
-    def __init__(self, sa_session: galaxy_scoped_session):
+    def __init__(self, app: MinimalManagerApp, sa_session: galaxy_scoped_session):
+        self._app = app
         self.sa_session = sa_session
 
     def index(self, limit: int = 10, offset: int = 0, user: Optional[model.User] = None):
@@ -48,10 +50,13 @@ class NotificationManager:
             raise ObjectNotFound(f"Notification with id {notification_id} was not found.")
         return notification
 
-    def update(self, notification: model.Notification, updated_message: str):
+    def update(self, notification_id, updated_message: str):
         """
         Modifies a notification.
         """
+        notification = self.sa_session.query(model.Notification).get(notification_id)
+        if notification is None:
+            raise ObjectNotFound(f"Notification with id {notification_id} was not found.")
         notification.message_text = updated_message
         self.sa_session.add(notification)
         self.sa_session.flush()
