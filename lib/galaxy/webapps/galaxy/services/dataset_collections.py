@@ -235,7 +235,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         # TODO: refactor get_dataset_collection_instance
         if instance_type != "history":
             raise exceptions.RequestParameterInvalidException(
-                "Parameter instance_type not bein 'history' is not yet implemented."
+                "Parameter instance_type not being 'history' is not yet implemented."
             )
         hdca: "HistoryDatasetCollectionAssociation" = self.collection_manager.get_dataset_collection_instance(
             trans, "history", hdca_id, check_ownership=True
