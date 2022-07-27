@@ -91,6 +91,7 @@ PyYAML = "*"
 refgenconf = ">=0.12.0"
 requests = "*"
 Routes = "*"
+schema-salad = "!=8.3.20220721194857"  # https://github.com/common-workflow-language/schema_salad/issues/575
 social-auth-core = {version = "==4.0.3", extras = ["openidconnect"]}
 sortedcontainers = "*"
 SQLAlchemy = ">=1.4.25,<2"
