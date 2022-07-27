@@ -333,7 +333,7 @@ class Interval(Tabular):
             ret_val.append((site_name, link))
         return ret_val
 
-    def validate(self, dataset, **kwd):
+    def validate(self, dataset: "DatasetInstance", **kwd) -> DatatypeValidation:
         """Validate an interval file using the bx GenomicIntervalReader"""
         c, s, e, t = (
             dataset.metadata.chromCol,

@@ -1012,7 +1012,7 @@ class BaseVcf(Tabular):
         if exit_code != 0:
             raise Exception(f"Error merging VCF files: {stderr}")
 
-    def validate(self, dataset, **kwd):
+    def validate(self, dataset: "DatasetInstance", **kwd) -> data.DatatypeValidation:
         def validate_row(row):
             if len(row) < 8:
                 raise Exception("Not enough columns in row %s" % row.join("\t"))

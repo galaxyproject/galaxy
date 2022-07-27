@@ -16,6 +16,7 @@ import os
 import re
 import sys
 from typing import (
+    cast,
     List,
     Optional,
     TYPE_CHECKING,
@@ -180,6 +181,7 @@ class GenomeGraphs(Tabular):
             for row in infile:
                 ll = row.strip().split("\t")[1:]  # first is alpha feature identifier
                 for x in ll:
+                    x = cast(float, x)
                     x = float(x)
         return DatatypeValidation.validated()
 
