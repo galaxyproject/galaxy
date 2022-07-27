@@ -113,6 +113,7 @@ class MinimalManagerApp(MinimalApp):
     dynamic_tool_manager: Any  # 'galaxy.managers.tools.DynamicToolManager'
     genomes: "Genomes"
     error_reports: "ErrorReports"
+    notification_manager: Any  # 'galaxy.managers.notification.NotificationManager'
     object_store: BaseObjectStore
     tool_shed_registry: ToolShedRegistry
 
