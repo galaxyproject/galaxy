@@ -50,7 +50,7 @@ class Xgmml(xml.GenericXml):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """
         Returns false and the user must manually set.
         """
@@ -106,7 +106,7 @@ class Sif(tabular.Tabular):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """
         Returns false and the user must manually set.
         """

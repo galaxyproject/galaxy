@@ -156,7 +156,7 @@ class PlantTribesKsComponents(Tabular):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('test_tab.bed')

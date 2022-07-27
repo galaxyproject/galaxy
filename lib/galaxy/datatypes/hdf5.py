@@ -75,7 +75,7 @@ class HDF5SummarizedExperiment(Data):
               </html>
               """
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """Not sure whether this is necessary (or possible) with binaries."""
 
     def get_mime(self) -> str:

@@ -1296,7 +1296,7 @@ class RNADotPlotMatrix(data.Data):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """Determine if the file is in RNA dot plot format."""
         if check_image_type(filename, ["EPS"]):
             seq = False

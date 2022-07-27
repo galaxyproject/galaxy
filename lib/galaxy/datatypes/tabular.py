@@ -1059,7 +1059,7 @@ class VcfGz(BaseVcf, binary.Binary):
         optional=True,
     )
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         if not self._sniff(filename):
             return False
         # Check that the file is compressed with bgzip (not gzip), i.e. the
@@ -1356,7 +1356,7 @@ class BaseCSV(TabularData):
         else:
             return "str"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """Return True if if recognizes dialect and header."""
         # check the dialect works
         with open(filename, newline="") as f:

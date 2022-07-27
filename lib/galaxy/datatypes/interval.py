@@ -727,7 +727,7 @@ class BedStrict(Bed):
             if dataset.metadata.columns >= 6:
                 dataset.metadata.strandCol = 6
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         return False  # NOTE: This would require aggressively validating the entire file
 
 
@@ -1634,7 +1634,7 @@ class ENCODEPeak(Interval):
     )
     MetadataElement(name="columns", default=3, desc="Number of columns", readonly=True, visible=False)
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         return False
 
 
@@ -1658,7 +1658,7 @@ class ChromatinInteractions(Interval):
 
     MetadataElement(name="columns", default=7, desc="Number of columns", readonly=True, visible=False)
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         return False
 
 

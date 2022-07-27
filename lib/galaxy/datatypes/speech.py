@@ -35,7 +35,7 @@ class TextGrid(Text):
         no_value=[],
     )
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
 
         with open(filename) as fd:
             text = fd.read(len(self.header))
@@ -114,7 +114,7 @@ class BPF(Text):
 
         dataset.metadata.annotations = list(types)
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         # We loop over 30 as there are 9 mandatory headers (the last should be
         # `LBD:`), while there are 21 optional headers that can be
         # interspersed.

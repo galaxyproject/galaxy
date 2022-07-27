@@ -176,7 +176,7 @@ class Video(Binary):
 class Mkv(Video):
     file_ext = "mkv"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
             return "matroska" in metadata["format_name"].split(",")
@@ -194,7 +194,7 @@ class Mp4(Video):
 
     file_ext = "mp4"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
             return "mp4" in metadata["format_name"].split(",")
@@ -203,7 +203,7 @@ class Mp4(Video):
 class Flv(Video):
     file_ext = "flv"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
             return "flv" in metadata["format_name"].split(",")
@@ -212,7 +212,7 @@ class Flv(Video):
 class Mpg(Video):
     file_ext = "mpg"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
             return "mpegvideo" in metadata["format_name"].split(",")
@@ -230,7 +230,7 @@ class Mp3(Audio):
 
     file_ext = "mp3"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
             return "mp3" in metadata["format_name"].split(",")
@@ -266,7 +266,7 @@ class Wav(Audio):
         """Returns the mime type of the datatype."""
         return "audio/wav"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         with wave.open(filename, "rb"):
             return True
 
