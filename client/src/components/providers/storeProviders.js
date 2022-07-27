@@ -1,9 +1,12 @@
 // Simple dataset provider, looks at api for result, renders to slot prop
 import axios from "axios";
 import { prependPath } from "utils/redirect";
-import { mapActions, mapGetters } from "vuex";
+import { mapActions as vuexMapActions, mapGetters } from "vuex";
 import { mapCacheActions } from "vuex-cache";
 import { HasAttributesMixin } from "./utils";
+
+import { useDbKeyStore } from "stores/dbKeyStore";
+import { mapActions, mapState } from "pinia";
 
 export const SimpleProviderMixin = {
     props: {
@@ -57,7 +60,7 @@ export const DbKeyProvider = {
         await this.load();
     },
     methods: {
-        ...mapCacheActions(["fetchUploadDbKeys"]),
+        ...mapActions(useDbKeyStore, ["fetchUploadDbKeys"]),
         async load() {
             this.loading = true;
             let dbKeys = this.getUploadDbKeys();
@@ -70,7 +73,7 @@ export const DbKeyProvider = {
         },
     },
     computed: {
-        ...mapGetters(["getUploadDbKeys"]),
+        ...mapState(useDbKeyStore, ["uploadDbKeys"]),
     },
 };
 
@@ -171,7 +174,7 @@ export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undef
             });
         },
         methods: {
-            ...mapActions([storeAction]),
+            ...vuexMapActions([storeAction]),
             async load() {
                 this.loading = true;
                 try {
