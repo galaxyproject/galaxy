@@ -496,14 +496,14 @@ class BamNative(CompressedArchive, _BamOrSam):
         _BamOrSam().set_meta(dataset, overwrite=overwrite, **kwd)
 
     @staticmethod
-    def merge(split_files, output_file):
+    def merge(split_files: List[str], output_file: str) -> None:
         """
         Merges BAM files
 
         :param split_files: List of bam file paths to merge
         :param output_file: Write merged bam file to this location
         """
-        pysam.merge("-O", "BAM", output_file, *split_files)
+        pysam.merge("-O", "BAM", output_file, *split_files)  # type:ignore[attr-defined]
 
     def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         Binary.init_meta(self, dataset, copy_from=copy_from)
