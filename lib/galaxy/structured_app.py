@@ -106,6 +106,7 @@ class MinimalManagerApp(MinimalApp):
     dynamic_tool_manager: Any  # 'galaxy.managers.tools.DynamicToolManager'
     genomes: "Genomes"
     error_reports: "ErrorReports"
+    notification_manager: Any  # 'galaxy.managers.notification.NotificationManager'
 
     @property
     def is_job_handler(self) -> bool:

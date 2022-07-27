@@ -43,6 +43,7 @@ from galaxy.managers.interactivetool import InteractiveToolManager
 from galaxy.managers.jobs import JobSearch
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.library_datasets import LibraryDatasetsManager
+from galaxy.managers.notification import NotificationManager
 from galaxy.managers.roles import RoleManager
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.tools import DynamicToolManager
@@ -560,6 +561,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.library_datasets_manager = self._register_singleton(LibraryDatasetsManager)
         self.role_manager = self._register_singleton(RoleManager)
         self.job_manager = self._register_singleton(JobManager)
+        self.notification_manager = self._register_singleton(NotificationManager)
 
         # ConfiguredFileSources
         self.file_sources = self._register_singleton(
