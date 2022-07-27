@@ -341,7 +341,7 @@ class Interval(Tabular):
                 except ParseError as e:
                     return DatatypeValidation.invalid(util.unicodify(e))
                 except StopIteration:
-                    return DatatypeValidation.valid()
+                    return DatatypeValidation.validated()
 
     def repair_methods(self, dataset):
         """Return options for removing errors along with a description"""
