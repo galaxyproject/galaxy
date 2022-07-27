@@ -102,7 +102,6 @@ def lint_tsts(tool_xml, lint_ctx):
                             f"Test {test_idx}: test output '{name}' must have a 'count' attribute and/or 'discovered_datasets' children",
                             node=output,
                         )
-                        pass
                 else:
                     elements = output.findall("./element")
                     if "count" not in output.attrib and len(elements) == 0:

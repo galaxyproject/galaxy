@@ -564,6 +564,7 @@ class Tool(Dictifiable):
     Represents a computational tool that can be executed through Galaxy.
     """
 
+    job_tool_configurations: list
     tool_type = "default"
     requires_setting_metadata = True
     produces_entry_points = False

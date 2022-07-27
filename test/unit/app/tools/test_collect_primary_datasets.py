@@ -1,12 +1,14 @@
 import json
 import os
 import unittest
+from typing import cast
 
 from galaxy import (
     model,
     util,
 )
 from galaxy.app_unittest_utils import tools_support
+from galaxy.objectstore import ObjectStore
 from galaxy.tool_util.parser import output_collection_def
 from galaxy.tool_util.provided_metadata import (
     BaseToolProvidedMetadata,
@@ -21,7 +23,7 @@ DEFAULT_EXTRA_NAME = "test1"
 class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools):
     def setUp(self):
         self.setup_app()
-        object_store = MockObjectStore()
+        object_store = cast(ObjectStore, MockObjectStore())
         self.app.object_store = object_store
         self._init_tool(tools_support.SIMPLE_TOOL_CONTENTS)
         self._setup_test_output()
@@ -47,10 +49,10 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools)
         assert list(datasets[DEFAULT_TOOL_OUTPUT].keys()) == ["test1", "test2"]
 
         created_hda_1 = datasets[DEFAULT_TOOL_OUTPUT]["test1"]
-        self.app.object_store.assert_created_with_path(created_hda_1.dataset, path1)
+        assert_created_with_path(self.app.object_store, created_hda_1.dataset, path1)
 
         created_hda_2 = datasets[DEFAULT_TOOL_OUTPUT]["test2"]
-        self.app.object_store.assert_created_with_path(created_hda_2.dataset, path2)
+        assert_created_with_path(self.app.object_store, created_hda_2.dataset, path2)
 
         # Test default metadata stuff
         assert created_hda_1.visible
@@ -78,13 +80,13 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools)
         assert list(datasets[DEFAULT_TOOL_OUTPUT].keys()) == ["test1", "test2", "test3"]
 
         created_hda_1 = datasets[DEFAULT_TOOL_OUTPUT]["test1"]
-        self.app.object_store.assert_created_with_path(created_hda_1.dataset, path1)
+        assert_created_with_path(self.app.object_store, created_hda_1.dataset, path1)
 
         created_hda_2 = datasets[DEFAULT_TOOL_OUTPUT]["test2"]
-        self.app.object_store.assert_created_with_path(created_hda_2.dataset, path2)
+        assert_created_with_path(self.app.object_store, created_hda_2.dataset, path2)
 
         created_hda_3 = datasets[DEFAULT_TOOL_OUTPUT]["test3"]
-        self.app.object_store.assert_created_with_path(created_hda_3.dataset, path3)
+        assert_created_with_path(self.app.object_store, created_hda_3.dataset, path3)
 
     def test_collect_multiple_recurse_dict(self):
         self._replace_output_collectors_from_dict(
@@ -117,13 +119,13 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools)
         assert list(datasets[DEFAULT_TOOL_OUTPUT].keys()) == ["test1", "test2", "test3"]
 
         created_hda_1 = datasets[DEFAULT_TOOL_OUTPUT]["test1"]
-        self.app.object_store.assert_created_with_path(created_hda_1.dataset, path1)
+        assert_created_with_path(self.app.object_store, created_hda_1.dataset, path1)
 
         created_hda_2 = datasets[DEFAULT_TOOL_OUTPUT]["test2"]
-        self.app.object_store.assert_created_with_path(created_hda_2.dataset, path2)
+        assert_created_with_path(self.app.object_store, created_hda_2.dataset, path2)
 
         created_hda_3 = datasets[DEFAULT_TOOL_OUTPUT]["test3"]
-        self.app.object_store.assert_created_with_path(created_hda_3.dataset, path3)
+        assert_created_with_path(self.app.object_store, created_hda_3.dataset, path3)
 
     def test_collect_sorted_reverse(self):
         self._replace_output_collectors(
@@ -457,5 +459,6 @@ class MockObjectStore:
     def get_filename(self, dataset):
         return self.created_datasets[dataset]
 
-    def assert_created_with_path(self, dataset, file_name):
-        assert self.created_datasets[dataset] == file_name
+
+def assert_created_with_path(object_store, dataset, file_name):
+    assert object_store.created_datasets[dataset] == file_name

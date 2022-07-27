@@ -1,9 +1,11 @@
 import string
 import unittest
+from typing import cast
 
 from galaxy import model
 from galaxy.app_unittest_utils import tools_support
 from galaxy.exceptions import UserActivationRequiredException
+from galaxy.objectstore import ObjectStore
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.actions import (
     DefaultToolAction,
@@ -66,7 +68,7 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesTools):
         self.app.model.context.flush()
         self.action = DefaultToolAction()
         self.app.config.len_file_path = "moocow"
-        self.app.object_store = MockObjectStore()
+        self.app.object_store = cast(ObjectStore, MockObjectStore())
 
     def test_output_created(self):
         _, output = self._simple_execute()

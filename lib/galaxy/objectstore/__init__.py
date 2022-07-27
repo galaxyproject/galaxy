@@ -256,6 +256,10 @@ class ObjectStore(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
+    def to_dict(self) -> Dict[str, Any]:
+        raise NotImplementedError
+
 
 class BaseObjectStore(ObjectStore):
     store_by: str

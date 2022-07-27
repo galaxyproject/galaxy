@@ -241,7 +241,7 @@ class FastAPIHistories:
     def create(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        payload: CreateHistoryPayload = Depends(CreateHistoryFormData.as_form),
+        payload: CreateHistoryPayload = Depends(CreateHistoryFormData.as_form),  # type: ignore[attr-defined]
         payload_as_json: Optional[Any] = Depends(try_get_request_body_as_json),
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> Union[JobImportHistoryResponse, AnyHistoryView]:

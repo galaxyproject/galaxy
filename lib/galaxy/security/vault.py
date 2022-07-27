@@ -57,7 +57,6 @@ class Vault(abc.ABC):
         :param key: The key to read. Typically a hierarchical path such as `/galaxy/user/1/preferences/editor`
         :return: The string value stored at the key, such as 'ace_editor'.
         """
-        pass
 
     @abc.abstractmethod
     def write_secret(self, key: str, value: str) -> None:
@@ -68,7 +67,6 @@ class Vault(abc.ABC):
         :param value: The value to write, such as 'vscode'
         :return:
         """
-        pass
 
     @abc.abstractmethod
     def list_secrets(self, key: str) -> List[str]:
@@ -80,7 +78,6 @@ class Vault(abc.ABC):
                  ['/galaxy/user/1/preferences/editor`, '/galaxy/user/1/preferences/storage`]
                  Note that only immediate subkeys are returned.
         """
-        pass
 
 
 class NullVault(Vault):

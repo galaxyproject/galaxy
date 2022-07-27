@@ -877,7 +877,7 @@ class FastAPIHistoryContents:
             since,
         )
         if result is None:
-            return Response(status_code=status.HTTP_204_NO_CONTENT)
+            return Response(status_code=status.HTTP_204_NO_CONTENT)  # type: ignore[return-value]
         response.headers.update(result.stats.to_headers())
         return result.contents
 
