@@ -107,7 +107,7 @@ class _SpalnDb(Data):
         except Exception:
             return "spaln database (multiple files)"
 
-    def display_data(self, trans, data, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
         """
         If preview is `True` allows us to format the data shown in the central pane via the "eye" icon.
         If preview is `False` triggers download.
@@ -116,7 +116,7 @@ class _SpalnDb(Data):
         if not preview:
             return super().display_data(
                 trans,
-                data=data,
+                dataset=dataset,
                 preview=preview,
                 filename=filename,
                 to_ext=to_ext,
@@ -137,7 +137,7 @@ class _SpalnDb(Data):
         msg = ""
         try:
             # Try to use any text recorded in the dummy index file:
-            with open(data.file_name, encoding="utf-8") as handle:
+            with open(dataset.file_name, encoding="utf-8") as handle:
                 msg = handle.read().strip()
         except Exception:
             pass

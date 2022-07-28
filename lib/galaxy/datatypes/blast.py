@@ -214,7 +214,7 @@ class _BlastDb(Data):
         except Exception:
             return "BLAST database (multiple files)"
 
-    def display_data(self, trans, data, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
         """
         If preview is `True` allows us to format the data shown in the central pane via the "eye" icon.
         If preview is `False` triggers download.
@@ -222,7 +222,7 @@ class _BlastDb(Data):
         headers = kwd.get("headers", {})
         if not preview:
             return super().display_data(
-                trans, data=data, preview=preview, filename=filename, to_ext=to_ext, size=size, offset=offset, **kwd
+                trans, dataset=dataset, preview=preview, filename=filename, to_ext=to_ext, size=size, offset=offset, **kwd
             )
         if self.file_ext == "blastdbn":
             title = "This is a nucleotide BLAST database"
@@ -236,7 +236,7 @@ class _BlastDb(Data):
         msg = ""
         try:
             # Try to use any text recorded in the dummy index file:
-            with open(data.file_name, encoding="utf-8") as handle:
+            with open(dataset.file_name, encoding="utf-8") as handle:
                 msg = handle.read().strip()
         except Exception:
             pass
