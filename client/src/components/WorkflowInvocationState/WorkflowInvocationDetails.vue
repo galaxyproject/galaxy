@@ -41,8 +41,8 @@ import ParameterStep from "./ParameterStep";
 import GenericHistoryItem from "components/History/Content/GenericItem";
 import WorkflowInvocationStep from "./WorkflowInvocationStep";
 
-import { mapGetters } from "vuex";
-import { mapCacheActions } from "vuex-cache";
+import { mapActions, mapState } from "pinia";
+import { useWorkflowStore } from "stores/workflowStore";
 
 export default {
     components: {
@@ -57,7 +57,7 @@ export default {
         },
     },
     computed: {
-        ...mapGetters(["getWorkflowByInstanceId"]),
+        ...mapState(useWorkflowStore, ["getWorkflowByInstanceId"]),
         workflow() {
             return this.getWorkflowByInstanceId(this.invocation.workflow_id);
         },
@@ -66,7 +66,7 @@ export default {
         this.fetchWorkflowForInstanceId(this.invocation.workflow_id);
     },
     methods: {
-        ...mapCacheActions(["fetchWorkflowForInstanceId"]),
+        ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceId"]),
         dataInputStepLabel(key, input) {
             const invocationStep = this.invocation.steps[key];
             let label = invocationStep && invocationStep.workflow_step_label;

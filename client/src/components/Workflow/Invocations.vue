@@ -80,14 +80,17 @@
 </template>
 
 <script>
+import { mapCacheActions } from "vuex-cache";
+import { mapGetters } from "vuex";
+import { mapActions, mapState } from "pinia";
 import { getAppRoot } from "onload/loadConfig";
+
 import { getGalaxyInstance } from "app";
 import { invocationsProvider } from "components/providers/InvocationsProvider";
 import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 import UtcDate from "components/UtcDate";
-import { mapCacheActions } from "vuex-cache";
-import { mapGetters } from "vuex";
+import { useWorkflowStore } from "stores/workflowStore";
 import paginationMixin from "./paginationMixin";
 
 export default {
@@ -125,7 +128,7 @@ export default {
         };
     },
     computed: {
-        ...mapGetters(["getWorkflowNameByInstanceId", "getWorkflowByInstanceId", "getStoredWorkflowIdByInstanceId"]),
+        ...mapState(useWorkflowStore, ["getWorkflowNameByInstanceId", "getWorkflowByInstanceId", "getStoredWorkflowIdByInstanceId"]),
         ...mapGetters("history", ["getHistoryById", "getHistoryNameById"]),
         title() {
             let title = `Workflow Invocations`;
@@ -160,7 +163,7 @@ export default {
         },
     },
     methods: {
-        ...mapCacheActions(["fetchWorkflowForInstanceId"]),
+        ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceId"]),
         ...mapCacheActions("history", ["loadHistoryById"]),
         async provider(ctx) {
             ctx.root = this.root;

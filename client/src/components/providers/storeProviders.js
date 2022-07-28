@@ -2,7 +2,6 @@
 import axios from "axios";
 import { prependPath } from "utils/redirect";
 import { mapActions as vuexMapActions, mapGetters } from "vuex";
-import { mapCacheActions } from "vuex-cache";
 import { HasAttributesMixin } from "./utils";
 
 import { useDbKeyStore } from "stores/dbKeyStore";
