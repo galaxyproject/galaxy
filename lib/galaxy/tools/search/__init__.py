@@ -75,8 +75,7 @@ def get_or_create_index(index_dir, schema):
         idx = index.open_dir(index_dir)
         if idx.schema == schema:
             return idx
-    log.warning(
-        f"Index at '{index_dir}' uses outdated schema, creating a new index")
+    log.warning(f"Index at '{index_dir}' uses outdated schema, creating a new index")
 
     # Delete the old index and return a new index reference
     shutil.rmtree(index_dir)
@@ -96,8 +95,11 @@ class ToolBoxSearch:
             panel_view_id = panel_view.id
             panel_index_dir = os.path.join(index_dir, panel_view_id)
             panel_searches[panel_view_id] = ToolPanelViewSearch(
-                panel_view_id, panel_index_dir, index_help=index_help,
-                config=toolbox.app.config)
+                panel_view_id,
+                panel_index_dir,
+                index_help=index_help,
+                config=toolbox.app.config,
+            )
         self.panel_searches = panel_searches
         # We keep track of how many times the tool index has been rebuilt.
         # We start at -1, so that after the first index the count is at 0,
@@ -105,16 +107,10 @@ class ToolBoxSearch:
         # reindexing if the index count is equal to the toolbox reload count.
         self.index_count = -1
 
-    def build_index(
-        self,
-        tool_cache,
-        toolbox,
-        index_help: bool = True
-    ) -> None:
+    def build_index(self, tool_cache, toolbox, index_help: bool = True) -> None:
         self.index_count += 1
         for panel_search in self.panel_searches.values():
-            panel_search.build_index(
-                tool_cache, toolbox, index_help=index_help)
+            panel_search.build_index(tool_cache, toolbox, index_help=index_help)
 
     def search(self, *args, **kwd) -> List[str]:
         panel_view = kwd.pop("panel_view")
@@ -135,60 +131,62 @@ class ToolPanelViewSearch:
         panel_view_id: str,
         index_dir: str,
         config: GalaxyAppConfiguration,
-        index_help: bool = True
+        index_help: bool = True,
     ):
         """Build the schema and validate against the index."""
         schema_conf = {
             # The stored ID field is not searchable
-            'id': ID(stored=True, unique=True),
+            "id": ID(stored=True, unique=True),
             # This exact field is searchable by exact matches only
-            'id_exact': TEXT(
-                field_boost=(
-                    config.tool_id_boost
-                    * config.tool_name_exact_multiplier),
+            "id_exact": TEXT(
+                field_boost=(config.tool_id_boost * config.tool_name_exact_multiplier),
                 analyzer=analysis.IDTokenizer() | analysis.LowercaseFilter(),
             ),
             # The primary name field is searchable by exact match only, and is
             # eligible for massive score boosting. A secondary ngram or text
             # field for name is added below
-            'name_exact': TEXT(
+            "name_exact": TEXT(
                 field_boost=(
-                    config.tool_name_boost
-                    * config.tool_name_exact_multiplier),
+                    config.tool_name_boost * config.tool_name_exact_multiplier
+                ),
                 analyzer=analysis.IDTokenizer() | analysis.LowercaseFilter(),
             ),
             # The owner/repo/tool_id parsed from the GUID
-            'stub': KEYWORD(field_boost=float(config.tool_stub_boost)),
+            "stub": KEYWORD(field_boost=float(config.tool_stub_boost)),
             # The section where the tool is listed in the tool panel
-            'section': TEXT(field_boost=float(config.tool_section_boost)),
+            "section": TEXT(field_boost=float(config.tool_section_boost)),
             # Short description defined in the tool XML
-            'description': TEXT(
+            "description": TEXT(
                 field_boost=config.tool_description_boost,
-                analyzer=analysis.StemmingAnalyzer()),
+                analyzer=analysis.StemmingAnalyzer(),
+            ),
             # Help text parsed from the tool XML
-            'help': TEXT(
-                field_boost=config.tool_help_boost,
-                analyzer=analysis.StemmingAnalyzer()),
-            'labels': KEYWORD(field_boost=float(config.tool_label_boost)),
+            "help": TEXT(
+                field_boost=config.tool_help_boost, analyzer=analysis.StemmingAnalyzer()
+            ),
+            "labels": KEYWORD(field_boost=float(config.tool_label_boost)),
         }
 
         if config.tool_enable_ngram_search:
-            schema_conf.update({
-                'name': NGRAMWORDS(
-                    minsize=config.tool_ngram_minsize,
-                    maxsize=config.tool_ngram_maxsize,
-                    field_boost=(
-                        float(config.tool_name_boost)
-                        * config.tool_ngram_factor
+            schema_conf.update(
+                {
+                    "name": NGRAMWORDS(
+                        minsize=config.tool_ngram_minsize,
+                        maxsize=config.tool_ngram_maxsize,
+                        field_boost=(
+                            float(config.tool_name_boost) * config.tool_ngram_factor
+                        ),
                     ),
-                ),
-            })
+                }
+            )
         else:
-            schema_conf.update({
-                'name': TEXT(
-                    field_boost=float(config.tool_name_boost),
-                ),
-            })
+            schema_conf.update(
+                {
+                    "name": TEXT(
+                        field_boost=float(config.tool_name_boost),
+                    ),
+                }
+            )
 
         self.schema = Schema(**schema_conf)
         self.rex = analysis.RegexTokenizer()
@@ -200,28 +198,18 @@ class ToolPanelViewSearch:
         """Get or create a reference to the index."""
         return get_or_create_index(self.index_dir, self.schema)
 
-    def build_index(
-        self,
-        tool_cache,
-        toolbox,
-        index_help: bool = True
-    ) -> None:
+    def build_index(self, tool_cache, toolbox, index_help: bool = True) -> None:
         """Prepare search index for tools loaded in toolbox.
 
         Use `tool_cache` to determine which tools need indexing and which
         should be removed.
         """
-        log.debug(
-            f"Starting to build toolbox index of panel {self.panel_view_id}.")
+        log.debug(f"Starting to build toolbox index of panel {self.panel_view_id}.")
         execution_timer = ExecutionTimer()
 
         with self.index.reader() as reader:
             # Index ocasionally contains empty stored fields
-            self.indexed_tool_ids = {
-                f["id"]
-                for f in reader.all_stored_fields()
-                if f
-            }
+            self.indexed_tool_ids = {f["id"] for f in reader.all_stored_fields() if f}
 
         tool_ids_to_remove = self._get_tools_to_remove(tool_cache)
         tools_to_index = self._get_tool_list(
@@ -242,7 +230,8 @@ class ToolPanelViewSearch:
 
         log.debug(
             f"Toolbox index of panel {self.panel_view_id}"
-            f" finished {execution_timer}")
+            f" finished {execution_timer}"
+        )
 
     def _get_tools_to_remove(self, tool_cache) -> list:
         """Return list of tool IDs to be removed from index."""
@@ -294,7 +283,7 @@ class ToolPanelViewSearch:
     ) -> Dict[str, str]:
         def clean(string):
             """Remove hyphens as they are Whoosh wildcards."""
-            if '-' in string:
+            if "-" in string:
                 return (" ").join(
                     token.text for token in self.rex(to_unicode(tool.name))
                 )
@@ -319,7 +308,7 @@ class ToolPanelViewSearch:
         if tool.guid:
             # Create a stub consisting of owner, repo, and tool from guid
             slash_indexes = [m.start() for m in re.finditer("/", tool.guid)]
-            id_stub = tool.guid[(slash_indexes[1] + 1):slash_indexes[4]]
+            id_stub = tool.guid[(slash_indexes[1] + 1) : slash_indexes[4]]
             add_doc_kwds["stub"] = clean(id_stub)
         else:
             add_doc_kwds["stub"] = to_unicode(id)
@@ -367,9 +356,7 @@ class ToolPanelViewSearch:
             schema=self.schema,
             group=OrGroup,  # We need OR grouping to match StopList phrases
         )
-        cleaned_query = " ".join(
-            token.text for token in self.rex(q.lower())
-        )
+        cleaned_query = " ".join(token.text for token in self.rex(q.lower()))
         parsed_query = self.parser.parse(cleaned_query)
         hits = self.searcher.search(
             parsed_query,
@@ -379,18 +366,20 @@ class ToolPanelViewSearch:
         )
 
         # !!! log match scores --------------------------------------------
-        scores = [
-            x[0] for x in hits.top_n
-        ][:config.tool_search_limit]
+        scores = [x[0] for x in hits.top_n][: config.tool_search_limit]
 
-        log.debug(pprint.pformat([
-            {
-                'score': score,
-                'details': hit['id'],
-                'matched_terms': hit.matched_terms(),
-            }
-            for hit, score in zip(hits[:config.tool_search_limit], scores)
-        ]))
+        log.debug(
+            pprint.pformat(
+                [
+                    {
+                        "score": score,
+                        "details": hit["id"],
+                        "matched_terms": hit.matched_terms(),
+                    }
+                    for hit, score in zip(hits[: config.tool_search_limit], scores)
+                ]
+            )
+        )
         # !!! -------------------------------------------------------------
 
-        return [hit["id"] for hit in hits[:config.tool_search_limit]]
+        return [hit["id"] for hit in hits[: config.tool_search_limit]]
