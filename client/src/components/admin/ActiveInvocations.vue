@@ -1,9 +1,9 @@
 <template>
-    <invocations-list
+    <InvocationsList
         header-message="Workflow invocations that are still being scheduled are displayed on this page."
         no-invocations-message="There are no scheduling workflow invocations to show currently."
         :owner-grid="false">
-    </invocations-list>
+    </InvocationsList>
 </template>
 
 <script>
