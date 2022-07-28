@@ -284,9 +284,7 @@ class ToolPanelViewSearch:
         def clean(string):
             """Remove hyphens as they are Whoosh wildcards."""
             if "-" in string:
-                return (" ").join(
-                    token.text for token in self.rex(to_unicode(tool.name))
-                )
+                return (" ").join(token.text for token in self.rex(to_unicode(tool.name)))
             else:
                 return string
 
@@ -298,11 +296,7 @@ class ToolPanelViewSearch:
             "id_exact": to_unicode(tool.id),
             "name": clean(tool.name),
             "description": to_unicode(tool.description),
-            "section": to_unicode(
-                tool.get_panel_section()[1]
-                if len(tool.get_panel_section()) == 2
-                else ""
-            ),
+            "section": to_unicode(tool.get_panel_section()[1] if len(tool.get_panel_section()) == 2 else ""),
             "help": to_unicode(""),
         }
         if tool.guid:
