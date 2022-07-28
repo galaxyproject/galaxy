@@ -99,14 +99,6 @@ export default {
         };
     },
     computed: {
-        ...mapGetters(["getInvocationById"]),
-        indexStr() {
-            if (this.index == null) {
-                return 0;
-            } else {
-                return `${this.index + 1}`;
-            }
-        },
         bcoDownloadLink: function () {
             return `${getAppRoot()}api/invocations/${this.invocationId}/biocompute/download`;
         },
