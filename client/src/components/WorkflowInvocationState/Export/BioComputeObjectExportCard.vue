@@ -104,15 +104,15 @@ export default {
     },
     methods: {
         async submitForm() {
-            const bco = await axios  
+            const bco = await axios
                 .get(getUrl(`./api/invocations/${this.invocationId}/biocompute/`))
                 .then((response) => {
                     this.bco = response.data;
-                    return this.bco
+                    return this.bco;
                 })
                 .catch((e) => {
                     this.errors.push(e);
-            });
+                });
             const bcoString = {
                 POST_api_objects_draft_create: [
                     {
