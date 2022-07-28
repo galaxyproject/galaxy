@@ -3,8 +3,8 @@
         <SidePanel
             v-if="showPanels"
             side="left"
-            :currentPanel="getToolBox()"
-            :currentPanelProperties="toolBoxProperties" />
+            :current-panel="getToolBox()"
+            :current-panel-properties="toolBoxProperties" />
         <div id="center">
             <div class="center-container">
                 <CenterPanel v-show="showCenter" id="galaxy_main" @load="onLoad" />
@@ -13,7 +13,7 @@
                 </div>
             </div>
         </div>
-        <SidePanel v-if="showPanels" side="right" :currentPanel="getHistoryIndex()" :currentPanelProperties="{}" />
+        <SidePanel v-if="showPanels" side="right" :current-panel="getHistoryIndex()" :current-panel-properties="{}" />
     </div>
 </template>
 <script>

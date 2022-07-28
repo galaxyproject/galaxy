@@ -1,6 +1,6 @@
 <template>
     <div>
-        <job-details-provider auto-refresh :jobId="job_id" @update:result="updateJob" />
+        <job-details-provider auto-refresh :job-id="job_id" @update:result="updateJob" />
         <h3>Job Information</h3>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
