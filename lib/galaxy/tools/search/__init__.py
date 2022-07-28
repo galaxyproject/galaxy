@@ -42,9 +42,9 @@ from whoosh import (
 from whoosh.fields import (
     ID,
     KEYWORD,
+    NGRAMWORDS,
     Schema,
     TEXT,
-    NGRAMWORDS,
 )
 from whoosh.qparser import (
     MultifieldParser,
@@ -57,9 +57,9 @@ from whoosh.scoring import (
 )
 from whoosh.writing import AsyncWriter
 
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.util import ExecutionTimer
 from galaxy.web.framework.helpers import to_unicode
-from galaxy.config import GalaxyAppConfiguration
 
 log = logging.getLogger(__name__)
 
@@ -146,9 +146,7 @@ class ToolPanelViewSearch:
             # eligible for massive score boosting. A secondary ngram or text
             # field for name is added below
             "name_exact": TEXT(
-                field_boost=(
-                    config.tool_name_boost * config.tool_name_exact_multiplier
-                ),
+                field_boost=(config.tool_name_boost * config.tool_name_exact_multiplier),
                 analyzer=analysis.IDTokenizer() | analysis.LowercaseFilter(),
             ),
             # The owner/repo/tool_id parsed from the GUID
@@ -161,9 +159,7 @@ class ToolPanelViewSearch:
                 analyzer=analysis.StemmingAnalyzer(),
             ),
             # Help text parsed from the tool XML
-            "help": TEXT(
-                field_boost=config.tool_help_boost, analyzer=analysis.StemmingAnalyzer()
-            ),
+            "help": TEXT(field_boost=config.tool_help_boost, analyzer=analysis.StemmingAnalyzer()),
             "labels": KEYWORD(field_boost=float(config.tool_label_boost)),
         }
 
@@ -173,9 +169,7 @@ class ToolPanelViewSearch:
                     "name": NGRAMWORDS(
                         minsize=config.tool_ngram_minsize,
                         maxsize=config.tool_ngram_maxsize,
-                        field_boost=(
-                            float(config.tool_name_boost) * config.tool_ngram_factor
-                        ),
+                        field_boost=(float(config.tool_name_boost) * config.tool_ngram_factor),
                     ),
                 }
             )
@@ -228,16 +222,13 @@ class ToolPanelViewSearch:
                 # Add tool document to index (or overwrite if existing)
                 writer.update_document(**add_doc_kwds)
 
-        log.debug(
-            f"Toolbox index of panel {self.panel_view_id}"
-            f" finished {execution_timer}"
-        )
+        log.debug(f"Toolbox index of panel {self.panel_view_id}" f" finished {execution_timer}")
 
     def _get_tools_to_remove(self, tool_cache) -> list:
         """Return list of tool IDs to be removed from index."""
-        tool_ids_to_remove = (
-            self.indexed_tool_ids - set(tool_cache._tool_paths_by_id.keys())
-        ).union(tool_cache._removed_tool_ids)
+        tool_ids_to_remove = (self.indexed_tool_ids - set(tool_cache._tool_paths_by_id.keys())).union(
+            tool_cache._removed_tool_ids
+        )
 
         for indexed_tool_id in self.indexed_tool_ids:
             indexed_tool = tool_cache.get_tool_by_id(indexed_tool_id)
