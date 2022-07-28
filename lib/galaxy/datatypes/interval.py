@@ -27,7 +27,10 @@ from galaxy.datatypes.sniff import (
     get_headers,
     iter_headers,
 )
-from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.tabular import (
+    MAX_DATA_LINES,
+    Tabular,
+)
 from galaxy.datatypes.util.gff_util import (
     parse_gff3_attributes,
     parse_gff_attributes,
@@ -119,7 +122,16 @@ class Interval(Tabular):
     def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         Tabular.init_meta(self, dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset, overwrite=True, first_line_is_header=False, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
+        first_line_is_header: bool = False,
+        **kwd,
+    ) -> None:
         """Tries to guess from the line the location number of the column for the chromosome, region start-end and strand"""
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=0)
         if dataset.has_data():
@@ -487,7 +499,16 @@ class Bed(Interval):
     )
     # do we need to repeat these? they are the same as should be inherited from interval type
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
+        first_line_is_header: bool = False,
+        **kwd,
+    ) -> None:
         """Sets the metadata information for datasets previously determined to be in bed format."""
         if dataset.has_data():
             i = 0
@@ -720,7 +741,16 @@ class BedStrict(Bed):
         Tabular.__init__(self, **kwd)
         self.clear_display_apps()  # only new style display applications for this datatype
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
+        first_line_is_header: bool = False,
+        **kwd,
+    ) -> None:
         Tabular.set_meta(self, dataset, overwrite=overwrite, **kwd)  # need column count first
         if dataset.metadata.columns >= 4:
             dataset.metadata.nameCol = 4
@@ -842,7 +872,15 @@ class Gff(Tabular, _RemoteCallMixin):
         dataset.metadata.attribute_types = attribute_types
         dataset.metadata.attributes = len(attribute_types)
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
         self.set_attribute_metadata(dataset)
 
         i = 0
@@ -1063,7 +1101,15 @@ class Gff3(Gff):
         """Initialize datatype, by adding GBrowse display app"""
         Gff.__init__(self, **kwd)
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
         self.set_attribute_metadata(dataset)
         i = 0
         with compression_utils.get_fileobj(dataset.file_name) as in_fh:
@@ -1373,8 +1419,16 @@ class Wiggle(Tabular, _RemoteCallMixin):
         """Returns formated html of peek"""
         return self.make_html_table(dataset, skipchars=["track", "#"])
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
-        max_data_lines = None
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
+        max_data_lines = None  # type: ignore [assignment]
         i = 0
         for i, line in enumerate(open(dataset.file_name)):  # noqa: B007
             line = line.rstrip("\r\n")
@@ -1463,7 +1517,15 @@ class CustomTrack(Tabular):
         Tabular.__init__(self, **kwd)
         self.add_display_app("ucsc", "display at UCSC", "as_ucsc_display_file", "ucsc_links")
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=1)
 
     def display_peek(self, dataset: "DatasetInstance") -> str:

@@ -2,7 +2,9 @@ import abc
 import logging
 import os
 from typing import (
+    Optional,
     Set,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -11,7 +13,13 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
     iter_headers,
 )
-from .tabular import Tabular
+from .tabular import (
+    MAX_DATA_LINES,
+    Tabular,
+)
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -23,7 +31,15 @@ class GoldenPath(Tabular):
     edam_format = "format_3693"
     file_ext = "agp"
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
         # AGPFile reads and validates entire file.
         AGPFile(dataset.file_name)
         super().set_meta(dataset, **kwd)

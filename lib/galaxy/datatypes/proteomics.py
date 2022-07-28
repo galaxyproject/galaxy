@@ -406,9 +406,9 @@ class Dta(TabularData):
     file_ext = "dta"
     comment_lines = 0
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         column_types = []
-        data_row = []
+        data_row: List = []
         data_lines = 0
         if dataset.has_data():
             with open(dataset.file_name) as dtafile:
@@ -417,7 +417,7 @@ class Dta(TabularData):
 
         # Guess column types
         for cell in data_row:
-            column_types.append(self.guess_type(cell))
+            column_types.append(self.guess_type(cell))  # type: ignore [attr-defined]  # TODO: this is a bug: should inherit from BaseCSV
 
         # Set metadata
         dataset.metadata.data_lines = data_lines
@@ -479,7 +479,7 @@ class Dta2d(TabularData):
             return False
         return True
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         data_lines = 0
         delim = None
         if dataset.has_data():
@@ -615,7 +615,7 @@ class Edta(TabularData):
                 line[idx] += str(idx // 4)
         return line
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         data_lines = 0
         delim = None
         tpe = None

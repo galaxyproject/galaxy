@@ -535,8 +535,16 @@ class SraManifest(Tabular):
     file_ext = "sra_manifest.tabular"
     data_line_offset = 1
 
-    def set_meta(self, dataset, **kwds):
-        super().set_meta(dataset, **kwds)
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
+        super().set_meta(dataset, overwrite, skip, max_data_lines, max_guess_type_data_lines, **kwd)
         dataset.metadata.comment_lines = 1
 
     def get_column_names(self, first_line):
@@ -723,7 +731,15 @@ class Sam(Tabular, _BamOrSam):
             return True
         return False
 
-    def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = 5,
+        max_guess_type_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
@@ -996,7 +1012,15 @@ class BaseVcf(Tabular):
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
         super().set_meta(dataset, **kwd)
         line = None
         with compression_utils.get_fileobj(dataset.file_name) as fh:
@@ -1080,7 +1104,16 @@ class VcfGz(BaseVcf, binary.Binary):
             last28 = fh.read()
             return binascii.hexlify(last28) == b"1f8b08040000000000ff0600424302001b0003000000000000000000"
 
-    def set_meta(self, dataset, metadata_tmp_files_dir=None, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
+        metadata_tmp_files_dir: Optional[str] = None,
+        **kwd,
+    ) -> None:
         super().set_meta(dataset, **kwd)
         # Creates the index for the VCF file.
         # These metadata values are not accessible by users, always overwrite
@@ -1241,7 +1274,15 @@ class Eland(Tabular):
             return True
         return False
 
-    def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = 5,
+        max_guess_type_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
         if dataset.has_data():
             with compression_utils.get_fileobj(dataset.file_name, compressed_formats=["gzip"]) as dataset_fh:
                 lanes = {}
@@ -1256,7 +1297,7 @@ class Eland(Tabular):
                 # Otherwise, read the whole thing and set num data lines.
                 for i, line in enumerate(dataset_fh):
                     if line:
-                        line_pieces = line.split("\t")
+                        line_pieces = line.split("\t")  # type: ignore [attr-defined]
                         if len(line_pieces) != 22:
                             raise Exception("%s:%d:Corrupt line!" % (dataset.file_name, i))
                         lanes[line_pieces[2]] = 1
@@ -1427,7 +1468,7 @@ class BaseCSV(TabularData):
             return False
         return True
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         column_types = []
         header_row = []
         data_row = []
@@ -1509,7 +1550,15 @@ class ConnectivityTable(Tabular):
         self.column_names = ["base_index", "base", "neighbor_left", "neighbor_right", "partner", "natural_numbering"]
         self.column_types = ["int", "str", "int", "int", "int", "int"]
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
         data_lines = 0
 
         with open(dataset.file_name) as fh:
@@ -1645,7 +1694,14 @@ class MatrixMarket(TabularData):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.startswith("%%MatrixMarket matrix coordinate")
 
-    def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = 5,
+        **kwd,
+    ) -> None:
         if dataset.has_data():
             # If the dataset is larger than optional_metadata, just count comment lines.
             with open(dataset.file_name) as dataset_fh:
@@ -1661,7 +1717,7 @@ class MatrixMarket(TabularData):
                     if line.startswith("%"):
                         comment_lines += 1
                     elif count_comments_only:
-                        data_lines = None
+                        data_lines = None  # type:ignore [assignment]
                         break
                     else:
                         data_lines += 1
@@ -1766,7 +1822,14 @@ class CMAP(TabularData):
                 return True
         return False
 
-    def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=7, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = 7,
+        **kwd,
+    ) -> None:
         if dataset.has_data():
             with open(dataset.file_name) as dataset_fh:
                 comment_lines = 0

@@ -3,14 +3,20 @@ import html
 import io
 import uuid as _uuid
 import zipfile
-from typing import TYPE_CHECKING
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 import yaml
 
 from galaxy.datatypes.binary import CompressedZipArchive
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import build_sniff_from_prefix
-from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.tabular import (
+    MAX_DATA_LINES,
+    Tabular,
+)
 
 if TYPE_CHECKING:
     from galaxy.datatypes.sniff import FilePrefix
@@ -26,7 +32,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
     MetadataElement(name="format", optional=True, no_value="", readonly=True)
     MetadataElement(name="version", readonly=True)
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         metadata = _get_metadata_from_archive(dataset.file_name)
         for key, value in metadata.items():
             if value:
@@ -110,12 +116,20 @@ class QIIME2Metadata(Tabular):
             return None
         return first_line.strip().split("\t")
 
-    def set_meta(self, dataset, **kwargs):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
         """
         Let Galaxy's Tabular format handle most of this. We will just jump
         in at the last minute to (potentially) override some column types.
         """
-        super().set_meta(dataset, **kwargs)
+        super().set_meta(dataset, **kwd)
 
         if dataset.has_data():
             with open(dataset.file_name) as dataset_fh:

@@ -3,6 +3,7 @@ import json
 import subprocess
 import wave
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import (
@@ -10,6 +11,9 @@ from galaxy.datatypes.metadata import (
     MetadataElement,
 )
 from galaxy.util import which
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 
 @lru_cache(maxsize=128)
@@ -67,7 +71,7 @@ class Audio(Binary):
         no_value=0,
     )
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         if which("ffprobe"):
             metadata, streams = ffprobe(dataset.file_name)
 
@@ -154,7 +158,7 @@ class Video(Binary):
             w = h = fps = 0
         return w, h, fps
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         if which("ffprobe"):
             metadata, streams = ffprobe(dataset.file_name)
             (w, h, fps) = self._get_resolution(streams)
@@ -276,7 +280,7 @@ class Wav(Audio):
             return True
         return False
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """Set the metadata for this dataset from the file contents."""
         try:
             with wave.open(dataset.dataset.file_name, "rb") as fd:

@@ -23,7 +23,10 @@ from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
 )
-from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.tabular import (
+    MAX_DATA_LINES,
+    Tabular,
+)
 
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance
@@ -99,7 +102,7 @@ class Ply:
                 break
         return False
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 for line in fh:
@@ -295,7 +298,7 @@ class Vtk:
             return check_data_kind(line)
         return False
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             dataset.metadata.field_names = []
             dataset.metadata.field_components = {}
@@ -579,7 +582,7 @@ class NeperTess(data.Text):
         """
         return file_prefix.text_io(errors="ignore").readline(10).startswith("***tess")
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 for i, line in enumerate(fh):
@@ -658,7 +661,7 @@ class NeperTesr(Binary):
         """
         return file_prefix.text_io(errors="ignore").readline(10).startswith("***tesr")
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 field = ""
@@ -711,7 +714,7 @@ class NeperPoints(data.Text):
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         data.Text.set_meta(self, dataset, **kwd)
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
@@ -761,7 +764,15 @@ class NeperPointsTabular(NeperPoints, Tabular):
     def __init__(self, **kwd):
         Tabular.__init__(self, **kwd)
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: int = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
         Tabular.set_meta(self, dataset, **kwd)
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
@@ -815,7 +826,7 @@ class GmshMsh(Binary):
         """
         return file_prefix.text_io(errors="ignore").readline().startswith("$MeshFormat")
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 for i, line in enumerate(fh):
