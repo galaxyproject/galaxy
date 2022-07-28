@@ -140,7 +140,17 @@ class TabularData(data.Text):
             }
         )
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
+    def display_data(
+        self,
+        trans,
+        dataset: "HistoryDatasetAssociation",
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        offset: Optional[int] = None,
+        ck_size: Optional[int] = None,
+        **kwd,
+    ):
         headers = kwd.get("headers", {})
         preview = util.string_as_bool(preview)
         if offset is not None:
@@ -171,7 +181,7 @@ class TabularData(data.Text):
             if dataset.metadata.column_names:
                 column_names = dataset.metadata.column_names
             elif hasattr(dataset.datatype, "column_names"):
-                column_names = dataset.datatype.column_names
+                column_names = dataset.datatype.column_names  # type: ignore[attr-defined]
             column_types = dataset.metadata.column_types
             if not column_types:
                 column_types = []

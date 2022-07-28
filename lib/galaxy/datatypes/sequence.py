@@ -44,7 +44,10 @@ from galaxy.util.image_util import check_image_type
 from . import data
 
 if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
+    from galaxy.model import (
+        DatasetInstance,
+        HistoryDatasetAssociation,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -781,7 +784,15 @@ class BaseFastq(Sequence):
             return False
         return self.check_first_block(file_prefix)
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+    def display_data(
+        self,
+        trans,
+        dataset: "HistoryDatasetAssociation",
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        **kwd,
+    ):
         headers = kwd.get("headers", {})
         if preview:
             with compression_utils.get_fileobj(dataset.file_name) as fh:

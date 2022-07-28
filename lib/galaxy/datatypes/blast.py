@@ -52,7 +52,10 @@ from .data import (
 from .xml import GenericXml
 
 if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
+    from galaxy.model import (
+        DatasetInstance,
+        HistoryDatasetAssociation,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -214,7 +217,17 @@ class _BlastDb(Data):
         except Exception:
             return "BLAST database (multiple files)"
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
+    def display_data(
+        self,
+        trans,
+        dataset: "HistoryDatasetAssociation",
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        size: Optional[int] = None,
+        offset: Optional[int] = None,
+        **kwd,
+    ):
         """
         If preview is `True` allows us to format the data shown in the central pane via the "eye" icon.
         If preview is `False` triggers download.
@@ -222,7 +235,14 @@ class _BlastDb(Data):
         headers = kwd.get("headers", {})
         if not preview:
             return super().display_data(
-                trans, dataset=dataset, preview=preview, filename=filename, to_ext=to_ext, size=size, offset=offset, **kwd
+                trans,
+                dataset=dataset,
+                preview=preview,
+                filename=filename,
+                to_ext=to_ext,
+                size=size,
+                offset=offset,
+                **kwd,
             )
         if self.file_ext == "blastdbn":
             title = "This is a nucleotide BLAST database"

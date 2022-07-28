@@ -39,7 +39,10 @@ from galaxy.util import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
+    from galaxy.model import (
+        DatasetInstance,
+        HistoryDatasetAssociation,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -214,7 +217,15 @@ class Ipynb(Json):
                 return False
         return False
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+    def display_data(
+        self,
+        trans,
+        dataset: "HistoryDatasetAssociation",
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        **kwd,
+    ):
         headers = kwd.get("headers", {})
         config = trans.app.config
         trust = getattr(config, "trust_jupyter_notebook_conversion", False)
