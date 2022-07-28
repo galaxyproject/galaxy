@@ -90,10 +90,6 @@ export default {
     },
     data() {
         return {
-            bco: {
-                type: Object,
-                required: true,
-            },
             form: {
                 fetch: "",
                 authorization: "",
