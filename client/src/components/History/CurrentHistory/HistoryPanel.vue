@@ -91,7 +91,7 @@
                                     No data found for selected filter.
                                 </b-alert>
                             </div>
-                            <Listing
+                            <ListingLayout
                                 v-else
                                 :offset="listOffset"
                                 :items="itemsLoaded"
@@ -119,7 +119,7 @@
                                         @undelete="onUndelete(item)"
                                         @unhide="onUnhide(item)" />
                                 </template>
-                            </Listing>
+                            </ListingLayout>
                         </div>
                     </section>
                 </section>
@@ -137,7 +137,7 @@ import { deleteContent, updateContentFields } from "components/History/model/que
 import { getHighlights } from "components/History/Content/model/highlights";
 import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
-import Listing from "components/History/Layout/Listing";
+import ListingLayout from "components/History/Layout/ListingLayout";
 import HistoryCounter from "./HistoryCounter";
 import HistoryOperations from "./HistoryOperations/Index";
 import HistoryDetails from "./HistoryDetails";
@@ -164,7 +164,7 @@ export default {
         HistorySelectionOperations,
         HistorySelectionStatus,
         LoadingSpan,
-        Listing,
+        ListingLayout,
         SelectedItems,
         SelectionChangeWarning,
         OperationErrorDialog,
