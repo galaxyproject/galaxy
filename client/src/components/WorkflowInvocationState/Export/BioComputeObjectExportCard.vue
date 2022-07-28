@@ -76,7 +76,6 @@
 <script>
 import { getRootFromIndexLink } from "onload";
 import { getAppRoot } from "onload/loadConfig";
-import { mapGetters } from "vuex";
 import axios from "axios";
 
 const getUrl = (path) => getRootFromIndexLink() + path;
@@ -103,22 +102,21 @@ export default {
             return `${getAppRoot()}api/invocations/${this.invocationId}/biocompute/download`;
         },
     },
-    created: function () {
-        axios
-            .get(getUrl(`./api/invocations/${this.invocationId}/biocompute/`))
-            .then((response) => {
-                this.bco = response.data;
-            })
-            .catch((e) => {
-                this.errors.push(e);
-            });
-    },
     methods: {
-        submitForm() {
+        async submitForm() {
+            const bco = await axios  
+                .get(getUrl(`./api/invocations/${this.invocationId}/biocompute/`))
+                .then((response) => {
+                    this.bco = response.data;
+                    return this.bco
+                })
+                .catch((e) => {
+                    this.errors.push(e);
+            });
             const bcoString = {
                 POST_api_objects_draft_create: [
                     {
-                        contents: this.bco,
+                        contents: bco,
                         owner_group: this.form.owner_group,
                         schema: "IEEE",
                         prefix: this.form.table,
