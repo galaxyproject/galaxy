@@ -100,8 +100,8 @@
                                 <template v-slot:item="{ item, currentOffset }">
                                     <ContentItem
                                         v-if="!invisible[item.hid]"
-                                        is-history-item
                                         :id="item.hid"
+                                        is-history-item
                                         :item="item"
                                         :name="item.name"
                                         :expand-dataset="isExpanded(item)"

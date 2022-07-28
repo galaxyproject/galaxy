@@ -1,9 +1,9 @@
 <template>
     <iframe
+        :id="id"
         frameborder="0"
         class="center-frame"
         title="galaxy frame"
-        :id="id"
         :name="id"
         :src="srcWithRoot"
         @load="onLoad" />
