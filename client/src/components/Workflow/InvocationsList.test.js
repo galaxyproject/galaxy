@@ -1,4 +1,4 @@
-import Invocations from "./Invocations";
+import InvocationsList from "./InvocationsList";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
@@ -10,7 +10,7 @@ import "jest-location-mock";
 
 const localVue = getLocalVue();
 
-describe("Invocations.vue", () => {
+describe("InvocationsList.vue", () => {
     let axiosMock;
     let wrapper;
 
@@ -28,7 +28,7 @@ describe("Invocations.vue", () => {
             const propsData = {
                 ownerGrid: false,
             };
-            wrapper = mount(Invocations, {
+            wrapper = mount(InvocationsList, {
                 propsData,
                 localVue,
             });
@@ -49,7 +49,7 @@ describe("Invocations.vue", () => {
             const propsData = {
                 ownerGrid: false,
             };
-            wrapper = mount(Invocations, {
+            wrapper = mount(InvocationsList, {
                 propsData,
                 localVue,
             });
@@ -68,7 +68,7 @@ describe("Invocations.vue", () => {
                 storedWorkflowName: "My Workflow",
                 storedWorkflowId: "abcde145678",
             };
-            wrapper = mount(Invocations, {
+            wrapper = mount(InvocationsList, {
                 propsData,
                 localVue,
             });
@@ -92,7 +92,7 @@ describe("Invocations.vue", () => {
                 ownerGrid: false,
                 loading: false,
             };
-            wrapper = mount(Invocations, {
+            wrapper = mount(InvocationsList, {
                 propsData,
                 computed: {
                     getWorkflowNameByInstanceId: (state) => (id) => "workflow name",
