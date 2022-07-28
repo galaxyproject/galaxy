@@ -84,7 +84,7 @@ class Otu(Text):
             dataset.metadata.labels = sorted(label_names)
             dataset.metadata.otulabels = sorted(otulabel_names)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is otu (operational taxonomic unit) format
 
@@ -128,7 +128,7 @@ class Sabund(Otu):
     def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is otu (operational taxonomic unit) format
         label<TAB>count[<TAB>value(1..n)]
@@ -202,7 +202,7 @@ class GroupAbund(Otu):
             dataset.metadata.groups = sorted(group_names)
             dataset.metadata.skip = skip
 
-    def sniff_prefix(self, file_prefix: FilePrefix, vals_are_int=False):
+    def sniff_prefix(self, file_prefix: FilePrefix, vals_are_int: bool = False) -> bool:
         """
         Determines whether the file is a otu (operational taxonomic unit)
         Shared format
@@ -250,7 +250,7 @@ class SecondaryStructureMap(Tabular):
         super().__init__(**kwd)
         self.column_names = ["Map"]
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a secondary structure map format
         A single column with an integer value which indicates the row that this
@@ -378,7 +378,7 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
     def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a lower-triangle distance matrix (phylip) format
         The first line has the number of sequences in the matrix.
@@ -443,7 +443,7 @@ class SquareDistanceMatrix(DistanceMatrix):
     def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a square distance matrix (Column-formatted distance matrix) format
         The first line has the number of sequences in the matrix.
@@ -509,7 +509,7 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
     def set_meta(self, dataset, overwrite=True, skip=None, **kwd):
         super().set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a pairwise distance matrix (Column-formatted distance matrix) format
         The first and second columns have the sequence names and the third column is the distance between those sequences.
@@ -619,7 +619,7 @@ class AccNos(Tabular):
 class Oligos(Text):
     file_ext = "mothur.oligos"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         http://www.mothur.org/wiki/Oligos_File
         Determines whether the file is a otu (operational taxonomic unit) format
@@ -660,7 +660,7 @@ class Frequency(Tabular):
         self.column_names = ["position", "frequency"]
         self.column_types = ["int", "float"]
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a frequency tabular format for chimera analysis
 
@@ -739,7 +739,7 @@ class Quantile(Tabular):
         self.column_names = ["num", "ten", "twentyfive", "fifty", "seventyfive", "ninetyfive", "ninetynine"]
         self.column_types = ["int", "float", "float", "float", "float", "float", "float"]
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a quantiles tabular format for chimera analysis
 
@@ -785,7 +785,7 @@ class Quantile(Tabular):
 class LaneMask(Text):
     file_ext = "mothur.filter"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a lane mask filter:  1 line consisting of zeros and ones.
 
@@ -859,7 +859,7 @@ class RefTaxonomy(Tabular):
         super().__init__(**kwd)
         self.column_names = ["name", "taxonomy"]
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a Reference Taxonomy
 
@@ -946,7 +946,7 @@ class Axes(Tabular):
         """Initialize axes datatype"""
         super().__init__(**kwd)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is an axes format
         The first line may have column headings.

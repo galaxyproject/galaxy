@@ -71,7 +71,7 @@ class Html(Text):
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in html format
 
@@ -115,7 +115,7 @@ class Json(Text):
         """Returns the mime type of the datatype"""
         return "application/json"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to load the string with the json module. If successful it's a json file.
         """
@@ -198,7 +198,7 @@ class Ipynb(Json):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to load the string with the json module. If successful it's a json file.
         """
@@ -212,6 +212,7 @@ class Ipynb(Json):
                     return False
             except Exception:
                 return False
+        return False
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         headers = kwd.get("headers", {})
@@ -405,7 +406,7 @@ class Biom1(Json):
         if not dataset.dataset.purged:
             dataset.blurb = "Biological Observation Matrix v1"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         is_biom = False
         if self._looks_like_json(file_prefix):
             is_biom = self._looks_like_biom(file_prefix)
@@ -512,7 +513,7 @@ class ImgtJson(Json):
         if not dataset.dataset.purged:
             dataset.blurb = "IMGT Library"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in json format with imgt elements
 
@@ -586,7 +587,7 @@ class GeoJson(Json):
         if not dataset.dataset.purged:
             dataset.blurb = "GeoJSON"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in json format with imgt elements
 
@@ -658,7 +659,7 @@ class Obo(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess the Obo filetype.
         It usually starts with a "format-version:" string and has several stanzas which starts with "id:".
@@ -709,7 +710,7 @@ class Arff(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess the Arff filetype.
         It usually starts with a "format-version:" string and has several stanzas which starts with "id:".
@@ -975,7 +976,7 @@ class IQTree(Text):
 
     file_ext = "iqtree"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Detect the IQTree file
 
@@ -1008,7 +1009,7 @@ class Paf(Text):
 
     file_ext = "paf"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('A-3105.paf')
@@ -1043,7 +1044,7 @@ class Gfa1(Text):
 
     file_ext = "gfa1"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('big.gfa1')
@@ -1093,7 +1094,7 @@ class Gfa2(Text):
 
     file_ext = "gfa2"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('sample.gfa2')
@@ -1135,7 +1136,7 @@ class Yaml(Text):
 
     file_ext = "yaml"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to load the string with the yaml module. If successful it's a yaml file.
         """

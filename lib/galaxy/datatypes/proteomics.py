@@ -119,7 +119,7 @@ class MzTab(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is the correct type."""
         has_version = False
         found_man_mtd = set()
@@ -218,7 +218,7 @@ class Kroenik(Tabular):
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         fh = file_prefix.string_io()
         line = [_.strip() for _ in fh.readline().split("\t")]
         if line != self.column_names:
@@ -257,7 +257,7 @@ class PepList(Tabular):
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         fh = file_prefix.string_io()
         line = [_.strip() for _ in fh.readline().split("\t")]
         if line == self.column_names:
@@ -294,7 +294,7 @@ class PSMS(Tabular):
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         fh = file_prefix.string_io()
         line = [_.strip() for _ in fh.readline().split("\t")]
         if line == self.column_names:
@@ -311,7 +311,7 @@ class PEFF(Sequence):
 
     file_ext = "peff"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'test.peff' )
@@ -503,7 +503,7 @@ class Dta2d(TabularData):
             dataset.metadata.data_lines -= 1
             dataset.metadata.column_names = ["SEC", "MZ", "INT"]
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         sep = None
         header = None
         for idx, line in enumerate(file_prefix.line_iterator()):
@@ -647,7 +647,7 @@ class Edta(TabularData):
             dataset.metadata.comment_lines += 1
             dataset.metadata.data_lines -= 1
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         sep = None
         tpe = None
         for idx, line in enumerate(file_prefix.line_iterator()):
@@ -679,7 +679,7 @@ class ProteomicsXml(GenericXml):
     edam_format = "format_2032"
     root: str
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is the correct XML type."""
         for line in file_prefix.line_iterator():
             line = line.strip()
@@ -982,7 +982,7 @@ class Msp(Text):
         next_line = contents.readline()
         return next_line is not None and next_line.startswith(prefix)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is a NIST MSP output file."""
         begin_contents = file_prefix.contents_header
         if "\n" not in begin_contents:
@@ -1065,7 +1065,7 @@ class SPLib(Msp):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is a SpectraST generated file."""
         contents = file_prefix.string_io()
         return Msp.next_line_starts_with(contents, "Name:") and Msp.next_line_starts_with(contents, "LibID:")
@@ -1075,7 +1075,7 @@ class SPLib(Msp):
 class Ms2(Text):
     file_ext = "ms2"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is a valid ms2 file."""
         header_lines = []
         for line in file_prefix.line_iterator():

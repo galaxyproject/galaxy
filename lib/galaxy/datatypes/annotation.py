@@ -50,7 +50,7 @@ class SnapHmm(Text):
         except Exception:
             return f"SNAP HMM model ({nice_size(dataset.get_size())})"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         SNAP model files start with zoeHMM
         """

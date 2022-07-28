@@ -28,7 +28,7 @@ class GoldenPath(Tabular):
         AGPFile(dataset.file_name)
         super().set_meta(dataset, **kwd)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Checks for and does cursory validation on data that looks like AGP
 

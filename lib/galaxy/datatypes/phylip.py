@@ -134,7 +134,7 @@ class Phylip(Text):
         # There may be more lines with the remaining parts of the sequences
         return True
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         All Phylip files starts with the number of sequences so we can use this
         to count the following number of sequences in the first 'stack'

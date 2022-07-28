@@ -88,7 +88,7 @@ class SequenceSplitLocations(data.Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         if file_prefix.file_size < 50000 and not file_prefix.truncated:
             try:
                 data = json.loads(file_prefix.contents_header)
@@ -357,7 +357,7 @@ class Fasta(Sequence):
     edam_format = "format_1929"
     file_ext = "fasta"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in fasta format
 
@@ -538,7 +538,7 @@ class csFasta(Sequence):
     edam_format = "format_3589"
     file_ext = "csfasta"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Color-space sequence:
             >2_15_85_F3
@@ -598,7 +598,7 @@ class Fastg(Sequence):
         no_value={},
     )
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """FASTG must begin with lines:
            #FASTG:begin;
            #FASTG:version=*.*;
@@ -736,7 +736,7 @@ class BaseFastq(Sequence):
             dataset.metadata.data_lines = data_lines
             dataset.metadata.sequences = sequences
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in generic fastq format
         For details, see http://maq.sourceforge.net/fastq.shtml
@@ -945,7 +945,7 @@ class FastqSolexa(Fastq):
                 return False
         return True
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # we expicitely do not want to have this sniffed. so we keep this here
         # such that it can not be enabled in datatypes_conf
         raise NotImplementedError
@@ -971,7 +971,7 @@ class FastqIllumina(Fastq):
                 return False
         return True
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # we expicitely do not want to have this sniffed. so we keep this here
         # such that it can not be enabled in datatypes_conf
         raise NotImplementedError
@@ -1104,7 +1104,7 @@ class Maf(Alignment):
             out = f"Can't create peek {exc}"
         return out
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines wether the file is in maf format
 
@@ -1199,7 +1199,7 @@ class Axt(data.Text):
     edam_format = "format_3013"
     file_ext = "axt"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in axt format
 
@@ -1243,6 +1243,7 @@ class Axt(data.Text):
                     return False
                 else:
                     return True
+        return False
 
 
 @build_sniff_from_prefix
@@ -1257,7 +1258,7 @@ class Lav(data.Text):
     edam_format = "format_3014"
     file_ext = "lav"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in lav format
 
@@ -1350,7 +1351,7 @@ class DotBracket(Sequence):
         dataset.metadata.data_lines = data_lines
         dataset.metadata.sequences = sequences
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Galaxy Dbn (Dot-Bracket notation) rules:
 
@@ -1426,7 +1427,7 @@ class Genbank(data.Text):
     edam_data = "data_0849"
     file_ext = "genbank"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determine whether the file is in genbank format.
         Works for compressed files.
@@ -1448,7 +1449,7 @@ class MemePsp(Sequence):
 
     file_ext = "memepsp"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         The format of an entry in a PSP file is:
 

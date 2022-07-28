@@ -38,7 +38,7 @@ class FCS(Binary):
         except Exception:
             return "Binary FCS file"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Checking if the file is in FCS format. Should read FCS2.0, FCS3.0
         and FCS3.1
