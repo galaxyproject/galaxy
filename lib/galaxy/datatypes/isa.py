@@ -194,10 +194,9 @@ class _Isa(data.Data):
                     continue
                 out.append(f"<tr><td>{escape(util.unicodify(line, 'utf-8'))}</td></tr>")
             out.append("</table>")
-            out = "".join(out)
+            return "".join(out)
         except Exception as exc:
-            out = f"Can't create peek: {util.unicodify(exc)}"
-        return out
+            return f"Can't create peek: {util.unicodify(exc)}"
 
     # Generate primary file {{{2
     ################################################################
