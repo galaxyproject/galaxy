@@ -140,7 +140,7 @@ class Json(Text):
                 return start.startswith("[") or start.startswith("{")
             return False
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:

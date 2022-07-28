@@ -1076,7 +1076,7 @@ class Maf(Alignment):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset)
 

@@ -180,7 +180,7 @@ class _Isa(data.Data):
     # Display peek {{{2
     ################################################################
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Create the HTML table used for displaying peek, from the peek text found by set_peek() method."""
 
         out = ['<table cellspacing="0" cellpadding="3">']

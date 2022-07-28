@@ -122,7 +122,7 @@ class Ply:
                             element_tuple = (items[1], int(items[2]))
                             dataset.metadata.other_elements.append(element_tuple)
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -470,7 +470,7 @@ class Vtk:
             blurb += str(dataset.metadata.dataset_type)
         return blurb or "VTK data"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
