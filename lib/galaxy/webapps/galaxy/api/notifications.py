@@ -4,8 +4,6 @@ API operations on Notification objects.
 
 import logging
 
-from fastapi import Path
-
 from galaxy.managers.notification import NotificationManager
 from . import (
     depends,
@@ -18,7 +16,7 @@ router = Router(tags=["notifications"])
 
 
 @router.cbv
-class FastAPIGroupRoles:
+class FastAPINotifications:
     manager: NotificationManager = depends(NotificationManager)
 
     @router.get("/api/notifications", summary="Displays a collection (list) of notifications.")
