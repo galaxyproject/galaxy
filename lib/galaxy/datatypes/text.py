@@ -37,6 +37,7 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
+from galaxy.util.bunch import Bunch
 
 if TYPE_CHECKING:
     from galaxy.model import (
@@ -919,7 +920,7 @@ class SnpSiftDbNSFP(Text):
             "%s.gz.tbi", description="Tabix Index File", substitute_name_with_metadata="reference_name", is_binary=True
         )
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: Optional[Bunch] = None) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately

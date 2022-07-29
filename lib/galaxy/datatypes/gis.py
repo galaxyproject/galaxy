@@ -1,9 +1,13 @@
 """
 GIS classes
 """
-from typing import TYPE_CHECKING
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.datatypes.binary import Binary
+from galaxy.util.bunch import Bunch
 
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance
@@ -65,7 +69,7 @@ class Shapefile(Binary):
             "shapefile.shp.xml", description="Geospatial metadata in XML format (xml)", is_binary=False, optional=True
         )
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: Optional[Bunch] = None) -> str:
         rval = ["<html><head><title>Shapefile Galaxy Composite Dataset</title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():

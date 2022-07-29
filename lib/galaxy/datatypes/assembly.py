@@ -7,7 +7,10 @@ for velvet assembler tool in galaxy
 import logging
 import os
 import re
-from typing import TYPE_CHECKING
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.datatypes import (
     data,
@@ -19,6 +22,7 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
 )
 from galaxy.datatypes.text import Html
+from galaxy.util.bunch import Bunch
 
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance
@@ -172,7 +176,7 @@ class Velvet(Html):
             is_binary=False,
         )
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: Optional[Bunch] = None) -> str:
         log.debug(f"Velvet log info  JJ generate_primary_file {dataset}")
         rval = ["<html><head><title>Velvet Galaxy Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")

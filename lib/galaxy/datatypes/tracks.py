@@ -9,6 +9,7 @@ from typing import (
 )
 
 from galaxy.datatypes.text import Html
+from galaxy.util.bunch import Bunch
 from . import binary
 
 if TYPE_CHECKING:
@@ -33,7 +34,7 @@ class UCSCTrackHub(Html):
     file_ext = "trackhub"
     composite_type = "auto_primary_file"
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: Optional[Bunch] = None) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately

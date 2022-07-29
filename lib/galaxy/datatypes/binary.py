@@ -54,6 +54,7 @@ from galaxy.util import (
     nice_size,
     sqlite,
 )
+from galaxy.util.bunch import Bunch
 from galaxy.util.checkers import (
     is_bz2,
     is_gzip,
@@ -2030,7 +2031,7 @@ class LudwigModel(Html):
             "training_progress.json", description="Training progress", is_binary=False, optional=True
         )
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: Optional[Bunch] = None) -> str:
         rval = ["<html><head><title>Ludwig Model Composite Dataset.</title></head><p/>"]
         rval.append("<div>This model dataset is composed of the following items:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():

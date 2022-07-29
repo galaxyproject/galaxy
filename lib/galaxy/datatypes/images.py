@@ -25,6 +25,7 @@ from galaxy.datatypes.sniff import (
 )
 from galaxy.datatypes.text import Html as HtmlFromText
 from galaxy.util import nice_size
+from galaxy.util.bunch import Bunch
 from galaxy.util.image_util import check_image_type
 from . import data
 from .xml import GenericXml
@@ -383,7 +384,7 @@ class Analyze75(Binary):
 
         self.add_composite_file("t2m", description="The Analyze75 t2m file.", optional=True, is_binary=True)
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: Optional[Bunch] = None) -> str:
         rval = ["<html><head><title>Analyze75 Composite Dataset.</title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():

@@ -11,6 +11,7 @@ from typing import (
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.images import Html
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.util.bunch import Bunch
 
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance
@@ -26,7 +27,7 @@ class Neo4j(Html):
     stored in extra files path
     """
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: Optional[Bunch] = None) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately

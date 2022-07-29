@@ -23,6 +23,7 @@ from galaxy.datatypes.tabular import (
 )
 from galaxy.datatypes.xml import GenericXml
 from galaxy.util import nice_size
+from galaxy.util.bunch import Bunch
 
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance
@@ -54,7 +55,7 @@ class Wiff(Binary):
             is_binary=True,
         )
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: Optional[Bunch] = None) -> str:
         rval = ["<html><head><title>Wiff Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -1031,7 +1032,7 @@ class SPLib(Msp):
         self.add_composite_file("library.spidx", description="Spectrum index", is_binary=False)
         self.add_composite_file("library.pepidx", description="Peptide index", is_binary=False)
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: Optional[Bunch] = None) -> str:
         rval = ["<html><head><title>Spectral Library Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -1128,7 +1129,7 @@ class ImzML(Binary):
 
         self.add_composite_file("ibd", description="The mass spectral data component.", is_binary=True)
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: Optional[Bunch] = None) -> str:
         rval = ["<html><head><title>imzML Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
