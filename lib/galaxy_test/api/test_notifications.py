@@ -1,8 +1,3 @@
-from typing import (
-    List,
-    Optional,
-)
-
 from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
 
