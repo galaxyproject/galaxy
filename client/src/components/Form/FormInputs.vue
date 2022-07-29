@@ -28,8 +28,8 @@
                 </div>
                 <FormCard
                     v-for="(cache, cacheId) in input.cache"
-                    data-description="repeat block"
                     :key="cacheId"
+                    data-description="repeat block"
                     :title="repeatTitle(cacheId, input.title)">
                     <template v-slot:operations>
                         <b-button

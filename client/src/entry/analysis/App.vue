@@ -48,30 +48,12 @@ export default {
     components: {
         Masthead,
     },
-    mounted() {
-        const Galaxy = getGalaxyInstance();
-        Galaxy.currHistoryPanel = new HistoryPanelProxy();
-        Galaxy.modal = new Modal.View();
-    },
     data() {
         return {
             config: getGalaxyInstance().config,
             confirmation: null,
             mastheadState: new MastheadState(),
             resendUrl: `${getAppRoot()}user/resend_verification`,
-        };
-    },
-    watch: {
-        confirmation() {
-            console.debug("App - Confirmation before route change: ", this.confirmation);
-            this.$router.confirmation = this.confirmation;
-        },
-    },
-    created() {
-        window.onbeforeunload = () => {
-            if (this.confirmation || this.mastheadState.windowManager.beforeUnload()) {
-                return "Are you sure you want to leave the page?";
-            }
         };
     },
     computed: {
@@ -82,6 +64,24 @@ export default {
             }
             return true;
         },
+    },
+    watch: {
+        confirmation() {
+            console.debug("App - Confirmation before route change: ", this.confirmation);
+            this.$router.confirmation = this.confirmation;
+        },
+    },
+    mounted() {
+        const Galaxy = getGalaxyInstance();
+        Galaxy.currHistoryPanel = new HistoryPanelProxy();
+        Galaxy.modal = new Modal.View();
+    },
+    created() {
+        window.onbeforeunload = () => {
+            if (this.confirmation || this.mastheadState.windowManager.beforeUnload()) {
+                return "Are you sure you want to leave the page?";
+            }
+        };
     },
     methods: {
         staticUrlToPrefixed(url) {

@@ -2,9 +2,12 @@
     <div class="container">
         <div class="row justify-content-md-center">
             <div class="col" :class="{ 'col-lg-6': !isAdmin }">
-                <b-alert :show="showRegistrationWarning" variant="info" v-html="registration_warning_message">
+                <b-alert :show="showRegistrationWarning" variant="info">
+                    {{ registration_warning_message }}
                 </b-alert>
-                <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
+                <b-alert :show="messageShow" :variant="messageVariant">
+                    {{ messageText }}
+                </b-alert>
                 <b-form id="registration" @submit.prevent="submit()">
                     <b-card no-body>
                         <!-- OIDC and Custos enabled and prioritized: encourage users to use it instead of local registration -->

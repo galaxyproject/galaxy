@@ -3,8 +3,8 @@
         <SidePanel
             v-if="showPanels"
             side="left"
-            :currentPanel="getToolBox()"
-            :currentPanelProperties="toolBoxProperties" />
+            :current-panel="getToolBox()"
+            :current-panel-properties="toolBoxProperties" />
         <div id="center">
             <div class="center-container">
                 <CenterPanel v-show="showCenter" id="galaxy_main" @load="onLoad" />
@@ -13,7 +13,7 @@
                 </div>
             </div>
         </div>
-        <SidePanel v-if="showPanels" side="right" :currentPanel="getHistoryIndex()" :currentPanelProperties="{}" />
+        <SidePanel v-if="showPanels" side="right" :current-panel="getHistoryIndex()" :current-panel-properties="{}" />
     </div>
 </template>
 <script>
@@ -33,14 +33,6 @@ export default {
             showCenter: false,
         };
     },
-    mounted() {
-        // Using a custom event here which, in contrast to watching $route,
-        // always fires when a route is pushed instead of validating it first.
-        this.$router.app.$on("router-push", this.hideCenter);
-    },
-    beforeDestroy() {
-        this.$router.app.$off("router-push", this.hideCenter);
-    },
     computed: {
         showPanels() {
             const panels = this.$route.query.hide_panels;
@@ -55,6 +47,14 @@ export default {
                 storedWorkflowMenuEntries: Galaxy.config.stored_workflow_menu_entries,
             };
         },
+    },
+    mounted() {
+        // Using a custom event here which, in contrast to watching $route,
+        // always fires when a route is pushed instead of validating it first.
+        this.$router.app.$on("router-push", this.hideCenter);
+    },
+    beforeDestroy() {
+        this.$router.app.$off("router-push", this.hideCenter);
     },
     methods: {
         getHistoryIndex() {
