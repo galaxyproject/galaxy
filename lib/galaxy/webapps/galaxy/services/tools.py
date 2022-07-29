@@ -244,32 +244,11 @@ class ToolsService(ServiceBase):
         :return type: dict
         """
         panel_view = view or self.config.default_panel_view
-        tool_name_boost = self.config.tool_name_boost
-        tool_id_boost = self.config.tool_id_boost
-        tool_section_boost = self.config.tool_section_boost
-        tool_description_boost = self.config.tool_description_boost
-        tool_label_boost = self.config.tool_label_boost
-        tool_stub_boost = self.config.tool_stub_boost
-        tool_help_boost = self.config.tool_help_boost
-        tool_search_limit = self.config.tool_search_limit
-        tool_enable_ngram_search = self.config.tool_enable_ngram_search
-        tool_ngram_minsize = self.config.tool_ngram_minsize
-        tool_ngram_maxsize = self.config.tool_ngram_maxsize
 
         results = self.toolbox_search.search(
             q=q,
             panel_view=panel_view,
-            tool_name_boost=tool_name_boost,
-            tool_id_boost=tool_id_boost,
-            tool_section_boost=tool_section_boost,
-            tool_description_boost=tool_description_boost,
-            tool_label_boost=tool_label_boost,
-            tool_stub_boost=tool_stub_boost,
-            tool_help_boost=tool_help_boost,
-            tool_search_limit=tool_search_limit,
-            tool_enable_ngram_search=tool_enable_ngram_search,
-            tool_ngram_minsize=tool_ngram_minsize,
-            tool_ngram_maxsize=tool_ngram_maxsize,
+            config=self.config,
         )
         return results
 
