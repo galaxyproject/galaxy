@@ -101,11 +101,7 @@
                     </button>
                     <FolderDetails :id="folder_id" class="mr-1" :metadata="metadata" />
                     <div v-if="canDelete" class="form-check logged-dataset-manipulation mr-1">
-                        <b-form-checkbox
-                            id="checkbox-1"
-                            :checked="include_deleted"
-                            name="checkbox-1"
-                            @input="toggle_include_deleted($event)">
+                        <b-form-checkbox :checked="includeDeleted" @change="$emit('update:includeDeleted', $event)">
                             include deleted
                         </b-form-checkbox>
                     </div>
@@ -155,7 +151,7 @@ export default {
             type: String,
             required: true,
         },
-        include_deleted: {
+        includeDeleted: {
             type: Boolean,
             required: true,
         },
@@ -244,7 +240,7 @@ export default {
                 const selected = await this.services.getFilteredFolderContents(
                     this.folder_id,
                     this.unselected,
-                    this.$parent.search_text
+                    this.$parent.searchText
                 );
                 this.$emit("setBusy", false);
                 return selected;
@@ -340,9 +336,6 @@ export default {
                 },
                 cache: true,
             });
-        },
-        toggle_include_deleted: function (value) {
-            this.$emit("fetchFolderContents", value);
         },
         updateContent: function () {
             this.$emit("fetchFolderContents");

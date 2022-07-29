@@ -37,6 +37,10 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.schema import (
+    LibraryFolderContentsIndexQueryPayload,
+    LibraryFolderContentsIndexSortByEnum,
+)
 from galaxy.security import RBACAgent
 from galaxy.security.idencoding import IdEncodingHelper
 
@@ -50,6 +54,21 @@ class SecurityParams:
     user_role_ids: List[model.Role]
     security_agent: RBACAgent
     is_admin: bool
+
+
+LDDA_SORT_COLUMN_MAP = {
+    LibraryFolderContentsIndexSortByEnum.name: lambda ldda, dataset: ldda.name,
+    LibraryFolderContentsIndexSortByEnum.description: lambda ldda, dataset: ldda.message,
+    LibraryFolderContentsIndexSortByEnum.type: lambda ldda, dataset: ldda.extension,
+    LibraryFolderContentsIndexSortByEnum.size: lambda ldda, dataset: dataset.file_size,
+    LibraryFolderContentsIndexSortByEnum.update_time: lambda ldda, dataset: ldda.update_time,
+}
+
+FOLDER_SORT_COLUMN_MAP = {
+    LibraryFolderContentsIndexSortByEnum.name: lambda folder: folder.name,
+    LibraryFolderContentsIndexSortByEnum.description: lambda folder: folder.description,
+    LibraryFolderContentsIndexSortByEnum.update_time: lambda folder: folder.update_time,
+}
 
 
 # =============================================================================
@@ -370,13 +389,12 @@ class FolderManager:
         self,
         trans,
         folder: model.LibraryFolder,
-        include_deleted: Optional[bool] = False,
-        search_text: Optional[str] = None,
-        offset: Optional[int] = None,
-        limit: Optional[int] = None,
+        payload: LibraryFolderContentsIndexQueryPayload,
     ) -> Tuple[List[Union[model.LibraryFolder, model.LibraryDataset]], int]:
         """Retrieves the contents of the given folder that match the provided filters and pagination parameters.
         Returns a tuple with the list of paginated contents and the total number of items contained in the folder."""
+        limit = payload.limit
+        offset = payload.offset
         sa_session = trans.sa_session
         security_params = SecurityParams(
             user_role_ids=[role.id for role in trans.get_current_user_roles()],
@@ -385,10 +403,11 @@ class FolderManager:
         )
 
         content_items: List[Union[model.LibraryFolder, model.LibraryDataset]] = []
-        sub_folders_query = self._get_sub_folders_query(
-            sa_session, folder, security_params, include_deleted, search_text
-        )
+        sub_folders_query = self._get_sub_folders_query(sa_session, folder, security_params, payload)
         total_sub_folders: int = sub_folders_query.count()
+        if payload.order_by in FOLDER_SORT_COLUMN_MAP:
+            sort_column = FOLDER_SORT_COLUMN_MAP[payload.order_by](model.LibraryFolder)
+            sub_folders_query = sub_folders_query.order_by(sort_column.desc() if payload.sort_desc else sort_column)
         if limit is not None:
             sub_folders_query = sub_folders_query.limit(limit)
         if offset is not None:
@@ -405,9 +424,7 @@ class FolderManager:
             offset -= num_folders_skipped
             offset = max(0, offset)
 
-        datasets_query = self._get_contained_datasets_query(
-            sa_session, folder, security_params, include_deleted, search_text
-        )
+        datasets_query = self._get_contained_datasets_query(sa_session, folder, security_params, payload)
         total_datasets = datasets_query.count()
         if limit is not None:
             datasets_query = datasets_query.limit(limit)
@@ -422,15 +439,17 @@ class FolderManager:
         sa_session: galaxy_scoped_session,
         folder: model.LibraryFolder,
         security: SecurityParams,
-        include_deleted: Optional[bool] = False,
-        search_text: Optional[str] = None,
+        payload: LibraryFolderContentsIndexQueryPayload,
     ):
         """Builds a query to retrieve all the sub-folders contained in the given folder applying filters."""
         item_model = model.LibraryFolder
         item_permission_model = model.LibraryFolderPermissions
+        search_text = payload.search_text
         query = sa_session.query(item_model)
         query = query.filter(item_model.parent_id == folder.id)
-        query = self._filter_by_include_deleted(query, item_model, item_permission_model, include_deleted, security)
+        query = self._filter_by_include_deleted(
+            query, item_model, item_permission_model, payload.include_deleted, security
+        )
         if search_text:
             search_text = search_text.lower()
             query = query.filter(
@@ -447,21 +466,23 @@ class FolderManager:
         sa_session: galaxy_scoped_session,
         folder: model.LibraryFolder,
         security: SecurityParams,
-        include_deleted: Optional[bool] = False,
-        search_text: Optional[str] = None,
+        payload: LibraryFolderContentsIndexQueryPayload,
     ):
         """Builds a query to retrieve all the datasets contained in the given folder applying filters."""
+        search_text = payload.search_text
         item_model = model.LibraryDataset
         item_permission_model = model.LibraryDatasetPermissions
         access_action = security.security_agent.permitted_actions.DATASET_ACCESS.action
         query = sa_session.query(item_model)
         query = query.filter(item_model.folder_id == folder.id)
-        query = self._filter_by_include_deleted(query, item_model, item_permission_model, include_deleted, security)
+        query = self._filter_by_include_deleted(
+            query, item_model, item_permission_model, payload.include_deleted, security
+        )
         ldda = aliased(model.LibraryDatasetDatasetAssociation)
+        associated_dataset = aliased(model.Dataset)
         query = query.outerjoin(item_model.library_dataset_dataset_association.of_type(ldda))
         if not security.is_admin:  # Non-admin users require ACCESS permission
             # We check against the actual dataset and not the ldda (for now?)
-            associated_dataset = aliased(model.Dataset)
             dataset_permission = aliased(model.DatasetPermissions)
             is_public_dataset = not_(
                 sa_session.query(model.DatasetPermissions)
@@ -493,7 +514,11 @@ class FolderManager:
                     func.lower(ldda.message).contains(search_text, autoescape=True),
                 )
             )
-        query = query.group_by(item_model.id)
+        sort_column = LDDA_SORT_COLUMN_MAP[payload.order_by](ldda, associated_dataset)
+        query = query.order_by(sort_column.desc() if payload.sort_desc else sort_column)
+
+        query = query.group_by(item_model.id, sort_column)
+
         return query
 
     def _filter_by_include_deleted(
