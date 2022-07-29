@@ -13,6 +13,7 @@ from typing import (
 
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.text import Html
+from galaxy.util.bunch import Bunch
 
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance
@@ -29,7 +30,7 @@ class AnvioComposite(Html):
     file_ext = "anvio_composite"
     composite_type = "auto_primary_file"
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: Optional[Bunch] = None) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
@@ -43,16 +44,19 @@ class AnvioComposite(Html):
                 if composite_file.optional:
                     opt_text = " (optional)"
                 missing_text = ""
-                if not os.path.exists(os.path.join(dataset.extra_files_path, composite_name)):
+                if dataset and not os.path.exists(os.path.join(dataset.extra_files_path, composite_name)):
                     missing_text = " (missing)"
                 rval.append(f'<li><a href="{composite_name}">{composite_name}</a>{opt_text}{missing_text}</li>')
             rval.append("</ul>")
         extra_files = []
-        for dirpath, _dirnames, filenames in os.walk(dataset.extra_files_path, followlinks=True):
-            for filename in filenames:
-                rel_path = os.path.relpath(os.path.join(dirpath, filename), dataset.extra_files_path)
-                if rel_path not in defined_files:
-                    extra_files.append(rel_path)
+
+        if dataset:
+            for dirpath, _dirnames, filenames in os.walk(dataset.extra_files_path, followlinks=True):
+                for filename in filenames:
+                    rel_path = os.path.relpath(os.path.join(dirpath, filename), dataset.extra_files_path)
+                    if rel_path not in defined_files:
+                        extra_files.append(rel_path)
+
         if extra_files:
             rval.append("<p/>This composite dataset contains these undefined files:<p/><ul>")
             for rel_path in extra_files:
