@@ -42,6 +42,7 @@ URI_PREFIXES = [f"{x}://" for x in ["http", "https", "ftp", "file", "gxfiles", "
 class Group(Dictifiable):
 
     dict_collection_visible_keys = ["name", "type"]
+    type: str
 
     def __init__(self):
         self.name = None

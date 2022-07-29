@@ -11,6 +11,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Optional,
     Tuple,
 )
 
@@ -55,7 +56,10 @@ from galaxy.model import (
     custom_types,
     mapping,
 )
-from galaxy.model.base import SharedModelMapping
+from galaxy.model.base import (
+    ModelMapping,
+    SharedModelMapping,
+)
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.database_utils import (
     database_exists,
@@ -170,6 +174,9 @@ class HaltableContainer(Container):
 
 
 class SentryClientMixin:
+    config: config.GalaxyAppConfiguration
+    application_stack: ApplicationStack
+
     def configure_sentry_client(self):
         self.sentry_client = None
         if self.config.sentry_dsn:
@@ -208,6 +215,7 @@ class ConfiguresGalaxyMixin:
     toolbox: tools.ToolBox
     toolbox_search: ToolBoxSearch
     container_finder: containers.ContainerFinder
+    install_model: ModelMapping
 
     def _configure_genome_builds(self, data_table_name="__dbkeys__", load_old_style=True):
         self.genome_builds = GenomeBuilds(self, data_table_name=data_table_name, load_old_style=load_old_style)
@@ -282,7 +290,7 @@ class ConfiguresGalaxyMixin:
             ToolBoxSearch(self.toolbox, index_dir=self.config.tool_search_index_dir, index_help=index_help),
         )
 
-    def reindex_tool_search(self):
+    def reindex_tool_search(self) -> None:
         # Call this when tools are added or removed.
         self.toolbox_search.build_index(tool_cache=self.tool_cache, toolbox=self.toolbox)
         self.tool_cache.reset_status()
@@ -449,6 +457,8 @@ class ConfiguresGalaxyMixin:
 class MinimalGalaxyApplication(BasicSharedApp, ConfiguresGalaxyMixin, HaltableContainer, SentryClientMixin):
     """Encapsulates the state of a minimal Galaxy application"""
 
+    model: GalaxyModelMapping
+
     def __init__(self, fsmon=False, **kwargs) -> None:
         super().__init__()
         self.haltables = [
@@ -485,7 +495,9 @@ class MinimalGalaxyApplication(BasicSharedApp, ConfiguresGalaxyMixin, HaltableCo
         if self.config.fluent_log:
             from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
 
-            self.trace_logger = FluentTraceLogger("galaxy", self.config.fluent_host, self.config.fluent_port)
+            self.trace_logger: Optional[FluentTraceLogger] = FluentTraceLogger(
+                "galaxy", self.config.fluent_host, self.config.fluent_port
+            )
         else:
             self.trace_logger = None
 
@@ -498,6 +510,8 @@ class MinimalGalaxyApplication(BasicSharedApp, ConfiguresGalaxyMixin, HaltableCo
 
 class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     """Extends the MinimalGalaxyApplication with most managers that are not tied to a web or job handling context."""
+
+    model: GalaxyModelMapping
 
     def __init__(self, configure_logging=True, use_converters=True, use_display_applications=True, **kwargs):
         super().__init__(**kwargs)
@@ -529,8 +543,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
         short_term_storage_config = ShortTermStorageConfiguration(**short_term_storage_config_kwds)
         short_term_storage_manager = ShortTermStorageManager(config=short_term_storage_config)
-        self._register_singleton(ShortTermStorageAllocator, short_term_storage_manager)
-        self._register_singleton(ShortTermStorageMonitor, short_term_storage_manager)
+        self._register_singleton(ShortTermStorageAllocator, short_term_storage_manager)  # type: ignore[misc]
+        self._register_singleton(ShortTermStorageMonitor, short_term_storage_manager)  # type: ignore[misc]
 
         # Tag handler
         self.tag_handler = self._register_singleton(GalaxyTagHandler)
@@ -554,7 +568,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
             ConfiguredFileSources, ConfiguredFileSources.from_app_config(self.config)
         )
 
-        self.vault = self._register_singleton(Vault, VaultFactory.from_app(self))
+        self.vault = self._register_singleton(Vault, VaultFactory.from_app(self))  # type: ignore[misc]
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.model.security.HostAgent(
@@ -582,6 +596,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
 class UniverseApplication(StructuredApp, GalaxyManagerApplication):
     """Encapsulates the state of a Universe application"""
+
+    model: GalaxyModelMapping
 
     def __init__(self, **kwargs) -> None:
         startup_timer = ExecutionTimer()
@@ -795,9 +811,9 @@ class ExecutionTimerFactory:
     def __init__(self, config):
         statsd_host = getattr(config, "statsd_host", None)
         if statsd_host:
-            from galaxy.web.framework.middleware.statsd import GalaxyStatsdClient
+            from galaxy.web.statsd_client import GalaxyStatsdClient
 
-            self.galaxy_statsd_client = GalaxyStatsdClient(
+            self.galaxy_statsd_client: Optional[GalaxyStatsdClient] = GalaxyStatsdClient(
                 statsd_host,
                 getattr(config, "statsd_port", 8125),
                 getattr(config, "statsd_prefix", "galaxy"),

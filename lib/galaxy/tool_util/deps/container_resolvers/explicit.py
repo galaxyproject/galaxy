@@ -1,6 +1,7 @@
 """This module describes the :class:`ExplicitContainerResolver` ContainerResolver plugin."""
 import logging
 import os
+from typing import cast
 
 from galaxy.util.commands import shell
 from .mulled import CliContainerResolver
@@ -88,7 +89,7 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
                 return None
             if not self.cli_available:
                 return container_description
-            image_id = container_description.identifier
+            image_id = cast(str, container_description.identifier)
             cache_path = os.path.normpath(os.path.join(self.cache_directory_path, image_id))
             if install and not os.path.exists(cache_path):
                 destination_info = {}

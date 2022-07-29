@@ -37,7 +37,7 @@ DatasetCollectionIdPathParam: EncodedDatabaseIdField = Path(
 )
 
 InstanceTypeQueryParam: DatasetCollectionInstanceType = Query(
-    default=DatasetCollectionInstanceType.history,
+    default="history",
     description="The type of collection instance. Either `history` (default) or `library`.",
 )
 

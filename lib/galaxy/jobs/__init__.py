@@ -1579,7 +1579,6 @@ class MinimalJobWrapper(HasResourceParameters):
 
     def set_job_destination(self, job_destination, external_id=None, flush=True, job=None):
         """Subclasses should implement this to persist a destination, if necessary."""
-        pass
 
     def _set_object_store_ids(self, job):
         if job.object_store_id:

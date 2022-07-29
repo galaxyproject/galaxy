@@ -6,6 +6,7 @@ from galaxy.jobs.manager import JobManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.store import (
+    DirectoryModelExportStore,
     ImportDiscardedDataType,
     ImportOptions,
     ObjectImportTracker,
@@ -53,9 +54,7 @@ class ModelStoreManager:
 
         history = self._sa_session.query(model.History).get(history_id)
         # symlink files on export, on worker files will tarred up in a dereferenced manner.
-        with model.store.DirectoryModelExportStore(
-            store_directory, app=self._app, export_files="symlink"
-        ) as export_store:
+        with DirectoryModelExportStore(store_directory, app=self._app, export_files="symlink") as export_store:
             export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)
         job = self._sa_session.query(model.Job).get(job_id)
         job.state = model.Job.states.NEW

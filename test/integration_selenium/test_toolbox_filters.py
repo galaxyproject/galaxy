@@ -1,4 +1,5 @@
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.by import By
 
 from .framework import (
     selenium_test,
@@ -26,7 +27,7 @@ class ToolboxFiltersSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
         """
         self.register()
         # The tool panel section should be visible and clickable at this stage
-        section = self.driver.find_element_by_link_text("Test Section")
+        section = self.driver.find_element(By.LINK_TEXT, "Test Section")
         self.action_chains().move_to_element(section).click().perform()
         self.navigate_to_user_preferences()
         self.components.preferences.toolbox_filters.wait_for_and_click()
@@ -41,4 +42,4 @@ class ToolboxFiltersSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.home()
         # But now it should raise NoSuchElementException
-        self.assertRaises(NoSuchElementException, lambda: self.driver.find_element_by_link_text("Test Section"))
+        self.assertRaises(NoSuchElementException, lambda: self.driver.find_element(By.LINK_TEXT, "Test Section"))

@@ -2,13 +2,31 @@
 Manager and Serializer for Library Folders.
 """
 import logging
+from dataclasses import dataclass
+from typing import (
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 
+from sqlalchemy import (
+    and_,
+    false,
+    func,
+    not_,
+    or_,
+)
+from sqlalchemy.orm import aliased
 from sqlalchemy.orm.exc import (
     MultipleResultsFound,
     NoResultFound,
 )
 
-from galaxy import util
+from galaxy import (
+    model,
+    util,
+)
 from galaxy.exceptions import (
     AuthenticationRequired,
     InconsistentDatabase,
@@ -18,8 +36,39 @@ from galaxy.exceptions import (
     MalformedId,
     RequestParameterInvalidException,
 )
+from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.schema import (
+    LibraryFolderContentsIndexQueryPayload,
+    LibraryFolderContentsIndexSortByEnum,
+)
+from galaxy.security import RBACAgent
+from galaxy.security.idencoding import IdEncodingHelper
 
 log = logging.getLogger(__name__)
+
+
+@dataclass
+class SecurityParams:
+    """Contains security data bundled for reusability."""
+
+    user_role_ids: List[model.Role]
+    security_agent: RBACAgent
+    is_admin: bool
+
+
+LDDA_SORT_COLUMN_MAP = {
+    LibraryFolderContentsIndexSortByEnum.name: lambda ldda, dataset: ldda.name,
+    LibraryFolderContentsIndexSortByEnum.description: lambda ldda, dataset: ldda.message,
+    LibraryFolderContentsIndexSortByEnum.type: lambda ldda, dataset: ldda.extension,
+    LibraryFolderContentsIndexSortByEnum.size: lambda ldda, dataset: dataset.file_size,
+    LibraryFolderContentsIndexSortByEnum.update_time: lambda ldda, dataset: ldda.update_time,
+}
+
+FOLDER_SORT_COLUMN_MAP = {
+    LibraryFolderContentsIndexSortByEnum.name: lambda folder: folder.name,
+    LibraryFolderContentsIndexSortByEnum.description: lambda folder: folder.description,
+    LibraryFolderContentsIndexSortByEnum.update_time: lambda folder: folder.update_time,
+}
 
 
 # =============================================================================
@@ -335,3 +384,176 @@ class FolderManager:
         :rtype:    int
         """
         return self.decode_folder_id(trans, self.cut_the_prefix(encoded_folder_id))
+
+    def get_contents(
+        self,
+        trans,
+        folder: model.LibraryFolder,
+        payload: LibraryFolderContentsIndexQueryPayload,
+    ) -> Tuple[List[Union[model.LibraryFolder, model.LibraryDataset]], int]:
+        """Retrieves the contents of the given folder that match the provided filters and pagination parameters.
+        Returns a tuple with the list of paginated contents and the total number of items contained in the folder."""
+        limit = payload.limit
+        offset = payload.offset
+        sa_session = trans.sa_session
+        security_params = SecurityParams(
+            user_role_ids=[role.id for role in trans.get_current_user_roles()],
+            security_agent=trans.app.security_agent,
+            is_admin=trans.user_is_admin,
+        )
+
+        content_items: List[Union[model.LibraryFolder, model.LibraryDataset]] = []
+        sub_folders_query = self._get_sub_folders_query(sa_session, folder, security_params, payload)
+        total_sub_folders: int = sub_folders_query.count()
+        if payload.order_by in FOLDER_SORT_COLUMN_MAP:
+            sort_column = FOLDER_SORT_COLUMN_MAP[payload.order_by](model.LibraryFolder)
+            sub_folders_query = sub_folders_query.order_by(sort_column.desc() if payload.sort_desc else sort_column)
+        if limit is not None:
+            sub_folders_query = sub_folders_query.limit(limit)
+        if offset is not None:
+            sub_folders_query = sub_folders_query.offset(offset)
+        folders = sub_folders_query.all()
+        content_items.extend(folders)
+
+        # Update pagination
+        num_folders_returned = len(folders)
+        num_folders_skipped = total_sub_folders - num_folders_returned
+        if limit:
+            limit -= num_folders_returned
+        if offset:
+            offset -= num_folders_skipped
+            offset = max(0, offset)
+
+        datasets_query = self._get_contained_datasets_query(sa_session, folder, security_params, payload)
+        total_datasets = datasets_query.count()
+        if limit is not None:
+            datasets_query = datasets_query.limit(limit)
+        if offset is not None:
+            datasets_query = datasets_query.offset(offset)
+        datasets = datasets_query.all()
+        content_items.extend(datasets)
+        return (content_items, total_sub_folders + total_datasets)
+
+    def _get_sub_folders_query(
+        self,
+        sa_session: galaxy_scoped_session,
+        folder: model.LibraryFolder,
+        security: SecurityParams,
+        payload: LibraryFolderContentsIndexQueryPayload,
+    ):
+        """Builds a query to retrieve all the sub-folders contained in the given folder applying filters."""
+        item_model = model.LibraryFolder
+        item_permission_model = model.LibraryFolderPermissions
+        search_text = payload.search_text
+        query = sa_session.query(item_model)
+        query = query.filter(item_model.parent_id == folder.id)
+        query = self._filter_by_include_deleted(
+            query, item_model, item_permission_model, payload.include_deleted, security
+        )
+        if search_text:
+            search_text = search_text.lower()
+            query = query.filter(
+                or_(
+                    func.lower(item_model.name).contains(search_text, autoescape=True),
+                    func.lower(item_model.description).contains(search_text, autoescape=True),
+                )
+            )
+        query = query.group_by(item_model.id)
+        return query
+
+    def _get_contained_datasets_query(
+        self,
+        sa_session: galaxy_scoped_session,
+        folder: model.LibraryFolder,
+        security: SecurityParams,
+        payload: LibraryFolderContentsIndexQueryPayload,
+    ):
+        """Builds a query to retrieve all the datasets contained in the given folder applying filters."""
+        search_text = payload.search_text
+        item_model = model.LibraryDataset
+        item_permission_model = model.LibraryDatasetPermissions
+        access_action = security.security_agent.permitted_actions.DATASET_ACCESS.action
+        query = sa_session.query(item_model)
+        query = query.filter(item_model.folder_id == folder.id)
+        query = self._filter_by_include_deleted(
+            query, item_model, item_permission_model, payload.include_deleted, security
+        )
+        ldda = aliased(model.LibraryDatasetDatasetAssociation)
+        associated_dataset = aliased(model.Dataset)
+        query = query.outerjoin(item_model.library_dataset_dataset_association.of_type(ldda))
+        if not security.is_admin:  # Non-admin users require ACCESS permission
+            # We check against the actual dataset and not the ldda (for now?)
+            dataset_permission = aliased(model.DatasetPermissions)
+            is_public_dataset = not_(
+                sa_session.query(model.DatasetPermissions)
+                .filter(
+                    model.DatasetPermissions.dataset_id == associated_dataset.id,
+                    model.DatasetPermissions.action == access_action,
+                )
+                .exists()
+            )
+            query = query.outerjoin(ldda.dataset.of_type(associated_dataset))
+            query = query.outerjoin(associated_dataset.actions.of_type(dataset_permission))
+            query = query.filter(
+                or_(
+                    # The dataset is public
+                    is_public_dataset,
+                    # The user has explicit access
+                    and_(
+                        dataset_permission.action == access_action,
+                        dataset_permission.role_id.in_(security.user_role_ids),
+                    ),
+                )
+            )
+
+        if search_text:
+            search_text = search_text.lower()
+            query = query.filter(
+                or_(
+                    func.lower(ldda.name).contains(search_text, autoescape=True),
+                    func.lower(ldda.message).contains(search_text, autoescape=True),
+                )
+            )
+        sort_column = LDDA_SORT_COLUMN_MAP[payload.order_by](ldda, associated_dataset)
+        query = query.order_by(sort_column.desc() if payload.sort_desc else sort_column)
+
+        query = query.group_by(item_model.id, sort_column)
+
+        return query
+
+    def _filter_by_include_deleted(
+        self, query, item_model, item_permissions_model, include_deleted: Optional[bool], security: SecurityParams
+    ):
+        if include_deleted:  # Admins or users with MODIFY permissions can see deleted contents
+            if not security.is_admin:
+                item_permission = aliased(item_permissions_model)
+                query = query.outerjoin(item_model.actions.of_type(item_permission))
+                query = query.filter(
+                    or_(
+                        item_model.deleted == false(),  # Is not deleted
+                        # User has MODIFY permission
+                        and_(
+                            item_permission.action == security.security_agent.permitted_actions.LIBRARY_MODIFY.action,
+                            item_permission.role_id.in_(security.user_role_ids),
+                        ),
+                    )
+                )
+        else:
+            query = query.filter(item_model.deleted == false())
+        return query
+
+    def build_folder_path(
+        self, sa_session: galaxy_scoped_session, security: IdEncodingHelper, folder: model.LibraryFolder
+    ) -> List[Tuple[str, str]]:
+        """
+        Returns the folder path from root to the given folder.
+
+        The path items are tuples with the name and id of each folder for breadcrumb building purposes.
+        """
+        current_folder = folder
+        path_to_root = [(f"F{security.encode_id(current_folder.id)}", current_folder.name)]
+        while current_folder.parent_id is not None:
+            parent_folder = sa_session.query(model.LibraryFolder).get(current_folder.parent_id)
+            current_folder = parent_folder
+            path_to_root.insert(0, (f"F{security.encode_id(current_folder.id)}", current_folder.name))
+        return path_to_root

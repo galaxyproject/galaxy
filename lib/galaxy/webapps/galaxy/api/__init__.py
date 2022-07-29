@@ -17,16 +17,21 @@ from typing import (
 from urllib.parse import urlencode
 
 from fastapi import (
-    Cookie,
     Form,
     Header,
     Query,
     Request,
     Response,
+    Security,
 )
 from fastapi.exceptions import RequestValidationError
 from fastapi.params import Depends
 from fastapi.routing import APIRoute
+from fastapi.security import (
+    APIKeyCookie,
+    APIKeyHeader,
+    APIKeyQuery,
+)
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
 from pydantic import ValidationError
@@ -67,6 +72,10 @@ from galaxy.work.context import (
     SessionRequestContext,
 )
 
+api_key_query = APIKeyQuery(name="key", auto_error=False)
+api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
+api_key_cookie = APIKeyCookie(name="galaxysession", auto_error=False)
+
 
 def get_app() -> StructuredApp:
     return cast(StructuredApp, galaxy_app.app)
@@ -82,7 +91,7 @@ async def get_app_with_request_session() -> AsyncGenerator[StructuredApp, None]:
         app.model.unset_request_id(request_id)
 
 
-DependsOnApp = Depends(get_app_with_request_session)
+DependsOnApp = cast(StructuredApp, Depends(get_app_with_request_session))
 
 
 T = TypeVar("T")
@@ -109,9 +118,9 @@ def get_session_manager(app: StructuredApp = DependsOnApp) -> GalaxySessionManag
 
 
 def get_session(
-    session_manager: GalaxySessionManager = Depends(get_session_manager),
+    session_manager=cast(GalaxySessionManager, Depends(get_session_manager)),
     security: IdEncodingHelper = depends(IdEncodingHelper),
-    galaxysession: Optional[str] = Cookie(None),
+    galaxysession: str = Security(api_key_cookie),
 ) -> Optional[model.GalaxySession]:
     if galaxysession:
         session_key = security.decode_guid(galaxysession)
@@ -124,8 +133,8 @@ def get_session(
 def get_api_user(
     security: IdEncodingHelper = depends(IdEncodingHelper),
     user_manager: UserManager = depends(UserManager),
-    key: Optional[str] = Query(None),
-    x_api_key: Optional[str] = Header(None),
+    key: str = Security(api_key_query),
+    x_api_key: str = Security(api_key_header),
     run_as: Optional[EncodedDatabaseIdField] = Header(
         default=None,
         title="Run as User",
@@ -152,8 +161,8 @@ def get_api_user(
 
 
 def get_user(
-    galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
-    api_user: Optional[User] = Depends(get_api_user),
+    galaxy_session=cast(Optional[model.GalaxySession], Depends(get_session)),
+    api_user=cast(Optional[User], Depends(get_api_user)),
 ) -> Optional[User]:
     if galaxy_session:
         return galaxy_session.user
@@ -217,7 +226,7 @@ class GalaxyASGIResponse(GalaxyAbstractResponse):
         return self.__response.headers
 
 
-DependsOnUser = Depends(get_user)
+DependsOnUser = cast(Optional[User], Depends(get_user))
 
 
 def get_current_history_from_session(galaxy_session: Optional[model.GalaxySession]) -> Optional[model.History]:
@@ -230,8 +239,8 @@ def get_trans(
     request: Request,
     response: Response,
     app: StructuredApp = DependsOnApp,
-    user: Optional[User] = Depends(get_user),
-    galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
+    user=cast(Optional[User], Depends(get_user)),
+    galaxy_session=cast(Optional[model.GalaxySession], Depends(get_session)),
 ) -> SessionRequestContext:
     url_builder = UrlBuilder(request)
     galaxy_request = GalaxyASGIRequest(request)
@@ -247,7 +256,7 @@ def get_trans(
     )
 
 
-DependsOnTrans = Depends(get_trans)
+DependsOnTrans: SessionRequestContext = cast(SessionRequestContext, Depends(get_trans))
 
 
 def get_admin_user(trans: SessionRequestContext = DependsOnTrans):

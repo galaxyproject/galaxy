@@ -214,7 +214,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         # Insert a tag
         tags_cell = self.get_history_tags_cell(self.history2_name)
-        tag_area = tags_cell.find_element_by_css_selector(".ti-new-tag-input-wrapper input")
+        tag_area = tags_cell.find_element(self.by.CSS_SELECTOR, ".ti-new-tag-input-wrapper input")
         tag_area.click()
         tag_area.send_keys(self.history2_tags[0])
         self.send_enter(tag_area)
@@ -223,7 +223,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         # Search by tag
         tags_cell = self.get_history_tags_cell(self.history2_name)
-        tag = tags_cell.find_element_by_css_selector(".ti-tag-center")
+        tag = tags_cell.find_element(self.by.CSS_SELECTOR, ".ti-tag-center")
         tag.click()
 
         self.assert_grid_histories_are([self.history2_name], False)
@@ -290,8 +290,8 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
     def get_history_tags_cell(self, history_name):
         tags_cell = None
         grid = self.wait_for_selector("#grid-table-body")
-        for row in grid.find_elements_by_tag_name("tr"):
-            td = row.find_elements_by_tag_name("td")
+        for row in grid.find_elements(self.by.CSS_SELECTOR, "tr"):
+            td = row.find_elements(self.by.CSS_SELECTOR, "td")
             if td[1].text == history_name:
                 tags_cell = td[4]
                 break
@@ -303,9 +303,9 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     def check_histories(self, histories):
         grid = self.wait_for_selector("#grid-table-body")
-        for row in grid.find_elements_by_tag_name("tr"):
-            td = row.find_elements_by_tag_name("td")
+        for row in grid.find_elements(self.by.CSS_SELECTOR, "tr"):
+            td = row.find_elements(self.by.CSS_SELECTOR, "td")
             history_name = td[1].text
             if history_name in histories:
-                checkbox = td[0].find_element_by_tag_name("input")
+                checkbox = td[0].find_element(self.by.CSS_SELECTOR, "input")
                 checkbox.click()

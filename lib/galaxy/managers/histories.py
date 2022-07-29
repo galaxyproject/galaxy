@@ -6,6 +6,7 @@ created (or copied) by users over the course of an analysis.
 """
 import logging
 from typing import (
+    Any,
     cast,
     Dict,
     List,
@@ -60,7 +61,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         hda_manager: hdas.HDAManager,
         contents_manager: history_contents.HistoryContentsManager,
         contents_filters: history_contents.HistoryContentsFilters,
-    ):
+    ) -> None:
         super().__init__(app)
         self.hda_manager = hda_manager
         self.contents_manager = contents_manager
@@ -74,7 +75,9 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
     # .... sharable
     # overriding to handle anonymous users' current histories in both cases
-    def by_user(self, user, current_history=None, **kwargs):
+    def by_user(
+        self, user: model.User, current_history: Optional[model.History] = None, **kwargs: Any
+    ) -> List[model.History]:
         """
         Get all the histories for a given user (allowing anon users' theirs)
         ordered by update time.
@@ -84,16 +87,22 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             return [current_history] if current_history else []
         return super().by_user(user, **kwargs)
 
-    def is_owner(self, history, user, current_history=None, **kwargs):
+    def is_owner(
+        self,
+        item: model._HasTable,
+        user: Optional[model.User],
+        current_history: Optional[model.History] = None,
+        **kwargs: Any,
+    ) -> bool:
         """
         True if the current user is the owner of the given history.
         """
         # anon users are only allowed to view their current history
         if self.user_manager.is_anonymous(user):
-            if current_history and history == current_history:
+            if current_history and item == current_history:
                 return True
             return False
-        return super().is_owner(history, user)
+        return super().is_owner(item, user)
 
     # TODO: possibly to sharable or base
     def most_recent(self, user, filters=None, current_history=None, **kwargs):

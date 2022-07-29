@@ -1,4 +1,8 @@
 import json
+from typing import (
+    Dict,
+    List,
+)
 
 import packaging.version
 
@@ -27,10 +31,10 @@ class YamlToolSource(ToolSource):
 
     language = "yaml"
 
-    def __init__(self, root_dict, source_path=None):
+    def __init__(self, root_dict: Dict, source_path=None):
         self.root_dict = root_dict
         self._source_path = source_path
-        self._macro_paths = []
+        self._macro_paths: List[str] = []
 
     @property
     def source_path(self):
@@ -192,9 +196,9 @@ class YamlToolSource(ToolSource):
         return self.root_dict.get("entry_points", [])
 
     def parse_python_template_version(self):
-        python_template_version = self.root_dict.get("python_template_version", None)
+        python_template_version = self.root_dict.get("python_template_version")
         if python_template_version is not None:
-            python_template_version = packaging.version.parse(python_template_version)
+            python_template_version = packaging.version.Version(python_template_version)
         return python_template_version
 
     def to_string(self):

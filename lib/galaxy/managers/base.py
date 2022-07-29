@@ -203,8 +203,11 @@ def munge_lists(listA, listB):
     return listA + listB
 
 
+U = TypeVar("U", bound=model._HasTable)
+
+
 # -----------------------------------------------------------------------------
-class ModelManager:
+class ModelManager(Generic[U]):
     """
     Base class for all model/resource managers.
 
@@ -212,7 +215,7 @@ class ModelManager:
     over the ORM.
     """
 
-    model_class: Type[model._HasTable]
+    model_class: Type[U]
     foreign_key_name: str
     app: BasicSharedApp
 
@@ -313,14 +316,14 @@ class ModelManager:
         return query
 
     # .... query resolution
-    def one(self, **kwargs):
+    def one(self, **kwargs) -> Query:
         """
         Sends kwargs to build the query and returns one and only one model.
         """
         query = self.query(**kwargs)
         return self._one_with_recast_errors(query)
 
-    def _one_with_recast_errors(self, query):
+    def _one_with_recast_errors(self, query: Query) -> Query:
         """
         Call sqlalchemy's one and recast errors to serializable errors if any.
 
@@ -347,7 +350,7 @@ class ModelManager:
             return None
 
     # NOTE: at this layer, all ids are expected to be decoded and in int form
-    def by_id(self, id: int):
+    def by_id(self, id: int) -> Query:
         """
         Gets a model by primary id.
         """
@@ -479,10 +482,8 @@ class ModelManager:
                 in_order.append(item_dict[id])
         return in_order
 
-    def create(self, flush=True, *args, **kwargs):
-        """
-        Generically create a new model.
-        """
+    def create(self, flush: bool = True, *args: Any, **kwargs: Any) -> U:
+        """Generically create a new model."""
         # override in subclasses
         item = self.model_class(*args, **kwargs)
         self.session().add(item)

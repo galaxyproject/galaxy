@@ -7,6 +7,7 @@ import random
 import socket
 import time
 from datetime import datetime
+from typing import Optional
 
 from markupsafe import escape
 from sqlalchemy import (
@@ -285,7 +286,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return util.safe_str_cmp(master_hash, provided_hash)
 
     # ---- admin
-    def is_admin(self, user, trans=None):
+    def is_admin(self, user: Optional[model.User], trans=None) -> bool:
         """Return True if this user is an admin (or session is authenticated as admin).
 
         Do not pass trans to simply check if an existing user object is an admin user,
@@ -317,7 +318,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return user
 
     # ---- anonymous
-    def is_anonymous(self, user):
+    def is_anonymous(self, user: Optional[model.User]) -> bool:
         """
         Return True if `user` is anonymous.
         """

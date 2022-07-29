@@ -261,9 +261,7 @@ class HistoryContentSource(str, Enum):
     new_collection = "new_collection"
 
 
-class DatasetCollectionInstanceType(str, Enum):
-    history = "history"
-    library = "library"
+DatasetCollectionInstanceType = Literal["history", "library"]
 
 
 class TagItem(ConstrainedStr):
@@ -1267,7 +1265,7 @@ class CreateNewCollectionPayload(Model):
         description="Whether to create a copy of the source HDAs for the new collection.",
     )
     instance_type: Optional[DatasetCollectionInstanceType] = Field(
-        default=DatasetCollectionInstanceType.history,
+        default="history",
         title="Instance Type",
         description="The type of the instance, either `history` (default) or `library`.",
     )
@@ -2534,11 +2532,21 @@ class LibraryFolderCurrentPermissions(BaseModel):
     )
 
 
+class LibraryFolderContentsIndexSortByEnum(str, Enum):
+    name = "name"
+    description = "description"
+    type = "type"
+    size = "size"
+    update_time = "update_time"
+
+
 class LibraryFolderContentsIndexQueryPayload(Model):
     limit: int = 10
     offset: int = 0
     search_text: Optional[str] = None
     include_deleted: Optional[bool] = None
+    order_by: LibraryFolderContentsIndexSortByEnum = LibraryFolderContentsIndexSortByEnum.name
+    sort_desc: Optional[bool] = False
 
 
 class LibraryFolderItemBase(Model):

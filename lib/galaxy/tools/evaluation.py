@@ -330,7 +330,7 @@ class ToolEvaluator:
                 dataset = input_values[input.name]
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
-                    tool=self,
+                    tool=self.tool,
                     name=input.name,
                     compute_environment=self.compute_environment,
                 )
@@ -343,7 +343,7 @@ class ToolEvaluator:
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
                     compute_environment=self.compute_environment,
-                    tool=self,
+                    tool=self.tool,
                     name=input.name,
                 )
                 wrapper = DatasetCollectionWrapper(job_working_directory, dataset_collection, **wrapper_kwds)
@@ -390,7 +390,7 @@ class ToolEvaluator:
             if not isinstance(param_dict_value, (DatasetFilenameWrapper, DatasetListWrapper)):
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
-                    tool=self,
+                    tool=self.tool,
                     name=name,
                     compute_environment=self.compute_environment,
                 )

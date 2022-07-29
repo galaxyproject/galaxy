@@ -25,6 +25,7 @@ from typing import (
     Optional,
     Set,
     SupportsInt,
+    TYPE_CHECKING,
     TypeVar,
     Union,
 )
@@ -50,6 +51,9 @@ from ..version import (
     VERSION_MAJOR,
     VERSION_MINOR,
 )
+
+if TYPE_CHECKING:
+    from galaxy.model import User
 
 try:
     from importlib.resources import files  # type: ignore[attr-defined]
@@ -561,9 +565,9 @@ class CommonConfigurationMixin:
         self._admin_users = value
         self.admin_users_list = listify(value)
 
-    def is_admin_user(self, user):
+    def is_admin_user(self, user: Optional["User"]) -> bool:
         """Determine if the provided user is listed in `admin_users`."""
-        return user and (user.email in self.admin_users_list or user.bootstrap_admin_user)
+        return user is not None and (user.email in self.admin_users_list or user.bootstrap_admin_user)
 
     @property
     def sentry_dsn_public(self):
