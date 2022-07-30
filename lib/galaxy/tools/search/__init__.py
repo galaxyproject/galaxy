@@ -346,21 +346,4 @@ class ToolPanelViewSearch:
             terms=True,
         )
 
-        # !!! log match scores --------------------------------------------
-        scores = [x[0] for x in hits.top_n][: config.tool_search_limit]
-
-        log.debug(
-            pprint.pformat(
-                [
-                    {
-                        "score": score,
-                        "details": hit["id"],
-                        "matched_terms": hit.matched_terms(),
-                    }
-                    for hit, score in zip(hits[: config.tool_search_limit], scores)
-                ]
-            )
-        )
-        # !!! -------------------------------------------------------------
-
         return [hit["id"] for hit in hits[: config.tool_search_limit]]
