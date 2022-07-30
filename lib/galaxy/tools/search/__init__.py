@@ -26,7 +26,6 @@ Filters - various filters are available for processing content as the index is
 """
 import logging
 import os
-import pprint
 import re
 import shutil
 from typing import (
