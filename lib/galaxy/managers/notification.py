@@ -5,11 +5,15 @@ from typing import (
 
 from sqlalchemy import false
 
+from pydantic import (
+    BaseModel,
+    Field,
+)
+
 from galaxy import model
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.structured_app import MinimalManagerApp
-
 
 class NotificationManager:
     """Interface/service object shared by controllers for interacting with notifications."""
@@ -32,13 +36,14 @@ class NotificationManager:
             rval.append(notification)
         return rval
 
-    def create(self, message: str):
+    def create(self, trans, payload):
         """
         Creates a new notification.
         """
-        notification = model.Notification(message_text=message)
-        self.sa_session.add(notification)
-        self.sa_session.flush()
+        notification = trans.app.model.Notification(message_text=payload.message)
+        session = trans.sa_session
+        session.add(notification)
+        session.flush()
         return notification
 
     def show(self, notification_id):
