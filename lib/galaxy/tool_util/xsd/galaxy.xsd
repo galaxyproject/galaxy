@@ -4666,10 +4666,10 @@ In both cases the desired metadata is selected by ``key``.
 
 The ``static_value`` and ``regexp`` filters can be inverted by setting ``keep`` to true.
 
-* ``add_value``: add an option with a given ``name`` and ``value`` to the options. By default the new option is appended, with ``index`` the insertion position can be specified.
-* ``remove_value``: remove a value from the options. Either specified explicitly with ``value``, the value of another input specifified with ``ref``, or the metatdata ``key`` of another input ``meta_ref``.
+* ``add_value``: add an option with a given ``name`` and ``value`` to the options. By default, the new option is appended, with ``index`` the insertion position can be specified.
+* ``remove_value``: remove a value from the options. Either specified explicitly with ``value``, the value of another input specified with ``ref``, or the metadata ``key`` of another input ``meta_ref``.
 * ``unique_value``: remove options that have duplicate entries in the given ``column``.
-* ``sort_by``: sort options by the entries of a given ``column``.
+* ``sort_by``: sort options by the entries of a given ``column``. If ``reverse_sort_order`` is set to ``true``, reverse sort order from ascending to descending.
 * ``multiple_splitter``: split the entries of the specified ``column``(s) in the referenced file using a ``separator``. Thereby the number of columns is increased.
 
 ### Examples
@@ -4856,6 +4856,13 @@ added to the end of the list.</xs:documentation>
         <xs:documentation xml:lang="en">Only used when ``type`` is
 ``remove_value``. Dataset to look for the value of metadata ``key`` to remove
 from the list.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="reverse_sort_order" type="xs:boolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Used when ``type`` is ``sort_by``, if set to
+        ``true`` it will reverse the sort order from ascending to descending. Default
+        is ``false``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
