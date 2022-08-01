@@ -516,7 +516,7 @@ class SortByColumnFilter(Filter):
         column = elem.get("column", None)
         assert column is not None, "Required 'column' attribute missing from filter"
         self.column = d_option.column_spec_to_index(column)
-        self.reverse = elem.get("reverse_sort_order", False)
+        self.reverse = string_as_bool(elem.get("reverse_sort_order", "False"))
 
     def filter_options(self, options, trans, other_values):
         return sorted(options, key=lambda x: x[self.column], reverse=self.reverse)
