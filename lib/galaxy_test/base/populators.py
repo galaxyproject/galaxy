@@ -1057,12 +1057,6 @@ class BaseDatasetPopulator(BasePopulator):
         assert "id" in role, role
         return role["id"]
 
-    def notification_id(self) -> str:
-        notification_response = self._get("notifications")
-        notification = notification_response.json()
-        assert len(notification) == 1
-        return notification[0]["id"]
-
     def create_role(self, user_ids: list, description: Optional[str] = None) -> dict:
         payload = {
             "name": self.get_random_name(prefix="testpop"),
