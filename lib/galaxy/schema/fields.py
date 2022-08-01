@@ -40,6 +40,9 @@ class BaseDatabaseIdField:
     def __repr__(self):
         return f"DatabaseID ({super().__repr__()})"
 
+    def __hash__(self) -> int:
+        return hash(self)
+
 
 class DecodedDatabaseIdField(int, BaseDatabaseIdField):
     @classmethod
