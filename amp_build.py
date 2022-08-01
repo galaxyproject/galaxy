@@ -58,10 +58,11 @@ def main():
         for n in ('.git', '.venv', 'static/plugins', '.ci', '.circleci', '.coveragerc', '.gitattributes',
                   '.gitignore', '.k8s_ci.Dockerfile', '.github'):            
             logging.debug(f"Removing entry {n}")
-            if Path(builddir, n).is_dir():
-                shutil.rmtree(builddir + "/" + n, ignore_errors=True)
-            else:
-                Path(builddir, n).unlink(missing_ok=True)
+            if Path(builddir, n).exists():
+                if Path(builddir, n).is_dir():
+                    shutil.rmtree(builddir + "/" + n, ignore_errors=True)
+                else:
+                    Path(builddir, n).unlink()
 
         for n in ('__pycache__', 'node_modules', '.cache'):
             logging.debug(f"Finding {n} directories")
