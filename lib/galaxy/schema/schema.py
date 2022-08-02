@@ -796,7 +796,7 @@ class HistoryContentItem(Model):
         title="Content Type",
         description="The type of this item.",
     )
-    id: EncodedDatabaseIdField = EncodedEntityIdField
+    id: DecodedDatabaseIdField = EncodedEntityIdField
 
 
 class UpdateContentItem(HistoryContentItem):
