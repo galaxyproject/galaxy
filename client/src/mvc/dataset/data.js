@@ -269,20 +269,20 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             row.append(this._renderCell(rowData.slice(num_columns - 1).join("\t"), num_columns - 1));
         } else if (rowData.length === 1) {
             // Try to split by comma first
-            rowData = rowData[0].split(",");
-            if (rowData.length === num_columns) {
+            let rowDataSplit = rowData[0].split(",");
+            if (rowDataSplit.length === num_columns) {
                 _.each(
-                    rowData,
+                    rowDataSplit,
                     function (cell_contents, index) {
                         row.append(this._renderCell(cell_contents, index));
                     },
                     this
                 );
             } else {
-                rowData = rowData[0].split(" ");
-                if (rowData.length === num_columns) {
+                rowDataSplit = rowData[0].split(" ");
+                if (rowDataSplit.length === num_columns) {
                     _.each(
-                        rowData,
+                        rowDataSplit,
                         function (cell_contents, index) {
                             row.append(this._renderCell(cell_contents, index));
                         },
@@ -315,13 +315,14 @@ var TabularDatasetChunkedView = Backbone.View.extend({
 
     _renderChunk: function (chunk) {
         var data_table = this.$el.find("table");
+        const parsedChunk = parse(chunk.ck_data, {
+            delimiter: this.delimiter,
+        });
         _.each(
-            parse(chunk.ck_data, {
-                delimiter: this.delimiter,
-            }),
-            function (line, index) {
-                if (line !== "" && index >= (chunk.data_line_offset || 0)) {
-                    data_table.append(this._renderRow(line));
+            parsedChunk,
+            (rowData, index) => {
+                if (index >= (chunk.data_line_offset || 0)) {
+                    data_table.append(this._renderRow(rowData));
                 }
             },
             this
