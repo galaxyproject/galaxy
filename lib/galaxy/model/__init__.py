@@ -2417,7 +2417,7 @@ class Notification(Base, Dictifiable, RepresentById):
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    message_text = Column(String, index=True, unique=True)
+    message_text = Column(String, index=True)
     deleted = Column(Boolean, index=True, default=False)
     user_notification_associations = relationship("UserNotificationAssociation", back_populates="notification")
 

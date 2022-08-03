@@ -21,7 +21,7 @@ def upgrade():
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("create_time", sa.DateTime),
         sa.Column("update_time", sa.DateTime),
-        sa.Column("message_text", sa.String(500), index=True, unique=True),
+        sa.Column("message_text", sa.String(500), index=True),
         sa.Column("deleted", sa.Boolean, index=True, default=False),
     )
 
@@ -37,5 +37,5 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_table("notification_push")
     op.drop_table("user_notification_association")
+    op.drop_table("notification_push")
