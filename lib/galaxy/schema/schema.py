@@ -3010,17 +3010,16 @@ class PageSummaryBase(BaseModel):
     )
 
 
-NotificationIdField = Field(title="ID", description="Notification ID of the notification")
-NotificationMessageField = Field(title="Message", description="Message of the notification")
+class NotificationResponseModel(BaseModel):
+    id: EncodedDatabaseIdField
+    message_text: str
+
+    class Config:
+        orm_mode = True
 
 
-class NotificationModel(BaseModel):
-    id: str = NotificationIdField
-    message_text: str = NotificationMessageField
-
-
-class NotificationListModel(BaseModel):
-    __root__: List[NotificationModel]
+class NotificationListResponseModel(BaseModel):
+    __root__: List[NotificationResponseModel]
 
 
 class MaterializeDatasetInstanceAPIRequest(Model):
