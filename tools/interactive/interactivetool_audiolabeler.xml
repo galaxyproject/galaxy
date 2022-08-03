@@ -15,7 +15,6 @@
         #for $count, $file in enumerate($input):
             #set $cleaned_name = str($count + 1) + '_' + re.sub('[^\w\-\.\s]', '_', str($file.element_identifier))
             cp '$file' '/opt/shiny-server/samples/sample-apps/audio/www/tmp/${cleaned_name}' &&
-            chmod -R 777 /opt/shiny-server/samples/sample-apps/audio/www/tmp/ &&
         #end for
 
         chown shiny.shiny /var/log/shiny-server &&
