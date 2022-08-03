@@ -28,7 +28,7 @@ class NotificationManager:
             self.sa_session.query(model.Notification)
             .filter(model.Notification.deleted == false())
             .limit(limit)
-            .offset(limit + offset)
+            .offset(offset)
         ):
             rval.append(notification)
         return rval
