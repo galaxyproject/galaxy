@@ -47,7 +47,6 @@ from galaxy.schema.types import (
 
 USER_MODEL_CLASS = Literal["User"]
 GROUP_MODEL_CLASS = Literal["Group"]
-NOTIFICATION_MODEL_CLASS_NAME = Literal["Notification"]
 HDA_MODEL_CLASS = Literal["HistoryDatasetAssociation"]
 DC_MODEL_CLASS = Literal["DatasetCollection"]
 DCE_MODEL_CLASS = Literal["DatasetCollectionElement"]
@@ -3269,19 +3268,17 @@ class PageSummaryBase(Model):
     )
 
 
-NotificationContentField: Optional[str] = Field(
-    default="",
-    title="Notification",
-    description="Raw text contents of the notification message.",
-)
+NotificationIdField = Field(title="ID", description="Notification ID of the notification")
+NotificationMessageField = Field(title="Message", description="Message of the notification")
 
 
-class NotificationBase(BaseModel):
-    message: str = Field(
-        ...,  # Required
-        title="Message",
-        description="The message of the notification",
-    )
+class NotificationModel(BaseModel):
+    id: str = NotificationIdField
+    message_text: str = NotificationMessageField
+
+
+class NotificationListModel(BaseModel):
+    __root__: List[NotificationModel]
 
 
 class MaterializeDatasetInstanceAPIRequest(Model):
@@ -3316,14 +3313,6 @@ class CreatePagePayload(PageSummaryBase):
         title="Workflow invocation ID",
         description="Encoded ID used by workflow generated reports.",
     )
-
-    class Config:
-        use_enum_values = True  # When using .dict()
-        extra = Extra.allow  # Allow any other extra fields
-
-
-class CreateNotificationPayload(NotificationBase):
-    notification: Optional[str] = NotificationContentField
 
     class Config:
         use_enum_values = True  # When using .dict()
