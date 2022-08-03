@@ -38,6 +38,7 @@
                         <HistoryMessages :history="history" />
                         <HistoryCounter
                             :history="history"
+                            :is-watching="isWatching"
                             :last-checked="lastChecked"
                             :filter-text.sync="filterText"
                             @reloadContents="reloadContents" />
@@ -210,6 +211,9 @@ export default {
         /** @returns {Date} */
         lastChecked() {
             return this.$store.getters.getLastCheckedTime();
+        },
+        isWatching() {
+            return this.$store.getters.getWatchingVisibility();
         },
     },
     watch: {

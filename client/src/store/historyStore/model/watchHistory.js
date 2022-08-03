@@ -87,13 +87,16 @@ export async function watchHistory(store = defaultStore) {
     // Only set up visibility listeners once, whenever a watch is first started
     if (watchingVisibility === false) {
         watchingVisibility = true;
+        store.commit("setWatchingVisibility", { watchingVisibility });
         document.addEventListener("visibilitychange", setVisibilityThrottle);
     }
     try {
         await watchHistoryOnce(store);
     } catch (error) {
-        // would be fantastic if we could show some error alerting the user to this
+        // error alerting the user that watch history failed
         console.warn(error);
+        watchingVisibility = false;
+        store.commit("setWatchingVisibility", { watchingVisibility });
     } finally {
         watchTimeout = setTimeout(() => {
             watchHistory(store);

@@ -18,6 +18,7 @@ const state = {
     latestCreateTime: new Date(),
     totalMatchesCount: undefined,
     lastCheckedTime: new Date(),
+    isWatching: false,
 };
 
 const getters = {
@@ -40,6 +41,7 @@ const getters = {
     getLatestCreateTime: (state) => () => state.latestCreateTime,
     getTotalMatchesCount: (state) => () => state.totalMatchesCount,
     getLastCheckedTime: (state) => () => state.lastCheckedTime,
+    getWatchingVisibility: (state) => () => state.isWatching,
 };
 
 const getQueryString = (filterText) => {
@@ -81,6 +83,9 @@ const mutations = {
     },
     setLastCheckedTime: (state, { checkForUpdate }) => {
         state.lastCheckedTime = checkForUpdate;
+    },
+    setWatchingVisibility: (state, { watchingVisibility }) => {
+        state.isWatching = watchingVisibility;
     },
     saveQueryStats: (state, { stats }) => {
         state.totalMatchesCount = stats.total_matches;
