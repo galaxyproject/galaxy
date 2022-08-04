@@ -61,7 +61,7 @@
                             class="primary-button dropdown-toggle add-to-history"
                             data-toggle="dropdown">
                             <font-awesome-icon icon="book" />
-                            Export to History <span class="caret"></span>
+                            Add to History <span class="caret"></span>
                         </button>
                         <div class="dropdown-menu" role="menu">
                             <a
