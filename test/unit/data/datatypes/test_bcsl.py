@@ -1,6 +1,15 @@
 import pytest
-from galaxy.datatypes.text import BCSLmodel, BCSLts, CTLresult
-from .util import get_input_files, MockDataset, MockDatasetDataset
+
+from galaxy.datatypes.text import (
+    BCSLmodel,
+    BCSLts,
+    CTLresult,
+)
+from .util import (
+    get_input_files,
+    MockDataset,
+    MockDatasetDataset,
+)
 
 
 @pytest.mark.parametrize(
