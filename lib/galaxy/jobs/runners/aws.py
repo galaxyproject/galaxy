@@ -8,7 +8,7 @@ import os
 import re
 import time
 from queue import Empty
-from typing import List
+from typing import Set
 
 from galaxy import model
 from galaxy.job_execution.output_collect import default_exit_code_file
@@ -451,42 +451,43 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             time.sleep(max(self.app.config.job_runner_monitor_sleep, self.MIN_QUERY_INTERVAL))
 
     def check_watched_items(self):
-        done = []           # type: ignore
+        done: Set[str] = set()
         self.check_watched_items_by_batch(0, len(self.watched), done)
         self.watched = [x for x in self.watched if x[0] not in done]
 
-    def check_watched_items_by_batch(self, start: int, end: int, done: List[str]):
+    def check_watched_items_by_batch(self, start: int, end: int, done: Set[str]):
         jobs = self.watched[start : start + self.MAX_JOBS_PER_QUERY]
         if not jobs:
             return
 
         jobs_dict = dict(jobs)
+        resp = self._batch_client.describe_jobs(jobs=list(jobs_dict.keys()))
 
-        res = self._batch_client.describe_jobs(jobs=list(jobs_dict.keys()))
-
-        gotten = []
-        for job in res["jobs"]:
+        gotten = set()
+        for job in resp["jobs"]:
             status = job["status"]
             job_id = job["jobId"]
-            gotten.append(job_id)
+            gotten.add(job_id)
             job_state = jobs_dict[job_id]
 
             if status == "SUCCEEDED":
                 self._mark_as_successful(job_state)
-                done.append(job_id)
+                done.add(job_id)
             elif status == "FAILED":
                 reason = job["statusReason"]
                 self._mark_as_failed(job_state, reason)
-                done.append(job_id)
+                done.add(job_id)
             elif status in ("SUBMITTED", "PENDING", "RUNNABLE", "STARTING", "RUNNING"):
                 self._mark_as_active(job_state)
             # TODO else?
 
-        for job_id in set(jobs_dict.keys()) - set(gotten):
+        for job_id in jobs_dict:
+            if job_id in gotten:
+                continue
             job_state = jobs_dict[job_id]
             reason = f"The track of Job {job_state} was lost for unknown reason!"
             self._mark_as_failed(job_state, reason)
-            done.append(job_id)
+            done.add(job_id)
 
         self.check_watched_items_by_batch(start + self.MAX_JOBS_PER_QUERY, end, done)
 
