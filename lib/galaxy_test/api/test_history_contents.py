@@ -164,6 +164,14 @@ class HistoryContentsApiTestCase(ApiTestCase):
         hda_details = self.__check_for_hda(contents_response, hda1)
         self.__assert_hda_has_full_details(hda_details)
 
+    def test_index_detail_parameter_error(self):
+        hda1 = self.dataset_populator.new_dataset(self.history_id)
+        wrong_details_query_with_empty_ids = f"details=,,{hda1['id']}"
+        contents_response = self._get(
+            f"histories/{self.history_id}/contents?v=dev&{wrong_details_query_with_empty_ids}"
+        )
+        self._assert_status_code_is(contents_response, 400)
+
     def test_show_hda(self):
         hda1 = self.dataset_populator.new_dataset(self.history_id)
         show_response = self.__show(hda1)
