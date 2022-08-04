@@ -28,6 +28,7 @@
     </div>
 </template>
 <script>
+import store from "store";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import { Services } from "./services";
@@ -147,16 +148,13 @@ export default {
                     this.onError(error);
                 });
         },
-        onShowDataset(item) {
-            const Galaxy = getGalaxyInstance();
-            this.services
-                .setHistory(item.history_id)
-                .then(() => {
-                    Galaxy.currHistoryPanel.loadCurrentHistory();
-                })
-                .catch((error) => {
-                    this.onError(error);
-                });
+        async onShowDataset(item) {
+            const historyId = item.history_id;
+            try {
+                await store.dispatch("history/setCurrentHistory", historyId);
+            } catch (error) {
+                this.onError(error);
+            }
         },
         onTags(tags, index) {
             const item = this.rows[index];

@@ -153,7 +153,7 @@ const actions = {
     },
     async setCurrentHistory({ dispatch, getters }, id) {
         const changedHistory = await setCurrentHistoryOnServer(id);
-        dispatch("selectHistory", changedHistory);
+        return dispatch("selectHistory", changedHistory);
     },
     setHistory({ commit }, history) {
         commit("setHistory", history);
