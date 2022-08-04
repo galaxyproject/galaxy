@@ -1,6 +1,6 @@
 <tool id="tool_deleting_output" name="tool_deleting_output" version="0.1.0" license="AFL-3.0" profile="21.09">
     <command><![CDATA[
-rm '$out_file1' || true && ## alle sure that this does not fail.
+rm '$out_file1' || true && ## ensure that this does not fail.
 exit $exit_code
     ]]></command>
     <inputs>
@@ -18,8 +18,8 @@ exit $exit_code
         </test>
     </tests>
     <help><![CDATA[
-        This tool tests what happens if the underlying program removes the output data set,
-        it should fail independent of the exit code and the exit code should be correctly checked.
+        This tool tests what happens if the underlying program removes the output data set:
+        the job should fail independent of the exit code and the exit code should be correctly checked.
 
         With outputs_to_working_directory this provoked https://github.com/galaxyproject/galaxy/issues/14206
     ]]></help>
