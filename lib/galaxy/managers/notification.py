@@ -61,6 +61,7 @@ class NotificationManager:
         notification.message_text = updated_message
         self.sa_session.add(notification)
         self.sa_session.flush()
+        return notification
 
     def associate_user_notification(self, users: List[model.User], notification: model.Notification):
         for user in users:

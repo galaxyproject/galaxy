@@ -8,15 +8,11 @@ class NotificationsApiTestCase(ApiTestCase):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_index(self):
-        print("Entering test")
-        # payload = {
-        #     "message": "Test Message"
-        # }
-        message = "Testt Message"
-        notification_response = self._post("notifications", message_text=message, json=True)
-        print(notification_response, " test message xx")
-        assert notification_response.status_code == 200
-        # notification_response = self._get("notifications", data=payload, json=True)
+        payload = {"message_text": "Test Message"}
+        notification_response = self._post("notifications", payload, json=True)
+        print(notification_response, " test noti")
+        notification = notification_response.json()[0]
+        notification_response = self._get("notifications", json=True)
         assert notification_response.status_code == 200
         print(notification_response, " test gett")
         notifications = notification_response.json()[0]  # Get /api/notifications returns a list
