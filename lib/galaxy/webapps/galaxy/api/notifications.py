@@ -11,6 +11,7 @@ from galaxy.managers.notification import NotificationManager
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     NotificationListResponseModel,
+    NotificationRequestModel,
     NotificationResponseModel,
 )
 from . import (
@@ -46,10 +47,11 @@ class FastAPINotifications:
     @router.post("/api/notifications", summary="Create a notification message")
     def create(
         self,
-        message_text: str = Body(..., title="Message", description="Message of the notification"),
+        # message_text: str = Body(..., title="Message", description="Message of the notification"),
+        payload: NotificationRequestModel,
         trans: ProvidesAppContext = DependsOnTrans,
     ) -> NotificationResponseModel:
-        return self.manager.create(trans, message_text)
+        return self.manager.create(trans, payload.message_text)
 
     @router.put("/api/notifications", summary="Updates a notificaton message")
     def update(self, notification_id: DecodedDatabaseIdField, updated_message) -> NotificationResponseModel:
