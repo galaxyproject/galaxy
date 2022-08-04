@@ -1925,3 +1925,5 @@ staramr_search	staramr
 humann_reduce_table	humann3
 humann_rna_dna_norm	humann3
 humann_unpack_pathways	humann3
+# testing tool mapping for test case
+cheetah_problem_unbound_var_input   bwa
