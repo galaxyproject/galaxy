@@ -1697,6 +1697,12 @@ class JobWrapper(HasResourceParameters):
                         # Prior to fail we need to set job.state
                         job.set_state(final_job_state)
                         return fail(f"Job {job.id}'s output dataset(s) could not be read")
+        else:
+            # check existence of outputs (tools may delete outputs)
+            for dataset_path in self.get_output_fnames():
+                if not os.path.exists(dataset_path.real_path):
+                    job.set_state(final_job_state)
+                    return fail(f"Job {job.id}'s output dataset(s) could not be read")
 
         job_context = ExpressionContext(dict(stdout=job.stdout, stderr=job.stderr))
         if extended_metadata:
