@@ -3279,6 +3279,12 @@ class NotificationListResponseModel(BaseModel):
     __root__: List[NotificationResponseModel]
 
 
+class NotificationRequestModel(BaseModel):
+    id: DecodedDatabaseIdField = None
+    message_text: str = None
+    updated_message: str = None
+
+
 class MaterializeDatasetInstanceAPIRequest(Model):
     source: DatasetSourceType = Field(
         title="Source",
