@@ -22,9 +22,9 @@ def create_notification_mananger(sa_session: galaxy_scoped_session):
 
 def test_update_notification(sa_session: galaxy_scoped_session):
     notificationManager = create_notification_mananger(sa_session)
-    notification = notificationManager.create(message="New notification")
+    notification = notificationManager.create(message_text="New notification")
     updated_message = "Updated notification"
-    notificationManager.update(notification, updated_message)
+    notificationManager.update(notification.id, updated_message)
     assert notification.message_text == updated_message
 
 
@@ -48,7 +48,7 @@ def create_user_notification_association(sa_session: galaxy_scoped_session, user
 
 def test_create_notification(sa_session: galaxy_scoped_session):
     notificationManager = create_notification_mananger(sa_session)
-    notification = notificationManager.create(message="New notification")
+    notification = notificationManager.create(message_text="New notification")
     user = create_user(sa_session)
     create_user_notification_association(sa_session, [user], notification)
     assert user.all_notifications is not None
