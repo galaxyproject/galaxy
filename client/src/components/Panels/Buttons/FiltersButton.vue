@@ -7,7 +7,7 @@
         aria-label="Toolbox Filter Settings"
         :title="tooltip"
         @click="onFilter">
-        <icon icon="filter"/>
+        <icon icon="filter" />
     </b-button>
 </template>
 
@@ -24,7 +24,7 @@ export default {
     methods: {
         onFilter() {
             this.$router.push("/user/toolbox_filters");
-        }
-    }
+        },
+    },
 };
 </script>
