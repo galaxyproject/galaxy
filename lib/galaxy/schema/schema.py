@@ -3022,10 +3022,12 @@ class NotificationListResponseModel(BaseModel):
     __root__: List[NotificationResponseModel]
 
 
-class NotificationRequestModel(BaseModel):
-    id: DecodedDatabaseIdField = None
-    message_text: str = None
-    updated_message: str = None
+class NotificationCreateRequestModel(BaseModel):
+    message_text: str
+
+
+class NotificationUpdateRequestModel(BaseModel):
+    message_text: str
 
 
 class MaterializeDatasetInstanceAPIRequest(Model):
