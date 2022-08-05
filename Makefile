@@ -162,6 +162,9 @@ update-cwl-conformance-tests: ## update CWL conformance tests
 	$(MAKE) clean-cwl-conformance-tests
 	$(MAKE) generate-cwl-conformance-tests
 
+skip-client: ## Run only the server, skipping the client build.
+	GALAXY_SKIP_CLIENT_BUILD=1 sh run.sh
+
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN
 	@echo "Could not find yarn, which is required to build the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
