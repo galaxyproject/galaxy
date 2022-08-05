@@ -162,7 +162,7 @@ update-cwl-conformance-tests: ## update CWL conformance tests
 	$(MAKE) clean-cwl-conformance-tests
 	$(MAKE) generate-cwl-conformance-tests
 
-skip-client: ## Build only the server, skipping the client build.
+skip-client: ## Run only the server, skipping the client build.
 	GALAXY_SKIP_CLIENT_BUILD=1 sh run.sh
 
 node-deps: ## Install NodeJS dependencies.
