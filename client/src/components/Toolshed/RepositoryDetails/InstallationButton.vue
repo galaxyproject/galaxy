@@ -5,7 +5,7 @@
             <b-button v-if="uninstallState" :class="buttonClass" variant="danger" @click="onUninstall">
                 Uninstall
             </b-button>
-            <b-button v-else :class="buttonClass" variant="info" @click="onCancel">
+            <b-button v-else :class="buttonClass" disabled>
                 <span v-if="!errorState" class="fa fa-spinner fa-spin" />
                 <span>{{ status }}</span>
             </b-button>
@@ -47,11 +47,6 @@ export default {
         },
         onUninstall() {
             this.$emit("onUninstall");
-        },
-        onCancel() {
-            if (window.confirm(`Do you want to reset this repository?`)) {
-                this.$emit("onUninstall");
-            }
         },
     },
 };
