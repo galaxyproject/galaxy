@@ -6,6 +6,7 @@
                     <h4 v-localize class="m-1">Tools</h4>
                     <div class="panel-header-buttons">
                         <b-button-group>
+                            <filters-button v-if="isUser" />
                             <favorites-button :query="query" @onFavorites="onQuery" />
                             <panel-view-button
                                 v-if="panelViews && Object.keys(panelViews).length > 1"
@@ -65,6 +66,7 @@ import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import { UploadButton, openGlobalUploadModal } from "components/Upload";
 import FavoritesButton from "./Buttons/FavoritesButton";
+import FiltersButton from "./Buttons/FiltersButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
 import { filterToolSections, filterTools } from "./utilities";
 import { getGalaxyInstance } from "app";
@@ -75,6 +77,7 @@ export default {
     components: {
         UploadButton,
         FavoritesButton,
+        FiltersButton,
         PanelViewButton,
         ToolSection,
         ToolSearch,
