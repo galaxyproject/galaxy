@@ -30,6 +30,7 @@ export const useWorkflowStore = defineStore("workflowStore", {
     },
     actions: {
         async fetchWorkflowForInstanceId(workflowId) {
+            console.debug("Fetching workflow details for", workflowId);
             const params = { instance: "true" };
             const { data } = await axios.get(`${getAppRoot()}api/workflows/${workflowId}`, { params });
             this.$patch({ workflowId: data });
