@@ -6,10 +6,13 @@ import { getLocalVue } from "jest/helpers";
 import mockInvocationData from "./test/json/invocation.json";
 import { parseISO, formatDistanceToNow } from "date-fns";
 
+import { createPinia }from "pinia";
+
 import "jest-location-mock";
 
 const localVue = getLocalVue();
 
+const pinia = createPinia();
 describe("InvocationsList.vue", () => {
     let axiosMock;
     let wrapper;
@@ -52,6 +55,7 @@ describe("InvocationsList.vue", () => {
             wrapper = mount(InvocationsList, {
                 propsData,
                 localVue,
+                pinia
             });
         });
 
@@ -71,6 +75,7 @@ describe("InvocationsList.vue", () => {
             wrapper = mount(InvocationsList, {
                 propsData,
                 localVue,
+                pinia
             });
         });
 
@@ -113,6 +118,7 @@ describe("InvocationsList.vue", () => {
                     },
                 },
                 localVue,
+                pinia
             });
         });
 
