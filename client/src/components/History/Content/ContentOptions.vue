@@ -4,25 +4,27 @@
             v-if="isDataset"
             :disabled="displayDisabled"
             :title="displayButtonTitle"
-            class="px-1"
+            class="display-btn px-1"
             size="sm"
             variant="link"
-            @click.stop="$emit('display')">
+            :href="displayUrl"
+            @click.prevent.stop="$emit('display')">
             <icon icon="eye" />
         </b-button>
         <b-button
             v-if="isHistoryItem"
             :disabled="editDisabled"
             :title="editButtonTitle"
-            class="px-1"
+            class="edit-btn px-1"
             size="sm"
             variant="link"
-            @click.stop="$emit('edit')">
+            :href="editUrl"
+            @click.prevent.stop="$emit('edit')">
             <icon icon="pen" />
         </b-button>
         <b-button
             v-if="isHistoryItem && !isDeleted"
-            class="px-1"
+            class="delete-btn px-1"
             title="Delete"
             size="sm"
             variant="link"
@@ -31,7 +33,7 @@
         </b-button>
         <b-button
             v-if="isHistoryItem && isDeleted"
-            class="px-1"
+            class="undelete-btn px-1"
             title="Undelete"
             size="sm"
             variant="link"
@@ -40,7 +42,7 @@
         </b-button>
         <b-button
             v-if="isHistoryItem && !isVisible"
-            class="px-1"
+            class="unhide-btn px-1"
             title="Unhide"
             size="sm"
             variant="link"
@@ -51,6 +53,7 @@
 </template>
 
 <script>
+import { prependPath } from "utils/redirect.js";
 export default {
     props: {
         isDataset: { type: Boolean, required: true },
@@ -58,6 +61,7 @@ export default {
         isHistoryItem: { type: Boolean, required: true },
         isVisible: { type: Boolean, default: true },
         state: { type: String, default: "" },
+        itemUrls: { type: Object, required: true },
     },
     computed: {
         displayButtonTitle() {
@@ -77,6 +81,12 @@ export default {
         },
         editDisabled() {
             return ["discarded", "new", "upload", "queued", "running", "waiting"].includes(this.state);
+        },
+        displayUrl() {
+            return prependPath(this.itemUrls.display);
+        },
+        editUrl() {
+            return prependPath(this.itemUrls.edit);
         },
     },
 };

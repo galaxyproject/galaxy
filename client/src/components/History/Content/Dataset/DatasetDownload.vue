@@ -14,12 +14,15 @@
         <template v-slot:button-content>
             <span class="fa fa-save" />
         </template>
-        <b-dropdown-item v-localize @click.stop="onDownload(downloadUrl)"> Download Dataset </b-dropdown-item>
+        <b-dropdown-item v-localize :href="downloadUrl" @click.prevent.stop="onDownload(downloadUrl)">
+            Download Dataset
+        </b-dropdown-item>
         <b-dropdown-item
             v-for="(metaFile, index) of metaFiles"
             :key="index"
             :data-description="`download ${metaFile.file_type}`"
-            @click.stop="onDownload(metaDownloadUrl, metaFile.file_type)">
+            :href="metaDownloadUrl + metaFile.file_type"
+            @click.prevent.stop="onDownload(metaDownloadUrl, metaFile.file_type)">
             Download {{ metaFile.file_type }}
         </b-dropdown-item>
     </b-dropdown>
@@ -29,7 +32,8 @@
         title="Download"
         size="sm"
         variant="link"
-        @click.stop="onDownload(downloadUrl)">
+        :href="downloadUrl"
+        @click.prevent.stop="onDownload(downloadUrl)">
         <span class="fa fa-save" />
     </b-button>
 </template>

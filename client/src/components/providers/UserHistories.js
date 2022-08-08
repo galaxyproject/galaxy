@@ -88,7 +88,7 @@ export default {
                 deleteHistory: (history) => this.deleteHistory({ history }),
                 deleteCurrentHistory: () => this.deleteHistory({ history: this.currentHistory }),
 
-                // purge history then clearn currentHistoryId
+                // purge history then clear currentHistoryId
                 purgeHistory: (history) => this.deleteHistory({ history, purge: true }),
                 purgeCurrentHistory: () => this.deleteHistory({ history: this.currentHistory, purge: true }),
 

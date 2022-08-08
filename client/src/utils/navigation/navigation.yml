@@ -290,9 +290,8 @@ history_panel:
     options_use_legacy_history: 'a[data-description="switch to legacy history view"]'
 
     collection_menu_button: '.collection-menu'
-    collection_menu_edit_attributes:
-      type: xpath
-      selector: '//button[@title="Edit attributes"]'
+    collection_menu_edit_attributes: '.edit-btn'
+
     new_history_button: '.history-new-button'
     multi_view_button: '.history-view-multi-button'
     histories_operation_menu: '[data-description="history options"]'

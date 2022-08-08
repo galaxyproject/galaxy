@@ -357,7 +357,9 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         trans.sa_session.flush()
 
         rval = trans.security.encode_all_ids(library_dataset.to_dict())
-        nice_size = util.nice_size(int(library_dataset.library_dataset_dataset_association.get_size()))
+        nice_size = util.nice_size(
+            int(library_dataset.library_dataset_dataset_association.get_size(calculate_size=False))
+        )
         rval["file_size"] = nice_size
         rval["update_time"] = library_dataset.update_time.strftime("%Y-%m-%d %I:%M %p")
         rval["deleted"] = library_dataset.deleted

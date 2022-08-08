@@ -1,8 +1,13 @@
+import random
+
 import pytest
 
 from galaxy.model.migrations.scripts import (
+    DatabaseDoesNotExistError,
+    DatabaseNotInitializedError,
     LegacyScripts,
     LegacyScriptsException,
+    verify_database_is_initialized,
 )
 
 
@@ -145,3 +150,25 @@ class TestLegacyScripts:
         argv = ["caller", "--alembic-config", "path-to-alembic", "downgrade"]
         with pytest.raises(LegacyScriptsException):
             LegacyScripts(argv).convert_args()
+
+    def test_access_database_id(self):
+        db = "galaxy"
+        argv = ["caller", "--alembic-config", "path-to-alembic", "upgrade", db]
+        ls = LegacyScripts(argv)
+        ls.run()
+        assert ls.database == db
+
+    def test_access_database_id_before_processing_script_args_raises_error(self):
+        argv = ["caller", "--alembic-config", "path-to-alembic", "upgrade"]
+        with pytest.raises(LegacyScriptsException):
+            LegacyScripts(argv).database
+
+    def test_verify_database_is_init_raises_error_if_no_database(self):
+        nonexistant_path = str(random.random())[2:]
+        db_url = f"sqlite:////{nonexistant_path}"
+        with pytest.raises(DatabaseDoesNotExistError):
+            verify_database_is_initialized(db_url)
+
+    def test_verify_database_is_init_raises_error_if_database_not_initialized(self, sqlite_memory_url):
+        with pytest.raises(DatabaseNotInitializedError):
+            verify_database_is_initialized(sqlite_memory_url)

@@ -27,6 +27,7 @@ from starlette.responses import (
 )
 
 from galaxy import util
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema import (
     FilterQueryParams,
@@ -252,6 +253,8 @@ def parse_dataset_details(details: Optional[str]):
     dataset_details: Optional[DatasetDetailsType] = None
     if details and details != "all":
         dataset_details = set(util.listify(details))
+        if "" in dataset_details:
+            raise RequestParameterInvalidException("Invalid empty IDs found in dataset details parameter")
     else:  # either None or 'all'
         dataset_details = details  # type: ignore
     return dataset_details

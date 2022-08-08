@@ -54,7 +54,7 @@ steps:
     - element: "#right"
       intro: "This is your history. It contains all datasets you are currently working with including our uploaded table."
 
-    - element: "#current-history-panel div.content-item button[title='Display']"
+    - element: "#current-history-panel div.content-item .display-btn"
       intro: "Clicking the eye-icon usually displays a dataset in the center panel."
       postclick: true
 
