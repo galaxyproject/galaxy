@@ -182,6 +182,10 @@ class Model(BaseModel):
     class Config:
         use_enum_values = True  # when using .dict()
         allow_population_by_field_name = True
+        json_encoders = {
+            # This will ensure all IDs are encoded when serialized to JSON
+            DecodedDatabaseIdField: lambda v: DecodedDatabaseIdField.encode(v),
+        }
 
 
 class UserModel(Model):
