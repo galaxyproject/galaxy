@@ -88,7 +88,7 @@ button {
 // Modal -- wider by default, scroll like Trello
 
 .modal-dialog {
-    width: 690px;
+    // width: 690px; // by removing this, size can be set with the "size" attribute of the bootstrap component <b-modal>
     max-width: 900px; // BS4 sets this to 500px now, so width not respected.
 }
 
