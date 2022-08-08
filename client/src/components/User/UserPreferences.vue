@@ -22,6 +22,15 @@
                 </div>
             </div>
         </b-row>
+
+      <ConfigProvider v-slot="{ config }">
+        <UserBeaconSettings
+            v-if="config"
+            :root="root"
+            :user-id="userId">>
+        </UserBeaconSettings>
+      </ConfigProvider>
+
         <b-row class="ml-3 mb-1">
             <i class="pref-icon pt-1 fa fa-lg fa-plus-square-o" />
             <div class="pref-content pr-1">
@@ -65,8 +74,8 @@ import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import ConfigProvider from "components/providers/ConfigProvider";
 import { userLogoutAll } from "utils/logout";
 import UserDeletion from "./UserDeletion";
-
 import "@fortawesome/fontawesome-svg-core";
+import UserBeaconSettings from "./UserBeaconSettings";
 
 Vue.use(BootstrapVue);
 
@@ -74,6 +83,7 @@ export default {
     components: {
         ConfigProvider,
         UserDeletion,
+        UserBeaconSettings
     },
     props: {
         userId: {
