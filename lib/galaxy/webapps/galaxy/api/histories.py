@@ -19,6 +19,7 @@ from fastapi import (
     Response,
     status,
 )
+from sqlalchemy import and_
 from pydantic.fields import Field
 from pydantic.main import BaseModel
 
@@ -29,6 +30,11 @@ from galaxy.managers.context import (
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
+)
+from galaxy.model import (
+    User,
+    UserPreference,
+    History
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -56,6 +62,7 @@ from galaxy.webapps.galaxy.api.common import (
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.histories import HistoriesService
+from galaxy import exceptions as glx_exceptions
 from . import (
     as_form,
     depends,
@@ -154,6 +161,50 @@ class FastAPIHistories:
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> List[AnyHistoryView]:
         return self.service.published(trans, serialization_params, filter_query_params)
+
+    @router.get(
+        "/api/histories/beacon",
+        summary="Returns the complete list of beacon histories",
+        status_code=status.HTTP_200_OK
+    )
+    def get_beacon_users(self, trans: ProvidesUserContext = DependsOnTrans):
+        """
+        Returns IDs of all beacon histories.
+
+        A beacon history is a history that has a special name and belongs to a user that has enabled the beacon_share
+        setting.
+
+            Note:
+                 This endpoint queries histories directly. We might want to move the query to the HistoryService or
+                 HistoryManager to be more in line with the other endpoints defined by this file.
+                 However, it is not likely for any of this code to be reused anywhere else.
+        """
+
+        # Prevent non-admin users querying beacon histories
+        if not trans.user_is_admin:
+            message = "Only admins can query beacon histories"
+            raise glx_exceptions.AdminRequiredException(message)
+
+        # Query beacon histories by "beacon_enabled" setting and hard coded name "___BEACON_PICKUP___"
+        query = trans.sa_session.query(User).join(History).filter(
+            User.preferences.any(and_(UserPreference.name == "beacon_enabled", UserPreference.value == 1))).filter(
+            History.name == "___BEACON_PICKUP___")
+
+        beacon_histories = []
+        for user in query:
+            for history in user.histories:
+                # only get "user_id" and "history_id" as consumed by the beacon-import script
+                beacon_histories.append(
+                    {
+                        "user_id": trans.security.encode_id(user.id),
+                        "history_id": trans.security.encode_id(history.id)
+                    }
+                )
+                # removing this break would mean supporting an arbitrary number of beacon histories per user
+                # with this break only the first history per user is added to the response
+                break
+
+        return {"beacon_histories": beacon_histories}
 
     @router.get(
         "/api/histories/shared_with_me",
