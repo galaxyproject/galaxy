@@ -124,14 +124,9 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
             python3 -m venv "$GALAXY_VIRTUAL_ENV"
         else
             # If $GALAXY_VIRTUAL_ENV does not exist, and there is no conda available, attempt to create it.
-            if [ -z "$GALAXY_PYTHON" ]; then
-                if command -v python3 >/dev/null; then
-                    GALAXY_PYTHON=python3
-                else
-                    GALAXY_PYTHON=python
-                fi
-            fi
+
             # Ensure Python is a supported version before creating $GALAXY_VIRTUAL_ENV
+            find_python_command
             "$GALAXY_PYTHON" ./scripts/check_python.py || exit 1
             echo "Creating Python virtual environment for Galaxy: $GALAXY_VIRTUAL_ENV"
             echo "using Python: $GALAXY_PYTHON"
