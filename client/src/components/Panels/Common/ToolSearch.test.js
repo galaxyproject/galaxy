@@ -20,6 +20,7 @@ describe("ToolSearch", () => {
         await wrapper.setProps({ showAdvanced: true });
         expect(wrapper.find("[description='advanced tool filters']").exists()).toBe(true);
         const filterInputs = {
+            "[description='show help text']": false,
             "[placeholder='any tool name']": "name-filter",
             "[placeholder='any section']": "section-filter",
             "[placeholder='any id']": "id-filter",
@@ -33,15 +34,17 @@ describe("ToolSearch", () => {
                 filterInput.setValue(value);
             }
         });
+        const helpFilterInput = wrapper.find("[description='show help text']");
+        await helpFilterInput.setChecked(filterInputs["[description='show help text']"]);
 
         // Test: values are stored in the filterSettings object
         expect(Object.values(wrapper.vm.filterSettings)).toEqual(Object.values(filterInputs));
 
         // Test: clearing the filters
         const clearButton = wrapper.find("[description='clear filters']");
-        expect(Object.values(wrapper.vm.filterSettings).length).toBe(4);
+        expect(Object.values(wrapper.vm.filterSettings).length).toBe(5);
         await clearButton.trigger("click");
-        expect(Object.values(wrapper.vm.filterSettings).length).toBe(0);
+        expect(Object.values(wrapper.vm.filterSettings).length).toBe(1);
 
         // Test: keyup.esc (should toggle the view out)
         const nameField = wrapper.find("[placeholder='any tool name']");

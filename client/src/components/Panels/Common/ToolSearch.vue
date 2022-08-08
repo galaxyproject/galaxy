@@ -23,12 +23,30 @@
             <b-form-input v-model="filterSettings['id']" size="sm" placeholder="any id" />
             <small class="mt-1">Filter by description:</small>
             <b-form-input v-model="filterSettings['description']" size="sm" placeholder="any description" />
+            <small>Show help text for tools:</small>
+            <span v-b-tooltip.noninteractive.hover title="Disabling this could provide faster results">
+                <icon icon="question" />
+            </span>
+            <b-form-checkbox v-model="filterSettings['showHelp']" size="sm" switch description="show help text" />
+            <span v-if="filterSettings['showHelp']">
+                <small>Search within help text:</small>
+                <span
+                    v-b-tooltip.noninteractive.hover
+                    title="This will help expand your search by including text from tool help information">
+                    <icon icon="question" />
+                </span>
+                <b-form-checkbox v-model="filterHelp" size="sm" switch />
+                <span v-if="filterHelp">
+                    <small class="mt-1">Filter by help text:</small>
+                    <b-form-input v-model="filterSettings['help']" size="sm" placeholder="any help text" />
+                </span>
+            </span>
             <div class="mt-3">
                 <b-button class="mr-1" size="sm" variant="primary" @click="onSearch">
                     <icon icon="search" />
                     <span>{{ "Search" | localize }}</span>
                 </b-button>
-                <b-button size="sm" description="clear filters" @click="filterSettings = {}">
+                <b-button size="sm" description="clear filters" @click="filterSettings = { showHelp: true }">
                     <icon icon="redo" />
                     <span>{{ "Clear" | localize }}</span>
                 </b-button>
@@ -71,7 +89,8 @@ export default {
             favorites: ["#favs", "#favorites", "#favourites"],
             minQueryLength: 3,
             loading: false,
-            filterSettings: {},
+            filterSettings: { showHelp: true },
+            filterHelp: false,
         };
     },
     computed: {
@@ -106,6 +125,11 @@ export default {
             }
         },
         onSearch() {
+            for (const [filter, value] of Object.entries(this.filterSettings)) {
+                if (!value || (filter === "help" && (!this.filterSettings["showHelp"] || !this.filterHelp))) {
+                    delete this.filterSettings[filter];
+                }
+            }
             this.$router.push({ path: "/tools/advanced_search", query: this.filterSettings });
         },
         onToggle(toggleAdvanced) {

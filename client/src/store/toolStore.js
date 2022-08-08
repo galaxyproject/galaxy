@@ -2,6 +2,7 @@ export const state = {
     toolById: {},
     toolsList: [],
     totalToolCount: undefined,
+    hasHelp: true,
 };
 
 import Vue from "vue";
@@ -23,11 +24,10 @@ const getters = {
     getTools:
         (state) =>
         ({ filterSettings }) => {
-            // if no filters, return all tools
+            // if no filters
             if (Object.keys(filterSettings).length == 0 || filterSettings == {}) {
-                return state.toolsList[0] ? state.toolsList[0] : [];
+                return [];
             }
-
             const allTools = state.toolsList[0];
             const returnedTools = [];
 
@@ -60,12 +60,17 @@ const actions = {
         const { data } = await axios.get(`${getAppRoot()}api/tools/${toolId}`);
         commit("saveToolForId", { toolId, toolData: data });
     },
-    fetchAllTools: async ({ commit }) => {
-        console.log("fetching tools list");
-        const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=False`);
-        const toolCount = data.length;
-        commit("saveTotalToolCount", { toolCount });
-        commit("saveTools", { toolsData: data });
+    fetchAllTools: async ({ state, commit }, { showHelp }) => {
+        // Preventing store from being populated for every search: we fetch again only if:
+        // store isn't already populated (initial fetch) OR user now wants (or doesn't want) help text
+        if (!state.toolsList[0] || !state.totalToolCount || state.hasHelp !== showHelp) {
+            console.log("fetching all tools once");
+            const { data } = await axios.get(`${getAppRoot()}api/tools?tool_help=${showHelp}&in_panel=False`);
+            const toolCount = data.length;
+            commit("saveTotalToolCount", { toolCount });
+            commit("saveShowHelp", { showHelp });
+            commit("saveTools", { toolsData: data });
+        }
     },
 };
 
@@ -78,6 +83,9 @@ const mutations = {
     },
     saveTotalToolCount: (state, { toolCount }) => {
         state.totalToolCount = toolCount;
+    },
+    saveShowHelp: (state, { showHelp }) => {
+        state.hasHelp = showHelp;
     },
 };
 
