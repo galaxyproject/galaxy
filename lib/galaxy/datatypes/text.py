@@ -1146,32 +1146,6 @@ class BCSLts(Json):
 
 
 @build_sniff_from_prefix
-class StormRegions(Text):
-    """
-    Storm PCTL parameter synthesis result file
-    containing partitioning of the given parameter space.
-    """
-
-    file_ext = "storm.regions"
-
-    def sniff_prefix(self, file_prefix: FilePrefix):
-        """
-        Determines whether the file is in .storm.regions format
-        """
-        content = open(file_prefix.filename, "r").read()
-        keywords = ["Storm-pars", "Region results"]
-        return all(keyword in content for keyword in keywords)
-
-    def set_peek(self, dataset):
-        if not dataset.dataset.purged:
-            dataset.peek = "Storm-pars region results."
-            dataset.blurb = nice_size(dataset.get_size())
-        else:
-            dataset.peek = "file does not exist"
-            dataset.blurb = "file purged from disk"
-
-
-@build_sniff_from_prefix
 class StormSample(Text):
     """
     Storm PCTL parameter synthesis result file

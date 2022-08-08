@@ -2,7 +2,6 @@ import pytest
 
 from galaxy.datatypes.text import (
     StormCheck,
-    StormRegions,
     StormSample,
 )
 from .util import (
@@ -15,7 +14,6 @@ from .util import (
 @pytest.mark.parametrize(
     "storm_loader, input_file",
     [
-        [StormRegions, "test_file2.storm.regions"],
         [StormSample, "test_file2.storm.sample"],
         [StormCheck, "test_file2.storm.check"],
     ],
@@ -29,7 +27,6 @@ def test_storm_sniff(storm_loader, input_file):
 @pytest.mark.parametrize(
     "storm_loader, input_file, expected_peek",
     [
-        [StormRegions, "test_file2.storm.regions", """Storm-pars region results."""],
         [StormSample, "test_file2.storm.sample", """Storm-pars sample results."""],
         [StormCheck, "test_file2.storm.check", """Model checking result: true"""],
     ],

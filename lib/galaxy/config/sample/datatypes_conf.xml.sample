@@ -929,7 +929,6 @@
     <datatype extension="pithya.model" type="galaxy.datatypes.text:PithyaModel" display_in_upload="true" />
     <datatype extension="bcsl.ts" type="galaxy.datatypes.text:BCSLts" mimetype="application/json" display_in_upload="true"/>
     <datatype extension="bcsl.model" type="galaxy.datatypes.text:BCSLmodel" display_in_upload="true"/>
-    <datatype extension="storm.regions" type="galaxy.datatypes.text:StormRegions" display_in_upload="true"/>
     <datatype extension="storm.sample" type="galaxy.datatypes.text:StormSample" display_in_upload="true"/>
     <datatype extension="storm.check" type="galaxy.datatypes.text:StormCheck" display_in_upload="true"/>
     <datatype extension="ctl.result" type="galaxy.datatypes.text:CTLresult" display_in_upload="true"/>
@@ -1203,7 +1202,6 @@
     <sniffer type="galaxy.datatypes.text:PithyaProperty"/>
     <sniffer type="galaxy.datatypes.text:PithyaModel"/>
     <sniffer type="galaxy.datatypes.text:BCSLmodel"/>
-    <sniffer type="galaxy.datatypes.text:StormRegions"/>
     <sniffer type="galaxy.datatypes.text:StormSample"/>
     <sniffer type="galaxy.datatypes.text:StormCheck"/>
   </sniffers>
