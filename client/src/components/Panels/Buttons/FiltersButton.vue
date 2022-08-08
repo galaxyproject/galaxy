@@ -7,7 +7,8 @@
         aria-label="Toolbox Filter Settings"
         :title="tooltip"
         @click="onFilter">
-        <icon icon="filter" />
+        <icon v-if="activeFilters === 0" :icon="['glr', 'filter']" />
+        <icon v-else :icon="['gls', 'filter']" />
     </b-button>
 </template>
 
