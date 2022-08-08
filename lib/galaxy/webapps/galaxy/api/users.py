@@ -1056,3 +1056,40 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         if user != trans.user and not trans.user_is_admin:
             raise exceptions.InsufficientPermissionsException("Access denied.")
         return user
+
+    @expose_api
+    def get_beacon(self, trans, id, payload=None, **kwd):
+        """
+        GET /api/users/{id}/beacon
+        Returns information about beacon share settings
+
+        :param id: the encoded id of the user
+        :type  id: str
+        """
+        user = self._get_user(trans, id)
+
+        enabled = user.preferences["beacon_enabled"] if "beacon_enabled" in user.preferences else False
+
+        return {"message": "benno ist ein cooler typ", "enabled": enabled}
+
+    @expose_api
+    def set_beacon(self, trans, id, payload=None, **kwd):
+        """
+        POST /api/users/{id}/beacon
+
+
+        :param id: the encoded id of the user
+        :type  id: str
+
+        :param payload: settings to persist
+        :type  payload: dict
+        """
+        payload = payload or {}
+        user = self._get_user(trans, id)
+
+        if "enabled" in payload:
+            user.preferences["beacon_enabled"] = payload["enabled"]
+            trans.sa_session.flush()
+            return {"message": "setting enabled..."}
+
+        return {"message": payload}
