@@ -82,7 +82,7 @@ AccessibleField: bool = Field(
     description="Whether this item is accessible to the current user due to permissions.",
 )
 
-EncodedEntityIdField: EncodedDatabaseIdField = Field(
+EntityIdField = Field(
     ...,
     title="ID",
     description="The encoded ID of this entity.",
@@ -349,7 +349,7 @@ class Visualization(Model):  # TODO annotate this model
 class HistoryItemBase(Model):
     """Basic information provided by items contained in a History."""
 
-    id: EncodedDatabaseIdField = EncodedEntityIdField
+    id: EncodedDatabaseIdField = EntityIdField
     name: Optional[str] = Field(
         title="Name",
         description="The name of the item.",
@@ -594,7 +594,7 @@ class DCSummary(Model):
     """Dataset Collection summary information."""
 
     model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
-    id: EncodedDatabaseIdField = EncodedEntityIdField
+    id: EncodedDatabaseIdField = EntityIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
     collection_type: CollectionType = CollectionTypeField
@@ -606,7 +606,7 @@ class DCSummary(Model):
 class HDAObject(Model):
     """History Dataset Association Object"""
 
-    id: EncodedDatabaseIdField = EncodedEntityIdField
+    id: EncodedDatabaseIdField = EntityIdField
     model_class: str = ModelClassField(HDA_MODEL_CLASS_NAME)
     state: Dataset.states = DatasetStateField
     hda_ldda: DatasetSourceType = HdaLddaField
@@ -619,7 +619,7 @@ class HDAObject(Model):
 class DCObject(Model):
     """Dataset Collection Object"""
 
-    id: EncodedDatabaseIdField = EncodedEntityIdField
+    id: EncodedDatabaseIdField = EntityIdField
     model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
     collection_type: CollectionType = CollectionTypeField
     populated: Optional[bool] = PopulatedField
@@ -631,7 +631,7 @@ class DCObject(Model):
 class DCESummary(Model):
     """Dataset Collection Element summary information."""
 
-    id: EncodedDatabaseIdField = EncodedEntityIdField
+    id: EncodedDatabaseIdField = EntityIdField
     model_class: str = ModelClassField(DCE_MODEL_CLASS_NAME)
     element_index: int = Field(
         ...,
@@ -800,7 +800,7 @@ class HistoryContentItem(Model):
         title="Content Type",
         description="The type of this item.",
     )
-    id: DecodedDatabaseIdField = EncodedEntityIdField
+    id: DecodedDatabaseIdField = EntityIdField
 
 
 class UpdateContentItem(HistoryContentItem):
@@ -899,7 +899,7 @@ class HistorySummary(HistoryBase):
     """History summary information."""
 
     model_class: str = ModelClassField(HISTORY_MODEL_CLASS_NAME)
-    id: EncodedDatabaseIdField = EncodedEntityIdField
+    id: EncodedDatabaseIdField = EntityIdField
     name: str = Field(
         ...,
         title="Name",
@@ -1423,7 +1423,7 @@ class JobIdResponse(BaseModel):
 
 
 class JobBaseModel(Model):
-    id: EncodedDatabaseIdField = EncodedEntityIdField
+    id: EncodedDatabaseIdField = EntityIdField
     model_class: str = ModelClassField(JOB_MODEL_CLASS_NAME)
     tool_id: str = Field(
         ...,
@@ -1464,7 +1464,7 @@ class JobImportHistoryResponse(JobBaseModel):
 
 
 class JobStateSummary(Model):
-    id: EncodedDatabaseIdField = EncodedEntityIdField
+    id: EncodedDatabaseIdField = EntityIdField
     model: str = ModelClassField("Job")
     populated_state: DatasetCollection.populated_states = PopulatedStateField
     states: Dict[Job.states, int] = Field(
@@ -1509,7 +1509,7 @@ class JobSummary(JobBaseModel):
 
 
 class DatasetSourceId(Model):
-    id: EncodedDatabaseIdField = EncodedEntityIdField
+    id: EncodedDatabaseIdField = EntityIdField
     src: DatasetSourceType = Field(
         ...,
         title="Source",
@@ -1643,7 +1643,7 @@ class JobFullDetails(JobDetails):
 
 
 class StoredWorkflowSummary(Model):
-    id: EncodedDatabaseIdField = EncodedEntityIdField
+    id: EncodedDatabaseIdField = EntityIdField
     model_class: str = ModelClassField(STORED_WORKFLOW_MODEL_CLASS_NAME)
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
