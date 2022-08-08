@@ -1,6 +1,8 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
+import { parse } from "csv-parse/sync";
+
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import mod_icon_btn from "mvc/ui/icon-button";
@@ -137,8 +139,10 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     initialize: function (options) {
         // Row count for rendering.
         this.row_count = 0;
+        // Flag for active loading
         this.loading_chunk = false;
-
+        // Configure delimiter for parsing data
+        this.delimiter = this.model?.attributes?.file_ext === "csv" ? "," : "\t";
         // load trackster button
         new TabularButtonTracksterView({
             model: options.model,
@@ -182,11 +186,11 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         var column_names = this.model.get_metadata("column_names");
         var header_container = $("<thead/>").appendTo(data_table);
         var header_row = $("<tr/>").appendTo(header_container);
-        if (column_names) {
+        if (column_names?.length > 0) {
             header_row.append(`<th>${column_names.join("</th><th>")}</th>`);
         } else {
             for (var j = 1; j <= this.model.get_metadata("columns"); j++) {
-                header_row.append(`<th>${j}</th>`);
+                header_row.append(`<th>Column ${j}</th>`);
             }
         }
 
@@ -237,10 +241,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         return $cell;
     },
 
-    _renderRow: function (line) {
-        // Check length of cells to ensure this is a complete row.
-        var cells = line.split("\t");
-
+    _renderRow: function (rowData) {
         var row = $("<tr>");
         var num_columns = this.model.get_metadata("columns");
 
@@ -248,39 +249,40 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             row.addClass("dark_row");
         }
 
-        if (cells.length === num_columns) {
+        if (rowData.length === num_columns) {
             _.each(
-                cells,
+                rowData,
                 function (cell_contents, index) {
                     row.append(this._renderCell(cell_contents, index));
                 },
                 this
             );
-        } else if (cells.length > num_columns) {
+        } else if (rowData.length > num_columns) {
             // SAM file or like format with optional metadata included.
             _.each(
-                cells.slice(0, num_columns - 1),
+                rowData.slice(0, num_columns - 1),
                 function (cell_contents, index) {
                     row.append(this._renderCell(cell_contents, index));
                 },
                 this
             );
-            row.append(this._renderCell(cells.slice(num_columns - 1).join("\t"), num_columns - 1));
-        } else if (cells.length === 1) {
-            cells = line.split(",");
-            if (cells.length === num_columns) {
+            row.append(this._renderCell(rowData.slice(num_columns - 1).join("\t"), num_columns - 1));
+        } else if (rowData.length === 1) {
+            // Try to split by comma first
+            let rowDataSplit = rowData[0].split(",");
+            if (rowDataSplit.length === num_columns) {
                 _.each(
-                    cells,
+                    rowDataSplit,
                     function (cell_contents, index) {
                         row.append(this._renderCell(cell_contents, index));
                     },
                     this
                 );
             } else {
-                cells = line.split(" ");
-                if (cells.length === num_columns) {
+                rowDataSplit = rowData[0].split(" ");
+                if (rowDataSplit.length === num_columns) {
                     _.each(
-                        cells,
+                        rowDataSplit,
                         function (cell_contents, index) {
                             row.append(this._renderCell(cell_contents, index));
                         },
@@ -288,21 +290,21 @@ var TabularDatasetChunkedView = Backbone.View.extend({
                     );
                 } else {
                     // Comment line, just return the one cell.
-                    row.append(this._renderCell(line, 0, num_columns));
+                    row.append(this._renderCell(rowData[0], 0, num_columns));
                 }
             }
         } else {
-            // cells.length is greater than one, but less than num_columns.  Render cells and pad tds.
+            // rowData.length is greater than one, but less than num_columns.  Render cells and pad tds.
             // Possibly a SAM file or like format with optional metadata missing.
             // Could also be a tabular file with a line with missing columns.
             _.each(
-                cells,
+                rowData,
                 function (cell_contents, index) {
                     row.append(this._renderCell(cell_contents, index));
                 },
                 this
             );
-            _.each(_.range(num_columns - cells.length), () => {
+            _.each(_.range(num_columns - rowData.length), () => {
                 row.append($("<td>"));
             });
         }
@@ -313,11 +315,14 @@ var TabularDatasetChunkedView = Backbone.View.extend({
 
     _renderChunk: function (chunk) {
         var data_table = this.$el.find("table");
+        const parsedChunk = parse(chunk.ck_data, {
+            delimiter: this.delimiter,
+        });
         _.each(
-            chunk.ck_data.split("\n"),
-            function (line, index) {
-                if (line !== "" && index >= (chunk.data_line_offset || 0)) {
-                    data_table.append(this._renderRow(line));
+            parsedChunk,
+            (rowData, index) => {
+                if (index >= (chunk.data_line_offset || 0)) {
+                    data_table.append(this._renderRow(rowData));
                 }
             },
             this
