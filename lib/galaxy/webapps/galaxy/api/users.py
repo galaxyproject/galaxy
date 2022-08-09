@@ -1070,7 +1070,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
 
         enabled = user.preferences["beacon_enabled"] if "beacon_enabled" in user.preferences else False
 
-        return {"message": "benno ist ein cooler typ", "enabled": enabled}
+        return {"enabled": enabled}
 
     @expose_api
     def set_beacon(self, trans, id, payload=None, **kwd):
