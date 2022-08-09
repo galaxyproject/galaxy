@@ -1,15 +1,15 @@
 import { mount, createLocalVue } from "@vue/test-utils";
-import InstallationButton from "./InstallationButton";
+import InstallationActions from "./InstallationActions";
 import { localizationPlugin } from "components/plugins";
 
 const localVue = createLocalVue();
 localVue.use(localizationPlugin);
 
-describe("InstallationButton", () => {
+describe("InstallationActions", () => {
 
 
     it("test installed repository revision", () => {
-        const wrapper = mount(InstallationButton, {
+        const wrapper = mount(InstallationActions, {
             propsData: {
                 installed: true,
                 status: "Installed",
@@ -23,7 +23,7 @@ describe("InstallationButton", () => {
     });
 
     it("test uninstalled repository revision", () => {
-        const wrapper = mount(InstallationButton, {
+        const wrapper = mount(InstallationActions, {
             propsData: {
                 installed: false,
                 status: "Uninstalled",

@@ -29,7 +29,7 @@
                             <span v-else :class="repoUnchecked" />
                         </template>
                         <template v-slot:cell(actions)="row">
-                            <InstallationButton
+                            <InstallationActions
                                 :status="row.item.status"
                                 @onInstall="setupRepository(row.item)"
                                 @onUninstall="uninstallRepository(row.item)" />
@@ -61,7 +61,7 @@ import { Services } from "../services";
 import ConfigProvider from "components/providers/ConfigProvider";
 import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
 import InstallationSettings from "./InstallationSettings.vue";
-import InstallationButton from "./InstallationButton.vue";
+import InstallationActions from "./InstallationActions.vue";
 import RepositoryTools from "./RepositoryTools.vue";
 
 Vue.use(BootstrapVue);
@@ -71,7 +71,7 @@ export default {
         ConfigProvider,
         ToolPanelViewProvider,
         InstallationSettings,
-        InstallationButton,
+        InstallationActions,
         RepositoryTools,
     },
     props: {

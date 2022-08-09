@@ -15,7 +15,7 @@
                     <b-link @click="onQuery(row.item.name)"> {{ row.item.name }} ({{ row.item.owner }}) </b-link>
                 </template>
                 <template v-slot:cell(status)="row">
-                    <InstallationButton
+                    <InstallationActions
                         class="float-right"
                         :status="row.item.status"
                         @onUninstall="uninstallRepository(row.item)" />
@@ -29,13 +29,13 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { Services } from "../services";
-import InstallationButton from "../RepositoryDetails/InstallationButton";
+import InstallationActions from "../RepositoryDetails/InstallationActions";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        InstallationButton,
+        InstallationActions,
     },
     data() {
         return {
