@@ -465,19 +465,19 @@ export default {
                 this.onInsertedStateMessages(insertedStateMessages);
             });
         },
-        async onInsertWorkflowSteps(workflow_id, step_count) {
+        async onInsertWorkflowSteps(workflowId, stepCount) {
             if (!this.isCanvas) {
                 this.isCanvas = true;
                 return;
             }
-            if (step_count < 4) {
-                this.copyIntoWorkflow(workflow_id);
+            if (stepCount < 10) {
+                this.copyIntoWorkflow(workflowId);
             } else {
                 const confirmed = await this.$bvModal.msgBoxConfirm(
-                    `Warning this will add ${step_count} new steps into your current workflow.  You may want to consider using a subworkflow instead.`
+                    `Warning this will add ${stepCount} new steps into your current workflow.  You may want to consider using a subworkflow instead.`
                 );
                 if (confirmed) {
-                    this.copyIntoWorkflow(workflow_id);
+                    this.copyIntoWorkflow(workflowId);
                 }
             }
         },
