@@ -180,7 +180,7 @@ import { getDatatypesMapper } from "components/Datatypes";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
 import { getUntypedWorkflowParameters } from "./modules/parameters";
-import { getStateUpgradeMessages, copyIntoWorkflow, saveAs } from "./modules/utilities";
+import { getStateUpgradeMessages, saveAs } from "./modules/utilities";
 import WorkflowCanvas from "./modules/canvas";
 import WorkflowOptions from "./Options";
 import FormDefault from "./Forms/FormDefault";
@@ -456,12 +456,30 @@ export default {
         onInsertWorkflow(workflow_id, workflow_name) {
             this._insertStep(workflow_id, workflow_name, "subworkflow");
         },
-        onInsertWorkflowSteps(workflow_id, step_count) {
+        copyIntoWorkflow(id = null) {
+            // Load workflow definition
+            this.onWorkflowMessage("Importing workflow", "progress");
+            loadWorkflow(this, id, null, true).then((data) => {
+                // Determine if any parameters were 'upgraded' and provide message
+                const insertedStateMessages = getStateUpgradeMessages(data);
+                this.onInsertedStateMessages(insertedStateMessages);
+            });
+        },
+        async onInsertWorkflowSteps(workflow_id, step_count) {
             if (!this.isCanvas) {
                 this.isCanvas = true;
                 return;
             }
-            copyIntoWorkflow(this, workflow_id, step_count);
+            if (step_count < 4) {
+                this.copyIntoWorkflow(workflow_id);
+            } else {
+                const confirmed = await this.$bvModal.msgBoxConfirm(
+                    `Warning this will add ${step_count} new steps into your current workflow.  You may want to consider using a subworkflow instead.`
+                );
+                if (confirmed) {
+                    this.copyIntoWorkflow(workflow_id);
+                }
+            }
         },
         onDownload() {
             window.location = `${getAppRoot()}api/workflows/${this.id}/download?format=json-download`;

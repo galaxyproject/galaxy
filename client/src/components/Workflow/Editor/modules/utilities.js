@@ -1,35 +1,9 @@
 import _ from "underscore";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
-import { loadWorkflow } from "./services";
 import { toSimple } from "./model";
 import { show_modal } from "layout/modal";
 import WorkflowIcons from "components/Workflow/icons";
-
-export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
-    const _copy_into_workflow_ajax = () => {
-        // Load workflow definition
-        workflow.onWorkflowMessage("Importing workflow", "progress");
-        loadWorkflow(workflow, id, null, true).then((data) => {
-            // Determine if any parameters were 'upgraded' and provide message
-            const insertedStateMessages = getStateUpgradeMessages(data);
-            workflow.onInsertedStateMessages(insertedStateMessages);
-        });
-    };
-    if (stepCount < 10) {
-        // If it's less than 10 steps, just do it.
-        _copy_into_workflow_ajax();
-    } else {
-        // but don't ruin the workflow if it's a ton of steps.
-        if (
-            window.confirm(
-                `Warning this will add ${stepCount} new steps into your current workflow.  You may want to consider using a subworkflow instead.`
-            )
-        ) {
-            _copy_into_workflow_ajax();
-        }
-    }
-}
 
 export function getStateUpgradeMessages(data) {
     // Determine if any parameters were 'upgraded' and provide message
