@@ -96,7 +96,7 @@ export default {
                 { key: "tools", label: "Tools and Versions" },
                 { key: "profile", label: "Requires" },
                 { key: "missing_test_components", label: "Tests" },
-                { key: "actions", label: "" },
+                { key: "actions", label: "", class: "toolshed-repo-actions" },
             ],
             showSettings: false,
             error: null,
@@ -195,3 +195,11 @@ export default {
     },
 };
 </script>
+
+<style lang="scss">
+// make actions take up less space
+.toolshed-repo-actions {
+    width: 15%;
+    min-width: 280px;
+}
+</style>

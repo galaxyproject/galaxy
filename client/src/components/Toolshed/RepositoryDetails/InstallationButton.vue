@@ -1,15 +1,31 @@
 <template>
     <div>
-        <b-button v-if="installState" :class="buttonClass" variant="primary" @click="onInstall"> Install </b-button>
-        <div v-else>
-            <b-button v-if="uninstallState" :class="buttonClass" variant="danger" @click="onUninstall">
-                Uninstall
-            </b-button>
-            <b-button v-else :class="buttonClass" disabled>
-                <span v-if="!errorState" class="fa fa-spinner fa-spin" />
-                <span>{{ status }}</span>
-            </b-button>
-        </div>
+        <span class="status">
+            <span v-if="installingState" class="fa fa-spinner fa-spin" />
+            {{ status }}
+        </span>
+        <b-button
+            :disabled="!installState"
+            :class="buttonClass"
+            :variant="installState ? 'primary' : ''"
+            @click="onInstall">
+            Install
+        </b-button>
+        <b-button
+            :disabled="!uninstallState"
+            :class="buttonClass"
+            :variant="uninstallState ? 'danger' : ''"
+            @click="onUninstall">
+            Uninstall
+        </b-button>
+        <b-button
+            :disabled="!resetState"
+            :class="buttonClass"
+            :title="l('Reset Broken or Stuck Installation')"
+            :variant="resetState ? 'warning' : ''"
+            @click="onCancel">
+            Reset
+        </b-button>
     </div>
 </template>
 <script>
@@ -22,7 +38,7 @@ export default {
     props: {
         status: {
             type: String,
-            default: null,
+            default: "Uninstalled",
         },
     },
     data() {
@@ -32,13 +48,16 @@ export default {
     },
     computed: {
         installState() {
-            return !this.status || this.status == "Uninstalled";
+            return !this.status || this.status === "Uninstalled";
         },
         uninstallState() {
-            return this.status == "Installed";
+            return this.status === "Installed";
         },
-        errorState() {
-            return this.status == "Error";
+        resetState() {
+            return !this.installState && !this.uninstallState;
+        },
+        installingState() {
+            return this.status !== "Error" && this.resetState;
         },
     },
     methods: {
@@ -48,6 +67,18 @@ export default {
         onUninstall() {
             this.$emit("onUninstall");
         },
+        onCancel() {
+            if (window.confirm(`Do you want to reset this repository?`)) {
+                this.$emit("onUninstall");
+            }
+        },
     },
 };
 </script>
+
+<style lang="scss" scoped>
+.status {
+    display: inline-block;
+    min-width: 80px;
+}
+</style>
