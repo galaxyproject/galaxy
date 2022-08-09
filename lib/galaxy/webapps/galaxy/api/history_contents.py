@@ -20,6 +20,7 @@ from fastapi import (
     Query,
     Request,
 )
+from pydantic.error_wrappers import ValidationError
 from starlette import status
 from starlette.responses import (
     Response,
@@ -27,7 +28,6 @@ from starlette.responses import (
 )
 
 from galaxy import util
-from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema import (
     FilterQueryParams,
@@ -58,6 +58,7 @@ from galaxy.schema.schema import (
     UpdateHistoryContentsPayload,
     WriteStoreToPayload,
 )
+from galaxy.web.framework.decorators import validation_error_to_message_exception
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
     get_update_permission_payload,
@@ -151,10 +152,13 @@ def parse_index_query_params(
 ) -> HistoryContentsIndexParams:
     """Parses query parameters for the history contents `index` operation
     and returns a model containing the values in the correct type."""
-    return HistoryContentsIndexParams(
-        v=v,
-        dataset_details=parse_dataset_details(dataset_details),
-    )
+    try:
+        return HistoryContentsIndexParams(
+            v=v,
+            dataset_details=parse_dataset_details(dataset_details),
+        )
+    except ValidationError as e:
+        raise validation_error_to_message_exception(e)
 
 
 def get_legacy_index_query_params(
@@ -238,23 +242,24 @@ def parse_legacy_index_query_params(
     else:
         dataset_details = parse_dataset_details(details)
 
-    return LegacyHistoryContentsIndexParams(
-        types=content_types,
-        ids=id_list,
-        deleted=deleted,
-        visible=visible,
-        dataset_details=dataset_details,
-    )
+    try:
+        return LegacyHistoryContentsIndexParams(
+            types=content_types,
+            ids=id_list,
+            deleted=deleted,
+            visible=visible,
+            dataset_details=dataset_details,
+        )
+    except ValidationError as e:
+        raise validation_error_to_message_exception(e)
 
 
 def parse_dataset_details(details: Optional[str]):
     """Parses the different values that the `dataset_details` parameter
     can have from a string."""
     dataset_details: Optional[DatasetDetailsType] = None
-    if details and details != "all":
+    if details is not None and details != "all":
         dataset_details = set(util.listify(details))
-        if "" in dataset_details:
-            raise RequestParameterInvalidException("Invalid empty IDs found in dataset details parameter")
     else:  # either None or 'all'
         dataset_details = details  # type: ignore
     return dataset_details
