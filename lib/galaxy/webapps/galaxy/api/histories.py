@@ -166,7 +166,7 @@ class FastAPIHistories:
         summary="Returns the complete list of beacon histories",
         status_code=status.HTTP_200_OK
     )
-    def get_beacon_users(self, trans: ProvidesUserContext = DependsOnTrans):
+    def get_beacon_histories(self, trans: ProvidesUserContext = DependsOnTrans):
         """
         Returns IDs of all beacon histories.
 
