@@ -16,7 +16,8 @@ export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
             workflow.onInsertedStateMessages(insertedStateMessages);
         });
     };
-    if (stepCount < 2) {
+    if (stepCount < 10) {
+        // If it's less than 10 steps, just do it.
         _copy_into_workflow_ajax();
     } else {
         // but don't ruin the workflow if it's a ton of steps.
