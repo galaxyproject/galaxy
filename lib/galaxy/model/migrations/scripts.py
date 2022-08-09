@@ -14,7 +14,10 @@ from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 
-from galaxy.model.database_utils import is_one_database
+from galaxy.model.database_utils import (
+    database_exists,
+    is_one_database,
+)
 from galaxy.model.migrations import (
     AlembicManager,
     DatabaseConfig,
@@ -36,6 +39,51 @@ CONFIG_FILE_ARG = "--galaxy-config"
 CONFIG_DIR_NAME = "config"
 GXY_CONFIG_PREFIX = "GALAXY_CONFIG_"
 TSI_CONFIG_PREFIX = "GALAXY_INSTALL_CONFIG_"
+
+
+class DatabaseDoesNotExistError(Exception):
+    def __init__(self, db_url: str) -> None:
+        super().__init__(
+            f"""The database at {db_url} does not exist. You must
+            create and initialize the database before running this script. You
+            can do so by (a) running `create_db.sh`; or by (b) starting Galaxy,
+            in which case Galaxy will create and initialize the database
+            automatically."""
+        )
+
+
+class DatabaseNotInitializedError(Exception):
+    def __init__(self, db_url: str) -> None:
+        super().__init__(
+            f"""The database at {db_url} is empty. You must
+            initialize the database before running this script. You can do so by
+            (a) running `create_db.sh`; or by (b) starting Galaxy, in which case
+            Galaxy will initialize the database automatically."""
+        )
+
+
+def verify_database_is_initialized(db_url: str) -> None:
+    """
+    Intended for use by scripts that run database migrations (manage_db.sh,
+    run_alembic.sh). Those scripts are meant to run on a database that has been
+    initialized with the appropriate metadata (e.g. galaxy or install model).
+
+    This function will raise an error if the database does not exist or has not
+    been initialized*.
+
+    *NOTE: this function cannot determine whether a database has been properly
+    initialized; it can only tell when a database has *not* been initialized.
+    """
+    if not database_exists(db_url):
+        raise DatabaseDoesNotExistError(db_url)
+
+    engine = create_engine(db_url)
+    try:
+        db_state = DatabaseStateCache(engine=engine)
+        if db_state.is_database_empty() or db_state.contains_only_kombu_tables():
+            raise DatabaseNotInitializedError(db_url)
+    finally:
+        engine.dispose()
 
 
 def get_configuration(argv: List[str], cwd: str) -> Tuple[DatabaseConfig, DatabaseConfig, bool]:
@@ -120,7 +168,15 @@ class LegacyScripts:
     def __init__(self, argv: List[str], cwd: Optional[str] = None) -> None:
         self.argv = argv
         self.cwd = cwd or os.getcwd()
-        self.database = self.DEFAULT_DB_ARG
+        self._database: Optional[str] = None  # Do not assign default value: `None` means we don't know yet.
+
+    @property
+    def database(self):
+        if self._database is None:
+            raise LegacyScriptsException(
+                "Attempt to access identifier of database before processing the script arguments"
+            )
+        return self._database
 
     def run(self) -> None:
         """
@@ -147,8 +203,9 @@ class LegacyScripts:
         If last argument is a valid database name, pop and assign it; otherwise assign default.
         """
         arg = self.argv[-1]
+        self._database = self.DEFAULT_DB_ARG
         if arg in ["galaxy", "install"]:
-            self.database = self.argv.pop()
+            self._database = self.argv.pop()
 
     def rename_config_argument(self) -> None:
         """
@@ -195,6 +252,12 @@ class LegacyScripts:
                     self.argv.append("gxy@head")
                 elif self.database == "install":
                     self.argv.append("tsi@head")
+
+    def get_db_url(self):
+        if self.database in ["galaxy", self.DEFAULT_DB_ARG]:
+            return self.gxy_url
+        elif self.database == "install":
+            return self.tsi_url
 
     def _rename_arg(self, old_name, new_name) -> None:
         pos = self.argv.index(old_name)

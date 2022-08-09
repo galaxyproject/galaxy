@@ -7,6 +7,7 @@
 
 import defaultStore from "store/index";
 import { urlData } from "utils/url";
+import { loadSet } from "utils/setCache";
 import { getCurrentHistoryFromServer } from "./queries";
 import { getGalaxyInstance } from "app";
 
@@ -52,18 +53,19 @@ export async function watchHistoryOnce(store) {
         lastUpdateTime = history.update_time;
         // execute request to obtain recently changed items
         const params = {
+            v: "dev",
             limit: limit,
             q: "update_time-ge",
             qv: lastRequestDate.toISOString(),
-            v: "dev",
-            view: "detailed",
         };
-        const paramsString = Object.entries(params)
-            .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
-            .join("&");
-        const url = `api/histories/${historyId}/contents?${paramsString}`;
+        // request detailed info only for the expanded datasets
+        const detailedIds = getCurrentlyExpandedHistoryContentIds();
+        if (detailedIds.length) {
+            params["details"] = detailedIds.join(",");
+        }
+        const url = `api/histories/${historyId}/contents`;
         lastRequestDate = new Date();
-        const payload = await urlData({ url });
+        const payload = await urlData({ url, params });
         // show warning that not all changes have been obtained
         if (payload && payload.length == limit) {
             console.debug(`Reached limit of monitored changes (limit=${limit}).`);
@@ -109,4 +111,23 @@ export function rewatchHistory() {
         clearTimeout(watchTimeout);
         watchHistory();
     }
+}
+
+/**
+ * Returns the set of history item IDs that are currently expanded in the history panel from the cache.
+ * These content items need to retrieve detailed information when updated.
+ * @returns {Array<string>} List of history item IDs that are currently expanded.
+ */
+function getCurrentlyExpandedHistoryContentIds() {
+    const expandedItemIds = [];
+    const cacheKey = "expanded-history-items";
+    const expandedItems = loadSet(cacheKey);
+    expandedItems.forEach((key) => {
+        // Items have the format: <type>-<id>
+        const itemId = key.split("-")[1];
+        if (itemId) {
+            expandedItemIds.push(itemId);
+        }
+    });
+    return expandedItemIds;
 }

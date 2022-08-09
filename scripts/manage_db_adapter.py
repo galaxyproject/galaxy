@@ -25,12 +25,15 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 from galaxy.model.migrations.scripts import (
     invoke_alembic,
     LegacyScripts,
+    verify_database_is_initialized,
 )
 
 
 def run():
     ls = LegacyScripts(sys.argv, os.getcwd())
     ls.run()
+    db_url = ls.get_db_url()
+    verify_database_is_initialized(db_url)
     invoke_alembic()
 
 

@@ -393,27 +393,34 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         email = user.email
         username = user.username
         inputs = list()
-        inputs.append(
-            {
-                "id": "email_input",
-                "name": "email",
-                "type": "text",
-                "label": "Email address",
-                "value": email,
-                "help": "If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.",
-            }
-        )
-        if trans.webapp.name == "galaxy":
+        user_info = {
+            "email": email,
+            "username": username,
+        }
+        is_galaxy_app = trans.webapp.name == "galaxy"
+        if trans.app.config.enable_account_interface or not is_galaxy_app:
             inputs.append(
                 {
-                    "id": "name_input",
-                    "name": "username",
+                    "id": "email_input",
+                    "name": "email",
                     "type": "text",
-                    "label": "Public name",
-                    "value": username,
-                    "help": 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.',
+                    "label": "Email address",
+                    "value": email,
+                    "help": "If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.",
                 }
             )
+        if is_galaxy_app:
+            if trans.app.config.enable_account_interface:
+                inputs.append(
+                    {
+                        "id": "name_input",
+                        "name": "username",
+                        "type": "text",
+                        "label": "Public name",
+                        "value": username,
+                        "help": 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.',
+                    }
+                )
             info_form_models = self.get_all_forms(
                 trans, filter=dict(deleted=False), form_type=trans.app.model.FormDefinition.types.USER_INFO
             )
@@ -441,25 +448,27 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     info_field["cases"].append({"value": info_form["id"], "inputs": info_form["inputs"]})
                 inputs.append(info_field)
 
-            address_inputs = [{"type": "hidden", "name": "id", "hidden": True}]
-            for field in AddressField.fields():
-                address_inputs.append({"type": "text", "name": field[0], "label": field[1], "help": field[2]})
-            address_repeat = {
-                "title": "Address",
-                "name": "address",
-                "type": "repeat",
-                "inputs": address_inputs,
-                "cache": [],
-            }
-            address_values = [address.to_dict(trans) for address in user.addresses]
-            for address in address_values:
-                address_cache = []
-                for input in address_inputs:
-                    input_copy = input.copy()
-                    input_copy["value"] = address.get(input["name"])
-                    address_cache.append(input_copy)
-                address_repeat["cache"].append(address_cache)
-            inputs.append(address_repeat)
+            if trans.app.config.enable_account_interface:
+                address_inputs = [{"type": "hidden", "name": "id", "hidden": True}]
+                for field in AddressField.fields():
+                    address_inputs.append({"type": "text", "name": field[0], "label": field[1], "help": field[2]})
+                address_repeat = {
+                    "title": "Address",
+                    "name": "address",
+                    "type": "repeat",
+                    "inputs": address_inputs,
+                    "cache": [],
+                }
+                address_values = [address.to_dict(trans) for address in user.addresses]
+                for address in address_values:
+                    address_cache = []
+                    for input in address_inputs:
+                        input_copy = input.copy()
+                        input_copy["value"] = address.get(input["name"])
+                        address_cache.append(input_copy)
+                    address_repeat["cache"].append(address_cache)
+                inputs.append(address_repeat)
+                user_info["addresses"] = [address.to_dict(trans) for address in user.addresses]
 
             # Build input sections for extra user preferences
             extra_user_pref = self._build_extra_user_pref_inputs(trans, self._get_extra_user_preferences(trans), user)
@@ -488,12 +497,8 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                         help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.',
                     )
                 )
-        return {
-            "email": email,
-            "username": username,
-            "addresses": [address.to_dict(trans) for address in user.addresses],
-            "inputs": inputs,
-        }
+        user_info["inputs"] = inputs
+        return user_info
 
     @expose_api
     def set_information(self, trans, id, payload=None, **kwd):

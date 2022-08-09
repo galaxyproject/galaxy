@@ -10,15 +10,33 @@ export function reloadPage() {
     window.location.reload();
 }
 
-// Prepends configured appRoot to given url
 const slashCleanup = /(\/)+/g;
+/**
+ * Prepends the configured app root to given url
+ * @param {String} path
+ * @returns The relative URL path with the configured appRoot.
+ */
 export function prependPath(path) {
     const root = getAppRoot();
     return `${root}/${path}`.replace(slashCleanup, "/");
 }
 
+/**
+ * Returns the absolute URL path for this server given a relative path.
+ * @param {String} path
+ * @returns The absolute URL path.
+ */
 export function absPath(path) {
-    const relativePath = prependPath(path);
+    const relativePath = hasRoot(path) ? path : prependPath(path);
     const server = window.location.origin;
     return `${server}/${relativePath}`.replace(slashCleanup, "/");
+}
+
+/**
+ * Checks if the path already has the app root.
+ * @param {String} path
+ * @returns true if the given path starts with the app root.
+ */
+function hasRoot(path) {
+    return path.startsWith(getAppRoot());
 }

@@ -92,29 +92,29 @@ steps:
               grey this means you are queued and need to wait until your tool can be started. If your dataset turns into red, an error has occurred. Please report the bug to the Galaxy team with the bug report button."
 
     - title: "View dataset"
-      element: "#current-history-panel div.content-item button[title='Display']"
+      element: "#current-history-panel div.content-item .display-btn"
       intro: "View your dataset by clicking the eye button."
 
     - title: "Rename dataset"
-      element: "#current-history-panel div.content-item button[title='Edit attributes']"
+      element: "#current-history-panel div.content-item .edit-btn"
       intro: "Rename your dataset by clicking the pencil button."
 
     - title: "Dataset information"
       element: "div.content-item .content-title"
       intro: "This is your dataset. You can get more informations and options like different visualizations by clicking on it."
       postclick: true
-  
+
     - title: "Remove dataset"
-      element: "#current-history-panel div.content-item button[title='Delete']"
+      element: "#current-history-panel div.content-item .delete-btn"
       intro: "Delete your dataset by clicking the trash-button."
 
     - title: "Dataset information"
-      element: "#current-history-panel div.content-item button[title='Dataset Details']"
+      element: "#current-history-panel div.content-item .params-btn"
       intro: "Clicking on your dataset provides you with more information regarding your dataset (e.g. filetype or size)."
       preclick: true
 
     - title: "Re-run tool"
-      element: "#current-history-panel div.content-item button[title='Run Job Again']"
+      element: "#current-history-panel div.content-item .rerun-btn"
       intro: "By clicking the reload button, you can re-run your tool again (e.g. with different parameters or on another dataset)."
 
     - title: "Panel collapse"
