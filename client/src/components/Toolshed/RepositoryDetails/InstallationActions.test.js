@@ -6,8 +6,6 @@ const localVue = createLocalVue();
 localVue.use(localizationPlugin);
 
 describe("InstallationActions", () => {
-
-
     it("test installed repository revision", () => {
         const wrapper = mount(InstallationActions, {
             propsData: {
