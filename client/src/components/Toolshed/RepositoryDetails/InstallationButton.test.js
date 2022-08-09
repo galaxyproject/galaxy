@@ -1,10 +1,13 @@
-import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { mount, createLocalVue } from "@vue/test-utils";
 import InstallationButton from "./InstallationButton";
+import { localizationPlugin } from "components/plugins";
 
-const localVue = getLocalVue();
+const localVue = createLocalVue();
+localVue.use(localizationPlugin);
 
 describe("InstallationButton", () => {
+
+
     it("test installed repository revision", () => {
         const wrapper = mount(InstallationButton, {
             propsData: {
@@ -13,7 +16,7 @@ describe("InstallationButton", () => {
             },
             localVue,
         });
-        const $el = wrapper.find("button");
+        const $el = wrapper.find("button:nth-of-type(2)");
         expect($el.classes()).toEqual(expect.arrayContaining(["btn-danger"]));
         $el.trigger("click");
         expect(wrapper.emitted().onUninstall).toBeDefined();
@@ -25,8 +28,9 @@ describe("InstallationButton", () => {
                 installed: false,
                 status: "Uninstalled",
             },
+            localVue,
         });
-        const $el = wrapper.find("button");
+        const $el = wrapper.find("button:nth-of-type(1)");
         expect($el.classes()).toEqual(expect.arrayContaining(["btn-primary"]));
         $el.trigger("click");
         expect(wrapper.emitted().onInstall).toBeDefined();
