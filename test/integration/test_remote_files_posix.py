@@ -6,10 +6,13 @@
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
-from galaxy_test.driver.integration_setup import PosixFileSourceSetup
-
-REQUIRED_ROLE = "user@bx.psu.edu"
-REQUIRED_GROUP = "fs_test_group"
+from galaxy_test.driver.integration_setup import (
+    GROUP_A,
+    GROUP_B,
+    PosixFileSourceSetup,
+    REQUIRED_GROUP_EXPRESSION,
+    REQUIRED_ROLE_EXPRESSION,
+)
 
 
 class PosixFileSourceIntegrationTestCase(PosixFileSourceSetup, integration_util.IntegrationTestCase):
@@ -32,8 +35,8 @@ class PosixFileSourceIntegrationTestCase(PosixFileSourceSetup, integration_util.
         assert plugins[0]["type"] == "posix"
         assert plugins[0]["uri_root"] == "gxfiles://posix_test"
         assert plugins[0]["writable"] is True
-        assert plugins[0]["requires_roles"] == REQUIRED_ROLE
-        assert plugins[0]["requires_groups"] == REQUIRED_GROUP
+        assert plugins[0]["requires_roles"] == REQUIRED_ROLE_EXPRESSION
+        assert plugins[0]["requires_groups"] == REQUIRED_GROUP_EXPRESSION
 
     def test_allow_admin_access(self):
         data = {"target": "gxfiles://posix_test"}
@@ -42,15 +45,22 @@ class PosixFileSourceIntegrationTestCase(PosixFileSourceSetup, integration_util.
 
     def test_user_access(self):
         data = {"target": "gxfiles://posix_test"}
-        group_id = self._create_group(REQUIRED_GROUP)
+        group_a_id = self._create_group(GROUP_A)
+        group_b_id = self._create_group(GROUP_B)
 
         # User has role but not group
         list_response = self.galaxy_interactor.get("remote_files", data)
         self._assert_access_forbidden_response(list_response)
 
-        # User has role and group
+        # User has role and group A
         user_id = self.dataset_populator.user_id()
-        self._add_user_to_group(group_id, user_id)
+        self._add_user_to_group(group_a_id, user_id)
+        list_response = self.galaxy_interactor.get("remote_files", data)
+        self._assert_list_response_matches_fixtures(list_response)
+
+        # Remove User from group A and add to group B
+        self._remove_user_from_group(group_a_id, user_id)
+        self._add_user_to_group(group_b_id, user_id)
         list_response = self.galaxy_interactor.get("remote_files", data)
         self._assert_list_response_matches_fixtures(list_response)
 
@@ -66,6 +76,10 @@ class PosixFileSourceIntegrationTestCase(PosixFileSourceSetup, integration_util.
 
     def _add_user_to_group(self, group_id, user_id):
         update_response = self._put(f"groups/{group_id}/users/{user_id}", admin=True)
+        self._assert_status_code_is_ok(update_response)
+
+    def _remove_user_from_group(self, group_id, user_id):
+        update_response = self._delete(f"groups/{group_id}/users/{user_id}", admin=True)
         self._assert_status_code_is_ok(update_response)
 
     def _assert_list_response_matches_fixtures(self, list_response):

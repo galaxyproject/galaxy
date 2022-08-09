@@ -19,6 +19,7 @@ from pyparsing import (
     opAssoc,
     ParseException,
     ParserElement,
+    QuotedString,
     Word,
 )
 
@@ -35,6 +36,7 @@ FALSE = Keyword("False")
 NOT_OP = CaselessKeyword("not")
 AND_OP = CaselessKeyword("and")
 OR_OP = CaselessKeyword("or")
+QUOTED_STRING = QuotedString("'")
 
 
 class TokenEvaluator:
@@ -133,7 +135,7 @@ class BooleanExpressionEvaluator:
         """
         action = BoolOperand
         action.evaluator = evaluator
-        boolOperand = TRUE | FALSE | Word(token_format or DEFAULT_TOKEN_FORMAT)
+        boolOperand = TRUE | FALSE | QUOTED_STRING | Word(token_format or DEFAULT_TOKEN_FORMAT)
         boolOperand.setParseAction(action)
         self.boolExpr: ParserElement = infixNotation(
             boolOperand,

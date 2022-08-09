@@ -12,7 +12,7 @@ TOKEN_FORMAT = DEFAULT_TOKEN_FORMAT
 
 # The set of tokens that will be evaluated to True using the TokenContainedEvaluator the rest
 # of the *valid tokens* (those that match the TOKEN_FORMAT) will be evaluated to False.
-TOKENS_THAT_ARE_TRUE = {"T1", "token_2"}
+TOKENS_THAT_ARE_TRUE = {"T1", "token_2", "valid quoted str"}
 
 VALID_EXPRESSIONS_TESTS = [
     ("T1", True),
@@ -26,12 +26,13 @@ VALID_EXPRESSIONS_TESTS = [
     ("not T3 or (T3 AND token_2)", True),
     ("T1 and (T3 OR token_2)", True),
     ("(T3 OR T1) and not (T3 OR valid_token)", True),
+    ("'some quoted str' and T1", False),
+    ("'valid quoted str' and T1", True),
 ]
 
 INVALID_EXPRESSIONS_TESTS = [
     "",
     "23 45",
-    "'some quoted str' and not T1",
     "invalid expression",
     "T1 and and T2",
     "T1 not and T3",

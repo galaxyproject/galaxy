@@ -6,10 +6,12 @@ import shutil
 from tempfile import mkdtemp
 from typing import ClassVar
 
-from .driver_util import GalaxyTestDriver
+from galaxy_test.driver.driver_util import GalaxyTestDriver
 
-REQUIRED_ROLE = "user@bx.psu.edu"
-REQUIRED_GROUP = "fs_test_group"
+REQUIRED_ROLE_EXPRESSION = "user@bx.psu.edu"
+GROUP_A = "fs_test_group"
+GROUP_B = "group name with spaces"
+REQUIRED_GROUP_EXPRESSION = f"{GROUP_A} or '{GROUP_B}'"
 
 
 def get_posix_file_source_config(root_dir: str, roles: str, groups: str, include_test_data_dir: bool) -> str:
@@ -36,7 +38,9 @@ def get_posix_file_source_config(root_dir: str, roles: str, groups: str, include
 
 
 def create_file_source_config_file_on(temp_dir, root_dir, include_test_data_dir):
-    file_contents = get_posix_file_source_config(root_dir, REQUIRED_ROLE, REQUIRED_GROUP, include_test_data_dir)
+    file_contents = get_posix_file_source_config(
+        root_dir, REQUIRED_ROLE_EXPRESSION, REQUIRED_GROUP_EXPRESSION, include_test_data_dir
+    )
     file_path = os.path.join(temp_dir, "file_sources_conf_posix.yml")
     with open(file_path, "w") as f:
         f.write(file_contents)
