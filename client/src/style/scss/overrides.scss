@@ -191,3 +191,14 @@ table.info_data_table th:nth-child(1) {
     background-color: unset;
     border: none;
 }
+
+// enable titles on disabled dropdown items
+.dropdown-menu {
+    .dropdown-item.disabled {
+        pointer-events: unset;
+        cursor: default;
+
+        // differentiate disabled items more
+        color: #bfc7cf !important;
+    }
+}

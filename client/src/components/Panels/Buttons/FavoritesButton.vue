@@ -5,6 +5,7 @@
         size="sm"
         variant="link"
         aria-label="Show favorite tools"
+        :disabled="currentUser.isAnonymous"
         :title="tooltipText"
         @click="onFavorites">
         <icon v-if="toggle" :icon="['fas', 'star']" />
@@ -13,6 +14,7 @@
 </template>
 
 <script>
+import { mapGetters } from "vuex";
 import _l from "utils/localization";
 
 export default {
@@ -25,17 +27,21 @@ export default {
     data() {
         return {
             searchKey: "#favorites",
-            tooltipToggle: _l("Show favorites"),
-            tooltipUntoggle: "Clear",
             toggle: false,
         };
     },
     computed: {
+        ...mapGetters("user", ["currentUser"]),
+
         tooltipText() {
-            if (this.toggle) {
-                return this.tooltipUntoggle;
+            if (this.currentUser.isAnonymous) {
+                return this.l("Login to Favorite Tools");
             } else {
-                return this.tooltipToggle;
+                if (this.toggle) {
+                    return this.l("Clear");
+                } else {
+                    return this.l("Show favorites");
+                }
             }
         },
     },
