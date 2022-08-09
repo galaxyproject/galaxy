@@ -213,6 +213,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/tours/{tour_id}")
     webapp.add_client_route("/user")
     webapp.add_client_route("/user/{form_id}")
+    webapp.add_client_route("/notifications")
     webapp.add_client_route("/welcome/new")
     webapp.add_client_route("/visualizations")
     webapp.add_client_route("/visualizations/edit")

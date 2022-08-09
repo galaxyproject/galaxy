@@ -22,6 +22,7 @@ import Grid from "components/Grid/Grid";
 import GridShared from "components/Grid/GridShared";
 import GridHistory from "components/Grid/GridHistory";
 import HistoryImport from "components/HistoryImport";
+import Notifications from "components/Notification/index";
 import HistoryView from "components/HistoryView";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
@@ -297,6 +298,11 @@ export function getRouter(Galaxy) {
                         path: "user/:formId",
                         component: UserPreferencesForm,
                         props: true,
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "/notifications",
+                        component: Notifications,
                         redirect: redirectAnon(),
                     },
                     {
