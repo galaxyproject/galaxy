@@ -1,7 +1,6 @@
 import _ from "underscore";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
-import _l from "utils/localization";
 import { loadWorkflow } from "./services";
 import { toSimple } from "./model";
 import { show_modal } from "layout/modal";
@@ -20,13 +19,14 @@ export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
     if (stepCount < 2) {
         _copy_into_workflow_ajax();
     } else {
-        // don't ruin the workflow by adding 50 steps unprompted.
-        show_modal(_l("Warning"), `This will copy ${stepCount} new steps into your workflow.`, {
-            Cancel: () => {
-                workflow.hideModal();
-            },
-            Copy: _copy_into_workflow_ajax,
-        });
+        // but don't ruin the workflow if it's a ton of steps.
+        if (
+            window.confirm(
+                `Warning this will add ${stepCount} new steps into your current workflow.  You may want to consider using a subworkflow instead.`
+            )
+        ) {
+            _copy_into_workflow_ajax();
+        }
     }
 }
 
