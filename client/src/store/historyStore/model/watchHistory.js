@@ -122,7 +122,7 @@ function getCurrentlyExpandedHistoryContentIds() {
     expandedItems.forEach((key) => {
         // Items have the format: <type>-<id>
         const itemId = key.split("-")[1];
-        if (itemId) {
+        if (itemId?.trim()) {
             expandedItemIds.push(itemId);
         }
     });
