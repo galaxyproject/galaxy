@@ -5,7 +5,7 @@
             class="edit-button ml-1 float-right"
             data-description="editor toggle"
             size="sm"
-            :variant="(currentUser.isAnonymous || !writeable) ? '' : 'link'"
+            variant="link"
             :title="editButtonTitle"
             :pressed="editing"
             @click="onToggle">
