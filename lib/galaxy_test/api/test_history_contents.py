@@ -9,13 +9,13 @@ from typing import (
 )
 
 from galaxy.webapps.galaxy.services.history_contents import DirectionOptions
+from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
     skip_without_tool,
 )
-from ._framework import ApiTestCase
 
 TEST_SOURCE_URI = "http://google.com/dataset.txt"
 TEST_HASH_FUNCTION = "MD5"
@@ -166,10 +166,15 @@ class HistoryContentsApiTestCase(ApiTestCase):
 
     def test_index_detail_parameter_error(self):
         hda1 = self.dataset_populator.new_dataset(self.history_id)
-        wrong_details_query_with_empty_ids = f"details=,,{hda1['id']}"
-        contents_response = self._get(
-            f"histories/{self.history_id}/contents?v=dev&{wrong_details_query_with_empty_ids}"
-        )
+        # Invalid details should return 400
+        contents_response = self._get(f"histories/{self.history_id}/contents?v=dev&details= ")
+        self._assert_status_code_is(contents_response, 400)
+        # Empty IDs should return 400
+        contents_response = self._get(f"histories/{self.history_id}/contents?v=dev&details=,,{hda1['id']}")
+        self._assert_status_code_is(contents_response, 400)
+
+        # Invalid IDs should return 400
+        contents_response = self._get(f"histories/{self.history_id}/contents?v=dev&details={hda1['id']}, ,{hda1['id']}")
         self._assert_status_code_is(contents_response, 400)
 
     def test_show_hda(self):
