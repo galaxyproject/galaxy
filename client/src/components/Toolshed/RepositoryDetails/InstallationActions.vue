@@ -1,31 +1,33 @@
 <template>
     <div>
-        <span class="status">
+        <span class="d-inline-block status">
             <span v-if="installingState" class="fa fa-spinner fa-spin" />
             {{ status }}
         </span>
-        <b-button
-            :disabled="!installState"
-            :class="buttonClass"
-            :variant="installState ? 'primary' : ''"
-            @click="onInstall">
-            Install
-        </b-button>
-        <b-button
-            :disabled="!uninstallState"
-            :class="buttonClass"
-            :variant="uninstallState ? 'danger' : ''"
-            @click="onUninstall">
-            Uninstall
-        </b-button>
-        <b-button
-            :disabled="!resetState"
-            :class="buttonClass"
-            :title="l('Reset Broken or Stuck Installation')"
-            :variant="resetState ? 'warning' : ''"
-            @click="onCancel">
-            Reset
-        </b-button>
+        <div class="d-inline-block">
+            <b-button
+                :disabled="!installState"
+                :class="buttonClass"
+                :variant="installState ? 'primary' : ''"
+                @click="onInstall">
+                Install
+            </b-button>
+            <b-button
+                :disabled="!uninstallState"
+                :class="buttonClass"
+                :variant="uninstallState ? 'danger' : ''"
+                @click="onUninstall">
+                Uninstall
+            </b-button>
+            <b-button
+                :disabled="!resetState"
+                :class="buttonClass"
+                :title="l('Reset Broken or Stuck Installation')"
+                :variant="resetState ? 'warning' : ''"
+                @click="onCancel">
+                Reset
+            </b-button>
+        </div>
     </div>
 </template>
 <script>
