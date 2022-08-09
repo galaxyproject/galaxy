@@ -1,8 +1,8 @@
 <template>
     <CurrentUser v-slot="{ user }">
         <UserHistories v-if="user" v-slot="{ histories, handlers, historiesLoading }" :user="user">
-            <div v-if="!historiesLoading && histories.length" id="histories" class="h-100 overflow-hidden">
-                <b-container class="mt-1 mb-3">
+            <div v-if="!historiesLoading && histories.length" id="histories" class="d-flex flex-column h-100">
+                <b-container>
                     <b-row>
                         <b-col>
                             <b-input-group>
@@ -52,20 +52,20 @@
                     </b-row>
                 </b-container>
 
-                <hr />
+                <hr class="w-100" />
 
-                <b-container fluid class="h-100 overflow-auto">
-                    <virtual-list
-                        class="row overflow-auto h-100"
-                        :data-key="'id'"
-                        :data-component="MultipleViewItem"
-                        :data-sources="histories"
-                        :direction="'horizontal'"
-                        :item-class="'col-1 d-flex'"
-                        :extra-props="{ handlers, onViewCollection }"
-                        :wrap-class="'row flex-row flex-nowrap h-100'">
-                    </virtual-list>
-                </b-container>
+                <virtual-list
+                    :data-key="'id'"
+                    :data-component="MultipleViewItem"
+                    :data-sources="histories"
+                    :direction="'horizontal'"
+                    :extra-props="{ handlers, onViewCollection }"
+                    :item-style="{ minWidth: '15rem', maxWidth: '15rem' }"
+                    item-class="d-flex mx-1"
+                    class="flex-grow-1"
+                    style="overflow: auto hidden"
+                    wrap-class="row container flex-nowrap h-100 m-0">
+                </virtual-list>
             </div>
             <b-alert v-else class="m-2" variant="info" show>
                 <LoadingSpan message="Loading Histories" />
