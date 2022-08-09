@@ -53,6 +53,23 @@
                     <b-dropdown-divider></b-dropdown-divider>
 
                     <b-dropdown-item
+                        :title="l('Resume all Paused Jobs in this History')"
+                        @click="iframeRedirect('/history/resume_paused_jobs?current=True')">
+                        <Icon fixed-width icon="play" class="mr-1" />
+                        <span v-localize>Resume Paused Jobs</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-item
+                        data-description="show structure"
+                        :title="l('Show Detailed Structure View of History')"
+                        @click="$router.push('/histories/show_structure')">
+                        <Icon fixed-width icon="code-branch" class="mr-1" />
+                        <span v-localize>Show Structure</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-divider></b-dropdown-divider>
+
+                    <b-dropdown-item
                         :disabled="currentUser.isAnonymous"
                         :title="userTitle('Copy History to a New History')"
                         v-b-modal:copy-history-modal>
@@ -65,13 +82,19 @@
                         <span v-localize>Delete this History</span>
                     </b-dropdown-item>
 
-                    <b-dropdown-divider></b-dropdown-divider>
+                    <b-dropdown-item
+                        :title="l('Export Citations for all Tools used in this History')"
+                        @click="$router.push(`/histories/citations?id=${history.id}`)">
+                        <Icon fixed-width icon="stream" class="mr-1" />
+                        <span v-localize>Export Tool Citations</span>
+                    </b-dropdown-item>
 
                     <b-dropdown-item
-                        :title="l('Resume all Paused Jobs in this History')"
-                        @click="iframeRedirect('/history/resume_paused_jobs?current=True')">
-                        <Icon fixed-width icon="play" class="mr-1" />
-                        <span v-localize>Resume Paused Jobs</span>
+                        data-description="export to file"
+                        :title="l('Export and Download History as a File')"
+                        @click="$router.push(`/histories/${history.id}/export`)">
+                        <Icon fixed-width icon="file-archive" class="mr-1" />
+                        <span v-localize>Export History to File</span>
                     </b-dropdown-item>
 
                     <b-dropdown-item
@@ -80,14 +103,6 @@
                         @click="iframeRedirect('/workflow/build_from_current_history')">
                         <Icon fixed-width icon="file-export" class="mr-1" />
                         <span v-localize>Extract Workflow</span>
-                    </b-dropdown-item>
-
-                    <b-dropdown-item
-                        data-description="show structure"
-                        :title="l('Show Detailed Structure View of History')"
-                        @click="$router.push('/histories/show_structure')">
-                        <Icon fixed-width icon="code-branch" class="mr-1" />
-                        <span v-localize>Show Structure</span>
                     </b-dropdown-item>
 
                     <b-dropdown-divider></b-dropdown-divider>
@@ -115,23 +130,6 @@
                         v-b-modal:history-privacy-modal>
                         <Icon fixed-width icon="lock" class="mr-1" />
                         <span v-localize>Make Private</span>
-                    </b-dropdown-item>
-
-                    <b-dropdown-divider></b-dropdown-divider>
-
-                    <b-dropdown-item
-                        :title="l('Export Citations for all Tools used in this History')"
-                        @click="$router.push(`/histories/citations?id=${history.id}`)">
-                        <Icon fixed-width icon="stream" class="mr-1" />
-                        <span v-localize>Export Tool Citations</span>
-                    </b-dropdown-item>
-
-                    <b-dropdown-item
-                        data-description="export to file"
-                        :title="l('Export and Download History as a File')"
-                        @click="$router.push(`/histories/${history.id}/export`)">
-                        <Icon fixed-width icon="file-archive" class="mr-1" />
-                        <span v-localize>Export History to File</span>
                     </b-dropdown-item>
 
                     <b-dropdown-divider></b-dropdown-divider>
