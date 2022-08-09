@@ -29,7 +29,7 @@
                             <span v-else :class="repoUnchecked" />
                         </template>
                         <template v-slot:cell(actions)="row">
-                            <InstallationButton
+                            <InstallationActions
                                 :status="row.item.status"
                                 @onInstall="setupRepository(row.item)"
                                 @onUninstall="uninstallRepository(row.item)" />
@@ -61,7 +61,7 @@ import { Services } from "../services";
 import ConfigProvider from "components/providers/ConfigProvider";
 import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
 import InstallationSettings from "./InstallationSettings.vue";
-import InstallationButton from "./InstallationButton.vue";
+import InstallationActions from "./InstallationActions.vue";
 import RepositoryTools from "./RepositoryTools.vue";
 
 Vue.use(BootstrapVue);
@@ -71,7 +71,7 @@ export default {
         ConfigProvider,
         ToolPanelViewProvider,
         InstallationSettings,
-        InstallationButton,
+        InstallationActions,
         RepositoryTools,
     },
     props: {
@@ -96,7 +96,7 @@ export default {
                 { key: "tools", label: "Tools and Versions" },
                 { key: "profile", label: "Requires" },
                 { key: "missing_test_components", label: "Tests" },
-                { key: "actions", label: "" },
+                { key: "actions", label: "", class: "toolshed-repo-actions" },
             ],
             showSettings: false,
             error: null,
@@ -195,3 +195,11 @@ export default {
     },
 };
 </script>
+
+<style lang="scss">
+// make actions take up less space
+.toolshed-repo-actions {
+    width: 15%;
+    min-width: 280px;
+}
+</style>
