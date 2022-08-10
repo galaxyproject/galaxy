@@ -610,7 +610,7 @@
                This may be a security or configuration issue, hence galaxy passes the `cleanenv`
                argument by default. You can turn this off by setting singularity_cleanenv to `false`.
           -->
-          <!-- <param id="singulairty_cleanenv">true</param> -->
+          <!-- <param id="singularity_cleanenv">true</param> -->
           <!-- Pass extra arguments to the singularity exec command not covered by the
                above options. -->
           <!-- <param id="singularity_run_extra_arguments"></param> -->
