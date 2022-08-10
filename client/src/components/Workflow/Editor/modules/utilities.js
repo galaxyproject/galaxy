@@ -1,34 +1,5 @@
 import _ from "underscore";
-import $ from "jquery";
-import { getAppRoot } from "onload/loadConfig";
-import _l from "utils/localization";
-import { loadWorkflow } from "./services";
-import { toSimple } from "./model";
-import { show_modal } from "layout/modal";
 import WorkflowIcons from "components/Workflow/icons";
-
-export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
-    const _copy_into_workflow_ajax = () => {
-        // Load workflow definition
-        workflow.onWorkflowMessage("Importing workflow", "progress");
-        loadWorkflow({ workflow, id, appendData: true }).then((data) => {
-            // Determine if any parameters were 'upgraded' and provide message
-            const insertedStateMessages = getStateUpgradeMessages(data);
-            workflow.onInsertedStateMessages(insertedStateMessages);
-        });
-    };
-    if (stepCount < 2) {
-        _copy_into_workflow_ajax();
-    } else {
-        // don't ruin the workflow by adding 50 steps unprompted.
-        show_modal(_l("Warning"), `This will copy ${stepCount} new steps into your workflow.`, {
-            Cancel: () => {
-                workflow.hideModal();
-            },
-            Copy: _copy_into_workflow_ajax,
-        });
-    }
-}
 
 export function getStateUpgradeMessages(data) {
     // Determine if any parameters were 'upgraded' and provide message
@@ -54,45 +25,6 @@ export function getStateUpgradeMessages(data) {
         }
     });
     return messages;
-}
-
-export function saveAs(workflow) {
-    var body = $(
-        '<form><label style="display:inline-block; width: 100%;">Save as name: </label><input type="text" id="workflow_rename" style="width: 80%;" autofocus/>' +
-            '<br><label style="display:inline-block; width: 100%;">Annotation: </label><input type="text" id="wf_annotation" style="width: 80%;" /></form>'
-    );
-    show_modal("Save As a New Workflow", body, {
-        OK: function () {
-            var rename_name =
-                $("#workflow_rename").val().length > 0 ? $("#workflow_rename").val() : `SavedAs_${workflow.name}`;
-            var rename_annotation = $("#wf_annotation").val().length > 0 ? $("#wf_annotation").val() : "";
-            $.ajax({
-                url: `${getAppRoot()}workflow/save_workflow_as`,
-                type: "POST",
-                data: {
-                    workflow_name: rename_name,
-                    workflow_annotation: rename_annotation,
-                    from_tool_form: true,
-                    workflow_data: () => {
-                        return JSON.stringify(toSimple(workflow));
-                    },
-                },
-            })
-                .done((id) => {
-                    workflow.onNavigate(`${getAppRoot()}workflows/edit?id=${id}`, true);
-                })
-                .fail((err) => {
-                    console.debug(err);
-                    workflow.onWorkflowError(
-                        "Saving this workflow failed. Please contact this site's administrator.",
-                        err
-                    );
-                });
-        },
-        Cancel: () => {
-            workflow.hideModal();
-        },
-    });
 }
 
 export function getCompatibleRecommendations(predChild, outputDatatypes, datatypesMapper) {
