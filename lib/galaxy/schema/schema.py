@@ -40,6 +40,7 @@ from galaxy.model import (
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
+    LibraryFolderDatabaseIdField,
     ModelClassField,
 )
 from galaxy.schema.types import (
@@ -188,6 +189,7 @@ class Model(BaseModel):
         json_encoders = {
             # This will ensure all IDs are encoded when serialized to JSON
             DecodedDatabaseIdField: lambda v: DecodedDatabaseIdField.encode(v),
+            LibraryFolderDatabaseIdField: lambda v: LibraryFolderDatabaseIdField.encode(v),
         }
 
 
