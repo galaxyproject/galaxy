@@ -11,7 +11,7 @@ class AnonymousHistoriesTestCase(SeleniumTestCase):
         self.assert_initial_history_panel_state_correct()
 
         if self.is_beta_history():
-            self.beta_history_element("editor toggle").assert_absent_or_hidden()
+            self.beta_history_element("editor toggle").assert_disabled()
         else:
             # Anonymous users cannot annotate or tag, these components should be absent.
             self.components.history_panel.tag_icon.assert_absent_or_hidden()

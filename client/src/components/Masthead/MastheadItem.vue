@@ -84,7 +84,7 @@ export default {
             return this.tab.menu;
         },
         popoverNote() {
-            return `Please <a href="${getAppRoot()}login">login or register</a> to use this feature.`;
+            return `Please <a href="${getAppRoot()}login">log in or register</a> to use this feature.`;
         },
         classes() {
             const isActiveTab = this.tab.id == this.activeTab;

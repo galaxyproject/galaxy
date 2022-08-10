@@ -1,12 +1,12 @@
 <template>
     <section class="m-3 details" data-description="edit details">
         <b-button
-            v-if="!currentUser.isAnonymous && writeable"
+            :disabled="currentUser.isAnonymous || !writeable"
             class="edit-button ml-1 float-right"
             data-description="editor toggle"
             size="sm"
             variant="link"
-            :title="'Edit' | l"
+            :title="editButtonTitle"
             :pressed="editing"
             @click="onToggle">
             <Icon icon="pen" />
@@ -91,6 +91,17 @@ export default {
     },
     computed: {
         ...mapGetters("user", ["currentUser"]),
+        editButtonTitle() {
+            if (this.currentUser?.isAnonymous) {
+                return this.l("Log in to Rename History");
+            } else {
+                if (this.writeable) {
+                    return this.l("Edit");
+                } else {
+                    return this.l("Not Editable");
+                }
+            }
+        },
     },
     methods: {
         onSave() {
