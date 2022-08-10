@@ -70,14 +70,14 @@
                     <b-dropdown-divider></b-dropdown-divider>
 
                     <b-dropdown-item
+                        v-b-modal:copy-history-modal
                         :disabled="currentUser.isAnonymous"
-                        :title="userTitle('Copy History to a New History')"
-                        v-b-modal:copy-history-modal>
+                        :title="userTitle('Copy History to a New History')">
                         <Icon fixed-width icon="copy" class="mr-1" />
                         <span v-localize>Copy this History</span>
                     </b-dropdown-item>
 
-                    <b-dropdown-item :title="l('Permanently Delete History')" v-b-modal:delete-history-modal>
+                    <b-dropdown-item v-b-modal:delete-history-modal :title="l('Permanently Delete History')">
                         <Icon fixed-width icon="trash" class="mr-1" />
                         <span v-localize>Delete this History</span>
                     </b-dropdown-item>
@@ -125,9 +125,9 @@
                     </b-dropdown-item>
 
                     <b-dropdown-item
+                        v-b-modal:history-privacy-modal
                         :disabled="currentUser.isAnonymous"
-                        :title="userTitle('Make this History Private')"
-                        v-b-modal:history-privacy-modal>
+                        :title="userTitle('Make this History Private')">
                         <Icon fixed-width icon="lock" class="mr-1" />
                         <span v-localize>Make Private</span>
                     </b-dropdown-item>
