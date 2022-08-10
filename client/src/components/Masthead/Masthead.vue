@@ -13,26 +13,30 @@
                 :tab="tab"
                 :active-tab="activeTab" />
             <masthead-item :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
+            <notification-bell />
         </b-navbar-nav>
         <quota-meter />
     </b-navbar>
 </template>
 
 <script>
-import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
+import { BNavbar, BNavbarBrand, BNavbarNav, BNavItem } from "bootstrap-vue";
 import MastheadItem from "./MastheadItem";
 import { fetchMenu } from "layout/menu";
 import { loadWebhookMenuItems } from "./_webhooks";
 import QuotaMeter from "./QuotaMeter.vue";
+import NotificationBell from "./NotificationBell.vue";
 
 export default {
     name: "Masthead",
     components: {
         BNavbar,
         BNavbarBrand,
+        BNavItem,
         BNavbarNav,
         MastheadItem,
         QuotaMeter,
+        NotificationBell,
     },
     props: {
         displayGalaxyBrand: {

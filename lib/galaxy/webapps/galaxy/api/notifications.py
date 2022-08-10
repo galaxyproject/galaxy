@@ -3,6 +3,7 @@ API operations on Notification objects.
 """
 
 import logging
+from typing import Optional
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.notification import NotificationManager
@@ -31,8 +32,8 @@ class FastAPINotifications:
     @router.get("/api/notifications", summary="Displays a collection (list) of notifications.")
     def index(
         self,
-        limit: int,
-        offset: int,
+        limit: Optional[int] = 20,
+        offset: Optional[int] = 0,
         trans: ProvidesAppContext = DependsOnTrans,
     ) -> NotificationListResponseModel:
         return self.manager.index(limit=limit, offset=offset)
