@@ -472,7 +472,7 @@ export default {
         copyIntoWorkflow(id = null) {
             // Load workflow definition
             this.onWorkflowMessage("Importing workflow", "progress");
-            loadWorkflow(this, id, null, true).then((data) => {
+            loadWorkflow({ workflow: this, id, appendData: true }).then((data) => {
                 // Determine if any parameters were 'upgraded' and provide message
                 const insertedStateMessages = getStateUpgradeMessages(data);
                 this.onInsertedStateMessages(insertedStateMessages);
