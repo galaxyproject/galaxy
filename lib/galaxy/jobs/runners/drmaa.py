@@ -205,6 +205,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                 job_wrapper.fail(fail_msg)
                 return
         else:
+            filename = self.store_jobtemplate(job_wrapper, jt)
             job_wrapper.change_ownership_for_run()
             # if user credentials are not available, use galaxy credentials (if permitted)
             allow_guests = asbool(job_wrapper.job_destination.params.get("allow_guests", False))
@@ -218,14 +219,11 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                     return
                 pwent = job_wrapper.galaxy_system_pwent
             log.debug(f"({galaxy_id_tag}) submitting with credentials: {pwent[0]} [uid: {pwent[2]}]")
-            filename = self.store_jobtemplate(job_wrapper, jt)
             self.userid = pwent[2]
             external_job_id = self.external_runjob(external_runjob_script, filename, pwent[2])
             if external_job_id is None:
                 job_wrapper.fail(f"({galaxy_id_tag}) could not queue job")
                 return
-            else:
-                os.unlink(filename)
         log.info(f"({galaxy_id_tag}) queued as {external_job_id}")
 
         # store runner information for tracking if Galaxy restarts
@@ -425,7 +423,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         """Stores the content of a DRMAA JobTemplate object in a file as a JSON string.
         Path is hard-coded, but it's no worse than other path in this module.
         Uses Galaxy's JobID, so file is expected to be unique."""
-        filename = f"{self.app.config.cluster_files_directory}/{job_wrapper.get_id_tag()}.jt_json"
+        filename = os.path.join(job_wrapper.working_directory, f"{job_wrapper.get_id_tag()}.jt_json")
         with open(filename, "w") as fp:
             json.dump(jt, fp)
         log.debug(f"({job_wrapper.job_id}) Job script for external submission is: {filename}")
