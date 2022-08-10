@@ -3,6 +3,7 @@ import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import MastheadItem from "./MastheadItem";
 import { loadWebhookMenuItems } from "./_webhooks";
 import QuotaMeter from "./QuotaMeter";
+import NotificationBell from "./NotificationBell.vue";
 import { withPrefix } from "utils/redirect";
 import { getActiveTab } from "./utilities";
 import { watch, ref, reactive } from "vue";
@@ -128,6 +129,7 @@ onMounted(() => {
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
             <masthead-item v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
+            <notification-bell />
         </b-navbar-nav>
         <quota-meter />
     </b-navbar>

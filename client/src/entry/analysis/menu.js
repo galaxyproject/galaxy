@@ -231,6 +231,11 @@ export function fetchMenu(options = {}) {
                     title: _l("Workflow Invocations"),
                     url: "/workflows/invocations",
                 },
+                {
+                    title: _l("Notifications"),
+                    url: "/notifications",
+                    target: "__use_router__",
+                },
             ],
         };
         if (Galaxy.config.visualizations_visible) {
