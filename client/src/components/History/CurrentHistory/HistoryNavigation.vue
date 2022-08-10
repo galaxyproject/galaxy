@@ -205,7 +205,7 @@ export default {
         switchToLegacyHistoryPanel,
         userTitle(title) {
             if (this.currentUser.isAnonymous) {
-                return this.l("Login to") + " " + this.l(title);
+                return this.l("Log in to") + " " + this.l(title);
             } else {
                 return this.l(title);
             }

@@ -3,7 +3,7 @@
         <transition name="fade">
             <b-alert v-localize :show="currentUser.isAnonymous" variant="warning">
                 As an anonymous user, unless you login or register, you will lose your current history after copying
-                this history. You can <a href="/user/login">login here</a> or <a href="/user/create">register here</a>.
+                this history. You can <a href="/user/login">log in here</a> or <a href="/user/create">register here</a>.
             </b-alert>
         </transition>
 

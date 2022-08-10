@@ -9,7 +9,7 @@
                 static
                 ok-only
                 hide-header>
-                <b-alert show variant="danger"> You must login to Galaxy to use this tour. </b-alert>
+                <b-alert show variant="danger"> You must log in to Galaxy to use this tour. </b-alert>
             </b-modal>
             <b-modal
                 v-else-if="adminRequired(user)"

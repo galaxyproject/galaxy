@@ -34,7 +34,7 @@ export default {
 
         tooltipText() {
             if (this.currentUser.isAnonymous) {
-                return this.l("Login to Favorite Tools");
+                return this.l("Log in to Favorite Tools");
             } else {
                 if (this.toggle) {
                     return this.l("Clear");

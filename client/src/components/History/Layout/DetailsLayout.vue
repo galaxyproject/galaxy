@@ -93,7 +93,7 @@ export default {
         ...mapGetters("user", ["currentUser"]),
         editButtonTitle() {
             if (this.currentUser?.isAnonymous) {
-                return this.l("Login to Rename History");
+                return this.l("Log in to Rename History");
             } else {
                 if (this.writeable) {
                     return this.l("Edit");
