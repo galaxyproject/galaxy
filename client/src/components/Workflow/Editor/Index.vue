@@ -14,11 +14,11 @@
             @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
         <b-modal
+            v-model="showSaveAsModal"
             title="Save As a New Workflow"
             ok-title="Save"
             cancel-title="Cancel"
-            @ok="doSaveAs"
-            v-model="showSaveAsModal">
+            @ok="doSaveAs">
             <b-form-group label="Name">
                 <b-form-input v-model="saveAsName" />
             </b-form-group>
