@@ -13,6 +13,19 @@
             @onRefactor="onRefactor"
             @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
+        <b-modal
+            title="Save As a New Workflow"
+            ok-title="Save"
+            cancel-title="Cancel"
+            @ok="doSaveAs"
+            v-model="showSaveAsModal">
+            <b-form-group label="Name">
+                <b-form-input v-model="saveAsName" />
+            </b-form-group>
+            <b-form-group label="Annotation">
+                <b-form-textarea v-model="saveAsAnnotation" />
+            </b-form-group>
+        </b-modal>
         <MarkdownEditor
             v-if="!isCanvas"
             :markdown-text="markdownText"
@@ -175,12 +188,13 @@
 </template>
 
 <script>
+import axios from "axios";
 import { LastQueue } from "utils/promise-queue";
 import { getDatatypesMapper } from "components/Datatypes";
-import { fromSimple } from "./modules/model";
+import { fromSimple, toSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
 import { getUntypedWorkflowParameters } from "./modules/parameters";
-import { getStateUpgradeMessages, saveAs } from "./modules/utilities";
+import { getStateUpgradeMessages } from "./modules/utilities";
 import WorkflowCanvas from "./modules/canvas";
 import WorkflowOptions from "./Options";
 import FormDefault from "./Forms/FormDefault";
@@ -273,6 +287,9 @@ export default {
             showInPanel: "attributes",
             isWheeled: false,
             canvasManager: null,
+            saveAsName: null,
+            saveAsAnnotation: null,
+            showSaveAsModal: false,
         };
     },
     computed: {
@@ -484,8 +501,30 @@ export default {
         onDownload() {
             window.location = `${getAppRoot()}api/workflows/${this.id}/download?format=json-download`;
         },
+        doSaveAs() {
+            const rename_name = this.saveAsName ?? `SavedAs_${this.name}`;
+            const rename_annotation = this.saveAsAnnotation ?? "";
+
+            // This is an old web controller endpoint that wants form data posted...
+            const formData = new FormData();
+            formData.append("workflow_name", rename_name);
+            formData.append("workflow_annotation", rename_annotation);
+            formData.append("from_tool_form", true);
+            formData.append("workflow_data", JSON.stringify(toSimple(this)));
+
+            axios
+                .post(`${getAppRoot()}workflow/save_workflow_as`, formData)
+                .then((response) => {
+                    this.onWorkflowMessage("Workflow saved as", "success");
+                    this.hideModal();
+                    this.onNavigate(`${getAppRoot()}workflow/editor?id=${response.data}`, true);
+                })
+                .catch((response) => {
+                    this.onWorkflowError("Saving workflow failed, please contact an administrator.");
+                });
+        },
         onSaveAs() {
-            saveAs(this);
+            this.showSaveAsModal = true;
         },
         onLayout() {
             this.canvasManager.drawOverview();
