@@ -426,7 +426,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         Path is hard-coded, but it's no worse than other path in this module.
         Uses Galaxy's JobID, so file is expected to be unique."""
         filename = f"{self.app.config.cluster_files_directory}/{job_wrapper.get_id_tag()}.jt_json"
-        with open(filename, "w+") as fp:
+        with open(filename, "w") as fp:
             json.dump(jt, fp)
         log.debug(f"({job_wrapper.job_id}) Job script for external submission is: {filename}")
         return filename
