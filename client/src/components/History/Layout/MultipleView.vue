@@ -1,6 +1,6 @@
 <template>
     <CurrentUser v-slot="{ user }">
-        <UserHistories v-if="user" v-slot="{ histories, handlers, historiesLoading }" :user="user">
+        <UserHistories v-if="user" v-slot="{ histories, handlers, historiesLoading, currentHistoryId }" :user="user">
             <div v-if="!historiesLoading && histories.length" id="histories" class="d-flex flex-column h-100">
                 <b-container>
                     <b-row>
@@ -59,7 +59,7 @@
                     :data-component="MultipleViewItem"
                     :data-sources="histories"
                     :direction="'horizontal'"
-                    :extra-props="{ handlers, onViewCollection }"
+                    :extra-props="{ handlers, onViewCollection, currentHistoryId }"
                     :item-style="{ minWidth: '15rem', maxWidth: '15rem' }"
                     item-class="d-flex mx-1"
                     class="flex-grow-1"
