@@ -224,6 +224,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             if external_job_id is None:
                 job_wrapper.fail(f"({galaxy_id_tag}) could not queue job")
                 return
+            else:
+                os.unlink(filename)
         log.info(f"({galaxy_id_tag}) queued as {external_job_id}")
 
         # store runner information for tracking if Galaxy restarts
