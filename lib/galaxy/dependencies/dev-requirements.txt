@@ -73,7 +73,7 @@ fs==2.4.16
 funcsigs==1.0.2
 future==0.18.2; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0")
 galaxy-sequence-utils==1.1.5
-gravity==0.13.1; python_version >= "3.6"
+gravity==0.13.2; python_version >= "3.6"
 greenlet==1.1.2; python_version >= "3" and python_full_version < "3.0.0" and (platform_machine == "aarch64" or platform_machine == "ppc64le" or platform_machine == "x86_64" or platform_machine == "amd64" or platform_machine == "AMD64" or platform_machine == "win32" or platform_machine == "WIN32") and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.6.0") and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.7") and (python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4.0" or python_version >= "3.6" and python_version < "4.0" and python_full_version >= "3.6.0") or python_version >= "3" and (platform_machine == "aarch64" or platform_machine == "ppc64le" or platform_machine == "x86_64" or platform_machine == "amd64" or platform_machine == "AMD64" or platform_machine == "win32" or platform_machine == "WIN32") and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.6.0") and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.7") and (python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4.0" or python_version >= "3.6" and python_version < "4.0" and python_full_version >= "3.6.0") and python_full_version >= "3.5.0"
 gunicorn==20.1.0; python_version >= "3.5"
 gxformat2==0.15.0
@@ -149,7 +149,7 @@ pygithub==1.55; python_version >= "3.6"
 pygments==2.12.0; python_full_version >= "3.6.3" and python_full_version < "4.0.0" and python_version >= "3.6" and (python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6")
 pyjwt==2.4.0; python_version >= "3.6"
 pykwalify==1.8.0
-pylibmagic==0.2.0; python_version >= "3.7"
+pylibmagic==0.2.1; python_version >= "3.7"
 pynacl==1.5.0; python_version >= "3.6"
 pyopenssl==22.0.0; python_version >= "3.7" and python_full_version < "3.0.0" and python_version < "4" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4") or python_full_version >= "3.6.0" and python_version < "4" and python_version >= "3.7" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4")
 pyparsing==3.0.9; python_full_version >= "3.6.8"
