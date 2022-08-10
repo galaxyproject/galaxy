@@ -677,7 +677,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     hours_between_check: int
     galaxy_data_manager_data_path: str
     use_remote_user: bool
-    cluster_files_directory: str
     preserve_python_environment: str
     email_from: str
     workflow_resource_params_mapper: str
@@ -843,7 +842,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             if len(ip.strip()) > 0
         ]
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
-        self.cluster_files_directory = self._in_root_dir(self.cluster_files_directory)
 
         # Fall back to legacy job_working_directory config variable if set.
         self.jobs_directory = self._in_data_dir(kwargs.get("jobs_directory", self.job_working_directory))

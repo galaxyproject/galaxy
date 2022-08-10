@@ -687,12 +687,6 @@ galaxy:
   # <data_dir>.
   #job_working_directory: jobs_directory
 
-  # If using a cluster, Galaxy will write job scripts and stdout/stderr
-  # to this directory.
-  # The value of this option will be resolved with respect to
-  # <data_dir>.
-  #cluster_files_directory: pbs
-
   # Mako templates are compiled as needed and cached for reuse, this
   # directory is used for the cache
   # The value of this option will be resolved with respect to
