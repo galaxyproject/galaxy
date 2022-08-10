@@ -1168,6 +1168,11 @@ class ModelFilterParser(HasAModelManager):
         allowed_ops = column_map["op"]
         if op not in allowed_ops:
             return None
+
+        if op == "contains":  # Ignore case (in a hacky way...)
+            op = "ilike"
+            val = f"%{val}%"
+
         converted_op = self._convert_op_string_to_fn(column, op)
         if not converted_op:
             return None
