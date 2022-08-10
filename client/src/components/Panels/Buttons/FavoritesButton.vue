@@ -15,7 +15,6 @@
 
 <script>
 import { mapGetters } from "vuex";
-import _l from "utils/localization";
 
 export default {
     name: "FavoritesButton",
