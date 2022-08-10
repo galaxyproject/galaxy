@@ -19,11 +19,13 @@ class ZipstreamWrapper:
                 allowZip64=True, compression=zipstream.ZIP_STORED if upstream_gzip else zipstream.ZIP_DEFLATED
             )
         self.files = []
+        self.directories = set()
         self.size = 0
 
     def response(self):
         if self.upstream_mod_zip:
-            yield "\n".join(self.files).encode()
+            dir_lines = [f"0 0 @directory {directory}" for directory in self.directories]
+            yield "\n".join(dir_lines + self.files).encode()
         else:
             yield from iter(self.archive)
 
@@ -49,6 +51,9 @@ class ZipstreamWrapper:
                 with open(path, "rb") as contents:
                     crc32 = hex(zlib.crc32(contents.read()))[2:]
             line = f"{crc32} {size} {quote(path)} {archive_name}"
+            head, tail = os.path.split(archive_name)
+            if head:
+                self.directories.add(head)
             self.files.append(line)
         else:
             self.size += size
