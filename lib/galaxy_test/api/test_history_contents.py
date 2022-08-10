@@ -838,6 +838,28 @@ class HistoryContentsApiTestCase(ApiTestCase):
         contents_response = self._get(f"histories/{history_id}/contents?types=dataset&types=dataset_collection").json()
         assert len(contents_response) == expected_num_datasets + expected_num_collections
 
+    def test_index_filter_by_name_ignores_case(self):
+        history_id = self.dataset_populator.new_history()
+        self.dataset_populator.new_dataset(history_id, name="AC")
+        self.dataset_populator.new_dataset(history_id, name="ac")
+        self.dataset_populator.new_dataset(history_id, name="Bc")
+
+        contains_text = "a"
+        contents_response = self._get(
+            f"histories/{history_id}/contents?v=dev&q=name-contains&qv={contains_text}"
+        ).json()
+        assert len(contents_response) == 2
+        contains_text = "b"
+        contents_response = self._get(
+            f"histories/{history_id}/contents?v=dev&q=name-contains&qv={contains_text}"
+        ).json()
+        assert len(contents_response) == 1
+        contains_text = "c"
+        contents_response = self._get(
+            f"histories/{history_id}/contents?v=dev&q=name-contains&qv={contains_text}"
+        ).json()
+        assert len(contents_response) == 3
+
     def test_elements_datatypes_field(self):
         history_id = self.dataset_populator.new_history()
         collection_name = "homogeneous"
