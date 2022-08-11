@@ -2179,13 +2179,13 @@ UserDescriptionField = Field(title="Description", description="Description of th
 # Group_Users -----------------------------------------------------------------
 
 
-class GroupUserModel(BaseModel):
-    id: EncodedDatabaseIdField = UserIdField
+class GroupUserModel(Model):
+    id: DecodedDatabaseIdField = UserIdField
     email: str = UserEmailField
     url: RelativeUrl = RelativeUrlField
 
 
-class GroupUserListModel(BaseModel):
+class GroupUserListModel(Model):
     __root__: List[GroupUserModel]
 
 
