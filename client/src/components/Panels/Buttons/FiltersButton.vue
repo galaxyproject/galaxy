@@ -5,6 +5,7 @@
         size="sm"
         variant="link"
         aria-label="Toolbox Filter Settings"
+        :disabled="currentUser.isAnonymous"
         :title="tooltip"
         @click="onFilter">
         <icon v-if="activeFilters === 0" :icon="['glr', 'filter']" />
@@ -13,15 +14,16 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { mapGetters } from "vuex";
 
 export default {
     name: "FiltersButton",
     computed: {
+        ...mapGetters("user", ["currentUser"]),
         activeFilters() {
-            const user = this.$store.state.user.currentUser;
+            const user = this.currentUser;
 
-            if (!user || !user.id) {
+            if (!user || !user.id || user.isAnonymous) {
                 return 0;
             }
 
@@ -33,12 +35,16 @@ export default {
             return [...labelFilters, ...sectionFilters, ...toolFilters].filter((s) => s !== "").length;
         },
         tooltip() {
+            if (this.currentUser.isAnonymous) {
+                return this.l("Log in to Filter Toolbox");
+            }
+
             if (this.activeFilters === 0) {
-                return _l("Toolbox Filter Settings");
+                return this.l("Toolbox Filter Settings");
             } else if (this.activeFilters === 1) {
-                return _l("1 Filter Active");
+                return this.l("1 Filter Active");
             } else {
-                return this.activeFilters + " " + _l("Filters Active");
+                return this.activeFilters + " " + this.l("Filters Active");
             }
         },
     },

@@ -6,7 +6,7 @@
                     <h4 v-localize class="m-1">Tools</h4>
                     <div class="panel-header-buttons">
                         <b-button-group>
-                            <filters-button v-if="isUser" />
+                            <filters-button />
                             <favorites-button :query="query" @onFavorites="onQuery" />
                             <panel-view-button
                                 v-if="panelViews && Object.keys(panelViews).length > 1"
@@ -127,10 +127,6 @@ export default {
             } else {
                 return filterTools(this.toolbox, this.results);
             }
-        },
-        isUser() {
-            const Galaxy = getGalaxyInstance();
-            return !!(Galaxy.user && Galaxy.user.id);
         },
         workflows() {
             return [
