@@ -79,7 +79,6 @@ class LibraryFolderDatabaseIdField(int, BaseDatabaseIdField):
         return f"F{cls.security.encode_id(v)}"
 
 
-# TODO: remove after replace
 class EncodedDatabaseIdField(str, BaseDatabaseIdField):
     @classmethod
     def validate(cls, v):
@@ -87,17 +86,12 @@ class EncodedDatabaseIdField(str, BaseDatabaseIdField):
             return cls(cls.security.encode_id(v))
         if not isinstance(v, str):
             raise TypeError("String required")
-        if v.startswith("F"):
-            # Library Folder ids start with an additional "F"
-            len_v = len(v) - 1
-        else:
-            len_v = len(v)
-        if len_v % ENCODED_ID_LENGTH_MULTIPLE:
-            raise ValueError("Invalid id length, must be multiple of 16")
-        m = ENCODED_DATABASE_ID_PATTERN.fullmatch(v.lower())
-        if not m:
-            raise ValueError("Invalid characters in encoded ID")
+        cls.ensure_valid(v)
         return cls(v)
+
+    @classmethod
+    def decode(cls, v) -> int:
+        return cls.security.decode_id(v)
 
 
 def ModelClassField(class_name: str) -> str:
