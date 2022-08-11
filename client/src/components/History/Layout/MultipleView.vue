@@ -1,7 +1,10 @@
 <template>
     <CurrentUser v-slot="{ user }">
         <UserHistories v-if="user" v-slot="{ histories, handlers, historiesLoading, currentHistoryId }" :user="user">
-            <div v-if="!historiesLoading && histories.length" id="histories" class="d-flex flex-column h-100">
+            <b-alert v-if="historiesLoading || histories.length === 0" class="m-2" variant="info" show>
+                <LoadingSpan message="Loading Histories" />
+            </b-alert>
+            <div v-else-if="histories.length" id="histories" class="d-flex flex-column h-100">
                 <b-container>
                     <b-row>
                         <b-col>
@@ -67,9 +70,6 @@
                     wrap-class="row container flex-nowrap h-100 m-0">
                 </virtual-list>
             </div>
-            <b-alert v-else class="m-2" variant="info" show>
-                <LoadingSpan message="Loading Histories" />
-            </b-alert>
         </UserHistories>
     </CurrentUser>
 </template>
