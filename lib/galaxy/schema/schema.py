@@ -2160,13 +2160,13 @@ RoleNameIdTuple = List[str]  # Tuple[str, DecodedDatabaseIdField]
 # Group_Roles -----------------------------------------------------------------
 
 
-class GroupRoleModel(BaseModel):
-    id: EncodedDatabaseIdField = RoleIdField
+class GroupRoleModel(Model):
+    id: DecodedDatabaseIdField = RoleIdField
     name: str = RoleNameField
     url: RelativeUrl = RelativeUrlField
 
 
-class GroupRoleListModel(BaseModel):
+class GroupRoleListModel(Model):
     __root__: List[GroupRoleModel]
 
 
