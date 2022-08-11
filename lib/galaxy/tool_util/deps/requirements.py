@@ -1,4 +1,5 @@
 import copy
+import os
 from typing import (
     Any,
     Callable,
@@ -186,8 +187,17 @@ class ContainerDescription:
         resolve_dependencies: bool = DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
         shell: str = DEFAULT_CONTAINER_SHELL,
     ) -> None:
-        # Force to lowercase because container image names must be lowercase
-        self.identifier = identifier.lower() if identifier else None
+        # Force to lowercase because container image names must be lowercase.
+        # Cached singularity images include the path on disk, so only lowercase
+        # the image identifier portion.
+        self.identifier = None
+        if identifier:
+            parts = identifier.rsplit(os.sep, 1)
+            parts[-1] = parts[-1].lower()
+            if len(parts) == 2:
+                self.identifier = f"{parts[0]}{os.sep}{parts[1]}"
+            else:
+                self.identifier = parts[0]
         self.type = type
         self.resolve_dependencies = resolve_dependencies
         self.shell = shell
