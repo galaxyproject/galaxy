@@ -859,6 +859,11 @@ class HistoryContentsApiTestCase(ApiTestCase):
             f"histories/{history_id}/contents?v=dev&q=name-contains&qv={contains_text}"
         ).json()
         assert len(contents_response) == 3
+        contains_text = "%"
+        contents_response = self._get(
+            f"histories/{history_id}/contents?v=dev&q=name-contains&qv={contains_text}"
+        ).json()
+        assert len(contents_response) == 0
 
     def test_elements_datatypes_field(self):
         history_id = self.dataset_populator.new_history()
