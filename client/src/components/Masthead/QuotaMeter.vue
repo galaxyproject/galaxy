@@ -4,7 +4,7 @@
             <b-progress :value="usage" :max="100" :variant="variant" />
             <span>{{ usingString + " " + usage.toFixed(0) }}%</span>
         </b-link>
-        <b-link v-else v-b-tooltip.hover.left :title="title" to="/storage">
+        <b-link v-else v-b-tooltip.hover.left to="/storage" class="ml-auto mr-auto quota-text" :title="title">
             {{ usingString + " " + totalUsageString }}
         </b-link>
     </div>
@@ -25,7 +25,10 @@ export default {
         ...mapGetters("config", ["config"]),
         ...mapGetters("user", ["currentUser"]),
         hasQuota() {
-            return this.config?.enable_quotas ?? false;
+            const quotasEnabled = this.config?.enable_quotas ?? false;
+            const quotaLimited = this.currentUser?.quota !== "unlimited" ?? false;
+
+            return quotasEnabled && quotaLimited;
         },
         usage() {
             if (this.hasQuota) {
@@ -62,6 +65,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@import "theme/blue.scss";
+
 .small-quota-meter {
     position: absolute;
     right: 0.8rem;
@@ -84,6 +89,11 @@ export default {
             line-height: 1em;
             pointer-events: none;
         }
+    }
+
+    .quota-text {
+        color: $brand-light;
+        text-decoration: none;
     }
 }
 </style>

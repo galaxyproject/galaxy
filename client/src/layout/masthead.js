@@ -1,6 +1,5 @@
 import $ from "jquery";
 import { WindowManager } from "layout/window-manager";
-import QuotaMeter from "mvc/user/user-quotameter";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 import Masthead from "../components/Masthead/Masthead";
@@ -17,16 +16,6 @@ export class MastheadState {
             Galaxy.frame = new WindowManager();
         }
         this.windowManager = Galaxy.frame;
-
-        // set up the quota meter (And fetch the current user data from trans)
-        // add quota meter to masthead
-        if (!Galaxy.quotaMeter) {
-            Galaxy.quotaMeter = new QuotaMeter.UserQuotaMeter({
-                model: Galaxy.user,
-                quotaUrl: Galaxy.config.quota_url,
-            });
-        }
-        this.quotaMeter = Galaxy.quotaMeter;
 
         // loop through beforeunload functions if the user attempts to unload the page
         $(window)

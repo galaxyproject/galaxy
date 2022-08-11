@@ -14,8 +14,7 @@
                 :active-tab="activeTab" />
             <masthead-item :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
         </b-navbar-nav>
-        <!--div ref="quota-meter-container" class="quota-meter-container" /-->
-        <quota-meter/>
+        <quota-meter />
     </b-navbar>
 </template>
 
@@ -94,10 +93,6 @@ export default {
     created() {
         this.baseTabs = fetchMenu(this.menuOptions);
         loadWebhookMenuItems(this.extensionTabs);
-    },
-    mounted() {
-        //this.mastheadState.quotaMeter.setElement(this.$refs["quota-meter-container"]);
-        //this.mastheadState.quotaMeter.render();
     },
     methods: {
         addItem(item) {
