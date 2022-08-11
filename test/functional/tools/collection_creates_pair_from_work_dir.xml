@@ -1,6 +1,6 @@
 <tool id="collection_creates_pair_from_work_dir" name="collection_creates_pair_from_work_dir" version="1.0.0">
     <command><![CDATA[
-echo 'Hello World ${input1}' > forward
+echo 'Hello World ${input1}' > _forward && ln -s _forward forward
     ]]></command>
     <inputs>
         <param name="input1" type="integer" value="42" />
