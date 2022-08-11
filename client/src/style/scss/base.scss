@@ -412,55 +412,6 @@ body {
     }
 }
 
-// ==== Quota meter styles ====
-
-.quota-meter-container {
-    position: absolute;
-    right: 0;
-    height: 32px;
-}
-
-.quota-meter {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    height: 16px;
-    width: 100px;
-}
-
-.quota-meter-bar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 16px;
-    background-color: $brand-primary;
-}
-
-.quota-meter-bar-warn {
-    background-color: $brand-warning;
-}
-
-.quota-meter-bar-error {
-    background-color: $brand-danger;
-}
-
-.quota-meter-text {
-    @extend .text-light;
-    position: absolute;
-    line-height: 16px;
-    left: 0;
-    width: 100px;
-    text-align: center;
-    z-index: 9001;
-    white-space: nowrap;
-    a {
-        @extend .text-dark;
-        font-size: 12px;
-        text-decoration: none;
-        display: block;
-    }
-}
-
 // ==== Tool form styles ====
 
 div.metadataForm {

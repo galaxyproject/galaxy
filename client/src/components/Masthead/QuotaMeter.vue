@@ -1,6 +1,6 @@
 <template>
     <current-user>
-        <div class="small-quota-meter d-flex align-items-center">
+        <div class="quota-meter d-flex align-items-center">
             <b-link v-if="!hasQuota" v-b-tooltip.hover.left to="/storage" class="ml-auto quota-text" :title="title">
                 {{ usingString + " " + totalUsageString }}
             </b-link>
@@ -73,7 +73,7 @@ export default {
 <style lang="scss" scoped>
 @import "theme/blue.scss";
 
-.small-quota-meter {
+.quota-meter {
     position: absolute;
     right: 0.8rem;
     width: 100px;
