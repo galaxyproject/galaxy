@@ -1,5 +1,5 @@
 <template>
-    <LayoutDetails
+    <DetailsLayout
         :name="history.name"
         :annotation="history.annotation"
         :tags="history.tags"
@@ -8,16 +8,16 @@
         <template v-slot:name>
             <h3 v-short="history.name || 'History'" data-description="name display" class="my-2" />
         </template>
-    </LayoutDetails>
+    </DetailsLayout>
 </template>
 
 <script>
 import short from "components/directives/v-short";
-import LayoutDetails from "components/History/Layout/LayoutDetails";
+import DetailsLayout from "components/History/Layout/DetailsLayout";
 
 export default {
     components: {
-        LayoutDetails,
+        DetailsLayout,
     },
     directives: {
         short,
