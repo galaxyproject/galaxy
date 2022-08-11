@@ -1,21 +1,27 @@
 <template>
-    <div class="small-quota-meter d-flex align-items-center">
-        <b-link v-if="hasQuota" v-b-tooltip.hover.left class="quota-progress" to="/storage" :title="title">
-            <b-progress :value="usage" :max="100" :variant="variant" />
-            <span>{{ usingString + " " + usage.toFixed(0) }}%</span>
-        </b-link>
-        <b-link v-else v-b-tooltip.hover.left to="/storage" class="ml-auto mr-auto quota-text" :title="title">
-            {{ usingString + " " + totalUsageString }}
-        </b-link>
-    </div>
+    <current-user>
+        <div class="small-quota-meter d-flex align-items-center">
+            <b-link v-if="!hasQuota" v-b-tooltip.hover.left to="/storage" class="ml-auto quota-text" :title="title">
+                {{ usingString + " " + totalUsageString }}
+            </b-link>
+            <b-link v-else v-b-tooltip.hover.left class="quota-progress" to="/storage" :title="title">
+                <b-progress :value="usage" :max="100" :variant="variant" />
+                <span>{{ usingString + " " + usage.toFixed(0) }}%</span>
+            </b-link>
+        </div>
+    </current-user>
 </template>
 
 <script>
 import { bytesToString } from "utils/utils";
+import CurrentUser from "components/providers/CurrentUser";
 import { mapGetters } from "vuex";
 
 export default {
     name: "QuotaMeter",
+    components: {
+        CurrentUser,
+    },
     data() {
         return {
             usingString: this.l("Using"),
