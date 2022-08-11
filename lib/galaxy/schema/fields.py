@@ -57,6 +57,10 @@ class DecodedDatabaseIdField(int, BaseDatabaseIdField):
             raise ValueError("Invalid characters in encoded ID")
         return cls(cls.security.decode_id(v))
 
+    @classmethod
+    def encode(cls, v):
+        return cls.security.encode_id(v)
+
 
 class EncodedDatabaseIdField(str, BaseDatabaseIdField):
     @classmethod
