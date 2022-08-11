@@ -194,10 +194,7 @@ class ContainerDescription:
         if identifier:
             parts = identifier.rsplit(os.sep, 1)
             parts[-1] = parts[-1].lower()
-            if len(parts) == 2:
-                self.identifier = f"{parts[0]}{os.sep}{parts[1]}"
-            else:
-                self.identifier = parts[0]
+            self.identifier = os.sep.join(parts)
         self.type = type
         self.resolve_dependencies = resolve_dependencies
         self.shell = shell
