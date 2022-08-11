@@ -2129,33 +2129,33 @@ RoleNameField = Field(title="Name", description="Name of the role")
 RoleDescriptionField = Field(title="Description", description="Description of the role")
 
 
-class BasicRoleModel(BaseModel):
-    id: EncodedDatabaseIdField = RoleIdField
+class BasicRoleModel(Model):
+    id: DecodedDatabaseIdField = RoleIdField
     name: str = RoleNameField
     type: str = Field(title="Type", description="Type or category of the role")
 
 
 class RoleModel(BasicRoleModel):
     description: Optional[str] = RoleDescriptionField
-    url: str = Field(title="URL", description="URL for the role")
+    url: RelativeUrl = RelativeUrlField
     model_class: str = ModelClassField("Role")
 
 
-class RoleDefinitionModel(BaseModel):
+class RoleDefinitionModel(Model):
     name: str = RoleNameField
     description: str = RoleDescriptionField
-    user_ids: Optional[List[EncodedDatabaseIdField]] = Field(title="User IDs", default=[])
-    group_ids: Optional[List[EncodedDatabaseIdField]] = Field(title="Group IDs", default=[])
+    user_ids: Optional[List[DecodedDatabaseIdField]] = Field(title="User IDs", default=[])
+    group_ids: Optional[List[DecodedDatabaseIdField]] = Field(title="Group IDs", default=[])
 
 
-class RoleListModel(BaseModel):
+class RoleListModel(Model):
     __root__: List[RoleModel]
 
 
 # The tuple should probably be another proper model instead?
 # Keeping it as a Tuple for now for backward compatibility
 # TODO: Use Tuple again when https://github.com/tiangolo/fastapi/issues/3665 is fixed upstream
-RoleNameIdTuple = List[str]  # Tuple[str, EncodedDatabaseIdField]
+RoleNameIdTuple = List[str]  # Tuple[str, DecodedDatabaseIdField]
 
 # Group_Roles -----------------------------------------------------------------
 
