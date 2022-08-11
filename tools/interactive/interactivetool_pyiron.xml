@@ -39,7 +39,6 @@
             cp '$__tool_directory__/default_notebook.ipynb' ./ipython_galaxy_notebook.ipynb &&
             jupyter trust ./ipython_galaxy_notebook.ipynb &&
             jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
-            cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
 
         #else:
             #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
@@ -49,9 +48,9 @@
             #if $mode.run_it:
                 jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
             #else:
+                ln -s ${cleaned_name}.ipynb ipython_galaxy_notebook.ipynb
                 jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
             #end if
-            cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
         #end if
     ]]>
     </command>
@@ -70,7 +69,7 @@
         <param name="input" type="data" optional="true" label="Include data into the environment"/>
     </inputs>
     <outputs>
-        <data name="jupyter_notebook" format="ipynb" label="PyIron Workbench"/>
+        <data name="jupyter_notebook" format="ipynb" from_work_dir="ipython_galaxy_notebook.ipynb" label="PyIron Workbench" />
     </outputs>
     <tests>
         <test expect_num_outputs="1">

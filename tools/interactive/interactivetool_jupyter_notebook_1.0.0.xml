@@ -105,11 +105,10 @@ except FileNotFoundError:
             #if $mode.run_it:
                 jupyter nbconvert --to notebook --execute --output '${output_notebook_name}' --allow-errors '${cleaned_name}' &&
             #else:
-                #set $output_notebook_name = $cleaned_name
+                ln -s '$cleaned_name' '${output_notebook_name}'
                 jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
             #end if
         #end if
-        cp '${output_notebook_name}' '$jupyter_notebook'
     ]]>
     </command>
     <inputs>
@@ -227,7 +226,7 @@ except FileNotFoundError:
         </repeat>
     </inputs>
     <outputs>
-        <data name="jupyter_notebook" format="ipynb" label="Executed JupyTool Notebook"/>
+        <data name="jupyter_notebook" format="ipynb" label="Executed JupyTool Notebook" from_work_dir="ipython_galaxy_notebook.ipynb" />
         <data name="output_dataset" format="data">
             <discover_datasets pattern="__designation_and_ext__" directory="jupyter/outputs" visible="true" assign_primary_output="true"/>
         </data>

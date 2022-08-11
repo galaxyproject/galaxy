@@ -37,7 +37,6 @@
             cp '$__tool_directory__/default_notebook.ipynb' ./ipython_galaxy_notebook.ipynb &&
             jupyter trust ./ipython_galaxy_notebook.ipynb &&
             jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
-            cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
 
         #else:
             #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($mode.ipynb.element_identifier))
@@ -48,9 +47,9 @@
             #if $mode.run_it:
                 jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
             #else:
+                ln -s ./data/${cleaned_name} ipython_galaxy_notebook.ipynb
                 jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
             #end if
-            cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
         #end if
 
     ]]>
@@ -73,7 +72,7 @@
 
     </inputs>
     <outputs>
-        <data name="jupyter_notebook" format="ipynb" label="Executed Climate Notebook"></data>
+        <data name="jupyter_notebook" format="ipynb" label="Executed Climate Notebook" from_work_dir="ipython_galaxy_notebook.ipynb"></data>
     </outputs>
     <tests>
         <test expect_num_outputs="1">
