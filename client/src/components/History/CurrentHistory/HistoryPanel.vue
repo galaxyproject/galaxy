@@ -78,7 +78,7 @@
                     </section>
                     <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
                         <div>
-                            <div v-if="itemsLoaded && itemsLoaded.length == 0 && loading">
+                            <div v-if="loading && !itemsLoaded">
                                 <b-alert class="m-2" variant="info" show>
                                     <LoadingSpan message="Loading History" />
                                 </b-alert>
@@ -86,7 +86,7 @@
                             <b-alert v-else-if="isProcessing" class="m-2" variant="info" show>
                                 <LoadingSpan message="Processing operation" />
                             </b-alert>
-                            <div v-else-if="totalItemsInQuery == 0">
+                            <div v-else-if="itemsLoaded.length === 0">
                                 <HistoryEmpty v-if="queryDefault" class="m-2" />
                                 <b-alert v-else class="m-2" variant="info" show>
                                     No data found for selected filter.
