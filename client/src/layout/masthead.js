@@ -1,4 +1,3 @@
-import $ from "jquery";
 import { WindowManager } from "layout/window-manager";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
@@ -16,20 +15,6 @@ export class MastheadState {
             Galaxy.frame = new WindowManager();
         }
         this.windowManager = Galaxy.frame;
-
-        // loop through beforeunload functions if the user attempts to unload the page
-        $(window)
-            .off()
-            .on("click", (e) => {
-                const $download_link = $(e.target).closest("a[download]");
-                if ($download_link.length == 1) {
-                    if ($("iframe[id=download]").length === 0) {
-                        $("body").append($("<iframe/>").attr("id", "download").hide());
-                    }
-                    $("iframe[id=download]").attr("src", $download_link.attr("href"));
-                    e.preventDefault();
-                }
-            });
     }
 }
 
