@@ -63,7 +63,7 @@
                         rows="3" />
 
                     <div v-else-if="row.item.deleted && includeDeleted" class="deleted-item">{{ row.item.name }}</div>
-                    <b-link v-else :to="{ path: `libraries/folders/${row.item.root_folder_id}` }">{{
+                    <b-link v-else :to="{ path: `/libraries/folders/${row.item.root_folder_id}` }">{{
                         row.item.name
                     }}</b-link>
                 </template>
@@ -125,7 +125,7 @@
                         size="sm"
                         class="lib-btn permission_library_btn"
                         :title="'Permissions of ' + row.item.name"
-                        :to="{ path: `/${row.item.id}/permissions` }">
+                        :to="{ path: `/libraries/${row.item.id}/permissions` }">
                         <font-awesome-icon icon="users" />
                         Manage
                     </b-button>
