@@ -55,7 +55,11 @@ export default {
                 details = this.l("Click for details.");
             }
 
-            return this.usingString + " " + this.totalUsageString + ". " + details;
+            if (this.hasQuota) {
+                return this.usingString + " " + this.totalUsageString + ". " + details;
+            } else {
+                return details;
+            }
         },
         variant() {
             if (!this.hasQuota || this.usage < 80) {
