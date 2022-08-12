@@ -441,6 +441,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             run_extra_arguments=self.prop("run_extra_arguments", singularity_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
             guest_ports=self.tool_info.guest_ports,
             container_name=self.container_name,
+            cleanenv=asbool(self.prop("cleanenv", singularity_util.DEFAULT_CLEANENV)),
             **self.get_singularity_target_kwds(),
         )
         return run_command

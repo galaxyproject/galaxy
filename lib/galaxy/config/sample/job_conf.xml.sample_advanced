@@ -606,6 +606,11 @@
           <!-- Following option can be used to tweak sudo command used by
                default. -->
           <!-- <param id="singularity_sudo_cmd">/usr/bin/sudo -extra_param</param> -->
+          <!-- Singularity by default passes most host environment variables into the container.
+               This may be a security or configuration issue, hence galaxy passes the `cleanenv`
+               argument by default. You can turn this off by setting singularity_cleanenv to `false`.
+          -->
+          <!-- <param id="singularity_cleanenv">true</param> -->
           <!-- Pass extra arguments to the singularity exec command not covered by the
                above options. -->
           <!-- <param id="singularity_run_extra_arguments"></param> -->

@@ -1,4 +1,5 @@
 import abc
+import logging
 import os
 from typing import (
     Set,
@@ -11,6 +12,8 @@ from galaxy.datatypes.sniff import (
     iter_headers,
 )
 from .tabular import Tabular
+
+log = logging.getLogger(__name__)
 
 
 @build_sniff_from_prefix
@@ -600,4 +603,6 @@ class AGPGapLine(AGPLine):
                 )
         else:
             if "na" in all_evidence:
-                raise AGPError(self.fname, self.line_number, "'na' is invalid linkage evidence when asserting linkage")
+                log.warning(
+                    AGPError(self.fname, self.line_number, "'na' is invalid linkage evidence when asserting linkage")
+                )

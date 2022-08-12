@@ -442,7 +442,7 @@ galaxy:
 Galaxy creates zip archives when downloading multiple datasets from a history or a dataset library.
 While this works fine for small datasets and few users, nginx can handle the creation of zip archives
 more efficiently using [mod-zip](https://www.nginx.com/resources/wiki/modules/zip/).
-To use this feature, install nginx with mod-zip enabled, provide the file locations from which
+To use this feature, install nginx with mod-zip enabled (requires <https://github.com/evanmiller/mod_zip/commit/51cf45d3e9f51e02224af017b235d1d30fbf28fb> or a newer), provide the file locations from which
 nginx should serve files and edit `galaxy.yml` and make the following changes before restarting Galaxy:
 
 ```yaml
