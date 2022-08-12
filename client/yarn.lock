@@ -10258,10 +10258,10 @@ wildcard@^2.0.0:
   resolved "https://registry.yarnpkg.com/wildcard/-/wildcard-2.0.0.tgz#a77d20e5200c6faaac979e4b3aadc7b3dd7f8fec"
   integrity sha512-JcKqAHLPxcdb9KM49dufGXn2x3ssnfjbcaQdLlfZsL9rH9wgDQjUtDxbo8NE0F6SFvydeu1VhZe7hZuHsB2/pw==
 
-winbox@^0.2.1:
-  version "0.2.3"
-  resolved "https://registry.yarnpkg.com/winbox/-/winbox-0.2.3.tgz#530ed60264029e7ddf9a27297dd78d2b9e3c9354"
-  integrity sha512-RbCxGzAe11BRw4sRPq1SjPwNP+SonFQmA0TSjz2rKCP0L+WPC6UQTMNNmdWBwuSsFqkwhtHhJaOLT8mJFoCvbw==
+winbox@^0.2.4:
+  version "0.2.4"
+  resolved "https://registry.yarnpkg.com/winbox/-/winbox-0.2.4.tgz#b9cbb475e663e4d162ae4570e38238f78ccef205"
+  integrity sha512-roEuUNY6iCOT9gF7J86D7bG8EeeH3U5073iCnWi1fgK/vkHTxFB9RJb4XKV65Hbbi0MCEtmb8B9zxS8+iumuJA==
 
 word-wrap@^1.2.3, word-wrap@~1.2.3:
   version "1.2.3"
