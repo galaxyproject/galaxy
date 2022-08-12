@@ -1,9 +1,12 @@
+import Vuex from "vuex";
 import { default as Masthead } from "./Masthead.vue";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import { WindowManager } from "layout/window-manager";
 import { fetchMenu } from "layout/menu";
 import { loadWebhookMenuItems } from "./_webhooks";
+import { userStore } from "store/userStore";
+import { configStore } from "store/configStore";
 
 jest.mock("app");
 jest.mock("layout/menu");
@@ -13,9 +16,10 @@ describe("Masthead.vue", () => {
     let wrapper;
     let localVue;
     let windowManager;
-    let quotaRendered;
-    let quotaEl;
     let tabs;
+    let store;
+    let state;
+    let actions;
 
     function stubFetchMenu() {
         return tabs;
@@ -35,17 +39,25 @@ describe("Masthead.vue", () => {
 
     beforeEach(() => {
         localVue = getLocalVue();
-        quotaRendered = false;
-        quotaEl = null;
 
-        const quotaMeter = {
-            setElement: function (el) {
-                quotaEl = el;
+        store = new Vuex.Store({
+            modules: {
+                user: {
+                    state,
+                    actions: {
+                        loadUser: jest.fn(),
+                    },
+                    getters: userStore.getters,
+                    namespaced: true,
+                },
+                config: {
+                    state,
+                    actions,
+                    getters: configStore.getters,
+                    namespaced: true,
+                },
             },
-            render: function () {
-                quotaRendered = true;
-            },
-        };
+        });
 
         tabs = [
             // Main Analysis Tab..
@@ -78,7 +90,6 @@ describe("Masthead.vue", () => {
         };
         windowManager = new WindowManager({});
         const mastheadState = {
-            quotaMeter,
             windowManager,
         };
 
@@ -87,6 +98,7 @@ describe("Masthead.vue", () => {
                 mastheadState,
                 initialActiveTab,
             },
+            store,
             localVue,
         });
     });
@@ -97,11 +109,6 @@ describe("Masthead.vue", () => {
         expect(wrapper.find(".navbar-brand-title").text()).toBe("Galaxy Foo");
         await wrapper.setProps({ displayGalaxyBrand: false });
         expect(wrapper.find(".navbar-brand-title").text()).toBe("Foo");
-    });
-
-    it("set quota element and renders it", () => {
-        expect(quotaEl).not.toBeNull();
-        expect(quotaRendered).toBe(true);
     });
 
     it("should render simple tab item links", () => {
