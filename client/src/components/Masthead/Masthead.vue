@@ -14,7 +14,7 @@
                 :active-tab="activeTab" />
             <masthead-item :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
         </b-navbar-nav>
-        <div ref="quota-meter-container" class="quota-meter-container" />
+        <quota-meter />
     </b-navbar>
 </template>
 
@@ -23,6 +23,7 @@ import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import MastheadItem from "./MastheadItem";
 import { fetchMenu } from "layout/menu";
 import { loadWebhookMenuItems } from "./_webhooks";
+import QuotaMeter from "./QuotaMeter.vue";
 
 export default {
     name: "Masthead",
@@ -31,6 +32,7 @@ export default {
         BNavbarBrand,
         BNavbarNav,
         MastheadItem,
+        QuotaMeter,
     },
     props: {
         displayGalaxyBrand: {
@@ -91,10 +93,6 @@ export default {
     created() {
         this.baseTabs = fetchMenu(this.menuOptions);
         loadWebhookMenuItems(this.extensionTabs);
-    },
-    mounted() {
-        this.mastheadState.quotaMeter.setElement(this.$refs["quota-meter-container"]);
-        this.mastheadState.quotaMeter.render();
     },
     methods: {
         addItem(item) {
