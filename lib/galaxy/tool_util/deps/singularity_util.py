@@ -3,6 +3,7 @@ import shlex
 
 DEFAULT_WORKING_DIRECTORY = None
 DEFAULT_SINGULARITY_COMMAND = "singularity"
+DEFAULT_CLEANENV = True
 DEFAULT_SUDO = False
 DEFAULT_SUDO_COMMAND = "sudo"
 DEFAULT_RUN_EXTRA_ARGUMENTS = None
@@ -58,6 +59,7 @@ def build_singularity_run_command(
     sudo_cmd=DEFAULT_SUDO_COMMAND,
     guest_ports=False,
     container_name=None,
+    cleanenv=DEFAULT_CLEANENV,
 ):
     volumes = volumes or []
     env = env or []
@@ -73,6 +75,8 @@ def build_singularity_run_command(
         sudo=sudo,
         sudo_cmd=sudo_cmd,
     )
+    if cleanenv:
+        command_parts.append("--cleanenv")
     command_parts.append("-s")
     command_parts.append("exec")
     for volume in volumes:
