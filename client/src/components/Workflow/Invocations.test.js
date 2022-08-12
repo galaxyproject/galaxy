@@ -96,6 +96,9 @@ describe("Invocations.vue", () => {
                 propsData,
                 computed: {
                     getWorkflowNameByInstanceId: (state) => (id) => "workflow name",
+                    getStoredWorkflowIdByInstanceId: (state) => (id) => {
+                        return "workflowId";
+                    },
                     getWorkflowByInstanceId: (state) => (id) => {
                         return { id: "workflowId" };
                     },
