@@ -420,9 +420,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             self.monitor_queue.put(ajs)
 
     def store_jobtemplate(self, job_wrapper, jt):
-        """Stores the content of a DRMAA JobTemplate object in a file as a JSON string.
-        Path is hard-coded, but it's no worse than other path in this module.
-        Uses Galaxy's JobID, so file is expected to be unique."""
+        """Stores the content of a DRMAA JobTemplate object in a file as a JSON string."""
         filename = os.path.join(job_wrapper.working_directory, f"{job_wrapper.get_id_tag()}.jt_json")
         with open(filename, "w") as fp:
             json.dump(jt, fp)
