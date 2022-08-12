@@ -438,7 +438,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
 class SeleniumTestCase(FunctionalTestCase, TestWithSeleniumMixin):
     galaxy_driver_class = GalaxyTestDriver
     ACCEPTABLE_LOG_LEVELS = ("DEBUG", "INFO", "WARNING")
-    IGNORE_ERRORS = ("favicon", "xkcd", "phdcomics")
+    IGNORE_ERRORS = ("favicon", "xkcd", "phdcomics", "Failed to load resource")
 
     def setUp(self):
         super().setUp()
