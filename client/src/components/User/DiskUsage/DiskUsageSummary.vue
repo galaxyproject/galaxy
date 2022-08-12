@@ -82,7 +82,9 @@ export default {
         },
         async onRefresh() {
             await this.requestDiskUsageRecalculation();
-            this.displayRecalculationForSeconds(30);
+            await this.displayRecalculationForSeconds(30);
+
+            this.$store.dispatch("user/loadUser");
         },
         async requestDiskUsageRecalculation() {
             try {
@@ -91,12 +93,16 @@ export default {
                 rethrowSimple(e);
             }
         },
-        displayRecalculationForSeconds(seconds) {
-            this.isRecalculating = true;
-            this.dismissCountDown = seconds;
-            setTimeout(() => {
-                this.isRecalculating = false;
-            }, seconds * 1000);
+        async displayRecalculationForSeconds(seconds) {
+            return new Promise((resolve) => {
+                this.isRecalculating = true;
+                this.dismissCountDown = seconds;
+
+                setTimeout(() => {
+                    this.isRecalculating = false;
+                    resolve();
+                }, seconds * 1000);
+            });
         },
         countDownChanged(dismissCountDown) {
             this.dismissCountDown = dismissCountDown;
