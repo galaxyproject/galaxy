@@ -1,6 +1,6 @@
 <template>
     <b-breadcrumb>
-        <b-breadcrumb-item title="Return to the list of libraries" :to="{ path: `/` }"> Libraries </b-breadcrumb-item>
+        <b-breadcrumb-item title="Return to the list of libraries" :to="{ path: `/libraries` }"> Libraries </b-breadcrumb-item>
         <template v-for="path_item in full_path">
             <b-breadcrumb-item
                 :key="path_item[0]"
