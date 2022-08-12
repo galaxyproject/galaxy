@@ -2,6 +2,7 @@
 This module *does not* contain API routes. It exclusively contains dependencies to be used in FastAPI routes
 """
 import inspect
+from enum import Enum
 from typing import (
     Any,
     AsyncGenerator,
@@ -245,25 +246,89 @@ class BaseGalaxyAPIController(BaseAPIController):
         super().__init__(app)
 
 
+class RestVerb(str, Enum):
+    get = "GET"
+    post = "POST"
+    put = "PUT"
+    patch = "PATCH"
+    delete = "DELETE"
+    options = "OPTIONS"
+
+
 class Router(InferringRouter):
-    """A FastAPI Inferring Router tailored to Galaxy.
-    """
+    """A FastAPI Inferring Router tailored to Galaxy."""
+
+    def wrap_with_alias(self, verb: RestVerb, *args, alias: Optional[str] = None, **kwd):
+        """
+        Wraps FastAPI methods with additional alias keyword and require_admin handling.
+
+        @router.get("/api/thing", alias="/api/deprecated_thing") will then create
+        routes for /api/thing and /api/deprecated_thing.
+        """
+        kwd = self._handle_galaxy_kwd(kwd)
+        include_in_schema = kwd.pop("include_in_schema", True)
+
+        def decorate_route(route, include_in_schema=include_in_schema):
+
+            # Decorator solely exists to allow passing `route_class_override` to add_api_route
+            def decorated_route(func):
+                self.add_api_route(
+                    route,
+                    endpoint=func,
+                    methods=[verb],
+                    include_in_schema=include_in_schema,
+                    **kwd,
+                )
+                return func
+
+            return decorated_route
+
+        routes = []
+        for path in self.construct_aliases(args[0], alias):
+            if path != "/" and path.endswith("/"):
+                routes.append(decorate_route(path, include_in_schema=False))
+            else:
+                routes.append(decorate_route(path))
+
+        def dec(f):
+            for route in routes:
+                f = route(f)
+            return f
+
+        return dec
+
+    @staticmethod
+    def construct_aliases(path: str, alias: Optional[str]):
+        yield path
+        if path != "/" and not path.endswith("/"):
+            yield f"{path}/"
+        if alias:
+            yield alias
+            if not alias == "/" and not alias.endswith("/"):
+                yield f"{alias}/"
 
     def get(self, *args, **kwd):
         """Extend FastAPI.get to accept a require_admin Galaxy flag."""
-        return super().get(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(RestVerb.get, *args, **kwd)
+
+    def patch(self, *args, **kwd):
+        """Extend FastAPI.patch to accept a require_admin Galaxy flag."""
+        return self.wrap_with_alias(RestVerb.patch, *args, **kwd)
 
     def put(self, *args, **kwd):
         """Extend FastAPI.put to accept a require_admin Galaxy flag."""
-        return super().put(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(RestVerb.put, *args, **kwd)
 
     def post(self, *args, **kwd):
         """Extend FastAPI.post to accept a require_admin Galaxy flag."""
-        return super().post(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(RestVerb.post, *args, **kwd)
 
     def delete(self, *args, **kwd):
         """Extend FastAPI.delete to accept a require_admin Galaxy flag."""
-        return super().delete(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(RestVerb.delete, *args, **kwd)
+
+    def options(self, *args, **kwd):
+        return self.wrap_with_alias(RestVerb.options, *args, **kwd)
 
     def _handle_galaxy_kwd(self, kwd):
         require_admin = kwd.pop("require_admin", False)
@@ -272,6 +337,7 @@ class Router(InferringRouter):
                 kwd["dependencies"].append(AdminUserRequired)
             else:
                 kwd["dependencies"] = [AdminUserRequired]
+
         return kwd
 
     @property
