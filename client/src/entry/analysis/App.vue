@@ -1,5 +1,5 @@
 <template>
-    <body scroll="no" class="full-content">
+    <div id="app">
         <div id="everything">
             <div id="background" />
             <Masthead
@@ -34,7 +34,7 @@
             <router-view @update:confirmation="confirmation = $event" />
         </div>
         <div id="dd-helper" />
-    </body>
+    </div>
 </template>
 <script>
 import { MastheadState } from "layout/masthead";

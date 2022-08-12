@@ -29,7 +29,7 @@ import { mapGetters } from "vuex";
 import { WorkflowInvocationState } from "components/WorkflowInvocationState";
 import Webhooks from "mvc/webhooks";
 import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
+import { refreshContentsWrapper } from "utils/data";
 
 export default {
     components: {
@@ -44,11 +44,6 @@ export default {
             type: Array,
             required: true,
         },
-    },
-    data() {
-        return {
-            refreshHistoryTimeout: null,
-        };
     },
     computed: {
         ...mapGetters("history", ["currentHistoryId"]),
@@ -78,26 +73,7 @@ export default {
             toolId: null,
             toolVersion: null,
         });
-        this._refreshHistory();
-    },
-    methods: {
-        _refreshHistory() {
-            // remove when disabling backbone history
-            const Galaxy = getGalaxyInstance();
-            var history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
-            if (this.refreshHistoryTimeout) {
-                window.clearTimeout(this.refreshHistoryTimeout);
-            }
-            if (history && history.refresh) {
-                history.refresh().success(() => {
-                    if (history.numOfUnfinishedShownContents() === 0) {
-                        this.refreshHistoryTimeout = window.setTimeout(() => {
-                            this._refreshHistory();
-                        }, history.UPDATE_DELAY);
-                    }
-                });
-            }
-        },
+        refreshContentsWrapper();
     },
 };
 </script>
