@@ -196,7 +196,7 @@ class Model(BaseModel):
 class UserModel(Model):
     """User in a transaction context."""
 
-    id: EncodedDatabaseIdField = Field(title="ID", description="User ID")
+    id: DecodedDatabaseIdField = Field(title="ID", description="User ID")
     username: str = Field(title="Username", description="User username")
     email: str = Field(title="Email", description="User email")
     active: bool = Field(title="Active", description="User is active")
@@ -205,11 +205,11 @@ class UserModel(Model):
     model_class: str = ModelClassField(USER_MODEL_CLASS_NAME)
 
 
-class GroupModel(BaseModel):
+class GroupModel(Model):
     """User group model"""
 
     model_class: str = ModelClassField(GROUP_MODEL_CLASS_NAME)
-    id: EncodedDatabaseIdField = Field(
+    id: DecodedDatabaseIdField = Field(
         ...,  # Required
         title="ID",
         description="Encoded group ID",
