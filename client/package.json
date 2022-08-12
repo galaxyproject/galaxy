@@ -39,7 +39,7 @@
     "backbone": "1.4.1",
     "bootstrap": "4.6",
     "bootstrap-vue": "^2.21.2",
-    "citation-js": "^0.5.5",
+    "citation-js": "^0.6.4",
     "core-js": "^3.21.0",
     "csv-parse": "^5.3.0",
     "d3": "3",
