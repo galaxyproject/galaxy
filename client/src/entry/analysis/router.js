@@ -8,6 +8,9 @@ import Analysis from "entry/analysis/modules/Analysis";
 import Home from "entry/analysis/modules/Home";
 import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
 
+// routes
+import LibraryRoutes from "entry/analysis/routes/library-routes";
+
 // child components
 import Citations from "components/Citation/Citations";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
@@ -26,7 +29,6 @@ import HistoryView from "components/HistoryView";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
-import Libraries from "components/Libraries";
 import NewUserConfirmation from "components/login/NewUserConfirmation";
 import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
 import Sharing from "components/Sharing/Sharing";
@@ -200,10 +202,6 @@ export function getRouter(Galaxy) {
                         path: "jobs/:jobId/view",
                         component: JobDetails,
                         props: true,
-                    },
-                    {
-                        path: "libraries",
-                        component: Libraries,
                     },
                     {
                         path: "login/confirm",
@@ -416,6 +414,7 @@ export function getRouter(Galaxy) {
                 ],
             },
             { path: "/workflows/edit", component: WorkflowEditorModule },
+            ...LibraryRoutes,
         ],
     });
 }

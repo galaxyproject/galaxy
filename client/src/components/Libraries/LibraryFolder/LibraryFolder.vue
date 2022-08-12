@@ -510,9 +510,9 @@ export default {
         },
         navigateToPermission(element) {
             if (element.type === "file") {
-                return `/folders/${this.folder_id}/dataset/${element.id}/permissions`;
+                return `/libraries/folders/${this.folder_id}/dataset/${element.id}/permissions`;
             } else if (element.type === "folder") {
-                return `/folders/${element.id}/permissions`;
+                return `/libraries/folders/${element.id}/permissions`;
             }
         },
         getMessage(element) {

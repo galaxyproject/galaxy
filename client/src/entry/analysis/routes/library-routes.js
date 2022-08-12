@@ -1,0 +1,47 @@
+import LibrariesList from "components/Libraries/LibrariesList";
+import LibraryFolder from "components/Libraries/LibraryFolder/LibraryFolder";
+import LibraryFolderDatasetPermissions from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryFolderDatasetPermissions";
+import LibraryFolderPermissions from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryFolderPermissions";
+import LibraryDataset from "components/Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset";
+import LibraryPermissions from "components/Libraries/LibraryPermissions/LibraryPermissions";
+
+export default [
+    { path: "/libraries", component: LibrariesList },
+    {
+        path: "/libraries/:library_id/permissions",
+        name: "LibraryPermissions",
+        component: LibraryPermissions,
+        props: true,
+    },
+    { path: "/libraries/folders/:folder_id", redirect: "/libraries/folders/:folder_id/page/1" },
+    {
+        path: "/libraries/folders/:folder_id/page/:page",
+        name: "LibraryFolder",
+        component: LibraryFolder,
+        props(route) {
+            const props = { ...route.params };
+            if (props.page) {
+                props.page = +props.page;
+            }
+            return props;
+        },
+    },
+    {
+        path: "/libraries/folders/:folder_id/dataset/:dataset_id",
+        name: "LibraryDataset",
+        component: LibraryDataset,
+        props: true,
+    },
+    {
+        path: "/libraries/folders/:folder_id/permissions",
+        name: "LibraryFolder",
+        component: LibraryFolderPermissions,
+        props: true,
+    },
+    {
+        path: "/libraries/folders/:folder_id/dataset/:dataset_id/permissions",
+        name: "LibraryFolderDatasetPermissions",
+        component: LibraryFolderDatasetPermissions,
+        props: true,
+    },
+];
