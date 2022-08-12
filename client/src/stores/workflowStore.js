@@ -13,11 +13,6 @@ export const useWorkflowStore = defineStore("workflowStore", {
                 state.workflowsByInstanceId[workflowId];
             };
         },
-        getWorkflowIdByInstanceId: (state) => {
-            return (workflowId) => {
-                return state.workflowsByInstanceId[workflowId]?.id || '';
-            };
-        },
         getWorkflowNameByInstanceId: (state) => {
             return (workflowId) => {
                 const details = state.workflowsByInstanceId[workflowId];
