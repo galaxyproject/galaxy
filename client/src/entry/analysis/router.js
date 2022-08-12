@@ -420,8 +420,8 @@ export function getRouter(Galaxy) {
                 ],
             },
             { path: "/workflows/edit", component: WorkflowEditorModule },
-            ...LibraryRoutes,
             ...AdminRoutes,
+            ...LibraryRoutes,
         ],
     });
 }
