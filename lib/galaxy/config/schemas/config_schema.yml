@@ -779,15 +779,6 @@ mapping:
 
           The value of this option will be resolved with respect to <data_dir>.
 
-      cluster_files_directory:
-        type: str
-        default: pbs
-        path_resolves_to: data_dir
-        required: false
-        desc: |
-          If using a cluster, Galaxy will write job scripts and stdout/stderr to this
-          directory.
-
       template_cache_path:
         type: str
         default: compiled_templates

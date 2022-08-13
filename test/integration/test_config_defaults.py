@@ -53,7 +53,6 @@ PATH_CONFIG_PROPERTIES = [
     "builds_file_path",
     "citation_cache_data_dir",
     "citation_cache_lock_dir",
-    "cluster_files_directory",
     "container_resolvers_config_file",
     "data_manager_config_file",
     "datatypes_config_file",

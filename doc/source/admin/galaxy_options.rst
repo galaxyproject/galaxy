@@ -1071,19 +1071,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``cluster_files_directory``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If using a cluster, Galaxy will write job scripts and
-    stdout/stderr to this directory.
-    The value of this option will be resolved with respect to
-    <data_dir>.
-:Default: ``pbs``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``template_cache_path``
 ~~~~~~~~~~~~~~~~~~~~~~~
