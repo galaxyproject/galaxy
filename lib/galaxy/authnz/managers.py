@@ -146,6 +146,7 @@ class AuthnzManager:
             "client_secret": config_xml.find("client_secret").text,
             "redirect_uri": config_xml.find("redirect_uri").text,
             "enable_idp_logout": asbool(config_xml.findtext("enable_idp_logout", "false")),
+            "enable_idp_logout_redirect": asbool(config_xml.findtext("enable_idp_logout_redirect", "true")),
         }
         if config_xml.find("prompt") is not None:
             rtv["prompt"] = config_xml.find("prompt").text
@@ -169,6 +170,7 @@ class AuthnzManager:
             "client_secret": config_xml.find("client_secret").text,
             "redirect_uri": config_xml.find("redirect_uri").text,
             "enable_idp_logout": asbool(config_xml.findtext("enable_idp_logout", "false")),
+            "enable_idp_logout_redirect": asbool(config_xml.findtext("enable_idp_logout_redirect", "true")),
         }
         if config_xml.find("credential_url") is not None:
             rtv["credential_url"] = config_xml.find("credential_url").text
@@ -387,7 +389,9 @@ class AuthnzManager:
             unified_provider_name = self._unify_provider_name(provider)
             if self.oidc_backends_config[unified_provider_name]["enable_idp_logout"] is False:
                 return False, f"IDP logout is not enabled for {provider}", None
-
+            # check if idp supports logout redirects
+            if self.oidc_backends_config[unified_provider_name]["enable_idp_logout_redirect"] is False:
+                post_logout_redirect_url = None
             success, message, backend = self._get_authnz_backend(provider)
             if success is False:
                 return False, message, None
