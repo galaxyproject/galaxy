@@ -216,6 +216,11 @@ export function fetchMenu(options = {}) {
                 target: "_blank",
             },
             {
+                title: _l("About"),
+                url: "about",
+                target: "__use_router__",
+            },
+            {
                 title: _l("Terms and Conditions"),
                 url: options.terms_url,
                 target: "_blank",
