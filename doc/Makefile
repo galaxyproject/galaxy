@@ -54,8 +54,6 @@ source/admin/config_logging_default_yaml.rst: ../lib/galaxy/config/__init__.py
 	printf '      logging:\n        ' >> $@
 	PYTHONPATH=../lib python -c 'from __future__ import print_function; import yaml, galaxy.config; print("\n        ".join(yaml.dump(galaxy.config.LOGGING_CONFIG_DEFAULT, indent=2, default_flow_style=False).splitlines()))' >> $@
 
-# might also want to do
-# cd source/lib; hg revert; rm *.rst.orig;  or not.
 clean:
 	-rm -rf $(BUILDDIR)/* $(GENERATED_RST)
 
@@ -172,4 +170,5 @@ doctest: $(GENERATED_RST)
 
 # Update Sphinx RST files for lib/ to reflect code structure changes
 updaterst:
+	-rm -rf source/lib/
 	$(SPHINXAPIDOC) -M --force -o source/lib/ ../lib/
