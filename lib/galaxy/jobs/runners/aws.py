@@ -477,8 +477,9 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
                 reason = job["statusReason"]
                 self._mark_as_failed(job_state, reason)
                 done.add(job_id)
-            elif status in ("SUBMITTED", "PENDING", "RUNNABLE", "STARTING", "RUNNING"):
+            elif status in ("STARTING", "RUNNING"):
                 self._mark_as_active(job_state)
+            # remain queued for "SUBMITTED", "PENDING" and "RUNNABLE"
             # TODO else?
 
         for job_id in jobs_dict:
