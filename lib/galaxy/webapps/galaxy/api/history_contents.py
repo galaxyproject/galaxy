@@ -690,7 +690,7 @@ class FastAPIHistoryContents:
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> HistoryContentsResult:
         """
-        **Warning**: For internal use to support the scroller functionality.
+        .. warning:: For internal use to support the scroller functionality.
 
         This endpoint provides random access to a large history without having
         to know exactly how many pages are in the final query. Pick a target HID
@@ -701,23 +701,30 @@ class FastAPIHistoryContents:
         The `direction` determines what items are selected:
 
         a) item counts:
-        - total matches-up:   hid < {hid}
-        - total matches-down: hid > {hid}
-        - total matches:      total matches-up + total matches-down + 1 (+1 for hid == {hid})
-        - displayed matches-up:   hid <= {hid} (hid == {hid} is included)
-        - displayed matches-down: hid > {hid}
-        - displayed matches:      displayed matches-up + displayed matches-down
+
+           - total matches-up:   hid < {hid}
+           - total matches-down: hid > {hid}
+           - total matches:      total matches-up + total matches-down + 1 (+1 for hid == {hid})
+           - displayed matches-up:   hid <= {hid} (hid == {hid} is included)
+           - displayed matches-down: hid > {hid}
+           - displayed matches:      displayed matches-up + displayed matches-down
 
         b) {limit} history items:
-        - if direction == before: hid <= {hid}
-        - if direction == after:  hid > {hid}
-        - if direction == near:   "near" {hid}, so that |before| <= limit // 2, |after| <= limit // 2 + 1.
 
-        **Note**: This endpoint uses slightly different filter params syntax. Instead of using `q`/`qv` parameters
-                  it uses the following syntax for query parameters:
-                    ?[field]-[operator]=[value]
-                  Example:
-                    ?update_time-gt=2015-01-29
+           - if direction == "before": hid <= {hid}
+           - if direction == "after":  hid > {hid}
+           - if direction == "near":   "near" {hid}, so that
+             n. items before <= limit // 2,
+             n. items after <= limit // 2 + 1.
+
+        .. note:: This endpoint uses slightly different filter params syntax. Instead of using `q`/`qv` parameters,
+            it uses the following syntax for query parameters::
+
+                ?[field]-[operator]=[value]
+
+            Example::
+
+                ?update_time-gt=2015-01-29
         """
         serialization_params.default_view = serialization_params.default_view or "betawebclient"
 
@@ -1177,17 +1184,21 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         Returns the following data:
 
         a) item counts:
-        - total matches-up:   hid < {hid}
-        - total matches-down: hid > {hid}
-        - total matches:      total matches-up + total matches-down + 1 (+1 for hid == {hid})
-        - displayed matches-up:   hid <= {hid} (hid == {hid} is included)
-        - displayed matches-down: hid > {hid}
-        - displayed matches:      displayed matches-up + displayed matches-down
+
+           - total matches-up:   hid < {hid}
+           - total matches-down: hid > {hid}
+           - total matches:      total matches-up + total matches-down + 1 (+1 for hid == {hid})
+           - displayed matches-up:   hid <= {hid} (hid == {hid} is included)
+           - displayed matches-down: hid > {hid}
+           - displayed matches:      displayed matches-up + displayed matches-down
 
         b) {limit} history items:
-        - if direction == before: hid <= {hid}
-        - if direction == after:  hid > {hid}
-        - if direction == near:   "near" {hid}, so that |before| <= limit // 2, |after| <= limit // 2 + 1.
+
+           - if direction == "before": hid <= {hid}
+           - if direction == "after":  hid > {hid}
+           - if direction == "near":   "near" {hid}, so that
+             n. items before <= limit // 2,
+             n. items after <= limit // 2 + 1.
 
         Intended purpose: supports scroller functionality.
 

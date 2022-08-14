@@ -374,16 +374,14 @@ class HistoriesContentsService(ServiceBase):
         """
         Set permissions of the given dataset to the given role ids.
 
-        :param   payload: dictionary structure containing:
-            :param  action:     (required) describes what action should be performed
-                                available actions: make_private, remove_restrictions, set_permissions
-            :type   action:     string
-            :param  access_ids[]:      list of Role.id defining roles that should have access permission on the dataset
-            :type   access_ids[]:      string or list
-            :param  manage_ids[]:      list of Role.id defining roles that should have manage permission on the dataset
-            :type   manage_ids[]:      string or list
-            :param  modify_ids[]:      list of Role.id defining roles that should have modify permission on the library dataset item
-            :type   modify_ids[]:      string or list
+        :type payload: dict
+        :param payload: dictionary structure containing:
+
+            - action: (required) describes what action should be performed.
+              Available actions: make_private, remove_restrictions, set_permissions
+            - access_ids[]: list of Role.id defining roles that should have access permission on the dataset
+            - manage_ids[]: list of Role.id defining roles that should have manage permission on the dataset
+            - modify_ids[]: list of Role.id defining roles that should have modify permission on the library dataset item
 
         :raises: RequestParameterInvalidException, ObjectNotFound, InsufficientPermissionsException, InternalServerError
                     RequestParameterMissingException
@@ -638,9 +636,12 @@ class HistoriesContentsService(ServiceBase):
         """
         Return {limit} history items "near" the {hid}. The {direction} determines what items
         are selected:
+
         - before: select items with hid < {hid}
         - after:  select items with hid > {hid}
-        - near:   select items "around" {hid}, so that |before| <= limit // 2, |after| <= limit // 2 + 1
+        - near:   select items "around" {hid}, so that
+          n. items before <= limit // 2,
+          n. items after <= limit // 2 + 1
 
         Additional counts provided in the HTTP headers.
         """

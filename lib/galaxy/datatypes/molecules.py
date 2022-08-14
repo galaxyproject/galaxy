@@ -228,8 +228,7 @@ class SDF(GenericMolFile):
             if idx < 4:
                 continue
             elif idx == 4:
-                if len(line) != 39 or not(line.endswith(' V2000')
-                        or line.endswith(' V3000')):
+                if len(line) != 39 or not (line.endswith(" V2000") or line.endswith(" V3000")):
                     return False
             elif not m_end_found:
                 if line == 'M  END':
@@ -988,7 +987,7 @@ class CIF(GenericMolFile):
         Try to guess if the file is a CIF file.
 
         The CIF format and the Relion STAR format have a shared origin.
-        Note therefore that STAR files and the STAR sniffer also use "data_" blocks.
+        Note therefore that STAR files and the STAR sniffer also use ``data_`` blocks.
         STAR files will not pass the CIF sniffer, but CIF files can pass the STAR sniffer.
 
         >>> from galaxy.datatypes.sniff import get_test_fname

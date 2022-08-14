@@ -40,8 +40,6 @@ If you've been trying out the beta history (which will be the default history ne
 New Visualizations
 ===========================================================
 
-.. visualizations
-
 Thanks to `@neoformit <https://github.com/neoformit>`__, a new R shiny app "iSEE" has been added, which provides a UI for visualization of single-cell RNA datasets. See `Pull Request 12650`_ for more information
 
 .. figure:: https://user-images.githubusercontent.com/42562517/136135157-40a46a31-3553-49b3-a975-b518db1374b2.png
@@ -50,7 +48,6 @@ Thanks to `@neoformit <https://github.com/neoformit>`__, a new R shiny app "iSEE
 New Datatypes
 ===========================================================
 
-.. datatypes
 * Add datatype iml_dataset subclassing html
   (thanks to `@knutwa-ext <https://github.com/knutwa-ext>`__).
   `Pull Request 12099`_
@@ -86,7 +83,6 @@ New Datatypes
 Builtin Tool Updates
 ===========================================================
 
-.. tools
 * New interactive tool - iSEE
   (thanks to `@neoformit <https://github.com/neoformit>`__).
   `Pull Request 12650`_
@@ -144,7 +140,7 @@ Release Notes
 
 User facing release notes compiled by `Helena Rasche <https://github.com/hexylena>`_.
 
-Please see the `full release notes <22.01_announce.html>`_ for more details.
+Please see the :doc:`full release notes <22.01_announce>` for more details.
 
 .. include:: 22.01_prs.rst
 
