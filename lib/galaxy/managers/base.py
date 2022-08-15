@@ -1220,7 +1220,7 @@ class ModelFilterParser(HasAModelManager):
         return {
             "op": {
                 "eq": lambda i, v: v == getattr(i, key),
-                "contains": lambda i, v: v in partial(getattr(i, key), autoescape=True),
+                "contains": lambda i, v: v in partial(getattr(i, key), autoescape=True),  # type: ignore[operator]
             }
         }
 
