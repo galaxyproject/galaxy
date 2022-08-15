@@ -2843,7 +2843,7 @@ class SharingOptions(str, Enum):
     no_changes = "no_changes"
 
 
-class ShareWithExtra(BaseModel):
+class ShareWithExtra(Model):
     can_share: bool = Field(
         False,
         title="Can Share",
@@ -2854,10 +2854,10 @@ class ShareWithExtra(BaseModel):
         extra = Extra.allow
 
 
-UserIdentifier = Union[EncodedDatabaseIdField, str]
+UserIdentifier = Union[DecodedDatabaseIdField, str]
 
 
-class ShareWithPayload(BaseModel):
+class ShareWithPayload(Model):
     user_ids: List[UserIdentifier] = Field(
         ...,
         title="User Identifiers",
@@ -2878,7 +2878,7 @@ class ShareWithPayload(BaseModel):
     )
 
 
-class SetSlugPayload(BaseModel):
+class SetSlugPayload(Model):
     new_slug: str = Field(
         ...,
         title="New Slug",
@@ -2886,8 +2886,8 @@ class SetSlugPayload(BaseModel):
     )
 
 
-class UserEmail(BaseModel):
-    id: EncodedDatabaseIdField = Field(
+class UserEmail(Model):
+    id: DecodedDatabaseIdField = Field(
         ...,
         title="User ID",
         description="The encoded ID of the user.",
@@ -2899,8 +2899,8 @@ class UserEmail(BaseModel):
     )
 
 
-class SharingStatus(BaseModel):
-    id: EncodedDatabaseIdField = Field(
+class SharingStatus(Model):
+    id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",
         description="The encoded ID of the resource to be shared.",
@@ -2948,8 +2948,8 @@ class ShareWithStatus(SharingStatus):
     )
 
 
-class HDABasicInfo(BaseModel):
-    id: EncodedDatabaseIdField
+class HDABasicInfo(Model):
+    id: DecodedDatabaseIdField
     name: str
 
 
