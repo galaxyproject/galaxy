@@ -13,6 +13,7 @@ from typing import (
     Tuple,
     Union,
 )
+from uuid import UUID
 
 from sqlalchemy import (
     false,
@@ -565,10 +566,11 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         trans: ProvidesHistoryContext,
         id: EncodedDatabaseIdField,
         jeha_id: Union[EncodedDatabaseIdField, LatestLiteral],
+        uuid: Optional[UUID],
     ) -> model.JobExportHistoryArchive:
         """Returns the exported history archive information if it's ready
         or raises an exception if not."""
-        return self.history_export_view.get_ready_jeha(trans, id, jeha_id)
+        return self.history_export_view.get_ready_jeha(trans, id, jeha_id, uuid)
 
     def get_archive_download_path(
         self,

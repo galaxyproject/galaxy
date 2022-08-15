@@ -38,6 +38,7 @@ from galaxy.workflow.trs_proxy import TrsProxy
 
 if TYPE_CHECKING:
     from galaxy.jobs import JobConfiguration
+    from galaxy.managers.histories import HistoryManager
     from galaxy.managers.workflows import WorkflowsManager
     from galaxy.tools.data import ToolDataTableManager
 
@@ -88,7 +89,7 @@ class MinimalManagerApp(MinimalApp):
     file_sources: ConfiguredFileSources
     genome_builds: GenomeBuilds
     dataset_collection_manager: Any  # 'galaxy.managers.collections.DatasetCollectionManager'
-    history_manager: Any  # 'galaxy.managers.histories.HistoryManager'
+    history_manager: "HistoryManager"
     hda_manager: Any  # 'galaxy.managers.hdas.HDAManager'
     workflow_manager: Any  # 'galaxy.managers.workflows.WorkflowsManager'
     workflow_contents_manager: Any  # 'galaxy.managers.workflows.WorkflowContentsManager'

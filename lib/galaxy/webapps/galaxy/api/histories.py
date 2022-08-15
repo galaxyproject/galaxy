@@ -10,6 +10,7 @@ from typing import (
     Optional,
     Union,
 )
+from uuid import UUID
 
 from fastapi import (
     Body,
@@ -385,13 +386,14 @@ class FastAPIHistories:
         trans: ProvidesHistoryContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
         jeha_id: Union[EncodedDatabaseIdField, LatestLiteral] = JehaIDPathParam,
+        uuid: Optional[UUID] = None,
     ):
         """
         See ``PUT /api/histories/{id}/exports`` to initiate the creation
         of the history export - when ready, that route will return 200 status
         code (instead of 202) and this route can be used to download the archive.
         """
-        jeha = self.service.get_ready_history_export(trans, id, jeha_id)
+        jeha = self.service.get_ready_history_export(trans, id, jeha_id, uuid)
         media_type = self.service.get_archive_media_type(jeha)
         file_path = self.service.get_archive_download_path(trans, jeha)
         return FileResponse(

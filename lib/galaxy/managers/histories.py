@@ -347,29 +347,42 @@ class HistoryExportView:
         return [self.serialize(trans, history_id, e) for e in matching_exports]
 
     def serialize(self, trans, history_id, jeha):
+        uuid = jeha.dataset.uuid
         rval = jeha.to_dict()
         encoded_jeha_id = trans.security.encode_id(jeha.id)
         api_url = trans.url_builder("history_archive_download", id=history_id, jeha_id=encoded_jeha_id)
         external_url = trans.url_builder("history_archive_download", id=history_id, jeha_id="latest", qualified=True)
         external_permanent_url = trans.url_builder(
-            "history_archive_download", id=history_id, jeha_id=encoded_jeha_id, qualified=True
+            "history_archive_download",
+            id=history_id,
+            jeha_id=encoded_jeha_id,
+            qualified=True,
         )
-        rval["download_url"] = api_url
-        rval["external_download_latest_url"] = external_url
-        rval["external_download_permanent_url"] = external_permanent_url
+        rval["download_url"] = f"{api_url}?uuid={uuid}"
+        rval["external_download_latest_url"] = f"{external_url}?uuid={uuid}"
+        rval["external_download_permanent_url"] = f"{external_permanent_url}?uuid={uuid}"
         rval = trans.security.encode_all_ids(rval)
         return rval
 
-    def get_ready_jeha(self, trans, history_id, jeha_id="latest"):
-        history = self._history(trans, history_id)
-        matching_exports = history.exports
+    def get_ready_jeha(self, trans, history_id, jeha_id="latest", uuid=None):
+        jeha = None
+        matching_exports = None
+        if jeha_id == "latest" or not uuid:
+            # Check access permissions
+            history = self._history(trans, history_id)
+            matching_exports = history.exports
+            if not matching_exports:
+                raise glx_exceptions.ObjectNotFound("Failed to find target history export")
+            if jeha_id == "latest":
+                jeha = matching_exports[0]
         if jeha_id != "latest":
             decoded_jeha_id = trans.security.decode_id(jeha_id)
-            matching_exports = [e for e in matching_exports if e.id == decoded_jeha_id]
-        if len(matching_exports) == 0:
+            jeha = self.app.model.session.query(model.JobExportHistoryArchive).get(decoded_jeha_id)
+            if uuid and jeha.dataset.uuid != uuid:
+                raise glx_exceptions.ObjectNotFound("Failed to find target history export")
+        if not jeha:
             raise glx_exceptions.ObjectNotFound("Failed to find target history export")
 
-        jeha = matching_exports[0]
         if not jeha.ready:
             raise glx_exceptions.MessageException("Export not available or not yet ready.")
 
