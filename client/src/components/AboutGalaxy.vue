@@ -32,17 +32,23 @@
             <h4>Galaxy API Documentation</h4>
             <!-- API documentation link -->
             <p>
-                The Galaxy API is browsable at <b-link :href="apiDocsLink">{{ apiDocsLink }}</b-link>
+                The Galaxy API is available, and explorable, at <b-link :href="apiDocsLink">{{ apiDocsLink }}</b-link>
             </p>
+        </div>
+        <div>
+            <h4>License Information</h4>
+            <p>The Galaxy Software is licensed under <License :license-id="galaxyLicense" /></p>
         </div>
     </div>
 </template>
 
 <script setup>
 import { computed } from "vue";
+
+import { getAppRoot } from "onload/loadConfig";
 import { useConfig } from "components/providers/useConfig";
 import UtcDate from "components/UtcDate";
-import { getAppRoot } from "onload/loadConfig";
+import License from "components/License/License";
 
 const { config, isLoaded } = useConfig();
 
@@ -50,6 +56,7 @@ const { config, isLoaded } = useConfig();
 /* (injected by webpack) */
 const clientBuildDate = __buildTimestamp__;
 const apiDocsLink = `${getAppRoot()}api/docs#/`;
+const galaxyLicense = "AFL-3.0"; // TODO: this should be read out of package.json maybe?
 
 const versionUserDocumentationUrl = computed(() => {
     const configVal = config.value;
