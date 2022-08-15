@@ -1,5 +1,5 @@
 <template>
-    <div v-if="isLoaded" class="container">
+    <div v-if="isLoaded">
         <h1>About This Galaxy</h1>
         <div>
             <!-- Galaxy version (detailed), with a link to the release notes -->
