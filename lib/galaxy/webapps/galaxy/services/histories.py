@@ -589,20 +589,6 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             media_type = "application/x-gzip"
         return media_type
 
-    # TODO: remove this function and HistoryManager.legacy_serve_ready_history_export when
-    # removing the legacy HistoriesController
-    def legacy_archive_download(
-        self,
-        trans: ProvidesHistoryContext,
-        id: EncodedDatabaseIdField,
-        jeha_id: EncodedDatabaseIdField,
-    ):
-        """
-        If ready and available, return raw contents of exported history.
-        """
-        jeha = self.history_export_view.get_ready_jeha(trans, id, jeha_id)
-        return self.manager.legacy_serve_ready_history_export(trans, jeha)
-
     def get_custom_builds_metadata(
         self,
         trans: ProvidesHistoryContext,

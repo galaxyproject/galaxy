@@ -201,18 +201,6 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         trans.app.job_manager.enqueue(job, tool=history_imp_tool)
         return job
 
-    # TODO: remove this function when the legacy endpoint using it is removed
-    def legacy_serve_ready_history_export(self, trans, jeha):
-        assert jeha.ready
-        if jeha.compressed:
-            trans.response.set_content_type("application/x-gzip")
-        else:
-            trans.response.set_content_type("application/x-tar")
-        disposition = f'attachment; filename="{jeha.export_name}"'
-        trans.response.headers["Content-Disposition"] = disposition
-        archive = trans.app.object_store.get_filename(jeha.dataset)
-        return open(archive, mode="rb")
-
     def get_ready_history_export_file_path(self, trans, jeha) -> str:
         """
         Serves the history export archive for use as a streaming response so the file
