@@ -43,6 +43,9 @@
 </template>
 
 <script setup>
+/* global __buildTimestamp__, __license__  */
+/* (injected by webpack) */
+
 import { computed } from "vue";
 
 import { getAppRoot } from "onload/loadConfig";
@@ -52,11 +55,9 @@ import License from "components/License/License";
 
 const { config, isLoaded } = useConfig();
 
-/* global __buildTimestamp__ */
-/* (injected by webpack) */
-const clientBuildDate = __buildTimestamp__;
+const clientBuildDate = __buildTimestamp__ || new Date();
 const apiDocsLink = `${getAppRoot()}api/docs#/`;
-const galaxyLicense = "AFL-3.0"; // TODO: this should be read out of package.json maybe?
+const galaxyLicense = __license__;
 
 const versionUserDocumentationUrl = computed(() => {
     const configVal = config.value;
