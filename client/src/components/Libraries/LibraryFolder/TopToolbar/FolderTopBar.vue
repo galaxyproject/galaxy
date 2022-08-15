@@ -3,7 +3,7 @@
         <div class="form-inline d-flex align-items-center mb-2">
             <b-button
                 class="mr-1 btn btn-secondary"
-                :to="{ path: `/` }"
+                :to="{ path: `/libraries` }"
                 data-toggle="tooltip"
                 title="Go to libraries list">
                 <font-awesome-icon icon="home" />
