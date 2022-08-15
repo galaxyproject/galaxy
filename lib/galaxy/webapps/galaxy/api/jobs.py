@@ -38,6 +38,7 @@ from galaxy.managers.jobs import (
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import JobIndexSortByEnum
+from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.util import listify
 from galaxy.web import (
     expose_api,
@@ -103,13 +104,13 @@ ToolIdLikeQueryParam: Optional[str] = Query(
     description="Limit listing of jobs to those that match one of the included tool ID sql-like patterns. If none, all are returned",
 )
 
-DateRangeMinQueryParam: Optional[Union[datetime, date]] = Query(
+DateRangeMinQueryParam: Optional[Union[OffsetNaiveDatetime, date]] = Query(
     default=None,
     title="Date Range Minimum",
     description="Limit listing of jobs to those that are updated after specified date (e.g. '2014-01-01')",
 )
 
-DateRangeMaxQueryParam: Optional[Union[datetime, date]] = Query(
+DateRangeMaxQueryParam: Optional[Union[OffsetNaiveDatetime, date]] = Query(
     default=None,
     title="Date Range Maximum",
     description="Limit listing of jobs to those that are updated before specified date (e.g. '2014-01-01')",
