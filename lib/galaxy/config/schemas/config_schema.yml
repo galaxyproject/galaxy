@@ -1871,12 +1871,41 @@ mapping:
           If true, Galaxy will attempt to configure a simple root logger if a
           "loggers" section does not appear in this configuration file.
 
+      log_destination:
+        type: str
+        default: stdout
+        required: false
+        desc: |
+          Log destination, defaults to special value "stdout" that logs to standard output. If set to anything else,
+          then it will be interpreted as a path that will be used as the log file, and logging to stdout will be
+          disabled.
+
+      log_rotate_size:
+        type: str
+        default: "0"
+        required: false
+        desc: |
+          Size of log file at which size it will be rotated as per the documentation in
+          https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+          If log_rotate_count is not also set, no log rotation will be performed. A value of 0 (the default) means no
+          rotation. Size can be a number of bytes or a human-friendly representation like "100 MB" or "1G".
+
+      log_rotate_count:
+        type: int
+        default: 0
+        required: false
+        desc: |
+          Number of log file backups to keep, per the documentation in
+          https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+          Any additional rotated log files will automatically be pruned. If log_rotate_size is not also set, no log
+          rotation will be performed. A value of 0 (the default) means no rotation.
+
       log_level:
         type: str
         default: DEBUG
         required: false
         desc: |
-          Verbosity of console log messages.  Acceptable values can be found here:
+          Verbosity of console log messages. Acceptable values can be found here:
           https://docs.python.org/library/logging.html#logging-levels
           A custom debug level of "TRACE" is available for even more verbosity.
 
@@ -1884,9 +1913,8 @@ mapping:
         type: map
         allowempty: true
         desc: |
-          Controls where and how the server logs messages. If unset, the default is to log all messages to standard
-          output at the level defined by the `log_level` configuration option. Configuration is described in the
-          documentation at:
+          Controls where and how the server logs messages. If set, overrides all settings in the log_* configuration
+          options. Configuration is described in the documentation at:
           https://docs.galaxyproject.org/en/master/admin/config_logging.html
 
       database_engine_option_echo:
