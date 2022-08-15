@@ -6,13 +6,15 @@
             <h4>Galaxy Version Information</h4>
             <p>
                 The Galaxy Server is running version
-                <strong>{{ config.version_major }}.{{ config.version_minor }}</strong>
+                <strong>{{ config.version_major }}.{{ config.version_minor }}</strong
+                >, and the web client was built on <UtcDate :date="clientBuildDate" />.
             </p>
-            <p>This web client was built on <UtcDate :date="clientBuildDate" mode="pretty"/></p>
-            <div v-if="config.version_extra">
+            <template v-if="config.version_extra">
                 <p>The server also provides the following extra version information</p>
                 <pre>{{ config.version_extra }}</pre>
-            </div>
+            </template>
+        </div>
+        <div>
             <h4>Release Documentation</h4>
             <p>
                 The user-facing documentation accompanying this release is available at
@@ -62,7 +64,7 @@ const galaxyLicense = __license__;
 
 const versionUserDocumentationUrl = computed(() => {
     const configVal = config.value;
-    return config.value.version_minor == "dev"
+    return config.value.version_minor.slice(0, 3) == "dev"
         ? "https://docs.galaxyproject.org/en/latest/releases/index.html"
         : `${configVal.release_doc_base_url}${configVal.version_major}/releases/${configVal.version_major}_announce_user.html`;
 });

@@ -4,9 +4,7 @@ and a more expanded set of data for admin in AdminConfigSerializer.
 
 Used by both the API and bootstrapped data.
 """
-import json
 import logging
-import os
 import sys
 from typing import (
     Any,
