@@ -364,8 +364,7 @@ class HistoryExportView:
             if jeha_id == "latest":
                 jeha = matching_exports[0]
         if jeha_id != "latest":
-            decoded_jeha_id = trans.security.decode_id(jeha_id)
-            jeha = self.app.model.session.query(model.JobExportHistoryArchive).get(decoded_jeha_id)
+            jeha = self.app.model.session.query(model.JobExportHistoryArchive).get(jeha_id)
             if uuid and jeha.dataset.uuid != uuid:
                 raise glx_exceptions.ObjectNotFound("Failed to find target history export")
         if not jeha:

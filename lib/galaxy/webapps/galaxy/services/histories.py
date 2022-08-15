@@ -43,7 +43,10 @@ from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
+)
 from galaxy.schema.schema import (
     AnyHistoryView,
     AsyncFile,
@@ -565,7 +568,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         self,
         trans: ProvidesHistoryContext,
         id: EncodedDatabaseIdField,
-        jeha_id: Union[EncodedDatabaseIdField, LatestLiteral],
+        jeha_id: Union[DecodedDatabaseIdField, LatestLiteral],
         uuid: Optional[UUID],
     ) -> model.JobExportHistoryArchive:
         """Returns the exported history archive information if it's ready

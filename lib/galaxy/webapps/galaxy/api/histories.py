@@ -32,7 +32,10 @@ from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
+)
 from galaxy.schema.schema import (
     AnyHistoryView,
     AsyncFile,
@@ -73,7 +76,7 @@ HistoryIDPathParam: EncodedDatabaseIdField = Path(
     ..., title="History ID", description="The encoded database identifier of the History."
 )
 
-JehaIDPathParam: Union[EncodedDatabaseIdField, LatestLiteral] = Path(
+JehaIDPathParam: Union[DecodedDatabaseIdField, LatestLiteral] = Path(
     default="latest",
     title="Job Export History ID",
     description=(
@@ -385,7 +388,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
-        jeha_id: Union[EncodedDatabaseIdField, LatestLiteral] = JehaIDPathParam,
+        jeha_id: Union[DecodedDatabaseIdField, LatestLiteral] = JehaIDPathParam,
         uuid: Optional[UUID] = None,
     ):
         """
