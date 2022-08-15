@@ -3,8 +3,8 @@ from typing import (
     Optional,
 )
 
-from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.api._framework import ApiTestCase
+from galaxy_test.base.populators import DatasetPopulator
 
 
 class GroupUsersApiTestCase(ApiTestCase):
