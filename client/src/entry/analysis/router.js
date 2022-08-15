@@ -13,7 +13,7 @@ import LibraryRoutes from "entry/analysis/routes/library-routes";
 
 // child components
 import Citations from "components/Citation/Citations";
-import About from "components/About.vue";
+import AboutGalaxy from "components/AboutGalaxy.vue";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
 import CustomBuilds from "components/User/CustomBuilds";
 import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
@@ -101,7 +101,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "about",
-                        component: About,
+                        component: AboutGalaxy,
                     },
                     {
                         path: "custom_builds",

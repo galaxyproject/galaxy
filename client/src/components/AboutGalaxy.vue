@@ -1,0 +1,62 @@
+<template>
+    <div class="container" v-if="isLoaded">
+        <h1>About This Galaxy</h1>
+        <div>
+            <!-- Galaxy version (detailed), with a link to the release notes -->
+            <h4>Galaxy Version Information</h4>
+            <p>
+                The Galaxy Server is running version
+                <strong>{{ config.version_major }}.{{ config.version_minor }}</strong>
+            </p>
+            <p>This web client was built on <UtcDate :date="clientBuildDate" /></p>
+            <div v-if="config.version_extra">
+                <p>The server also provides the following extra version information</p>
+                <pre>{{ config.version_extra }}</pre>
+            </div>
+            <h4>Release Documentation</h4>
+            <p>
+                The user-facing documentation accompanying this release is available at
+                <a :href="versionUserDocumentationUrl" target="_blank">
+                    {{ versionUserDocumentationUrl }}
+                </a>
+            </p>
+        </div>
+        <div v-if="config.terms_url">
+            <!-- Terms, if available.-->
+            <h4>Terms of use for this Galaxy:</h4>
+            <p>
+                <b-link :href="config.terms_url"> {{ config.terms_url }}</b-link>
+            </p>
+        </div>
+        <div>
+            <h4>Galaxy API Documentation</h4>
+            <!-- API documentation link -->
+            <p>
+                The Galaxy API is browsable at <b-link :href="apiDocsLink">{{ apiDocsLink }}</b-link>
+            </p>
+        </div>
+    </div>
+</template>
+
+<script setup>
+import { computed } from "vue";
+import { useConfig } from "components/providers/useConfig";
+import UtcDate from "components/UtcDate";
+import { getAppRoot } from "onload/loadConfig";
+
+const { config, isLoaded } = useConfig();
+
+/* global __buildTimestamp__ */
+/* (injected by webpack) */
+const clientBuildDate = __buildTimestamp__;
+const apiDocsLink = `${getAppRoot()}api/docs#/`;
+
+const versionUserDocumentationUrl = computed(() => {
+    const configVal = config.value;
+    return config.value.version_minor == "dev"
+        ? "https://docs.galaxyproject.org/en/latest/releases/index.html"
+        : `${configVal.release_doc_base_url}${configVal.version_major}/releases/${configVal.version_major}_announce_user.html`;
+});
+</script>
+
+<style scoped></style>
