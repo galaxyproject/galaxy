@@ -1,5 +1,5 @@
 <template>
-    <div class="container" v-if="isLoaded">
+    <div v-if="isLoaded" class="container">
         <h1>About This Galaxy</h1>
         <div>
             <!-- Galaxy version (detailed), with a link to the release notes -->
@@ -16,16 +16,16 @@
             <h4>Release Documentation</h4>
             <p>
                 The user-facing documentation accompanying this release is available at
-                <a :href="versionUserDocumentationUrl" target="_blank">
+                <external-link :href="versionUserDocumentationUrl">
                     {{ versionUserDocumentationUrl }}
-                </a>
+                </external-link>
             </p>
         </div>
         <div v-if="config.terms_url">
             <!-- Terms, if available.-->
             <h4>Terms of use for this Galaxy:</h4>
             <p>
-                <b-link :href="config.terms_url"> {{ config.terms_url }}</b-link>
+                <external-link :href="config.terms_url">{{ config.terms_url }}</external-link>
             </p>
         </div>
         <div>
@@ -52,6 +52,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { useConfig } from "components/providers/useConfig";
 import UtcDate from "components/UtcDate";
 import License from "components/License/License";
+import ExternalLink from "components/ExternalLink";
 
 const { config, isLoaded } = useConfig();
 
