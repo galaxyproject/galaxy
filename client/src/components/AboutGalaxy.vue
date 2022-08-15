@@ -8,7 +8,7 @@
                 The Galaxy Server is running version
                 <strong>{{ config.version_major }}.{{ config.version_minor }}</strong>
             </p>
-            <p>This web client was built on <UtcDate :date="clientBuildDate" /></p>
+            <p>This web client was built on <UtcDate :date="clientBuildDate" mode="pretty"/></p>
             <div v-if="config.version_extra">
                 <p>The server also provides the following extra version information</p>
                 <pre>{{ config.version_extra }}</pre>
