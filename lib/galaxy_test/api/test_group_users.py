@@ -67,7 +67,7 @@ class GroupUsersApiTestCase(ApiTestCase):
         self._assert_status_code_is_ok(update_response)
         group_user = update_response.json()
         self._assert_valid_group_user(group_user, assert_id=encoded_user_id)
-        assert group_user["url"] == f"/api/groups/{encoded_group_id}/users/{encoded_user_id}"
+        assert group_user["url"] == f"/api/groups/{encoded_group_id}/user/{encoded_user_id}"
 
     def test_update_only_admin(self):
         encoded_group_id = "any-group-id"
