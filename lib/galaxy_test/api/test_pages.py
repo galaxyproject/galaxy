@@ -18,7 +18,7 @@ from galaxy_test.base.populators import (
     skip_without_tool,
     WorkflowPopulator,
 )
-from ._framework import ApiTestCase
+from galaxy_test.api._framework import ApiTestCase
 
 
 class BasePageApiTestCase(ApiTestCase):
@@ -169,9 +169,9 @@ steps:
     def test_index_show_shared_with_me_deleted(self):
         user_id = self.dataset_populator.user_id()
         with self._different_user():
-            response_published = self._create_valid_page_with_slug("indexshowsharedpublished")
+            response_published = self._create_valid_page_with_slug("indexshowsharedpublisheddeleted")
             self._make_public(response_published["id"])
-            response_shared = self._create_valid_page_with_slug("indexshowsharedshared")
+            response_shared = self._create_valid_page_with_slug("indexshowsharedshareddeleted")
             self._share_with_user(response_shared["id"], user_id)
             self._delete(f"pages/{response_published['id']}").raise_for_status()
             self._delete(f"pages/{response_shared['id']}").raise_for_status()
