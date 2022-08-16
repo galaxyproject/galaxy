@@ -59,7 +59,6 @@ const versionExtra = computed(() => {
         </div>
         <div v-if="config.terms_url">
             <!-- Terms, if available.-->
-            <h4>Terms of use for this Galaxy:</h4>
             <b-embed type="iframe" :src="config.terms_url" aspect="1by1" />
         </div>
     </div>
