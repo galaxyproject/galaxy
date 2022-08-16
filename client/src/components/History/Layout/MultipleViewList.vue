@@ -1,6 +1,8 @@
 <template>
     <virtual-list
         v-if="filteredHistories.length"
+        :keeps="10"
+        :estimate-size="histories.length"
         :data-key="'id'"
         :data-component="MultipleViewItem"
         :data-sources="filteredHistories"
