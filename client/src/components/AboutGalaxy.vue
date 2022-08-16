@@ -5,7 +5,7 @@
 import { computed } from "vue";
 
 import { getAppRoot } from "onload/loadConfig";
-import { useConfig } from "components/providers/useConfig";
+import { useConfig } from "components/composables/useConfig";
 import UtcDate from "components/UtcDate";
 import License from "components/License/License";
 import ExternalLink from "components/ExternalLink";
