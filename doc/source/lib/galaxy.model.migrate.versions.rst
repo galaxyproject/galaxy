@@ -1385,6 +1385,70 @@ galaxy.model.migrate.versions.0172\_it\_entrypoint\_requires\_domain module
    :undoc-members:
    :show-inheritance:
 
+galaxy.model.migrate.versions.0173\_add\_job\_id\_to\_dataset module
+--------------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0173_add_job_id_to_dataset
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.model.migrate.versions.0174\_readd\_update\_time\_triggers module
+------------------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0174_readd_update_time_triggers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.model.migrate.versions.0175\_history\_audit module
+---------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0175_history_audit
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.model.migrate.versions.0176\_add\_indexes\_on\_update\_time module
+-------------------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0176_add_indexes_on_update_time
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.model.migrate.versions.0177\_update\_job\_state\_summary module
+----------------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0177_update_job_state_summary
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.model.migrate.versions.0178\_drop\_deferredjob\_table module
+-------------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0178_drop_deferredjob_table
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.model.migrate.versions.0179\_drop\_transferjob\_table module
+-------------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0179_drop_transferjob_table
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.model.migrate.versions.0180\_add\_vault\_table module
+------------------------------------------------------------
+
+.. automodule:: galaxy.model.migrate.versions.0180_add_vault_table
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.model.migrate.versions.util module
 -----------------------------------------
 

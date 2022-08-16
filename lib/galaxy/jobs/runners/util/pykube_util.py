@@ -178,14 +178,17 @@ def ingress_object_dict(params, ingress_name, spec):
 
 def parse_pvc_param_line(pvc_param):
     """
-    Takes a pvc mount in the format: "pvc-name/subpath/desired:/mountpath/desired[:r]"
-    and returns {"name": "pvc-name",
-                 "subPath": "subpath/desired",
-                 "mountPath": "/mountpath/desired",
-                 "readOnly": False}
+    :type pvc_param: str
+    :param pvc_param: the pvc mount param in the format ``pvc-name/subpath/desired:/mountpath/desired[:r]``
 
-    :param pvc_param: the pvc mount param in the format "pvc-name/subpath:/mountpath[:r]"
-    :return: a dict containing the elements claim, subpath, mountpath and readonly
+    :rtype: dict
+    :return: a dict
+      like::
+
+        {"name": "pvc-name",
+         "subPath": "subpath/desired",
+         "mountPath": "/mountpath/desired",
+         "readOnly": False}
     """
     claim, _, rest = pvc_param.partition(":")
     mount_path, _, mode = rest.partition(":")

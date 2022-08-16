@@ -155,7 +155,7 @@ A special thanks to the release testing team for testing many of the new feature
 Release Notes
 ===========================================================
 
-Please see the `full release notes <${release}_announce.html>`_ for more details.
+Please see the :doc:`full release notes <${release}_announce>` for more details.
 
 .. include:: ${release}_prs.rst
 

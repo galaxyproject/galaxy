@@ -4,7 +4,7 @@ This should be mixed into classes with a self.driver and self.default_timeout
 attribute.
 """
 
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException as SeleniumTimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -16,7 +16,6 @@ UNSPECIFIED_TIMEOUT = object()
 
 
 class HasDriver:
-    TimeoutException = TimeoutException
     driver: WebDriver
 
     def re_get_with_query_params(self, params_str: str):
@@ -228,7 +227,7 @@ class HasDriver:
         timeout_msg = timeout_exception.msg
         if timeout_msg:
             msg += f" {timeout_msg}"
-        return TimeoutException(
+        return SeleniumTimeoutException(
             msg=msg,
             screen=timeout_exception.screen,
             stacktrace=timeout_exception.stacktrace,
@@ -259,5 +258,5 @@ __all__ = (
     "exception_indicates_not_clickable",
     "exception_indicates_stale_element",
     "HasDriver",
-    "TimeoutException",
+    "SeleniumTimeoutException",
 )

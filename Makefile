@@ -4,7 +4,6 @@ VENV?=.venv
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
 RELEASE_CURR:=22.05
 RELEASE_UPSTREAM:=upstream
-TARGET_BRANCH=$(RELEASE_UPSTREAM)/dev
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 DOCS_DIR=doc

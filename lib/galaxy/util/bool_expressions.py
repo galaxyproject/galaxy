@@ -129,8 +129,9 @@ class BooleanExpressionEvaluator:
 
         :param evaluator: The custom TokenEvaluator used to transform any token into a boolean.
         :type evaluator:  TokenEvaluator
+
         :param token_format: A string of all allowed characters used to form a valid token, defaults to None.
-                             The default value (None) will use DEFAULT_TOKEN_FORMAT which means the allowed characters are [A-Za-z0-9_-@.].
+                             The default value (None) will use DEFAULT_TOKEN_FORMAT which means the allowed characters are ``[A-Za-z0-9_-@.]``.
         :type token_format:  Optional[str]
         """
         action = BoolOperand

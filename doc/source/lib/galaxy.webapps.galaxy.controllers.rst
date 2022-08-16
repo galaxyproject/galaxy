@@ -97,14 +97,6 @@ galaxy.webapps.galaxy.controllers.library module
    :undoc-members:
    :show-inheritance:
 
-galaxy.webapps.galaxy.controllers.openid module
------------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.openid
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.webapps.galaxy.controllers.page module
 ---------------------------------------------
 

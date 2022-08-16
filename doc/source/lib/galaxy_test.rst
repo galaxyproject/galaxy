@@ -15,4 +15,5 @@ Subpackages
    galaxy_test.api
    galaxy_test.base
    galaxy_test.driver
+   galaxy_test.performance
    galaxy_test.selenium

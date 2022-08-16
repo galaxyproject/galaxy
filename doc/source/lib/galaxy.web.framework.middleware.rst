@@ -49,14 +49,6 @@ galaxy.web.framework.middleware.request\_id module
    :undoc-members:
    :show-inheritance:
 
-galaxy.web.framework.middleware.sentry module
----------------------------------------------
-
-.. automodule:: galaxy.web.framework.middleware.sentry
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.web.framework.middleware.sqldebug module
 -----------------------------------------------
 
