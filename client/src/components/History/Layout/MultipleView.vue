@@ -4,6 +4,7 @@
             <b-alert v-if="historiesLoading || histories.length === 0" class="m-2" variant="info" show>
                 <LoadingSpan message="Loading Histories" />
             </b-alert>
+
             <div v-else-if="histories.length" id="histories" class="d-flex flex-column h-100">
                 <b-container>
                     <b-row>
@@ -17,13 +18,13 @@
                                         :placeholder="'search histories' | localize"
                                         data-description="filter text input"
                                         @input="input"
-                                        @keyup.esc="updateFilter('')" />
+                                        @keyup.esc="updateHistoriesFilter('')" />
                                 </DebouncedInput>
                                 <b-input-group-append>
                                     <b-button
                                         size="sm"
                                         data-description="show deleted filter toggle"
-                                        @click="updateFilter('')">
+                                        @click="updateHistoriesFilter('')">
                                         <icon icon="times" />
                                     </b-button>
                                 </b-input-group-append>
@@ -32,21 +33,21 @@
 
                         <b-col>
                             <b-input-group>
-                                <DebouncedInput v-slot="{ value, input }" v-model="datasetsFilter">
+                                <DebouncedInput v-slot="{ value, input }" v-model="dataSetsFilter">
                                     <b-form-input
                                         size="sm"
-                                        :class="datasetsFilter && 'font-weight-bold'"
+                                        :class="dataSetsFilter && 'font-weight-bold'"
                                         :value="value"
                                         :placeholder="'search all datasets' | localize"
                                         data-description="filter text input"
                                         @input="input"
-                                        @keyup.esc="updateFilter('')" />
+                                        @keyup.esc="updateDataSetsFilter('')" />
                                 </DebouncedInput>
                                 <b-input-group-append>
                                     <b-button
                                         size="sm"
                                         data-description="show deleted filter toggle"
-                                        @click="updateFilter('')">
+                                        @click="updateDataSetsFilter('')">
                                         <icon icon="times" />
                                     </b-button>
                                 </b-input-group-append>
@@ -57,45 +58,45 @@
 
                 <hr class="w-100" />
 
-                <virtual-list
-                    :data-key="'id'"
-                    :data-component="MultipleViewItem"
-                    :data-sources="histories"
-                    :direction="'horizontal'"
-                    :extra-props="{ handlers, onViewCollection, currentHistoryId }"
-                    :item-style="{ minWidth: '15rem', maxWidth: '15rem' }"
-                    item-class="d-flex mx-1"
-                    class="flex-grow-1"
-                    style="overflow: auto hidden"
-                    wrap-class="row container flex-nowrap h-100 m-0">
-                </virtual-list>
+                <multiple-view-list
+                    :histories="histories"
+                    :histories-filter="historiesFilter"
+                    :data-sets-filter="dataSetsFilter"
+                    :current-history-id="currentHistoryId"
+                    :handlers="handlers" />
             </div>
         </UserHistories>
     </CurrentUser>
 </template>
 
 <script>
-import MultipleViewItem from "./MultipleViewItem";
 import LoadingSpan from "components/LoadingSpan";
-import VirtualList from "vue-virtual-scroll-list";
 import DebouncedInput from "components/DebouncedInput";
 import CurrentUser from "components/providers/CurrentUser";
 import UserHistories from "components/providers/UserHistories";
+import MultipleViewList from "./MultipleViewList";
 
 export default {
     components: {
         LoadingSpan,
-        VirtualList,
         DebouncedInput,
         CurrentUser,
         UserHistories,
+        MultipleViewList,
     },
     data() {
-        return { MultipleViewItem: MultipleViewItem, datasetsFilter: "", historiesFilter: "" };
+        return {
+            dataSetsFilter: "",
+            historiesFilter: "",
+        };
     },
     methods: {
-        onViewCollection(collection) {},
-        updateFilter(filter) {},
+        updateHistoriesFilter(filter) {
+            this.historiesFilter = filter;
+        },
+        updateDataSetsFilter(filter) {
+            this.dataSetsFilter = filter;
+        },
     },
 };
 </script>
