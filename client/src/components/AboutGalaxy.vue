@@ -11,7 +11,7 @@
             </p>
             <template v-if="config.version_extra">
                 <p>The server also provides the following extra version information</p>
-                <pre>{{ config.version_extra }}</pre>
+                <b-table striped="true" thead-class="d-none" :items="versionExtra" />
             </template>
         </div>
         <div>
@@ -67,6 +67,11 @@ const versionUserDocumentationUrl = computed(() => {
     return config.value.version_minor.slice(0, 3) == "dev"
         ? "https://docs.galaxyproject.org/en/latest/releases/index.html"
         : `${configVal.release_doc_base_url}${configVal.version_major}/releases/${configVal.version_major}_announce_user.html`;
+});
+
+const versionExtra = computed(() => {
+    const configVal = config.value;
+    return Object.entries(configVal.version_extra);
 });
 </script>
 
