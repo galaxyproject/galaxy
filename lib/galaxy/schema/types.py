@@ -18,5 +18,4 @@ class OffsetNaiveDatetime(datetime):
     @classmethod
     def validate(cls, v):
         v = parse_datetime(v)
-        v = v.replace(tzinfo=None)
-        return v
+        return v.replace(tzinfo=None) - v.utcoffset() if v.tzinfo else v
