@@ -3,7 +3,6 @@ Job control via TES.
 """
 import logging
 import os
-from re import escape, findall
 
 import requests
 import shlex
@@ -52,7 +51,7 @@ class TESJobRunner(AsynchronousJobRunner):
         """
         super().__init__(app, nworkers, **kwargs)
         self.container_workdir = "/tmp"
-        if(hasattr(app.config, "galaxy_infrastructure_url")):
+        if (hasattr(app.config, "galaxy_infrastructure_url")):
             self.galaxy_url = f"{app.config.galaxy_infrastructure_url.rstrip('/')}/"
         else:
             raise Exception("Galaxy URL isn't specified")
@@ -264,24 +263,24 @@ class TESJobRunner(AsynchronousJobRunner):
         remote_image = None
         staging_docker_image = None
 
-        if(hasattr(job_wrapper.job_destination, "params")):
-            if("default_docker_image" in job_wrapper.job_destination.params):
+        if (hasattr(job_wrapper.job_destination, "params")):
+            if ("default_docker_image" in job_wrapper.job_destination.params):
                 remote_image = job_wrapper.job_destination.params.get("default_docker_image")
 
-        if(hasattr(job_wrapper.job_destination, "params")):
-            if("staging_docker_image" in job_wrapper.job_destination.params):
+        if (hasattr(job_wrapper.job_destination, "params")):
+            if ("staging_docker_image" in job_wrapper.job_destination.params):
                 staging_docker_image = job_wrapper.job_destination.params.get("staging_docker_image")
 
             else:
                 staging_docker_image = remote_image
 
-        if(hasattr(remote_container, "container_id")):
+        if (hasattr(remote_container, "container_id")):
             remote_image = remote_container.container_id
 
-        if(staging_docker_image is None):
+        if (staging_docker_image is None):
             staging_docker_image = remote_image
 
-        if(remote_image is None):
+        if (remote_image is None):
             raise Exception("default_docker_image not specified")
         else:
             return remote_image, staging_docker_image
@@ -303,22 +302,22 @@ class TESJobRunner(AsynchronousJobRunner):
         remote_image, staging_out_image = self.get_docker_image(job_wrapper)
 
         command_line = build_command(self,
-                job_wrapper=job_wrapper,
-                include_metadata=False,
-                create_tool_working_directory=False,
-                include_work_dir_outputs=False,
-                remote_job_directory=job_wrapper.working_directory)
+                                    job_wrapper=job_wrapper,
+                                    include_metadata=False,
+                                    create_tool_working_directory=False,
+                                    include_work_dir_outputs=False,
+                                    remote_job_directory=job_wrapper.working_directory)
 
         env_var = self.env_variables(job_wrapper)
         staging_out_url = None
-        if(hasattr(job_wrapper.job_destination, "params")):
-            if("stage_out_url" in job_wrapper.job_destination.params):
+        if (hasattr(job_wrapper.job_destination, "params")):
+            if ("stage_out_url" in job_wrapper.job_destination.params):
                 encoded_job_id = self.app.security.encode_id(job_wrapper.job_id)
                 job_key = self.app.security.encode_id(job_wrapper.job_id, kind="jobs_files")
                 endpoint_base = "%sapi/jobs/%s/files?job_key=%s"
                 staging_out_url = endpoint_base % (job_wrapper.job_destination.params.get("stage_out_url"), encoded_job_id, job_key)
 
-        if(staging_out_url is None):
+        if (staging_out_url is None):
             staging_out_url = client_args['files_endpoint']
 
         staging_out_command = self.staging_out_command(script_path, output_files, staging_out_url, job_wrapper.working_directory)
@@ -368,7 +367,7 @@ class TESJobRunner(AsynchronousJobRunner):
         job_script = self.build_script(job_wrapper, client_args)
         job_id = self._send_task(master_addr, job_script)
 
-        if(job_id is None):
+        if (job_id is None):
             log.debug(f"Unable to set job on TES instance {master_addr}")
             return
 
@@ -416,7 +415,7 @@ class TESJobRunner(AsynchronousJobRunner):
         logs_data = data.get('logs')
         log_lines = []
         for log in logs_data:
-            if('logs' in log):
+            if ('logs' in log):
                 for log_output in log.get('logs'):
                     log_line = log_output.get(key)
                     if log_line is not None:
@@ -427,7 +426,7 @@ class TESJobRunner(AsynchronousJobRunner):
         """"
         Utility for getting out exit code of the job
         """
-        if(data['state'] == "COMPLETE"):
+        if (data['state'] == "COMPLETE"):
             return 0
         else:
             return 1
@@ -460,7 +459,7 @@ class TESJobRunner(AsynchronousJobRunner):
 
         if not job_running and job_state.running:
             log.debug("(%s/%s) job has stopped running" % (galaxy_id_tag, job_id))
-            if(job_cancel):
+            if (job_cancel):
                 job_state.job_wrapper.change_state(model.Job.states.DELETED)
                 job_state.running = False
                 self.__finish_job(data, job_state.job_wrapper)

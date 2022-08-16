@@ -58,6 +58,7 @@ def skip_unless_docker():
 def skip_unless_kubernetes():
     return skip_unless_executable("kubectl")
 
+
 def skip_unless_tes():
     return skip_unless_executable("tes")
 
