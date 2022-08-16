@@ -15,8 +15,8 @@
                         {{ section.title }}
                         <div class="toolSectionBody">
                             <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="toolTitle">
-                                <a class="title-link">
-                                    {{ item.title }}
+                                <a class="title-link" :id="item.id">
+                                    <span class="name">{{ item.title }}</span>
                                 </a>
                             </div>
                         </div>
@@ -54,40 +54,34 @@ export default {
                     title: "Server",
                     items: [
                         {
+                            id: "admin-link-datatypes",
                             title: "Data Types",
                             url: "admin/data_types",
-                            target: "__use_router__",
-                            id: "admin-link-datatypes",
                         },
                         {
+                            id: "admin-link-data-tables",
                             title: "Data Tables",
                             url: "admin/data_tables",
-                            target: "__use_router__",
-                            id: "admin-link-data-tables",
                         },
                         {
+                            id: "admin-link-display-applications",
                             title: "Display Applications",
                             url: "admin/display_applications",
-                            target: "__use_router__",
-                            id: "admin-link-display-applications",
                         },
                         {
+                            id: "admin-link-jobs",
                             title: "Jobs",
                             url: "admin/jobs",
-                            target: "__use_router__",
-                            id: "admin-link-jobs",
                         },
                         {
+                            id: "admin-link-invocations",
                             title: "Workflow Invocations",
                             url: "admin/invocations",
-                            target: "__use_router__",
-                            id: "admin-link-invocations",
                         },
                         {
+                            id: "admin-link-local-data",
                             title: "Local Data",
                             url: "admin/data_manager",
-                            target: "__use_router__",
-                            id: "admin-link-local-data",
                         },
                     ],
                 },
@@ -95,35 +89,30 @@ export default {
                     title: "User Management",
                     items: [
                         {
+                            id: "admin-link-users",
                             title: "Users",
                             url: "admin/users",
-                            target: "__use_router__",
-                            id: "admin-link-users",
                         },
                         {
+                            id: "admin-link-quotas",
                             title: "Quotas",
                             url: "admin/quotas",
-                            target: "__use_router__",
                             enabled: this.enableQuotas,
-                            id: "admin-link-quotas",
                         },
                         {
+                            id: "admin-link-groups",
                             title: "Groups",
                             url: "admin/groups",
-                            target: "__use_router__",
-                            id: "admin-link-groups",
                         },
                         {
+                            id: "admin-link-roles",
                             title: "Roles",
                             url: "admin/roles",
-                            target: "__use_router__",
-                            id: "admin-link-roles",
                         },
                         {
+                            id: "admin-link-forms",
                             title: "Forms",
                             url: "admin/forms",
-                            target: "__use_router__",
-                            id: "admin-link-forms",
                         },
                     ],
                 },
@@ -131,46 +120,41 @@ export default {
                     title: "Tool Management",
                     items: [
                         {
+                            id: "admin-link-toolshed",
                             title: "Install and Uninstall",
                             url: "admin/toolshed",
-                            target: "__use_router__",
-                            id: "admin-link-toolshed",
                             enabled: this.isToolshedInstalled,
                         },
                         {
+                            id: "admin-link-metadata",
                             title: "Manage Metadata",
                             url: "admin/reset_metadata",
-                            id: "admin-link-metadata",
                             enabled: this.isRepoInstalled,
-                            target: "__use_router__",
                         },
                         {
+                            id: "admin-link-allowlist",
                             title: "Manage Allowlist",
                             url: "admin/sanitize_allow",
-                            id: "admin-link-allowlist",
-                            target: "__use_router__",
                         },
                         {
+                            id: "admin-link-manage-dependencies",
                             title: "Manage Dependencies",
                             url: "admin/toolbox_dependencies",
-                            target: "__use_router__",
-                            id: "admin-link-manage-dependencies",
                         },
                         {
+                            id: "admin-link-manage-dependencies-legacy",
                             title: "Manage Dependencies (legacy)",
                             url: "admin/manage_tool_dependencies",
                         },
                         {
+                            id: "admin-link-tool-versions",
                             title: "View Lineage",
                             url: "admin/tool_versions",
-                            target: "__use_router__",
-                            id: "admin-link-tool-versions",
                         },
                         {
+                            id: "admin-link-error-stack",
                             title: "View Error Logs",
                             url: "admin/error_stack",
-                            id: "admin-link-error-stack",
-                            target: "__use_router__",
                         },
                     ],
                 },
