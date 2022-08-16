@@ -2997,7 +2997,7 @@ ContentField: Optional[str] = Field(
 )
 
 
-class PageSummaryBase(BaseModel):
+class PageSummaryBase(Model):
     title: str = Field(
         ...,  # Required
         title="Title",
@@ -3040,7 +3040,7 @@ class CreatePagePayload(PageSummaryBase):
         title="Annotation",
         description="Annotation that will be attached to the page.",
     )
-    invocation_id: Optional[EncodedDatabaseIdField] = Field(
+    invocation_id: Optional[DecodedDatabaseIdField] = Field(
         None,
         title="Workflow invocation ID",
         description="Encoded ID used by workflow generated reports.",
@@ -3078,7 +3078,7 @@ class AsyncFile(Model):
 
 
 class PageSummary(PageSummaryBase):
-    id: EncodedDatabaseIdField = Field(
+    id: DecodedDatabaseIdField = Field(
         ...,  # Required
         title="ID",
         description="Encoded ID of the Page.",
@@ -3109,12 +3109,12 @@ class PageSummary(PageSummaryBase):
         title="Deleted",
         description="Whether this Page has been deleted.",
     )
-    latest_revision_id: EncodedDatabaseIdField = Field(
+    latest_revision_id: DecodedDatabaseIdField = Field(
         ...,  # Required
         title="Latest revision ID",
         description="The encoded ID of the last revision of this Page.",
     )
-    revision_ids: List[EncodedDatabaseIdField] = Field(
+    revision_ids: List[DecodedDatabaseIdField] = Field(
         ...,  # Required
         title="List of revisions",
         description="The history with the encoded ID of each revision of the Page.",
@@ -3139,7 +3139,7 @@ class PageDetails(PageSummary):
         extra = Extra.allow  # Allow any other extra fields
 
 
-class PageSummaryList(BaseModel):
+class PageSummaryList(Model):
     __root__: List[PageSummary] = Field(
         default=[],
         title="List with summary information of Pages.",
