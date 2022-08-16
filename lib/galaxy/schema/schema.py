@@ -156,7 +156,7 @@ ElementsField = Field(
     description="The summary information of each of the elements inside the dataset collection.",
 )
 
-HistoryIdField: EncodedDatabaseIdField = Field(
+HistoryIdField: DecodedDatabaseIdField = Field(
     ...,
     title="History ID",
     description="The encoded ID of the history associated with this item.",
@@ -599,7 +599,7 @@ class DCSummary(Model):
     """Dataset Collection summary information."""
 
     model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
-    id: EncodedDatabaseIdField = EntityIdField
+    id: DecodedDatabaseIdField = EntityIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
     collection_type: CollectionType = CollectionTypeField
@@ -624,7 +624,7 @@ class HDAObject(Model):
 class DCObject(Model):
     """Dataset Collection Object"""
 
-    id: EncodedDatabaseIdField = EntityIdField
+    id: DecodedDatabaseIdField = EntityIdField
     model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
     collection_type: CollectionType = CollectionTypeField
     populated: Optional[bool] = PopulatedField
@@ -636,7 +636,7 @@ class DCObject(Model):
 class DCESummary(Model):
     """Dataset Collection Element summary information."""
 
-    id: EncodedDatabaseIdField = EntityIdField
+    id: DecodedDatabaseIdField = EntityIdField
     model_class: str = ModelClassField(DCE_MODEL_CLASS_NAME)
     element_index: int = Field(
         ...,
@@ -756,7 +756,7 @@ class HDCASummary(HistoryItemCommon):
     populated_state: DatasetCollection.populated_states = PopulatedStateField
     populated_state_message: Optional[str] = PopulatedStateMessageField
     element_count: Optional[int] = ElementCountField
-    job_source_id: Optional[EncodedDatabaseIdField] = Field(
+    job_source_id: Optional[DecodedDatabaseIdField] = Field(
         None,
         title="Job Source ID",
         description="The encoded ID of the Job that produced this dataset collection. Used to track the state of the job.",
@@ -772,7 +772,7 @@ class HDCASummary(HistoryItemCommon):
         description="Overview of the job states working inside the dataset collection.",
     )
     contents_url: RelativeUrl = ContentsUrlField
-    collection_id: EncodedDatabaseIdField = Field(
+    collection_id: DecodedDatabaseIdField = Field(
         ...,
         title="Collection ID",
         description="The encoded ID of the dataset collection associated with this HDCA.",
@@ -1228,7 +1228,7 @@ class CollectionElementIdentifier(Model):
         title="Source",
         description="The source of the element.",
     )
-    id: Optional[EncodedDatabaseIdField] = Field(
+    id: Optional[DecodedDatabaseIdField] = Field(
         default=None,
         title="ID",
         description="The encoded ID of the element.",
@@ -1278,13 +1278,13 @@ class CreateNewCollectionPayload(Model):
         title="Instance Type",
         description="The type of the instance, either `history` (default) or `library`.",
     )
-    history_id: Optional[EncodedDatabaseIdField] = Field(
+    history_id: Optional[DecodedDatabaseIdField] = Field(
         default=None,
         description="The ID of the history that will contain the collection. Required if `instance_type=history`.",
     )
-    folder_id: Optional[EncodedDatabaseIdField] = Field(
+    folder_id: Optional[LibraryFolderDatabaseIdField] = Field(
         default=None,
-        description="The ID of the history that will contain the collection. Required if `instance_type=library`.",
+        description="The ID of the library folder that will contain the collection. Required if `instance_type=library`.",
     )
 
 
