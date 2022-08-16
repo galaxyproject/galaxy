@@ -354,12 +354,12 @@ class Visualization(Model):  # TODO annotate this model
 class HistoryItemBase(Model):
     """Basic information provided by items contained in a History."""
 
-    id: EncodedDatabaseIdField = EntityIdField
+    id: DecodedDatabaseIdField = EntityIdField
     name: Optional[str] = Field(
         title="Name",
         description="The name of the item.",
     )
-    history_id: EncodedDatabaseIdField = HistoryIdField
+    history_id: DecodedDatabaseIdField = HistoryIdField
     hid: int = Field(
         ...,
         title="HID",
@@ -408,7 +408,7 @@ class HistoryItemCommon(HistoryItemBase):
 class HDASummary(HistoryItemCommon):
     """History Dataset Association summary information."""
 
-    dataset_id: EncodedDatabaseIdField = Field(
+    dataset_id: DecodedDatabaseIdField = Field(
         ...,
         title="Dataset ID",
         description="The encoded ID of the dataset associated with this item.",
@@ -583,7 +583,7 @@ class HDAExtended(HDADetailed):
         title="Tool Version",
         description="The version of the tool that produced this dataset.",
     )
-    parent_id: Optional[EncodedDatabaseIdField] = Field(
+    parent_id: Optional[DecodedDatabaseIdField] = Field(
         None,
         title="Parent ID",
         description="TODO",
@@ -611,11 +611,11 @@ class DCSummary(Model):
 class HDAObject(Model):
     """History Dataset Association Object"""
 
-    id: EncodedDatabaseIdField = EntityIdField
+    id: DecodedDatabaseIdField = EntityIdField
     model_class: str = ModelClassField(HDA_MODEL_CLASS_NAME)
     state: Dataset.states = DatasetStateField
     hda_ldda: DatasetSourceType = HdaLddaField
-    history_id: EncodedDatabaseIdField = HistoryIdField
+    history_id: DecodedDatabaseIdField = HistoryIdField
 
     class Config:
         extra = Extra.allow  # Can contain more fields like metadata_*
@@ -789,11 +789,10 @@ class HDCADetailed(HDCASummary):
     )
 
 
-class HistoryBase(BaseModel):
+class HistoryBase(Model):
     """Provides basic configuration for all the History models."""
 
     class Config:
-        use_enum_values = True  # When using .dict()
         extra = Extra.allow  # Allow any other extra fields
 
 
@@ -904,7 +903,7 @@ class HistorySummary(HistoryBase):
     """History summary information."""
 
     model_class: str = ModelClassField(HISTORY_MODEL_CLASS_NAME)
-    id: EncodedDatabaseIdField = EntityIdField
+    id: DecodedDatabaseIdField = EntityIdField
     name: str = Field(
         ...,
         title="Name",
@@ -951,7 +950,7 @@ class HistoryActiveContentCounts(Model):
 
 
 HistoryStateCounts = Dict[Dataset.states, int]
-HistoryStateIds = Dict[Dataset.states, List[EncodedDatabaseIdField]]
+HistoryStateIds = Dict[Dataset.states, List[DecodedDatabaseIdField]]
 
 
 class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
@@ -963,7 +962,7 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
         title="Size",
         description="The total size of the contents of this history in bytes.",
     )
-    user_id: EncodedDatabaseIdField = Field(
+    user_id: DecodedDatabaseIdField = Field(
         ...,
         title="User ID",
         description="The encoded ID of the user that owns this History.",
@@ -1186,7 +1185,7 @@ class CreateHistoryPayload(Model):
         title="Name",
         description="The new history name.",
     )
-    history_id: Optional[EncodedDatabaseIdField] = Field(
+    history_id: Optional[DecodedDatabaseIdField] = Field(
         default=None,
         title="History ID",
         description=(
@@ -1339,12 +1338,12 @@ class WriteStoreToPayload(StoreExportPayload):
 
 
 class JobExportHistoryArchiveModel(Model):
-    id: EncodedDatabaseIdField = Field(
+    id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",
         description="The encoded database ID of the job that is currently processing a particular request.",
     )
-    job_id: EncodedDatabaseIdField = Field(
+    job_id: DecodedDatabaseIdField = Field(
         ...,
         title="Job ID",
         description="The encoded database ID of the job that generated this history export archive.",
