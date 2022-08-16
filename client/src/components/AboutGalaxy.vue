@@ -1,3 +1,34 @@
+<script setup>
+/* global __buildTimestamp__, __license__  */
+/* (injected by webpack) */
+
+import { computed } from "vue";
+
+import { getAppRoot } from "onload/loadConfig";
+import { useConfig } from "components/providers/useConfig";
+import UtcDate from "components/UtcDate";
+import License from "components/License/License";
+import ExternalLink from "components/ExternalLink";
+
+const { config, isLoaded } = useConfig();
+
+const clientBuildDate = __buildTimestamp__ || new Date();
+const apiDocsLink = `${getAppRoot()}api/docs#/`;
+const galaxyLicense = __license__;
+
+const versionUserDocumentationUrl = computed(() => {
+    const configVal = config.value;
+    return config.value.version_minor.slice(0, 3) == "dev"
+        ? "https://docs.galaxyproject.org/en/latest/releases/index.html"
+        : `${configVal.release_doc_base_url}${configVal.version_major}/releases/${configVal.version_major}_announce_user.html`;
+});
+
+const versionExtra = computed(() => {
+    const configVal = config.value;
+    return Object.entries(configVal.version_extra);
+});
+</script>
+
 <template>
     <div v-if="isLoaded">
         <h1>About This Galaxy</h1>
@@ -43,36 +74,3 @@
         </div>
     </div>
 </template>
-
-<script setup>
-/* global __buildTimestamp__, __license__  */
-/* (injected by webpack) */
-
-import { computed } from "vue";
-
-import { getAppRoot } from "onload/loadConfig";
-import { useConfig } from "components/providers/useConfig";
-import UtcDate from "components/UtcDate";
-import License from "components/License/License";
-import ExternalLink from "components/ExternalLink";
-
-const { config, isLoaded } = useConfig();
-
-const clientBuildDate = __buildTimestamp__ || new Date();
-const apiDocsLink = `${getAppRoot()}api/docs#/`;
-const galaxyLicense = __license__;
-
-const versionUserDocumentationUrl = computed(() => {
-    const configVal = config.value;
-    return config.value.version_minor.slice(0, 3) == "dev"
-        ? "https://docs.galaxyproject.org/en/latest/releases/index.html"
-        : `${configVal.release_doc_base_url}${configVal.version_major}/releases/${configVal.version_major}_announce_user.html`;
-});
-
-const versionExtra = computed(() => {
-    const configVal = config.value;
-    return Object.entries(configVal.version_extra);
-});
-</script>
-
-<style scoped></style>

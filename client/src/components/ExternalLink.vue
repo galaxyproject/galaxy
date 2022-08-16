@@ -1,10 +1,3 @@
-<template>
-    <a target="_blank" :href="props.href">
-        <slot></slot>
-        <font-awesome-icon icon="external-link-alt" />
-    </a>
-</template>
-
 <script setup>
 import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -19,3 +12,10 @@ const props = defineProps({
     },
 });
 </script>
+
+<template>
+    <a target="_blank" :href="props.href">
+        <slot></slot>
+        <font-awesome-icon icon="external-link-alt" />
+    </a>
+</template>
