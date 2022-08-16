@@ -65,6 +65,7 @@
                 v-for="output in outputs"
                 :key="output.name"
                 :output="output"
+                :post-job-actions="postJobActions"
                 :get-node="getNode"
                 :get-manager="getManager"
                 @onAdd="onAddOutput"

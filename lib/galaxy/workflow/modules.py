@@ -207,7 +207,7 @@ class WorkflowModule:
         return self.get_all_outputs(data_only=True)
 
     def get_post_job_actions(self, incoming):
-        return []
+        return {}
 
     def check_and_update_state(self):
         """
@@ -407,6 +407,10 @@ class SubWorkflowModule(WorkflowModule):
     _modules: Optional[List[Any]] = None
     subworkflow: Workflow
 
+    def __init__(self, trans, content_id=None, **kwds):
+        super().__init__(trans, content_id, **kwds)
+        self.post_job_actions: Optional[Dict[str, Any]] = None
+
     @classmethod
     def from_dict(Class, trans, d, **kwds):
         module = super().from_dict(trans, d, **kwds)
@@ -491,6 +495,7 @@ class SubWorkflowModule(WorkflowModule):
 
     def get_all_outputs(self, data_only=False):
         outputs = []
+        self.post_job_actions = {}
         if hasattr(self.subworkflow, 'workflow_outputs'):
             from galaxy.managers.workflows import WorkflowContentsManager
             workflow_contents_manager = WorkflowContentsManager(self.trans.app)
@@ -509,8 +514,11 @@ class SubWorkflowModule(WorkflowModule):
                     workflow_output_uuid = workflow_output.get('uuid') or object()
                     for data_output in data_outputs:
                         data_output_uuid = data_output.get('uuid') or object()
-                        if data_output['name'] == workflow_output['output_name'] or data_output_uuid == workflow_output_uuid:
-                            data_output['name'] = label
+                        if (
+                            data_output['name'] == workflow_output['output_name']
+                            or data_output_uuid == workflow_output_uuid
+                        ):
+                            data_output['label'] = label
                             # That's the right data_output
                             break
                     else:
@@ -519,8 +527,20 @@ class SubWorkflowModule(WorkflowModule):
                         # the workflow.
                         log.error(f"Workflow output '{workflow_output['output_name']}' defined, but not listed among data outputs")
                         continue
+                    post_job_actions = step["post_job_actions"].copy()
+                    change_datatype_action = post_job_actions.pop(f"ChangeDatatypeAction{data_output['name']}", None)
+                    # Post job actions are referred to by tool output name,
+                    # but that's not guaranteed to be unique within a workflow,
+                    # but the label is unique.
+                    if change_datatype_action:
+                        post_job_actions[f"ChangeDatatypeAction{label}"] = change_datatype_action
+
+                    self.post_job_actions.update(post_job_actions)
                     outputs.append(data_output)
         return outputs
+
+    def get_post_job_actions(self, incoming):
+        return self.post_job_actions
 
     def get_content_id(self):
         return self.trans.security.encode_id(self.subworkflow.id)
