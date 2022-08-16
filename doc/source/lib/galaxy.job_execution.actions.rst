@@ -1,5 +1,5 @@
-galaxy.job_execution.actions package
-===========================
+galaxy.job\_execution.actions package
+=====================================
 
 .. automodule:: galaxy.job_execution.actions
    :members:
@@ -9,8 +9,8 @@ galaxy.job_execution.actions package
 Submodules
 ----------
 
-galaxy.job_execution.actions.post module
--------------------------------
+galaxy.job\_execution.actions.post module
+-----------------------------------------
 
 .. automodule:: galaxy.job_execution.actions.post
    :members:

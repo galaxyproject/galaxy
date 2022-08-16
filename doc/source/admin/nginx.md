@@ -325,7 +325,7 @@ If you serve Galaxy at a prefix exchange `/api/upload/resumable_upload` with `/p
 
 After reloading the nginx configuration you can verify that this configuration works correctly by uploading a file to Galaxy. Make sure the tusd server logs the request. It should look similar to the following
 
-```log
+```
 [tusd] 2021/10/12 13:30:14 Using '/Users/mvandenb/src/galaxy/database/tmp' as directory storage.
 [tusd] 2021/10/12 13:30:14 Using 0.00MB as maximum size.
 [tusd] 2021/10/12 13:30:14 Using 'http://localhost:8000/api/upload/hooks' as the endpoint for hooks

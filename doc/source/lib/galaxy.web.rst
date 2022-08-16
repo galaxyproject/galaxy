@@ -35,22 +35,6 @@ galaxy.web.form\_builder module
    :undoc-members:
    :show-inheritance:
 
-galaxy.web.formatting module
-----------------------------
-
-.. automodule:: galaxy.web.formatting
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-galaxy.web.params module
-------------------------
-
-.. automodule:: galaxy.web.params
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.web.statsd\_client module
 --------------------------------
 

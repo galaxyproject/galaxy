@@ -28,6 +28,14 @@ galaxy.util.aliaspickler module
    :undoc-members:
    :show-inheritance:
 
+galaxy.util.bool\_expressions module
+------------------------------------
+
+.. automodule:: galaxy.util.bool_expressions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.util.bunch module
 ------------------------
 
@@ -84,6 +92,14 @@ galaxy.util.dictifiable module
    :undoc-members:
    :show-inheritance:
 
+galaxy.util.dynamic module
+--------------------------
+
+.. automodule:: galaxy.util.dynamic
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.util.expressions module
 ------------------------------
 
@@ -112,14 +128,6 @@ galaxy.util.form\_builder module
 --------------------------------
 
 .. automodule:: galaxy.util.form_builder
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-galaxy.util.getargspec module
------------------------------
-
-.. automodule:: galaxy.util.getargspec
    :members:
    :undoc-members:
    :show-inheritance:
@@ -188,14 +196,6 @@ galaxy.util.monitors module
    :undoc-members:
    :show-inheritance:
 
-galaxy.util.object\_wrapper module
-----------------------------------
-
-.. automodule:: galaxy.util.object_wrapper
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.util.odict module
 ------------------------
 
@@ -240,6 +240,14 @@ galaxy.util.renamed\_temporary\_file module
 -------------------------------------------
 
 .. automodule:: galaxy.util.renamed_temporary_file
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.util.resources module
+----------------------------
+
+.. automodule:: galaxy.util.resources
    :members:
    :undoc-members:
    :show-inheritance:
@@ -320,6 +328,14 @@ galaxy.util.submodules module
 -----------------------------
 
 .. automodule:: galaxy.util.submodules
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.util.task module
+-----------------------
+
+.. automodule:: galaxy.util.task
    :members:
    :undoc-members:
    :show-inheritance:

@@ -46,3 +46,19 @@ tool\_shed.webapp.config module
    :members:
    :undoc-members:
    :show-inheritance:
+
+tool\_shed.webapp.fast\_app module
+----------------------------------
+
+.. automodule:: tool_shed.webapp.fast_app
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+tool\_shed.webapp.fast\_factory module
+--------------------------------------
+
+.. automodule:: tool_shed.webapp.fast_factory
+   :members:
+   :undoc-members:
+   :show-inheritance:
