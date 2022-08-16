@@ -43,7 +43,9 @@ from galaxy import (
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.managers import sharable
+from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.executables import artifact_class
 from galaxy.model import StoredWorkflow
 from galaxy.model.index_filter_util import (
     append_user_filter,
@@ -90,8 +92,6 @@ from galaxy.workflow.refactor.schema import (
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.resources import get_resource_mapper_function
 from galaxy.workflow.steps import attach_ordered_steps
-from .base import decode_id
-from .executables import artifact_class
 
 log = logging.getLogger(__name__)
 
@@ -368,7 +368,9 @@ class WorkflowsManager(sharable.SharableModelManager):
         return workflow_invocation
 
     def get_invocation_report(self, trans, invocation_id, **kwd):
-        decoded_workflow_invocation_id = trans.security.decode_id(invocation_id)
+        decoded_workflow_invocation_id = (
+            trans.security.decode_id(invocation_id) if isinstance(invocation_id, str) else invocation_id
+        )
         workflow_invocation = self.get_invocation(trans, decoded_workflow_invocation_id)
         generator_plugin_type = kwd.get("generator_plugin_type")
         runtime_report_config_json = kwd.get("runtime_report_config_json")

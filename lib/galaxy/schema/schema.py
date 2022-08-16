@@ -1647,7 +1647,7 @@ class JobFullDetails(JobDetails):
 
 
 class StoredWorkflowSummary(Model):
-    id: EncodedDatabaseIdField = EntityIdField
+    id: DecodedDatabaseIdField = EntityIdField
     model_class: str = ModelClassField(STORED_WORKFLOW_MODEL_CLASS_NAME)
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
@@ -1700,7 +1700,7 @@ class StoredWorkflowSummary(Model):
     )
 
 
-class WorkflowInput(BaseModel):
+class WorkflowInput(Model):
     label: str = Field(
         ...,
         title="Label",
@@ -1718,7 +1718,7 @@ class WorkflowInput(BaseModel):
     )
 
 
-class WorkflowOutput(BaseModel):
+class WorkflowOutput(Model):
     label: Optional[str] = Field(
         None,
         title="Label",
@@ -1736,7 +1736,7 @@ class WorkflowOutput(BaseModel):
     )
 
 
-class InputStep(BaseModel):
+class InputStep(Model):
     source_step: int = Field(
         ...,
         title="Source Step",
@@ -1760,7 +1760,7 @@ class WorkflowModuleType(str, Enum):
     pause = "pause"  # Experimental
 
 
-class WorkflowStepBase(BaseModel):
+class WorkflowStepBase(Model):
     id: int = Field(
         ...,
         title="ID",
@@ -1819,12 +1819,12 @@ class SubworkflowStep(WorkflowStepBase):
     type: WorkflowModuleType = Field(
         WorkflowModuleType.subworkflow, const=True, title="Type", description="The type of workflow module."
     )
-    workflow_id: EncodedDatabaseIdField = Field(
+    workflow_id: DecodedDatabaseIdField = Field(
         ..., title="Workflow ID", description="The encoded ID of the workflow that will be run on this step."
     )
 
 
-class Creator(BaseModel):
+class Creator(Model):
     class_: str = Field(..., alias="class", title="Class", description="The class representing this creator.")
     name: str = Field(..., title="Name", description="The name of the creator.")
     address: Optional[str] = Field(
@@ -1929,17 +1929,17 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
     ] = Field({}, title="Steps", description="A dictionary with information about all the steps of the workflow.")
 
 
-class Input(BaseModel):
+class Input(Model):
     name: str = Field(..., title="Name", description="The name of the input.")
     description: str = Field(..., title="Description", description="The annotation or description of the input.")
 
 
-class Output(BaseModel):
+class Output(Model):
     name: str = Field(..., title="Name", description="The name of the output.")
     type: str = Field(..., title="Type", description="The extension or type of output.")
 
 
-class InputConnection(BaseModel):
+class InputConnection(Model):
     id: int = Field(..., title="ID", description="The identifier of the input.")
     output_name: str = Field(
         ...,
@@ -1953,7 +1953,7 @@ class InputConnection(BaseModel):
     )
 
 
-class WorkflowStepLayoutPosition(BaseModel):
+class WorkflowStepLayoutPosition(Model):
     """Position and dimensions of the workflow step represented by a box on the graph."""
 
     bottom: int = Field(..., title="Bottom", description="Position in pixels of the bottom of the box.")
@@ -1966,7 +1966,7 @@ class WorkflowStepLayoutPosition(BaseModel):
     width: int = Field(..., title="Width", description="Width of the box in pixels.")
 
 
-class WorkflowStepToExportBase(BaseModel):
+class WorkflowStepToExportBase(Model):
     id: int = Field(
         ...,
         title="ID",
@@ -2031,7 +2031,7 @@ class WorkflowStepToExport(WorkflowStepToExportBase):
     )
 
 
-class ToolShedRepositorySummary(BaseModel):
+class ToolShedRepositorySummary(Model):
     name: str = Field(
         ...,
         title="Name",
@@ -2054,7 +2054,7 @@ class ToolShedRepositorySummary(BaseModel):
     )
 
 
-class PostJobAction(BaseModel):
+class PostJobAction(Model):
     action_type: str = Field(
         ...,
         title="Action Type",
@@ -2087,7 +2087,7 @@ class SubworkflowStepToExport(WorkflowStepToExportBase):
     )
 
 
-class WorkflowToExport(BaseModel):
+class WorkflowToExport(Model):
     a_galaxy_workflow: str = Field(  # Is this meant to be a bool instead?
         "true", title="Galaxy Workflow", description="Whether this workflow is a Galaxy Workflow."
     )
