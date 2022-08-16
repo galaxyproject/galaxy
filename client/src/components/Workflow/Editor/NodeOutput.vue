@@ -34,6 +34,10 @@ export default {
             type: Function,
             required: true,
         },
+        postJobActions: {
+            type: Object,
+            required: true,
+        },
     },
     data() {
         return {
@@ -46,12 +50,8 @@ export default {
             return `node-${node.id}-output-${this.output.name}`;
         },
         label() {
-            let extensions = this.output.extensions || this.output.type || "unspecified";
-            if (Array.isArray(extensions)) {
-                extensions = extensions.join(", ");
-            }
             const activeLabel = this.output.activeLabel || this.output.label || this.output.name;
-            return `${activeLabel} (${extensions})`;
+            return `${activeLabel} (${this.extensions})`;
         },
         activeClass() {
             return this.output.activeOutput && "mark-terminal-active";
@@ -66,6 +66,19 @@ export default {
                 return `${cls} multiple`;
             }
             return cls;
+        },
+        forcedExtensions() {
+            const changeDatatype =
+                this.postJobActions[`ChangeDatatypeAction${this.output.label}`] ||
+                this.postJobActions[`ChangeDatatypeAction${this.output.name}`];
+            return changeDatatype?.action_arguments.newtype;
+        },
+        extensions() {
+            let extensions = this.forcedExtensions || this.output.extensions || this.output.type || "unspecified";
+            if (Array.isArray(extensions)) {
+                extensions = extensions.join(", ");
+            }
+            return extensions;
         },
     },
     watch: {
