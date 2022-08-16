@@ -76,16 +76,6 @@ class JobRunnerMapper:
             "referrer": destination,
         }
 
-        actual_args = {}
-
-        for arg in function_arg_names:
-            # Send through any job_conf.xml defined args to function
-            if arg in destination.params:
-                actual_args[arg] = destination.params[arg]
-            # Populate needed args
-            if arg in possible_args:
-                actual_args[arg] = possible_args[arg]
-
         # Don't hit the DB to load the job object if not needed
         db_param_set = set(["job", "user", "user_email", "resource_params", "workflow_invocation_uuid"])
         require_db = any(arg in db_param_set for arg in function_arg_names)
@@ -100,9 +90,18 @@ class JobRunnerMapper:
                 "workflow_invocation_uuid": job.raw_param_dict().get("__workflow_invocation_uuid__", None),
                 "workflow_resource_params": job.raw_param_dict().get("__workflow_resource_params__", None),
             }
-            actual_args.update({
-                arg: db_param_mapping[arg] for arg in function_arg_names if arg in db_param_mapping
-            })
+
+        actual_args = {}
+
+        for arg in function_arg_names:
+            # Send through any job_conf.xml defined args to function
+            if arg in destination.params:
+                actual_args[arg] = destination.params[arg]
+            # Populate needed args
+            if arg in possible_args:
+                actual_args[arg] = possible_args[arg]
+            if require_db and arg in db_param_mapping:
+                actual_args[arg] = db_param_mapping[arg]
 
         return expand_function(**actual_args)
 
