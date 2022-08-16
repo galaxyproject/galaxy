@@ -60,7 +60,7 @@ def load_edam_tree_from_tsv_stream(tsv_stream: TextIO, *included_terms: str):
         term_id = term[len(EDAM_PREFIX) :]
 
         # Only care about included terms
-        if (included_terms is not None) and not (term_id.startswith(included_terms)):
+        if included_terms and not (term_id.startswith(included_terms)):
             continue
 
         parents = fields[parents_column].split("|")
