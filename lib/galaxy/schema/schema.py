@@ -301,12 +301,12 @@ class MetadataFile(Model):
 class DatasetPermissions(Model):
     """Role-based permissions for accessing and managing a dataset."""
 
-    manage: List[EncodedDatabaseIdField] = Field(
+    manage: List[DecodedDatabaseIdField] = Field(
         [],
         title="Management",
         description="The set of roles (encoded IDs) that can manage this dataset.",
     )
-    access: List[EncodedDatabaseIdField] = Field(
+    access: List[DecodedDatabaseIdField] = Field(
         [],
         title="Access",
         description="The set of roles (encoded IDs) that can access this dataset.",
@@ -1384,7 +1384,7 @@ class JobExportHistoryArchiveCollection(Model):
     __root__: List[JobExportHistoryArchiveModel]
 
 
-class LabelValuePair(BaseModel):
+class LabelValuePair(Model):
     """Generic Label/Value pair model."""
 
     label: str = Field(
@@ -1399,7 +1399,7 @@ class LabelValuePair(BaseModel):
     )
 
 
-class CustomBuildsMetadataResponse(BaseModel):
+class CustomBuildsMetadataResponse(Model):
     installed_builds: List[LabelValuePair] = Field(
         ...,
         title="Installed Builds",
@@ -1416,10 +1416,10 @@ class CustomBuildsMetadataResponse(BaseModel):
     )
 
 
-class JobIdResponse(BaseModel):
+class JobIdResponse(Model):
     """Contains the ID of the job associated with a particular request."""
 
-    job_id: EncodedDatabaseIdField = Field(
+    job_id: DecodedDatabaseIdField = Field(
         ...,
         title="Job ID",
         description="The encoded database ID of the job that is currently processing a particular request.",
@@ -1427,14 +1427,14 @@ class JobIdResponse(BaseModel):
 
 
 class JobBaseModel(Model):
-    id: EncodedDatabaseIdField = EntityIdField
+    id: DecodedDatabaseIdField = EntityIdField
     model_class: str = ModelClassField(JOB_MODEL_CLASS_NAME)
     tool_id: str = Field(
         ...,
         title="Tool ID",
         description="Identifier of the tool that generated this job.",
     )
-    history_id: Optional[EncodedDatabaseIdField] = Field(
+    history_id: Optional[DecodedDatabaseIdField] = Field(
         None,
         title="History ID",
         description="The encoded ID of the history associated with this item.",
@@ -1468,7 +1468,7 @@ class JobImportHistoryResponse(JobBaseModel):
 
 
 class JobStateSummary(Model):
-    id: EncodedDatabaseIdField = EntityIdField
+    id: DecodedDatabaseIdField = EntityIdField
     model: str = ModelClassField("Job")
     populated_state: DatasetCollection.populated_states = PopulatedStateField
     states: Dict[Job.states, int] = Field(
@@ -1513,7 +1513,7 @@ class JobSummary(JobBaseModel):
 
 
 class DatasetSourceId(Model):
-    id: EncodedDatabaseIdField = EntityIdField
+    id: DecodedDatabaseIdField = EntityIdField
     src: DatasetSourceType = Field(
         ...,
         title="Source",
@@ -2711,7 +2711,7 @@ AnyJobStateSummary = Union[
 HistoryArchiveExportResult = Union[JobExportHistoryArchiveModel, JobIdResponse]
 
 
-class DeleteHistoryContentPayload(BaseModel):
+class DeleteHistoryContentPayload(Model):
     purge: bool = Field(
         default=False,
         title="Purge",
@@ -2734,7 +2734,7 @@ class DeleteHistoryContentResult(CustomHistoryItem):
 
     Can also contain any other properties of the item."""
 
-    id: EncodedDatabaseIdField = Field(
+    id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",
         description="The encoded ID of the history item.",
@@ -2751,7 +2751,7 @@ class DeleteHistoryContentResult(CustomHistoryItem):
     )
 
 
-class HistoryContentsArchiveDryRunResult(BaseModel):
+class HistoryContentsArchiveDryRunResult(Model):
     """
     Contains a collection of filepath/filename entries that represent
     the contents that would have been included in the archive.
@@ -2765,7 +2765,7 @@ class HistoryContentsArchiveDryRunResult(BaseModel):
     __root__: List[List[str]]  # List[Tuple[str, str]]
 
 
-class HistoryContentStats(BaseModel):
+class HistoryContentStats(Model):
     total_matches: int = Field(
         ...,
         title="Total Matches",
@@ -2773,7 +2773,7 @@ class HistoryContentStats(BaseModel):
     )
 
 
-class ContentsNearStats(BaseModel):
+class ContentsNearStats(Model):
     """Stats used by the `contents_near` endpoint."""
 
     matches: int
@@ -2806,7 +2806,7 @@ class HistoryContentsResult(Model):
     __root__: List[AnyHistoryContentItem]
 
 
-class HistoryContentsWithStatsResult(BaseModel):
+class HistoryContentsWithStatsResult(Model):
     """Includes stats with items counting"""
 
     stats: HistoryContentStats = Field(
@@ -2826,7 +2826,7 @@ class HistoryContentsWithStatsResult(BaseModel):
     __accept_type__ = "application/vnd.galaxy.history.contents.stats+json"
 
 
-class ContentsNearResult(BaseModel):
+class ContentsNearResult(Model):
     contents: HistoryContentsResult
     stats: ContentsNearStats
 
@@ -3017,7 +3017,7 @@ class MaterializeDatasetInstanceAPIRequest(Model):
         title="Source",
         description="The source of the content. Can be other history element to be copied or library elements.",
     )
-    content: EncodedDatabaseIdField = Field(
+    content: DecodedDatabaseIdField = Field(
         None,
         title="Content",
         description=(
@@ -3029,7 +3029,7 @@ class MaterializeDatasetInstanceAPIRequest(Model):
 
 
 class MaterializeDatasetInstanceRequest(MaterializeDatasetInstanceAPIRequest):
-    history_id: EncodedDatabaseIdField
+    history_id: DecodedDatabaseIdField
 
 
 class CreatePagePayload(PageSummaryBase):
@@ -3051,7 +3051,7 @@ class CreatePagePayload(PageSummaryBase):
         extra = Extra.allow  # Allow any other extra fields
 
 
-class AsyncTaskResultSummary(BaseModel):
+class AsyncTaskResultSummary(Model):
     id: str = Field(
         ...,
         title="ID",
@@ -3072,7 +3072,7 @@ class AsyncTaskResultSummary(BaseModel):
     )
 
 
-class AsyncFile(BaseModel):
+class AsyncFile(Model):
     storage_request_id: str
     task: AsyncTaskResultSummary
 

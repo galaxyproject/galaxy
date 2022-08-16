@@ -565,14 +565,13 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         trans,
         request: MaterializeDatasetInstanceRequest,
     ) -> AsyncTaskResultSummary:
-        history_id = self.decode_id(request.history_id)
         # DO THIS JUST TO MAKE SURE IT IS OWNED...
-        self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
+        self.history_manager.get_owned(request.history_id, trans.user, current_history=trans.history)
         assert trans.app.config.enable_celery_tasks
         task_request = MaterializeDatasetInstanceTaskRequest(
-            history_id=history_id,
+            history_id=request.history_id,
             source=request.source,
-            content=self.decode_id(request.content),
+            content=request.content,
             user=trans.async_request_user,
         )
         results = materialize_task.delay(request=task_request)
@@ -604,7 +603,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         assert hda is not None
         self.hda_manager.update_permissions(trans, hda, **payload_dict)
         roles = self.hda_manager.serialize_dataset_association_roles(trans, hda)
-        return DatasetAssociationRoles.parse_obj(roles)
+        return DatasetAssociationRoles.construct(**roles)
 
     def update(
         self,
@@ -844,7 +843,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
         # if dry_run, return the structure as json for debugging
         if dry_run:
-            return HistoryContentsArchiveDryRunResult.parse_obj(paths_and_files)
+            return HistoryContentsArchiveDryRunResult.construct(__root__=paths_and_files)
 
         # create the archive, add the dataset files, then stream the archive as a download
         archive = ZipstreamWrapper(

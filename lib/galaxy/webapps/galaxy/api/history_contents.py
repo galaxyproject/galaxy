@@ -76,7 +76,7 @@ from galaxy.webapps.galaxy.services.history_contents import (
     HistoryContentsIndexParams,
     LegacyHistoryContentsIndexParams,
 )
-from . import (
+from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     Router,
@@ -636,7 +636,7 @@ class FastAPIHistoryContents:
         will be made to the items.
         """
         result = self.service.update_batch(trans, history_id, payload, serialization_params)
-        return HistoryContentsResult.parse_obj(result)
+        return HistoryContentsResult.construct(__root__=result)
 
     @router.put(
         "/api/histories/{history_id}/contents/bulk",
