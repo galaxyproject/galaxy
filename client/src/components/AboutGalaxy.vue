@@ -13,7 +13,7 @@ import ExternalLink from "components/ExternalLink";
 const { config, isLoaded } = useConfig();
 
 const clientBuildDate = __buildTimestamp__ || new Date();
-const apiDocsLink = `${getAppRoot()}api/docs#/`;
+const apiDocsLink = `${getAppRoot()}api/docs`;
 const galaxyLicense = __license__;
 
 const versionUserDocumentationUrl = computed(() => {
@@ -37,29 +37,14 @@ const versionExtra = computed(() => {
             <h4>Galaxy Version Information</h4>
             <p>
                 The Galaxy Server is running version
-                <strong>{{ config.version_major }}.{{ config.version_minor }}</strong
+                <external-link :href="versionUserDocumentationUrl">
+                    <strong> {{ config.version_major }}.{{ config.version_minor }}</strong> </external-link
                 >, and the web client was built on <UtcDate :date="clientBuildDate" />.
             </p>
             <template v-if="config.version_extra">
                 <p>The server also provides the following extra version information</p>
-                <b-table striped="true" thead-class="d-none" :items="versionExtra" />
+                <b-table :striped="true" thead-class="d-none" :items="versionExtra" />
             </template>
-        </div>
-        <div>
-            <h4>Release Documentation</h4>
-            <p>
-                The user-facing documentation accompanying this release is available at
-                <external-link :href="versionUserDocumentationUrl">
-                    {{ versionUserDocumentationUrl }}
-                </external-link>
-            </p>
-        </div>
-        <div v-if="config.terms_url">
-            <!-- Terms, if available.-->
-            <h4>Terms of use for this Galaxy:</h4>
-            <p>
-                <external-link :href="config.terms_url">{{ config.terms_url }}</external-link>
-            </p>
         </div>
         <div>
             <h4>Galaxy API Documentation</h4>
@@ -71,6 +56,11 @@ const versionExtra = computed(() => {
         <div>
             <h4>License Information</h4>
             <p>The Galaxy Software is licensed under <License :license-id="galaxyLicense" /></p>
+        </div>
+        <div v-if="config.terms_url">
+            <!-- Terms, if available.-->
+            <h4>Terms of use for this Galaxy:</h4>
+            <b-embed type="iframe" :src="config.terms_url" aspect="1by1" />
         </div>
     </div>
 </template>
