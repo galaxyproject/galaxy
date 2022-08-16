@@ -1,5 +1,6 @@
 <template>
     <div id="columns">
+        <SidePanel side="left" :currentPanel="getAdminPanel()" />
         <div id="center">
             <div class="center-container m-2">
                 <router-view :key="$route.fullPath" />
@@ -9,6 +10,7 @@
 </template>
 <script>
 import { getGalaxyInstance } from "app";
+import AdminPanel from "components/admin/AdminPanel";
 import SidePanel from "components/Panels/SidePanel";
 
 export default {
@@ -16,9 +18,8 @@ export default {
         SidePanel,
     },
     methods: {
-        getToolBox() {
-            //<SidePanel side="left" :currentPanel="getAdminBox()" />
-            //return ToolBox;
+        getAdminPanel() {
+            return AdminPanel;
         },
     },
 };
