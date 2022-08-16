@@ -21,6 +21,7 @@ import yaml
 import galaxy.util
 from galaxy.util import RW_R__R__
 from galaxy.util.bunch import Bunch
+from galaxy.tool_util.edam_util import load_edam_tree
 from . import (
     binary,
     coverage,
@@ -46,9 +47,18 @@ class ConfigurationError(Exception):
 
 class Registry:
     def __init__(self, config=None):
+        edam_ontology_path = config.edam_toolbox_ontology_path
+
+        edam = load_edam_tree(
+            None if not edam_ontology_path or not os.path.exists(edam_ontology_path) else edam_ontology_path,
+            "format_",
+            "data_",
+        )
+
         self.log = logging.getLogger(__name__)
         self.log.addHandler(logging.NullHandler())
         self.config = config
+        self.edam = edam
         self.datatypes_by_extension = {}
         self.datatypes_by_suffix_inferences = {}
         self.mimetypes_by_extension = {}

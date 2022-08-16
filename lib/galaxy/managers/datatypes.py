@@ -12,6 +12,7 @@ from galaxy.datatypes._schema import (
     DatatypeDetails,
     DatatypesCombinedMap,
     DatatypesMap,
+    DatatypeEDAMDetailsDict,
 )
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.registry import Registry
@@ -87,6 +88,34 @@ def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
                 }
             )
     return parse_obj_as(DatatypeConverterList, converters)
+
+
+def _get_edam_details(datatypes_registry: Registry, edam_ids: Dict[str, str]):
+    details_dict = {}
+    for (format, edam_iri) in edam_ids.items():
+        edam_details = datatypes_registry.edam.get(edam_iri, {})
+
+        details_dict[format] = {
+            "prefix_IRI": edam_iri,
+            "label": edam_details.get("label", None),
+            "definition": edam_details.get("definition", None),
+        }
+
+    return details_dict
+
+
+def view_edam_formats(datatypes_registry: Registry, id_only: Optional[bool] = True) -> Union[Dict[str, str], DatatypeEDAMDetailsDict]:
+    if id_only:
+        return datatypes_registry.edam_formats
+    else:
+        return _get_edam_details(datatypes_registry, datatypes_registry.edam_formats)
+
+
+def view_edam_data(datatypes_registry: Registry, id_only: Optional[bool] = True) -> Union[Dict[str, str], DatatypeEDAMDetailsDict]:
+    if id_only:
+        return datatypes_registry.edam_data
+    else:
+        return _get_edam_details(datatypes_registry, datatypes_registry.edam_data)
 
 
 __all__ = (

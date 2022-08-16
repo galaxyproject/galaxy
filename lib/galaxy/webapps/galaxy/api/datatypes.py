@@ -17,10 +17,13 @@ from galaxy.managers.datatypes import (
     DatatypeDetails,
     DatatypesCombinedMap,
     DatatypesMap,
+    DatatypeEDAMDetailsDict,
     view_converters,
     view_index,
     view_mapping,
     view_sniffers,
+    view_edam_formats,
+    view_edam_data,
 )
 from . import (
     depends,
@@ -41,6 +44,12 @@ UploadOnlyQueryParam: Optional[bool] = Query(
     default=True,
     title="Upload only",
     description="Whether to return only datatypes which can be uploaded",
+)
+
+IdentifierOnly: Optional[bool] = Query(
+    default=True,
+    title="prefixIRI only",
+    description="Whether to return only the EDAM prefixIRI rather than the EDAM details",
 )
 
 
@@ -111,15 +120,21 @@ class FastAPIDatatypes:
         summary="Returns a dictionary/map of datatypes and EDAM formats",
         response_description="Dictionary/map of datatypes and EDAM formats",
     )
-    async def edam_formats(self) -> Dict[str, str]:
+    async def edam_formats(
+        self,
+        id_only: Optional[bool] = IdentifierOnly,
+    ) -> Union[DatatypeEDAMDetailsDict, Dict[str, str]]:
         """Gets a map of datatypes and their corresponding EDAM formats."""
-        return self.datatypes_registry.edam_formats
+        return view_edam_formats(self.datatypes_registry, id_only)
 
     @router.get(
         "/api/datatypes/edam_data",
         summary="Returns a dictionary/map of datatypes and EDAM data",
         response_description="Dictionary/map of datatypes and EDAM data",
     )
-    async def edam_data(self) -> Dict[str, str]:
+    async def edam_data(
+        self,
+        id_only: Optional[bool] = IdentifierOnly,
+    ) -> Union[DatatypeEDAMDetailsDict, Dict[str, str]]:
         """Gets a map of datatypes and their corresponding EDAM data."""
-        return self.datatypes_registry.edam_data
+        return view_edam_data(self.datatypes_registry, id_only)
