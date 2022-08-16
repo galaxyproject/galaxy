@@ -1,6 +1,10 @@
 <template>
     <div class="d-flex flex-column align-items-center">
-        <HistoryPanel :history="source" v-on="handlers" @view-collection="onViewCollection" />
+        <HistoryPanel
+            :history="source"
+            :data-sets-filter="dataSetsFilter"
+            v-on="handlers"
+            @view-collection="onViewCollection" />
         <b-button
             size="sm"
             class="my-1"
@@ -30,6 +34,10 @@ export default {
         handlers: {
             type: Object,
             required: true,
+        },
+        dataSetsFilter: {
+            type: String,
+            default: null,
         },
         onViewCollection: {
             type: Function,
