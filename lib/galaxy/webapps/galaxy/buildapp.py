@@ -1369,7 +1369,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # Error middleware
     app = wrap_if_allowed(app, stack, ErrorMiddleware, args=(conf,))
     # Transaction logging (apache access.log style)
-    if asbool(conf.get("use_translogger", True)):
+    if asbool(conf.get("use_translogger", False)):
         from galaxy.web.framework.middleware.translogger import TransLogger
 
         app = wrap_if_allowed(app, stack, TransLogger)

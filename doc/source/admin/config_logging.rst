@@ -45,6 +45,20 @@ To change the log file name or location, use the ``$GALAXY_LOG`` environment var
 
     $ GALAXY_LOG=/path/to/galaxy/logfile sh run.sh --daemon
 
+It is also possible to specify the path to the log file using the ``log_destination`` configuration option in
+``galaxy.yml``. Additionally, it is possible to automatically rotate logs once the log file reaches a given size, using
+the ``log_rotate_size`` and ``log_rotate_count`` options, which control the size at which the log is rotated, and the
+number of rotated logs to keep, respectively:
+
+.. code-block:: yaml
+
+    galaxy:
+        # Set log file path
+        log_destination: /srv/galaxy/log/galaxy.log
+        # Rotate once log reaches 100 MB
+        log_rotate_size: 100 MB
+        # Keep the 10 most recent log files
+        log_rotate_count: 10
 
 Advanced Configuration
 ----------------------------

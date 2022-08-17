@@ -2563,12 +2563,55 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~
+``log_destination``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Log destination, defaults to special value "stdout" that logs to
+    standard output. If set to anything else, then it will be
+    interpreted as a path that will be used as the log file, and
+    logging to stdout will be disabled.
+:Default: ``stdout``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``log_rotate_size``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Size of log file at which size it will be rotated as per the
+    documentation in
+    https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+    If log_rotate_count is not also set, no log rotation will be
+    performed. A value of 0 (the default) means no rotation. Size can
+    be a number of bytes or a human-friendly representation like "100
+    MB" or "1G".
+:Default: ``0``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``log_rotate_count``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Number of log file backups to keep, per the documentation in
+    https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+    Any additional rotated log files will automatically be pruned. If
+    log_rotate_size is not also set, no log rotation will be
+    performed. A value of 0 (the default) means no rotation.
+:Default: ``0``
+:Type: int
+
+
 ~~~~~~~~~~~~~
 ``log_level``
 ~~~~~~~~~~~~~
 
 :Description:
-    Verbosity of console log messages.  Acceptable values can be found
+    Verbosity of console log messages. Acceptable values can be found
     here: https://docs.python.org/library/logging.html#logging-levels
     A custom debug level of "TRACE" is available for even more
     verbosity.
@@ -2581,9 +2624,8 @@
 ~~~~~~~~~~~
 
 :Description:
-    Controls where and how the server logs messages. If unset, the
-    default is to log all messages to standard output at the level
-    defined by the `log_level` configuration option. Configuration is
+    Controls where and how the server logs messages. If set, overrides
+    all settings in the log_* configuration options. Configuration is
     described in the documentation at:
     https://docs.galaxyproject.org/en/master/admin/config_logging.html
 :Default: ``None``
