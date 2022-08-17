@@ -41,6 +41,14 @@ galaxy.webapps.galaxy.api.cloudauthz module
    :undoc-members:
    :show-inheritance:
 
+galaxy.webapps.galaxy.api.common module
+---------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.common
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.webapps.galaxy.api.configuration module
 ----------------------------------------------
 
@@ -309,6 +317,14 @@ galaxy.webapps.galaxy.api.roles module
 --------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.roles
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.webapps.galaxy.api.sanitize\_allow module
+------------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.sanitize_allow
    :members:
    :undoc-members:
    :show-inheritance:

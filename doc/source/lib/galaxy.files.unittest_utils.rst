@@ -1,7 +1,7 @@
-galaxy.tools.toolbox.filters package
+galaxy.files.unittest\_utils package
 ====================================
 
-.. automodule:: galaxy.tools.toolbox.filters
+.. automodule:: galaxy.files.unittest_utils
    :members:
    :undoc-members:
    :show-inheritance:

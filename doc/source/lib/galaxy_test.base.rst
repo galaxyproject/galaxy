@@ -89,18 +89,18 @@ galaxy\_test.base.rules\_test\_data module
    :undoc-members:
    :show-inheritance:
 
-galaxy\_test.base.ssh\_util module
-----------------------------------
-
-.. automodule:: galaxy_test.base.ssh_util
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy\_test.base.testcase module
 ---------------------------------
 
 .. automodule:: galaxy_test.base.testcase
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy\_test.base.uses\_shed module
+-----------------------------------
+
+.. automodule:: galaxy_test.base.uses_shed
    :members:
    :undoc-members:
    :show-inheritance:

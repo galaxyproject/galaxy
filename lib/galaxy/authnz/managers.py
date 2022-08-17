@@ -501,7 +501,7 @@ class AuthnzManager:
         )
         credentials = self.get_cloud_access_credentials(cloudauthz, sa_session, user_id, request)
         log.info(
-            "Writting credentials generated using CloudAuthz with config id `{}` to the following file: `{}`"
+            "Writing credentials generated using CloudAuthz with config id `{}` to the following file: `{}`"
             "".format(cloudauthz.id, filename)
         )
         with open(filename, "w") as f:

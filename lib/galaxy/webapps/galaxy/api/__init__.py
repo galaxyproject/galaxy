@@ -293,8 +293,9 @@ class Router(InferringRouter):
         routes for /api/thing and /api/deprecated_thing.
         """
         kwd = self._handle_galaxy_kwd(kwd)
+        include_in_schema = kwd.pop("include_in_schema", True)
 
-        def decorate_route(route):
+        def decorate_route(route, include_in_schema=include_in_schema):
 
             # Decorator solely exists to allow passing `route_class_override` to add_api_route
             def decorated_route(func):
@@ -302,22 +303,36 @@ class Router(InferringRouter):
                     route,
                     endpoint=func,
                     methods=[verb],
+                    include_in_schema=include_in_schema,
                     **kwd,
                 )
                 return func
 
             return decorated_route
 
-        route = decorate_route(args[0])
+        routes = []
+        for path in self.construct_aliases(args[0], alias):
+            if path != "/" and path.endswith("/"):
+                routes.append(decorate_route(path, include_in_schema=False))
+            else:
+                routes.append(decorate_route(path))
 
+        def dec(f):
+            for route in routes:
+                f = route(f)
+            return f
+
+        return dec
+
+    @staticmethod
+    def construct_aliases(path: str, alias: Optional[str]):
+        yield path
+        if path != "/" and not path.endswith("/"):
+            yield f"{path}/"
         if alias:
-            redecorated_route = decorate_route(alias)
-
-            def dec(f):
-                return route(redecorated_route(f))
-
-            return dec
-        return route
+            yield alias
+            if not alias == "/" and not alias.endswith("/"):
+                yield f"{alias}/"
 
     def get(self, *args, **kwd):
         """Extend FastAPI.get to accept a require_admin Galaxy flag."""

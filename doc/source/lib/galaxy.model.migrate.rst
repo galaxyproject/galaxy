@@ -12,6 +12,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   galaxy.model.migrate.triggers
    galaxy.model.migrate.versions
 
 Submodules

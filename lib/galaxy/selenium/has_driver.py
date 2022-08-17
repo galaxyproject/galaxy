@@ -27,7 +27,6 @@ HasFindElement = Union[WebDriver, WebElement]
 
 
 class HasDriver:
-    TimeoutException: Type[SeleniumTimeoutException] = SeleniumTimeoutException
     by: Type[By] = By
     keys: Type[Keys] = Keys
     driver: WebDriver
@@ -296,13 +295,10 @@ def exception_indicates_stale_element(exception):
     return "stale" in str(exception)
 
 
-TimeoutException = SeleniumTimeoutException
-
-
 __all__ = (
     "exception_indicates_click_intercepted",
     "exception_indicates_not_clickable",
     "exception_indicates_stale_element",
     "HasDriver",
-    "TimeoutException",
+    "SeleniumTimeoutException",
 )

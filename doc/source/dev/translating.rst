@@ -45,19 +45,19 @@ There are a number of ways text gets used in the codebase, especially the new Vu
 
 1. Text within an element:
 
-   .. code-block:: js
+   .. code-block:: html
 
        <b>Some Text</b>
 
 2. Text within a more complex element:
 
-   .. code-block:: javascript
+   .. code-block:: html
 
        <b><icon library>Some Text</b>
 
 3. Attribute or placeholder text
 
-   .. code-block:: javascript
+   .. code-block:: html
 
        <b-form-input v-model="newLibraryForm.synopsis" placeholder="Synopsis of the library" />
 
@@ -88,7 +88,7 @@ The first one is the easiest, we can just add the ``v-localize`` tag and we're d
 
 For those you'll need to have a quick overview of the structure of a Vue component to localize the correct place to set the variable. The exact structure will not always be identical but it should be similar. At the top is a ``<template>`` section which contains what will be rendered, and at the bottom is a ``<script>`` section which contains some code that's run as part of rendering that UI component.
 
-.. code-block:: javascript
+.. code-block:: html
 
     <template>
         <span class="position-relative">
