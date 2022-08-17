@@ -68,7 +68,10 @@ from galaxy.schema import (
     SerializationParams,
     ValueFilterQueryParams,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    LibraryFolderDatabaseIdField,
+)
 from galaxy.schema.schema import (
     AnyBulkOperationParams,
     AnyHistoryContentItem,
@@ -178,7 +181,7 @@ class CreateHistoryContentPayloadFromCopy(CreateHistoryContentPayloadBase):
         title="Source",
         description="The source of the content. Can be other history element to be copied or library elements.",
     )
-    content: Optional[DecodedDatabaseIdField] = Field(
+    content: Optional[Union[DecodedDatabaseIdField, LibraryFolderDatabaseIdField]] = Field(
         None,
         title="Content",
         description=(
@@ -1365,7 +1368,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         trans.sa_session.flush()
         return self.hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, **serialization_params.dict())
 
-    def __create_hda_from_ldda(self, trans, history: History, ldda_id: DecodedDatabaseIdField):
+    def __create_hda_from_ldda(self, trans, history: History, ldda_id: int):
         decoded_ldda_id = ldda_id
         ld = self.ldda_manager.get(trans, decoded_ldda_id)
         if type(ld) is not LibraryDataset:
@@ -1375,7 +1378,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         hda = ld.library_dataset_dataset_association.to_history_dataset_association(history, add_to_history=True)
         return hda
 
-    def __create_hda_from_copy(self, trans, history: History, original_hda_id: DecodedDatabaseIdField):
+    def __create_hda_from_copy(self, trans, history: History, original_hda_id: int):
         original = self.hda_manager.get_accessible(original_hda_id, trans.user)
         # check for access on history that contains the original hda as well
         self.history_manager.error_unless_accessible(original.history, trans.user, current_history=trans.history)
