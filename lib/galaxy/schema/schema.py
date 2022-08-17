@@ -39,7 +39,6 @@ from galaxy.model import (
 )
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
-    EncodedDatabaseIdField,
     LibraryFolderDatabaseIdField,
     ModelClassField,
 )
@@ -2196,9 +2195,9 @@ class LibraryPermissionScope(str, Enum):
     available = "available"
 
 
-class LibraryLegacySummary(BaseModel):
+class LibraryLegacySummary(Model):
     model_class: str = ModelClassField("Library")
-    id: EncodedDatabaseIdField = Field(
+    id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",
         description="Encoded ID of the Library.",
@@ -2218,7 +2217,7 @@ class LibraryLegacySummary(BaseModel):
         title="Description",
         description="A short text describing the contents of the Library.",
     )
-    root_folder_id: EncodedDatabaseIdField = Field(
+    root_folder_id: LibraryFolderDatabaseIdField = Field(
         ...,
         title="Root Folder ID",
         description="Encoded ID of the Library's base folder.",
@@ -2264,14 +2263,14 @@ class LibrarySummary(LibraryLegacySummary):
     )
 
 
-class LibrarySummaryList(BaseModel):
+class LibrarySummaryList(Model):
     __root__: List[LibrarySummary] = Field(
         default=[],
         title="List with summary information of Libraries.",
     )
 
 
-class CreateLibraryPayload(BaseModel):
+class CreateLibraryPayload(Model):
     name: str = Field(
         ...,
         title="Name",
@@ -2293,7 +2292,7 @@ class CreateLibrariesFromStore(StoreContentSource):
     pass
 
 
-class UpdateLibraryPayload(BaseModel):
+class UpdateLibraryPayload(Model):
     name: Optional[str] = Field(
         None,
         title="Name",
@@ -2311,7 +2310,7 @@ class UpdateLibraryPayload(BaseModel):
     )
 
 
-class DeleteLibraryPayload(BaseModel):
+class DeleteLibraryPayload(Model):
     undelete: bool = Field(
         ...,
         title="Undelete",
@@ -2319,7 +2318,7 @@ class DeleteLibraryPayload(BaseModel):
     )
 
 
-class LibraryCurrentPermissions(BaseModel):
+class LibraryCurrentPermissions(Model):
     access_library_role_list: List[RoleNameIdTuple] = Field(
         ...,
         title="Access Role List",
@@ -2343,11 +2342,11 @@ class LibraryCurrentPermissions(BaseModel):
 
 
 RoleIdList = Union[
-    List[EncodedDatabaseIdField], EncodedDatabaseIdField
-]  # Should we support just List[EncodedDatabaseIdField] in the future?
+    List[DecodedDatabaseIdField], DecodedDatabaseIdField
+]  # Should we support just List[DecodedDatabaseIdField] in the future?
 
 
-class LegacyLibraryPermissionsPayload(BaseModel):
+class LegacyLibraryPermissionsPayload(Model):
     LIBRARY_ACCESS_in: Optional[RoleIdList] = Field(
         [],
         title="Access IDs",
@@ -2443,9 +2442,9 @@ class LibraryFolderPermissionsPayload(LibraryPermissionsPayloadBase):
     )
 
 
-class LibraryFolderDetails(BaseModel):
+class LibraryFolderDetails(Model):
     model_class: str = ModelClassField("LibraryFolder")
-    id: EncodedDatabaseIdField = Field(
+    id: LibraryFolderDatabaseIdField = Field(
         ...,
         title="ID",
         description="Encoded ID of the library folder.",
@@ -2457,12 +2456,12 @@ class LibraryFolderDetails(BaseModel):
         title="Item Count",
         description="A detailed description of the library folder.",
     )
-    parent_library_id: EncodedDatabaseIdField = Field(
+    parent_library_id: DecodedDatabaseIdField = Field(
         ...,
         title="Parent Library ID",
         description="Encoded ID of the Library this folder belongs to.",
     )
-    parent_id: Optional[EncodedDatabaseIdField] = Field(
+    parent_id: Optional[LibraryFolderDatabaseIdField] = Field(
         None,
         title="Parent Folder ID",
         description="Encoded ID of the parent folder. Empty if it's the root folder.",
@@ -2481,12 +2480,12 @@ class LibraryFolderDetails(BaseModel):
     )
 
 
-class CreateLibraryFolderPayload(BaseModel):
+class CreateLibraryFolderPayload(Model):
     name: str = FolderNameField
     description: Optional[str] = FolderDescriptionField
 
 
-class UpdateLibraryFolderPayload(BaseModel):
+class UpdateLibraryFolderPayload(Model):
     name: Optional[str] = Field(
         default=None,
         title="Name",
@@ -2499,7 +2498,7 @@ class UpdateLibraryFolderPayload(BaseModel):
     )
 
 
-class LibraryAvailablePermissions(BaseModel):
+class LibraryAvailablePermissions(Model):
     roles: List[BasicRoleModel] = Field(
         ...,
         title="Roles",
@@ -2522,7 +2521,7 @@ class LibraryAvailablePermissions(BaseModel):
     )
 
 
-class LibraryFolderCurrentPermissions(BaseModel):
+class LibraryFolderCurrentPermissions(Model):
     modify_folder_role_list: List[RoleNameIdTuple] = Field(
         ...,
         title="Modify Role List",

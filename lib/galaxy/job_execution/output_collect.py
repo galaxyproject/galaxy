@@ -298,9 +298,7 @@ class JobContext(BaseJobContext):
     def get_library_folder(self, destination):
         app = self.app
         library_folder_manager = app.library_folder_manager
-        library_folder = library_folder_manager.get(
-            self.work_context, app.security.decode_id(destination.get("library_folder_id"))
-        )
+        library_folder = library_folder_manager.get(self.work_context, destination.get("library_folder_id"))
         return library_folder
 
     def get_hdca(self, object_id):
