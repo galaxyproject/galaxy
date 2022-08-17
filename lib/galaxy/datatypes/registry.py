@@ -47,7 +47,7 @@ class ConfigurationError(Exception):
 
 class Registry:
     def __init__(self, config=None):
-        edam_ontology_path = config.edam_toolbox_ontology_path
+        edam_ontology_path = config.edam_toolbox_ontology_path if config is not None else None
 
         edam = load_edam_tree(
             None if not edam_ontology_path or not os.path.exists(edam_ontology_path) else edam_ontology_path,
