@@ -51,7 +51,7 @@ export default {
         },
         label() {
             const activeLabel = this.output.activeLabel || this.output.label || this.output.name;
-            return `${activeLabel} (${this.extensions})`;
+            return `${activeLabel} (${this.extensions.join(", ")})`;
         },
         activeClass() {
             return this.output.activeOutput && "mark-terminal-active";
@@ -67,16 +67,16 @@ export default {
             }
             return cls;
         },
-        forcedExtensions() {
+        forcedExtension() {
             const changeDatatype =
                 this.postJobActions[`ChangeDatatypeAction${this.output.label}`] ||
                 this.postJobActions[`ChangeDatatypeAction${this.output.name}`];
             return changeDatatype?.action_arguments.newtype;
         },
         extensions() {
-            let extensions = this.forcedExtensions || this.output.extensions || this.output.type || "unspecified";
-            if (Array.isArray(extensions)) {
-                extensions = extensions.join(", ");
+            let extensions = this.forcedExtension || this.output.extensions || this.output.type || "unspecified";
+            if (!Array.isArray(extensions)) {
+                extensions = [extensions];
             }
             return extensions;
         },
@@ -137,7 +137,7 @@ export default {
                     ...parameters,
                     collection_type: collection_type,
                     collection_type_source: collection_type_source,
-                    datatypes: output.extensions,
+                    datatypes: this.extensions,
                 });
             } else if (output.parameter) {
                 this.terminal = new terminalClass({
@@ -147,7 +147,7 @@ export default {
             } else {
                 this.terminal = new terminalClass({
                     ...parameters,
-                    datatypes: output.extensions,
+                    datatypes: this.extensions,
                 });
             }
             new OutputDragging(this.getManager(), {
