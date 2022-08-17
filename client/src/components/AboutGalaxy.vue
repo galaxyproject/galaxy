@@ -62,9 +62,11 @@ const versionExtra = computed(() => {
         </div>
         <div v-if="config.terms_url">
             <!-- Terms, if available.-->
-            <p>This Galaxy instance has set terms of use. Please review them below.</p>
-            <hr />
-            <b-embed type="iframe" :src="config.terms_url" aspect="1by1" />
+            <h4>Terms and Conditions</h4>
+            <p>
+                This Galaxy Server has specified Terms and Conditions that apply to use of the service.
+                <external-link :href="config.terms_url">Review them here.</external-link>
+            </p>
         </div>
     </div>
 </template>
