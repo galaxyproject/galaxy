@@ -22,6 +22,7 @@ import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import DatasetList from "components/Dataset/DatasetList";
+import AvailableDatatypes from "components/AvailableDatatypes";
 import DisplayStructured from "components/DisplayStructured";
 import FormGeneric from "components/Form/FormGeneric";
 import Grid from "components/Grid/Grid";
@@ -52,7 +53,6 @@ import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import { HistoryExport } from "components/HistoryExport/index";
 import { StorageDashboardRouter } from "components/User/DiskUsage";
-import Datatypes from "components/Datatypes";
 
 Vue.use(VueRouter);
 
@@ -140,6 +140,10 @@ export function getRouter(Galaxy) {
                         path: "datasets/:datasetId/error",
                         component: DatasetError,
                         props: true,
+                    },
+                    {
+                        path: "available_datatypes",
+                        component: AvailableDatatypes,
                     },
                     {
                         path: "histories/import",
@@ -418,10 +422,6 @@ export function getRouter(Galaxy) {
                         path: "workflows/:storedWorkflowId/invocations",
                         component: StoredWorkflowInvocations,
                         props: true,
-                    },
-                    {
-                        path: "datatypes",
-                        component: Datatypes,
                     },
                 ],
             },
