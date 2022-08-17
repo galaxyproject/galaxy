@@ -39,7 +39,10 @@ from galaxy.schema.fields import (
     EncodedDatabaseIdField,
     ModelClassField,
 )
-from galaxy.schema.types import RelativeUrl
+from galaxy.schema.types import (
+    OffsetNaiveDatetime,
+    RelativeUrl,
+)
 
 USER_MODEL_CLASS_NAME = "User"
 GROUP_MODEL_CLASS_NAME = "Group"
@@ -1112,8 +1115,8 @@ class JobIndexQueryPayload(Model):
     user_id: Optional[DecodedDatabaseIdField] = None
     tool_ids: Optional[List[str]] = None
     tool_ids_like: Optional[List[str]] = None
-    date_range_min: Optional[Union[datetime, date]] = None
-    date_range_max: Optional[Union[datetime, date]] = None
+    date_range_min: Optional[Union[OffsetNaiveDatetime, date]] = None
+    date_range_max: Optional[Union[OffsetNaiveDatetime, date]] = None
     history_id: Optional[DecodedDatabaseIdField] = None
     workflow_id: Optional[DecodedDatabaseIdField] = None
     invocation_id: Optional[DecodedDatabaseIdField] = None
