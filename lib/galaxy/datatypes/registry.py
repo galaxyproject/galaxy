@@ -19,9 +19,9 @@ from typing import (
 import yaml
 
 import galaxy.util
+from galaxy.tool_util.edam_util import load_edam_tree
 from galaxy.util import RW_R__R__
 from galaxy.util.bunch import Bunch
-from galaxy.tool_util.edam_util import load_edam_tree
 from . import (
     binary,
     coverage,
