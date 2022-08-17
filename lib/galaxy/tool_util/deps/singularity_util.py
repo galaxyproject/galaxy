@@ -75,10 +75,10 @@ def build_singularity_run_command(
         sudo=sudo,
         sudo_cmd=sudo_cmd,
     )
-    if cleanenv:
-        command_parts.append("--cleanenv")
     command_parts.append("-s")
     command_parts.append("exec")
+    if cleanenv:
+        command_parts.append("--cleanenv")
     for volume in volumes:
         command_parts.extend(["-B", str(volume)])
     if home is not None:
