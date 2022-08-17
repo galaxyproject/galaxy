@@ -11,6 +11,7 @@ from requests import delete
 from requests.models import Response
 
 from galaxy.exceptions import error_codes
+from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import (
@@ -18,7 +19,6 @@ from galaxy_test.base.populators import (
     skip_without_tool,
     WorkflowPopulator,
 )
-from galaxy_test.api._framework import ApiTestCase
 
 
 class BasePageApiTestCase(ApiTestCase):

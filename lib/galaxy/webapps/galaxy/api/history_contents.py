@@ -59,6 +59,11 @@ from galaxy.schema.schema import (
     WriteStoreToPayload,
 )
 from galaxy.web.framework.decorators import validation_error_to_message_exception
+from galaxy.webapps.galaxy.api import (
+    depends,
+    DependsOnTrans,
+    Router,
+)
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
     get_update_permission_payload,
@@ -75,11 +80,6 @@ from galaxy.webapps.galaxy.services.history_contents import (
     HistoryContentsIndexJobsSummaryParams,
     HistoryContentsIndexParams,
     LegacyHistoryContentsIndexParams,
-)
-from galaxy.webapps.galaxy.api import (
-    depends,
-    DependsOnTrans,
-    Router,
 )
 
 log = logging.getLogger(__name__)

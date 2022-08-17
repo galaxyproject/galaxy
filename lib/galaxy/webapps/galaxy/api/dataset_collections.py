@@ -15,17 +15,17 @@ from galaxy.schema.schema import (
     DatasetCollectionInstanceType,
     HDCADetailed,
 )
+from galaxy.webapps.galaxy.api import (
+    depends,
+    DependsOnTrans,
+    Router,
+)
 from galaxy.webapps.galaxy.services.dataset_collections import (
     DatasetCollectionAttributesResult,
     DatasetCollectionContentElements,
     DatasetCollectionsService,
     SuitableConverters,
     UpdateCollectionAttributePayload,
-)
-from galaxy.webapps.galaxy.api import (
-    depends,
-    DependsOnTrans,
-    Router,
 )
 
 log = getLogger(__name__)

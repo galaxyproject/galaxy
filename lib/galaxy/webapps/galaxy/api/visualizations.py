@@ -31,13 +31,13 @@ from galaxy.schema.schema import (
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
-from galaxy.webapps.galaxy.services.visualizations import VisualizationsService
 from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.services.visualizations import VisualizationsService
 
 log = logging.getLogger(__name__)
 
