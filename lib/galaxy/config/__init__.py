@@ -35,6 +35,7 @@ from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import (
     listify,
+    size_to_bytes,
     string_as_bool,
     unicodify,
 )
@@ -1108,6 +1109,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             }
 
         log_destination = kwargs.get("log_destination")
+        log_rotate_size = size_to_bytes(unicodify(kwargs.get("log_rotate_size", 0)))
+        log_rotate_count = int(kwargs.get("log_rotate_count", 0))
         galaxy_daemon_log_destination = os.environ.get("GALAXY_DAEMON_LOG")
         if log_destination == "stdout":
             LOGGING_CONFIG_DEFAULT["handlers"]["console"] = {
@@ -1119,19 +1122,23 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             }
         elif log_destination:
             LOGGING_CONFIG_DEFAULT["handlers"]["console"] = {
-                "class": "logging.FileHandler",
+                "class": "logging.handlers.RotatingFileHandler",
                 "formatter": "stack",
                 "level": "DEBUG",
                 "filename": log_destination,
                 "filters": ["stack"],
+                "maxBytes": log_rotate_size,
+                "backupCount": log_rotate_count,
             }
         if galaxy_daemon_log_destination:
             LOGGING_CONFIG_DEFAULT["handlers"]["files"] = {
-                "class": "logging.FileHandler",
+                "class": "logging.handlers.RotatingFileHandler",
                 "formatter": "stack",
                 "level": "DEBUG",
                 "filename": galaxy_daemon_log_destination,
                 "filters": ["stack"],
+                "maxBytes": log_rotate_size,
+                "backupCount": log_rotate_count,
             }
             LOGGING_CONFIG_DEFAULT["root"]["handlers"].append("files")
 
