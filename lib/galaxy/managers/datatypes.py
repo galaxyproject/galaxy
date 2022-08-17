@@ -104,14 +104,18 @@ def _get_edam_details(datatypes_registry: Registry, edam_ids: Dict[str, str]):
     return details_dict
 
 
-def view_edam_formats(datatypes_registry: Registry, id_only: Optional[bool] = True) -> Union[Dict[str, str], DatatypeEDAMDetailsDict]:
+def view_edam_formats(
+    datatypes_registry: Registry, id_only: Optional[bool] = True
+) -> Union[Dict[str, str], DatatypeEDAMDetailsDict]:
     if id_only:
         return datatypes_registry.edam_formats
     else:
         return _get_edam_details(datatypes_registry, datatypes_registry.edam_formats)
 
 
-def view_edam_data(datatypes_registry: Registry, id_only: Optional[bool] = True) -> Union[Dict[str, str], DatatypeEDAMDetailsDict]:
+def view_edam_data(
+    datatypes_registry: Registry, id_only: Optional[bool] = True
+) -> Union[Dict[str, str], DatatypeEDAMDetailsDict]:
     if id_only:
         return datatypes_registry.edam_data
     else:
@@ -123,6 +127,7 @@ __all__ = (
     "DatatypeDetails",
     "DatatypesCombinedMap",
     "DatatypesMap",
+    "DatatypeEDAMDetailsDict",
     "view_index",
     "view_mapping",
     "view_types_and_mapping",
