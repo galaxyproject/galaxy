@@ -99,6 +99,12 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
             "level": "INFO",
             "qualname": "botocore",
         },
+        "gunicorn.access": {
+            "level": "INFO",
+            "qualname": "gunicorn.access",
+            "propagate": False,
+            "handlers": ["console"],
+        },
     },
     "filters": {
         "stack": {
