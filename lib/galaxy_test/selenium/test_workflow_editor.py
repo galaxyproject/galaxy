@@ -556,7 +556,7 @@ steps:
         editor.select_dataype_text_search.wait_for_and_send_keys("bam")
         editor.select_datatype(datatype="bam").wait_for_and_click()
         editor.node.output_data_row(output_name="out_file1", extension="bam").wait_for_visible()
-        self.assert_not_connected("create_2#out_file1", "extension#input")
+        self.assert_not_connected("create_2#out_file1", "checksum#input")
 
     def test_change_datatype_in_subworkflow(self):
         self.open_in_workflow_editor(

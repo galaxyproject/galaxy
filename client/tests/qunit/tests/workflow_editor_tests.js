@@ -314,7 +314,7 @@ QUnit.module("Input collection terminal model test", {
 QUnit.test("Collection output can connect to same collection input type", function (assert) {
     const inputTerminal = this.input_terminal;
     const outputTerminal = new Terminals.OutputCollectionTerminal({
-        datatypes: "txt",
+        datatypes: ["txt"],
         collection_type: "list",
         node: {},
     });
@@ -328,7 +328,7 @@ QUnit.test("Collection output can connect to same collection input type", functi
 QUnit.test("Optional collection output can not connect to required collection input", function (assert) {
     const inputTerminal = this.input_terminal;
     const outputTerminal = new Terminals.OutputCollectionTerminal({
-        datatypes: "txt",
+        datatypes: ["txt"],
         collection_type: "list",
         optional: true,
         node: {},
@@ -340,7 +340,7 @@ QUnit.test("Optional collection output can not connect to required collection in
 QUnit.test("Collection output cannot connect to different collection input type", function (assert) {
     const inputTerminal = this.input_terminal;
     const outputTerminal = new Terminals.OutputCollectionTerminal({
-        datatypes: "txt",
+        datatypes: ["txt"],
         collection_type: "paired",
         node: {},
     });
@@ -712,14 +712,14 @@ QUnit.test(
 QUnit.module("Input terminal view", {
     beforeEach: function () {
         this.node = buildNode({ type: "tool", name: "newnode" });
-        this.input = { name: "i1", extensions: "txt", multiple: false };
+        this.input = { name: "i1", extensions: ["txt"], multiple: false };
         this.node.initData({ inputs: [this.input], outputs: [] });
     },
 });
 
 QUnit.test("terminal added to node", function (assert) {
     assert.ok(this.node.inputTerminals.i1);
-    assert.equal(this.node.inputTerminals.i1.datatypes, ["txt"]);
+    assert.equal(this.node.inputTerminals.i1.datatypes[0], "txt");
     assert.equal(this.node.inputTerminals.i1.multiple, false);
 });
 
@@ -737,14 +737,14 @@ QUnit.test("terminal element", function (assert) {
 QUnit.module("Output terminal view", {
     beforeEach: function () {
         this.node = buildNode({ type: "tool", name: "newnode" });
-        this.output = { name: "o1", extensions: "txt" };
+        this.output = { name: "o1", extensions: ["txt"] };
         this.node.initData({ inputs: [], outputs: [this.output] });
     },
 });
 
 QUnit.test("terminal added to node", function (assert) {
     assert.ok(this.node.outputTerminals.o1);
-    assert.equal(this.node.outputTerminals.o1.datatypes, ["txt"]);
+    assert.equal(this.node.outputTerminals.o1.datatypes[0], "txt");
 });
 
 QUnit.test("terminal element", function (assert) {
