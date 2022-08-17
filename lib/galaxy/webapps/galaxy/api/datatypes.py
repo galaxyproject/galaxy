@@ -16,14 +16,14 @@ from galaxy.managers.datatypes import (
     DatatypeConverterList,
     DatatypeDetails,
     DatatypesCombinedMap,
+    DatatypesEDAMDetailsDict,
     DatatypesMap,
-    DatatypeEDAMDetailsDict,
     view_converters,
+    view_edam_data,
+    view_edam_formats,
     view_index,
     view_mapping,
     view_sniffers,
-    view_edam_formats,
-    view_edam_data,
 )
 from . import (
     depends,
@@ -123,7 +123,7 @@ class FastAPIDatatypes:
     async def edam_formats(
         self,
         id_only: Optional[bool] = IdentifierOnly,
-    ) -> Union[DatatypeEDAMDetailsDict, Dict[str, str]]:
+    ) -> Union[DatatypesEDAMDetailsDict, Dict[str, str]]:
         """Gets a map of datatypes and their corresponding EDAM formats."""
         return view_edam_formats(self.datatypes_registry, id_only)
 
@@ -135,6 +135,6 @@ class FastAPIDatatypes:
     async def edam_data(
         self,
         id_only: Optional[bool] = IdentifierOnly,
-    ) -> Union[DatatypeEDAMDetailsDict, Dict[str, str]]:
+    ) -> Union[DatatypesEDAMDetailsDict, Dict[str, str]]:
         """Gets a map of datatypes and their corresponding EDAM data."""
         return view_edam_data(self.datatypes_registry, id_only)

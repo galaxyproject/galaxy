@@ -119,7 +119,7 @@ class DatatypeEDAMDetails(BaseModel):
     )
 
 
-class DatatypeEDAMDetailsDict(BaseModel):
+class DatatypesEDAMDetailsDict(BaseModel):
     __root__: Dict[str, DatatypeEDAMDetails] = Field(
         title="Dict of EDAM details for formats",
         default={},
