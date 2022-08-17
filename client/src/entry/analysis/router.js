@@ -142,7 +142,7 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
-                        path: "available_datatypes",
+                        path: "datatypes",
                         component: AvailableDatatypes,
                     },
                     {
