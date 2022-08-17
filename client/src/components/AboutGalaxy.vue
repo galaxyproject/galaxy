@@ -39,7 +39,7 @@ const versionExtra = computed(() => {
                 The Galaxy Server is running version
                 <external-link :href="versionUserDocumentationUrl">
                     <strong> {{ config.version_major }}.{{ config.version_minor }}</strong> </external-link
-                >, and the web client was built on <UtcDate :date="clientBuildDate" />.
+                >, and the web client was built on <UtcDate :date="clientBuildDate" mode="pretty" />.
             </p>
             <template v-if="config.version_extra">
                 <p>The server also provides the following extra version information</p>
