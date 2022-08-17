@@ -50,7 +50,10 @@ const versionExtra = computed(() => {
             <h4>Galaxy API Documentation</h4>
             <!-- API documentation link -->
             <p>
-                The Galaxy API is available, and explorable, at <b-link :href="apiDocsLink">{{ apiDocsLink }}</b-link>
+                The Galaxy API is available, and explorable, at
+                <external-link :href="apiDocsLink">
+                    {{ apiDocsLink }}
+                </external-link>
             </p>
         </div>
         <div>
