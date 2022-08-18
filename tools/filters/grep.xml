@@ -1,4 +1,4 @@
-<tool id="Grep1" name="Select" version="1.0.3" profile="20.05">
+<tool id="Grep1" name="Select" version="1.0.4" profile="20.05">
   <description>lines that match an expression</description>
   <requirements>
     <requirement type="package" version="3.4">grep</requirement>
