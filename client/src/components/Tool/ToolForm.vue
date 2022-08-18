@@ -33,7 +33,6 @@
                     <ToolCard
                         v-if="showForm"
                         :id="formConfig.id"
-                        :user="user"
                         :version="formConfig.version"
                         :title="formConfig.name"
                         :description="formConfig.description"
