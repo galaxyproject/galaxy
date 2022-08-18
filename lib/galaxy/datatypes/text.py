@@ -911,3 +911,112 @@ class Yaml(Text):
             except yaml.YAMLError:
                 return False
             return False
+
+
+@build_sniff_from_prefix
+class Castep(Text):
+    """Report on the calculation (text)"""
+
+    file_ext = "castep"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """Determines whether the file is a CASTEP log"""
+        castep_header = [
+            "+-------------------------------------------------+",
+            "|                                                 |",
+            "|      CCC   AA    SSS  TTTTT  EEEEE  PPPP        |",
+            "|     C     A  A  S       T    E      P   P       |",
+            "|     C     AAAA   SS     T    EEE    PPPP        |",
+            "|     C     A  A     S    T    E      P           |",
+            "|      CCC  A  A  SSS     T    EEEEE  P           |",
+            "|                                                 |",
+            "+-------------------------------------------------+"
+        ]
+        handle = file_prefix.string_io()
+        for header_line in castep_header:
+            if handle.readline().strip() != header_line:
+                return False
+        return True
+
+
+@build_sniff_from_prefix
+class Param(Yaml):
+    """General input file (text)"""
+
+    file_ext = "param"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Modified version of the normal Yaml sniff that also checks the
+        dict keys for "general" CASTEP keywords, which are not case
+        sensitive
+        """
+        general_keywords = [
+            "BACKUP_INTERVAL",
+            "CALCULATE_STRESS",
+            "CALCULATE_DENSDIFF",
+            "CALCULATE_ELF",
+            "CALCULATE_HIRSHFELD",
+            "CHARGE_UNIT",
+            "CHECKPOINT",
+            "COMMENT",
+            "CONTINUATION",
+            "DATA_DISTRIBUTION",
+            "IPRINT",
+            "NUM_BACKUP_ITER",
+            "OPT_STRATEGY",
+            "PAGE_WVFNS",
+            "PRINT_CLOCK",
+            "PRINT_MEMORY_USAGE",
+            "RAND_SEED",
+            "REUSE",
+            "RUN_TIME",
+            "STOP",
+            "TASK",
+            "WRITE_CHECKPOINT",
+            "WRITE_FORMATTED_DENSITY",
+            "WRITE_FORMATTED_ELF",
+            "WRITE_FORMATTED_POTENTIAL",
+            "WRITE_ORBITALS"
+        ]
+        # Pattern used by SequenceSplitLocations
+        if file_prefix.file_size < 50000 and not file_prefix.truncated:
+            # If the file is small enough - don't guess just check.
+            try:
+                item = yaml.safe_load(file_prefix.contents_header)
+                assert isinstance(item, dict)
+            except yaml.YAMLError:
+                return False
+        else:
+            # If file is too big, load the first part. Trim the current line, in case it cut off in the middle of a key.
+            file_start = file_prefix.string_io().read(50000).strip().rsplit("\n", 1)[0]
+            try:
+                item = yaml.safe_load(file_start)
+                assert isinstance(item, dict)
+            except yaml.YAMLError:
+                return False
+
+        for key in item.keys():
+            assert isinstance(key, str)
+            if key.upper() in general_keywords:
+                return True
+        return False
+
+
+@build_sniff_from_prefix
+class FormattedDensity(Text):
+    """Final electron density written to an ASCII file"""
+
+    file_ext = "den_fmt"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """Determines whether the file is a formatted electron densities"""
+        begin_header = "BEGIN header"
+        end_header = 'END header: data is "<a b c> charge" in units of electrons/grid_point * number'
+        grid_points = "of grid_points"
+        handle = file_prefix.string_io()
+        lines = handle.readlines()
+        if (lines[0].strip() == begin_header and lines[9].strip() == end_header and lines[10].strip() == grid_points):
+            return True
+        else:
+            return False
