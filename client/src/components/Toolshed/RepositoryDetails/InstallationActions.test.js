@@ -14,7 +14,7 @@ describe("InstallationActions", () => {
             },
             localVue,
         });
-        const $el = wrapper.find("button:nth-of-type(2)");
+        const $el = wrapper.find("button");
         expect($el.classes()).toEqual(expect.arrayContaining(["btn-danger"]));
         $el.trigger("click");
         expect(wrapper.emitted().onUninstall).toBeDefined();
@@ -28,7 +28,7 @@ describe("InstallationActions", () => {
             },
             localVue,
         });
-        const $el = wrapper.find("button:nth-of-type(1)");
+        const $el = wrapper.find("button");
         expect($el.classes()).toEqual(expect.arrayContaining(["btn-primary"]));
         $el.trigger("click");
         expect(wrapper.emitted().onInstall).toBeDefined();
