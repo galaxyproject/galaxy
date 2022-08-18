@@ -1,13 +1,13 @@
 <script setup>
 import { ref } from "vue";
-import { useGetDetailedDatatypes } from "composables/datatypes";
-import { useFilterObjectArray } from "composables/filter";
+import { useDetailedDatatypes } from "composables/datatypes";
+import { useFilterObjectArray } from "composables/utils/filter";
 import DelayedInput from "components/Common/DelayedInput";
 
 const filter = ref("");
 const filterFields = ["extension"];
 
-const { datatypes } = useGetDetailedDatatypes();
+const { datatypes } = useDetailedDatatypes();
 const filteredDatatypes = useFilterObjectArray(datatypes, filter, filterFields);
 
 const fields = [
