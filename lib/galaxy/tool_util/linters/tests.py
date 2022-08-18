@@ -38,7 +38,7 @@ def lint_tsts(tool_xml, lint_ctx):
             if len(assertions) == 0:
                 continue
             if len(assertions) > 1:
-                lint_ctx.error("Test {test_idx}: More than one {ta} found. Only the first is considered.")
+                lint_ctx.error(f"Test {test_idx}: More than one {ta} found. Only the first is considered.")
             has_test = True
             _check_asserts(test_idx, assertions, lint_ctx)
         _check_asserts(test_idx, test.findall(".//assert_contents"), lint_ctx)
