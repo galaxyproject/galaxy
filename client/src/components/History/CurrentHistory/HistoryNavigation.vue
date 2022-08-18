@@ -33,6 +33,9 @@
                     toggle-class="text-decoration-none"
                     menu-class="history-options-button-menu"
                     data-description="history options">
+                    <template v-slot:button-content>
+                        <span class="sr-only">History Options</span>
+                    </template>
                     <b-dropdown-text>
                         <div v-if="historiesLoading">
                             <b-spinner v-if="historiesLoading" small />
