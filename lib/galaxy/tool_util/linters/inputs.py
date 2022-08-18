@@ -57,6 +57,7 @@ PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
     "float": ["in_range", "expression"],
     "data": [
         "metadata",
+        "no_options",
         "unspecified_build",
         "dataset_ok_validator",
         "dataset_metadata_in_range",
@@ -67,6 +68,7 @@ PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
     ],
     "data_collection": [
         "metadata",
+        "no_options",
         "unspecified_build",
         "dataset_ok_validator",
         "dataset_metadata_in_range",
@@ -122,6 +124,7 @@ def lint_inputs(tool_xml, lint_ctx):
         tool_node = tool_xml.getroot()
     num_inputs = 0
     for param in inputs:
+        # print(param.get("name"), param.get("argument"), param.attrib)
         num_inputs += 1
         param_attrib = param.attrib
         if "name" not in param_attrib and "argument" not in param_attrib:
