@@ -8,6 +8,7 @@
             toggle-class="text-decoration-none rounded-0"
             data-description="history action menu">
             <template v-slot:button-content>
+                <span class="sr-only">History actions</span>
                 <Icon icon="cog" />
             </template>
             <b-dropdown-text id="history-op-all-content">
