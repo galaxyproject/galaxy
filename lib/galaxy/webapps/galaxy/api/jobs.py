@@ -17,7 +17,10 @@ from typing import (
     Union,
 )
 
-from fastapi import Query
+from fastapi import (
+    Depends,
+    Query,
+)
 
 from galaxy import (
     exceptions,
@@ -39,20 +42,13 @@ from galaxy.managers.jobs import (
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import JobIndexSortByEnum
 from galaxy.schema.types import OffsetNaiveDatetime
-from galaxy.util import listify
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
     require_admin,
 )
 from galaxy.webapps.base.controller import UsesVisualizationMixin
-from galaxy.webapps.galaxy.services.jobs import (
-    JobIndexPayload,
-    JobIndexViewEnum,
-    JobsService,
-)
-from galaxy.work.context import WorkRequestContext
-from . import (
+from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
@@ -60,6 +56,13 @@ from . import (
     Router,
     search_query_param,
 )
+from galaxy.webapps.galaxy.api.common import query_parameter_as_list
+from galaxy.webapps.galaxy.services.jobs import (
+    JobIndexPayload,
+    JobIndexViewEnum,
+    JobsService,
+)
+from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)
 
@@ -68,6 +71,7 @@ router = Router(tags=["jobs"])
 
 StateQueryParam: Optional[str] = Query(
     default=None,
+    alias="state",
     title="States",
     description="Comma-separated list of states to filter job query on. If unspecified, jobs of any state may be returned.",
 )
@@ -93,6 +97,7 @@ ViewQueryParam: JobIndexViewEnum = Query(
 
 ToolIdQueryParam: Optional[str] = Query(
     default=None,
+    alias="tool_id",
     title="Tool ID(s)",
     description="Limit listing of jobs to those that match one of the included tool_ids. If none, all are returned",
 )
@@ -100,6 +105,7 @@ ToolIdQueryParam: Optional[str] = Query(
 
 ToolIdLikeQueryParam: Optional[str] = Query(
     default=None,
+    alias="tool_id_like",
     title="Tool ID Pattern(s)",
     description="Limit listing of jobs to those that match one of the included tool ID sql-like patterns. If none, all are returned",
 )
@@ -186,12 +192,12 @@ class FastAPIJobs:
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        state: Optional[str] = StateQueryParam,
+        states: Optional[List[str]] = Depends(query_parameter_as_list(StateQueryParam)),
         user_details: bool = UserDetailsQueryParam,
         user_id: Optional[EncodedDatabaseIdField] = UserIdQueryParam,
         view: JobIndexViewEnum = ViewQueryParam,
-        tool_id: Optional[str] = ToolIdQueryParam,
-        tool_id_like: Optional[str] = ToolIdLikeQueryParam,
+        tool_ids: Optional[List[str]] = Depends(query_parameter_as_list(ToolIdQueryParam)),
+        tool_ids_like: Optional[List[str]] = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
         date_range_min: Optional[Union[datetime, date]] = DateRangeMinQueryParam,
         date_range_max: Optional[Union[datetime, date]] = DateRangeMaxQueryParam,
         history_id: Optional[EncodedDatabaseIdField] = HistoryIdQueryParam,
@@ -202,16 +208,6 @@ class FastAPIJobs:
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
     ) -> List[Dict[str, Any]]:
-        def optional_list(input: Optional[str]) -> Optional[List[str]]:
-            if input is None:
-                return None
-            else:
-                return listify(input)
-
-        states = optional_list(state)
-        tool_ids = optional_list(tool_id)
-        tool_ids_like = optional_list(tool_id_like)
-
         payload = JobIndexPayload(
             states=states,
             user_details=user_details,
