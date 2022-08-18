@@ -2,7 +2,6 @@
     <b-dropdown
         v-b-tooltip.hover
         right
-        role="button"
         title="Show panel options"
         variant="link"
         aria-label="View all tool panel configurations"
