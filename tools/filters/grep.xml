@@ -17,7 +17,7 @@
     #else
       cat '$input'
     #end if
-    | grep -P -f '$pattern_file' $invert > '$out_file1'
+    | grep -P -f '$pattern_file' $invert >> '$out_file1'
   ]]></command>
   <configfiles>
     <configfile name="pattern_file">$pattern</configfile>
