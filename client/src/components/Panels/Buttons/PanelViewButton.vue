@@ -4,6 +4,7 @@
         right
         title="Show panel options"
         variant="link"
+        role="menu"
         aria-label="View all tool panel configurations"
         class="tool-panel-dropdown"
         size="sm">
