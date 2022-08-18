@@ -4121,7 +4121,7 @@ used to generate dynamic options.
     </xs:attribute>
     <xs:attribute name="startswith" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Ignore lines starting with the given string.</xs:documentation>
+        <xs:documentation xml:lang="en">Keep only lines starting with the given string.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="meta_file_key" type="xs:string">
