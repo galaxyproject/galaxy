@@ -153,7 +153,7 @@ def query_parameter_as_list(query):
 
     Usage example:
     ```python
-        ValueQueryParam: Optional[str] = Query(
+        ValueQueryParam = Query(
             default=None,
             alias="value", # Important! this is the parameter name that will be displayed in the API docs
             title="My Value",
@@ -174,13 +174,12 @@ def query_parameter_as_list(query):
     """
 
     def parse_elements(
-        element: str = query,
-        elements: Optional[List[str]] = Query(default=None, alias=query.alias, include_in_schema=False),
+        elements: Optional[List[str]] = query,
     ) -> Optional[List[Any]]:
-        if query.default != Ellipsis and element is None and not elements:
+        if query.default != Ellipsis and not elements:
             return query.default
-        if elements and len(elements) > 1:
-            return elements
-        return listify(element)
+        if elements and len(elements) == 1:
+            return listify(elements[0])
+        return elements
 
     return parse_elements

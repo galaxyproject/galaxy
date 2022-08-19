@@ -69,11 +69,11 @@ log = logging.getLogger(__name__)
 router = Router(tags=["jobs"])
 
 
-StateQueryParam: Optional[str] = Query(
+StateQueryParam = Query(
     default=None,
     alias="state",
     title="States",
-    description="Comma-separated list of states to filter job query on. If unspecified, jobs of any state may be returned.",
+    description="A list or comma-separated list of states to filter job query on. If unspecified, jobs of any state may be returned.",
 )
 
 UserDetailsQueryParam: bool = Query(
@@ -95,7 +95,7 @@ ViewQueryParam: JobIndexViewEnum = Query(
 )
 
 
-ToolIdQueryParam: Optional[str] = Query(
+ToolIdQueryParam = Query(
     default=None,
     alias="tool_id",
     title="Tool ID(s)",
@@ -103,7 +103,7 @@ ToolIdQueryParam: Optional[str] = Query(
 )
 
 
-ToolIdLikeQueryParam: Optional[str] = Query(
+ToolIdLikeQueryParam = Query(
     default=None,
     alias="tool_id_like",
     title="Tool ID Pattern(s)",
