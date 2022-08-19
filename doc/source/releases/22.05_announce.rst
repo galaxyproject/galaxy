@@ -82,37 +82,6 @@ The following configuration options have been changed
 config/galaxy.yml.sample:galaxy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  mapping.galaxy.mapping.amqp_internal_connection.desc has changed from
-
-   ::
-
-    Galaxy uses AMQP internally for communicating between processes.  For
-    example, when reloading the toolbox or locking job execution, the process
-    that handled that particular request will tell all others to also reload,
-    lock jobs, etc.
-    For connection examples, see http://docs.celeryproject.org/projects/kombu/en/latest/userguide/connections.html
-    
-    Without specifying anything here, galaxy will first attempt to use your
-    specified database_connection above.  If that's not specified either, Galaxy
-    will automatically create and use a separate sqlite database located in your
-    <galaxy>/database folder (indicated in the commented out line below).
-
-   to
-
-   ::
-
-    Galaxy uses AMQP internally for communicating between processes.  For
-    example, when reloading the toolbox or locking job execution, the process
-    that handled that particular request will tell all others to also reload,
-    lock jobs, etc.
-    For connection examples, see https://docs.celeryq.dev/projects/kombu/en/stable/userguide/connections.html
-    
-    Without specifying anything here, galaxy will first attempt to use your
-    specified database_connection above.  If that's not specified either, Galaxy
-    will automatically create and use a separate sqlite database located in your
-    <galaxy>/database folder (indicated in the commented out line below).
-
-
 -  mapping.galaxy.mapping.debug.desc has changed from
 
    ::
@@ -136,53 +105,6 @@ config/galaxy.yml.sample:galaxy
     and debugging: use_lint, use_profile, and use_printdebug.  It also
     causes the files used by PBS/SGE (submission script, output, and error)
     to remain on disk after the job is complete.
-
-
--  mapping.galaxy.mapping.heartbeat_interval.desc has changed from
-
-   ::
-
-    Control the period (in seconds) between dumps. Use -1 to disable. Regardless
-    of this setting, if use_heartbeat is enabled, you can send a Galaxy process
-    (unless running with uWSGI) SIGUSR1 (`kill -USR1`) to force a dump.
-
-   to
-
-   ::
-
-    Control the period (in seconds) between dumps. Use -1 to disable. Regardless
-    of this setting, if use_heartbeat is enabled, you can send a Galaxy process
-    SIGUSR1 (`kill -USR1`) to force a dump.
-
-
--  mapping.galaxy.mapping.helpsite_url.required has changed from
-
-   ::
-
-    False
-
-   to
-
-   ::
-
-    True
-
-
--  mapping.galaxy.mapping.log_level.desc has changed from
-
-   ::
-
-    Verbosity of console log messages.  Acceptable values can be found here:
-    https://docs.python.org/library/logging.html#logging-levels
-    A custom debug level of "TRACE" is available for even more verbosity.
-
-   to
-
-   ::
-
-    Verbosity of console log messages. Acceptable values can be found here:
-    https://docs.python.org/library/logging.html#logging-levels
-    A custom debug level of "TRACE" is available for even more verbosity.
 
 
 -  mapping.galaxy.mapping.logging.desc has changed from
@@ -226,32 +148,6 @@ config/galaxy.yml.sample:galaxy
     output discovery (e.g. discovered datasets <discover_datasets>, unpopulated collections,
     etc) happens as part of the job. In `directory_celery` and `extended_celery` metadata
     will be set within a celery task.
-
-
--  mapping.galaxy.mapping.monitor_thread_join_timeout.desc has changed from
-
-   ::
-
-    When stopping Galaxy cleanly, how much time to give various monitoring/polling
-    threads to finish before giving up on joining them. Set to 0 to disable this and
-    terminate without waiting. Among others, these threads include the job handler
-    workers, which are responsible for preparing/submitting and collecting/finishing
-    jobs, and which can cause job errors if not shut down cleanly. If using
-    supervisord, consider also increasing the value of `stopwaitsecs`. If using job
-    handler mules, consider also setting the `mule-reload-mercy` uWSGI option. See
-    the Galaxy Admin Documentation for more.
-
-   to
-
-   ::
-
-    When stopping Galaxy cleanly, how much time to give various monitoring/polling
-    threads to finish before giving up on joining them. Set to 0 to disable this and
-    terminate without waiting. Among others, these threads include the job handler
-    workers, which are responsible for preparing/submitting and collecting/finishing
-    jobs, and which can cause job errors if not shut down cleanly. If using
-    supervisord, consider also increasing the value of `stopwaitsecs`. See the
-    Galaxy Admin Documentation for more.
 
 
 -  mapping.galaxy.mapping.screencasts_url.default has changed from
@@ -574,8 +470,6 @@ config/galaxy.yml.sample:galaxy
    ::
 
     The URL linked by the "Community Hub" link in the "Help" menu.
-
-
 
 
 Removed
