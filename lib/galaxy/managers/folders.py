@@ -77,16 +77,13 @@ class FolderManager:
     Interface/service object for interacting with folders.
     """
 
-    def get(self, trans, decoded_folder_id, check_manageable=False, check_accessible=True):
+    def get(self, trans, decoded_folder_id: int, check_manageable: bool = False, check_accessible: bool = True):
         """
         Get the folder from the DB.
 
         :param  decoded_folder_id:       decoded folder id
-        :type   decoded_folder_id:       int
         :param  check_manageable:        flag whether the check that user can manage item
-        :type   check_manageable:        bool
         :param  check_accessible:        flag whether to check that user can access item
-        :type   check_accessible:        bool
 
         :returns:   the requested folder
         :rtype:     LibraryFolder
