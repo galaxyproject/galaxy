@@ -84,6 +84,23 @@ class FastAPIHistories:
         self.service.recalculate_disk_usage(trans)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+    @router.get("/api/user/api_keys", summary="Returns all API keys")
+    def get_api_keys(self, trans: ProvidesUserContext = DependsOnTrans):
+        return self.service.get_api_keys(trans)
+
+    @router.post("/api/user/api_keys", summary="Creates a new API key")
+    def create_api_key(self, trans: ProvidesUserContext = DependsOnTrans):
+        return self.service.create_api_key(trans)
+
+    @router.delete(
+        "/api/user/api_keys/{api_key}",
+        summary="Delete the API key with given key",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def delete_api_key(self, api_key: str, trans: ProvidesUserContext = DependsOnTrans):
+        self.service.delete_api_key(api_key, trans)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
     user_manager: users.UserManager = depends(users.UserManager)
