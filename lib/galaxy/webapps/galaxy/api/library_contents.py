@@ -36,7 +36,7 @@ from galaxy.webapps.base.controller import (
     UsesFormDefinitionsMixin,
     UsesLibraryMixinItems,
 )
-from . import BaseGalaxyAPIController
+from galaxy.webapps.galaxy.api import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
@@ -289,9 +289,9 @@ class LibraryContentsController(
 
         # Now create the desired content object, either file or folder.
         if create_type == "file":
-            status, output = self._upload_library_dataset(trans, library_id, folder_id, **payload)
+            status, output = self._upload_library_dataset(trans, folder_id, **payload)
         elif create_type == "folder":
-            status, output = self._create_folder(trans, folder_id, library_id, **payload)
+            status, output = self._create_folder(trans, folder_id, **payload)
         elif create_type == "collection":
             # Not delegating to library_common, so need to check access to parent
             # folder here.
@@ -334,7 +334,7 @@ class LibraryContentsController(
                 )
             return rval
 
-    def _upload_library_dataset(self, trans, library_id: int, folder_id: int, **kwd):
+    def _upload_library_dataset(self, trans, folder_id: int, **kwd):
         replace_dataset: Optional[LibraryDataset] = None
         upload_option = kwd.get("upload_option", "upload_file")
         dbkey = kwd.get("dbkey", "?")
