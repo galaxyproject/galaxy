@@ -149,10 +149,10 @@ def query_parameter_as_list(query):
     """Used as FastAPI dependable for query parameters that need to behave as a list of values separated by comma
     or as multiple instances of the same parameter.
 
-    **Important**: the `query` annotation provided must define the `alias` exactly as the name of the actual parameter name.
+    .. important:: the ``query`` annotation provided must define the ``alias`` exactly as the name of the actual parameter name.
 
-    Usage example:
-    ```python
+    Usage example::
+
         ValueQueryParam = Query(
             default=None,
             alias="value", # Important! this is the parameter name that will be displayed in the API docs
@@ -166,11 +166,11 @@ def query_parameter_as_list(query):
             values: Optional[List[str]] = Depends(query_parameter_as_list(ValueQueryParam)),
         ):
             ...
-    ```
 
     This will render in the API docs as a single string query parameter but will make the following requests equivalent:
-    - `api/my_route?value=val1,val2,val3`
-    - `api/my_route?value=val1&value=val2&value=val3`
+
+    - ``api/my_route?value=val1,val2,val3``
+    - ``api/my_route?value=val1&value=val2&value=val3``
     """
 
     def parse_elements(

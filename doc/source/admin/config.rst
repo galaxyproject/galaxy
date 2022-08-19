@@ -93,7 +93,7 @@ Configuration Basics
 ----------------------------
 
 - Edit ``config/galaxy.yml`` (copy it from ``config/galaxy.yml.sample`` if it does not exist) to make configuration
-  changes. This is a `YAML configuration file`_ and should contain one or two sections, one named ``gravity`` for
+  changes. This is a YAML configuration file and should contain one or two sections, one named ``gravity`` for
   process management via `Gravity`_ (optional) and one named ``galaxy`` for Galaxy (required).
 
     - The `gravity` section contain several important options about how to
