@@ -639,9 +639,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 and not self.sessionless
                 and self.import_options.allow_edit
             ):
-                library_folder = self.sa_session.query(model.LibraryFolder).get(
-                    self.app.security.decode_id(library_attrs["id"])
-                )
+                library_folder = self.sa_session.query(model.LibraryFolder).get(library_attrs["id"])
                 import_folder(library_attrs, root_folder=library_folder)
             else:
                 assert self.import_options.allow_library_creation
