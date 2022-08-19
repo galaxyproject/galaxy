@@ -1095,12 +1095,21 @@ class Yaml(Text):
 
 @build_sniff_from_prefix
 class Castep(Text):
-    """Report on the calculation (text)"""
+    """Report on a CASTEP calculation"""
 
     file_ext = "castep"
 
     def sniff_prefix(self, file_prefix: FilePrefix):
-        """Determines whether the file is a CASTEP log"""
+        """Determines whether the file is a CASTEP log
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Si.castep')
+        >>> Castep().sniff(fname)
+        True
+        >>> fname = get_test_fname('Si.param')
+        >>> Castep().sniff(fname)
+        False
+        """
         castep_header = [
             "+-------------------------------------------------+",
             "|                                                 |",
@@ -1110,7 +1119,7 @@ class Castep(Text):
             "|     C     A  A     S    T    E      P           |",
             "|      CCC  A  A  SSS     T    EEEEE  P           |",
             "|                                                 |",
-            "+-------------------------------------------------+"
+            "+-------------------------------------------------+",
         ]
         handle = file_prefix.string_io()
         for header_line in castep_header:
@@ -1121,82 +1130,71 @@ class Castep(Text):
 
 @build_sniff_from_prefix
 class Param(Yaml):
-    """General input file (text)"""
+    """CASTEP parameter input file"""
 
     file_ext = "param"
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
-        Modified version of the normal Yaml sniff that also checks the
-        dict keys for "general" CASTEP keywords, which are not case
+        Modified version of the normal Yaml sniff that also checks
+        for a valid CASTEP task key-value pair, which is not case
         sensitive
-        """
-        general_keywords = [
-            "BACKUP_INTERVAL",
-            "CALCULATE_STRESS",
-            "CALCULATE_DENSDIFF",
-            "CALCULATE_ELF",
-            "CALCULATE_HIRSHFELD",
-            "CHARGE_UNIT",
-            "CHECKPOINT",
-            "COMMENT",
-            "CONTINUATION",
-            "DATA_DISTRIBUTION",
-            "IPRINT",
-            "NUM_BACKUP_ITER",
-            "OPT_STRATEGY",
-            "PAGE_WVFNS",
-            "PRINT_CLOCK",
-            "PRINT_MEMORY_USAGE",
-            "RAND_SEED",
-            "REUSE",
-            "RUN_TIME",
-            "STOP",
-            "TASK",
-            "WRITE_CHECKPOINT",
-            "WRITE_FORMATTED_DENSITY",
-            "WRITE_FORMATTED_ELF",
-            "WRITE_FORMATTED_POTENTIAL",
-            "WRITE_ORBITALS"
-        ]
-        # Pattern used by SequenceSplitLocations
-        if file_prefix.file_size < 50000 and not file_prefix.truncated:
-            # If the file is small enough - don't guess just check.
-            try:
-                item = yaml.safe_load(file_prefix.contents_header)
-                assert isinstance(item, dict)
-            except yaml.YAMLError:
-                return False
-        else:
-            # If file is too big, load the first part. Trim the current line, in case it cut off in the middle of a key.
-            file_start = file_prefix.string_io().read(50000).strip().rsplit("\n", 1)[0]
-            try:
-                item = yaml.safe_load(file_start)
-                assert isinstance(item, dict)
-            except yaml.YAMLError:
-                return False
 
-        for key in item.keys():
-            assert isinstance(key, str)
-            if key.upper() in general_keywords:
-                return True
-        return False
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Si.param')
+        >>> Param().sniff(fname)
+        True
+        >>> fname = get_test_fname('Si.castep')
+        >>> Param().sniff(fname)
+        False
+        """
+        valid_tasks = [
+            "SINGLEPOINT",
+            "BANDSTRUCTURE",
+            "GEOMETRYOPTIMIZATION",
+            "GEOMETRYOPTIMISATION",
+            "MOLECULARDYNAMICS",
+            "OPTICS",
+            "PHONON",
+            "EFIELD",
+            "PHONON+EFIELD",
+            "TRANSITIONSTATESEARCH",
+            "MAGRES",
+            "ELNES",
+            "ELECTRONICSPECTROSCOPY",
+        ]
+
+        # check it looks like YAML
+        if not super().sniff_prefix(file_prefix):
+            return False
+
+        # check the TASK keyword is present
+        # and that it is set to a valid CASTEP task
+        pattern = re.compile(r"^TASK ?: ?([A-Z\+]*)$", flags=re.IGNORECASE | re.MULTILINE)
+        task = file_prefix.search(pattern)
+        return task and task.group(1).upper() in valid_tasks
 
 
 @build_sniff_from_prefix
 class FormattedDensity(Text):
-    """Final electron density written to an ASCII file"""
+    """Final electron density from a CASTEP calculation written to an ASCII file"""
 
     file_ext = "den_fmt"
 
     def sniff_prefix(self, file_prefix: FilePrefix):
-        """Determines whether the file is a formatted electron densities"""
+        """Determines whether the file contains electron densities in the CASTEP den_fmt format
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Si.den_fmt')
+        >>> FormattedDensity().sniff(fname)
+        True
+        >>> fname = get_test_fname('Si.param')
+        >>> FormattedDensity().sniff(fname)
+        False
+        """
         begin_header = "BEGIN header"
         end_header = 'END header: data is "<a b c> charge" in units of electrons/grid_point * number'
         grid_points = "of grid_points"
         handle = file_prefix.string_io()
         lines = handle.readlines()
-        if (lines[0].strip() == begin_header and lines[9].strip() == end_header and lines[10].strip() == grid_points):
-            return True
-        else:
-            return False
+        return lines[0].strip() == begin_header and lines[9].strip() == end_header and lines[10].strip() == grid_points
