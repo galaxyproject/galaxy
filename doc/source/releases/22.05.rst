@@ -636,6 +636,9 @@ Enhancements
 * Disable translogger middleware by default
   (thanks to `@natefoo <https://github.com/natefoo>`__).
   `Pull Request 14467`_
+* Fix Jobs API index to accept query parameters as lists
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 14482`_
 .. small_enhancement
 
 * Python code formatting standard, automatic
