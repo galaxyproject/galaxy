@@ -900,12 +900,12 @@ class FastAPIHistoryContents:
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         id: DecodedDatabaseIdField = HistoryItemIDPathParam,
     ) -> AsyncTaskResultSummary:
-        materializae_request = MaterializeDatasetInstanceRequest(
+        materialize_request = MaterializeDatasetInstanceRequest.construct(
             history_id=history_id,
             source=DatasetSourceType.hda,
             content=id,
         )
-        rval = self.service.materialize(trans, materializae_request)
+        rval = self.service.materialize(trans, materialize_request)
         return rval
 
     @router.post(
@@ -918,8 +918,8 @@ class FastAPIHistoryContents:
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         materialize_api_payload: MaterializeDatasetInstanceAPIRequest = Body(...),
     ) -> AsyncTaskResultSummary:
-        materializae_request: MaterializeDatasetInstanceRequest = MaterializeDatasetInstanceRequest(
+        materialize_request: MaterializeDatasetInstanceRequest = MaterializeDatasetInstanceRequest.construct(
             history_id=history_id, **materialize_api_payload.dict()
         )
-        rval = self.service.materialize(trans, materializae_request)
+        rval = self.service.materialize(trans, materialize_request)
         return rval
