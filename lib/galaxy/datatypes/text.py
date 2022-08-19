@@ -918,6 +918,7 @@ class Castep(Text):
     """Report on the calculation (text)"""
 
     file_ext = "castep"
+    sniff: callable
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """Determines whether the file is a CASTEP log"""
@@ -944,6 +945,7 @@ class Param(Yaml):
     """General input file (text)"""
 
     file_ext = "param"
+    sniff: callable
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
@@ -1008,6 +1010,7 @@ class FormattedDensity(Text):
     """Final electron density written to an ASCII file"""
 
     file_ext = "den_fmt"
+    sniff: callable
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """Determines whether the file is a formatted electron densities"""
