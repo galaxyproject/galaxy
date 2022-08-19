@@ -13,10 +13,11 @@ Subpackages
    :maxdepth: 4
 
    galaxy.model.dataset_collections
-   galaxy.model.migrate
+   galaxy.model.migrations
    galaxy.model.orm
    galaxy.model.store
    galaxy.model.tool_shed_install
+   galaxy.model.triggers
    galaxy.model.unittest_utils
    galaxy.model.view
 
@@ -51,6 +52,22 @@ galaxy.model.database\_utils module
 -----------------------------------
 
 .. automodule:: galaxy.model.database_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.model.deferred module
+----------------------------
+
+.. automodule:: galaxy.model.deferred
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.model.index\_filter\_util module
+---------------------------------------
+
+.. automodule:: galaxy.model.index_filter_util
    :members:
    :undoc-members:
    :show-inheritance:

@@ -67,6 +67,14 @@ galaxy.tool\_util.deps.container\_classes module
    :undoc-members:
    :show-inheritance:
 
+galaxy.tool\_util.deps.container\_volumes module
+------------------------------------------------
+
+.. automodule:: galaxy.tool_util.deps.container_volumes
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.tool\_util.deps.containers module
 ----------------------------------------
 

@@ -9,14 +9,6 @@ galaxy.app\_unittest\_utils package
 Submodules
 ----------
 
-galaxy.app\_unittest\_utils.celery\_helper module
--------------------------------------------------
-
-.. automodule:: galaxy.app_unittest_utils.celery_helper
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.app\_unittest\_utils.galaxy\_mock module
 -----------------------------------------------
 

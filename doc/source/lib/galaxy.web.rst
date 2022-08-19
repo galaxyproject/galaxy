@@ -15,17 +15,10 @@ Subpackages
    galaxy.web.framework
    galaxy.web.legacy_framework
    galaxy.web.proxy
+   galaxy.web.short_term_storage
 
 Submodules
 ----------
-
-galaxy.web.buildapp module
---------------------------
-
-.. automodule:: galaxy.web.buildapp
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 galaxy.web.form\_builder module
 -------------------------------

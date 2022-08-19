@@ -9,14 +9,6 @@ galaxy.web.framework.middleware package
 Submodules
 ----------
 
-galaxy.web.framework.middleware.batch module
---------------------------------------------
-
-.. automodule:: galaxy.web.framework.middleware.batch
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.web.framework.middleware.error module
 --------------------------------------------
 
