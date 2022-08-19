@@ -23,7 +23,7 @@ Check it out now!
 
 **Storage Dashboard** (beta)
 
-Have you ever been over your quotum? 250 GB sure goes fast! Now with the new Storage Dashboard you can get a quick overview of ways to help clean up deleted datasets and recover some of that quotum allocation. This is a beta version of this interface, let us know if you have any issues. In future versions, it will be expanded to help you understand how your allocation is being used, and which histories and datasets should be cleaned up first.
+Have you ever been over your quota? 250 GB sure goes fast! Now with the new Storage Dashboard you can get a quick overview of ways to help clean up deleted datasets and recover some of that quotum allocation. This is a beta version of this interface, let us know if you have any issues. In future versions, it will be expanded to help you understand how your allocation is being used, and which histories and datasets should be cleaned up first.
 
 .. raw:: html
 
@@ -36,6 +36,16 @@ The new history allows for improved bulk operations, selecting dozens or hundred
 .. raw:: html
 
    <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/rSv4HgQaMkg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video of a user selecting multiple datasets and applying a tag to all of them, before selecting multiple datasets and applying a DB key to all of them as well."></iframe>
+
+**Deferred dataset resolution enables running workflows and tools without importing data into Galaxy first**
+
+It is now possible to defer dataset resolution for datasets imported via URLs and the "Choose remote files" dialog.
+This means that the deferred dataset will only be downloaded as it is needed during job execution. Deferred datasets will not
+count towards you storage quota, as the data is not stored by Galaxy. To enable deferred dataset resolution click on "settings"
+in the upload dialog.
+
+.. figure:: images/22.05-deferred-data-upload.png
+   :alt: Screenshot of the upload modal. The settings menu is expanded and shows the "Deferred dataset resolution" checkbox.
 
 **Workflow Improvements**
 
