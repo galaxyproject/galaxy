@@ -53,7 +53,7 @@ describe("HistoryFilters", () => {
         await expectCorrectEmits(wrapper, false, "name:name-filter");
 
         // Test: clearing the filterText
-        const clearButton = wrapper.find("[data-description='show deleted filter toggle']");
+        const clearButton = wrapper.find("[data-description='clear filters']");
         await clearButton.trigger("click");
         await expectCorrectEmits(wrapper, false, "");
 
