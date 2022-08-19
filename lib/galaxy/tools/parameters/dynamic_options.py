@@ -655,7 +655,7 @@ class DynamicOptions:
         rval = []
         field_count = None
         for line in reader:
-            if line.startswith("#") or (self.line_startswith and line.startswith(self.line_startswith)):
+            if line.startswith("#") or (self.line_startswith and not line.startswith(self.line_startswith)):
                 continue
             line = line.rstrip("\n\r")
             if line:
