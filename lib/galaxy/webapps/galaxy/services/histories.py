@@ -547,8 +547,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             # we don't have a jeha, there will never be a download_url. Just let
             # the client poll on the created job_id to determine when the file has been
             # written.
-            job_id = trans.security.encode_id(job.id)
-            return (JobIdResponse(job_id=job_id), ready)
+            return (JobIdResponse.construct(job_id=job.id), ready)
 
         if up_to_date and jeha.ready:
             serialized_jeha = self.history_export_view.serialize(trans, id, jeha)
@@ -560,8 +559,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                 return (JobExportHistoryArchiveModel.construct(**serialized_jeha), ready)
             else:
                 assert job is not None, "logic error, don't have a jeha or a job"
-                job_id = trans.security.encode_id(job.id)
-                return (JobIdResponse.construct(job_id=job_id), ready)
+                return (JobIdResponse.construct(job_id=job.id), ready)
 
     def get_ready_history_export(
         self,

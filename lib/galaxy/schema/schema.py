@@ -39,6 +39,7 @@ from galaxy.model import (
 )
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
     LibraryFolderDatabaseIdField,
     ModelClassField,
 )
@@ -1418,7 +1419,7 @@ class CustomBuildsMetadataResponse(Model):
 class JobIdResponse(Model):
     """Contains the ID of the job associated with a particular request."""
 
-    job_id: DecodedDatabaseIdField = Field(
+    job_id: EncodedDatabaseIdField = Field(
         ...,
         title="Job ID",
         description="The encoded database ID of the job that is currently processing a particular request.",
