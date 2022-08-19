@@ -45,7 +45,7 @@ from galaxy.webapps.base.controller import (
     UsesStoredWorkflowMixin,
     UsesVisualizationMixin,
 )
-from ..api import depends
+from galaxy.webapps.galaxy.api import depends
 
 
 def format_bool(b):
@@ -469,7 +469,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                 ],
             }
         else:
-            page = self.page_manager.create(trans, CreatePagePayload(**payload))
+            page = self.page_manager.create_page(trans, CreatePagePayload(**payload))
             return {"message": "Page '%s' successfully created." % page.title, "status": "success"}
 
     @web.legacy_expose_api
