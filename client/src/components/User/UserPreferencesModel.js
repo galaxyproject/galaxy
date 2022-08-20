@@ -56,13 +56,10 @@ export const getUserPreferencesModel = (user_id) => {
             shouldRender: !config.single_user,
         },
         api_key: {
-            title: _l("Manage API Key"),
-            id: "edit-preferences-api-key",
-            description: _l("Access your current API key or create a new one."),
-            url: `api/users/${user_id}/api_key/inputs`,
+            id: "edit-preferences-api-keys",
+            title: _l("Manage API Keys"),
+            description: _l("Access your current API keys or create a new one."),
             icon: "fa-key",
-            submitTitle: "Create a new Key",
-            submitIcon: "fa-check",
         },
         cloud_auth: {
             id: "edit-preferences-cloud-auth",
