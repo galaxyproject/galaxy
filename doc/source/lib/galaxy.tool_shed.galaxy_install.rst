@@ -15,7 +15,6 @@ Subpackages
    galaxy.tool_shed.galaxy_install.datatypes
    galaxy.tool_shed.galaxy_install.metadata
    galaxy.tool_shed.galaxy_install.repository_dependencies
-   galaxy.tool_shed.galaxy_install.tool_dependencies
    galaxy.tool_shed.galaxy_install.tools
 
 Submodules

@@ -268,6 +268,14 @@ galaxy.datatypes.proteomics module
    :undoc-members:
    :show-inheritance:
 
+galaxy.datatypes.qiime2 module
+------------------------------
+
+.. automodule:: galaxy.datatypes.qiime2
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.datatypes.qualityscore module
 ------------------------------------
 

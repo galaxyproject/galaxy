@@ -14,3 +14,14 @@ Subpackages
 
    galaxy.files.sources
    galaxy.files.unittest_utils
+
+Submodules
+----------
+
+galaxy.files.uris module
+------------------------
+
+.. automodule:: galaxy.files.uris
+   :members:
+   :undoc-members:
+   :show-inheritance:

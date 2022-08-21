@@ -9,6 +9,14 @@ galaxy.schema package
 Submodules
 ----------
 
+galaxy.schema.fetch\_data module
+--------------------------------
+
+.. automodule:: galaxy.schema.fetch_data
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.schema.fields module
 ---------------------------
 
@@ -29,6 +37,14 @@ galaxy.schema.schema module
 ---------------------------
 
 .. automodule:: galaxy.schema.schema
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.schema.tasks module
+--------------------------
+
+.. automodule:: galaxy.schema.tasks
    :members:
    :undoc-members:
    :show-inheritance:

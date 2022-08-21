@@ -16,3 +16,11 @@ galaxy.model.unittest\_utils.data\_app module
    :members:
    :undoc-members:
    :show-inheritance:
+
+galaxy.model.unittest\_utils.store\_fixtures module
+---------------------------------------------------
+
+.. automodule:: galaxy.model.unittest_utils.store_fixtures
+   :members:
+   :undoc-members:
+   :show-inheritance:

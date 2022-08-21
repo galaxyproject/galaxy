@@ -97,6 +97,14 @@ galaxy\_test.selenium.test\_data\_source\_tools module
    :undoc-members:
    :show-inheritance:
 
+galaxy\_test.selenium.test\_dataset\_metadata\_download module
+--------------------------------------------------------------
+
+.. automodule:: galaxy_test.selenium.test_dataset_metadata_download
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy\_test.selenium.test\_histories\_list module
 --------------------------------------------------
 
@@ -181,6 +189,14 @@ galaxy\_test.selenium.test\_history\_structure module
 -----------------------------------------------------
 
 .. automodule:: galaxy_test.selenium.test_history_structure
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy\_test.selenium.test\_invocation\_grid module
+---------------------------------------------------
+
+.. automodule:: galaxy_test.selenium.test_invocation_grid
    :members:
    :undoc-members:
    :show-inheritance:
