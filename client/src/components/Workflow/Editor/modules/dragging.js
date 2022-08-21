@@ -11,8 +11,9 @@ export function attachDragging(el, callbacks) {
 }
 
 export class InputDragging {
-    constructor(app, options = {}) {
+    constructor(app, canvasManager, options = {}) {
         this.app = app;
+        this.canvasManager = canvasManager;
         this.el = options.el;
         this.terminal = options.terminal;
         this.el.terminal = this.terminal;
@@ -64,15 +65,16 @@ export class InputDragging {
         d.proxy.dropTooltip = "";
         if (this.$el.hasClass("can-accept")) {
             const terminal = this.terminal;
-            const c = new Connector(this.app.canvasManager, d.drag.terminal, terminal);
+            const c = new Connector(this.canvasManager, d.drag.terminal, terminal);
             c.redraw();
         }
     }
 }
 
 export class OutputDragging {
-    constructor(app, options) {
+    constructor(app, canvasManager, options) {
         this.app = app;
+        this.canvasManager = canvasManager;
         this.el = options.el;
         this.terminal = options.terminal;
         this.el.terminal = this.terminal;
@@ -97,16 +99,16 @@ export class OutputDragging {
     }
     onDrag(e, d = {}) {
         var onmove = () => {
-            var canvasZoom = this.app.canvasManager.canvasZoom;
+            var canvasZoom = this.canvasManager.canvasZoom;
             var po = $(d.proxy).offsetParent().offset();
             var x = d.offsetX - po.left;
             var y = d.offsetY - po.top;
             $(d.proxy).css({ left: x / canvasZoom, top: y / canvasZoom });
             d.proxy.terminal.redraw();
-            this.app.canvasManager.updateViewportOverlay();
+            this.canvasManager.updateViewportOverlay();
         };
         onmove();
-        this.app.canvasManager.scrollPanel.test(e, onmove);
+        this.canvasManager.scrollPanel.test(e, onmove);
     }
     onDragStart(e, d = {}) {
         $(d.available).addClass("input-terminal-active");
@@ -120,7 +122,7 @@ export class OutputDragging {
             },
         });
         h.terminal = new Terminals.Terminal({ element: h, node: {} });
-        const c = new Connector(this.app.canvasManager);
+        const c = new Connector(this.canvasManager);
         c.dragging = true;
         c.connect(this.terminal, h.terminal);
         return h;
@@ -133,6 +135,6 @@ export class OutputDragging {
         $(d.proxy).tooltip("dispose");
         $(d.proxy).remove();
         $(d.available).removeClass("input-terminal-active");
-        this.app.canvasManager.scrollPanel.stop();
+        this.canvasManager.scrollPanel.stop();
     }
 }

@@ -29,8 +29,6 @@ class Connector {
         this.canvas.style.position = "absolute";
         const container = document.getElementById("canvas-container");
         container.appendChild(this.canvas);
-        this.svg = d3.select(this.canvas).append("svg");
-        this.svg.attr("class", "ribbon");
         if (outputHandle && inputHandle) {
             this.connect(outputHandle, inputHandle);
         }
@@ -109,8 +107,11 @@ class Connector {
         this.canvas.style.top = `${canvas_top}px`;
 
         // Resize the svg
-        this.svg.style("width", `${canvas_width}px`);
-        this.svg.style("height", `${canvas_height}px`);
+        const svg = d3.select(this.canvas).append("svg");
+        svg.attr("class", "ribbon");
+        console.log(svg);
+        svg.style("width", `${canvas_width}px`);
+        svg.style("height", `${canvas_height}px`);
 
         // Adjust points to be relative to the canvas
         start_x -= canvas_left;
@@ -122,9 +123,9 @@ class Connector {
         const cp_shift = Math.min(Math.max(Math.abs(canvas_max_y - canvas_min_y) / 2, cpFactor), 3 * cpFactor);
 
         // Draw ribbons
-        this.drawRibbon(outputHandle, inputHandle, cp_shift, start_x, start_y, end_x, end_y);
+        this.drawRibbon(svg, outputHandle, inputHandle, cp_shift, start_x, start_y, end_x, end_y);
     }
-    drawRibbon(outputHandle, inputHandle, cp_shift, start_x, start_y, end_x, end_y) {
+    drawRibbon(svg, outputHandle, inputHandle, cp_shift, start_x, start_y, end_x, end_y) {
         // Check ribbon type
         const startRibbon = outputHandle && outputHandle.isMappedOver();
         const endRibbon = inputHandle && inputHandle.isMappedOver();
@@ -142,7 +143,7 @@ class Connector {
             end_offsets = offsets;
             num_offsets = offsets.length;
         }
-        this.svg.selectAll("*").remove();
+        svg.selectAll("*").remove();
         for (let i = 0; i < num_offsets; i++) {
             let inner_width = ribbonInnerSingle;
             let outer_width = ribbonOuterSingle;
@@ -151,6 +152,7 @@ class Connector {
                 outer_width = ribbonOuterMultiple;
             }
             this.drawCurve(
+                svg,
                 start_x,
                 start_y,
                 end_x,
@@ -163,7 +165,7 @@ class Connector {
             );
         }
     }
-    drawCurve(start_x, start_y, end_x, end_y, cp_shift, inner_width, outer_width, offset_start, offset_end) {
+    drawCurve(svg, start_x, start_y, end_x, end_y, cp_shift, inner_width, outer_width, offset_start, offset_end) {
         offset_start = offset_start || 0;
         offset_end = offset_end || 0;
         const lineData = [
@@ -172,6 +174,7 @@ class Connector {
             { x: end_x - cp_shift, y: end_y + offset_end },
             { x: end_x, y: end_y + offset_end },
         ];
+        console.log("lineData", lineData);
         const lineFunction = d3.svg
             .line()
             .x(function (d) {
@@ -181,14 +184,12 @@ class Connector {
                 return d.y;
             })
             .interpolate("basis");
-        this.svg
-            .append("path")
+        svg.append("path")
             .attr("class", "ribbon-outer")
             .attr("d", lineFunction(lineData))
             .attr("stroke-width", outer_width)
             .attr("fill", "none");
-        this.svg
-            .append("path")
+        svg.append("path")
             .attr("class", this.innerClass)
             .attr("d", lineFunction(lineData))
             .attr("stroke-width", inner_width)

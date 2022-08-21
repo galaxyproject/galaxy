@@ -65,50 +65,19 @@
                         {{ name }}
                     </div>
                 </div>
-                <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
-                    <ZoomControl v-if="!checkWheeled" :zoom-level="zoomLevel" @onZoom="onZoom" />
-                    <b-button
-                        v-else
-                        v-b-tooltip.hover
-                        class="reset-wheel"
-                        variant="light"
-                        title="Show Zoom Buttons"
-                        size="sm"
-                        aria-label="Show Zoom Buttons"
-                        @click="resetWheel">
-                        Zoom Controls
-                    </b-button>
-                    <div id="canvas-viewport">
-                        <div id="canvas-container" ref="canvas">
-                            <WorkflowNode
-                                v-for="(step, key) in steps"
-                                :id="key"
-                                :key="key"
-                                :name="step.name"
-                                :type="step.type"
-                                :content-id="step.content_id"
-                                :step="step"
-                                :datatypes-mapper="datatypesMapper"
-                                :get-manager="getManager"
-                                :get-canvas-manager="getCanvasManager"
-                                @onAdd="onAdd"
-                                @onUpdate="onUpdate"
-                                @onClone="onClone"
-                                @onCreate="onInsertTool"
-                                @onChange="onChange"
-                                @onActivate="onActivate"
-                                @onRemove="onRemove" />
-                        </div>
-                    </div>
-                    <div class="workflow-overview" aria-hidden="true">
-                        <div class="workflow-overview-body">
-                            <div id="overview-container">
-                                <canvas id="overview-canvas" width="0" height="0" />
-                                <div id="overview-viewport" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <workflow-graph
+                    :steps="steps"
+                    :datatypes-mapper="datatypesMapper"
+                    :get-manager="getManager"
+                    @onActiveNode="onActiveNode"
+                    @onAdd="onAdd"
+                    @onUpdate="onUpdate"
+                    @onClone="onClone"
+                    @onCreate="onInsertTool"
+                    @onChange="onChange"
+                    @onDisconnect="onDisconnect"
+                    @onRemove="onRemove">
+                </workflow-graph>
             </div>
             <SidePanel id="right" side="right">
                 <template v-slot:panel>
@@ -211,7 +180,6 @@ import { fromSimple, toSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
 import { getUntypedWorkflowParameters } from "./modules/parameters";
 import { getStateUpgradeMessages } from "./modules/utilities";
-import WorkflowCanvas from "./modules/canvas";
 import WorkflowOptions from "./Options";
 import FormDefault from "./Forms/FormDefault";
 import FormTool from "./Forms/FormTool";
@@ -226,8 +194,8 @@ import RefactorConfirmationModal from "./RefactorConfirmationModal";
 import MessagesModal from "./MessagesModal";
 import { hide_modal } from "layout/modal";
 import WorkflowAttributes from "./Attributes";
-import ZoomControl from "./ZoomControl";
-import WorkflowNode from "./Node";
+import WorkflowGraph from "./WorkflowGraph.vue";
+
 import Vue from "vue";
 import { ConfirmDialog } from "composables/confirmDialog";
 
@@ -241,11 +209,10 @@ export default {
         FormTool,
         WorkflowOptions,
         WorkflowAttributes,
-        ZoomControl,
-        WorkflowNode,
         WorkflowLint,
         RefactorConfirmationModal,
         MessagesModal,
+        WorkflowGraph,
     },
     props: {
         id: {
@@ -280,7 +247,6 @@ export default {
             markdownText: null,
             versions: [],
             parameters: null,
-            zoomLevel: 7,
             steps: {},
             hasChanges: false,
             nodeIndex: 0,
@@ -302,8 +268,6 @@ export default {
             messageIsError: false,
             version: this.initialVersion,
             showInPanel: "attributes",
-            isWheeled: false,
-            canvasManager: null,
             saveAsName: null,
             saveAsAnnotation: null,
             showSaveAsModal: false,
@@ -355,12 +319,6 @@ export default {
         hasActiveNodeTool() {
             return this.activeNode && this.activeNode.type == "tool";
         },
-        checkWheeled() {
-            if (this.canvasManager != null) {
-                return this.canvasManager.isWheeled;
-            }
-            return this.isWheeled;
-        },
     },
     watch: {
         id(newId, oldId) {
@@ -394,27 +352,13 @@ export default {
             this.datatypesMapper = mapper;
             this.datatypes = mapper.datatypes;
 
-            // canvas overview management
-            this.canvasManager = new WorkflowCanvas(this, this.$refs.canvas);
             this._loadCurrent(this.id, this.version);
         });
         hide_modal();
     },
     methods: {
-        onActivate(node) {
-            if (this.activeNode != node) {
-                this.onDeactivate();
-                node.makeActive();
-                this.activeNode = node;
-                this.canvasManager.drawOverview();
-                this.$refs["right-panel"].scrollTop = 0;
-            }
-        },
-        onDeactivate() {
-            if (this.activeNode) {
-                this.activeNode.makeInactive();
-                this.activeNode = null;
-            }
+        onDisconnect(nodeId, inputName) {
+            delete this.steps[nodeId].input_connections[inputName];
         },
         onAttemptRefactor(actions) {
             if (this.hasChanges) {
@@ -463,6 +407,7 @@ export default {
             this._loadEditorData(response.workflow);
         },
         onAdd(node) {
+            console.log("onAdd", node);
             this.nodes[node.id] = node;
         },
         onUpdate(node) {
@@ -488,11 +433,9 @@ export default {
             Vue.set(this.nodes[nodeId], "postJobActions", postJobActions);
             this.onChange();
         },
-        onRemove(node) {
-            delete this.nodes[node.id];
-            Vue.delete(this.steps, node.id);
-            this.canvasManager.drawOverview();
-            this.onDeactivate();
+        onRemove(nodeId) {
+            delete this.nodes[nodeId];
+            Vue.delete(this.steps, nodeId);
             this.showInPanel = "attributes";
         },
         onEditSubworkflow(contentId) {
@@ -646,13 +589,6 @@ export default {
                 this.$router.push(url);
             });
         },
-        onZoom(zoomLevel) {
-            this.zoomLevel = this.canvasManager.setZoom(zoomLevel);
-        },
-        resetWheel() {
-            this.zoomLevel = this.canvasManager.zoomLevel;
-            this.canvasManager.isWheeled = false;
-        },
         onSave(hideProgress = false) {
             !hideProgress && this.onWorkflowMessage("Saving workflow...", "progress");
             return saveWorkflow(this)
@@ -712,8 +648,6 @@ export default {
                 this.versions = versions;
             });
             await Vue.nextTick();
-            this.canvasManager.drawOverview();
-            this.canvasManager.scrollToNodes();
             this.hasChanges = has_changes;
         },
         _loadCurrent(id, version) {
@@ -739,13 +673,16 @@ export default {
                 this.creator = creator;
             }
         },
+        onActiveNode(nodeId) {
+            this.activeNode = this.nodes[nodeId];
+            console.log("active node");
+            this.$refs["right-panel"].scrollTop = 0;
+        },
         getManager() {
             return this;
         },
-        getCanvasManager() {
-            return this.canvasManager;
-        },
         getNode() {
+            console.log("getting node");
             return this.activeNode;
         },
         onInsertedStateMessages(insertedStateMessages) {

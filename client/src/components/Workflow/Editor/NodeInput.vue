@@ -30,6 +30,10 @@ export default {
             type: Object,
             required: true,
         },
+        canvasManager: {
+            type: Object,
+            required: true,
+        },
     },
     data() {
         return {
@@ -100,11 +104,12 @@ export default {
                 element: this.$refs.terminal,
             });
             terminal.on("change", this.onChange.bind(this));
-            new InputDragging(this.getManager(), {
+            new InputDragging(this.getManager(), this.canvasManager, {
                 el: this.$refs.terminal,
                 terminal: terminal,
             });
             this.$emit("onAdd", this.input, terminal);
+            this.$store.commit("setInputTerminal", { inputTerminalId: terminal.element.id, inputTerminal: terminal });
             return terminal;
         },
         onChange() {
@@ -112,6 +117,7 @@ export default {
             this.$emit("onChange");
         },
         onRemove() {
+            this.$emit("onDisconnect", this.input.name);
             this.terminal.destroy();
         },
         mouseOver(e) {

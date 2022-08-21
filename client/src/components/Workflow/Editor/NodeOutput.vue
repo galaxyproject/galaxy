@@ -26,6 +26,10 @@ export default {
             type: Object,
             required: true,
         },
+        canvasManager: {
+            type: Object,
+            required: true,
+        },
         getNode: {
             type: Function,
             required: true,
@@ -154,13 +158,17 @@ export default {
                     datatypes: this.extensions,
                 });
             }
-            new OutputDragging(this.getManager(), {
+            new OutputDragging(this.getManager(), this.canvasManager, {
                 el: this.$refs.terminal,
                 terminal: this.terminal,
             });
             this.terminal.on("change", this.onChange.bind(this));
             this.terminal.emit("change");
             this.$emit("onAdd", this.output, this.terminal);
+            this.$store.commit("setOutputTerminal", {
+                outputTerminalId: this.terminal.element.id,
+                outputTerminal: this.terminal,
+            });
         },
         onChange() {
             this.isMultiple = this.terminal.isMappedOver();

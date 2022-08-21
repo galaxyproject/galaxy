@@ -1,9 +1,5 @@
 <template>
-    <div
-        :id="idString"
-        :name="name"
-        :node-label="label"
-        :class="{ 'workflow-node': true, 'node-on-scroll-to': scrolledTo, 'node-highlight': highlight }">
+    <div @click="makeActive()" :id="idString" :name="name" :node-label="label" :class="classes">
         <div class="node-header unselectable clearfix">
             <b-button
                 v-b-tooltip.hover
@@ -62,8 +58,10 @@
                 :get-node="getNode"
                 :get-manager="getManager"
                 :datatypes-mapper="datatypesMapper"
+                :canvas-manager="canvasManager"
                 @onAdd="onAddInput"
                 @onRemove="onRemoveInput"
+                @onDisconnect="onDisconnect"
                 @onChange="onChange" />
             <div v-if="showRule" class="rule" />
             <node-output
@@ -73,6 +71,7 @@
                 :post-job-actions="postJobActions"
                 :get-node="getNode"
                 :get-manager="getManager"
+                :canvas-manager="canvasManager"
                 @onAdd="onAddOutput"
                 @onRemove="onRemoveOutput"
                 @onToggle="onToggleOutput"
@@ -136,9 +135,14 @@ export default {
             type: Object,
             default: null,
         },
+        activeNodeId: {
+            type: String,
+            default: null,
+        },
     },
     data() {
         return {
+            canvasManager: null,
             popoverShow: false,
             inputs: [],
             outputs: [],
@@ -187,6 +191,20 @@ export default {
         stepIndex() {
             return parseInt(this.id) + 1;
         },
+        isActive() {
+            return this.id == this.activeNodeId;
+        },
+        classes() {
+            const cssObj = {
+                "workflow-node": true,
+                "node-on-scroll-to": this.scrolledTo,
+                "node-highlight": this.highlight || this.isActive,
+            };
+            if (this.isActive) {
+                return { ...cssObj, "is-active": true };
+            }
+            return cssObj;
+        },
     },
     mounted() {
         this.canvasManager = this.getCanvasManager();
@@ -216,7 +234,7 @@ export default {
         // Attach node dragging events
         attachDragging(this.$el, {
             dragstart: () => {
-                this.$emit("onActivate", this);
+                this.$emit("onActivate", this.id);
             },
             dragend: () => {
                 this.$emit("onChange");
@@ -233,7 +251,7 @@ export default {
                 this.onRedraw();
             },
             dragclickonly: () => {
-                this.$emit("onActivate", this);
+                this.$emit("onActivate", this.id);
             },
         });
 
@@ -248,7 +266,6 @@ export default {
 
     methods: {
         onChange() {
-            this.onRedraw();
             this.$emit("onChange");
         },
         onAddInput(input, terminal) {
@@ -258,6 +275,9 @@ export default {
         onRemoveInput(input) {
             delete this.inputTerminals[input.name];
             this.onRedraw();
+        },
+        onDisconnect(inputName) {
+            this.$emit("onDisconnect", this.id, inputName);
         },
         onAddOutput(output, terminal) {
             this.outputTerminals[output.name] = terminal;
@@ -286,7 +306,7 @@ export default {
                 t.destroy();
             });
             this.activeOutputs.filterOutputs([]);
-            this.$emit("onRemove", this);
+            this.$emit("onRemove", this.id);
         },
         onRedraw() {
             Object.values(this.inputTerminals).forEach((t) => {
@@ -302,7 +322,7 @@ export default {
         setNode(data) {
             this.initData(data);
             this.$emit("onChange");
-            this.$emit("onActivate", this);
+            this.$emit("onActivate", this.id);
         },
         setAnnotation(annotation) {
             this.annotation = annotation;
@@ -347,19 +367,7 @@ export default {
             this.highlight = false;
         },
         makeActive() {
-            this.element.classList.add("node-active");
-        },
-        makeInactive() {
-            // Keep inactive nodes stacked from most to least recently active
-            // by moving element to the end of parent's node list
-            document.activeElement.blur();
-            const element = this.element;
-            ((p) => {
-                p.removeChild(element);
-                p.appendChild(element);
-            })(element.parentNode);
-            // Remove active class
-            element.classList.remove("node-active");
+            this.$emit("onActivate", this.id);
         },
         offsetVaryPosition(offsetRange) {
             return Math.floor(Math.random() * offsetRange);
