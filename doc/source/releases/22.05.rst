@@ -9,11 +9,6 @@
 Enhancements
 -------------------------------
 
-.. major_feature
-
-
-.. feature
-
 * Add new molecule datatypes
   (thanks to `@muon-spectroscopy-computational-project <https://github.com/muon-spectroscopy-computational-project>`__).
   `Pull Request 12375`_
@@ -56,13 +51,9 @@ Enhancements
 * Update color scheme collection progress bar
   (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
   `Pull Request 14031`_
-.. enhancement_tag_viz
-
 * Add gulp target for force-rebuild of viz plugins
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 13370`_
-.. enhancement_tag_datatypes
-
 * Add mzqc datatype
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 13564`_
@@ -87,13 +78,9 @@ Enhancements
 * Add scool datatype
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 14480`_
-.. enhancement_tag_tools
-
 * Add JupyTool, user-configurable interactive Jupyter-based tool
   (thanks to `@blankenberg <https://github.com/blankenberg>`__).
   `Pull Request 13606`_
-.. enhancement_tag_workflows
-
 * Simplified workflow form runtime options
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13613`_
@@ -136,8 +123,6 @@ Enhancements
 * Add workflow deletion selenium tests
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13994`_
-.. enhancement_tag_ui
-
 * Update Client dependency, swap to node 16
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 13282`_
@@ -162,8 +147,6 @@ Enhancements
 * Add client build timestamp to application config
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 13874`_
-.. enhancement_tag_jobs
-
 * Attach dataset source in model store imports
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 13560`_
@@ -182,8 +165,6 @@ Enhancements
 * Jobs Index and Grid Improvements
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13893`_
-.. enhancement_tag_admin
-
 * make maximum number of retries for username validation configurable
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 13177`_
@@ -208,8 +189,6 @@ Enhancements
 * Add log rotation options and update logging documentation
   (thanks to `@natefoo <https://github.com/natefoo>`__).
   `Pull Request 14457`_
-.. enhancement
-
 * Allow site-specific history default, leave fallback option to legacy
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 11748`_
@@ -639,8 +618,6 @@ Enhancements
 * Fix Jobs API index to accept query parameters as lists
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 14482`_
-.. small_enhancement
-
 * Python code formatting standard, automatic
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 11162`_
@@ -760,11 +737,6 @@ Enhancements
 Fixes
 -------------------------------
 
-.. major_bug
-
-
-.. bug_tag_viz
-
 * Properly initialize chart settings for new visualizations
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 13561`_
@@ -780,8 +752,6 @@ Fixes
 * Visualization fix for MSA
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 14263`_
-.. bug_tag_datatypes
-
 * Tighten sniffers
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 13959`_
@@ -809,8 +779,6 @@ Fixes
 * Fix xml deprecation warning in ``parse_requirements_from_xml``
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 14483`_
-.. bug_tag_tools
-
 * Fix David URL
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 13666`_
@@ -823,8 +791,6 @@ Fixes
 * Grep1 tool: fix keep_header option
   (thanks to `@jancrichter <https://github.com/jancrichter>`__).
   `Pull Request 14475`_
-.. bug_tag_workflows
-
 * Fix workflow index API boolean parameters
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 13698`_
@@ -840,8 +806,6 @@ Fixes
 * Fix effective datatype in workflow editor node terminals
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 14473`_
-.. bug_tag_ui
-
 * Bump karma from 6.3.13 to 6.3.14 in /client
   (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
   `Pull Request 13357`_
@@ -887,8 +851,6 @@ Fixes
 * Update yarn.lock file
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 14337`_
-.. bug_tag_jobs
-
 * Fix for uploading metadata to remote object store
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 13348`_
@@ -931,8 +893,6 @@ Fixes
 * Specify time as datetime object in job queries
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 14281`_
-.. bug_tag_admin
-
 * Drop uWSGI from Galaxy Reports documentation
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 13406`_
@@ -966,8 +926,6 @@ Fixes
 * Pass ``--cleanenv`` by default to singularity command
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 14429`_
-.. bug
-
 * Doc fixes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 14488`_
