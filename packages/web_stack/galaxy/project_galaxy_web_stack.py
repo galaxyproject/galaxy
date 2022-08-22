@@ -1,4 +1,4 @@
-__version__ = "22.1.1"
+__version__ = "22.1.2.dev0"
 
 PROJECT_NAME = "galaxy-web-stack"
 PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"
