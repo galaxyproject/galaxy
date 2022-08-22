@@ -16,6 +16,7 @@ Galaxy is known to work with:
 * [HTCondor](http://research.cs.wisc.edu/htcondor/)
 * [Slurm](https://slurm.schedmd.com/)
 * [Galaxy Pulsar](#pulsar) (formerly LWR)
+* [AWS Batch](https://aws.amazon.com/batch)
 
 It should also work with [any other DRM](http://www.drmaa.org/implementations.php) which implements a [DRMAA](http://www.drmaa.org) interface. If you successfully run Galaxy with a DRM not listed here, please let us know via an email to the [galaxy-dev mailing list](https://galaxyproject.org/mailing-lists/).
 
@@ -306,6 +307,62 @@ Torque attributes can be defined in either their short (e.g. [qsub(1B)](http://c
 
 
 Most options available to `qsub(1b)` and `pbs_submit(3b)` are supported.  Exceptions include `-o/Output_Path`, `-e/Error_Path`, and `-N/Job_Name` since these PBS job attributes are set by Galaxy.
+
+## AWS Batch
+
+Runs jobs via [AWS Batch](https://aws.amazon.com/batch/). Built on top of AWS Elastic Container Service (ECS), AWS Batch enables users to run hundreds of thousands of jobs with little configuration.
+
+#### Dependencies
+
+The AWS Batch job runner requires AWS Elastic File System (EFS) to be mounted as a shared file system that enables both Galaxy and job containers to read and write files. In a typical use case, Galaxy is installed on an AWS EC2 instance where an EFS drive is mounted, and all job-related paths, such as objects, jobs_directory, tool_directory and so on, are placed on the EFS drive. Galaxy admins configure Batch compute environments, Batch job queues and proper AWS IAM roles, and specify them as destination parameters.
+AWS Batch job runner requires [boto3](https://pypi.org/project/boto3/) to be installed in Galaxy's environment.
+
+#### Parameters and Configuration
+
+AWS Batch job runner sends jobs to Batch compute environment that is composed of either Fargate or EC2. While Fargate provides a series of lightweight compute resources (up to 4 vcpu and 30 GB memory), EC2 offers broader choices. With `auto_platform` enabled, this runner supports mapping to the best fit type of resources based on the requested `vcpu` and `memory`, i.e., Fargate is preferred over EC2 when `vcpu` and `memory` are below the limits (4 and 30 gb, respectively). If `GPU` computing is needed for a destination, a job queue built on top of a GPU-enabled compute environment must be provisioned.
+
+```xml
+<plugins>
+    <plugin id="aws_batch" type="runner" load="galaxy.jobs.runners.aws:AWSBatchJobRunner">
+        <!-- Run `aws configure` with aws cli or set params below -->
+        <!-- <param id="aws_access_key_id">xxxxxxxxx</param>
+        <param id="aws_secret_access_key">xxxxxxxxxxxxxxxxxxx</param>
+        <param id="region">us-west-1</param> -->
+    </plugin>
+</plugins>
+<destinations>
+    <destination id="aws_batch_auto" runner="aws_batch">
+        <param id="docker_enabled">true</param>
+        <!-- `docker_enabled = true` is always required -->
+        <param id="job_queue">arn_for_Fargate_job_queue, arn_for_EC2_job_queue</param>
+        <!-- Fargete and non-GPU EC2 -->
+        <param id="job_role_arn">arn:aws:iam::xxxxxxxxxxxxxxxxxx</param>
+        <param id="vcpu">1</param>
+        <param id="memory">2048</param>
+        <!-- MB, default is 2048 -->
+        <param id="efs_filesystem_id">fs-xxxxxxxxxxxxxx</param>
+        <param id="efs_mount_point">/mnt/efs/fs1</param>
+        <!-- This is the location where the EFS is mounted -->
+        <param id="fargate_version">1.4.0</param>
+        <!-- `fargate_version` is required to use Fargate compute resources -->
+        <param id="auto_platform">true</param>
+    </destination>
+    <destination id="aws_batch_gpu" runner="aws_batch">
+        <param id="docker_enabled">true</param>
+        <!-- `docker_enabled = true` is always required -->
+        <param id="job_queue">arn_for_gpu_job_queue</param>
+        <!-- Job queue must be built on GPU-specific compute environment -->
+        <param id="job_role_arn">arn:aws:iam::xxxxxxxxxxxxxxxxxx</param>
+        <param id="vcpu">4</param>
+        <param id="memory">20000</param>
+        <!-- MB, default is 2048 -->
+        <param id="gpu">1</param>
+        <param id="efs_filesystem_id">fs-xxxxxxxxxxxxxx</param>
+        <param id="efs_mount_point">/mnt/efs/fs1</param>
+            <!-- This is the location where the EFS is mounted -->
+    </destination>
+</destinations>
+```
 
 ## Submitting Jobs as the Real User
 
