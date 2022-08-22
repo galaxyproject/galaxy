@@ -3,8 +3,8 @@
     "extends": [
         "eslint:recommended",
         "plugin:vue/recommended",
-        "plugin:compat/recommended"
-        //"airbnb-base", eventually (?)
+        "plugin:compat/recommended",
+        "plugin:vuejs-accessibility/recommended"
     ],
     "env": {
         "browser": true,
