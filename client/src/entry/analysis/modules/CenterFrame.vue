@@ -38,7 +38,7 @@ export default {
                     this.$emit("load");
                 }
             } catch (err) {
-                console.warn("CenterPanel - onLoad location access forbidden.", ev, location);
+                console.warn("CenterFrame - onLoad location access forbidden.", ev, location);
             }
         },
     },

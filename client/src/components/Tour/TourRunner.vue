@@ -1,14 +1,14 @@
 <template>
-    <CenterPanel src="welcome" />
+    <CenterFrame src="welcome" />
 </template>
 
 <script>
-import CenterPanel from "entry/analysis/modules/CenterPanel";
+import CenterFrame from "entry/analysis/modules/CenterFrame";
 import { runTour } from "./runTour";
 
 export default {
     components: {
-        CenterPanel,
+        CenterFrame,
     },
     props: {
         tourId: {

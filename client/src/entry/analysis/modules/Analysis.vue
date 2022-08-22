@@ -7,7 +7,7 @@
             :current-panel-properties="toolBoxProperties" />
         <div id="center">
             <div class="center-container">
-                <CenterPanel v-show="showCenter" id="galaxy_main" @load="onLoad" />
+                <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
                 <div v-show="!showCenter" class="center-panel" style="display: block">
                     <router-view :key="$route.fullPath" />
                 </div>
@@ -21,11 +21,11 @@ import { getGalaxyInstance } from "app";
 import HistoryIndex from "components/History/Index";
 import ToolBox from "components/Panels/ProviderAwareToolBox";
 import SidePanel from "components/Panels/SidePanel";
-import CenterPanel from "./CenterPanel";
+import CenterFrame from "./CenterFrame";
 
 export default {
     components: {
-        CenterPanel,
+        CenterFrame,
         SidePanel,
     },
     data() {
