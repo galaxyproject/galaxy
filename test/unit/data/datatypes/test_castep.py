@@ -1,4 +1,8 @@
-from galaxy.datatypes.text import Castep, FormattedDensity, Param
+from galaxy.datatypes.text import (
+    Castep,
+    FormattedDensity,
+    Param,
+)
 from .util import get_input_files
 
 
