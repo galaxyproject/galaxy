@@ -1112,7 +1112,7 @@ class Castep(Text):
             "|     C     A  A     S    T    E      P           |",
             "|      CCC  A  A  SSS     T    EEEEE  P           |",
             "|                                                 |",
-            "+-------------------------------------------------+"
+            "+-------------------------------------------------+",
         ]
         handle = file_prefix.string_io()
         for header_line in castep_header:
@@ -1160,7 +1160,7 @@ class Param(Yaml):
             "WRITE_FORMATTED_DENSITY",
             "WRITE_FORMATTED_ELF",
             "WRITE_FORMATTED_POTENTIAL",
-            "WRITE_ORBITALS"
+            "WRITE_ORBITALS",
         ]
         # Pattern used by SequenceSplitLocations
         if file_prefix.file_size < 50000 and not file_prefix.truncated:
@@ -1200,7 +1200,7 @@ class FormattedDensity(Text):
         grid_points = "of grid_points"
         handle = file_prefix.string_io()
         lines = handle.readlines()
-        if (lines[0].strip() == begin_header and lines[9].strip() == end_header and lines[10].strip() == grid_points):
+        if lines[0].strip() == begin_header and lines[9].strip() == end_header and lines[10].strip() == grid_points:
             return True
         else:
             return False
