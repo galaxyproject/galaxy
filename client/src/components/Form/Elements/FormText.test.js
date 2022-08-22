@@ -40,7 +40,7 @@ describe("FormText", () => {
     });
 
     it("should be able to render a datalist", async () => {
-        let wrapper = await mountFormText({ datalist: ["one", "two", "three"] });
+        const wrapper = await mountFormText({ datalist: ["one", "two", "three"] });
         await flushPromises();
         let el = await wrapper.find("datalist");
         expect(el.exists()).toBe(true);
@@ -54,17 +54,17 @@ describe("FormText", () => {
         let el = await wrapper.find("input");
         expect(el.element.style).toMatchObject({ fontSize: "18px" });
 
-        wrapper = await mountFormText({ styleObj: { fontSize: "18px" }, color: 'white' });
+        wrapper = await mountFormText({ styleObj: { fontSize: "18px" }, color: "white" });
         await flushPromises();
         el = await wrapper.find("input");
-        expect(el.element.style).toMatchObject({ fontSize: "18px", color: 'white' });
+        expect(el.element.style).toMatchObject({ fontSize: "18px", color: "white" });
     });
 
     it("should be able to accept a default value", async () => {
         const v = "something";
-        let wrapper = await mountFormText({ value: v });
+        const wrapper = await mountFormText({ value: v });
         await flushPromises();
-        let el = await wrapper.find("input");
-        expect(el.props('value')).toEqual(v);
+        const el = await wrapper.find("input");
+        expect(el.props("value")).toEqual(v);
     });
 });

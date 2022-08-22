@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-alert class="mt-2" v-if="errorMessage" :show="dismissCountDown" variant="info" @dismissed="resetAlert">
+        <b-alert v-if="errorMessage" class="mt-2" :show="dismissCountDown" variant="info" @dismissed="resetAlert">
             {{ errorMessage }}
         </b-alert>
         <b-row align-v="center">
@@ -8,11 +8,11 @@
                 <component
                     :is="componentName"
                     :id="id"
+                    v-model="currentValue"
                     :readonly="readonly"
                     :placeholder="placeholder"
                     :style="style"
                     :type="type"
-                    v-model="currentValue"
                     @change="onInputChange" />
 
                 <datalist v-if="datalist && !area && !multiple" :id="`${id}-datalist`">
@@ -91,25 +91,20 @@ export default {
             required: false,
         },
         data: {
-            type: Object,  // ?
+            type: Object, // ?
             required: false,
         },
     },
     data() {
-        if (
-            ["SelectTagParameter", "ColumnListParameter"].includes(this.model_class) ||
-            (this.options && this.data)
-        ) {
+        if (["SelectTagParameter", "ColumnListParameter"].includes(this.model_class) || (this.options && this.data)) {
             this.area = this.multiple;
             if (Utils.isEmpty(this.value)) {
                 this.value = null;
             } else {
                 if (Array.isArray(this.value)) {
-                    this.value = this.multiple ?
-                        this.value.reduce(
-                            (str_value, v) => str_value + String(v) + '\n',
-                            ''
-                        ) : String(this.value[i]);
+                    this.value = this.multiple
+                        ? this.value.reduce((str_value, v) => str_value + String(v) + "\n", "")
+                        : String(this.value[i]);
                 }
             }
         }
