@@ -76,10 +76,13 @@ const showVersions = computed(() => props.options.versions?.length > 1);
     <div>
         <div class="sticky-top bg-secondary px-2 py-1 rounded">
             <div class="d-flex justify-content-between">
-                <div class="py-1">
-                    <icon icon="wrench" class="fa-fw mr-1" />
-                    <b itemprop="name">{{ title }}</b>
-                    <span itemprop="description">{{ description }}</span> (Galaxy Version {{ version }})
+                <div class="py-1 d-flex flex-wrap flex-gap">
+                    <span>
+                        <icon icon="wrench" class="fa-fw mr-1" />
+                        <b itemprop="name">{{ title }}</b>
+                    </span>
+                    <span itemprop="description">{{ description }}</span>
+                    <span>(Galaxy Version {{ version }})</span>
                 </div>
                 <b-button-group class="tool-card-buttons">
                     <ToolFavoriteButton
@@ -102,5 +105,9 @@ const showVersions = computed(() => props.options.versions?.length > 1);
 
 .tool-card-buttons {
     height: 2em;
+}
+
+.flex-gap {
+    gap: 0 0.25em;
 }
 </style>
