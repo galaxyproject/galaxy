@@ -2,6 +2,7 @@ export const state = {
     inputTerminals: {},
     outputTerminals: {},
     connections: {},
+    activeNode: null,
 };
 
 import Vue from "vue";
@@ -12,18 +13,18 @@ const getters = {
     getOutputTerminal: (state) => (outputTerminalId) => {
         return state.outputTerminals[outputTerminalId];
     },
+    getActiveNode: (state) => () => {
+        return state.activeNode;
+    },
 };
 
 const actions = {};
 
 const mutations = {
     setInputTerminal: (state, { inputTerminalId, inputTerminal }) => {
-        // TODO: Need to find a better inputTerminalId, terminal.id is just undefined
-        console.log(inputTerminalId);
         Vue.set(state.inputTerminals, inputTerminalId, inputTerminal);
     },
     setOutputTerminal: (state, { outputTerminalId, outputTerminal }) => {
-        console.log(outputTerminal);
         Vue.set(state.outputTerminals, outputTerminalId, outputTerminal);
     },
     setConnection: (state, { source, target, connection }) => {
@@ -32,6 +33,9 @@ const mutations = {
         } else {
             state.connections[source][target] = connection;
         }
+    },
+    setActiveNode: (state, nodeId) => {
+        state.activeNode = nodeId;
     },
 };
 

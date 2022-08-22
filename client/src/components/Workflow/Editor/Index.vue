@@ -69,7 +69,6 @@
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
                     :get-manager="getManager"
-                    @onActiveNode="onActiveNode"
                     @onAdd="onAdd"
                     @onUpdate="onUpdate"
                     @onClone="onClone"
@@ -250,10 +249,10 @@ export default {
             steps: {},
             hasChanges: false,
             nodes: {},
+            nodeIndex: 0,
             datatypesMapper: null,
             datatypes: [],
             report: {},
-            activeNode: null,
             labels: {},
             license: null,
             creator: null,
@@ -282,8 +281,12 @@ export default {
         postJobActions() {
             return this.activeNode.postJobActions;
         },
+        activeNode() {
+            // TODO: replace usage of this with just data ?
+            return this.nodes[this.activeNodeId];
+        },
         activeNodeId() {
-            return this.activeNode && this.activeNode.id;
+            return this.$store.getters.getActiveNode();
         },
         activeNodeName() {
             return this.activeNode?.name;
@@ -337,6 +340,7 @@ export default {
         },
         steps(newSteps, oldSteps) {
             this.hasChanges = true;
+            this.nodeIndex = Math.max(...Object.keys(newSteps).map((k) => parseInt(k))) + 1;
         },
         nodes(newNodes, oldNodes) {
             this.hasChanges = true;
@@ -442,7 +446,7 @@ export default {
             this.onNavigate(editUrl);
         },
         async onClone(node) {
-            const newId = Object.keys(this.steps).length;
+            const newId = this.nodeIndex++;
             const stepCopy = JSON.parse(JSON.stringify(node.step));
             await Vue.set(this.steps, newId, {
                 ...stepCopy,
@@ -454,9 +458,7 @@ export default {
                 tool_state: JSON.parse(JSON.stringify(node.tool_state)),
                 post_job_actions: JSON.parse(JSON.stringify(node.postJobActions)),
             });
-            this.canvasManager.drawOverview();
-            node = this.nodes[newId];
-            this.onActivate(node);
+            this.$store.commit("setActiveNode", newId);
         },
         onInsertTool(tool_id, tool_name) {
             this._insertStep(tool_id, tool_name, "tool");
@@ -627,11 +629,13 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            Vue.set(this.steps, Object.keys(this.steps).length, {
+            console.log(this.nodeIndex);
+            Vue.set(this.steps, this.nodeIndex++, {
                 name: name,
                 content_id: contentId,
                 type: type,
             });
+            this.$store.commit("setActiveNode", this.nodeIndex);
         },
         async _loadEditorData(data) {
             const report = data.report || {};

@@ -64,7 +64,6 @@ export default {
             isWheeled: false,
             canvasManager: null,
             zoomLevel: 7,
-            activeNodeId: null,
         };
     },
     props: {
@@ -101,19 +100,21 @@ export default {
         onActivate(nodeId) {
             console.log("onNodeId", nodeId);
             if (this.activeNodeId != nodeId) {
-                this.activeNodeId = nodeId;
+                this.$store.commit("setActiveNode", nodeId);
                 this.canvasManager.drawOverview();
-                this.$emit("onActiveNode", nodeId);
             }
         },
         onDeactivate() {
-            this.activeNodeId = null;
+            this.$store.commit("setActiveNode", null);
         },
         onRemove(nodeId) {
             this.$emit("onRemove", nodeId);
         },
     },
     computed: {
+        activeNodeId() {
+            return this.$store.getters.getActiveNode();
+        },
         checkWheeled() {
             if (this.canvasManager != null) {
                 return this.canvasManager.isWheeled;
