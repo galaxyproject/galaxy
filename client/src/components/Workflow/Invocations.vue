@@ -66,9 +66,9 @@
             </template>
             <template v-slot:cell(execute)="data">
                 <WorkflowRunButton
+                    v-if="getStoredWorkflowIdByInstanceId(data.item.workflow_id)"
                     :id="getStoredWorkflowIdByInstanceId(data.item.workflow_id)"
-                    :root="root"
-                    v-if="getStoredWorkflowIdByInstanceId(data.item.workflow_id)" />
+                    :root="root" />
             </template>
         </b-table>
         <b-pagination
