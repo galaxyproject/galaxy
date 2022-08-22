@@ -1,5 +1,5 @@
 <template>
-    <div v-if="canvasManager">{{ connections }}</div>
+    <div v-if="step.input_connections">{{ connections }}</div>
 </template>
 <script>
 import Connector from "./modules/connector";

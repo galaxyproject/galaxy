@@ -249,7 +249,6 @@ export default {
             parameters: null,
             steps: {},
             hasChanges: false,
-            nodeIndex: 0,
             nodes: {},
             datatypesMapper: null,
             datatypes: [],
@@ -443,7 +442,7 @@ export default {
             this.onNavigate(editUrl);
         },
         async onClone(node) {
-            const newId = this.nodeIndex++;
+            const newId = Object.keys(this.steps).length;
             const stepCopy = JSON.parse(JSON.stringify(node.step));
             await Vue.set(this.steps, newId, {
                 ...stepCopy,
@@ -628,7 +627,7 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            Vue.set(this.steps, this.nodeIndex++, {
+            Vue.set(this.steps, Object.keys(this.steps).length, {
                 name: name,
                 content_id: contentId,
                 type: type,
