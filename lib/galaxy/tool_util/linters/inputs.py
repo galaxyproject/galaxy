@@ -57,6 +57,7 @@ PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
     "float": ["in_range", "expression"],
     "data": [
         "metadata",
+        "no_options",
         "unspecified_build",
         "dataset_ok_validator",
         "dataset_metadata_in_range",
@@ -67,6 +68,7 @@ PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
     ],
     "data_collection": [
         "metadata",
+        "no_options",
         "unspecified_build",
         "dataset_ok_validator",
         "dataset_metadata_in_range",

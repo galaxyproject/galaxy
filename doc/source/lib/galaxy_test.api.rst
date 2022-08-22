@@ -17,26 +17,10 @@ Subpackages
 Submodules
 ----------
 
-galaxy\_test.api.conftest module
---------------------------------
-
-.. automodule:: galaxy_test.api.conftest
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy\_test.api.sharable module
 --------------------------------
 
 .. automodule:: galaxy_test.api.sharable
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-galaxy\_test.api.test\_api\_batch module
-----------------------------------------
-
-.. automodule:: galaxy_test.api.test_api_batch
    :members:
    :undoc-members:
    :show-inheritance:

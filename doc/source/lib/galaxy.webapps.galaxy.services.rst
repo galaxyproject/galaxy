@@ -9,6 +9,14 @@ galaxy.webapps.galaxy.services package
 Submodules
 ----------
 
+galaxy.webapps.galaxy.services.authenticate module
+--------------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.services.authenticate
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.webapps.galaxy.services.base module
 ------------------------------------------
 
@@ -45,6 +53,22 @@ galaxy.webapps.galaxy.services.history\_contents module
 -------------------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.services.history_contents
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.webapps.galaxy.services.invocations module
+-------------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.services.invocations
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.webapps.galaxy.services.jobs module
+------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.services.jobs
    :members:
    :undoc-members:
    :show-inheritance:
@@ -97,10 +121,34 @@ galaxy.webapps.galaxy.services.sharable module
    :undoc-members:
    :show-inheritance:
 
+galaxy.webapps.galaxy.services.tools module
+-------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.services.tools
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.webapps.galaxy.services.users module
+-------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.services.users
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.webapps.galaxy.services.visualizations module
 ----------------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.services.visualizations
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.webapps.galaxy.services.workflows module
+-----------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.services.workflows
    :members:
    :undoc-members:
    :show-inheritance:

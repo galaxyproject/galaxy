@@ -81,14 +81,6 @@ galaxy.webapps.galaxy.controllers.history module
    :undoc-members:
    :show-inheritance:
 
-galaxy.webapps.galaxy.controllers.interactive\_environments module
-------------------------------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.interactive_environments
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.webapps.galaxy.controllers.library module
 ------------------------------------------------
 

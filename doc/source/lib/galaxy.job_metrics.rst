@@ -24,3 +24,11 @@ galaxy.job\_metrics.formatting module
    :members:
    :undoc-members:
    :show-inheritance:
+
+galaxy.job\_metrics.safety module
+---------------------------------
+
+.. automodule:: galaxy.job_metrics.safety
+   :members:
+   :undoc-members:
+   :show-inheritance:

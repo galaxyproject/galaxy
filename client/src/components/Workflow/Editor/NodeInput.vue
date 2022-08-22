@@ -61,10 +61,11 @@ export default {
                 oldTerminal.destroyInvalidConnections();
             } else {
                 // create new terminal, connect like old terminal, destroy old terminal
+                // this might be a little buggy, the terminals and connectors should be vue components
                 this.$emit("onRemove", this.input);
                 const newTerminal = this.createTerminal(newInput);
                 newTerminal.connectors = this.terminal.connectors.map((c) => {
-                    return new Connector(this.getManager(), c.outputHandle, newTerminal);
+                    return new Connector(this.getManager().canvasManager, c.outputHandle, newTerminal);
                 });
                 newTerminal.destroyInvalidConnections();
                 this.terminal = newTerminal;

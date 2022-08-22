@@ -9,14 +9,6 @@ galaxy\_test.performance package
 Submodules
 ----------
 
-galaxy\_test.performance.conftest module
-----------------------------------------
-
-.. automodule:: galaxy_test.performance.conftest
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy\_test.performance.test\_workflow\_framework\_performance module
 ----------------------------------------------------------------------
 

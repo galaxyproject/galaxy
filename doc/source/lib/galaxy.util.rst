@@ -13,7 +13,6 @@ Subpackages
    :maxdepth: 4
 
    galaxy.util.custom_logging
-   galaxy.util.pastescript
    galaxy.util.path
    galaxy.util.tool_shed
 
@@ -384,14 +383,6 @@ galaxy.util.watcher module
 --------------------------
 
 .. automodule:: galaxy.util.watcher
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-galaxy.util.web\_compat module
-------------------------------
-
-.. automodule:: galaxy.util.web_compat
    :members:
    :undoc-members:
    :show-inheritance:

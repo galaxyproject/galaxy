@@ -1,4 +1,3 @@
-import $ from "jquery";
 import * as d3 from "d3";
 import { Toast } from "ui/toast";
 
@@ -13,9 +12,17 @@ const ribbonOuterSingle = 6;
 const ribbonInnerMultiple = 1;
 const ribbonOuterMultiple = 3;
 
+function offset(element) {
+    const rect = element.getBoundingClientRect();
+    return {
+        top: rect.top + window.scrollY,
+        left: rect.left + window.scrollX,
+    };
+}
+
 class Connector {
-    constructor(manager = {}, outputHandle = null, inputHandle = null) {
-        this.manager = manager;
+    constructor(canvasManager = {}, outputHandle = null, inputHandle = null) {
+        this.manager = canvasManager;
         this.dragging = false;
         this.innerClass = "ribbon-inner";
         this.canvas = document.createElement("div");
@@ -59,31 +66,33 @@ class Connector {
     }
     redraw() {
         // Identify handles
-        const canvasContainer = $("#canvas-container");
+        const canvasContainer = document.getElementById("canvas-container");
         const outputHandle = this.outputHandle;
         const inputHandle = this.inputHandle;
-        if (!canvasContainer.length || !outputHandle || !inputHandle) {
+        if (!canvasContainer || !outputHandle || !inputHandle) {
             return;
         }
-        const canvasZoom = this.manager.canvasZoom;
         if (this.dragging) {
             this.canvas.style.zIndex = zIndex;
         }
-        const relativeLeft = (e) => ($(e).offset().left - canvasContainer.offset().left) / canvasZoom;
-        const relativeTop = (e) => ($(e).offset().top - canvasContainer.offset().top) / canvasZoom;
         if (!outputHandle || !inputHandle) {
             return;
         }
-
         // Set handle ids, used in test cases
         this.canvas.setAttribute("output-handle-id", outputHandle.element.getAttribute("id"));
         this.canvas.setAttribute("input-handle-id", inputHandle.element.getAttribute("id"));
 
         // Find the position of each handle
-        let start_x = relativeLeft(outputHandle.element) + handleMarginX;
-        let start_y = relativeTop(outputHandle.element) + 0.5 * $(outputHandle.element).height();
-        let end_x = relativeLeft(inputHandle.element) + handleMarginX;
-        let end_y = relativeTop(inputHandle.element) + 0.5 * $(inputHandle.element).height();
+        const canvasZoom = this.manager.canvasZoom;
+
+        const relativeLeft = (e) => (offset(e).left - offset(canvasContainer).left) / canvasZoom + handleMarginX;
+        const relativeTop = (e) =>
+            (offset(e).top - offset(canvasContainer).top) / canvasZoom + 0.5 * inputHandle.element.offsetHeight;
+
+        let start_x = relativeLeft(outputHandle.element);
+        let start_y = relativeTop(outputHandle.element);
+        let end_x = relativeLeft(inputHandle.element);
+        let end_y = relativeTop(inputHandle.element);
 
         // Calculate canvas area
         const canvas_min_x = Math.min(start_x, end_x);
