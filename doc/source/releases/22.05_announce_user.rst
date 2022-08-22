@@ -23,7 +23,7 @@ Check it out now!
 
 **Storage Dashboard** (beta)
 
-Have you ever been over your quota? 250 GB sure goes fast! Now with the new Storage Dashboard you can get a quick overview of ways to help clean up deleted datasets and recover some of that quotum allocation. This is a beta version of this interface, let us know if you have any issues. In future versions, it will be expanded to help you understand how your allocation is being used, and which histories and datasets should be cleaned up first.
+Have you ever been over your quota? 250 GB sure goes fast! Now with the new Storage Dashboard you can get a quick overview of ways to help clean up deleted datasets and recover some of that quota allocation. This is a beta version of this interface, let us know if you have any issues. In future versions, it will be expanded to help you understand how your allocation is being used, and which histories and datasets should be cleaned up first.
 
 .. raw:: html
 
@@ -31,21 +31,21 @@ Have you ever been over your quota? 250 GB sure goes fast! Now with the new Stor
 
 **Bulk History Operations**
 
-The new history allows for improved bulk operations, selecting dozens or hundreds of datasets to retag or change their dbkey automatically, a process that used to require using collections or doing them one by one.
+The new history allows for improved bulk operations, selecting dozens or hundreds of datasets to retag or change database key automatically, a process that used to require using collections or doing them one by one.
 
 .. raw:: html
 
-   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/rSv4HgQaMkg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video of a user selecting multiple datasets and applying a tag to all of them, before selecting multiple datasets and applying a DB key to all of them as well."></iframe>
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/rSv4HgQaMkg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video of a user selecting multiple datasets and applying a tag to all of them, before selecting multiple datasets and applying a database key to all of them as well."></iframe>
 
 **Deferred dataset resolution enables running workflows and tools without importing data into Galaxy first**
 
 It is now possible to defer dataset resolution for datasets imported via URLs and the "Choose remote files" dialog.
 This means that the deferred dataset will only be downloaded as it is needed during job execution. Deferred datasets will not
-count towards you storage quota, as the data is not stored by Galaxy. To enable deferred dataset resolution click on "settings"
+count towards your storage quota, as the data is not stored by Galaxy. To enable deferred dataset resolution click on "Settings"
 in the upload dialog.
 
 .. figure:: images/22.05-deferred-data-upload.png
-   :alt: Screenshot of the upload modal. The settings menu is expanded and shows the "Deferred dataset resolution" checkbox.
+   :alt: Screenshot of the upload modal. The Settings menu is expanded and shows the "Deferred dataset resolution" checkbox.
 
 **Workflow Improvements**
 
@@ -61,7 +61,7 @@ This is especially useful if you run a single workflow across multiple datasets,
 
 Additional workflow improvements have been made, e.g. numbering of steps in a workflow. Improvements have been made to the internal representation of the workflow that should make the saved `.ga` and `.gxwf.yml` files easier to compare across changes.
 
-Workflows can also now be zoomed via scrolling, this interface should be more familiar for anyone who has used Google Maps:
+Workflows can also now be zoomed in and out via scrolling, this interface should be more familiar for anyone who has used Google Maps:
 
 .. raw:: html
 

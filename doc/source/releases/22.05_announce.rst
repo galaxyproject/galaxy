@@ -17,15 +17,15 @@ Highlights
 
 **Deferred dataset resolution**
   Optional deferred dataset resolution enables users to select that datasets fetched from URLs or remote file sources should not be fetched into Galaxy's objectstore.
-  Instead these datasets are only fetched when jobs using these datasets are run.
+  Deferred datasets are only fetched when jobs using these datasets are run.
 
 **Enhanced Celery tasks and features**
   Galaxy can optionally delegate the data upload job to Celery, and Galaxy can run the metadata script in Celery. This results in much shorter runtime for small jobs.
-  To enable this set `enable_celery_tasks` to `true` and ensure that at least one celery worker is started.
-  If Celery tasks are enabled it is also possible to change the datatype for many history items in batch.
+  To enable this, set `enable_celery_tasks` to `true` and ensure that at least one celery worker is started.
+  If Celery tasks are enabled, it is also possible to change the datatype for many history items in batch.
 
 **Galaxy has a new database migrations system based on Alembic.**
-  The new migrations system is built on top of Alembic. The SQLAlchemy Migrate tool been retired. 
+  The new migrations system is built on top of Alembic. The SQLAlchemy Migrate tool has been retired. 
   For usage, see `Galaxy's migrations documentation <https://github.com/galaxyproject/galaxy/blob/release_22.05/lib/galaxy/model/migrations/README.md>`__.
   For an architectural overview, see `pull request #13108 <https://github.com/galaxyproject/galaxy/pull/13108>`__.
 Also check out the `22.05 user release notes <22.05_announce_user.html>`__
