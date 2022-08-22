@@ -6,14 +6,15 @@ tags:
   - "UI"
   - "visualization"
 
-requirements:
-  - new_history
-
 steps:
     - content: "This short tour will walk you through <b>Galaxy's Window Manager</b> feature"
 
+    - element: "#current-history-panel .create-hist-btn"
+      intro: "Before using the Window Manager, we will create a new history for this tour."
+      postclick: true
+
     - element: "#tool-panel-upload-button"
-      intro: "Before using the Window Manager, we will upload some tabular data."
+      intro: "Now, we will upload some tabular data into our new history."
       postclick: true
 
     - element: "#btn-new"
