@@ -1,5 +1,5 @@
 <template>
-    <div @click="makeActive()" :id="idString" :name="name" :node-label="label" :class="classes">
+    <div @click="makeActive()" :id="idString" :name="name" :node-label="label" :class="classes" :style="style">
         <div class="node-header unselectable clearfix">
             <b-button
                 v-b-tooltip.hover
@@ -205,31 +205,35 @@ export default {
             }
             return cssObj;
         },
+        style() {
+            const step = this.step;
+            const styleObj = {};
+            if (step.position) {
+                styleObj.top = step.position.top + "px";
+                styleObj.left = step.position.left + "px";
+            } else {
+                // Set initial scroll position
+                // TODO: should just be in template
+                const p = document.getElementById("canvas-viewport");
+                const o = document.getElementById("canvas-container");
+                if (p && o) {
+                    const el = this.$el;
+                    const left =
+                        -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
+                    const top =
+                        -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
+                    styleObj.top = `${top}px`;
+                    styleObj.left = `${left}px`;
+                }
+            }
+            return styleObj;
+        },
     },
     mounted() {
         this.canvasManager = this.getCanvasManager();
         this.activeOutputs = new ActiveOutputs();
         this.element = this.$el;
         this.content_id = this.contentId;
-
-        // Set initial scroll position
-        const step = this.step;
-        const el = this.$el;
-        if (step.position) {
-            el.style.top = step.position.top + "px";
-            el.style.left = step.position.left + "px";
-        } else {
-            const p = document.getElementById("canvas-viewport");
-            const o = document.getElementById("canvas-container");
-            if (p && o) {
-                const left =
-                    -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
-                const top =
-                    -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
-                el.style.top = `${top}px`;
-                el.style.left = `${left}px`;
-            }
-        }
 
         // Attach node dragging events
         attachDragging(this.$el, {
