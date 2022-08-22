@@ -968,6 +968,9 @@ Fixes
   `Pull Request 14429`_
 .. bug
 
+* Doc fixes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 14488`_
 * fix `drill_down` parameters
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 12232`_
