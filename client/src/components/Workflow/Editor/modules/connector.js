@@ -29,6 +29,7 @@ class Connector {
         this.canvas.style.position = "absolute";
         const container = document.getElementById("canvas-container");
         container.appendChild(this.canvas);
+        d3.select(this.canvas).append("svg");
         if (outputHandle && inputHandle) {
             this.connect(outputHandle, inputHandle);
         }
@@ -107,7 +108,7 @@ class Connector {
         this.canvas.style.top = `${canvas_top}px`;
 
         // Resize the svg
-        const svg = d3.select(this.canvas).append("svg");
+        const svg = d3.select(this.canvas).select("svg");
         svg.attr("class", "ribbon");
         console.log(svg);
         svg.style("width", `${canvas_width}px`);
