@@ -42,8 +42,7 @@
                         :disabled="disabled || showExecuting"
                         itemscope="itemscope"
                         itemtype="https://schema.org/CreativeWork"
-                        @onChangeVersion="onChangeVersion"
-                        @onUpdateFavorites="onUpdateFavorites">
+                        @onChangeVersion="onChangeVersion">
                         <template v-slot:body>
                             <FormDisplay
                                 :id="toolId"
@@ -247,9 +246,6 @@ export default {
         },
         onChangeVersion(newVersion) {
             this.requestTool(newVersion);
-        },
-        onUpdateFavorites(user, newFavorites) {
-            user.preferences["favorites"] = newFavorites;
         },
         requestTool(newVersion) {
             this.currentVersion = newVersion || this.currentVersion;

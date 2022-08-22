@@ -46,10 +46,10 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(["onUpdateFavorites"]);
+const emit = defineEmits(["onChangeVersion"]);
 
-function onUpdateFavorites(user, favorites) {
-    emit("onUpdateFavorites", user, favorites);
+function onChangeVersion(v) {
+    emit("onChangeVersion", v);
 }
 
 const errorText = ref(null);
@@ -85,12 +85,12 @@ const showVersions = computed(() => props.options.versions?.length > 1);
                     <span>(Galaxy Version {{ version }})</span>
                 </div>
                 <b-button-group class="tool-card-buttons">
-                    <ToolFavoriteButton
-                        v-if="hasUser"
-                        :id="props.id"
-                        @onSetError="onSetError"
-                        @onUpdateFavorites="onUpdateFavorites" />
-                    <ToolVersionsButton v-if="showVersions" :version="props.version" :versions="versions" />
+                    <ToolFavoriteButton v-if="hasUser" :id="props.id" @onSetError="onSetError" />
+                    <ToolVersionsButton
+                        v-if="showVersions"
+                        :version="props.version"
+                        :versions="versions"
+                        @onChangeVersion="onChangeVersion" />
                     <ToolOptionsButton :id="props.id" :sharableUrl="props.options.sharable_url" />
                 </b-button-group>
             </div>
