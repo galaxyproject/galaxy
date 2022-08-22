@@ -1,4 +1,4 @@
-__version__ = "22.1.0"
+__version__ = "22.1.1"
 
 PROJECT_NAME = "galaxy-test-selenium"
 PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"
