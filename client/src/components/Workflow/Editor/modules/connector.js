@@ -92,7 +92,6 @@ class Connector {
         let start_y = relativeTop(outputHandle.element);
         let end_x = relativeLeft(inputHandle.element);
         let end_y = relativeTop(inputHandle.element);
-
         // Calculate canvas area
         const canvas_min_x = Math.min(start_x, end_x);
         const canvas_max_x = Math.max(start_x, end_x);
