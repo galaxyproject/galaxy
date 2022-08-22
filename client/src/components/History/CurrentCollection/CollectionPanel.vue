@@ -14,7 +14,8 @@
                     <CollectionNavigation
                         :history="history"
                         :selected-collections="selectedCollections"
-                        v-on="$listeners" />
+                        v-on="$listeners"
+                        ref="collectionNav" />
                     <CollectionDetails :dsc="dsc" :writeable="isRoot" @update:dsc="updateDsc(dsc, $event)" />
                     <CollectionOperations v-if="isRoot" :dsc="dsc" />
                 </section>
@@ -58,6 +59,11 @@ export default {
         ContentItem,
         ExpandedItems,
         ListingLayout,
+    },
+    watch: {
+        history() {
+            this.$refs.collectionNav.close();
+        },
     },
     props: {
         history: { type: Object, required: true },
