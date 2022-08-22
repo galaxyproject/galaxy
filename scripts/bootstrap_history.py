@@ -378,7 +378,7 @@ def do_release(argv):
     for pr in _get_prs(release_name):
         # 2015-06-29 18:32:13 2015-04-22 19:11:53 2015-08-12 21:15:45
         as_dict = {
-            "title": pr.title,
+            "title": pr.title.rstrip("."),
             "number": pr.number,
             "head": pr.head,
             "labels": _pr_to_labels(pr),
