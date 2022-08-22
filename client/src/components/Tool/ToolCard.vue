@@ -1,7 +1,4 @@
 <script setup>
-import FormMessage from "components/Form/FormMessage";
-import ToolFooter from "components/Tool/ToolFooter";
-import ToolHelp from "components/Tool/ToolHelp";
 import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton.vue";
 import ToolVersionsButton from "components/Tool/Buttons/ToolVersionsButton.vue";
 import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
@@ -95,6 +92,8 @@ const showVersions = computed(() => props.options.versions?.length > 1);
                 </b-button-group>
             </div>
         </div>
+
+        <div class="test-box"></div>
     </div>
 </template>
 
@@ -109,5 +108,14 @@ const showVersions = computed(() => props.options.versions?.length > 1);
 
 .flex-gap {
     gap: 0 0.25em;
+}
+
+.sticky-top {
+    z-index: unset;
+}
+
+.test-box {
+    background-color: aquamarine;
+    height: 1200px;
 }
 </style>
