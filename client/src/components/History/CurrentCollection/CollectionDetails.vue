@@ -6,6 +6,7 @@
         :show-annotation="false"
         @save="$emit('update:dsc', $event)">
         <template v-slot:name>
+            <!-- eslint-disable-next-line vuejs-accessibility/heading-has-content -->
             <h3 v-short="dsc.name || 'Collection'" data-description="collection name display" />
             <CollectionDescription
                 :job-state-summary="jobState"

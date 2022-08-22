@@ -6,6 +6,7 @@
         :writeable="writeable"
         @save="onSave">
         <template v-slot:name>
+            <!-- eslint-disable-next-line vuejs-accessibility/heading-has-content -->
             <h3 v-short="history.name || 'History'" data-description="name display" class="my-2" />
         </template>
     </DetailsLayout>
