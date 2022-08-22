@@ -18,7 +18,6 @@ Subpackages
    galaxy.authnz
    galaxy.celery
    galaxy.config
-   galaxy.containers
    galaxy.datatypes
    galaxy.dependencies
    galaxy.exceptions

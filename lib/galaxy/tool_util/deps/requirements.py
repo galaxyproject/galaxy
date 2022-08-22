@@ -340,7 +340,7 @@ def parse_requirements_from_xml(xml_root, parse_resources=False):
 
     containers = [container_from_element(c) for c in container_elems]
     if parse_resources:
-        resource_elems = requirements_elem.findall("resource") if requirements_elem else []
+        resource_elems = requirements_elem.findall("resource") if requirements_elem is not None else []
         resources = [resource_from_element(r) for r in resource_elems]
         return requirements, containers, resources
 

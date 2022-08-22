@@ -273,6 +273,14 @@ galaxy.managers.metrics module
    :undoc-members:
    :show-inheritance:
 
+galaxy.managers.model\_stores module
+------------------------------------
+
+.. automodule:: galaxy.managers.model_stores
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.managers.pages module
 ----------------------------
 

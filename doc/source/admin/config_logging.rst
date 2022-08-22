@@ -9,22 +9,19 @@ There are two ways in which you can configure logging for Galaxy servers:
 1. Basic/automatic configuration with control over log level and log destination (standard output or a named log file).
 2. More complex configuration using the Python :mod:`logging` module's :func:`logging.config.dictConfig` or :func:`logging.config.fileConfig`.
 
-By default, Galaxy logs all messages to standard output at the ``DEBUG`` logging level, unless the ``--daemon`` argument
-is passed to ``run.sh``, in which case, output is logged to a location configured in `gravity`_.
-
-Gravity and related terminology are explained in detail in the :doc:`Scaling and Load Balancing <scaling>` documentation.
-
 Basic Configuration
 ----------------------------
 
-Basic logging configuration can be used to modify the level of log messages and the file to which Galaxy logs. The level
-is controlled by the ``log_level`` configuration option.
+Basic logging configuration can be used to modify the level of log messages and the file to which Galaxy logs.
 
-If not set, Galaxy logs all messages at the ``DEBUG`` level (versions prior to 18.01 defaulted to ``INFO`` if unset, but
-the default config file shipped with ``log_level`` explicitly set to ``DEBUG`` for development purposes).
+The logging level is controlled by the ``log_level`` configuration option. By default, Galaxy logs all messages at the
+``DEBUG`` level.
 
-Galaxy logs all messages to standard output by default if running in the foreground. If running in the background, the
-log is written to a location configured in `gravity`_.
+Galaxy logs all messages to standard output by default if running in the foreground. If running in the background (e.g.
+by passing the ``--daemon`` argument to ``run.sh``), the log is written to a location configured in
+`gravity <https://github.com/galaxyproject/gravity/>`_.
+
+Gravity and related terminology are explained in detail in the :doc:`Scaling and Load Balancing <scaling>` documentation.
 
 **Setting the log level:**
 

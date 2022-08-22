@@ -32,3 +32,11 @@ galaxy.model.orm.scripts module
    :members:
    :undoc-members:
    :show-inheritance:
+
+galaxy.model.orm.util module
+----------------------------
+
+.. automodule:: galaxy.model.orm.util
+   :members:
+   :undoc-members:
+   :show-inheritance:

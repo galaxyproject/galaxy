@@ -580,6 +580,10 @@ workflow_editor:
       destroy: '${_} .node-destroy'
       clone: '${_} .node-clone'
 
+
+      output_data_row:
+        type: xpath
+        selector: '//div[contains(@class, "output-data-row") and contains(string(), "${output_name} (${extension})")]'
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
 
