@@ -6,11 +6,11 @@ import store from "store";
  * @returns currentUser computed
  */
 export function useCurrentUser() {
-    const user = computed(() => store.getters["user/currentUser"]);
+    const currentUser = computed(() => store.getters["user/currentUser"]);
 
     onMounted(() => {
         store.dispatch("user/loadUser");
     });
 
-    return user;
+    return { currentUser };
 }

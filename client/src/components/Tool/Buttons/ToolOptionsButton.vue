@@ -5,7 +5,7 @@ import { useCurrentUser } from "composables/user";
 import Webhooks from "mvc/webhooks";
 import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
 
-const user = useCurrentUser();
+const { currentUser: user } = useCurrentUser();
 
 const props = defineProps({
     id: {

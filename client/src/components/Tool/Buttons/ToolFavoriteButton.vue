@@ -13,17 +13,17 @@ const props = defineProps({
 
 const emit = defineEmits(["onSetError", "onUpdateFavorites"]);
 
-const user = useCurrentUser();
+const { currentUser: user } = useCurrentUser();
 
 const hasUser = computed(() => !user.value.isAnonymous);
 const isFavorite = computed(() => getFavorites().tools.includes(props.id));
-const showAddFavorite = computed(() => hasUser && !isFavorite);
-const showRemoveFavorite = computed(() => hasUser && isFavorite);
+const showAddFavorite = computed(() => hasUser.value && !isFavorite.value);
+const showRemoveFavorite = computed(() => hasUser.value && isFavorite.value);
 
 const title = computed(() => {
-    if (showAddFavorite) {
+    if (showAddFavorite.value) {
         return "Add to Favorites";
-    } else if (showRemoveFavorite) {
+    } else if (showRemoveFavorite.value) {
         return "Remove from Favorites";
     } else {
         return null;
@@ -31,7 +31,7 @@ const title = computed(() => {
 });
 
 function onToggleFavorite() {
-    if (isFavorite) {
+    if (isFavorite.value) {
         onRemoveFavorite();
     } else {
         onAddFavorite();
@@ -75,13 +75,13 @@ function getFavorites() {
 function updateFavorites(objectType, newFavorites) {
     const favorites = getFavorites();
     favorites[objectType] = newFavorites[objectType];
-    emit("onUpdateFavorites", user.value, JSON.stringify(favorites));
+    user.value.preferences["favorites"] = JSON.stringify(favorites);
 }
 </script>
 
 <template>
     <b-button v-b-tooltip.hover role="button" variant="link" size="sm" :title="title" @click="onToggleFavorite">
-        <icon v-if="showAddFavorite" icon="star" />
-        <icon v-if="showRemoveFavorite" icon="far fa-star" />
+        <icon v-if="showAddFavorite" icon="fa-regular fa-star" />
+        <icon v-if="showRemoveFavorite" icon="fa-solid fa-star" />
     </b-button>
 </template>
