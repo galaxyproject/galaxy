@@ -1,7 +1,10 @@
 <script setup>
+import FormMessage from "components/Form/FormMessage";
 import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton.vue";
 import ToolVersionsButton from "components/Tool/Buttons/ToolVersionsButton.vue";
 import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
+import ToolFooter from "components/Tool/ToolFooter";
+import ToolHelp from "components/Tool/ToolHelp";
 
 import ariaAlert from "utils/ariaAlert";
 import Webhooks from "utils/webhooks";
@@ -70,10 +73,10 @@ const showVersions = computed(() => props.options.versions?.length > 1);
 </script>
 
 <template>
-    <div>
+    <div class="position-relative">
         <div class="sticky-top bg-secondary px-2 py-1 rounded">
             <div class="d-flex justify-content-between">
-                <div class="py-1 d-flex flex-wrap flex-gap">
+                <div class="py-1 d-flex flex-wrap flex-gapx-1">
                     <span>
                         <icon icon="wrench" class="fa-fw mr-1" />
                         <b itemprop="name">{{ title }}</b>
@@ -93,7 +96,25 @@ const showVersions = computed(() => props.options.versions?.length > 1);
             </div>
         </div>
 
-        <div class="test-box"></div>
+        <FormMessage variant="danger" :message="errorText" :persistent="true" />
+        <FormMessage :variant="props.messageVariant" :message="props.messageText" />
+        <slot name="body" />
+        <div v-if="props.disabled" class="portlet-backdrop" />
+
+        <div>
+            <ToolHelp :content="props.options.help" />
+            <ToolFooter
+                :id="props.id"
+                :has-citations="props.options.hasCitations"
+                :xrefs="props.options.xrefs"
+                :license="props.options.license"
+                :creators="props.options.creators"
+                :requirements="props.options.requirements" />
+        </div>
+
+        <div class="tool-buttons-row position-sticky d-flex justify-content-end float-right mt-2">
+            <slot name="buttons" />
+        </div>
     </div>
 </template>
 
@@ -106,16 +127,20 @@ const showVersions = computed(() => props.options.versions?.length > 1);
     height: 2em;
 }
 
-.flex-gap {
-    gap: 0 0.25em;
+.flex-gapx-1 {
+    column-gap: 0.25em;
 }
 
 .sticky-top {
-    z-index: unset;
+    z-index: 800;
 }
 
-.test-box {
-    background-color: aquamarine;
-    height: 1200px;
+.portlet-backdrop {
+    display: block;
+}
+
+.tool-buttons-row {
+    bottom: 0;
+    column-gap: 0.5em;
 }
 </style>
