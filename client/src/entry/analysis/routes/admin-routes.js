@@ -1,5 +1,13 @@
 import Admin from "entry/analysis/modules/Admin";
 import Home from "components/admin/Home";
+import ActiveInvocations from "components/admin/ActiveInvocations";
+import DataTables from "components/admin/DataTables";
+import DataTypes from "components/admin/DataTypes";
+import DisplayApplications from "components/admin/DisplayApplications";
+import ErrorStack from "components/admin/ErrorStack";
+import Jobs from "components/admin/Jobs";
+import ResetMetadata from "components/admin/ResetMetadata";
+import SanitizeAllow from "components/admin/SanitizeAllow";
 import Toolshed from "components/Toolshed/Index";
 
 export default [
@@ -8,7 +16,15 @@ export default [
         component: Admin,
         children: [
             { path: "", component: Home },
-            { path: "toolshed", component: Toolshed }
+            { path: "data_tables", component: DataTables },
+            { path: "data_types", component: DataTypes },
+            { path: "display_applications", component: DisplayApplications },
+            { path: "error_stack", component: ErrorStack },
+            { path: "invocations", component: ActiveInvocations },
+            { path: "jobs", component: Jobs },
+            { path: "reset_metadata", component: ResetMetadata },
+            { path: "sanitize_allow", component: SanitizeAllow },
+            { path: "toolshed", component: Toolshed },
         ],
     },
 ];
@@ -20,18 +36,9 @@ import FormGeneric from "components/Form/FormGeneric";
 import GridView from "mvc/grid/grid-view";
 import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
-import DataTables from "components/admin/DataTables.vue";
-import DataTypes from "components/admin/DataTypes.vue";
-import SanitizeAllow from "components/admin/SanitizeAllow.vue";
-import Jobs from "components/admin/Jobs.vue";
-import ActiveInvocations from "components/admin/ActiveInvocations.vue";
 import Landing from "components/admin/Dependencies/Landing.vue";
-
 import DataManager from "components/admin/DataManager";
 import RegisterForm from "components/login/RegisterForm.vue";
-import ErrorStack from "components/admin/ErrorStack.vue";
-import DisplayApplications from "components/admin/DisplayApplications.vue";
-import ResetMetadata from "components/admin/ResetMetadata.vue";
 import { mountVueComponent } from "utils/mountVueComponent";*/
 
 /*
@@ -100,10 +107,6 @@ export const getAdminRouter = (Galaxy, options) => {
             this._show_grid_view("admin/groups_list");
         },
 
-        show_toolshed: function () {
-            this._display_vue_helper(Toolshed);
-        },
-
         show_tool_versions: function () {
             this._show_grid_view("admin/tool_versions_list");
         },
@@ -127,14 +130,6 @@ export const getAdminRouter = (Galaxy, options) => {
             this.page.display(container);
             const mountFn = mountVueComponent(component);
             return mountFn(propsData, container);
-        },
-
-        show_data_tables: function () {
-            this._display_vue_helper(DataTables);
-        },
-
-        show_data_types: function () {
-            this._display_vue_helper(DataTypes);
         },
 
         show_jobs: function () {
