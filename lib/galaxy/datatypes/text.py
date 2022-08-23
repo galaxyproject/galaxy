@@ -9,7 +9,6 @@ import re
 import shlex
 import subprocess
 import tempfile
-import typing
 
 import yaml
 
@@ -916,13 +915,21 @@ class Yaml(Text):
 
 @build_sniff_from_prefix
 class Castep(Text):
-    """Report on the calculation (text)"""
+    """Report on a CASTEP calculation"""
 
     file_ext = "castep"
-    sniff: typing.Callable
 
     def sniff_prefix(self, file_prefix: FilePrefix):
-        """Determines whether the file is a CASTEP log"""
+        """Determines whether the file is a CASTEP log
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Si.castep')
+        >>> Castep().sniff(fname)
+        True
+        >>> fname = get_test_fname('Si.param')
+        >>> Castep().sniff(fname)
+        False
+        """
         castep_header = [
             "+-------------------------------------------------+",
             "|                                                 |",
@@ -943,16 +950,23 @@ class Castep(Text):
 
 @build_sniff_from_prefix
 class Param(Yaml):
-    """General input file (text)"""
+    """CASTEP parameter input file"""
 
     file_ext = "param"
-    sniff: typing.Callable
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Modified version of the normal Yaml sniff that also checks the
         dict keys for "general" CASTEP keywords, which are not case
         sensitive
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Si.param')
+        >>> Param().sniff(fname)
+        True
+        >>> fname = get_test_fname('Si.castep')
+        >>> Param().sniff(fname)
+        False
         """
         general_keywords = [
             "BACKUP_INTERVAL",
@@ -1008,13 +1022,21 @@ class Param(Yaml):
 
 @build_sniff_from_prefix
 class FormattedDensity(Text):
-    """Final electron density written to an ASCII file"""
+    """Final electron density from a CASTEP calculation written to an ASCII file"""
 
     file_ext = "den_fmt"
-    sniff: typing.Callable
 
     def sniff_prefix(self, file_prefix: FilePrefix):
-        """Determines whether the file is a formatted electron densities"""
+        """Determines whether the file contains electron densities in the CASTEP den_fmt format
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Si.den_fmt')
+        >>> FormattedDensity().sniff(fname)
+        True
+        >>> fname = get_test_fname('Si.param')
+        >>> FormattedDensity().sniff(fname)
+        False
+        """
         begin_header = "BEGIN header"
         end_header = 'END header: data is "<a b c> charge" in units of electrons/grid_point * number'
         grid_points = "of grid_points"
