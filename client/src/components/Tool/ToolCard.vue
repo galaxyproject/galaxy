@@ -73,13 +73,13 @@ const showVersions = computed(() => props.options.versions?.length > 1);
 </script>
 
 <template>
-    <div class="position-relative">
-        <div class="sticky-top bg-secondary px-2 py-1 rounded">
+    <div>
+        <div class="tool-header sticky-top bg-secondary px-2 py-1 rounded">
             <div class="d-flex justify-content-between">
                 <div class="py-1 d-flex flex-wrap flex-gapx-1">
                     <span>
-                        <icon icon="wrench" class="fa-fw mr-1" />
-                        <b itemprop="name">{{ title }}</b>
+                        <icon icon="wrench" class="fa-fw" />
+                        <h1 itemprop="name">{{ title }}</h1>
                     </span>
                     <span itemprop="description">{{ description }}</span>
                     <span>(Galaxy Version {{ version }})</span>
@@ -119,6 +119,22 @@ const showVersions = computed(() => props.options.versions?.length > 1);
 </template>
 
 <style lang="scss" scoped>
+@import "scss/theme/blue.scss";
+
+$shadow: 1px 1px 6px rgba($brand-dark, 0.2), 0.4px 0.4px 2px rgba($brand-dark, 0.4);
+
+.tool-header {
+    box-shadow: $shadow;
+
+    h1 {
+        font-size: 1em;
+        line-height: 1em;
+        font-weight: 700;
+        margin: 0;
+        display: inline;
+    }
+}
+
 .fa-wrench {
     cursor: unset;
 }
@@ -142,5 +158,9 @@ const showVersions = computed(() => props.options.versions?.length > 1);
 .tool-buttons-row {
     bottom: 0;
     column-gap: 0.5em;
+
+    &::v-deep > * {
+        box-shadow: $shadow;
+    }
 }
 </style>
