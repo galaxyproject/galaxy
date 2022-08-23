@@ -968,56 +968,34 @@ class Param(Yaml):
         >>> Param().sniff(fname)
         False
         """
-        general_keywords = [
-            "BACKUP_INTERVAL",
-            "CALCULATE_STRESS",
-            "CALCULATE_DENSDIFF",
-            "CALCULATE_ELF",
-            "CALCULATE_HIRSHFELD",
-            "CHARGE_UNIT",
-            "CHECKPOINT",
-            "COMMENT",
-            "CONTINUATION",
-            "DATA_DISTRIBUTION",
-            "IPRINT",
-            "NUM_BACKUP_ITER",
-            "OPT_STRATEGY",
-            "PAGE_WVFNS",
-            "PRINT_CLOCK",
-            "PRINT_MEMORY_USAGE",
-            "RAND_SEED",
-            "REUSE",
-            "RUN_TIME",
-            "STOP",
-            "TASK",
-            "WRITE_CHECKPOINT",
-            "WRITE_FORMATTED_DENSITY",
-            "WRITE_FORMATTED_ELF",
-            "WRITE_FORMATTED_POTENTIAL",
-            "WRITE_ORBITALS"
+        valid_tasks = [
+            "SINGLEPOINT",
+            "BANDSTRUCTURE",
+            "GEOMETRYOPTIMIZATION",
+            "GEOMETRYOPTIMISATION",
+            "MOLECULARDYNAMICS",
+            "OPTICS",
+            "PHONON",
+            "EFIELD",
+            "PHONON+EFIELD",
+            "TRANSITIONSTATESEARCH",
+            "MAGRES",
+            "ELNES",
+            "ELECTRONICSPECTROSCOPY",
         ]
-        # Pattern used by SequenceSplitLocations
-        if file_prefix.file_size < 50000 and not file_prefix.truncated:
-            # If the file is small enough - don't guess just check.
-            try:
-                item = yaml.safe_load(file_prefix.contents_header)
-                assert isinstance(item, dict)
-            except yaml.YAMLError:
-                return False
-        else:
-            # If file is too big, load the first part. Trim the current line, in case it cut off in the middle of a key.
-            file_start = file_prefix.string_io().read(50000).strip().rsplit("\n", 1)[0]
-            try:
-                item = yaml.safe_load(file_start)
-                assert isinstance(item, dict)
-            except yaml.YAMLError:
-                return False
+        
+        # check it looks like YAML
+        if not super().sniff_prefix(file_prefix):
+            return False
 
-        for key in item.keys():
-            assert isinstance(key, str)
-            if key.upper() in general_keywords:
-                return True
-        return False
+        # check the TASK keyword is present 
+        # and that it is set to a valid CASTEP task
+        pattern = re.compile(r"^TASK ?: ?([A-Z\+]*)$", flags=re.IGNORECASE | re.MULTILINE)
+        task = file_prefix.search(pattern)
+        if task and task.group(1).upper() in valid_tasks:
+            return True
+        else:
+            return False
 
 
 @build_sniff_from_prefix
