@@ -224,7 +224,7 @@ export default {
     },
 };
 </script>
-<style>
+<style lang="scss">
 .content-item:hover {
     filter: brightness(105%);
 }
