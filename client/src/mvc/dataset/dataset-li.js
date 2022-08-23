@@ -38,7 +38,7 @@ export var DatasetListItemView = _super.extend(
             if (attributes.logger) {
                 this.logger = this.model.logger = attributes.logger;
             }
-            this.log(`${this}.initialize:`, attributes);
+            this.log(`${this}.initialize:`, attributes.model);
             _super.prototype.initialize.call(this, attributes);
 
             /** where should pages from links be displayed? (default to new tab/window) */
