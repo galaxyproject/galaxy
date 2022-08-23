@@ -5,10 +5,13 @@ import DataTables from "components/admin/DataTables";
 import DataTypes from "components/admin/DataTypes";
 import DisplayApplications from "components/admin/DisplayApplications";
 import ErrorStack from "components/admin/ErrorStack";
+import FormGeneric from "components/Form/FormGeneric";
+import Grid from "components/Grid/Grid";
 import Jobs from "components/admin/Jobs";
 import ResetMetadata from "components/admin/ResetMetadata";
 import SanitizeAllow from "components/admin/SanitizeAllow";
 import Toolshed from "components/Toolshed/Index";
+import ToolboxDependencies from "components/admin/Dependencies/Landing";
 
 export default [
     {
@@ -24,7 +27,97 @@ export default [
             { path: "jobs", component: Jobs },
             { path: "reset_metadata", component: ResetMetadata },
             { path: "sanitize_allow", component: SanitizeAllow },
+            { path: "toolbox_dependencies", component: ToolboxDependencies },
             { path: "toolshed", component: Toolshed },
+            {
+                path: "users",
+                component: Grid,
+                props: {
+                    urlBase: "admin/users_list",
+                },
+            },
+            {
+                path: "form/reset_user_password",
+                component: FormGeneric,
+                props: (route) => ({
+                    title: "Reset passwords",
+                    url: `admin/reset_user_password?id=${route.query.id}`,
+                    icon: "fa-user",
+                    submitTitle: "Save new password",
+                    redirect: "admin/users",
+                }),
+            },
+            /*
+            (form_id) {
+                const id = `?id=${QueryStringParsing.get("id")}`;
+                const form_defs = {
+                    reset_user_password: {
+                        title: _l("Reset passwords"),
+                        url: `admin/reset_user_password${id}`,
+                        icon: "fa-user",
+                        submitTitle: "Save new password",
+                        redirect: "admin/users",
+                    },
+                    manage_roles_and_groups_for_user: {
+                        url: `admin/manage_roles_and_groups_for_user${id}`,
+                        icon: "fa-users",
+                        redirect: "admin/users",
+                    },
+                    manage_users_and_groups_for_role: {
+                        url: `admin/manage_users_and_groups_for_role${id}`,
+                        redirect: "admin/roles",
+                    },
+                    manage_users_and_roles_for_group: {
+                        url: `admin/manage_users_and_roles_for_group${id}`,
+                        redirect: "admin/groups",
+                    },
+                    manage_users_and_groups_for_quota: {
+                        url: `admin/manage_users_and_groups_for_quota${id}`,
+                        redirect: "admin/quotas",
+                    },
+                    create_role: {
+                        url: "admin/create_role",
+                        redirect: "admin/roles",
+                    },
+                    create_group: {
+                        url: "admin/create_group",
+                        redirect: "admin/groups",
+                    },
+                    create_quota: {
+                        url: "admin/create_quota",
+                        redirect: "admin/quotas",
+                    },
+                    rename_role: {
+                        url: `admin/rename_role${id}`,
+                        redirect: "admin/roles",
+                    },
+                    rename_group: {
+                        url: `admin/rename_group${id}`,
+                        redirect: "admin/groups",
+                    },
+                    rename_quota: {
+                        url: `admin/rename_quota${id}`,
+                        redirect: "admin/quotas",
+                    },
+                    edit_quota: {
+                        url: `admin/edit_quota${id}`,
+                        redirect: "admin/quotas",
+                    },
+                    set_quota_default: {
+                        url: `admin/set_quota_default${id}`,
+                        redirect: "admin/quotas",
+                    },
+                    create_form: {
+                        url: "forms/create_form",
+                        redirect: "admin/forms",
+                    },
+                    edit_form: {
+                        url: `forms/edit_form${id}`,
+                        redirect: "admin/forms",
+                    },
+                };
+                this._display_vue_helper(FormGeneric, form_defs[form_id]);
+            },*/
         ],
     },
 ];
@@ -148,14 +241,6 @@ export const getAdminRouter = (Galaxy, options) => {
             this._display_vue_helper(Landing);
         },
 
-        show_error_stack: function () {
-            this._display_vue_helper(ErrorStack);
-        },
-
-        show_display_applications: function () {
-            this._display_vue_helper(DisplayApplications);
-        },
-
         show_reset_metadata: function () {
             this._display_vue_helper(ResetMetadata);
         },
@@ -171,77 +256,6 @@ export const getAdminRouter = (Galaxy, options) => {
 
         show_forms: function () {
             this._show_grid_view("forms/forms_list");
-        },
-
-        show_form: function (form_id) {
-            const id = `?id=${QueryStringParsing.get("id")}`;
-            const form_defs = {
-                reset_user_password: {
-                    title: _l("Reset passwords"),
-                    url: `admin/reset_user_password${id}`,
-                    icon: "fa-user",
-                    submitTitle: "Save new password",
-                    redirect: "admin/users",
-                },
-                manage_roles_and_groups_for_user: {
-                    url: `admin/manage_roles_and_groups_for_user${id}`,
-                    icon: "fa-users",
-                    redirect: "admin/users",
-                },
-                manage_users_and_groups_for_role: {
-                    url: `admin/manage_users_and_groups_for_role${id}`,
-                    redirect: "admin/roles",
-                },
-                manage_users_and_roles_for_group: {
-                    url: `admin/manage_users_and_roles_for_group${id}`,
-                    redirect: "admin/groups",
-                },
-                manage_users_and_groups_for_quota: {
-                    url: `admin/manage_users_and_groups_for_quota${id}`,
-                    redirect: "admin/quotas",
-                },
-                create_role: {
-                    url: "admin/create_role",
-                    redirect: "admin/roles",
-                },
-                create_group: {
-                    url: "admin/create_group",
-                    redirect: "admin/groups",
-                },
-                create_quota: {
-                    url: "admin/create_quota",
-                    redirect: "admin/quotas",
-                },
-                rename_role: {
-                    url: `admin/rename_role${id}`,
-                    redirect: "admin/roles",
-                },
-                rename_group: {
-                    url: `admin/rename_group${id}`,
-                    redirect: "admin/groups",
-                },
-                rename_quota: {
-                    url: `admin/rename_quota${id}`,
-                    redirect: "admin/quotas",
-                },
-                edit_quota: {
-                    url: `admin/edit_quota${id}`,
-                    redirect: "admin/quotas",
-                },
-                set_quota_default: {
-                    url: `admin/set_quota_default${id}`,
-                    redirect: "admin/quotas",
-                },
-                create_form: {
-                    url: "forms/create_form",
-                    redirect: "admin/forms",
-                },
-                edit_form: {
-                    url: `forms/edit_form${id}`,
-                    redirect: "admin/forms",
-                },
-            };
-            this._display_vue_helper(FormGeneric, form_defs[form_id]);
         },
     });
 };
