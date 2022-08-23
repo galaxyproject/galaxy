@@ -26,7 +26,16 @@ export default [
         path: "/admin",
         component: Admin,
         children: [
-            { path: "", component: Home },
+            {
+                path: "",
+                component: Home,
+                props: () => {
+                    const config = getGalaxyInstance().config;
+                    return {
+                        isToolShedInstalled: config.tool_shed_urls && config.tool_shed_urls.length > 0,
+                    };
+                },
+            },
             { path: "data_tables", component: DataTables },
             { path: "data_types", component: DataTypes },
             { path: "display_applications", component: DisplayApplications },

@@ -17,7 +17,6 @@ from galaxy.exceptions import (
 from galaxy.managers.quotas import QuotaManager
 from galaxy.model import tool_shed_install as install_model
 from galaxy.security.validate_user_input import validate_password
-from galaxy.tool_shed.util.repository_util import get_ids_of_tool_shed_repositories_being_installed
 from galaxy.util import (
     nice_size,
     pretty_print_time_interval,

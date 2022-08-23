@@ -15,7 +15,7 @@
                         {{ section.title }}
                         <div class="toolSectionBody">
                             <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="toolTitle">
-                                <router-link class="title-link" :id="item.id" :to="item.route">
+                                <router-link v-if="!item.disabled" class="title-link" :id="item.id" :to="item.route">
                                     <small class="name">{{ item.title }}</small>
                                 </router-link>
                             </div>
@@ -31,10 +31,6 @@
 export default {
     props: {
         enableQuotas: {
-            type: Boolean,
-            default: false,
-        },
-        isRepoInstalled: {
             type: Boolean,
             default: false,
         },
@@ -97,7 +93,7 @@ export default {
                             id: "admin-link-quotas",
                             title: "Quotas",
                             route: "/admin/quotas",
-                            enabled: this.enableQuotas,
+                            disabled: !this.enableQuotas,
                         },
                         {
                             id: "admin-link-groups",
@@ -123,13 +119,12 @@ export default {
                             id: "admin-link-toolshed",
                             title: "Install and Uninstall",
                             route: "/admin/toolshed",
-                            enabled: this.isToolshedInstalled,
+                            disabled: !this.isToolshedInstalled,
                         },
                         {
                             id: "admin-link-metadata",
                             title: "Manage Metadata",
                             route: "/admin/reset_metadata",
-                            enabled: this.isRepoInstalled,
                         },
                         {
                             id: "admin-link-allowlist",

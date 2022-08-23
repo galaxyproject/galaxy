@@ -101,7 +101,7 @@
             </li>
             <li>
                 <strong>
-                    <router-link :to="adminManageMetadata">Manage Metadata</router-link>
+                    <router-link to="/admin/reset_metadata">Manage Metadata</router-link>
                 </strong>
                 - Select on which repositories you want to reset metadata.
             </li>
@@ -116,13 +116,11 @@
 </template>
 
 <script>
-import { getGalaxyInstance } from "app";
-
 export default {
-    computed: {
-        isToolShedInstalled: () => {
-            const Galaxy = getGalaxyInstance();
-            return Galaxy.config.tool_shed_urls && Galaxy.config.tool_shed_urls.length > 0;
+    props: {
+        isToolshedInstalled: {
+            type: Boolean,
+            default: false,
         },
     },
 };

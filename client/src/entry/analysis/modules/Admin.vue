@@ -21,9 +21,11 @@ export default {
     },
     computed: {
         panelProperties() {
-            const Galaxy = getGalaxyInstance();
+            const config = getGalaxyInstance().config;
             return {
-                versionMajor: Galaxy.config.version_major,
+                enableQuotas: config.enable_quotas,
+                isToolshedInstalled: config.tool_shed_urls && config.tool_shed_urls.length > 0,
+                versionMajor: config.version_major,
             };
         },
     },
