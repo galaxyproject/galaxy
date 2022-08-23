@@ -29,6 +29,36 @@ export default [
             { path: "sanitize_allow", component: SanitizeAllow },
             { path: "toolbox_dependencies", component: ToolboxDependencies },
             { path: "toolshed", component: Toolshed },
+
+            // grids
+            {
+                path: "forms",
+                component: Grid,
+                props: {
+                    urlBase: "forms/forms_list",
+                },
+            },
+            {
+                path: "groups",
+                component: Grid,
+                props: {
+                    urlBase: "admin/groups_list",
+                },
+            },
+            {
+                path: "quotas",
+                component: Grid,
+                props: {
+                    urlBase: "admin/quotas_list",
+                },
+            },
+            {
+                path: "roles",
+                component: Grid,
+                props: {
+                    urlBase: "admin/roles_list",
+                },
+            },
             {
                 path: "users",
                 component: Grid,
@@ -36,6 +66,14 @@ export default [
                     urlBase: "admin/users_list",
                 },
             },
+            {
+                path: "tool_versions",
+                component: Grid,
+                props: {
+                    urlBase: "admin/tool_versions_list",
+                },
+            },
+            // forms
             {
                 path: "form/reset_user_password",
                 component: FormGeneric,
@@ -148,7 +186,7 @@ export default [
                 path: "form/create_form",
                 component: FormGeneric,
                 props: {
-                    url: "admin/create_form",
+                    url: "forms/create_form",
                     redirect: "admin/forms",
                 },
             },
@@ -156,7 +194,7 @@ export default [
                 path: "form/edit_form",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/edit_form?id=${route.query.id}`,
+                    url: `forms/edit_form?id=${route.query.id}`,
                     redirect: "admin/forms",
                 }),
             },
@@ -164,17 +202,9 @@ export default [
     },
 ];
 
-/*import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload";
-import _l from "utils/localization";
-import FormGeneric from "components/Form/FormGeneric";
-import GridView from "mvc/grid/grid-view";
-import QueryStringParsing from "utils/query-string-parsing";
-import Router from "layout/router";
-import Landing from "components/admin/Dependencies/Landing.vue";
+/*
 import DataManager from "components/admin/DataManager";
 import RegisterForm from "components/login/RegisterForm.vue";
-import { mountVueComponent } from "utils/mountVueComponent";*/
 
 /*
 export const getAdminRouter = (Galaxy, options) => {
@@ -183,25 +213,8 @@ export const getAdminRouter = (Galaxy, options) => {
     return Router.extend({
         routes: {
             "(/)admin(/)": "show_home",
-            "(/)admin(/)users": "show_users",
             "(/)admin(/)users(/)create": "show_users_create",
-            "(/)admin(/)roles": "show_roles",
-            "(/)admin(/)groups": "show_groups",
-            "(/)admin(/)toolshed": "show_toolshed",
-            "(/)admin(/)error_stack": "show_error_stack",
-            "(/)admin(/)display_applications": "show_display_applications",
-            "(/)admin(/)tool_versions": "show_tool_versions",
-            "(/)admin(/)quotas": "show_quotas",
-            "(/)admin(/)forms": "show_forms",
-            "(/)admin(/)form(/)(:form_id)": "show_form",
-            "(/)admin/data_tables": "show_data_tables",
-            "(/)admin/data_types": "show_data_types",
-            "(/)admin/jobs": "show_jobs",
-            "(/)admin/invocations": "show_invocations",
-            "(/)admin/sanitize_allow": "show_sanitize_allow",
-            "(/)admin/toolbox_dependencies": "show_toolbox_dependencies",
             "(/)admin/data_manager*path": "show_data_manager",
-            "(/)admin(/)reset_metadata": "show_reset_metadata",
             "*notFound": "not_found",
         },
 
@@ -221,10 +234,6 @@ export const getAdminRouter = (Galaxy, options) => {
             });
         },
 
-        show_users: function () {
-            this._show_grid_view("admin/users_list");
-        },
-
         show_users_create: function () {
             this._display_vue_helper(RegisterForm, {
                 redirect: "/admin/users",
@@ -232,32 +241,6 @@ export const getAdminRouter = (Galaxy, options) => {
                 mailing_join_addr: options.config.mailing_join_addr,
                 server_mail_configured: options.config.server_mail_configured,
             });
-        },
-
-        show_roles: function () {
-            this._show_grid_view("admin/roles_list");
-        },
-
-        show_groups: function () {
-            this._show_grid_view("admin/groups_list");
-        },
-
-        show_tool_versions: function () {
-            this._show_grid_view("admin/tool_versions_list");
-        },
-
-        show_quotas: function () {
-            this._show_grid_view("admin/quotas_list");
-        },
-
-        _show_grid_view: function (urlSuffix) {
-            const Galaxy = getGalaxyInstance();
-            this.page.display(
-                new GridView({
-                    url_base: `${galaxyRoot}${urlSuffix}`,
-                    url_data: Galaxy.params,
-                })
-            );
         },
 
         _display_vue_helper: function (component, propsData = {}) {
@@ -296,9 +279,6 @@ export const getAdminRouter = (Galaxy, options) => {
             this.dataManagerInstance = this._display_vue_helper(DataManager);
         },
 
-        show_forms: function () {
-            this._show_grid_view("forms/forms_list");
-        },
     });
 };
 */
