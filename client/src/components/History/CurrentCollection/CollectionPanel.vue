@@ -85,7 +85,8 @@ export default {
     },
     watch: {
         history() {
-            this.$refs.collectionNav.close();
+            // Send up event closing out selected collection on history change.
+            this.$emit("update:selected-collections", []);
         },
     },
     methods: {
