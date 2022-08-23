@@ -251,10 +251,9 @@ class LintContext:
     def failed(self, fail_level: Union[LintLevel, str]) -> bool:
         if isinstance(fail_level, str):
             fail_level = LintLevel[fail_level.upper()]
-
         found_warns = self.found_warns
         found_errors = self.found_errors
-        if fail_level >= LintLevel.WARN:
+        if fail_level == LintLevel.WARN:
             lint_fail = (found_warns or found_errors)
         elif fail_level >= LintLevel.ERROR:
             lint_fail = found_errors
