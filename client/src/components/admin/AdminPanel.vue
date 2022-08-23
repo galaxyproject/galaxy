@@ -16,7 +16,7 @@
                         <div class="toolSectionBody">
                             <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="toolTitle">
                                 <router-link class="title-link" :id="item.id" :to="item.route">
-                                    <span class="name">{{ item.title }}</span>
+                                    <small class="name">{{ item.title }}</small>
                                 </router-link>
                             </div>
                         </div>
