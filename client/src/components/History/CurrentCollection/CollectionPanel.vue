@@ -12,10 +12,10 @@
             <section class="dataset-collection-panel d-flex flex-column">
                 <section>
                     <CollectionNavigation
+                        ref="collectionNav"
                         :history="history"
                         :selected-collections="selectedCollections"
-                        v-on="$listeners"
-                        ref="collectionNav" />
+                        v-on="$listeners" />
                     <CollectionDetails :dsc="dsc" :writeable="isRoot" @update:dsc="updateDsc(dsc, $event)" />
                     <CollectionOperations v-if="isRoot" :dsc="dsc" />
                 </section>
@@ -60,11 +60,6 @@ export default {
         ExpandedItems,
         ListingLayout,
     },
-    watch: {
-        history() {
-            this.$refs.collectionNav.close();
-        },
-    },
     props: {
         history: { type: Object, required: true },
         selectedCollections: { type: Array, required: true },
@@ -87,6 +82,11 @@ export default {
         },
         contentsUrl() {
             return this.dsc.contents_url.substring(1);
+        },
+    },
+    watch: {
+        history() {
+            this.$refs.collectionNav.close();
         },
     },
     methods: {
