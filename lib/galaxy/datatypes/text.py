@@ -1136,8 +1136,8 @@ class Param(Yaml):
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
-        Modified version of the normal Yaml sniff that also checks the
-        dict keys for "general" CASTEP keywords, which are not case
+        Modified version of the normal Yaml sniff that also checks
+        for a valid CASTEP task key-value pair, which is not case
         sensitive
 
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -1163,12 +1163,12 @@ class Param(Yaml):
             "ELNES",
             "ELECTRONICSPECTROSCOPY",
         ]
-        
+
         # check it looks like YAML
         if not super().sniff_prefix(file_prefix):
             return False
 
-        # check the TASK keyword is present 
+        # check the TASK keyword is present
         # and that it is set to a valid CASTEP task
         pattern = re.compile(r"^TASK ?: ?([A-Z\+]*)$", flags=re.IGNORECASE | re.MULTILINE)
         task = file_prefix.search(pattern)
