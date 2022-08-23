@@ -71,7 +71,7 @@ export default {
             return "Display";
         },
         displayDisabled() {
-            return ["discarded", "new", "upload"].includes(this.state);
+            return ["discarded", "new", "upload", "queued"].includes(this.state);
         },
         editButtonTitle() {
             if (this.editDisabled) {

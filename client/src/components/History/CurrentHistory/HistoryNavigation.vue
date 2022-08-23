@@ -8,6 +8,7 @@
             <b-button-group>
                 <b-button
                     v-b-tooltip.bottom.hover
+                    class="create-hist-btn"
                     data-description="create new history"
                     size="sm"
                     variant="link"
