@@ -518,7 +518,12 @@ class SubWorkflowModule(WorkflowModule):
                             data_output['name'] == workflow_output['output_name']
                             or data_output_uuid == workflow_output_uuid
                         ):
-                            data_output['label'] = label
+                            change_datatype_action = step["post_job_actions"].get(
+                                f"ChangeDatatypeAction{data_output['name']}"
+                            )
+                            if change_datatype_action:
+                                self.post_job_actions[f"ChangeDatatypeAction{label}"] = change_datatype_action
+                            data_output["name"] = label
                             # That's the right data_output
                             break
                     else:
@@ -527,15 +532,7 @@ class SubWorkflowModule(WorkflowModule):
                         # the workflow.
                         log.error(f"Workflow output '{workflow_output['output_name']}' defined, but not listed among data outputs")
                         continue
-                    post_job_actions = step["post_job_actions"].copy()
-                    change_datatype_action = post_job_actions.pop(f"ChangeDatatypeAction{data_output['name']}", None)
-                    # Post job actions are referred to by tool output name,
-                    # but that's not guaranteed to be unique within a workflow,
-                    # but the label is unique.
-                    if change_datatype_action:
-                        post_job_actions[f"ChangeDatatypeAction{label}"] = change_datatype_action
 
-                    self.post_job_actions.update(post_job_actions)
                     outputs.append(data_output)
         return outputs
 
