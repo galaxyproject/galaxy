@@ -2,8 +2,10 @@
     <div id="columns">
         <SidePanel side="left" :currentPanel="getAdminPanel()" />
         <div id="center">
-            <div class="center-container m-2" style="overflow-y: auto">
-                <router-view :key="$route.fullPath" />
+            <div class="center-container">
+                <div class="center-panel" style="display: block">
+                    <router-view :key="$route.fullPath" />
+                </div>
             </div>
         </div>
     </div>
