@@ -570,27 +570,6 @@ class AdminGalaxy(controller.JSAppLauncher):
         self.quota_manager: QuotaManager = QuotaManager(app)
 
     @web.expose
-    @web.require_admin
-    def index(self, trans, **kwd):
-        return self.client(trans, **kwd)
-
-    @web.expose
-    @web.require_admin
-    def client(self, trans, **kwd):
-        """
-        Endpoint for admin clientside routes.
-        """
-        message = escape(kwd.get("message", ""))
-        status = kwd.get("status", "done")
-        settings = {
-            "is_repo_installed": trans.install_model.context.query(trans.install_model.ToolShedRepository).first()
-            is not None,
-            "installing_repository_ids": get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=True),
-            "is_tool_shed_installed": bool(trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds),
-        }
-        return self._bootstrapped_client(trans, settings=settings, message=message, status=status)
-
-    @web.expose
     @web.json
     @web.require_admin
     def data_tables_list(self, trans, **kwd):
