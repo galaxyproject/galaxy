@@ -142,11 +142,6 @@ export default {
                             route: "/admin/toolbox_dependencies",
                         },
                         {
-                            id: "admin-link-manage-dependencies-legacy",
-                            title: "Manage Dependencies (legacy)",
-                            route: "/admin/manage_tool_dependencies",
-                        },
-                        {
                             id: "admin-link-tool-versions",
                             title: "View Lineage",
                             route: "/admin/tool_versions",

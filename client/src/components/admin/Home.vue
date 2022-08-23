@@ -99,7 +99,7 @@
                     >the tutorial</a
                 >.
             </li>
-            <li v-if="isRepoInstalled">
+            <li>
                 <strong>
                     <a :href="adminManageMetadata" @click.prevent="useRouter">Manage Metadata</a>
                 </strong>
@@ -122,16 +122,6 @@ import { getGalaxyInstance } from "app";
 const root = getAppRoot();
 
 export default {
-    props: {
-        isRepoInstalled: {
-            type: Boolean,
-            required: true,
-        },
-        isToolShedInstalled: {
-            type: Boolean,
-            required: true,
-        },
-    },
     computed: {
         adminDataTypesUrl: () => `${root}admin/data_types`,
         adminDataTablesUrl: () => `${root}admin/data_tables`,
@@ -147,6 +137,10 @@ export default {
         adminFormsUrl: () => `${root}admin/forms`,
         adminToolshedUrl: () => `${root}admin/toolshed`,
         adminToolVersionsUrl: () => `${root}admin/tool_versions`,
+        isToolShedInstalled: () => {
+            const Galaxy = getGalaxyInstance();
+            return Galaxy.config.tool_shed_urls && Galaxy.config.tool_shed_urls.length > 0;
+        },
     },
     methods: {
         useRouter: function (ev) {

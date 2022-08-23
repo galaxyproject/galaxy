@@ -227,13 +227,6 @@ export const getAdminRouter = (Galaxy, options) => {
             window.location.reload(); // = window.location.href;
         },
 
-        show_home: function () {
-            this._display_vue_helper(AdminHome, {
-                isRepoInstalled: options.settings.is_repo_installed,
-                isToolShedInstalled: options.settings.is_tool_shed_installed,
-            });
-        },
-
         show_users_create: function () {
             this._display_vue_helper(RegisterForm, {
                 redirect: "/admin/users",
@@ -241,33 +234,6 @@ export const getAdminRouter = (Galaxy, options) => {
                 mailing_join_addr: options.config.mailing_join_addr,
                 server_mail_configured: options.config.server_mail_configured,
             });
-        },
-
-        _display_vue_helper: function (component, propsData = {}) {
-            const container = document.createElement("div");
-            this.page.display(container);
-            const mountFn = mountVueComponent(component);
-            return mountFn(propsData, container);
-        },
-
-        show_jobs: function () {
-            this._display_vue_helper(Jobs);
-        },
-
-        show_invocations: function () {
-            this._display_vue_helper(ActiveInvocations);
-        },
-
-        show_sanitize_allow: function () {
-            this._display_vue_helper(SanitizeAllow);
-        },
-
-        show_toolbox_dependencies: function () {
-            this._display_vue_helper(Landing);
-        },
-
-        show_reset_metadata: function () {
-            this._display_vue_helper(ResetMetadata);
         },
 
         // Because this has a router in it, we need to be careful about destroying it properly
