@@ -587,8 +587,8 @@ steps:
         node.output_data_row(output_name="workflow_output", extension="bam").wait_for_visible()
         # Move canvas, so terminals are in viewport
         self.move_center_of_canvas(xoffset=100, yoffset=100)
-        self.workflow_editor_connect("nested_workflow#out_file1", "metadata_bam#input_bam")
-        self.assert_connected("nested_workflow#out_file1", "metadata_bam#input_bam")
+        self.workflow_editor_connect("nested_workflow#workflow_output", "metadata_bam#input_bam")
+        self.assert_connected("nested_workflow#workflow_output", "metadata_bam#input_bam")
 
     @selenium_test
     def test_editor_duplicate_node(self):
