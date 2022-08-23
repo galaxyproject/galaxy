@@ -1,3 +1,5 @@
+import { getGalaxyInstance } from "app";
+
 import Admin from "entry/analysis/modules/Admin";
 import Home from "components/admin/Home";
 import ActiveInvocations from "components/admin/ActiveInvocations";
@@ -13,6 +15,7 @@ import ErrorStack from "components/admin/ErrorStack";
 import FormGeneric from "components/Form/FormGeneric";
 import Grid from "components/Grid/Grid";
 import Jobs from "components/admin/Jobs";
+import RegisterForm from "components/login/RegisterForm";
 import ResetMetadata from "components/admin/ResetMetadata";
 import SanitizeAllow from "components/admin/SanitizeAllow";
 import Toolshed from "components/Toolshed/Index";
@@ -35,6 +38,21 @@ export default [
             { path: "toolbox_dependencies", component: ToolboxDependencies },
             { path: "toolshed", component: Toolshed },
 
+            // user registration route
+            {
+                path: "users/create",
+                component: RegisterForm,
+                props: () => {
+                    const Galaxy = getGalaxyInstance();
+                    return {
+                        redirect: "/admin/users",
+                        registration_warning_message: Galaxy.config.registration_warning_message,
+                        mailing_join_addr: Galaxy.config.mailing_join_addr,
+                        server_mail_configured: Galaxy.config.server_mail_configured,
+                    };
+                },
+            },
+
             // data managers
             {
                 path: "data_manager",
@@ -43,7 +61,7 @@ export default [
                     {
                         path: "",
                         name: "DataManager",
-                        component: DataManager
+                        component: DataManager,
                     },
                     {
                         path: "jobs/:id",
@@ -237,50 +255,3 @@ export default [
         ],
     },
 ];
-
-/*
-import DataManager from "components/admin/DataManager";
-import RegisterForm from "components/login/RegisterForm.vue";
-
-/*
-export const getAdminRouter = (Galaxy, options) => {
-    const galaxyRoot = getAppRoot();
-
-    return Router.extend({
-        routes: {
-            "(/)admin(/)": "show_home",
-            "(/)admin(/)users(/)create": "show_users_create",
-            "(/)admin/data_manager*path": "show_data_manager",
-            "*notFound": "not_found",
-        },
-
-        authenticate: function () {
-            const Galaxy = getGalaxyInstance();
-            return Galaxy.user && Galaxy.user.id && Galaxy.user.get("is_admin");
-        },
-
-        not_found: function () {
-            window.location.reload(); // = window.location.href;
-        },
-
-        show_users_create: function () {
-            this._display_vue_helper(RegisterForm, {
-                redirect: "/admin/users",
-                registration_warning_message: options.config.registration_warning_message,
-                mailing_join_addr: options.config.mailing_join_addr,
-                server_mail_configured: options.config.server_mail_configured,
-            });
-        },
-
-        // Because this has a router in it, we need to be careful about destroying it properly
-        dataManagerInstance: null,
-        show_data_manager: function () {
-            if (this.dataManagerInstance) {
-                this.dataManagerInstance.$destroy();
-            }
-            this.dataManagerInstance = this._display_vue_helper(DataManager);
-        },
-
-    });
-};
-*/
