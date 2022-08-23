@@ -1,6 +1,11 @@
 import Admin from "entry/analysis/modules/Admin";
 import Home from "components/admin/Home";
 import ActiveInvocations from "components/admin/ActiveInvocations";
+import DataManager from "components/admin/DataManager/DataManager";
+import DataManagerJobs from "components/admin/DataManager/DataManagerJobs";
+import DataManagerJob from "components/admin/DataManager/DataManagerJob";
+import DataManagerTable from "components/admin/DataManager/DataManagerTable";
+import DataManagerView from "components/admin/DataManager/DataManagerView";
 import DataTables from "components/admin/DataTables";
 import DataTypes from "components/admin/DataTypes";
 import DisplayApplications from "components/admin/DisplayApplications";
@@ -29,6 +34,37 @@ export default [
             { path: "sanitize_allow", component: SanitizeAllow },
             { path: "toolbox_dependencies", component: ToolboxDependencies },
             { path: "toolshed", component: Toolshed },
+
+            // data managers
+            {
+                path: "data_manager",
+                component: DataManagerView,
+                children: [
+                    {
+                        path: "",
+                        name: "DataManager",
+                        component: DataManager
+                    },
+                    {
+                        path: "jobs/:id",
+                        name: "DataManagerJobs",
+                        component: DataManagerJobs,
+                        props: true,
+                    },
+                    {
+                        path: "job/:id",
+                        name: "DataManagerJob",
+                        component: DataManagerJob,
+                        props: true,
+                    },
+                    {
+                        path: "table/:name",
+                        name: "DataManagerTable",
+                        component: DataManagerTable,
+                        props: true,
+                    },
+                ],
+            },
 
             // grids
             {
