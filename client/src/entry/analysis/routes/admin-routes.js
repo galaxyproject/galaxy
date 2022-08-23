@@ -1,11 +1,15 @@
 import Admin from "entry/analysis/modules/Admin";
 import Home from "components/admin/Home";
+import Toolshed from "components/Toolshed/Index";
 
 export default [
     {
         path: "/admin",
         component: Admin,
-        children: [{ path: "", component: Home }],
+        children: [
+            { path: "", component: Home },
+            { path: "toolshed", component: Toolshed }
+        ],
     },
 ];
 
@@ -28,7 +32,6 @@ import RegisterForm from "components/login/RegisterForm.vue";
 import ErrorStack from "components/admin/ErrorStack.vue";
 import DisplayApplications from "components/admin/DisplayApplications.vue";
 import ResetMetadata from "components/admin/ResetMetadata.vue";
-import Toolshed from "components/Toolshed/Index.vue";
 import { mountVueComponent } from "utils/mountVueComponent";*/
 
 /*

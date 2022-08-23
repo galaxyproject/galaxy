@@ -15,9 +15,9 @@
                         {{ section.title }}
                         <div class="toolSectionBody">
                             <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="toolTitle">
-                                <a class="title-link" :id="item.id">
+                                <router-link class="title-link" :id="item.id" :to="item.route">
                                     <span class="name">{{ item.title }}</span>
-                                </a>
+                                </router-link>
                             </div>
                         </div>
                     </div>
@@ -56,32 +56,32 @@ export default {
                         {
                             id: "admin-link-datatypes",
                             title: "Data Types",
-                            url: "admin/data_types",
+                            route: "/admin/data_types",
                         },
                         {
                             id: "admin-link-data-tables",
                             title: "Data Tables",
-                            url: "admin/data_tables",
+                            route: "/admin/data_tables",
                         },
                         {
                             id: "admin-link-display-applications",
                             title: "Display Applications",
-                            url: "admin/display_applications",
+                            route: "/admin/display_applications",
                         },
                         {
                             id: "admin-link-jobs",
                             title: "Jobs",
-                            url: "admin/jobs",
+                            route: "/admin/jobs",
                         },
                         {
                             id: "admin-link-invocations",
                             title: "Workflow Invocations",
-                            url: "admin/invocations",
+                            route: "/admin/invocations",
                         },
                         {
                             id: "admin-link-local-data",
                             title: "Local Data",
-                            url: "admin/data_manager",
+                            route: "/admin/data_manager",
                         },
                     ],
                 },
@@ -91,28 +91,28 @@ export default {
                         {
                             id: "admin-link-users",
                             title: "Users",
-                            url: "admin/users",
+                            route: "/admin/users",
                         },
                         {
                             id: "admin-link-quotas",
                             title: "Quotas",
-                            url: "admin/quotas",
+                            route: "/admin/quotas",
                             enabled: this.enableQuotas,
                         },
                         {
                             id: "admin-link-groups",
                             title: "Groups",
-                            url: "admin/groups",
+                            route: "/admin/groups",
                         },
                         {
                             id: "admin-link-roles",
                             title: "Roles",
-                            url: "admin/roles",
+                            route: "/admin/roles",
                         },
                         {
                             id: "admin-link-forms",
                             title: "Forms",
-                            url: "admin/forms",
+                            route: "/admin/forms",
                         },
                     ],
                 },
@@ -122,39 +122,39 @@ export default {
                         {
                             id: "admin-link-toolshed",
                             title: "Install and Uninstall",
-                            url: "admin/toolshed",
+                            route: "/admin/toolshed",
                             enabled: this.isToolshedInstalled,
                         },
                         {
                             id: "admin-link-metadata",
                             title: "Manage Metadata",
-                            url: "admin/reset_metadata",
+                            route: "/admin/reset_metadata",
                             enabled: this.isRepoInstalled,
                         },
                         {
                             id: "admin-link-allowlist",
                             title: "Manage Allowlist",
-                            url: "admin/sanitize_allow",
+                            route: "/admin/sanitize_allow",
                         },
                         {
                             id: "admin-link-manage-dependencies",
                             title: "Manage Dependencies",
-                            url: "admin/toolbox_dependencies",
+                            route: "/admin/toolbox_dependencies",
                         },
                         {
                             id: "admin-link-manage-dependencies-legacy",
                             title: "Manage Dependencies (legacy)",
-                            url: "admin/manage_tool_dependencies",
+                            route: "/admin/manage_tool_dependencies",
                         },
                         {
                             id: "admin-link-tool-versions",
                             title: "View Lineage",
-                            url: "admin/tool_versions",
+                            route: "/admin/tool_versions",
                         },
                         {
                             id: "admin-link-error-stack",
                             title: "View Error Logs",
-                            url: "admin/error_stack",
+                            route: "/admin/error_stack",
                         },
                     ],
                 },
