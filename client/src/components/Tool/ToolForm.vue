@@ -44,33 +44,40 @@
                         itemtype="https://schema.org/CreativeWork"
                         @onChangeVersion="onChangeVersion">
                         <template v-slot:body>
-                            <FormDisplay
-                                :id="toolId"
-                                :inputs="formConfig.inputs"
-                                :validation-scroll-to="validationScrollTo"
-                                @onChange="onChange"
-                                @onValidation="onValidation" />
-                            <FormElement
-                                v-if="emailAllowed(config, user)"
-                                id="send_email_notification"
-                                v-model="useEmail"
-                                title="Email notification"
-                                help="Send an email notification when the job completes."
-                                type="boolean" />
-                            <FormElement
-                                v-if="remapAllowed"
-                                id="rerun_remap_job_id"
-                                v-model="useJobRemapping"
-                                :title="remapTitle"
-                                :help="remapHelp"
-                                type="boolean" />
-                            <FormElement
-                                v-if="reuseAllowed(user)"
-                                id="use_cached_job"
-                                v-model="useCachedJobs"
-                                title="Attempt to re-use jobs with identical parameters?"
-                                help="This may skip executing jobs that you have already run."
-                                type="boolean" />
+                            <ToolCardSection title="Tool Parameters">
+                                <FormDisplay
+                                    :id="toolId"
+                                    :inputs="formConfig.inputs"
+                                    :validation-scroll-to="validationScrollTo"
+                                    @onChange="onChange"
+                                    @onValidation="onValidation" />
+                            </ToolCardSection>
+
+                            <ToolCardSection
+                                v-if="emailAllowed(config, user) || remapAllowed || reuseAllowed(user)"
+                                title="Additional Options">
+                                <FormElement
+                                    v-if="emailAllowed(config, user)"
+                                    id="send_email_notification"
+                                    v-model="useEmail"
+                                    title="Email notification"
+                                    help="Send an email notification when the job completes."
+                                    type="boolean" />
+                                <FormElement
+                                    v-if="remapAllowed"
+                                    id="rerun_remap_job_id"
+                                    v-model="useJobRemapping"
+                                    :title="remapTitle"
+                                    :help="remapHelp"
+                                    type="boolean" />
+                                <FormElement
+                                    v-if="reuseAllowed(user)"
+                                    id="use_cached_job"
+                                    v-model="useCachedJobs"
+                                    title="Attempt to re-use jobs with identical parameters?"
+                                    help="This may skip executing jobs that you have already run."
+                                    type="boolean" />
+                            </ToolCardSection>
                         </template>
                         <template v-slot:buttons>
                             <ButtonSpinner
@@ -101,6 +108,7 @@ import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import ToolSuccess from "./ToolSuccess";
+import ToolCardSection from "./ToolCardSection";
 import UserHistories from "components/providers/UserHistories";
 import Webhook from "components/Common/Webhook";
 
@@ -117,6 +125,7 @@ export default {
         ToolSuccess,
         UserHistories,
         Webhook,
+        ToolCardSection,
     },
     props: {
         id: {

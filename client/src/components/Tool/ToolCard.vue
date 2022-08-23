@@ -5,6 +5,7 @@ import ToolVersionsButton from "components/Tool/Buttons/ToolVersionsButton.vue";
 import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
+import ToolCardSection from "./ToolCardSection";
 
 import ariaAlert from "utils/ariaAlert";
 import Webhooks from "utils/webhooks";
@@ -102,7 +103,10 @@ const showVersions = computed(() => props.options.versions?.length > 1);
         <div v-if="props.disabled" class="portlet-backdrop" />
 
         <div>
-            <ToolHelp :content="props.options.help" />
+            <ToolCardSection title="Help">
+                <ToolHelp :content="props.options.help" />
+            </ToolCardSection>
+
             <ToolFooter
                 :id="props.id"
                 :has-citations="props.options.hasCitations"
