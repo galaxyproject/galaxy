@@ -3,9 +3,10 @@ Job control via TES.
 """
 import logging
 import os
-
-import requests
 import shlex
+
+import pulsar
+import requests
 
 from galaxy import model
 from galaxy.jobs import JobWrapper
@@ -15,13 +16,12 @@ from galaxy.jobs.runners import (
     AsynchronousJobState
 )
 from galaxy.util import asbool
-import pulsar
 
 log = logging.getLogger(__name__)
 
 __all__ = ('TESJobRunner', )
 
-GENERIC_REMOTE_ERROR = "Failed to communicate with remote job server."
+GENERIC_REMOTE_ERROR = "Failed to communicate with remote job server"
 FAILED_REMOTE_ERROR = "Remote job server indicated a problem running or monitoring the job."
 LOST_REMOTE_ERROR = "Remote job server could not determine the job's state."
 
@@ -77,7 +77,7 @@ class TESJobRunner(AsynchronousJobRunner):
                 return job_id
             except KeyError:
                 log.error(f"TES Server failed to accept the job {req.json()}")
-        except requests.exceptions:
+        except requests.exceptions.RequestException:
             log.error(f"{GENERIC_REMOTE_ERROR} on URL {master_addr}")
 
     def _get_job(self, master_addr: str, job_id: str, view: str = "MINIMAL"):
@@ -89,7 +89,7 @@ class TESJobRunner(AsynchronousJobRunner):
         try:
             req = requests.get(url, params={'view': view})
             return req.json()
-        except requests.exceptions:
+        except requests.exceptions.RequestException:
             log.error(f"{LOST_REMOTE_ERROR} for job id {job_id}")
 
     def _cancel_job(self, master_addr: str, job_id: str):
@@ -100,7 +100,7 @@ class TESJobRunner(AsynchronousJobRunner):
         url = f"{master_addr}/v1/tasks/{job_id}:cancel"
         try:
             requests.post(url)
-        except requests.exceptions:
+        except requests.exceptions.RequestException:
             log.error(f"{GENERIC_REMOTE_ERROR} for cancellation of job id {job_id}")
 
     def get_upload_path(self, job_id: str, env=None):
@@ -358,7 +358,7 @@ class TESJobRunner(AsynchronousJobRunner):
         job_id = job_wrapper.job_id
         if hasattr(job_wrapper, 'task_id'):
             job_id = f"{job_id}_{job_wrapper.task_id}"
-
+            
         client_args = self.get_upload_path(job_id)
         job_destination = job_wrapper.job_destination
         galaxy_id_tag = job_wrapper.get_id_tag()
