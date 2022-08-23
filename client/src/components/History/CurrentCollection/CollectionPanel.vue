@@ -12,7 +12,6 @@
             <section class="dataset-collection-panel d-flex flex-column">
                 <section>
                     <CollectionNavigation
-                        ref="collectionNav"
                         :history="history"
                         :selected-collections="selectedCollections"
                         v-on="$listeners" />
