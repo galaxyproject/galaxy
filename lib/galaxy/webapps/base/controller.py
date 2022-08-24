@@ -253,6 +253,13 @@ class JSAppLauncher(BaseUIController):
         self.config_serializer = configuration.ConfigSerializer(app)
         self.admin_config_serializer = configuration.AdminConfigSerializer(app)
 
+    def _check_require_login(self, trans):
+        if self.app.config.require_login and self.user_manager.is_anonymous(trans.user):
+            # TODO: this doesn't properly redirect when login is done
+            # (see webapp __ensure_logged_in_user for the initial redirect - not sure why it doesn't redirect to login?)
+            login_url = web.url_for(controller="root", action="login")
+            trans.response.send_redirect(login_url)
+
     @web.expose
     def client(self, trans, **kwd):
         """

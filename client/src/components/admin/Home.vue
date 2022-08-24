@@ -90,7 +90,7 @@
                 </strong>
                 - Manage HTML rendering for installed tools' output datasets.
             </li>
-            <li v-if="isToolShedInstalled">
+            <li v-if="isToolshedInstalled">
                 <strong>
                     <router-link to="/admin/toolshed">Install and Uninstall</router-link>
                 </strong>
