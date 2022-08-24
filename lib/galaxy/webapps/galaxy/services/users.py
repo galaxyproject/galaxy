@@ -35,5 +35,5 @@ class UsersService(ServiceBase):
             send_local_control_task(
                 trans.app,
                 "recalculate_user_disk_usage",
-                kwargs={"user_id": self.encode_id(trans.user.id)},
+                kwargs={"user_id": trans.user.id},
             )

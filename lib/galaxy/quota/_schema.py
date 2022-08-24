@@ -4,17 +4,15 @@ from typing import (
     Optional,
 )
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
+from pydantic import Field
 
 from galaxy.schema.fields import (
-    EncodedDatabaseIdField,
+    DecodedDatabaseIdField,
     ModelClassField,
 )
 from galaxy.schema.schema import (
     GroupModel,
+    Model,
     UserModel,
 )
 
@@ -67,7 +65,7 @@ QuotaOperationField = Field(
 )
 
 
-class DefaultQuota(BaseModel):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
+class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
     model_class: str = ModelClassField(DEFAULT_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
     type: DefaultQuotaTypes = Field(
         ...,
@@ -80,7 +78,7 @@ class DefaultQuota(BaseModel):  # TODO: should this replace lib.galaxy.model.Def
     )
 
 
-class UserQuota(BaseModel):
+class UserQuota(Model):
     model_class: str = ModelClassField(USER_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
     user: UserModel = Field(
         ...,
@@ -89,7 +87,7 @@ class UserQuota(BaseModel):
     )
 
 
-class GroupQuota(BaseModel):
+class GroupQuota(Model):
     model_class: str = ModelClassField(GROUP_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
     group: GroupModel = Field(
         ...,
@@ -98,11 +96,11 @@ class GroupQuota(BaseModel):
     )
 
 
-class QuotaBase(BaseModel):
+class QuotaBase(Model):
     """Base model containing common fields for Quotas."""
 
     model_class: str = ModelClassField(QUOTA_MODEL_CLASS_NAME)
-    id: EncodedDatabaseIdField = Field(
+    id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",
         description="The `encoded identifier` of the quota.",
@@ -121,7 +119,7 @@ class QuotaSummary(QuotaBase):
     )
 
 
-class QuotaSummaryList(BaseModel):
+class QuotaSummaryList(Model):
     __root__: List[QuotaSummary] = Field(
         default=[],
         title="List with summary information of Quotas.",
@@ -166,7 +164,7 @@ class CreateQuotaResult(QuotaSummary):
     )
 
 
-class CreateQuotaParams(BaseModel):
+class CreateQuotaParams(Model):
     name: str = QuotaNameField
     description: str = QuotaDescriptionField
     amount: str = Field(
@@ -196,7 +194,7 @@ class CreateQuotaParams(BaseModel):
     )
 
 
-class UpdateQuotaParams(BaseModel):
+class UpdateQuotaParams(Model):
     name: Optional[str] = Field(
         default=None,
         title="Name",
@@ -243,7 +241,7 @@ class UpdateQuotaParams(BaseModel):
     )
 
 
-class DeleteQuotaPayload(BaseModel):
+class DeleteQuotaPayload(Model):
     purge: bool = Field(
         False,
         title="Purge",

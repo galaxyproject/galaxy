@@ -23,7 +23,7 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.workflows import WorkflowsManager
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
@@ -135,12 +135,11 @@ class InvocationsService(ServiceBase):
         return invocation_dict, total_matches
 
     def prepare_store_download(
-        self, trans, invocation_id: EncodedDatabaseIdField, payload: PrepareStoreDownloadPayload
+        self, trans, invocation_id: DecodedDatabaseIdField, payload: PrepareStoreDownloadPayload
     ) -> AsyncFile:
         ensure_celery_tasks_enabled(trans.app.config)
         model_store_format = payload.model_store_format
-        decoded_workflow_invocation_id = self.decode_id(invocation_id)
-        workflow_invocation = self._workflows_manager.get_invocation(trans, decoded_workflow_invocation_id, eager=True)
+        workflow_invocation = self._workflows_manager.get_invocation(trans, invocation_id, eager=True)
         if not workflow_invocation:
             raise ObjectNotFound()
         try:
@@ -162,11 +161,10 @@ class InvocationsService(ServiceBase):
         return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=async_task_summary(result))
 
     def write_store(
-        self, trans, invocation_id: EncodedDatabaseIdField, payload: WriteStoreToPayload
+        self, trans, invocation_id: DecodedDatabaseIdField, payload: WriteStoreToPayload
     ) -> AsyncTaskResultSummary:
         ensure_celery_tasks_enabled(trans.app.config)
-        decoded_workflow_invocation_id = self.decode_id(invocation_id)
-        workflow_invocation = self._workflows_manager.get_invocation(trans, decoded_workflow_invocation_id, eager=True)
+        workflow_invocation = self._workflows_manager.get_invocation(trans, invocation_id, eager=True)
         if not workflow_invocation:
             raise ObjectNotFound()
         request = WriteInvocationTo(

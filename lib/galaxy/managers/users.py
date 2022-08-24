@@ -232,7 +232,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # Purge the user
         super().purge(user, flush=flush)
 
-    def _error_on_duplicate_email(self, email):
+    def _error_on_duplicate_email(self, email: str) -> None:
         """
         Check for a duplicate email and raise if found.
 
@@ -242,11 +242,11 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if self.by_email(email) is not None:
             raise exceptions.Conflict("Email must be unique", email=email)
 
-    def by_id(self, user_id):
+    def by_id(self, user_id: int) -> model.User:
         return self.app.model.session.query(self.model_class).get(user_id)
 
     # ---- filters
-    def by_email(self, email, filters=None, **kwargs):
+    def by_email(self, email: str, filters=None, **kwargs) -> Optional[model.User]:
         """
         Find a user by their email.
         """
@@ -257,7 +257,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         except exceptions.ObjectNotFound:
             return None
 
-    def by_api_key(self, api_key, sa_session=None):
+    def by_api_key(self, api_key: str, sa_session=None):
         """
         Find a user by API key.
         """
@@ -359,7 +359,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return trans.user
 
     # ---- api keys
-    def create_api_key(self, user):
+    def create_api_key(self, user: model.User) -> str:
         """
         Create and return an API key for `user`.
         """

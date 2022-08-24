@@ -165,7 +165,7 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
     controller mixin code - however whenever possible the managers for a
     particular model should be used to load objects.
     """
-    decoded_id = decode_id(trans.app, id)
+    decoded_id = id if isinstance(id, int) else decode_id(trans.app, id)
     try:
         item_class = get_class(class_name)
         assert item_class is not None

@@ -10,7 +10,6 @@ from sqlalchemy.orm import (
 )
 
 from galaxy import (
-    exceptions,
     model,
     util,
     web,
@@ -28,6 +27,7 @@ from galaxy.managers.pages import (
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.item_attrs import UsesItemRatings
+from galaxy.schema.schema import CreatePagePayload
 from galaxy.structured_app import StructuredApp
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
@@ -45,7 +45,7 @@ from galaxy.webapps.base.controller import (
     UsesStoredWorkflowMixin,
     UsesVisualizationMixin,
 )
-from ..api import depends
+from galaxy.webapps.galaxy.api import depends
 
 
 def format_bool(b):
@@ -408,7 +408,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             {"username": p.page.user.username, "slug": p.page.slug, "title": p.page.title} for p in shared_by_others
         ]
 
-    @web.legacy_expose_api
+    @web.expose_api
     @web.require_login("create pages")
     def create(self, trans, payload=None, **kwd):
         """
@@ -425,7 +425,9 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                 invocation_id = kwd.get("invocation_id")
                 form_title = f"{form_title} from Invocation Report"
                 slug = f"invocation-report-{invocation_id}"
-                invocation_report = self.workflow_manager.get_invocation_report(trans, invocation_id)
+                invocation_report = self.workflow_manager.get_invocation_report(
+                    trans, trans.security.decode_id(invocation_id)
+                )
                 title = invocation_report.get("title")
                 content = invocation_report.get("markdown")
                 content_format_hide = True
@@ -467,10 +469,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                 ],
             }
         else:
-            try:
-                page = self.page_manager.create(trans, payload)
-            except exceptions.MessageException as e:
-                return self.message_exception(trans, unicodify(e))
+            page = self.page_manager.create_page(trans, CreatePagePayload(**payload))
             return {"message": "Page '%s' successfully created." % page.title, "status": "success"}
 
     @web.legacy_expose_api

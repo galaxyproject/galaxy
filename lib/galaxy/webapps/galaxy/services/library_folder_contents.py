@@ -17,7 +17,7 @@ from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.model import tags
 from galaxy.model.security import GalaxyRBACAgent
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import LibraryFolderDatabaseIdField
 from galaxy.schema.schema import (
     CreateLibraryFilePayload,
     LibraryFolderContentsIndexQueryPayload,
@@ -62,7 +62,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
     def index(
         self,
         trans: ProvidesUserContext,
-        folder_id: DecodedDatabaseIdField,
+        folder_id: LibraryFolderDatabaseIdField,
         payload: LibraryFolderContentsIndexQueryPayload,
     ) -> LibraryFolderContentsIndexResult:
         """
@@ -87,7 +87,9 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         metadata = self._serialize_library_folder_metadata(trans, folder, user_permissions, total_rows)
         return LibraryFolderContentsIndexResult.construct(metadata=metadata, folder_contents=folder_contents)
 
-    def create(self, trans: ProvidesUserContext, folder_id: DecodedDatabaseIdField, payload: CreateLibraryFilePayload):
+    def create(
+        self, trans: ProvidesUserContext, folder_id: LibraryFolderDatabaseIdField, payload: CreateLibraryFilePayload
+    ):
         """
         Create a new library file from an HDA/HDCA.
         """

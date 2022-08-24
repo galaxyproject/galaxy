@@ -39,7 +39,7 @@ from galaxy.managers.jobs import (
     summarize_job_metrics,
     summarize_job_parameters,
 )
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import JobIndexSortByEnum
 from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.web import (
@@ -82,7 +82,7 @@ UserDetailsQueryParam: bool = Query(
     description="If true, and requestor is an admin, will return external job id and user email. This is only available to admins.",
 )
 
-UserIdQueryParam: Optional[EncodedDatabaseIdField] = Query(
+UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
     default=None,
     title="User ID",
     description="an encoded user id to restrict query to, must be own id if not admin user",
@@ -122,19 +122,19 @@ DateRangeMaxQueryParam: Optional[Union[OffsetNaiveDatetime, date]] = Query(
     description="Limit listing of jobs to those that are updated before specified date (e.g. '2014-01-01')",
 )
 
-HistoryIdQueryParam: Optional[EncodedDatabaseIdField] = Query(
+HistoryIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
     default=None,
     title="History ID",
     description="Limit listing of jobs to those that match the history_id. If none, jobs from any history may be returned.",
 )
 
-WorkflowIdQueryParam: Optional[EncodedDatabaseIdField] = Query(
+WorkflowIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
     default=None,
     title="Workflow ID",
     description="Limit listing of jobs to those that match the specified workflow ID. If none, jobs from any workflow (or from no workflows) may be returned.",
 )
 
-InvocationIdQueryParam: Optional[EncodedDatabaseIdField] = Query(
+InvocationIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
     default=None,
     title="Invocation ID",
     description="Limit listing of jobs to those that match the specified workflow invocation ID. If none, jobs from any workflow invocation (or from no workflows) may be returned.",
@@ -175,7 +175,7 @@ class FastAPIJobs:
     @router.get("/api/jobs/{id}")
     def show(
         self,
-        id: EncodedDatabaseIdField,
+        id: DecodedDatabaseIdField,
         trans: ProvidesUserContext = DependsOnTrans,
         full: Optional[bool] = False,
     ) -> Dict[str, Any]:
@@ -194,21 +194,21 @@ class FastAPIJobs:
         trans: ProvidesUserContext = DependsOnTrans,
         states: Optional[List[str]] = Depends(query_parameter_as_list(StateQueryParam)),
         user_details: bool = UserDetailsQueryParam,
-        user_id: Optional[EncodedDatabaseIdField] = UserIdQueryParam,
+        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
         view: JobIndexViewEnum = ViewQueryParam,
         tool_ids: Optional[List[str]] = Depends(query_parameter_as_list(ToolIdQueryParam)),
         tool_ids_like: Optional[List[str]] = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
         date_range_min: Optional[Union[datetime, date]] = DateRangeMinQueryParam,
         date_range_max: Optional[Union[datetime, date]] = DateRangeMaxQueryParam,
-        history_id: Optional[EncodedDatabaseIdField] = HistoryIdQueryParam,
-        workflow_id: Optional[EncodedDatabaseIdField] = WorkflowIdQueryParam,
-        invocation_id: Optional[EncodedDatabaseIdField] = InvocationIdQueryParam,
+        history_id: Optional[DecodedDatabaseIdField] = HistoryIdQueryParam,
+        workflow_id: Optional[DecodedDatabaseIdField] = WorkflowIdQueryParam,
+        invocation_id: Optional[DecodedDatabaseIdField] = InvocationIdQueryParam,
         order_by: JobIndexSortByEnum = SortByQueryParam,
         search: Optional[str] = SearchQueryParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
     ) -> List[Dict[str, Any]]:
-        payload = JobIndexPayload(
+        payload = JobIndexPayload.construct(
             states=states,
             user_details=user_details,
             user_id=user_id,

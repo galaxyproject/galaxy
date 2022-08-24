@@ -3,13 +3,12 @@ from typing import (
     List,
 )
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
+from pydantic import Field
+
+from galaxy.schema.schema import Model
 
 
-class ToolDataEntry(BaseModel):
+class ToolDataEntry(Model):
     name: str = Field(
         ...,  # Mark this field as required
         title="Name",
@@ -24,7 +23,7 @@ class ToolDataEntry(BaseModel):
     )
 
 
-class ToolDataEntryList(BaseModel):
+class ToolDataEntryList(Model):
     __root__: List[ToolDataEntry] = Field(
         title="A list with details on individual data tables.",
     )
@@ -38,7 +37,7 @@ class ToolDataDetails(ToolDataEntry):
         example=["value", "dbkey", "name", "path"],
     )
     # We must use an alias since the name 'fields'
-    # shadows a BaseModel attribute
+    # shadows a Model attribute
     fields_value: List[List[str]] = Field(
         alias="fields",
         default=[],
@@ -47,7 +46,7 @@ class ToolDataDetails(ToolDataEntry):
     )
 
 
-class ToolDataField(BaseModel):
+class ToolDataField(Model):
     name: str = Field(
         ...,  # Mark this field as required
         title="Name",
@@ -60,7 +59,7 @@ class ToolDataField(BaseModel):
         example="TabularToolDataField",
     )
     # We must use an alias since the name 'fields'
-    # shadows a BaseModel attribute
+    # shadows a Model attribute
     fields_value: Dict[str, str] = Field(
         ...,  # Mark this field as required
         alias="fields",
@@ -86,7 +85,7 @@ class ToolDataField(BaseModel):
     )
 
 
-class ToolDataItem(BaseModel):
+class ToolDataItem(Model):
     values: str = Field(
         ...,  # Mark this field as required
         title="Values",

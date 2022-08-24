@@ -7,7 +7,6 @@ from typing import (
 )
 
 from pydantic import (
-    BaseModel,
     Extra,
     Field,
     Json,
@@ -18,11 +17,14 @@ from typing_extensions import (
     Literal,
 )
 
-from galaxy.schema.fields import EncodedDatabaseIdField
-from .schema import HistoryIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.schema import (
+    HistoryIdField,
+    Model,
+)
 
 
-class FetchBaseModel(BaseModel):
+class FetchBaseModel(Model):
     class Config:
         allow_population_by_field_name = True
 
@@ -76,7 +78,7 @@ class HdcaDestination(FetchBaseModel):
 
 class LibraryFolderDestination(FetchBaseModel):
     type: Literal["library_folder"]
-    library_folder_id: EncodedDatabaseIdField
+    library_folder_id: DecodedDatabaseIdField  # For some reason this folder ID must NOT have the 'F' prefix
 
 
 class BaseCollectionTarget(BaseFetchDataTarget):
@@ -151,7 +153,7 @@ class FtpImportElement(BaseDataElement):
     collection_type: Optional[str]
 
 
-class ItemsFromModel(BaseModel):
+class ItemsFromModel(Model):
     src: ItemsFromSrc
     path: Optional[str]
     ftp_path: Optional[str]
@@ -241,13 +243,13 @@ class HdcaDataItemsFromTarget(BaseCollectionTarget, ItemsFromModel):
     items_from: ElementsFromType = Field(..., alias="elements_from")
 
 
-class FilesPayload(BaseModel):
+class FilesPayload(Model):
     filename: str
     local_filename: str
 
 
 class BaseDataPayload(FetchBaseModel):
-    history_id: EncodedDatabaseIdField = HistoryIdField
+    history_id: DecodedDatabaseIdField = HistoryIdField
 
     class Config:
         # file payloads are just tacked on, so we need to allow everything

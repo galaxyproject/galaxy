@@ -5,10 +5,11 @@ from typing import (
 )
 
 from pydantic import (
-    BaseModel,
     Extra,
     Field,
 )
+
+from galaxy.schema.schema import Model
 
 
 class RemoteFilesTarget(str, Enum):
@@ -28,7 +29,7 @@ class RemoteFilesDisableMode(str, Enum):
     files = "files"
 
 
-class FilesSourcePlugin(BaseModel):
+class FilesSourcePlugin(Model):
     id: str = Field(
         ...,  # This field is required
         title="ID",
@@ -83,7 +84,7 @@ class FilesSourcePlugin(BaseModel):
         extra = Extra.allow
 
 
-class FilesSourcePluginList(BaseModel):
+class FilesSourcePluginList(Model):
     __root__: List[FilesSourcePlugin] = Field(
         default=[],
         title="List of files source plugins",
