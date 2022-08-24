@@ -1,19 +1,20 @@
 <template>
     <loading-span v-if="license == null" message="Loading license information"> </loading-span>
-    <div v-else-if="license.name" class="text-muted">
+    <span v-else-if="license.name" class="text-muted">
         <link itemprop="license" :href="license.licenseId" />
         <span v-if="title">
             {{ title }}
         </span>
-        {{ license.name }}
-        <external-link :href="license.url" />
+        <external-link :href="license.url">
+            {{ license.name }}
+        </external-link>
         <slot name="buttons"></slot>
-    </div>
-    <div v-else>
+    </span>
+    <span v-else>
         Unknown License (<i>{{ license.url }}</i
         >)
         <slot name="buttons"></slot>
-    </div>
+    </span>
 </template>
 
 <script>
