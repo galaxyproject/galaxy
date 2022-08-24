@@ -18,14 +18,9 @@ const galaxyLicense = __license__;
 
 const versionUserDocumentationUrl = computed(() => {
     const configVal = config.value;
-    return config.value.version_minor.slice(0, 3) == "dev"
+    return config.value.version_minor.slice(0, 3) === "dev"
         ? "https://docs.galaxyproject.org/en/latest/releases/index.html"
         : `${configVal.release_doc_base_url}${configVal.version_major}/releases/${configVal.version_major}_announce_user.html`;
-});
-
-const versionExtra = computed(() => {
-    const configVal = config.value;
-    return Object.entries(configVal.version_extra);
 });
 </script>
 
@@ -34,7 +29,7 @@ const versionExtra = computed(() => {
         <h1>About This Galaxy</h1>
         <div>
             <!-- Galaxy version (detailed), with a link to the release notes -->
-            <h4>Galaxy Version Information</h4>
+            <h2>Galaxy Version Information</h2>
             <p>
                 The Galaxy Server is running version
                 <external-link :href="versionUserDocumentationUrl">
@@ -43,11 +38,16 @@ const versionExtra = computed(() => {
             </p>
             <template v-if="config.version_extra">
                 <p>The server also provides the following extra version information</p>
-                <b-table :striped="true" thead-class="d-none" :items="versionExtra" />
+                <ul>
+                    <li v-for="(value, name, index) in config.version_extra" :key="index">
+                        <strong>{{ name }}</strong>
+                        : {{ value }}
+                    </li>
+                </ul>
             </template>
         </div>
         <div>
-            <h4>Galaxy API Documentation</h4>
+            <h2>Galaxy API Documentation</h2>
             <!-- API documentation link -->
             <p>
                 The Galaxy API is available, and explorable, at
@@ -57,12 +57,12 @@ const versionExtra = computed(() => {
             </p>
         </div>
         <div>
-            <h4>License Information</h4>
+            <h2>License Information</h2>
             <p>The Galaxy Software is licensed under <License :license-id="galaxyLicense" /></p>
         </div>
         <div v-if="config.terms_url">
             <!-- Terms, if available.-->
-            <h4>Terms and Conditions</h4>
+            <h2>Terms and Conditions</h2>
             <p>
                 This Galaxy Server has specified Terms and Conditions that apply to use of the service.
                 <external-link :href="config.terms_url">Review them here.</external-link>
