@@ -49,13 +49,15 @@ class FastAPINotifications:
     ) -> NotificationResponseModel:
         return self.manager.show(notification_id)
 
-    @router.post("/api/notifications", summary="Create a notification message")
+    @router.post("/api/notifications", summary="Create a notification message", require_admin=True)
     def create(
         self,
         payload: NotificationCreateRequestModel,
         trans: ProvidesAppContext = DependsOnTrans,
     ) -> NotificationResponseModel:
-        return self.manager.create(payload.message_text)
+        notification = self.manager.create(payload.message_text)
+        assoc_user_ids = self.manager.associate_user_notification(payload.user_ids, notification)
+        return notification, assoc_user_ids
 
     @router.put("/api/notifications/{notification_id}", summary="Updates a notificaton message")
     def update(
@@ -65,3 +67,5 @@ class FastAPINotifications:
         trans: ProvidesAppContext = DependsOnTrans,
     ) -> NotificationResponseModel:
         return self.manager.update(notification_id, payload.message_text)
+
+    
