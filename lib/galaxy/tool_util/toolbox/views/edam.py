@@ -6,7 +6,6 @@ from typing import (
     Tuple,
 )
 
-from galaxy.datatypes.registry import Registry
 from galaxy.tool_util.edam_util import (
     ROOT_OPERATION,
     ROOT_TOPIC,
@@ -34,8 +33,8 @@ class EdamPanelMode(str, Enum):
 
 
 class EdamToolPanelView(ToolPanelView):
-    def __init__(self, datatypes_registry: Registry, mode: EdamPanelMode = EdamPanelMode.merged):
-        self.edam = datatypes_registry.edam
+    def __init__(self, edam: Dict[str, Dict], mode: EdamPanelMode = EdamPanelMode.merged):
+        self.edam = edam
         self.mode = mode
         self.include_topics = mode in [EdamPanelMode.merged, EdamPanelMode.topics]
         self.include_operations = mode in [EdamPanelMode.merged, EdamPanelMode.operations]
