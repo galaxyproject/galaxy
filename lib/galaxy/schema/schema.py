@@ -42,10 +42,7 @@ from galaxy.schema.fields import (
     EncodedDatabaseIdField,
     ModelClassField,
 )
-from galaxy.schema.types import (
-    OffsetNaiveDatetime,
-    RelativeUrl,
-)
+from galaxy.schema.types import RelativeUrl
 
 USER_MODEL_CLASS_NAME = "User"
 GROUP_MODEL_CLASS_NAME = "Group"
@@ -85,7 +82,7 @@ AccessibleField: bool = Field(
     description="Whether this item is accessible to the current user due to permissions.",
 )
 
-EntityIdField = Field(
+EncodedEntityIdField: EncodedDatabaseIdField = Field(
     ...,
     title="ID",
     description="The encoded ID of this entity.",
@@ -185,10 +182,6 @@ class Model(BaseModel):
     class Config:
         use_enum_values = True  # when using .dict()
         allow_population_by_field_name = True
-        json_encoders = {
-            # This will ensure all IDs are encoded when serialized to JSON
-            DecodedDatabaseIdField: lambda v: DecodedDatabaseIdField.encode(v),
-        }
 
 
 class UserModel(Model):
@@ -352,7 +345,7 @@ class Visualization(Model):  # TODO annotate this model
 class HistoryItemBase(Model):
     """Basic information provided by items contained in a History."""
 
-    id: EncodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField = EncodedEntityIdField
     name: Optional[str] = Field(
         title="Name",
         description="The name of the item.",
@@ -597,7 +590,7 @@ class DCSummary(Model):
     """Dataset Collection summary information."""
 
     model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
-    id: EncodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField = EncodedEntityIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
     collection_type: CollectionType = CollectionTypeField
@@ -609,7 +602,7 @@ class DCSummary(Model):
 class HDAObject(Model):
     """History Dataset Association Object"""
 
-    id: EncodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField = EncodedEntityIdField
     model_class: str = ModelClassField(HDA_MODEL_CLASS_NAME)
     state: Dataset.states = DatasetStateField
     hda_ldda: DatasetSourceType = HdaLddaField
@@ -622,7 +615,7 @@ class HDAObject(Model):
 class DCObject(Model):
     """Dataset Collection Object"""
 
-    id: EncodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField = EncodedEntityIdField
     model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
     collection_type: CollectionType = CollectionTypeField
     populated: Optional[bool] = PopulatedField
@@ -634,7 +627,7 @@ class DCObject(Model):
 class DCESummary(Model):
     """Dataset Collection Element summary information."""
 
-    id: EncodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField = EncodedEntityIdField
     model_class: str = ModelClassField(DCE_MODEL_CLASS_NAME)
     element_index: int = Field(
         ...,
@@ -803,7 +796,7 @@ class HistoryContentItem(Model):
         title="Content Type",
         description="The type of this item.",
     )
-    id: DecodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField = EncodedEntityIdField
 
 
 class UpdateContentItem(HistoryContentItem):
@@ -902,7 +895,7 @@ class HistorySummary(HistoryBase):
     """History summary information."""
 
     model_class: str = ModelClassField(HISTORY_MODEL_CLASS_NAME)
-    id: EncodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField = EncodedEntityIdField
     name: str = Field(
         ...,
         title="Name",
@@ -1120,8 +1113,8 @@ class JobIndexQueryPayload(Model):
     user_id: Optional[DecodedDatabaseIdField] = None
     tool_ids: Optional[List[str]] = None
     tool_ids_like: Optional[List[str]] = None
-    date_range_min: Optional[Union[OffsetNaiveDatetime, date]] = None
-    date_range_max: Optional[Union[OffsetNaiveDatetime, date]] = None
+    date_range_min: Optional[Union[datetime, date]] = None
+    date_range_max: Optional[Union[datetime, date]] = None
     history_id: Optional[DecodedDatabaseIdField] = None
     workflow_id: Optional[DecodedDatabaseIdField] = None
     invocation_id: Optional[DecodedDatabaseIdField] = None
@@ -1426,7 +1419,7 @@ class JobIdResponse(BaseModel):
 
 
 class JobBaseModel(Model):
-    id: EncodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField = EncodedEntityIdField
     model_class: str = ModelClassField(JOB_MODEL_CLASS_NAME)
     tool_id: str = Field(
         ...,
@@ -1467,7 +1460,7 @@ class JobImportHistoryResponse(JobBaseModel):
 
 
 class JobStateSummary(Model):
-    id: EncodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField = EncodedEntityIdField
     model: str = ModelClassField("Job")
     populated_state: DatasetCollection.populated_states = PopulatedStateField
     states: Dict[Job.states, int] = Field(
@@ -1512,7 +1505,7 @@ class JobSummary(JobBaseModel):
 
 
 class DatasetSourceId(Model):
-    id: EncodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField = EncodedEntityIdField
     src: DatasetSourceType = Field(
         ...,
         title="Source",
@@ -1646,7 +1639,7 @@ class JobFullDetails(JobDetails):
 
 
 class StoredWorkflowSummary(Model):
-    id: EncodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField = EncodedEntityIdField
     model_class: str = ModelClassField(STORED_WORKFLOW_MODEL_CLASS_NAME)
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
@@ -3024,6 +3017,7 @@ class NotificationListResponseModel(BaseModel):
 
 class NotificationCreateRequestModel(BaseModel):
     message_text: str
+    user_ids: List[DecodedDatabaseIdField]
 
 
 class NotificationUpdateRequestModel(BaseModel):
