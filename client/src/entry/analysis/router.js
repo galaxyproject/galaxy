@@ -3,9 +3,10 @@ import VueRouter from "vue-router";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 
-// modules
+// these modules are mounted below the masthead.
 import Analysis from "entry/analysis/modules/Analysis";
 import Home from "entry/analysis/modules/Home";
+import Login from "entry/analysis/modules/Login";
 import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
 
 // routes
@@ -419,6 +420,7 @@ export function getRouter(Galaxy) {
                     },
                 ],
             },
+            { path: "/login/start", component: Login },
             { path: "/workflows/edit", component: WorkflowEditorModule },
             ...AdminRoutes,
             ...LibraryRoutes,
