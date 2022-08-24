@@ -18,7 +18,6 @@ try:
         pathmapper,
         process,
         workflow,
-        cuda,
     )
 except ImportError:
     main = None  # type: ignore[assignment]
@@ -26,7 +25,6 @@ except ImportError:
     job = None  # type: ignore[assignment]
     process = None  # type: ignore[assignment]
     pathmapper = None  # type: ignore[assignment]
-    cuda = None  # type: ignore[assignment]
 
 try:
     from cwltool.context import (
@@ -71,13 +69,6 @@ try:
 except ImportError:
     visit_class = None  # type: ignore[assignment]
     normalizeFilesDirs = None  # type: ignore[assignment]
-
-try:
-    from cwltool.cuda import (
-        cuda_version_and_device_count,
-    )
-except ImportError:
-    cuda_version_and_device_count = None  # type: ignore[assignment]
 
 try:
     import shellescape
@@ -150,6 +141,5 @@ __all__ = (
     "StdFsAccess",
     "visit_class",
     "workflow",
-    "cuda",
     "yaml_no_ts",
 )

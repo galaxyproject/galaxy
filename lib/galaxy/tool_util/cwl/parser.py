@@ -81,7 +81,6 @@ SUPPORTED_TOOL_REQUIREMENTS = [
     "SubworkflowFeatureRequirement",
     "StepInputExpressionRequirement",
     "MultipleInputFeatureRequirement",
-    "CUDARequirement",
 ]
 
 
