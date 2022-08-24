@@ -83,6 +83,14 @@ export default {
             return this.dsc.contents_url.substring(1);
         },
     },
+    watch: {
+        history(newHistory, oldHistory) {
+            if (newHistory.id != oldHistory.id) {
+                // Send up event closing out selected collection on history change.
+                this.$emit("update:selected-collections", []);
+            }
+        },
+    },
     methods: {
         updateDsc(collection, fields) {
             updateContentFields(collection, fields).then((response) => {
