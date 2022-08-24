@@ -3282,6 +3282,7 @@ class NotificationListResponseModel(BaseModel):
 
 class NotificationCreateRequestModel(BaseModel):
     message_text: str
+    user_ids: List[DecodedDatabaseIdField]
 
 
 class NotificationUpdateRequestModel(BaseModel):
