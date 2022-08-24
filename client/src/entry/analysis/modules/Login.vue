@@ -1,7 +1,14 @@
 <template>
     <div class="m-3">
         <ChangePassword v-if="hasToken" />
-        <LoginIndex v-else />
+        <LoginIndex
+            v-else
+            :show_welcome_with_login="config.show_welcome_with_login"
+            :welcome_url="config.welcome_url"
+            :terms_url="config.terms_url"
+            :registration_warning_message="config.registration_warning_message"
+            :mailing_join_addr="config.mailing_join_addr"
+            :server_mail_configured="config.server_mail_configured" />
     </div>
 </template>
 
@@ -16,6 +23,9 @@ export default {
         LoginIndex,
     },
     computed: {
+        config() {
+            return getGalaxyInstance().config;
+        },
         hasToken() {
             const Galaxy = getGalaxyInstance();
             return Galaxy.params.token || Galaxy.params.expired_user;
