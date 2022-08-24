@@ -186,7 +186,7 @@ export default {
                 display: `/datasets/${id}/display/?preview=True`,
                 edit: `/datasets/edit/${id}`,
                 showDetails: `/datasets/${id}/details`,
-                reportError: `/datasets/error?dataset_id=${id}`,
+                reportError: `/datasets/${id}/error`,
                 rerun: `/tool_runner/rerun?id=${id}`,
                 visualize: `/visualizations?dataset_id=${id}`,
             };
