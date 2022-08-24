@@ -429,7 +429,7 @@ class ConcreteObjectStore(BaseObjectStore):
 
     def start_cache_monitor(self):
         # Clean cache only if value is set in galaxy.ini
-        if self.cache_size != -1 and self.enable_cache_monitor:
+        if self.cache_size != -1 and self.cache_monitor_enabled:
             # Convert GBs to bytes for comparison
             self.cache_size = self.cache_size * ONE_GIGA_BYTE
             # Helper for interruptable sleep
@@ -439,7 +439,7 @@ class ConcreteObjectStore(BaseObjectStore):
             log.info("Cache cleaner manager started")
 
     def __cache_monitor(self):
-        time.sleep(2)  # Wait for things to load before starting the monitor
+        time.sleep(self.cache_monitor_startup_delay)  # Wait for things to load before starting the monitor
         while self.running:
             total_size = 0
             # Is this going to be too expensive of an operation to be done frequently?
@@ -456,8 +456,8 @@ class ConcreteObjectStore(BaseObjectStore):
                     file_list.append(file_tuple)
             # Sort the file list (based on access time)
             file_list.sort()
-            # Initiate cleaning once within 10% of the defined cache size?
-            cache_limit = self.cache_size * 0.9
+            # Initiate cleaning once we reach cache_monitor_cache_limit percntage of the defined cache size?
+            cache_limit = self.cache_size * self.cache_monitor_cache_limit
             if total_size > cache_limit:
                 log.info(
                     "Initiating cache cleaning: current cache size: %s; clean until smaller than: %s",
@@ -470,7 +470,7 @@ class ConcreteObjectStore(BaseObjectStore):
                 # For now, delete enough to leave at least 10% of the total cache free
                 delete_this_much = total_size - cache_limit
                 self.__clean_cache(file_list, delete_this_much)
-            self.sleeper.sleep(30)  # Test cache size every 30 seconds?
+            self.sleeper.sleep(self.cache_monitor_interval)  # Test cache size every 30 seconds?
 
     def __clean_cache(self, file_list, delete_this_much):
         """Keep deleting files from the file_list until the size of the deleted

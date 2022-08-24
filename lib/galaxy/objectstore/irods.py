@@ -80,6 +80,13 @@ def parse_config_xml(config_xml):
         cache_size = float(c_xml[0].get("size", -1))
         staging_path = c_xml[0].get("path", None)
 
+        cm_xml = config_xml.findall("cache_monitor")
+        if cm_xml:
+            enabled = bool(cm_xml[0].get("enabled", False))
+            cache_limit = float(cm_xml[0].get("cache_limit", 0.9))
+            interval = int(cm_xml[0].get("interval", 30))
+            startup_delay = int(cm_xml[0].get("startup_delay", 5))
+
         attrs = ("type", "path")
         e_xml = config_xml.findall("extra_dir")
         if not e_xml:
@@ -106,6 +113,12 @@ def parse_config_xml(config_xml):
             "cache": {
                 "size": cache_size,
                 "path": staging_path,
+            },
+            "cache_monitor": {
+                "enabled": enabled,
+                "cache_limit": cache_limit,
+                "interval": interval,
+                "startup_delay": startup_delay,
             },
             "extra_dirs": extra_dirs,
         }
@@ -137,6 +150,12 @@ class CloudConfigMixin:
             "cache": {
                 "size": self.cache_size,
                 "path": self.staging_path,
+            },
+            "cache_monitor": {
+                "enabled": self.cache_monitor_enabed,
+                "cache_limit": self.cache_monitor_cache_limit,
+                "interval": self.cache_monitor_interval,
+                "startup_delay": self.cache_monitor_startup_delay
             },
         }
 
@@ -203,7 +222,15 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         if self.staging_path is None:
             _config_dict_error("cache->path")
-        self.enable_cache_monitor = config_dict.get("enable_cache_monitor", True)
+
+        cache_monitor_dict = config_dict["cache_monitor"]
+        if cache_monitor_dict is not None:
+            self.cache_monitor_enabled = cache_monitor_dict.get("enabled", False)
+            self.cache_monitor_cache_limit = cache_monitor_dict.get("cache_limit", 0.9)
+            self.cache_monitor_interval = cache_monitor_dict.get("interval", 30)
+            self.cache_monitor_startup_delay = cache_monitor_dict.get("startup_delay", 5)
+        else:
+            self.cache_monitor_enabled = False
 
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         if not extra_dirs:
