@@ -53,6 +53,8 @@ class Registry:
             None if not edam_ontology_path or not os.path.exists(edam_ontology_path) else edam_ontology_path,
             "format_",
             "data_",
+            "operation_",
+            "topic_",
         )
 
         self.log = logging.getLogger(__name__)

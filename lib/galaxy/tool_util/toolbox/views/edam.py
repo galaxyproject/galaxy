@@ -1,15 +1,13 @@
 import logging
-import os
 from enum import Enum
 from typing import (
     Dict,
     List,
-    Optional,
     Tuple,
 )
+from galaxy.datatypes.registry import Registry
 
 from galaxy.tool_util.edam_util import (
-    load_edam_tree,
     ROOT_OPERATION,
     ROOT_TOPIC,
 )
@@ -36,13 +34,8 @@ class EdamPanelMode(str, Enum):
 
 
 class EdamToolPanelView(ToolPanelView):
-    def __init__(self, edam_ontology_path: Optional[str], mode: EdamPanelMode = EdamPanelMode.merged):
-        edam = load_edam_tree(
-            None if not edam_ontology_path or not os.path.exists(edam_ontology_path) else edam_ontology_path,
-            "operation_",
-            "topic_",
-        )
-        self.edam = edam
+    def __init__(self, datatypes_registry: Registry, mode: EdamPanelMode = EdamPanelMode.merged):
+        self.edam = datatypes_registry.edam
         self.mode = mode
         self.include_topics = mode in [EdamPanelMode.merged, EdamPanelMode.topics]
         self.include_operations = mode in [EdamPanelMode.merged, EdamPanelMode.operations]
