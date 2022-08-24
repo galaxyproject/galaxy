@@ -38,7 +38,7 @@ const edamLink = (edamIRI) => `https://edamontology.github.io/edam-browser/#${ed
             can be filtered by in the History, by expanding "search datasets".
         </p>
         <DelayedInput placeholder="filter extensions" class="mb-3" :delay="200" @change="(val) => (filter = val)" />
-        <b-table striped small sort-icon-left :items="filteredDatatypes" :fields="fields">
+        <b-table striped small sort-icon-left sort-by="extension" :items="filteredDatatypes" :fields="fields">
             <template v-slot:cell(extension)="row">
                 <span v-b-tooltip.hover :title="row.item.description">
                     {{ row.item.extension }}
