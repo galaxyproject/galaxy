@@ -5,8 +5,8 @@ from typing import (
     List,
     Tuple,
 )
-from galaxy.datatypes.registry import Registry
 
+from galaxy.datatypes.registry import Registry
 from galaxy.tool_util.edam_util import (
     ROOT_OPERATION,
     ROOT_TOPIC,
