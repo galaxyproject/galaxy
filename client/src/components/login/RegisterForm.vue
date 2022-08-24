@@ -140,12 +140,10 @@ export default {
         },
     },
     methods: {
-        toggleLogin: function () {
-            if (this.$root.toggleLogin) {
-                this.$root.toggleLogin();
-            }
+        toggleLogin() {
+            this.$emit("toggle-login");
         },
-        submit: function (method) {
+        submit(method) {
             this.disableCreate = true;
             const rootUrl = getAppRoot();
             axios

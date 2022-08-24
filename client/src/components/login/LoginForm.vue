@@ -127,9 +127,7 @@ export default {
     },
     methods: {
         toggleLogin() {
-            if (this.$root.toggleLogin) {
-                this.$root.toggleLogin();
-            }
+            this.$emit("toggle-login");
         },
         submitGalaxyLogin(method) {
             if (localStorage.getItem("redirect_url")) {
