@@ -89,8 +89,6 @@ class DatatypesApiTestCase(ApiTestCase):
         edam_formats = response.json()
         assert isinstance(edam_formats, dict)
         assert edam_formats["ab1"] == "format_3000"
-        time.sleep(2)
-
         response = self._get("datatypes/edam_formats?id_only=false")
         self._assert_status_code_is(response, 200)
         edam_formats = response.json()
@@ -105,8 +103,6 @@ class DatatypesApiTestCase(ApiTestCase):
         edam_data = response.json()
         assert isinstance(edam_data, dict)
         assert edam_data["ab1"] == "data_0924"
-        time.sleep(2)
-
         response = self._get("datatypes/edam_data?id_only=false")
         edam_data = response.json()
         assert isinstance(edam_data, dict)
