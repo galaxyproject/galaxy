@@ -75,6 +75,7 @@ const showVersions = computed(() => props.options.versions?.length > 1);
 
 <template>
     <div>
+        <div class="underlay sticky-top" />
         <div class="tool-header sticky-top bg-secondary px-2 py-1 rounded">
             <div class="d-flex justify-content-between">
                 <div class="py-1 d-flex flex-wrap flex-gapx-1">
@@ -137,6 +138,17 @@ $shadow: 1px 1px 6px rgba($brand-dark, 0.2), 0.4px 0.4px 2px rgba($brand-dark, 0
         margin: 0;
         display: inline;
     }
+}
+
+.underlay::after {
+    content: "";
+    display: block;
+    position: absolute;
+    top: -$margin-h;
+    left: -$margin-v;
+    right: -$margin-v;
+    height: 50px;
+    background: linear-gradient($white 75%, transparent);
 }
 
 .fa-wrench {
