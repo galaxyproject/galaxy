@@ -13,8 +13,8 @@ export function useDetailedDatatypes() {
     async function getDatatypes() {
         try {
             const datatypesPromise = axios.get(`${getAppRoot()}api/datatypes?extension_only=false`);
-            const datatypeEDAMFormatsPromise = axios.get(`${getAppRoot()}api/datatypes/edam_formats?id_only=false`);
-            const datatypeEDAMDataPromise = axios.get(`${getAppRoot()}api/datatypes/edam_data?id_only=false`);
+            const datatypeEDAMFormatsPromise = axios.get(`${getAppRoot()}api/datatypes/edam_formats/detailed`);
+            const datatypeEDAMDataPromise = axios.get(`${getAppRoot()}api/datatypes/edam_data/detailed`);
 
             const [baseTypes, datatypeEDAMFormats, datatypeEDAMData] = await Promise.all([
                 datatypesPromise,
