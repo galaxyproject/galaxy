@@ -12,6 +12,7 @@ from .navigates_galaxy import NavigatesGalaxy
 class GalaxySeleniumContext(NavigatesGalaxy):
     url: str
     target_url_from_selenium: str
+    configured_driver: ConfiguredDriver
 
     def build_url(self, url: str, for_selenium: bool = True) -> str:
         if for_selenium:
