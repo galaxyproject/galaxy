@@ -68,7 +68,7 @@ class FastAPIDatatypes:
         upload_only: Optional[bool] = UploadOnlyQueryParam,
     ) -> Union[List[DatatypeDetails], List[str]]:
         """Gets the list of all available data types."""
-        return view_index(self.datatypes_registry, extension_only, upload_only)
+        return await view_index(self.datatypes_registry, extension_only, upload_only)
 
     @router.get(
         "/api/datatypes/mapping",
@@ -77,7 +77,7 @@ class FastAPIDatatypes:
     )
     async def mapping(self) -> DatatypesMap:
         """Gets mappings for data types."""
-        return view_mapping(self.datatypes_registry)
+        return await view_mapping(self.datatypes_registry)
 
     @router.get(
         "/api/datatypes/types_and_mapping",
@@ -93,8 +93,8 @@ class FastAPIDatatypes:
         mapping information from (/api/datatypes/mapping) into a single
         response."""
         return DatatypesCombinedMap(
-            datatypes=view_index(self.datatypes_registry, extension_only, upload_only),
-            datatypes_mapping=view_mapping(self.datatypes_registry),
+            datatypes=await view_index(self.datatypes_registry, extension_only, upload_only),
+            datatypes_mapping=await view_mapping(self.datatypes_registry),
         )
 
     @router.get(
@@ -104,7 +104,7 @@ class FastAPIDatatypes:
     )
     async def sniffers(self) -> List[str]:
         """Gets the list of all installed data type sniffers."""
-        return view_sniffers(self.datatypes_registry)
+        return await view_sniffers(self.datatypes_registry)
 
     @router.get(
         "/api/datatypes/converters",
@@ -113,7 +113,7 @@ class FastAPIDatatypes:
     )
     async def converters(self) -> DatatypeConverterList:
         """Gets the list of all installed converters."""
-        return view_converters(self.datatypes_registry)
+        return await view_converters(self.datatypes_registry)
 
     @router.get(
         "/api/datatypes/edam_formats",
@@ -125,7 +125,7 @@ class FastAPIDatatypes:
         id_only: Optional[bool] = IdentifierOnly,
     ) -> Union[DatatypesEDAMDetailsDict, Dict[str, str]]:
         """Gets a map of datatypes and their corresponding EDAM formats."""
-        return view_edam_formats(self.datatypes_registry, id_only)
+        return await view_edam_formats(self.datatypes_registry, id_only)
 
     @router.get(
         "/api/datatypes/edam_data",
@@ -137,4 +137,4 @@ class FastAPIDatatypes:
         id_only: Optional[bool] = IdentifierOnly,
     ) -> Union[DatatypesEDAMDetailsDict, Dict[str, str]]:
         """Gets a map of datatypes and their corresponding EDAM data."""
-        return view_edam_data(self.datatypes_registry, id_only)
+        return await view_edam_data(self.datatypes_registry, id_only)

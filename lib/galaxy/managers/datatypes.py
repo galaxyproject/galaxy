@@ -18,7 +18,7 @@ from galaxy.datatypes.data import Data
 from galaxy.datatypes.registry import Registry
 
 
-def view_index(
+async def view_index(
     datatypes_registry: Registry, extension_only: Optional[bool] = True, upload_only: Optional[bool] = True
 ) -> Union[List[DatatypeDetails], List[str]]:
     if extension_only:
@@ -35,7 +35,7 @@ def view_index(
         return rval
 
 
-def view_mapping(datatypes_registry: Registry) -> DatatypesMap:
+async def view_mapping(datatypes_registry: Registry) -> DatatypesMap:
     ext_to_class_name: Dict[str, str] = {}
     classes = []
     for k, v in datatypes_registry.datatypes_by_extension.items():
@@ -58,7 +58,7 @@ def view_mapping(datatypes_registry: Registry) -> DatatypesMap:
     return DatatypesMap(ext_to_class_name=ext_to_class_name, class_to_classes=class_to_classes)
 
 
-def view_types_and_mapping(
+async def view_types_and_mapping(
     datatypes_registry: Registry, extension_only: Optional[bool] = True, upload_only: Optional[bool] = True
 ) -> DatatypesCombinedMap:
     return DatatypesCombinedMap(
@@ -67,7 +67,7 @@ def view_types_and_mapping(
     )
 
 
-def view_sniffers(datatypes_registry: Registry) -> List[str]:
+async def view_sniffers(datatypes_registry: Registry) -> List[str]:
     rval: List[str] = []
     for sniffer_elem in datatypes_registry.sniffer_elems:
         datatype = sniffer_elem.get("type")
@@ -76,7 +76,7 @@ def view_sniffers(datatypes_registry: Registry) -> List[str]:
     return rval
 
 
-def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
+async def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
     converters = []
     for (source_type, targets) in datatypes_registry.datatype_converters.items():
         for target_type in targets:
@@ -90,7 +90,7 @@ def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
     return parse_obj_as(DatatypeConverterList, converters)
 
 
-def _get_edam_details(datatypes_registry: Registry, edam_ids: Dict[str, str]):
+async def _get_edam_details(datatypes_registry: Registry, edam_ids: Dict[str, str]):
     details_dict = {}
     for (format, edam_iri) in edam_ids.items():
         edam_details = datatypes_registry.edam.get(edam_iri, {})
@@ -104,22 +104,22 @@ def _get_edam_details(datatypes_registry: Registry, edam_ids: Dict[str, str]):
     return details_dict
 
 
-def view_edam_formats(
+async def view_edam_formats(
     datatypes_registry: Registry, id_only: Optional[bool] = True
 ) -> Union[Dict[str, str], DatatypesEDAMDetailsDict]:
     if id_only:
         return datatypes_registry.edam_formats
     else:
-        return _get_edam_details(datatypes_registry, datatypes_registry.edam_formats)
+        return await _get_edam_details(datatypes_registry, datatypes_registry.edam_formats)
 
 
-def view_edam_data(
+async def view_edam_data(
     datatypes_registry: Registry, id_only: Optional[bool] = True
 ) -> Union[Dict[str, str], DatatypesEDAMDetailsDict]:
     if id_only:
         return datatypes_registry.edam_data
     else:
-        return _get_edam_details(datatypes_registry, datatypes_registry.edam_data)
+        return await _get_edam_details(datatypes_registry, datatypes_registry.edam_data)
 
 
 __all__ = (
