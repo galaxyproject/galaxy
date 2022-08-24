@@ -1172,10 +1172,7 @@ class Param(Yaml):
         # and that it is set to a valid CASTEP task
         pattern = re.compile(r"^TASK ?: ?([A-Z\+]*)$", flags=re.IGNORECASE | re.MULTILINE)
         task = file_prefix.search(pattern)
-        if task and task.group(1).upper() in valid_tasks:
-            return True
-        else:
-            return False
+        return task and task.group(1).upper() in valid_tasks
 
 
 @build_sniff_from_prefix
@@ -1200,7 +1197,4 @@ class FormattedDensity(Text):
         grid_points = "of grid_points"
         handle = file_prefix.string_io()
         lines = handle.readlines()
-        if lines[0].strip() == begin_header and lines[9].strip() == end_header and lines[10].strip() == grid_points:
-            return True
-        else:
-            return False
+        return lines[0].strip() == begin_header and lines[9].strip() == end_header and lines[10].strip() == grid_points
