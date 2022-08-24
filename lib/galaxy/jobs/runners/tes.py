@@ -301,12 +301,14 @@ class TESJobRunner(AsynchronousJobRunner):
 
         remote_image, staging_out_image = self.get_docker_image(job_wrapper)
 
-        command_line = build_command(self,
-                                    job_wrapper=job_wrapper,
-                                    include_metadata=False,
-                                    create_tool_working_directory=False,
-                                    include_work_dir_outputs=False,
-                                    remote_job_directory=job_wrapper.working_directory)
+        command_line = build_command(
+            self,
+            job_wrapper=job_wrapper,
+            include_metadata=False,
+            create_tool_working_directory=False,
+            include_work_dir_outputs=False,
+            remote_job_directory=job_wrapper.working_directory
+        )
 
         env_var = self.env_variables(job_wrapper)
         staging_out_url = None
@@ -356,9 +358,6 @@ class TESJobRunner(AsynchronousJobRunner):
             return
 
         job_id = job_wrapper.job_id
-        if hasattr(job_wrapper, 'task_id'):
-            job_id = f"{job_id}_{job_wrapper.task_id}"
-            
         client_args = self.get_upload_path(job_id)
         job_destination = job_wrapper.job_destination
         galaxy_id_tag = job_wrapper.get_id_tag()
@@ -414,7 +413,7 @@ class TESJobRunner(AsynchronousJobRunner):
         """
         logs_data = data.get('logs')
         log_lines = []
-        for log in logs_data:
+        for log in (logs_data or []):
             if ('logs' in log):
                 for log_output in log.get('logs'):
                     log_line = log_output.get(key)
@@ -495,7 +494,6 @@ class TESJobRunner(AsynchronousJobRunner):
 
     def recover(self, job: model.Job, job_wrapper: JobWrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
-        # TODO Check if we need any changes here
         job_id = job.get_job_runner_external_id()
         galaxy_id_tag = job_wrapper.get_id_tag()
         if job_id is None:
@@ -503,7 +501,6 @@ class TESJobRunner(AsynchronousJobRunner):
             return
         job_state = TESJobState(job_wrapper=job_wrapper, files_dir=self.app.config.cluster_files_directory)
         job_state.job_id = str(job_id)
-        job_state.command_line = job.get_command_line()
         job_state.job_wrapper = job_wrapper
         job_state.job_destination = job_wrapper.job_destination
         job_state.user_log = os.path.join(self.app.config.cluster_files_directory, 'galaxy_%s.tes.log' % galaxy_id_tag)
