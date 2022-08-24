@@ -639,6 +639,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 # client app route
                 # TODO: might be better as '/:username/login', '/:username/logout'
                 url_for(controller="root", action="login"),
+                url_for(controller="login", action="start"),
                 # mako app routes
                 url_for(controller="user", action="login"),
                 url_for(controller="user", action="logout"),

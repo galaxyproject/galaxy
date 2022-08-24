@@ -84,7 +84,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
             if success:
                 return trans.response.send_redirect(redirect_uri)
-        return trans.response.send_redirect(web.url_for("/login/start", redirect=redirect))
+        return trans.response.send_redirect(web.url_for(controller="login", action="start", redirect=redirect))
 
     # ---- Tool related -----------------------------------------------------
 
