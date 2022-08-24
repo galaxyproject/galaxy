@@ -17,6 +17,7 @@ The converted sys.argv will include `-c path-to-alembic.ini`.
 The optional `-c` argument name is renamed to `--galaxy-config`.
 """
 
+import logging
 import os
 import sys
 
@@ -27,6 +28,9 @@ from galaxy.model.migrations.scripts import (
     LegacyScripts,
     verify_database_is_initialized,
 )
+
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 
 def run():
