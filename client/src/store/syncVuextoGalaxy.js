@@ -7,7 +7,7 @@
 import { defer } from "rxjs";
 import { shareReplay } from "rxjs/operators";
 import { getGalaxyInstance } from "app";
-import { waitForInit } from "utils/observable/waitForInit";
+import { waitForInit } from "utils/observable";
 
 // store subscriptions
 import { syncUserToGalaxy } from "store/userStore";

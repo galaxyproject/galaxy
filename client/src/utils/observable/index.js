@@ -1,20 +1,22 @@
-export { activity } from "./activity";
-export { burst as debounceBurst } from "./burst";
-export { chunk, chunkParam, chunkProp } from "./chunk";
-export { decay } from "./decay";
-export { firstValueFrom } from "./firstValueFrom";
-export { hydrate } from "./hydrate";
-export { monitorBackboneModel } from "./monitorBackboneModel";
-export { monitorXHR } from "./monitorXHR";
-export { nth } from "./nth";
-export { shareButDie } from "./shareButDie";
-export { show } from "./show";
-export { singleton } from "./singleton";
-export { throttleDistinct } from "./throttleDistinct";
-export { toggle } from "./toggle";
-export { waitForInit } from "./waitForInit";
-export { whenAny } from "./whenAny";
-export { watchVuexSelector } from "./vuex";
+import { fromEvent, interval, timer } from "rxjs";
+import { map, filter, take, takeUntil } from "rxjs/operators";
 
-// Do not export rxjsDebugging in the barrel file because it has global consequences
-// export { initSpy } from "./rxjsDebugging";
+/**
+ * Creates an observable that emits a single value once it appears, as defined by the selector
+ * function. Emits that value and stops. Times out after designated period in the event that the
+ * thing never shows up.
+ */
+export function waitForInit(selector, cfg = {}) {
+    const { spamTime = 100, timeout = 10000, isValid = (val) => val !== undefined } = cfg;
+
+    return interval(spamTime).pipe(
+        map(() => selector()),
+        filter(isValid),
+        take(1),
+        takeUntil(timer(timeout))
+    );
+}
+
+export function monitorBackboneModel(sourceModel, evtName = "change") {
+    return fromEvent(sourceModel, evtName).pipe(map(([model]) => model.toJSON()));
+}
