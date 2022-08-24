@@ -203,6 +203,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         if self.staging_path is None:
             _config_dict_error("cache->path")
+        self.enable_cache_monitor = config_dict.get("enable_cache_monitor", True)
 
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         if not extra_dirs:
@@ -228,6 +229,11 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         # Set connection timeout
         self.session.connection_timeout = self.timeout
         log.debug("irods_pt __init__: %s", ipt_timer)
+
+        self._initialize()
+
+    def _initialize(self):
+        self.start_cache_monitor()
 
     def shutdown(self):
         # This call will cleanup all the connections in the connection pool
