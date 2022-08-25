@@ -1077,7 +1077,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         """
         POST /api/users/{id}/beacon
 
-
         :param id: the encoded id of the user
         :type  id: str
 
