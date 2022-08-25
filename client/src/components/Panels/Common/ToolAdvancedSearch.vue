@@ -1,21 +1,35 @@
 <template>
-    <ToolsProvider
-        v-slot="{ loading, result: itemsLoaded, count: totalItems }"
-        :filter-settings="filterSettings"
-        :show-help="showHelp === 'true'">
+    <ToolsProvider v-slot="{ loading, result: itemsLoaded }" :filter-settings="filterSettings">
         <section>
             <div class="mb-2">
-                <span class="row">
+                <span class="row mb-1">
                     <span class="col">
-                        <h4 class="d-inline-block align-middle">Advanced Tool Search Results</h4>
-                        <b-button v-if="hasFilters" class="float-right" size="sm" @click="onClear">
-                            <icon icon="redo" />
-                            <span>{{ "Clear Search" | localize }}</span>
+                        <h4 class="d-inline-block">Advanced Tool Search Results</h4>
+                        <b-button
+                            v-if="hasFilters && itemsLoaded.length !== 0"
+                            class="float-right"
+                            size="sm"
+                            :pressed="listView"
+                            :variant="listView ? 'info' : 'secondary'"
+                            data-description="show list view for tools"
+                            @click="listView = !listView">
+                            <icon icon="list" />
+                            <span>{{ "List View" | localize }}</span>
                         </b-button>
                     </span>
                 </span>
                 <span v-if="itemsLoaded.length !== 0 && hasFilters" class="row">
-                    <span class="col"> (found {{ itemsLoaded.length }} of {{ totalItems }} tools) </span>
+                    <span class="col d-inline-block">
+                        (found {{ itemsLoaded.length }} tools for
+                        <a id="popover-filters" href="javascript:void(0)">filters</a>)
+                        <b-popover target="popover-filters" triggers="hover" placement="top">
+                            <template v-slot:title>Filters</template>
+                            <div v-for="(value, filter) in filterSettings" :key="filter">
+                                <b>{{ filter }}</b
+                                >: {{ value }}
+                            </div>
+                        </b-popover>
+                    </span>
                 </span>
             </div>
             <div>
@@ -29,55 +43,7 @@
                     No tools found for selected filter(s): {{ filterSettings }}
                 </b-alert>
                 <div v-else>
-                    <b-card v-for="(tool, key) in itemsLoaded" :key="key" no-body>
-                        <b-card-header
-                            v-b-toggle="'accordion-' + key"
-                            :disabled="!hasHelp(tool.help)"
-                            :role="hasHelp(tool.help) ? 'button' : ''">
-                            <span class="pl-2 d-flex justify-content-between">
-                                <span class="row">
-                                    <a
-                                        :href="tool.target === 'galaxy_main' ? 'javascript:void(0)' : tool.link"
-                                        @click.stop="onOpen(tool)">
-                                        <b>{{ tool.name }}</b> {{ tool.description }}
-                                    </a>
-                                    <b-badge class="ml-1">{{ tool.panel_section_name }}</b-badge>
-                                    <b-badge
-                                        v-if="tool.is_workflow_compatible"
-                                        v-b-tooltip.hover
-                                        class="ml-1"
-                                        variant="success"
-                                        title="Can use this tool in Workflows"
-                                        >Workflow</b-badge
-                                    >
-                                    <b-badge v-if="tool.hidden" class="ml-1" variant="danger">Hidden</b-badge>
-                                </span>
-                                <i v-if="hasHelp(tool.help)" class="text-secondary"> Click here to expand tool info </i>
-                            </span>
-                        </b-card-header>
-                        <b-collapse :id="'accordion-' + key" role="tabpanel">
-                            <b-card-body>
-                                <p
-                                    v-if="helpSummary(tool.help)"
-                                    :id="'collapseInfo-' + key"
-                                    class="collapse show"
-                                    v-html="helpSummary(tool.help)"></p>
-                                <a
-                                    v-if="helpSummary(tool.help)"
-                                    data-toggle="collapse"
-                                    :href="'#collapseInfo-' + key"
-                                    role="button"
-                                    aria-expanded="false"
-                                    :aria-controls="'collapseInfo-' + key">
-                                    Show more/less
-                                </a>
-                                <p
-                                    :id="'collapseInfo-' + key"
-                                    :class="helpSummary(tool.help) ? 'collapse' : ''"
-                                    v-html="tool.help"></p>
-                            </b-card-body>
-                        </b-collapse>
-                    </b-card>
+                    <ToolAdvancedSearchResults :tools="itemsLoaded" :list-view="listView" />
                 </div>
                 <b-button
                     v-if="hasFilters && !loading && offset > 200"
@@ -94,15 +60,16 @@
         </section>
     </ToolsProvider>
 </template>
+
 <script>
-import { getGalaxyInstance } from "app";
 import LoadingSpan from "components/LoadingSpan";
-import { openGlobalUploadModal } from "components/Upload";
 import { ToolsProvider } from "components/providers/storeProviders";
+import ToolAdvancedSearchResults from "./ToolAdvancedSearchResults";
 
 export default {
     components: {
         LoadingSpan,
+        ToolAdvancedSearchResults,
         ToolsProvider,
     },
     props: {
@@ -122,18 +89,11 @@ export default {
             type: String,
             default: "",
         },
-        showHelp: {
-            type: String,
-            default: "false",
-        },
-        help: {
-            type: String,
-            default: "",
-        },
     },
     data() {
         return {
             offset: 0,
+            listView: false,
         };
     },
     computed: {
@@ -143,7 +103,7 @@ export default {
                 if (value && value !== "") {
                     if (filter === "panelSectionName") {
                         newFilterSettings["panel_section_name"] = value;
-                    } else if (filter !== "showHelp") {
+                    } else {
                         newFilterSettings[filter] = value;
                     }
                 }
@@ -164,48 +124,8 @@ export default {
         onScroll(e) {
             this.offset = e.target.scrollTop;
         },
-        hasHelp(help) {
-            return help && help !== "\n";
-        },
-        onClear() {
-            this.$router.push({ path: "/tools/advanced_search" });
-        },
-        onOpen(tool) {
-            if (tool.id === "upload1") {
-                openGlobalUploadModal();
-            } else if (tool.form_style === "regular") {
-                const Galaxy = getGalaxyInstance();
-                // encode spaces in tool.id
-                const toolId = tool.id;
-                const toolVersion = tool.version;
-                Galaxy.router.push(`/?tool_id=${encodeURIComponent(toolId)}&version=${toolVersion}`);
-            }
-        },
         scrollToTop() {
             document.querySelector(".center-panel").scrollTop = 0;
-        },
-        helpSummary(help) {
-            const parser = new DOMParser();
-            const helpDoc = parser.parseFromString(help, "text/html");
-            const xpaths = [
-                "//strong[text()='What it does']/../following-sibling::*",
-                "//strong[text()='What It Does']/../following-sibling::*",
-                "//h1[text()='Synopsis']/following-sibling::*",
-                "//strong[text()='Syntax']/../following-sibling::*",
-            ];
-            const matches = [];
-            xpaths.forEach((xpath) => {
-                matches.push(
-                    helpDoc.evaluate(xpath, helpDoc, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
-                );
-            });
-            let returnVal = null;
-            matches.forEach((match) => {
-                if (match) {
-                    returnVal = match.innerHTML + "\n";
-                }
-            });
-            return returnVal;
         },
     },
 };

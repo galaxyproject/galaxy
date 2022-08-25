@@ -1,8 +1,6 @@
 export const state = {
     toolById: {},
     toolsList: [],
-    totalToolCount: undefined,
-    hasHelp: true,
 };
 
 import Vue from "vue";
@@ -60,15 +58,12 @@ const actions = {
         const { data } = await axios.get(`${getAppRoot()}api/tools/${toolId}`);
         commit("saveToolForId", { toolId, toolData: data });
     },
-    fetchAllTools: async ({ state, commit }, { showHelp }) => {
+    fetchAllTools: async ({ state, commit }) => {
         // Preventing store from being populated for every search: we fetch again only if:
-        // store isn't already populated (initial fetch) OR user now wants (or doesn't want) help text
-        if (!state.toolsList[0] || !state.totalToolCount || state.hasHelp !== showHelp) {
+        // store isn't already populated (initial fetch)
+        if (!state.toolsList[0]) {
             console.log("fetching all tools once");
-            const { data } = await axios.get(`${getAppRoot()}api/tools?tool_help=${showHelp}&in_panel=False`);
-            const toolCount = data.length;
-            commit("saveTotalToolCount", { toolCount });
-            commit("saveShowHelp", { showHelp });
+            const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=False`);
             commit("saveTools", { toolsData: data });
         }
     },
@@ -80,12 +75,6 @@ const mutations = {
     },
     saveTools: (state, { toolsData }) => {
         Vue.set(state.toolsList, 0, toolsData);
-    },
-    saveTotalToolCount: (state, { toolCount }) => {
-        state.totalToolCount = toolCount;
-    },
-    saveShowHelp: (state, { showHelp }) => {
-        state.hasHelp = showHelp;
     },
 };
 
