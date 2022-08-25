@@ -39,8 +39,9 @@ class UsersService(ServiceBase):
     def get_api_keys(self, trans: ProvidesUserContext):
         result = []
         api_keys = self.api_key_manager.get_api_keys(trans.user)
-        for api_key in api_keys:
-            result.append({"key": api_key.key, "create_time": api_key.create_time})
+        if api_keys:
+            # Only return the last created key
+            result.append({"key": api_keys[0].key, "create_time": api_keys[0].create_time})
         return result
 
     def create_api_key(self, trans: ProvidesUserContext):
