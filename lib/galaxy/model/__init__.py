@@ -9494,6 +9494,8 @@ class Page(Base, HasTags, Dictifiable, RepresentById):
         "deleted",
         "username",
         "email_hash",
+        "create_time",
+        "update_time",
     ]
 
     def to_dict(self, view="element"):
