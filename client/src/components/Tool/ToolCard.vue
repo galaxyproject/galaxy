@@ -86,21 +86,25 @@ const showVersions = computed(() => props.options.versions?.length > 1);
                     <span itemprop="description">{{ description }}</span>
                     <span>(Galaxy Version {{ version }})</span>
                 </div>
-                <b-button-group class="tool-card-buttons">
-                    <ToolFavoriteButton v-if="hasUser" :id="props.id" @onSetError="onSetError" />
-                    <ToolVersionsButton
-                        v-if="showVersions"
-                        :version="props.version"
-                        :versions="versions"
-                        @onChangeVersion="onChangeVersion" />
-                    <ToolOptionsButton :id="props.id" :sharableUrl="props.options.sharable_url" />
-                </b-button-group>
+                <div class="d-flex flex-nowrap align-items-start">
+                    <b-button-group class="tool-card-buttons">
+                        <ToolFavoriteButton v-if="hasUser" :id="props.id" @onSetError="onSetError" />
+                        <ToolVersionsButton
+                            v-if="showVersions"
+                            :version="props.version"
+                            :versions="versions"
+                            @onChangeVersion="onChangeVersion" />
+                        <ToolOptionsButton :id="props.id" :sharableUrl="props.options.sharable_url" />
+                    </b-button-group>
+                    <slot name="header-buttons" />
+                </div>
             </div>
         </div>
 
         <FormMessage variant="danger" :message="errorText" :persistent="true" />
         <FormMessage :variant="props.messageVariant" :message="props.messageText" />
         <slot name="body" />
+        <slot name="buttons" />
         <div v-if="props.disabled" class="portlet-backdrop" />
 
         <div>
@@ -116,21 +120,13 @@ const showVersions = computed(() => props.options.versions?.length > 1);
                 :creators="props.options.creators"
                 :requirements="props.options.requirements" />
         </div>
-
-        <div class="tool-buttons-row position-sticky d-flex justify-content-end float-right mt-2">
-            <slot name="buttons" />
-        </div>
     </div>
 </template>
 
 <style lang="scss" scoped>
 @import "scss/theme/blue.scss";
 
-$shadow: 1px 1px 6px rgba($brand-dark, 0.2), 0.4px 0.4px 2px rgba($brand-dark, 0.4);
-
 .tool-header {
-    box-shadow: $shadow;
-
     h1 {
         font-size: 1em;
         line-height: 1em;
@@ -169,14 +165,5 @@ $shadow: 1px 1px 6px rgba($brand-dark, 0.2), 0.4px 0.4px 2px rgba($brand-dark, 0
 
 .portlet-backdrop {
     display: block;
-}
-
-.tool-buttons-row {
-    bottom: 0;
-    column-gap: 0.5em;
-
-    &::v-deep > * {
-        box-shadow: $shadow;
-    }
 }
 </style>
