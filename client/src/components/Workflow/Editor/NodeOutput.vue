@@ -9,7 +9,8 @@
             <i :class="['mark-terminal', activeClass]" />
         </div>
         {{ label }}
-        <div :id="id" ref="terminal" :output-name="output.name" :class="terminalClass">
+        <div :id="id" :output-name="output.name" :class="terminalClass" @drop="onDrop">
+            >
             <div class="icon" />
         </div>
     </div>
@@ -95,22 +96,25 @@ export default {
                 this.$emit("onChange");
             });
         },
-        effectiveOutput(newOutput) {
-            const oldTerminal = this.terminal;
-            if (oldTerminal instanceof this.terminalClassForOutput(newOutput)) {
-                oldTerminal.update(newOutput);
-                oldTerminal.destroyInvalidConnections();
-            } else {
-                // create new terminal, connect like old terminal, destroy old terminal
-                // this might be a little buggy, we should replace this with proper vue components
-                this.$emit("onRemove", this.output);
-                this.createTerminal(newOutput);
-                this.terminal.connectors = oldTerminal.connectors.map((c) => {
-                    return new Connector(this.getManager().canvasManager, this.terminal, c.inputHandle);
-                });
-                this.terminal.destroyInvalidConnections();
-                oldTerminal.destroy();
-            }
+        // output(newOutput) {
+        //     const oldTerminal = this.terminal;
+        //     if (oldTerminal instanceof this.terminalClassForOutput(newOutput)) {
+        //         oldTerminal.update({ ...newOutput, extensions: this.extensions });
+        //         oldTerminal.destroyInvalidConnections();
+        //     } else {
+        //         // create new terminal, connect like old terminal, destroy old terminal
+        //         // this might be a little buggy, we should replace this with proper vue components
+        //         this.$emit("onRemove", this.output);
+        //         this.createTerminal(newOutput);
+        //         this.terminal.connectors = oldTerminal.connectors.map((c) => {
+        //             return new Connector(this.getManager().canvasManager, this.terminal, c.inputHandle);
+        //         });
+        //         this.terminal.destroyInvalidConnections();
+        //         oldTerminal.destroy();
+        //     }
+        // },
+        onDrop(e) {
+            console.log("onDrop", e);
         },
     },
     mounted() {
