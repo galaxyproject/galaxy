@@ -170,10 +170,3 @@ export default {
     },
 };
 </script>
-
-<style>
-.btn-back-to-top {
-    position: fixed;
-    bottom: 2em;
-}
-</style>
