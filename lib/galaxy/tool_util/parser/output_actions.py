@@ -7,6 +7,7 @@ import os.path
 import re
 
 from galaxy import util
+from galaxy.util.template import fill_template
 
 log = logging.getLogger(__name__)
 
@@ -81,7 +82,7 @@ class ValueToolOutputActionConditionalWhen(ToolOutputActionConditionalWhen):
 
     def is_case(self, output_dataset, other_values):
         ref = self.get_ref(output_dataset, other_values)
-        return bool(str(ref) == self.value)
+        return ref == self.value
 
 
 class DatatypeIsInstanceToolOutputActionConditionalWhen(ToolOutputActionConditionalWhen):
@@ -304,8 +305,17 @@ class MetadataToolOutputAction(ToolOutputAction):
 
     def apply_action(self, output_dataset, other_values):
         value = self.option.get_value(other_values)
-        if value is None and self.default is not None:
-            value = self.default
+        # TODO: figure out correct type based on MetadataElementSpec,
+        # but MetadataElementSpec doesn't actually define a type (but it should).
+        # That would avoid the ad-hoc comma splitting here for defaults.
+        if self.default:
+            # For historical reasons the default value takes preference over value,
+            # and we only treat the default value as potentially containing cheetah.
+            value = fill_template(
+                self.default,
+                context=other_values,
+                python_template_version=other_values.get("__python_template_version__"),
+            ).split(",")
         if value is not None:
             setattr(output_dataset.metadata, self.name, value)
 
