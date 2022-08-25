@@ -19,7 +19,6 @@
                     title="Copy Link"
                     size="sm"
                     variant="link"
-                    href="#"
                     @click.stop="onCopyLink">
                     <span class="fa fa-link" />
                 </b-button>
@@ -59,18 +58,10 @@
                     title="Show Inputs for this item"
                     size="sm"
                     variant="link"
-                    href="#"
                     @click.stop="onHighlight">
                     <span class="fa fa-sitemap" />
                 </b-button>
-                <b-button
-                    v-if="showRerun"
-                    class="px-1"
-                    title="Help"
-                    size="sm"
-                    variant="link"
-                    href="#"
-                    @click.stop="onRerun">
+                <b-button v-if="showRerun" class="px-1" title="Help" size="sm" variant="link" @click.stop="onRerun">
                     <span class="fa fa-question" />
                 </b-button>
             </div>

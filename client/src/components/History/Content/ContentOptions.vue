@@ -28,7 +28,6 @@
             title="Delete"
             size="sm"
             variant="link"
-            href="#"
             @click.stop="$emit('delete')">
             <icon icon="trash" />
         </b-button>
@@ -38,7 +37,6 @@
             title="Undelete"
             size="sm"
             variant="link"
-            href="#"
             @click.stop="$emit('undelete')">
             <icon icon="trash-restore" />
         </b-button>
@@ -48,7 +46,6 @@
             title="Unhide"
             size="sm"
             variant="link"
-            href="#"
             @click.stop="$emit('unhide')">
             <icon icon="eye-slash" />
         </b-button>
