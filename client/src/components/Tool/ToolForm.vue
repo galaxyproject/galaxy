@@ -79,13 +79,24 @@
                                     type="boolean" />
                             </ToolCardSection>
                         </template>
-                        <template v-slot:buttons>
+                        <template v-slot:header-buttons>
                             <ButtonSpinner
-                                id="execute"
-                                title="Execute"
+                                title="Run"
+                                class="btn-sm"
                                 :wait="showExecuting"
                                 :tooltip="tooltip"
                                 @onClick="onExecute(config, currentHistoryId)" />
+                        </template>
+                        <template v-slot:buttons>
+                            <ToolCardSection>
+                                <ButtonSpinner
+                                    id="execute"
+                                    title="Run Tool"
+                                    class="mt-3"
+                                    :wait="showExecuting"
+                                    :tooltip="tooltip"
+                                    @onClick="onExecute(config, currentHistoryId)" />
+                            </ToolCardSection>
                         </template>
                     </ToolCard>
                 </div>
