@@ -347,7 +347,10 @@ class MetadataElementSpec:
                  visible=True, set_in_upload=False, **kwargs):
         self.name = name
         self.desc = desc or name
-        self.default = default
+        if default is None and no_value is not None:
+            self.default = no_value
+        else:
+            self.default = default
         self.no_value = no_value
         self.visible = visible
         self.set_in_upload = set_in_upload
