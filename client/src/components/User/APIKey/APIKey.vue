@@ -16,18 +16,18 @@
                 <LoadingSpan message="Loading API keys" />
             </b-alert>
 
-            <b-row v-else cols="2">
-                <b-col v-for="(item, index) in items" :key="index" class="mb-2">
-                    <a-p-i-key-item :item="item" @listAPIKeys="listAPIKeys" />
-                </b-col>
-            </b-row>
-
-            <b-row class="text-center">
+            <b-row v-else-if="!loading && !items.length" class="text-center">
                 <b-button variant="primary" :disabled="createLoading" @click.prevent="createNewAPIKey">
                     <icon v-if="!createLoading" icon="plus" />
                     <icon v-else icon="spinner" spin />
                     <span v-localize>Create a new key</span>
                 </b-button>
+            </b-row>
+
+            <b-row v-else cols="1">
+                <b-col class="mb-2">
+                    <a-p-i-key-item :item="items[0]" @listAPIKeys="listAPIKeys" />
+                </b-col>
             </b-row>
         </b-container>
     </section>
@@ -67,7 +67,7 @@ export default {
             this.createLoading = true;
 
             svc.createNewAPIKey()
-                .then((item) => this.items.push(item))
+                .then(() => this.listAPIKeys())
                 .catch((err) => (this.errorMessage = err.message))
                 .finally(() => (this.createLoading = false));
         },
