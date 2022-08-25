@@ -233,6 +233,9 @@ ResourceType = Literal[
     "ram_max",
     "tmpdir_min",
     "tmpdir_max",
+    "cuda_runtime_min",
+    "cuda_compute_capability",
+    "gpu_memory_min",
 ]
 VALID_RESOURCE_TYPES = get_args(ResourceType)
 
@@ -272,6 +275,9 @@ def resource_requirements_from_list(requirements) -> List[ResourceRequirement]:
         "ramMax": "ram_max",
         "tmpdirMin": "tmpdir_min",
         "tmpdirMax": "tmpdir_max",
+        "cudaRuntimeMin": "cuda_runtime_min",
+        "cudaComputeCapability": "cuda_compute_capability",
+        "gpuMemoryMin": "gpu_memory_min",
     }
     rr = []
     for r in requirements:

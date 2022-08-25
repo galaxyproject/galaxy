@@ -6793,6 +6793,21 @@ and ``bibtex`` are the only supported options.</xs:documentation>
           <xs:documentation xml:lang="en">Maximum reserved filesystem based storage for the designated temporary directory, in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
         </xs:annotation>
       </xs:enumeration>
+       <xs:enumeration value="cuda_runtime_min">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum CUDA (runtime link library) runtime version, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="cuda_compute_capability">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum NVIDIA (hardware+driver) Compute capabilities (major, minor (can be a range or a list), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="gpu_memory_min">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum Memory of the GPU in mebibytes, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="ContainerType">
