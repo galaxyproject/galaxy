@@ -145,4 +145,4 @@ foo_var = %(foobar)s/cow
         exc = e
     assert exc is not None
     assert f"Error in file {conf_path}" in str(exc)
-    assert f"Bad value substitution: option 'foo_var' in section 'main' contains an interpolation key" in str(exc)
+    assert "Bad value substitution: option 'foo_var' in section 'main' contains an interpolation key" in str(exc)
