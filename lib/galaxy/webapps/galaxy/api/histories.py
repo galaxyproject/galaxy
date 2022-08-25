@@ -19,7 +19,6 @@ from fastapi import (
     Response,
     status,
 )
-from sqlalchemy import and_
 from pydantic.fields import Field
 from pydantic.main import BaseModel
 
@@ -30,11 +29,6 @@ from galaxy.managers.context import (
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
-)
-from galaxy.model import (
-    User,
-    UserPreference,
-    History
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
