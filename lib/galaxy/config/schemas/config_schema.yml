@@ -3631,3 +3631,11 @@ mapping:
         default: true
         required: false
         desc: Display built-in converters in the tool panel.
+
+      enable_beacon_integration:
+        type: bool
+        default: false
+        required: true
+        desc: |
+          Enables user preferences and api endpoint for the beacon integration.
+

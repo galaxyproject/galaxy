@@ -2659,3 +2659,7 @@ galaxy:
   # Display built-in converters in the tool panel.
   #display_builtin_converters: true
 
+  # Enables user preferences and api endpoint for the beacon
+  # integration.
+  #enable_beacon_integration: false
+
