@@ -197,7 +197,6 @@
 
         config.addInitialization(function() {
             console.log("base/base_panels.mako, panel init");
-            window.bundleEntries.panelManagement(panelConfig);
         });
 
         config.addInitialization(function() {

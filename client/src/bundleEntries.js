@@ -74,7 +74,6 @@ export function chart(options) {
 }
 
 export { initMasthead } from "components/Masthead/initMasthead";
-export { panelManagement } from "onload/globalInits/panelManagement";
 export { mountMakoTags } from "components/Tags";
 export { mountWorkflowEditor } from "components/Workflow/Editor/mount";
 export { mountPageEditor } from "components/PageEditor/mount";
