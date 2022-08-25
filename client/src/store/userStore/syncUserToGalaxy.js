@@ -1,7 +1,7 @@
 // Sync Galaxy store to legacy galaxy current user
 
 import { pluck, switchMap } from "rxjs/operators";
-import { monitorBackboneModel } from "utils/observable/monitorBackboneModel";
+import { monitorBackboneModel } from "utils/observable";
 
 export function syncUserToGalaxy(galaxy$, store) {
     const result$ = galaxy$.pipe(
