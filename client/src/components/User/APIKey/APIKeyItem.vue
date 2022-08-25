@@ -19,7 +19,10 @@
         <b-row class="flex-column align-items-center">
             <UtcDate class="text-black-50 small mb-2" :date="item.create_time" mode="pretty" />
 
-            <b-button size="small" variant="outline-danger" @click="toggleDeleteModal">Delete</b-button>
+            <b-button size="small" variant="outline-danger" @click="toggleDeleteModal">
+                <icon icon="trash" />
+                <span v-localize>Delete</span>
+            </b-button>
         </b-row>
 
         <b-modal ref="modal" title="Delete API key" size="md" @ok="deleteKey">
