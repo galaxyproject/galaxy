@@ -1252,6 +1252,16 @@ class NavigatesGalaxy(HasDriver):
         action_chains.move_to_element(center_element).perform()
         self.wait_for_selector_absent_or_hidden(".b-tooltip", wait_type=WAIT_TYPES.UX_POPUP)
 
+    def pages_index_table_elements(self):
+        pages = self.components.pages
+        pages.index_table.wait_for_visible()
+        return pages.index_rows.all()
+
+    def page_index_click_option(self, option_title, page_id):
+        self.components.pages.dropdown(id=page_id).wait_for_and_click()
+        if not self.select_dropdown_item(option_title):
+            raise AssertionError(f"Failed to find page action option with title [{option_title}]")
+
     def workflow_index_open(self):
         self.home()
         self.click_masthead_workflow()

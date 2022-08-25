@@ -429,6 +429,8 @@ pages:
     submit: '#submit'
     export: '.markdown-pdf-export'
     dropdown: '[data-page-dropdown*="${id}"]'
+    index_table: "#page-table"
+    index_rows: "#page-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
 
   editor:
     selectors:

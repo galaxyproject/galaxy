@@ -24,9 +24,9 @@ import DatasetError from "components/DatasetInformation/DatasetError";
 import DatasetList from "components/Dataset/DatasetList";
 import AvailableDatatypes from "components/AvailableDatatypes/AvailableDatatypes";
 import FormGeneric from "components/Form/FormGeneric";
-import Grid from "components/Grid/Grid";
 import GridShared from "components/Grid/GridShared";
 import GridHistory from "components/Grid/GridHistory";
+import PageList from "components/Page/PageList";
 import HistoryImport from "components/HistoryImport";
 import HistoryView from "components/HistoryView";
 import HistoryInvocations from "components/Workflow/HistoryInvocations";
@@ -260,11 +260,9 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "pages/:actionId",
-                        component: GridShared,
+                        component: PageList,
                         props: (route) => ({
-                            actionId: route.params.actionId,
-                            item: "page",
-                            plural: "Pages",
+                            published: route.props.actionId == "list_published" ? "shared" : "user",
                         }),
                     },
                     {

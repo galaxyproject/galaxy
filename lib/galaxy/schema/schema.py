@@ -3126,6 +3126,8 @@ class PageSummary(PageSummaryBase):
         title="List of revisions",
         description="The history with the encoded ID of each revision of the Page.",
     )
+    create_time: Optional[datetime] = CreateTimeField
+    update_time: Optional[datetime] = UpdateTimeField
 
 
 class PageDetails(PageSummary):

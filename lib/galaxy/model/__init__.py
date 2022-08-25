@@ -8874,6 +8874,8 @@ class Page(Base, Dictifiable, RepresentById):
         "importable",
         "deleted",
         "username",
+        "create_time",
+        "update_time",
     ]
 
     def to_dict(self, view="element"):
