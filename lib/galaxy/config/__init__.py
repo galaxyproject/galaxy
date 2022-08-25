@@ -5,6 +5,7 @@ Universe configuration builder.
 
 import configparser
 import ipaddress
+import json
 import locale
 import logging
 import logging.config
@@ -132,6 +133,8 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
     },
 }
 """Default value for logging configuration, passed to :func:`logging.config.dictConfig`"""
+
+VERSION_JSON_FILE = "version.json"
 
 
 def configure_logging(config, facts=None):
@@ -774,6 +777,18 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         self.version_major = VERSION_MAJOR
         self.version_minor = VERSION_MINOR
+        # Try loading extra version info
+        self.version_extra = None
+        json_file = os.environ.get(
+            "GALAXY_VERSION_JSON_FILE", self._in_root_dir(VERSION_JSON_FILE)
+        )  # TODO: add this to schema
+        try:
+            with open(json_file) as f:
+                extra_info = json.load(f)
+        except OSError:
+            log.info("Galaxy extra version JSON file %s not loaded.", json_file)
+        else:
+            self.version_extra = extra_info
 
         # Database related configuration
         self.check_migrate_databases = string_as_bool(kwargs.get("check_migrate_databases", True))

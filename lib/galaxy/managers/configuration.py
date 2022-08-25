@@ -4,9 +4,7 @@ and a more expanded set of data for admin in AdminConfigSerializer.
 
 Used by both the API and bootstrapped data.
 """
-import json
 import logging
-import os
 import sys
 from typing import (
     Any,
@@ -22,8 +20,6 @@ from galaxy.structured_app import StructuredApp
 from galaxy.web.framework.base import server_starttime
 
 log = logging.getLogger(__name__)
-
-VERSION_JSON_FILE = "version.json"
 
 
 class ConfigurationManager:
@@ -46,16 +42,8 @@ class ConfigurationManager:
             "version_major": self._app.config.version_major,
             "version_minor": self._app.config.version_minor,
         }
-        # Try loading extra version info
-        json_file = os.path.join(self._app.config.root, VERSION_JSON_FILE)  # TODO: add this to schema
-        json_file = os.environ.get("GALAXY_VERSION_JSON_FILE", json_file)
-        try:
-            with open(json_file) as f:
-                extra_info = json.load(f)
-        except OSError:
-            log.info("Galaxy extra version JSON file %s not loaded.", json_file)
-        else:
-            version_info["extra"] = extra_info
+        if self._app.config.version_extra:
+            version_info["extra"] = self._app.config.version_extra
         return version_info
 
     def decode_id(
@@ -181,6 +169,7 @@ class ConfigSerializer(base.ModelSerializer):
             "ftp_upload_site": _use_config,
             "version_major": _defaults_to(None),
             "version_minor": _defaults_to(None),
+            "version_extra": _use_config,
             "require_login": _use_config,
             "inactivity_box_content": _use_config,
             "visualizations_visible": _use_config,
