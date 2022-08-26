@@ -9,7 +9,7 @@
             <i :class="['mark-terminal', activeClass]" />
         </div>
         {{ label }}
-        <draggable-wrapper :id="id" :output-name="output.name" :class="terminalClass">
+        <draggable-wrapper :id="id" :output-name="output.name" :class="terminalClass" :zoom="canvasManager.zoomLevel">
             <div class="icon" />
         </draggable-wrapper>
     </div>
