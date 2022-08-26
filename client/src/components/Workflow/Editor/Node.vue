@@ -223,6 +223,7 @@ export default {
             return { top: this.step.position.top + "px", left: this.step.position.left + "px" };
         },
         defaultPosition() {
+            console.log("defaultPosition fires");
             const p = document.getElementById("canvas-viewport");
             const o = document.getElementById("canvas-container");
             if (p && o) {
@@ -235,7 +236,7 @@ export default {
             }
         },
     },
-    mounted() {
+    created() {
         this.canvasManager = this.getCanvasManager();
         this.activeOutputs = new ActiveOutputs();
         this.element = this.$el;
@@ -372,6 +373,7 @@ export default {
             this.highlight = false;
         },
         makeActive() {
+            console.log("Clicked");
             this.$emit("onActivate", this.id);
         },
         offsetVaryPosition(offsetRange) {

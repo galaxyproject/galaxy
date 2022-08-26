@@ -1,13 +1,6 @@
 <template>
     <div class="form-row dataRow input-data-row" @mouseover="mouseOver" @mouseleave="mouseLeave">
-        <div
-            draggable="true"
-            :id="id"
-            :input-name="input.name"
-            :class="terminalClass"
-            @dragstart="inputDragStart"
-            @dragenter="inputDragEnter"
-            @dragleave="inputDragLeave">
+        <div :id="id" :input-name="input.name" :class="terminalClass" @drop="onDrop">
             <div class="icon" />
         </div>
         <div v-if="showRemove" class="delete-terminal" @click="onRemove" />
@@ -84,9 +77,9 @@ export default {
         //     }
         // },
     },
-    mounted() {
-        this.terminal = this.createTerminal(this.input);
-    },
+    // mounted() {
+    //     this.terminal = this.createTerminal(this.input);
+    // },
     beforeDestroy() {
         this.$emit("onRemove", this.input);
         this.onRemove();
@@ -101,48 +94,42 @@ export default {
             }
             return terminalClass;
         },
-        createTerminal(input) {
-            const terminalClass = this.terminalClassForInput(input);
-            const terminal = new terminalClass({
-                node: this.getNode(),
-                datatypesMapper: this.datatypesMapper,
-                name: input.name,
-                input: input,
-                element: this.$refs.terminal,
-            });
-            terminal.on("change", this.onChange.bind(this));
-            new InputDragging(this.getManager(), this.canvasManager, {
-                el: this.$refs.terminal,
-                terminal: terminal,
-            });
-            this.$emit("onAdd", this.input, terminal);
-            this.$store.commit("setInputTerminal", { inputTerminalId: terminal.element.id, inputTerminal: terminal });
-            return terminal;
-        },
+        // createTerminal(input) {
+        //     const terminalClass = this.terminalClassForInput(input);
+        //     const terminal = new terminalClass({
+        //         node: this.getNode(),
+        //         datatypesMapper: this.datatypesMapper,
+        //         name: input.name,
+        //         input: input,
+        //         element: this.$refs.terminal,
+        //     });
+        //     terminal.on("change", this.onChange.bind(this));
+        //     new InputDragging(this.getManager(), this.canvasManager, {
+        //         el: this.$refs.terminal,
+        //         terminal: terminal,
+        //     });
+        //     this.$emit("onAdd", this.input, terminal);
+        //     this.$store.commit("setInputTerminal", { inputTerminalId: terminal.element.id, inputTerminal: terminal });
+        //     return terminal;
+        // },
         onChange() {
             this.isMultiple = this.terminal.isMappedOver();
             this.$emit("onChange");
         },
         onRemove() {
             this.$emit("onDisconnect", this.input.name);
-            this.terminal.destroy();
         },
         mouseOver(e) {
-            if (this.terminal.connectors.length > 0) {
-                this.showRemove = true;
-            }
+            console.log("mousOver");
+            // if (this.terminal.connectors.length > 0) {
+            //     this.showRemove = true;
+            // }
         },
         mouseLeave() {
             this.showRemove = false;
         },
-        inputDragStart(e) {
-            console.log("inputDragStart", e);
-        },
-        inputDragEnter(e) {
-            console.log("inputDragEnter", e);
-        },
-        inputDragStart(e) {
-            console.log("inputDragStart", e);
+        onDrop(e) {
+            console.log("onDrop", e);
         },
     },
 };

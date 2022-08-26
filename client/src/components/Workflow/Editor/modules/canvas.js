@@ -100,7 +100,8 @@ class CanvasManager {
         this.zoomLevel = defaultZoomLevel;
         this.canvasZoom = zoomLevels[defaultZoomLevel];
         // Make overview box draggable
-        this.init_drag();
+        // Can probably enable this again if we remove the hackery here and make the canvas a vue component
+        // this.init_drag();
         // Initialize Copy & Paste events
         this.init_copy_paste();
         this.init_scroll_zoom();
@@ -181,13 +182,15 @@ class CanvasManager {
             .bind("click", function () {
                 document.activeElement.blur();
             })
-            .bind("dragstart", function () {
+            .bind("dragstart", function (e) {
+                e.preventDefault();
                 var o = $(this).offset();
                 var p = self.cc.position();
                 y_adjust = p.top - o.top;
                 x_adjust = p.left - o.left;
             })
             .bind("drag", (e, d) => {
+                e.preventDefault();
                 this.move((d.offsetX + x_adjust) / this.canvasZoom, (d.offsetY + y_adjust) / this.canvasZoom);
             })
             .bind("dragend", () => {
@@ -353,18 +356,17 @@ class CanvasManager {
         canvas_el.attr("width", o_w);
         canvas_el.attr("height", o_h);
 
-        const drawOverlayRectFor = (nodeElement, color) => {
-            const position = nodeElement.position();
+        const drawOverlayRectFor = (position, color) => {
             const x = (position.left / in_w) * o_w;
             const y = (position.top / in_h) * o_h;
-            const w = (nodeElement.width() / in_w) * o_w;
-            const h = (nodeElement.height() / in_h) * o_h;
+            const w = (40 / in_w) * o_w;
+            const h = (20 / in_h) * o_h;
             c.fillStyle = color;
             c.fillRect(x, y, w, h);
         };
 
         this.highlightInOverlay = (node) => {
-            const nodeElement = $(node.element);
+            const position = node.step.position;
             let i = 0;
             let colorTarget = NODE_COLOR;
             if (node.errors) {
@@ -373,7 +375,7 @@ class CanvasManager {
             const ramp = getRamp(NODE_HIGHLIGHT_COLOR, colorTarget, OVERLAY_HIGHLIGHT_STEPS);
             const interval = setInterval(function () {
                 i++;
-                drawOverlayRectFor(nodeElement, ramp[i]);
+                drawOverlayRectFor(position, ramp[i]);
                 if (i === OVERLAY_HIGHLIGHT_STEPS) {
                     clearInterval(interval);
                 }
@@ -381,12 +383,12 @@ class CanvasManager {
         };
         // Draw overview
         $.each(this.app.nodes, (id, node) => {
-            const nodeElement = $(node.element);
+            const position = node.step.position;
             let color = NODE_COLOR;
             if (node.errors) {
                 color = NODE_ERROR_COLOR;
             }
-            drawOverlayRectFor(nodeElement, color);
+            drawOverlayRectFor(position, color);
         });
         this.updateViewportOverlay();
     }
@@ -441,12 +443,11 @@ class CanvasManager {
         let ymax = -Infinity;
         let p;
         Object.values(this.app.nodes).forEach((node) => {
-            const e = $(node.element);
-            p = e.position();
+            p = node.step.position;
             xmin = Math.min(xmin, p.left);
-            xmax = Math.max(xmax, p.left + e.width());
+            xmax = Math.max(xmax, p.left); // + e.width());
             ymin = Math.min(ymin, p.top);
-            ymax = Math.max(ymax, p.top + e.height());
+            ymax = Math.max(ymax, p.top); // + e.height());
         });
         return { xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax };
     }

@@ -9,19 +9,22 @@
             <i :class="['mark-terminal', activeClass]" />
         </div>
         {{ label }}
-        <div :id="id" :output-name="output.name" :class="terminalClass" @drop="onDrop">
-            >
+        <draggable-wrapper :id="id" :output-name="output.name" :class="terminalClass">
             <div class="icon" />
-        </div>
+        </draggable-wrapper>
     </div>
 </template>
 
 <script>
 import Terminals from "./modules/terminals";
 import { OutputDragging } from "./modules/dragging";
+import DraggableWrapper from "./Draggable";
 import Connector from "./modules/connector";
 
 export default {
+    components: {
+        DraggableWrapper,
+    },
     props: {
         output: {
             type: Object,
@@ -113,18 +116,27 @@ export default {
         //         oldTerminal.destroy();
         //     }
         // },
+    },
+    // mounted() {
+    //     this.createTerminal(this.output);
+    // },
+    beforeDestroy() {
+        this.$emit("onRemove", this.output);
+        // this.terminal.destroy();
+    },
+    methods: {
+        inputDragStart(e) {
+            console.log("inputDragStart", e);
+        },
+        inputDragEnter(e) {
+            console.log("inputDragEnter", e);
+        },
+        inputDragLeave(e) {
+            console.log("inputDragLeave", e);
+        },
         onDrop(e) {
             console.log("onDrop", e);
         },
-    },
-    mounted() {
-        this.createTerminal(this.output);
-    },
-    beforeDestroy() {
-        this.$emit("onRemove", this.output);
-        this.terminal.destroy();
-    },
-    methods: {
         terminalClassForOutput(output) {
             let terminalClass = Terminals.OutputTerminal;
             if (output.collection) {
@@ -175,7 +187,7 @@ export default {
             });
         },
         onChange() {
-            this.isMultiple = this.terminal.isMappedOver();
+            // this.isMultiple = this.terminal.isMappedOver();
             this.$emit("onChange");
         },
         onToggle() {
