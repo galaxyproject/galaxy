@@ -2,7 +2,10 @@ import pytest
 
 from galaxy.exceptions import InvalidFileFormatError
 from galaxy.util import properties
-from galaxy.util.properties import read_properties_from_file
+from galaxy.util.properties import (
+    nice_config_parser,
+    read_properties_from_file,
+)
 
 KEY1, KEY2, KEY3, KEY4, KEY5, KEY6 = "k1", "k2", "k3", "k4", "k5", "k6"
 VAL1, VAL2, VAL3, VAL4, VAL5, VAL6 = 1, 2, 3, 4, 5, 6
@@ -107,3 +110,39 @@ def test_dont_read_properties_from_other_format(mock_properties):
     file = "invalid"
     with pytest.raises(InvalidFileFormatError):
         read_properties_from_file(file)
+
+
+def test_nice_config_parser(tmp_path):
+    conf_path = tmp_path / "config.ini"
+    conf_path.write_text(
+        """
+[main]
+foo_path = %(here)s/cow
+FOO_PATH123 = hackedtonotchangecase
+config_file = %(__file__)s
+"""
+    )
+    config_parser = nice_config_parser(conf_path)
+    foo_path = config_parser.get("main", "foo_path")
+    assert foo_path == str(tmp_path / "cow")
+    assert config_parser.get("main", "FOO_PATH123") == "hackedtonotchangecase"
+    assert config_parser.get("main", "config_file") == str(conf_path)
+
+
+def test_nice_config_parser_custom_exceptions(tmp_path):
+    conf_path = tmp_path / "config.ini"
+    conf_path.write_text(
+        """
+[main]
+foo_var = %(foobar)s/cow
+"""
+    )
+    config_parser = nice_config_parser(conf_path)
+    exc = None
+    try:
+        config_parser.get("main", "foo_var")
+    except Exception as e:
+        exc = e
+    assert exc is not None
+    assert f"Error in file {conf_path}" in str(exc)
+    assert "Bad value substitution: option 'foo_var' in section 'main' contains an interpolation key" in str(exc)
