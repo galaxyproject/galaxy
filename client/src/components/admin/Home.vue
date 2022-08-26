@@ -118,7 +118,7 @@
 <script>
 export default {
     props: {
-        isToolshedInstalled: {
+        isToolShedInstalled: {
             type: Boolean,
             default: false,
         },
