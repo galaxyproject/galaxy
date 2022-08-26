@@ -81,7 +81,7 @@
                         </template>
                         <template v-slot:header-buttons>
                             <ButtonSpinner
-                                title="Run"
+                                title="Run Tool"
                                 class="btn-sm"
                                 :wait="showExecuting"
                                 :tooltip="tooltip"
