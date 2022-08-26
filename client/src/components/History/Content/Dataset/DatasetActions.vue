@@ -74,6 +74,7 @@ import { copy as sendToClipboard } from "utils/clipboard";
 import { absPath, prependPath } from "utils/redirect.js";
 import { downloadUrlMixin } from "./mixins.js";
 import DatasetDownload from "./DatasetDownload";
+import { iframeAdd } from "components/plugins/legacyNavigation";
 
 export default {
     components: {
@@ -146,7 +147,11 @@ export default {
                 title: title,
                 tryIframe: false,
             };
-            if (!this.iframeAdd(redirectParams)) {
+            if (!iframeAdd(redirectParams)) {
+                // We still use iframeAdd here to allow usage from within window
+                // manager, but it shouldn't actually *use* an iframe in the
+                // standard case (deferring to $router in the legacy routing handler).
+                // This should be refactored.
                 this.$router.push(path);
             }
         },
