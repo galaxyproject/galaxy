@@ -9,6 +9,7 @@ import Home from "entry/analysis/modules/Home";
 import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
 
 // routes
+import AdminRoutes from "entry/analysis/routes/admin-routes";
 import LibraryRoutes from "entry/analysis/routes/library-routes";
 
 // child components
@@ -419,6 +420,7 @@ export function getRouter(Galaxy) {
                 ],
             },
             { path: "/workflows/edit", component: WorkflowEditorModule },
+            ...AdminRoutes,
             ...LibraryRoutes,
         ],
     });
