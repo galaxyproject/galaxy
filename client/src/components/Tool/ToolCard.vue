@@ -74,7 +74,7 @@ const showVersions = computed(() => props.options.versions?.length > 1);
 </script>
 
 <template>
-    <div>
+    <div class="position-relative">
         <div class="underlay sticky-top" />
         <div class="tool-header sticky-top bg-secondary px-2 py-1 rounded">
             <div class="d-flex justify-content-between">
