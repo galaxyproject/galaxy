@@ -999,13 +999,9 @@ a.action-button {
 // A content button is a button in content items
 
 .content-buttons {
-    .btn:hover,
-    .btn:active,
-    .btn:focus,
-    .btn:focus-visible {
+    .btn {
         background-color: transparent !important;
         border-color: transparent !important;
-        box-shadow: none !important;
     }
 
     .btn:hover {
