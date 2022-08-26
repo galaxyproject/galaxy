@@ -11,7 +11,8 @@
                 :brand-link="staticUrlToPrefixed(config.logo_url)"
                 :brand-image="staticUrlToPrefixed(config.logo_src)"
                 :brand-image-secondary="staticUrlToPrefixed(config.logo_src_secondary)"
-                :menu-options="config" />
+                :masthead-options="mastheadOptions"
+                :config="config" />
             <alert
                 v-if="config.message_box_visible && config.message_box_content"
                 id="messagebox"
@@ -48,6 +49,7 @@ export default {
     components: {
         Masthead,
     },
+    props: ["mastheadOptions"],
     data() {
         return {
             config: getGalaxyInstance().config,

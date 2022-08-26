@@ -81,7 +81,6 @@ describe("Masthead.vue", () => {
                 hidden: true,
             },
         ];
-        const initialActiveTab = "shared";
 
         // window manager assumes this is a Backbone collection - mock that out.
         tabs.add = (x) => {
@@ -93,10 +92,16 @@ describe("Masthead.vue", () => {
             windowManager,
         };
 
+        const mastheadOptions = {
+            activeTab: "shared",
+        };
+        const config = {};
+
         wrapper = mount(Masthead, {
             propsData: {
                 mastheadState,
-                initialActiveTab,
+                mastheadOptions,
+                config,
             },
             store,
             localVue,

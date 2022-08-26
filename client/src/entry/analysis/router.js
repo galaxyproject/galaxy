@@ -1,7 +1,5 @@
-import Vue from "vue";
-import VueRouter from "vue-router";
-import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
+import { getGalaxyRouter } from "entry/router";
 
 // modules
 import Analysis from "entry/analysis/modules/Analysis";
@@ -11,6 +9,7 @@ import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
 // routes
 import AdminRoutes from "entry/analysis/routes/admin-routes";
 import LibraryRoutes from "entry/analysis/routes/library-routes";
+import { MASTHEAD_TAB_ID } from "layout/masthead";
 
 // child components
 import Citations from "components/Citation/Citations";
@@ -52,30 +51,6 @@ import { ExternalIdentities } from "components/User/ExternalIdentities";
 import { HistoryExport } from "components/HistoryExport/index";
 import { StorageDashboardRouter } from "components/User/DiskUsage";
 
-Vue.use(VueRouter);
-
-// patches $router.push() to trigger an event and hide duplication warnings
-const originalPush = VueRouter.prototype.push;
-VueRouter.prototype.push = function push(location) {
-    // verify if confirmation is required
-    console.debug("VueRouter - push: ", location);
-    if (this.confirmation) {
-        if (confirm("There are unsaved changes which will be lost.")) {
-            this.confirmation = undefined;
-        } else {
-            return;
-        }
-    }
-    // always emit event when a route is pushed
-    this.app.$emit("router-push");
-    // avoid console warning when user clicks to revisit same route
-    return originalPush.call(this, location).catch((err) => {
-        if (err.name !== "NavigationDuplicated") {
-            throw err;
-        }
-    });
-};
-
 // redirect anon users
 function redirectAnon() {
     const Galaxy = getGalaxyInstance();
@@ -85,343 +60,377 @@ function redirectAnon() {
 }
 
 // produces the client router
-export function getRouter(Galaxy) {
-    return new VueRouter({
-        base: getAppRoot(),
-        mode: "history",
-        routes: [
-            {
-                path: "/",
-                component: Analysis,
-                children: [
-                    {
-                        path: "",
-                        alias: "root",
-                        component: Home,
-                        props: (route) => ({ config: Galaxy.config, query: route.query }),
-                    },
-                    {
-                        path: "about",
-                        component: AboutGalaxy,
-                    },
-                    {
-                        path: "custom_builds",
-                        component: CustomBuilds,
-                        redirect: redirectAnon(),
-                    },
-                    {
-                        path: "collection/edit/:collection_id",
-                        component: CollectionEditView,
-                        props: true,
-                    },
-                    {
-                        path: "datasets/edit/:datasetId",
-                        component: DatasetAttributes,
-                        props: true,
-                    },
-                    {
-                        path: "datasets/list",
-                        component: DatasetList,
-                    },
-                    {
-                        path: "datasets/:datasetId/details",
-                        component: DatasetDetails,
-                        props: true,
-                    },
-                    {
-                        // legacy route, potentially used by 3rd parties
-                        path: "datasets/:datasetId/show_params",
-                        component: DatasetDetails,
-                        props: true,
-                    },
-                    {
-                        path: "datasets/:datasetId/error",
-                        component: DatasetError,
-                        props: true,
-                    },
-                    {
-                        path: "histories/import",
-                        component: HistoryImport,
-                    },
-                    {
-                        path: "histories/citations",
-                        component: Citations,
-                        props: (route) => ({
-                            id: route.query.id,
-                            source: "histories",
-                        }),
-                    },
-                    {
-                        path: "histories/rename",
-                        component: FormGeneric,
-                        props: (route) => ({
-                            url: `history/rename?id=${route.query.id}`,
-                            redirect: "histories/list",
-                        }),
-                    },
-                    {
-                        path: "histories/sharing",
-                        component: Sharing,
-                        props: (route) => ({
-                            id: route.query.id,
-                            pluralName: "Histories",
-                            modelClass: "History",
-                        }),
-                    },
-                    {
-                        path: "histories/permissions",
-                        component: FormGeneric,
-                        props: (route) => ({
-                            url: `history/permissions?id=${route.query.id}`,
-                            redirect: "histories/list",
-                        }),
-                    },
-                    {
-                        path: "histories/view",
-                        component: HistoryView,
-                        props: (route) => ({
-                            id: route.query.id,
-                        }),
-                    },
-                    {
-                        path: "histories/show_structure",
-                        component: DisplayStructured,
-                        props: (route) => ({
-                            id: route.query.id,
-                        }),
-                    },
-                    {
-                        path: "histories/:historyId/export",
-                        component: HistoryExport,
-                        props: true,
-                    },
-                    {
-                        path: "histories/:actionId",
-                        component: GridHistory,
-                        props: true,
-                    },
-                    {
-                        path: "interactivetool_entry_points/list",
-                        component: InteractiveTools,
-                    },
-                    {
-                        path: "jobs/:jobId/view",
-                        component: JobDetails,
-                        props: true,
-                    },
-                    {
-                        path: "login/confirm",
-                        component: NewUserConfirmation,
-                    },
-                    {
-                        path: "pages/create",
-                        component: FormGeneric,
-                        props: (route) => {
-                            let url = "page/create";
-                            const invocation_id = route.query.invocation_id;
-                            if (invocation_id) {
-                                url += `?invocation_id=${invocation_id}`;
-                            }
-                            return {
-                                url: url,
+export function getRouter(Galaxy, mastheadOptions) {
+    const router = getGalaxyRouter(
+        {
+            mode: "history",
+            routes: [
+                {
+                    path: "/",
+                    component: Analysis,
+                    children: [
+                        {
+                            path: "",
+                            alias: "root",
+                            component: Home,
+                            props: (route) => ({ config: Galaxy.config, query: route.query }),
+                        },
+                        {
+                            path: "about",
+                            component: AboutGalaxy,
+                        },
+                        {
+                            path: "custom_builds",
+                            component: CustomBuilds,
+                            redirect: redirectAnon(),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.USER },
+                        },
+                        {
+                            path: "collection/edit/:collection_id",
+                            component: CollectionEditView,
+                            props: true,
+                        },
+                        {
+                            path: "datasets/edit/:datasetId",
+                            component: DatasetAttributes,
+                            props: true,
+                        },
+                        {
+                            path: "datasets/list",
+                            component: DatasetList,
+                        },
+                        {
+                            path: "datasets/:datasetId/details",
+                            component: DatasetDetails,
+                            props: true,
+                        },
+                        {
+                            // legacy route, potentially used by 3rd parties
+                            path: "datasets/:datasetId/show_params",
+                            component: DatasetDetails,
+                            props: true,
+                        },
+                        {
+                            path: "datasets/:datasetId/error",
+                            component: DatasetError,
+                            props: true,
+                        },
+                        {
+                            path: "histories/import",
+                            component: HistoryImport,
+                        },
+                        {
+                            path: "histories/citations",
+                            component: Citations,
+                            props: (route) => ({
+                                id: route.query.id,
+                                source: "histories",
+                            }),
+                        },
+                        {
+                            path: "histories/rename",
+                            component: FormGeneric,
+                            props: (route) => ({
+                                url: `history/rename?id=${route.query.id}`,
+                                redirect: "histories/list",
+                            }),
+                        },
+                        {
+                            path: "histories/sharing",
+                            component: Sharing,
+                            props: (route) => ({
+                                id: route.query.id,
+                                pluralName: "Histories",
+                                modelClass: "History",
+                            }),
+                        },
+                        {
+                            path: "histories/permissions",
+                            component: FormGeneric,
+                            props: (route) => ({
+                                url: `history/permissions?id=${route.query.id}`,
+                                redirect: "histories/list",
+                            }),
+                        },
+                        {
+                            path: "histories/view",
+                            component: HistoryView,
+                            props: (route) => ({
+                                id: route.query.id,
+                            }),
+                        },
+                        {
+                            path: "histories/show_structure",
+                            component: DisplayStructured,
+                            props: (route) => ({
+                                id: route.query.id,
+                            }),
+                        },
+                        {
+                            path: "histories/:historyId/export",
+                            component: HistoryExport,
+                            props: true,
+                        },
+                        {
+                            path: "histories/:actionId",
+                            component: GridHistory,
+                            props: true,
+                            masthead: { activeTab: MASTHEAD_TAB_ID.SHARED },
+                        },
+                        {
+                            path: "interactivetool_entry_points/list",
+                            component: InteractiveTools,
+                            masthead: { activeTab: MASTHEAD_TAB_ID.USER },
+                        },
+                        {
+                            path: "jobs/:jobId/view",
+                            component: JobDetails,
+                            props: true,
+                        },
+                        {
+                            path: "login/confirm",
+                            component: NewUserConfirmation,
+                        },
+                        {
+                            path: "pages/create",
+                            component: FormGeneric,
+                            props: (route) => {
+                                let url = "page/create";
+                                const invocation_id = route.query.invocation_id;
+                                if (invocation_id) {
+                                    url += `?invocation_id=${invocation_id}`;
+                                }
+                                return {
+                                    url: url,
+                                    redirect: "pages/list",
+                                    active_tab: "user",
+                                };
+                            },
+                            masthead: { activeTab: MASTHEAD_TAB_ID.USER },
+                        },
+                        {
+                            path: "pages/edit",
+                            component: FormGeneric,
+                            props: (route) => ({
+                                url: `page/edit?id=${route.query.id}`,
                                 redirect: "pages/list",
                                 active_tab: "user",
-                            };
+                            }),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.USER },
                         },
-                    },
-                    {
-                        path: "pages/edit",
-                        component: FormGeneric,
-                        props: (route) => ({
-                            url: `page/edit?id=${route.query.id}`,
-                            redirect: "pages/list",
-                            active_tab: "user",
-                        }),
-                    },
-                    {
-                        path: "pages/sharing",
-                        component: Sharing,
-                        props: (route) => ({
-                            id: route.query.id,
-                            pluralName: "Pages",
-                            modelClass: "Page",
-                        }),
-                    },
-                    {
-                        path: "pages/:actionId",
-                        component: GridShared,
-                        props: (route) => ({
-                            actionId: route.params.actionId,
-                            item: "page",
-                            plural: "Pages",
-                        }),
-                    },
-                    {
-                        path: "storage",
-                        component: StorageDashboardRouter,
-                        redirect: redirectAnon(),
-                    },
-                    {
-                        path: "tours",
-                        component: TourList,
-                    },
-                    {
-                        path: "tours/:tourId",
-                        component: TourRunner,
-                        props: true,
-                    },
-                    {
-                        path: "tools/view",
-                        component: ToolsView,
-                    },
-                    {
-                        path: "tools/json",
-                        component: ToolsJson,
-                    },
-                    {
-                        path: "user",
-                        component: UserPreferences,
-                        props: {
-                            enableQuotas: Galaxy.config.enable_quotas,
-                            userId: Galaxy.user.id,
+                        {
+                            path: "pages/sharing",
+                            component: Sharing,
+                            props: (route) => ({
+                                id: route.query.id,
+                                pluralName: "Pages",
+                                modelClass: "Page",
+                            }),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.USER },
                         },
-                        redirect: redirectAnon(),
-                    },
-                    {
-                        path: "user/cloud_auth",
-                        component: CloudAuth,
-                        redirect: redirectAnon(),
-                    },
-                    {
-                        path: "user/external_ids",
-                        component: ExternalIdentities,
-                        redirect: redirectAnon(),
-                    },
-                    {
-                        path: "user/:formId",
-                        component: UserPreferencesForm,
-                        props: true,
-                        redirect: redirectAnon(),
-                    },
-                    {
-                        path: "visualizations",
-                        component: VisualizationsList,
-                        props: (route) => ({
-                            datasetId: route.query.dataset_id,
-                        }),
-                    },
-                    {
-                        path: "visualizations/edit",
-                        component: FormGeneric,
-                        props: (route) => ({
-                            url: `visualization/edit?id=${route.query.id}`,
-                            redirect: "visualizations/list",
-                            active_tab: "visualization",
-                        }),
-                    },
-                    {
-                        path: "visualizations/sharing",
-                        component: Sharing,
-                        props: (route) => ({
-                            id: route.query.id,
-                            pluralName: "Visualizations",
-                            modelClass: "Visualization",
-                        }),
-                    },
-                    {
-                        path: "visualizations/:actionId",
-                        component: GridShared,
-                        props: (route) => ({
-                            actionId: route.params.actionId,
-                            item: "visualization",
-                            plural: "Visualizations",
-                        }),
-                    },
-                    {
-                        path: "welcome/new",
-                        component: NewUserWelcome,
-                    },
-                    {
-                        path: "workflows/create",
-                        component: FormGeneric,
-                        props: {
-                            url: "workflow/create",
-                            redirect: "workflows/edit",
-                            active_tab: "workflow",
-                            submitTitle: "Create",
-                            submitIcon: "fa-check",
-                            cancelRedirect: "workflows/list",
+                        {
+                            path: "pages/:actionId",
+                            component: GridShared,
+                            props: (route) => ({
+                                actionId: route.params.actionId,
+                                item: "page",
+                                plural: "Pages",
+                            }),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.SHARED },
                         },
-                    },
-                    {
-                        path: "workflows/import",
-                        component: WorkflowImport,
-                    },
-                    {
-                        path: "workflows/invocations",
-                        component: UserInvocations,
-                    },
-                    {
-                        path: "workflows/invocations/report",
-                        component: InvocationReport,
-                        props: (route) => ({
-                            invocationId: route.query.id,
-                        }),
-                    },
-                    {
-                        path: "workflows/list_published",
-                        component: Grid,
-                        props: (route) => ({
-                            urlBase: "workflow/list_published",
-                            userFilter: route.query["f-username"],
-                        }),
-                    },
-                    {
-                        path: "workflows/list",
-                        component: WorkflowList,
-                        redirect: redirectAnon(),
-                    },
-                    {
-                        path: "workflows/run",
-                        component: Home,
-                        props: (route) => ({
-                            config: Galaxy.config,
-                            query: { workflow_id: route.query.id },
-                        }),
-                    },
-                    {
-                        path: "workflows/sharing",
-                        component: Sharing,
-                        props: (route) => ({
-                            id: route.query.id,
-                            pluralName: "Workflows",
-                            modelClass: "Workflow",
-                        }),
-                    },
-                    {
-                        path: "workflows/trs_import",
-                        component: TrsImport,
-                        props: (route) => ({
-                            queryTrsServer: route.query.trs_server,
-                            queryTrsId: route.query.trs_id,
-                            queryTrsVersionId: route.query.trs_version,
-                            isRun: route.query.run_form == "true",
-                        }),
-                    },
-                    {
-                        path: "workflows/trs_search",
-                        component: TrsSearch,
-                    },
-                    {
-                        path: "workflows/:storedWorkflowId/invocations",
-                        component: StoredWorkflowInvocations,
-                        props: true,
-                    },
-                ],
-            },
-            { path: "/workflows/edit", component: WorkflowEditorModule },
-            ...AdminRoutes,
-            ...LibraryRoutes,
-        ],
-    });
+                        {
+                            path: "storage",
+                            component: StorageDashboardRouter,
+                            redirect: redirectAnon(),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.USER },
+                        },
+                        {
+                            path: "tours",
+                            component: TourList,
+                        },
+                        {
+                            path: "tours/:tourId",
+                            component: TourRunner,
+                            props: true,
+                        },
+                        {
+                            path: "tools/view",
+                            component: ToolsView,
+                        },
+                        {
+                            path: "tools/json",
+                            component: ToolsJson,
+                        },
+                        {
+                            path: "user",
+                            component: UserPreferences,
+                            props: {
+                                enableQuotas: Galaxy.config.enable_quotas,
+                                userId: Galaxy.user.id,
+                            },
+                            redirect: redirectAnon(),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.USER },
+                        },
+                        {
+                            path: "user/cloud_auth",
+                            component: CloudAuth,
+                            redirect: redirectAnon(),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.USER },
+                        },
+                        {
+                            path: "user/external_ids",
+                            component: ExternalIdentities,
+                            redirect: redirectAnon(),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.USER },
+                        },
+                        {
+                            path: "user/:formId",
+                            component: UserPreferencesForm,
+                            props: true,
+                            redirect: redirectAnon(),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.USER },
+                        },
+                        {
+                            path: "visualizations",
+                            component: VisualizationsList,
+                            props: (route) => ({
+                                datasetId: route.query.dataset_id,
+                            }),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.VISUALIZATION },
+                        },
+                        {
+                            path: "visualizations/edit",
+                            component: FormGeneric,
+                            props: (route) => ({
+                                url: `visualization/edit?id=${route.query.id}`,
+                                redirect: "visualizations/list",
+                                active_tab: "visualization",
+                            }),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.VISUALIZATION },
+                        },
+                        {
+                            path: "visualizations/sharing",
+                            component: Sharing,
+                            props: (route) => ({
+                                id: route.query.id,
+                                pluralName: "Visualizations",
+                                modelClass: "Visualization",
+                            }),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.VISUALIZATION },
+                        },
+                        {
+                            path: "visualizations/:actionId",
+                            component: GridShared,
+                            props: (route) => ({
+                                actionId: route.params.actionId,
+                                item: "visualization",
+                                plural: "Visualizations",
+                            }),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.SHARED },
+                        },
+                        {
+                            path: "welcome/new",
+                            component: NewUserWelcome,
+                        },
+                        {
+                            path: "workflows/create",
+                            component: FormGeneric,
+                            props: {
+                                url: "workflow/create",
+                                redirect: "workflows/edit",
+                                active_tab: "workflow",
+                                submitTitle: "Create",
+                                submitIcon: "fa-check",
+                                cancelRedirect: "workflows/list",
+                            },
+                            masthead: { activeTab: MASTHEAD_TAB_ID.WORKFLOW },
+                        },
+                        {
+                            path: "workflows/import",
+                            component: WorkflowImport,
+                            masthead: { activeTab: MASTHEAD_TAB_ID.WORKFLOW },
+                        },
+                        {
+                            path: "workflows/invocations",
+                            component: UserInvocations,
+                            masthead: { activeTab: MASTHEAD_TAB_ID.WORKFLOW },
+                        },
+                        {
+                            path: "workflows/invocations/report",
+                            component: InvocationReport,
+                            props: (route) => ({
+                                invocationId: route.query.id,
+                            }),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.WORKFLOW },
+                        },
+                        {
+                            path: "workflows/list_published",
+                            component: Grid,
+                            props: (route) => ({
+                                urlBase: "workflow/list_published",
+                                userFilter: route.query["f-username"],
+                            }),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.SHARED },
+                        },
+                        {
+                            path: "workflows/list",
+                            component: WorkflowList,
+                            redirect: redirectAnon(),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.WORKFLOW },
+                        },
+                        {
+                            path: "workflows/run",
+                            component: Home,
+                            props: (route) => ({
+                                config: Galaxy.config,
+                                query: { workflow_id: route.query.id },
+                            }),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.WORKFLOW },
+                        },
+                        {
+                            path: "workflows/sharing",
+                            component: Sharing,
+                            props: (route) => ({
+                                id: route.query.id,
+                                pluralName: "Workflows",
+                                modelClass: "Workflow",
+                            }),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.WORKFLOW },
+                        },
+                        {
+                            path: "workflows/trs_import",
+                            component: TrsImport,
+                            props: (route) => ({
+                                queryTrsServer: route.query.trs_server,
+                                queryTrsId: route.query.trs_id,
+                                queryTrsVersionId: route.query.trs_version,
+                                isRun: route.query.run_form == "true",
+                            }),
+                            masthead: { activeTab: MASTHEAD_TAB_ID.WORKFLOW },
+                        },
+                        {
+                            path: "workflows/trs_search",
+                            component: TrsSearch,
+                            masthead: { activeTab: MASTHEAD_TAB_ID.WORKFLOW },
+                        },
+                        {
+                            path: "workflows/:storedWorkflowId/invocations",
+                            component: StoredWorkflowInvocations,
+                            props: true,
+                            masthead: { activeTab: MASTHEAD_TAB_ID.WORKFLOW },
+                        },
+                    ],
+                },
+                {
+                    path: "/workflows/edit",
+                    component: WorkflowEditorModule,
+                    masthead: { activeTab: MASTHEAD_TAB_ID.WORKFLOW },
+                },
+                ...AdminRoutes,
+                ...LibraryRoutes,
+            ],
+        },
+        mastheadOptions
+    );
+    return router;
 }

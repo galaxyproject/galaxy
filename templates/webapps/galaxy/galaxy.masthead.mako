@@ -39,7 +39,7 @@
                 console.log("galaxy.masthead.mako", "initialize masthead");
                 let options = ${h.dumps(masthead_config)};
                 const container = document.getElementById("masthead");
-                window.bundleEntries.initMasthead(options, container);
+                window.bundleEntries.initMasthead(galaxy, options, container);
             });
         } else {
             console.log("galaxy.masthead.mako", "Detected embedding, not initializing masthead");

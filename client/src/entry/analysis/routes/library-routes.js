@@ -5,11 +5,13 @@ import LibraryFolderDatasetPermissions from "components/Libraries/LibraryFolder/
 import LibraryFolderPermissions from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryFolderPermissions";
 import LibraryDataset from "components/Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset";
 import LibraryPermissions from "components/Libraries/LibraryPermissions/LibraryPermissions";
+import { MASTHEAD_TAB_ID } from "layout/masthead";
 
 export default [
     {
         path: "/libraries",
         component: Base,
+        masthead: { activeTab: MASTHEAD_TAB_ID.SHARED },
         children: [
             { path: "", component: LibrariesList },
             {

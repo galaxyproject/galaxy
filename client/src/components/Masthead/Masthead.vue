@@ -11,7 +11,7 @@
                 v-show="!(tab.hidden === undefined ? false : tab.hidden)"
                 :key="`tab-${idx}`"
                 :tab="tab"
-                :active-tab="activeTab" />
+                :active="tab.id == activeTab" />
             <masthead-item :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
         </b-navbar-nav>
         <quota-meter />
@@ -55,23 +55,20 @@ export default {
             type: String,
             default: null,
         },
-        initialActiveTab: {
-            type: String,
-            default: null,
-        },
         mastheadState: {
             type: Object,
             default: null,
         },
-        menuOptions: {
+        config: {
             type: Object,
-            default: null,
+            required: true,
+        },
+        mastheadOptions: {
+            required: true,
         },
     },
     data() {
         return {
-            activeTab: this.initialActiveTab,
-            baseTabs: [],
             extensionTabs: [],
             windowTab: this.mastheadState.windowManager.getTab(),
             windowToggle: false,
@@ -85,21 +82,27 @@ export default {
             }
             return brandTitle;
         },
+        baseTabs() {
+            if (this.config) {
+                return fetchMenu(this.config, this.mastheadOptions);
+            } else {
+                return [];
+            }
+        },
         tabs() {
             const tabs = [].concat(this.baseTabs, this.extensionTabs);
             return tabs.map(this._tabToJson);
         },
+        activeTab() {
+            return this.mastheadOptions.activeTab;
+        },
     },
     created() {
-        this.baseTabs = fetchMenu(this.menuOptions);
         loadWebhookMenuItems(this.extensionTabs);
     },
     methods: {
         addItem(item) {
             this.tabs.push(item);
-        },
-        highlight(activeTab) {
-            this.activeTab = activeTab;
         },
         onWindowToggle() {
             this.windowToggle = !this.windowToggle;

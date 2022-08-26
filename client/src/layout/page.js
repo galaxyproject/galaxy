@@ -59,7 +59,7 @@ const View = Backbone.View.extend({
             this.$masthead.remove();
             this.$center.css("top", 0);
         } else {
-            this.masthead = mountMasthead(this.$masthead[0], this.config, mastheadState);
+            this.masthead = mountMasthead(this.$masthead[0], Galaxy, this.config, mastheadState);
         }
         this.$center.append(this.center.$el);
         this.$el.append(this.modal.$el);

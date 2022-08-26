@@ -74,9 +74,9 @@ export default {
             type: Boolean,
             default: false,
         },
-        activeTab: {
-            type: String,
-            default: null,
+        active: {
+            type: Boolean,
+            default: false,
         },
     },
     computed: {
@@ -87,9 +87,8 @@ export default {
             return `Please <a href="${getAppRoot()}login">log in or register</a> to use this feature.`;
         },
         classes() {
-            const isActiveTab = this.tab.id == this.activeTab;
             return Object.fromEntries([
-                ["active", isActiveTab],
+                ["active", this.active],
                 [this.tab.cls, true],
             ]);
         },

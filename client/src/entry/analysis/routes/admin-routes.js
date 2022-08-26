@@ -1,4 +1,5 @@
 import { getGalaxyInstance } from "app";
+import { MASTHEAD_TAB_ID } from "layout/masthead";
 
 import Admin from "entry/analysis/modules/Admin";
 import Home from "components/admin/Home";
@@ -25,6 +26,7 @@ export default [
     {
         path: "/admin",
         component: Admin,
+        masthead: { activeTab: MASTHEAD_TAB_ID.ADMIN },
         children: [
             {
                 path: "",

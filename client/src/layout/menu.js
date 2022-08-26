@@ -1,6 +1,7 @@
 import axios from "axios";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
+import { MASTHEAD_TAB_ID } from "./masthead";
 
 const POST_LOGOUT_URL = "root/login?is_logout_redirect=true";
 
@@ -55,14 +56,14 @@ export function userLogoutClient() {
     window.top.location.href = `${galaxy.root}${POST_LOGOUT_URL}`;
 }
 
-export function fetchMenu(options = {}) {
+export function fetchMenu(config, mastheadOptions) {
     const Galaxy = getGalaxyInstance();
     const menu = [];
     //
     // Analyze data tab.
     //
     menu.push({
-        id: "analysis",
+        id: MASTHEAD_TAB_ID.ANALYSIS,
         url: "",
         tooltip: _l("Tools and Current History"),
         icon: "fa-home",
@@ -72,7 +73,7 @@ export function fetchMenu(options = {}) {
     // Workflow tab.
     //
     menu.push({
-        id: "workflow",
+        id: MASTHEAD_TAB_ID.WORKFLOW,
         title: _l("Workflow"),
         tooltip: _l("Chain tools into workflows"),
         disabled: !Galaxy.user.id,
@@ -83,34 +84,32 @@ export function fetchMenu(options = {}) {
     //
     // Visualization tab.
     //
-    if (Galaxy.config.visualizations_visible) {
-        if (Galaxy.config.visualizations_visible) {
-            menu.push({
-                id: "visualization",
-                title: _l("Visualize"),
-                tooltip: _l("Visualize datasets"),
-                disabled: !Galaxy.user.id,
-                url: "visualizations",
-                target: "__use_router__",
-            });
-        }
+    if (mastheadOptions.enableVisualizations) {
+        menu.push({
+            id: MASTHEAD_TAB_ID.VISUALIZATION,
+            title: _l("Visualize"),
+            tooltip: _l("Visualize datasets"),
+            disabled: !Galaxy.user.id,
+            url: "visualizations",
+            target: "__use_router__",
+        });
     }
 
     //
     // 'Shared Items' or Libraries tab.
     //
-    if (Galaxy.config.single_user) {
+    if (config.single_user) {
         // Single user can still use libraries, especially as we may grow that
         // functionality as a representation for external data.  The rest is
         // hidden though.
         menu.push({
             title: _l("Data Libraries"),
             url: "libraries",
-            id: "libraries",
+            id: MASTHEAD_TAB_ID.SHARED,
         });
     } else {
         menu.push({
-            id: "shared",
+            id: MASTHEAD_TAB_ID.SHARED,
             title: _l("Shared Data"),
             url: "javascript:void(0)",
             tooltip: _l("Access published resources"),
@@ -146,9 +145,9 @@ export function fetchMenu(options = {}) {
     //
     // Admin.
     //
-    if (Galaxy.user.get("is_admin")) {
+    if (mastheadOptions.enableAdmin) {
         menu.push({
-            id: "admin",
+            id: MASTHEAD_TAB_ID.ADMIN,
             title: _l("Admin"),
             url: "admin",
             tooltip: _l("Administer this Galaxy"),
@@ -160,38 +159,38 @@ export function fetchMenu(options = {}) {
     // Help tab.
     //
     const helpTab = {
-        id: "help",
+        id: MASTHEAD_TAB_ID.HELP,
         title: _l("Help"),
         url: "javascript:void(0)",
         tooltip: _l("Support, contact, and community"),
         menu: [
             {
                 title: _l("Galaxy Help"),
-                url: options.helpsite_url,
+                url: config.helpsite_url,
                 target: "_blank",
-                hidden: !options.helpsite_url,
+                hidden: !config.helpsite_url,
             },
             {
                 title: _l("Support"),
-                url: options.support_url,
+                url: config.support_url,
                 target: "_blank",
-                hidden: !options.support_url,
+                hidden: !config.support_url,
             },
             {
                 title: _l("Videos"),
-                url: options.screencasts_url,
+                url: config.screencasts_url,
                 target: "_blank",
-                hidden: !options.screencasts_url,
+                hidden: !config.screencasts_url,
             },
             {
                 title: _l("Community Hub"),
-                url: options.wiki_url,
+                url: config.wiki_url,
                 target: "_blank",
-                hidden: !options.wiki_url,
+                hidden: !config.wiki_url,
             },
             {
                 title: _l("How to Cite Galaxy"),
-                url: options.citation_url,
+                url: config.citation_url,
                 target: "_blank",
             },
             {
@@ -210,9 +209,9 @@ export function fetchMenu(options = {}) {
             },
             {
                 title: _l("Terms and Conditions"),
-                url: options.terms_url,
+                url: config.terms_url,
                 target: "_blank",
-                hidden: !options.terms_url,
+                hidden: !config.terms_url,
             },
         ],
     };
@@ -223,9 +222,9 @@ export function fetchMenu(options = {}) {
     //
     let userTab = {};
     if (!Galaxy.user.id) {
-        if (options.allow_user_creation) {
+        if (config.allow_user_creation) {
             userTab = {
-                id: "user",
+                id: MASTHEAD_TAB_ID.USER,
                 title: _l("Login or Register"),
                 cls: "loggedout-only",
                 url: "login",
@@ -233,7 +232,7 @@ export function fetchMenu(options = {}) {
             };
         } else {
             userTab = {
-                id: "user",
+                id: MASTHEAD_TAB_ID.USER,
                 title: _l("Login"),
                 cls: "loggedout-only",
                 tooltip: _l("Login"),
@@ -242,7 +241,7 @@ export function fetchMenu(options = {}) {
         }
     } else {
         userTab = {
-            id: "user",
+            id: MASTHEAD_TAB_ID.USER,
             title: _l("User"),
             cls: "loggedin-only",
             url: "javascript:void(0)",
@@ -268,7 +267,7 @@ export function fetchMenu(options = {}) {
                 {
                     title: _l("Logout"),
                     onclick: userLogout,
-                    hidden: Galaxy.config.single_user,
+                    hidden: config.single_user,
                 },
                 {
                     title: _l("Datasets"),
@@ -284,7 +283,7 @@ export function fetchMenu(options = {}) {
                     title: _l("Histories shared with me"),
                     url: "histories/list_shared",
                     target: "__use_router__",
-                    hidden: Galaxy.config.single_user,
+                    hidden: config.single_user,
                 },
                 {
                     title: _l("Pages"),
@@ -298,14 +297,14 @@ export function fetchMenu(options = {}) {
                 },
             ],
         };
-        if (Galaxy.config.visualizations_visible) {
+        if (mastheadOptions.enableVisualizations) {
             userTab.menu.push({
                 title: _l("Visualizations"),
                 url: "visualizations/list",
                 target: "__use_router__",
             });
         }
-        if (Galaxy.config.interactivetools_enable) {
+        if (mastheadOptions.enableInteractiveTools) {
             userTab.menu.push({ divider: true });
             userTab.menu.push({
                 title: _l("Active InteractiveTools"),

@@ -21,14 +21,14 @@ describe("MastheadItem.vue", () => {
         return shallowMount(MastheadItem, {
             propsData: {
                 tab,
-                activeTab: active,
+                active: active,
             },
             localVue,
         });
     }
 
     it("should render active tab with menus", async () => {
-        active = "mytab";
+        active = true;
         menu = true;
         wrapper = m();
         expect(wrapper.vm.classes.active).toBe(true);
@@ -36,7 +36,7 @@ describe("MastheadItem.vue", () => {
     });
 
     it("should render inactive tabs without menus", async () => {
-        active = "othertab";
+        active = false;
         menu = false;
         wrapper = m();
         expect(wrapper.vm.classes.active).toBe(false);

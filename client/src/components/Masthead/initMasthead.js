@@ -5,7 +5,7 @@
 import { MastheadState, mountMasthead } from "../../layout/masthead";
 import $ from "jquery";
 
-export function initMasthead(config, container) {
+export function initMasthead(Galaxy, config, container) {
     console.log("initMasthead");
 
     const $masthead = $("#masthead");
@@ -15,7 +15,7 @@ export function initMasthead(config, container) {
     } else {
         if (container) {
             const mastheadState = new MastheadState();
-            mountMasthead(container, config, mastheadState);
+            mountMasthead(container, Galaxy, config, mastheadState);
         }
     }
 }
