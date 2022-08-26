@@ -1319,7 +1319,35 @@ steps:
       col_names: 'B'
 """, history_id=history_id)
 
-    @skip_without_tool('column_param')
+    @skip_without_tool("column_param_list")
+    def test_comma_separated_columns_with_trailing_newline(self):
+        # Tests that workflows with weird tool state continue to run.
+        # In this case the newline may have been added by the workflow editor
+        # text field that is used for data_column parameters
+        with self.dataset_populator.test_history() as history_id:
+            job_summary = self._run_workflow(
+                """class: GalaxyWorkflow
+steps:
+  empty_output:
+    tool_id: empty_output
+    outputs:
+      out_file1:
+        change_datatype: tabular
+  column_param_list:
+    tool_id: column_param_list
+    in:
+      input1: empty_output/out_file1
+    state:
+      col: '2,3\n'
+      col_names: 'B\n'
+""",
+                history_id=history_id,
+            )
+            job = self.dataset_populator.get_job_details(job_summary.jobs[0]["id"], full=True).json()
+            assert "col 2,3" in job["command_line"]
+            assert 'echo "col_names B" >>' in job["command_line"]
+
+    @skip_without_tool("column_param")
     def test_runtime_data_column_parameter(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_jobs("""class: GalaxyWorkflow
