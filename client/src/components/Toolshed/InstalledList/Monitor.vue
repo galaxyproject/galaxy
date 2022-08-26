@@ -15,6 +15,9 @@
                     <b-link @click="onQuery(row.item.name)"> {{ row.item.name }} ({{ row.item.owner }}) </b-link>
                 </template>
                 <template v-slot:cell(status)="row">
+                    <b>Status: </b><span>{{ row.item.status }}</span>
+                </template>
+                <template v-slot:cell(actions)="row">
                     <InstallationActions
                         class="float-right"
                         :status="row.item.status"
@@ -43,7 +46,7 @@ export default {
             loading: true,
             error: null,
             items: [],
-            fields: ["name", "status"],
+            fields: ["name", "status", "actions"],
         };
     },
     computed: {
