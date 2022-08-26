@@ -2,85 +2,89 @@
     <draggable-wrapper
         :position="step.position || defaultPosition"
         :zoom="canvasManager.zoomLevel"
-        @updatePosition="onUpdatePosition">
-        <div @click="makeActive()" :id="idString" :name="name" :node-label="label" :class="classes" draggable="true">
-            <div class="node-header unselectable clearfix">
-                <b-button
-                    v-b-tooltip.hover
-                    class="node-destroy py-0 float-right"
-                    variant="primary"
-                    size="sm"
-                    aria-label="destroy node"
-                    title="Remove"
-                    @click="onRemove">
-                    <i class="fa fa-times" />
-                </b-button>
-                <b-button
-                    v-if="isEnabled"
-                    :id="popoverId"
-                    class="node-recommendations py-0 float-right"
-                    variant="primary"
-                    size="sm"
-                    aria-label="tool recommendations">
-                    <i class="fa fa-arrow-right" />
-                </b-button>
-                <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
-                    <Recommendations
-                        :get-node="getNode"
-                        :get-manager="getManager"
-                        :datatypes-mapper="datatypesMapper"
-                        @onCreate="onCreate" />
-                </b-popover>
-                <b-button
-                    v-if="canClone"
-                    v-b-tooltip.hover
-                    class="node-clone py-0 float-right"
-                    variant="primary"
-                    size="sm"
-                    aria-label="clone node"
-                    title="Duplicate"
-                    @click="onClone">
-                    <i class="fa fa-files-o" />
-                </b-button>
-                <i :class="iconClass" />
-                <span
-                    v-b-tooltip.hover
-                    title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."
-                    >{{ stepIndex }}:
-                </span>
-                <span class="node-title">{{ title }}</span>
-            </div>
-            <b-alert v-if="!!errors" variant="danger" show class="node-error">
-                {{ errors }}
-            </b-alert>
-            <div v-else class="node-body">
-                <loading-span v-if="showLoading" message="Loading details" />
-                <node-input
-                    v-for="input in inputs"
-                    :key="input.name"
-                    :input="input"
+        @updatePosition="onUpdatePosition"
+        @click="makeActive"
+        :id="idString"
+        :name="name"
+        :node-label="label"
+        :class="classes"
+        :style="style">
+        <div class="node-header unselectable clearfix">
+            <b-button
+                v-b-tooltip.hover
+                class="node-destroy py-0 float-right"
+                variant="primary"
+                size="sm"
+                aria-label="destroy node"
+                title="Remove"
+                @click="onRemove">
+                <i class="fa fa-times" />
+            </b-button>
+            <b-button
+                v-if="isEnabled"
+                :id="popoverId"
+                class="node-recommendations py-0 float-right"
+                variant="primary"
+                size="sm"
+                aria-label="tool recommendations">
+                <i class="fa fa-arrow-right" />
+            </b-button>
+            <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
+                <Recommendations
                     :get-node="getNode"
                     :get-manager="getManager"
                     :datatypes-mapper="datatypesMapper"
-                    :canvas-manager="canvasManager"
-                    @onAdd="onAddInput"
-                    @onRemove="onRemoveInput"
-                    @onDisconnect="onDisconnect"
-                    @onChange="onChange" />
-                <div v-if="showRule" class="rule" />
-                <node-output
-                    v-for="output in outputs"
-                    :key="output.name"
-                    :output="output"
-                    :post-job-actions="postJobActions"
-                    :get-node="getNode"
-                    :get-manager="getManager"
-                    :canvas-manager="canvasManager"
-                    @onAdd="onAddOutput"
-                    @onRemove="onRemoveOutput"
-                    @onToggle="onToggleOutput"
-                    @onChange="onChange" />
-            </div>
+                    @onCreate="onCreate" />
+            </b-popover>
+            <b-button
+                v-if="canClone"
+                v-b-tooltip.hover
+                class="node-clone py-0 float-right"
+                variant="primary"
+                size="sm"
+                aria-label="clone node"
+                title="Duplicate"
+                @click="onClone">
+                <i class="fa fa-files-o" />
+            </b-button>
+            <i :class="iconClass" />
+            <span
+                v-b-tooltip.hover
+                title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."
+                >{{ stepIndex }}:
+            </span>
+            <span class="node-title">{{ title }}</span>
+        </div>
+        <b-alert v-if="!!errors" variant="danger" show class="node-error">
+            {{ errors }}
+        </b-alert>
+        <div v-else class="node-body">
+            <loading-span v-if="showLoading" message="Loading details" />
+            <node-input
+                v-for="input in inputs"
+                :key="input.name"
+                :input="input"
+                :get-node="getNode"
+                :get-manager="getManager"
+                :datatypes-mapper="datatypesMapper"
+                :canvas-manager="canvasManager"
+                @onAdd="onAddInput"
+                @onRemove="onRemoveInput"
+                @onDisconnect="onDisconnect"
+                @onChange="onChange" />
+            <div v-if="showRule" class="rule" />
+            <node-output
+                v-for="output in outputs"
+                :key="output.name"
+                :output="output"
+                :post-job-actions="postJobActions"
+                :get-node="getNode"
+                :get-manager="getManager"
+                :canvas-manager="canvasManager"
+                @onAdd="onAddOutput"
+                @onRemove="onRemoveOutput"
+                @onToggle="onToggleOutput"
+                @onChange="onChange" />
         </div>
     </draggable-wrapper>
 </template>
@@ -212,6 +216,12 @@ export default {
             }
             return cssObj;
         },
+        style() {
+            if (isNaN(this.step.position?.top) || isNaN(this.step.position?.left)) {
+                return this.defaultPosition;
+            }
+            return { top: this.step.position.top + "px", left: this.step.position.left + "px" };
+        },
         defaultPosition() {
             const p = document.getElementById("canvas-viewport");
             const o = document.getElementById("canvas-container");
@@ -228,6 +238,8 @@ export default {
     mounted() {
         this.canvasManager = this.getCanvasManager();
         this.activeOutputs = new ActiveOutputs();
+        this.element = this.$el;
+        this.content_id = this.contentId;
         // initialize node data
         this.$emit("onAdd", this);
         if (this.step.config_form) {

@@ -1,5 +1,5 @@
 <template>
-    <div draggable="true" @drag="onDrag" @dragend="onDragEnd" @mousedown="onMouseDown" :style="style">
+    <div draggable="true" @drag="onDrag" @dragend="onDragEnd" @mousedown="onMouseDown" @click="$emit('click')">
         <slot></slot>
     </div>
 </template>
@@ -26,13 +26,7 @@ export default {
     data() {
         return {
             mouseDown: {},
-            localPosition: {},
         };
-    },
-    computed: {
-        style() {
-            return { top: this.position.top + "px", left: this.position.left + "px" };
-        },
     },
     methods: {
         onMouseDown(e) {
