@@ -21,7 +21,7 @@ export default [
             { path: "folders/:folder_id", redirect: "folders/:folder_id/page/1" },
             {
                 path: "folders/:folder_id/page/:page",
-                name: "LibraryFolder",
+                name: "LibraryFolderPage",
                 component: LibraryFolder,
                 props(route) {
                     const props = { ...route.params };
@@ -39,7 +39,7 @@ export default [
             },
             {
                 path: "folders/:folder_id/permissions",
-                name: "LibraryFolder",
+                name: "LibraryFolderPermissions",
                 component: LibraryFolderPermissions,
                 props: true,
             },
