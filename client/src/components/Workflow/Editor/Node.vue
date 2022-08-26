@@ -1,94 +1,88 @@
 <template>
-    <div
-        @click="makeActive()"
-        :id="idString"
-        :name="name"
-        :node-label="label"
-        :class="classes"
-        :style="style"
-        draggable="true"
-        @mousedown="onMouseDown"
-        @dragstart="makeActive"
-        @drag="onDrag"
-        @dragend="onDragEnd">
-        <div class="node-header unselectable clearfix">
-            <b-button
-                v-b-tooltip.hover
-                class="node-destroy py-0 float-right"
-                variant="primary"
-                size="sm"
-                aria-label="destroy node"
-                title="Remove"
-                @click="onRemove">
-                <i class="fa fa-times" />
-            </b-button>
-            <b-button
-                v-if="isEnabled"
-                :id="popoverId"
-                class="node-recommendations py-0 float-right"
-                variant="primary"
-                size="sm"
-                aria-label="tool recommendations">
-                <i class="fa fa-arrow-right" />
-            </b-button>
-            <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
-                <Recommendations
+    <draggable-wrapper
+        :position="step.position || defaultPosition"
+        :zoom="canvasManager.zoomLevel"
+        @updatePosition="onUpdatePosition">
+        <div @click="makeActive()" :id="idString" :name="name" :node-label="label" :class="classes" draggable="true">
+            <div class="node-header unselectable clearfix">
+                <b-button
+                    v-b-tooltip.hover
+                    class="node-destroy py-0 float-right"
+                    variant="primary"
+                    size="sm"
+                    aria-label="destroy node"
+                    title="Remove"
+                    @click="onRemove">
+                    <i class="fa fa-times" />
+                </b-button>
+                <b-button
+                    v-if="isEnabled"
+                    :id="popoverId"
+                    class="node-recommendations py-0 float-right"
+                    variant="primary"
+                    size="sm"
+                    aria-label="tool recommendations">
+                    <i class="fa fa-arrow-right" />
+                </b-button>
+                <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
+                    <Recommendations
+                        :get-node="getNode"
+                        :get-manager="getManager"
+                        :datatypes-mapper="datatypesMapper"
+                        @onCreate="onCreate" />
+                </b-popover>
+                <b-button
+                    v-if="canClone"
+                    v-b-tooltip.hover
+                    class="node-clone py-0 float-right"
+                    variant="primary"
+                    size="sm"
+                    aria-label="clone node"
+                    title="Duplicate"
+                    @click="onClone">
+                    <i class="fa fa-files-o" />
+                </b-button>
+                <i :class="iconClass" />
+                <span
+                    v-b-tooltip.hover
+                    title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."
+                    >{{ stepIndex }}:
+                </span>
+                <span class="node-title">{{ title }}</span>
+            </div>
+            <b-alert v-if="!!errors" variant="danger" show class="node-error">
+                {{ errors }}
+            </b-alert>
+            <div v-else class="node-body">
+                <loading-span v-if="showLoading" message="Loading details" />
+                <node-input
+                    v-for="input in inputs"
+                    :key="input.name"
+                    :input="input"
                     :get-node="getNode"
                     :get-manager="getManager"
                     :datatypes-mapper="datatypesMapper"
-                    @onCreate="onCreate" />
-            </b-popover>
-            <b-button
-                v-if="canClone"
-                v-b-tooltip.hover
-                class="node-clone py-0 float-right"
-                variant="primary"
-                size="sm"
-                aria-label="clone node"
-                title="Duplicate"
-                @click="onClone">
-                <i class="fa fa-files-o" />
-            </b-button>
-            <i :class="iconClass" />
-            <span
-                v-b-tooltip.hover
-                title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."
-                >{{ stepIndex }}:
-            </span>
-            <span class="node-title">{{ title }}</span>
+                    :canvas-manager="canvasManager"
+                    @onAdd="onAddInput"
+                    @onRemove="onRemoveInput"
+                    @onDisconnect="onDisconnect"
+                    @onChange="onChange" />
+                <div v-if="showRule" class="rule" />
+                <node-output
+                    v-for="output in outputs"
+                    :key="output.name"
+                    :output="output"
+                    :post-job-actions="postJobActions"
+                    :get-node="getNode"
+                    :get-manager="getManager"
+                    :canvas-manager="canvasManager"
+                    @onAdd="onAddOutput"
+                    @onRemove="onRemoveOutput"
+                    @onToggle="onToggleOutput"
+                    @onChange="onChange" />
+            </div>
         </div>
-        <b-alert v-if="!!errors" variant="danger" show class="node-error">
-            {{ errors }}
-        </b-alert>
-        <div v-else class="node-body">
-            <loading-span v-if="showLoading" message="Loading details" />
-            <node-input
-                v-for="input in inputs"
-                :key="input.name"
-                :input="input"
-                :get-node="getNode"
-                :get-manager="getManager"
-                :datatypes-mapper="datatypesMapper"
-                :canvas-manager="canvasManager"
-                @onAdd="onAddInput"
-                @onRemove="onRemoveInput"
-                @onDisconnect="onDisconnect"
-                @onChange="onChange" />
-            <div v-if="showRule" class="rule" />
-            <node-output
-                v-for="output in outputs"
-                :key="output.name"
-                :output="output"
-                :post-job-actions="postJobActions"
-                :get-node="getNode"
-                :get-manager="getManager"
-                :canvas-manager="canvasManager"
-                @onAdd="onAddOutput"
-                @onRemove="onRemoveOutput"
-                @onToggle="onToggleOutput"
-                @onChange="onChange" />
-        </div>
-    </div>
+    </draggable-wrapper>
 </template>
 
 <script>
@@ -100,6 +94,7 @@ import { getGalaxyInstance } from "app";
 import Recommendations from "components/Workflow/Editor/Recommendations";
 import NodeInput from "./NodeInput";
 import NodeOutput from "./NodeOutput";
+import DraggableWrapper from "./Draggable";
 import { ActiveOutputs } from "./modules/outputs";
 Vue.use(BootstrapVue);
 
@@ -107,6 +102,7 @@ const OFFSET_RANGE = 100;
 
 export default {
     components: {
+        DraggableWrapper,
         LoadingSpan,
         Recommendations,
         NodeInput,
@@ -216,35 +212,22 @@ export default {
             }
             return cssObj;
         },
-        style() {
-            const step = this.step;
-            const styleObj = {};
-            if (step.position) {
-                styleObj.top = step.position.top + "px";
-                styleObj.left = step.position.left + "px";
-            } else {
-                // Set initial scroll position
-                // TODO: should just be in template
-                const p = document.getElementById("canvas-viewport");
-                const o = document.getElementById("canvas-container");
-                if (p && o) {
-                    const el = this.$el;
-                    const left =
-                        -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
-                    const top =
-                        -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
-                    styleObj.top = `${top}px`;
-                    styleObj.left = `${left}px`;
-                }
+        defaultPosition() {
+            const p = document.getElementById("canvas-viewport");
+            const o = document.getElementById("canvas-container");
+            if (p && o) {
+                const el = this.$el;
+                const left =
+                    -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
+                const top =
+                    -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
+                return { left, top };
             }
-            return styleObj;
         },
     },
     mounted() {
         this.canvasManager = this.getCanvasManager();
         this.activeOutputs = new ActiveOutputs();
-        this.element = this.$el;
-        this.content_id = this.contentId;
         // initialize node data
         this.$emit("onAdd", this);
         if (this.step.config_form) {
@@ -255,6 +238,10 @@ export default {
     },
 
     methods: {
+        onUpdatePosition(position) {
+            const newStep = { ...this.step, position };
+            this.$emit("onUpdateStep", newStep.id, newStep);
+        },
         onMouseDown(e) {
             this.mouseDown = { offsetX: e.offsetX, offsetY: e.offsetY };
             console.log("mouseDownOffset", this.mouseDown);
