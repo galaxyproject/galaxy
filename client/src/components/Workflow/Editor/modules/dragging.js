@@ -3,13 +3,6 @@ import Terminals from "./terminals";
 import Connector from "./connector";
 import { ariaSelectOutputNode } from "./aria";
 
-export function attachDragging(el, callbacks) {
-    const $el = $(el);
-    Object.entries(callbacks).forEach(([k, v]) => {
-        $el.bind(k, v);
-    });
-}
-
 export class InputDragging {
     constructor(app, canvasManager, options = {}) {
         this.app = app;
@@ -18,10 +11,10 @@ export class InputDragging {
         this.terminal = options.terminal;
         this.el.terminal = this.terminal;
         this.$el = $(this.el);
-        this.$el.on("dropinit", (e, d) => this.onDropInit(e, d));
-        this.$el.on("dropstart", (e, d) => this.onDropStart(e, d));
-        this.$el.on("dropend", (e, d) => this.onDropEnd(e, d));
-        this.$el.on("drop", (e, d) => this.onDrop(e, d));
+        // this.$el.on("dropinit", (e, d) => this.onDropInit(e, d));
+        // this.$el.on("dropstart", (e, d) => this.onDropStart(e, d));
+        // this.$el.on("dropend", (e, d) => this.onDropEnd(e, d));
+        // this.$el.on("drop", (e, d) => this.onDrop(e, d));
     }
     onDropInit(e, d = {}) {
         var terminal = this.terminal;
@@ -84,18 +77,18 @@ export class OutputDragging {
             `connect output ${this.terminal.name} to input. Press space to see a list of available inputs`
         );
         this.$el.attr("tabindex", "0");
-        this.$el.attr("aria-grabbed", "false");
-        this.$el.on("drag", (e, d) => this.onDrag(e, d));
-        this.$el.on("dragstart", (e, d) => this.onDragStart(e, d));
-        this.$el.on("dragend", (e, d) => this.onDragEnd(e, d));
-        this.$el.on("keydown", (e) =>
-            ariaSelectOutputNode({
-                e: e,
-                manager: app,
-                outputTerminal: options.terminal,
-                outputEl: this.el,
-            })
-        );
+        // this.$el.attr("aria-grabbed", "false");
+        // this.$el.on("drag", (e, d) => this.onDrag(e, d));
+        // this.$el.on("dragstart", (e, d) => this.onDragStart(e, d));
+        // this.$el.on("dragend", (e, d) => this.onDragEnd(e, d));
+        // this.$el.on("keydown", (e) =>
+        //     ariaSelectOutputNode({
+        //         e: e,
+        //         manager: app,
+        //         outputTerminal: options.terminal,
+        //         outputEl: this.el,
+        //     })
+        // );
     }
     onDrag(e, d = {}) {
         var onmove = () => {

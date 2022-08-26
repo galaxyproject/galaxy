@@ -75,7 +75,8 @@
                     @onCreate="onInsertTool"
                     @onChange="onChange"
                     @onDisconnect="onDisconnect"
-                    @onRemove="onRemove">
+                    @onRemove="onRemove"
+                    @onUpdateStep="onUpdateStep">
                 </workflow-graph>
             </div>
             <SidePanel id="right" side="right">
@@ -360,6 +361,10 @@ export default {
         hide_modal();
     },
     methods: {
+        onUpdateStep(stepId, step) {
+            console.log("updating step");
+            this.steps[stepId] = step;
+        },
         onDisconnect(nodeId, inputName) {
             delete this.steps[nodeId].input_connections[inputName];
         },

@@ -12,7 +12,7 @@
             @click="resetWheel">
             Zoom Controls
         </b-button>
-        <div id="canvas-viewport">
+        <div id="canvas-viewport" @dragover.prevent @drop.prevent>
             <div id="canvas-container" ref="canvas">
                 <WorkflowNode
                     v-for="(step, key) in steps"

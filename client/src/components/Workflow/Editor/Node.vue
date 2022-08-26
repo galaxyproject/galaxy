@@ -1,5 +1,16 @@
 <template>
-    <div @click="makeActive()" :id="idString" :name="name" :node-label="label" :class="classes" :style="style">
+    <div
+        @click="makeActive()"
+        :id="idString"
+        :name="name"
+        :node-label="label"
+        :class="classes"
+        :style="style"
+        draggable="true"
+        @mousedown="onMouseDown"
+        @dragstart="makeActive"
+        @drag="onDrag"
+        @dragend="onDragEnd">
         <div class="node-header unselectable clearfix">
             <b-button
                 v-b-tooltip.hover
@@ -90,7 +101,6 @@ import Recommendations from "components/Workflow/Editor/Recommendations";
 import NodeInput from "./NodeInput";
 import NodeOutput from "./NodeOutput";
 import { ActiveOutputs } from "./modules/outputs";
-import { attachDragging } from "./modules/dragging";
 Vue.use(BootstrapVue);
 
 const OFFSET_RANGE = 100;
@@ -157,6 +167,7 @@ export default {
             showLoading: true,
             highlight: false,
             scrolledTo: false,
+            mouseDown: {},
         };
     },
     computed: {
@@ -234,31 +245,6 @@ export default {
         this.activeOutputs = new ActiveOutputs();
         this.element = this.$el;
         this.content_id = this.contentId;
-
-        // Attach node dragging events
-        attachDragging(this.$el, {
-            dragstart: () => {
-                this.$emit("onActivate", this.id);
-            },
-            dragend: () => {
-                this.$emit("onChange");
-                this.canvasManager.drawOverview();
-            },
-            drag: (e, d) => {
-                const o = document.getElementById("canvas-container");
-                const el = this.$el;
-                const rect = o.getBoundingClientRect();
-                const left = (d.offsetX - rect.left) / this.canvasManager.canvasZoom;
-                const top = (d.offsetY - rect.top) / this.canvasManager.canvasZoom;
-                el.style.left = `${left}px`;
-                el.style.top = `${top}px`;
-                this.onRedraw();
-            },
-            dragclickonly: () => {
-                this.$emit("onActivate", this.id);
-            },
-        });
-
         // initialize node data
         this.$emit("onAdd", this);
         if (this.step.config_form) {
@@ -269,6 +255,22 @@ export default {
     },
 
     methods: {
+        onMouseDown(e) {
+            this.mouseDown = { offsetX: e.offsetX, offsetY: e.offsetY };
+            console.log("mouseDownOffset", this.mouseDown);
+        },
+        onDrag(e) {
+            const left = this.step.position.left + (e.offsetX - this.mouseDown.offsetX) / this.canvasManager.canvasZoom;
+            const top = this.step.position.top + (e.offsetY - this.mouseDown.offsetY) / this.canvasManager.canvasZoom;
+            const newStep = { ...this.step, position: { left, top } };
+            console.log({ left, top, e });
+            this.$emit("onUpdateStep", newStep.id, newStep);
+        },
+        onDragEnd(e) {
+            // this.$emit("onChange");
+            // this.canvasManager.drawOverview();
+            console.log("end");
+        },
         onChange() {
             this.$emit("onChange");
         },
