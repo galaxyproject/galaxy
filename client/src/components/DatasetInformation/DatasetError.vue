@@ -31,11 +31,11 @@
                         <div v-if="jobProblems && (jobProblems.has_duplicate_inputs || jobProblems.has_empty_inputs)">
                             <h3 class="common_problems mt-3">Detected Common Potential Problems</h3>
                             <p v-if="jobProblems.has_empty_inputs" id="dataset-error-has-empty-inputs">
-                                The tool was executed with one or more empty input datasets. This frequently results in
+                                The tool was started with one or more empty input datasets. This frequently results in
                                 tool errors due to problematic input choices.
                             </p>
                             <p v-if="jobProblems.has_duplicate_inputs" id="dataset-error-has-duplicate-inputs">
-                                The tool was executed with one or more duplicate input datasets. This frequently results
+                                The tool was started with one or more duplicate input datasets. This frequently results
                                 in tool errors due to problematic input choices.
                             </p>
                         </div>

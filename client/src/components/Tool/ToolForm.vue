@@ -197,7 +197,7 @@ export default {
             return id.endsWith(version) ? id : `${id}/${version}`;
         },
         tooltip() {
-            return `Execute: ${this.formConfig.name} (${this.formConfig.version})`;
+            return `Run tool: ${this.formConfig.name} (${this.formConfig.version})`;
         },
         errorContentPretty() {
             return JSON.stringify(this.errorContent, null, 4);
