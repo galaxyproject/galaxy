@@ -225,3 +225,11 @@
         }
     }
 }
+
+.workflow-recommendations {
+    display: block;
+    .header-background {
+        border-bottom: solid 1px $brand-primary;
+        margin-bottom: 0.5rem;
+    }
+}

@@ -457,6 +457,15 @@ $galaxy-state-bg: (
     border-style: dotted;
 }
 
+// Extra label colors
+.badge-beta {
+    @extend .badge-warning;
+}
+
+.badge-new {
+    @extend .badge-info;
+}
+
 // Button styles
 
 button {
@@ -494,6 +503,11 @@ a.btn {
     .btn:active {
         color: $brand-dark;
     }
+}
+
+/* For Vue */
+[v-cloak] {
+    display: none;
 }
 
 @import "unsorted.scss";

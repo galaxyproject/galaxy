@@ -437,3 +437,27 @@ $ui-margin-horizontal-large: $margin-v * 2;
     border: 2px solid $state-success-bg;
     background: lighten($state-success-bg, 10%);
 }
+
+/* Used for tree in tool recommendations */
+.ui-tool-recommendation {
+    .node {
+        cursor: pointer;
+        circle {
+            fill: $brand-primary;
+            stroke: $brand-primary;
+        }
+        text {
+            font-size: 0.4rem;
+        }
+    }
+
+    .tree-size {
+        width: 100%;
+    }
+
+    .link {
+        fill: none;
+        stroke: $brand-primary;
+        stroke-width: 1;
+    }
+}

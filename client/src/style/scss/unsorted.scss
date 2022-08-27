@@ -459,15 +459,6 @@ div.odd_row {
 
 // Tool panel stuff
 
-// Extra label colors
-.badge-beta {
-    @extend .badge-warning;
-}
-
-.badge-new {
-    @extend .badge-info;
-}
-
 span.toolParameterExpandableCollapsable {
     font-weight: bold;
     cursor: pointer;
@@ -1004,11 +995,6 @@ div.toolSectionTitle {
     opacity: 1;
 }
 
-/* For Vue */
-[v-cloak] {
-    display: none;
-}
-
 /* Toolshed, reports custom styles from mako templates */
 body.toolshed,
 body.reports {
@@ -1035,36 +1021,4 @@ body.reports {
     right: 0;
     bottom: 0;
     background: url(../../assets/images/largespinner.gif) no-repeat center center fixed;
-}
-
-/* Used for tree in tool recommendations */
-.tool-recommendation-view {
-    .node {
-        cursor: pointer;
-        circle {
-            fill: $brand-primary;
-            stroke: $brand-primary;
-        }
-        text {
-            font-size: 0.4rem;
-        }
-    }
-
-    .tree-size {
-        width: 100%;
-    }
-
-    .link {
-        fill: none;
-        stroke: $brand-primary;
-        stroke-width: 1;
-    }
-}
-
-.workflow-recommendations {
-    display: block;
-    .header-background {
-        border-bottom: solid 1px $brand-primary;
-        margin-bottom: 0.5rem;
-    }
 }
