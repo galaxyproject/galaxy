@@ -480,4 +480,20 @@ a.btn {
     @extend .btn-secondary;
 }
 
+.btn-transparent-background {
+    // A wrapper for buttons with transparent background when hovering over it.
+    .btn {
+        background-color: transparent !important;
+        border-color: transparent !important;
+    }
+
+    .btn:hover {
+        color: $brand-info;
+    }
+
+    .btn:active {
+        color: $brand-dark;
+    }
+}
+
 @import "unsorted.scss";

@@ -506,23 +506,6 @@ a.action-button {
     @extend .btn, .active;
 }
 
-// A content button is a button in content items
-
-.content-buttons {
-    .btn {
-        background-color: transparent !important;
-        border-color: transparent !important;
-    }
-
-    .btn:hover {
-        color: $brand-info;
-    }
-
-    .btn:active {
-        color: $brand-dark;
-    }
-}
-
 // A menu button is a button that has an attached popup menu
 
 .menubutton {
