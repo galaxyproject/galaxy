@@ -2128,10 +2128,8 @@ class MinimalJobWrapper(HasResourceParameters):
             raise Exception(f"Unknown target type [{target}]")
 
     def get_tool_provided_job_metadata(self):
-        if self.tool_provided_job_metadata is not None:
-            return self.tool_provided_job_metadata
-
-        self.tool_provided_job_metadata = self.tool.tool_provided_metadata(self)
+        if self.tool_provided_job_metadata is None:
+            self.tool_provided_job_metadata = self.tool.tool_provided_metadata(self)
         return self.tool_provided_job_metadata
 
     def get_dataset_finish_context(self, job_context, output_dataset_assoc):
