@@ -49,7 +49,6 @@ const getters = {
 
             return returnedTools;
         },
-    getTotalToolCount: (state) => () => state.totalToolCount,
 };
 
 const actions = {
