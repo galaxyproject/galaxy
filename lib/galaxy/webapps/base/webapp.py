@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 import mako.lookup
 import mako.runtime
 from apispec import APISpec
+from paste.urlmap import URLMap
 from sqlalchemy import (
     and_,
     true,
@@ -47,6 +48,7 @@ from galaxy.web.framework import (
     helpers,
     url_for,
 )
+from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
 
 try:
     from importlib.resources import files  # type: ignore[attr-defined]
@@ -1114,10 +1116,6 @@ def default_url_path(path):
 
 
 def build_url_map(app, global_conf, **local_conf):
-    from paste.urlmap import URLMap
-
-    from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
-
     urlmap = URLMap()
     # Merge the global and local configurations
     conf = global_conf.copy()
