@@ -1,3 +1,4 @@
+import argparse
 import os
 import re
 import sys
@@ -339,13 +340,8 @@ class LegacyManageDb:
         return dbcache.sqlalchemymigrate_version
 
     def _get_script_directory(self):
-        alembic_cfg = self._get_alembic_cfg()
+        alembic_cfg = get_alembic_cfg()
         return ScriptDirectory.from_config(alembic_cfg)
-
-    def _get_alembic_cfg(self):
-        config_file = os.path.join(os.path.dirname(__file__), "alembic.ini")
-        config_file = os.path.abspath(config_file)
-        return Config(config_file)
 
     def _get_gxy_alembic_db_version(self, engine):
         # We may get 2 values, one for each branch (gxy and tsi). So we need to
@@ -367,6 +363,12 @@ class LegacyManageDb:
             if GXY in rev.branch_labels:
                 gxy_revisions.add(rev.revision)
         return gxy_revisions
+
+
+def get_alembic_cfg():
+    config_file = os.path.join(os.path.dirname(__file__), "alembic.ini")
+    config_file = os.path.abspath(config_file)
+    return Config(config_file)
 
 
 def get_alembic_manager(engine: Engine) -> AlembicManager:
