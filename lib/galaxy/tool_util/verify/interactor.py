@@ -1340,14 +1340,6 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
             error = AssertionError(message)
             register_exception(error)
 
-    if testdef.num_outputs is not None:
-        expected = testdef.num_outputs
-        actual = len(data_list) + len(data_collection_list)
-        if expected != actual:
-            message = f"Incorrect number of outputs - expected {expected}, found {actual}: datasets {data_list.keys()} collections {data_collection_list.keys()}"
-            error = AssertionError(message)
-            register_exception(error)
-
     if not job_failed and testdef.expect_failure:
         error = AssertionError("Expected job to fail but Galaxy indicated the job successfully completed.")
         register_exception(error)
