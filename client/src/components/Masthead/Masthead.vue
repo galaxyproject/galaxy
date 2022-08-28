@@ -55,10 +55,6 @@ export default {
             type: String,
             default: null,
         },
-        initialActiveTab: {
-            type: String,
-            default: null,
-        },
         mastheadState: {
             type: Object,
             default: null,
@@ -70,7 +66,6 @@ export default {
     },
     data() {
         return {
-            activeTab: this.initialActiveTab,
             baseTabs: [],
             extensionTabs: [],
             windowTab: this.mastheadState.windowManager.getTab(),
@@ -78,6 +73,9 @@ export default {
         };
     },
     computed: {
+        activeTab() {
+            return "analysis";
+        },
         brandTitle() {
             let brandTitle = this.displayGalaxyBrand ? "Galaxy " : "";
             if (this.brand) {
@@ -97,9 +95,6 @@ export default {
     methods: {
         addItem(item) {
             this.tabs.push(item);
-        },
-        highlight(activeTab) {
-            this.activeTab = activeTab;
         },
         onWindowToggle() {
             this.windowToggle = !this.windowToggle;
