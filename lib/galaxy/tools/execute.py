@@ -33,7 +33,7 @@ if typing.TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 SINGLE_EXECUTION_SUCCESS_MESSAGE = "Tool ${tool_id} created job ${job_id}"
-BATCH_EXECUTION_MESSAGE = "Executed ${job_count} job(s) for tool ${tool_id} request"
+BATCH_EXECUTION_MESSAGE = "Created ${job_count} job(s) for tool ${tool_id} request"
 
 
 class PartialJobExecution(Exception):
