@@ -212,16 +212,17 @@ def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
     elif checkers.check_binary(file_path):
         return "<br/>Binary file<br/>"
     else:
-        for line in open(file_path):
-            safe_str = f"{safe_str}{basic_util.to_html_string(line)}"
-            # Stop reading after string is larger than MAX_CONTENT_SIZE.
-            if len(safe_str) > MAX_CONTENT_SIZE:
-                large_str = (
-                    "<br/>File contents truncated because file size is larger than maximum viewing size of %s<br/>"
-                    % util.nice_size(MAX_CONTENT_SIZE)
-                )
-                safe_str = f"{safe_str}{large_str}"
-                break
+        with open(file_path) as fh:
+            for line in fh:
+                safe_str = f"{safe_str}{basic_util.to_html_string(line)}"
+                # Stop reading after string is larger than MAX_CONTENT_SIZE.
+                if len(safe_str) > MAX_CONTENT_SIZE:
+                    large_str = (
+                        "<br/>File contents truncated because file size is larger than maximum viewing size of %s<br/>"
+                        % util.nice_size(MAX_CONTENT_SIZE)
+                    )
+                    safe_str = f"{safe_str}{large_str}"
+                    break
 
         if len(safe_str) > basic_util.MAX_DISPLAY_SIZE:
             # Eliminate the middle of the file to display a file no larger than basic_util.MAX_DISPLAY_SIZE.
