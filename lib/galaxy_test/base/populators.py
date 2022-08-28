@@ -2662,7 +2662,7 @@ class BaseDatasetCollectionPopulator:
         return element_identifiers
 
     def __create(self, payload, wait=False):
-        # Create a colleciton - either from existing datasets using collection creation API
+        # Create a collection - either from existing datasets using collection creation API
         # or from direct uploads with the fetch API. Dispatch on "targets" keyword in payload
         # to decide which to use.
         if "targets" not in payload:

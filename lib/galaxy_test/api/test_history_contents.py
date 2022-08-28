@@ -434,7 +434,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert post_combined_count == pre_combined_count + 1
         assert pre_dataset_count == post_dataset_count
 
-        # Test show dataset colleciton.
+        # Test show dataset collection.
         collection_url = f"histories/{self.history_id}/contents/dataset_collections/{dataset_collection['id']}"
         show_response = self._get(collection_url)
         self._assert_status_code_is(show_response, 200)
