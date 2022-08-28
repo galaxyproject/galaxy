@@ -158,7 +158,7 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
   particular emphasis on readability being the ultimate goal:
   - 4 spaces (not tabs!) per indentation level
   - divergences from PEP-8 are listed in the `[flake8]` section of the
-    `setup.cfg` file
+    `.flake8` file
   - The Python code base is automatically formatted using
     [isort](https://pycqa.github.io/isort/) (for imports) and
     [black](https://black.readthedocs.io). To easily format your Python code
