@@ -5,23 +5,12 @@
                 <span class="row mb-1">
                     <span class="col">
                         <h4 class="d-inline-block">Advanced Tool Search Results</h4>
-                        <b-button
-                            v-if="hasFilters && itemsLoaded.length !== 0"
-                            class="float-right"
-                            size="sm"
-                            :pressed="listView"
-                            :variant="listView ? 'info' : 'secondary'"
-                            data-description="show list view for tools"
-                            @click="listView = !listView">
-                            <icon icon="list" />
-                            <span>{{ "List View" | localize }}</span>
-                        </b-button>
                     </span>
                 </span>
                 <span v-if="itemsLoaded.length !== 0 && hasFilters" class="row">
                     <span class="col d-inline-block">
-                        (found {{ itemsLoaded.length }} tools for
-                        <a id="popover-filters" href="javascript:void(0)">filters</a>)
+                        Found {{ itemsLoaded.length }} tools for
+                        <a id="popover-filters" href="javascript:void(0)">filters</a>.
                         <b-popover target="popover-filters" triggers="hover" placement="top">
                             <template v-slot:title>Filters</template>
                             <div v-for="(value, filter) in filterSettings" :key="filter">
@@ -43,18 +32,16 @@
                     No tools found for selected filter(s): {{ filterSettings }}
                 </b-alert>
                 <div v-else>
-                    <ToolAdvancedSearchResults :tools="itemsLoaded" :list-view="listView" />
+                    <ToolAdvancedSearchResults :tools="itemsLoaded" />
                 </div>
                 <b-button
                     v-if="hasFilters && !loading && offset > 200"
-                    v-b-tooltip.hover
-                    class="btn-back-to-top"
+                    v-b-tooltip.noninteractive.hover
+                    class="ui-btn-back-to-top btn-circle"
                     title="Scroll To Top"
-                    variant="danger"
-                    pill
-                    size="lg"
+                    variant="info"
                     @click="scrollToTop">
-                    <icon icon="arrow-up" />
+                    <i class="fa fa-arrow-up" />
                 </b-button>
             </div>
         </section>
@@ -93,7 +80,6 @@ export default {
     data() {
         return {
             offset: 0,
-            listView: false,
         };
     },
     computed: {
@@ -130,10 +116,3 @@ export default {
     },
 };
 </script>
-
-<style>
-.btn-back-to-top {
-    position: fixed;
-    bottom: 2em;
-}
-</style>
