@@ -9,6 +9,7 @@ from typing import (
 )
 
 import alembic.config
+from alembic import command
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
@@ -88,6 +89,7 @@ def verify_database_is_initialized(db_url: str) -> None:
 
 
 def get_configuration(argv: List[str], cwd: str) -> Tuple[DatabaseConfig, DatabaseConfig, bool]:
+    # TODO i think is_auto-migrate is not used!
     """
     Return a 3-item-tuple with configuration values used for managing databases.
     """
