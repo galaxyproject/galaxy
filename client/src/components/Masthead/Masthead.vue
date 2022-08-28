@@ -68,13 +68,31 @@ export default {
         return {
             baseTabs: [],
             extensionTabs: [],
+            currentTab: "analysis",
             windowTab: this.mastheadState.windowManager.getTab(),
             windowToggle: false,
         };
     },
     computed: {
         activeTab() {
-            return "analysis";
+            const currentRoute = this.$route.path;
+            let matchedId = null;
+            for (let tab of this.baseTabs) {
+                const tabId = tab.id;
+                if (currentRoute == `/${tab.url}`) {
+                    matchedId = tabId;
+                    break;
+                } else if (tab.menu) {
+                    for (let item of tab.menu) {
+                        if (currentRoute == `/${item.url}`) {
+                            matchedId = tabId;
+                            break;
+                        }
+                    }
+                }
+            }
+            this.currentTab = matchedId || this.currentTab;
+            return this.currentTab;
         },
         brandTitle() {
             let brandTitle = this.displayGalaxyBrand ? "Galaxy " : "";
