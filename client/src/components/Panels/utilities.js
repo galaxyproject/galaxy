@@ -5,8 +5,7 @@ export function filterToolSections(layout, results) {
             var toolRes = [];
             if (section.elems) {
                 section.elems.forEach((el) => {
-                    if (
-                        (!el.text && results.includes(el.id))
+                    if (!el.text && results.includes(el.id)
                     ) {
                         toolRes.push(el);
                     }
@@ -54,9 +53,7 @@ export function filterTools(layout, results) {
         layout.map((section) => {
             if (section.elems) {
                 section.elems.forEach((el) => {
-                    if (
-                        (!el.text && results.includes(el.id))
-                    ) {
+                    if (!el.text && results.includes(el.id)) {
                         toolsResults.push(el);
                     }
                 });
@@ -74,11 +71,11 @@ export function filterTools(layout, results) {
 
 function normalize_results(results) {
     var norm_results = [];
-    results.forEach((result) => {
+        results.forEach((result) => {
         norm_results.push(result);
-        if (result.includes("/repos/")) {
+            if (result.includes("/repos/")) {
             norm_results.push(result.split("/repos/")[1].split("/")[2]);
-        }
-    });
+            }
+        });
     return norm_results;
 }
