@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div v-if="topics">
         <header class="main-header">
             <h1 class="text-center my-3">{{ title | localize }}</h1>
             <h4 class="text-center my-3">{{ intro | localize }}</h4>
@@ -27,7 +27,7 @@ export default {
     props: {
         topics: {
             type: Array,
-            required: true,
+            default: null,
         },
         imageLoc: {
             type: String,

@@ -1,4 +1,5 @@
+import { newUserDict } from "../../../../static/plugins/welcome_page/new_user/dist/static/topics/index";
+
 export function getResource() {
-    const resource = import("../../../../static/plugins/welcome_page/new_user/dist/static/topics/index");
-    return resource.newUserDict;
+    return newUserDict;
 }
