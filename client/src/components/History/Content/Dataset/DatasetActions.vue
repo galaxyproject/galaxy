@@ -139,21 +139,11 @@ export default {
             this.$router.push(`/root?job_id=${this.item.creating_job}`);
         },
         onVisualize() {
-            const name = this.item.name || "";
-            const title = `Visualization of ${name}`;
-            const path = this.itemUrls.visualize;
-            const redirectParams = {
-                path: path,
-                title: title,
-                tryIframe: false,
-            };
-            if (!iframeAdd(redirectParams)) {
-                // We still use iframeAdd here to allow usage from within window
-                // manager, but it shouldn't actually *use* an iframe in the
-                // standard case (deferring to $router in the legacy routing handler).
-                // This should be refactored.
-                this.$router.push(path);
-            }
+            iframeAdd({
+                path: this.itemUrls.visualize,
+                title: `Visualization of ${this.item.name || ""}`,
+                $router: this.$router,
+            });
         },
         onHighlight() {
             this.$emit("toggleHighlights");
