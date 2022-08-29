@@ -1298,6 +1298,7 @@ def config_to_dict(config):
         "gid": config.gid,
     }
 
+
 # Returns cache size and cache files. For each file, we get
 # last access time, file path, and file size.
 def get_cache_size_files(cache_path):

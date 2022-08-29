@@ -8,8 +8,6 @@ import os
 import os.path
 import shutil
 import subprocess
-import threading
-import time
 from datetime import datetime
 
 from galaxy.exceptions import (
@@ -24,10 +22,7 @@ from galaxy.util import (
 )
 from galaxy.util.sleeper import Sleeper
 from .s3 import parse_config_xml
-from ..objectstore import (
-    ConcreteObjectStore,
-    convert_bytes,
-)
+from ..objectstore import ConcreteObjectStore
 
 try:
     from cloudbridge.factory import (

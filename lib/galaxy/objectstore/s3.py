@@ -33,10 +33,7 @@ from galaxy.util import (
 from galaxy.util.path import safe_relpath
 from galaxy.util.sleeper import Sleeper
 from .s3_multipart_upload import multipart_upload
-from ..objectstore import (
-    ConcreteObjectStore,
-    convert_bytes,
-)
+from ..objectstore import ConcreteObjectStore
 
 NO_BOTO_ERROR_MESSAGE = (
     "S3/Swift object store configured, but no boto dependency available."
