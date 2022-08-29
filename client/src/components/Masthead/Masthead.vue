@@ -75,7 +75,7 @@ export default {
     },
     computed: {
         activeTab() {
-            const currentRoute = this.$route.path;
+            /*const currentRoute = this.$route.path;
             let matchedId = null;
             for (let tab of this.baseTabs) {
                 const tabId = tab.id;
@@ -91,7 +91,7 @@ export default {
                     }
                 }
             }
-            this.currentTab = matchedId || this.currentTab;
+            this.currentTab = matchedId || this.currentTab;*/
             return this.currentTab;
         },
         brandTitle() {

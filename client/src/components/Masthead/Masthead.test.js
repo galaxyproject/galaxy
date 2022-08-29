@@ -3,13 +3,13 @@ import { default as Masthead } from "./Masthead.vue";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import { WindowManager } from "layout/window-manager";
-import { fetchMenu } from "layout/menu";
+import { fetchMenu } from "./menu";
 import { loadWebhookMenuItems } from "./_webhooks";
 import { userStore } from "store/userStore";
 import { configStore } from "store/configStore";
 
 jest.mock("app");
-jest.mock("layout/menu");
+jest.mock("./menu");
 jest.mock("./_webhooks");
 
 describe("Masthead.vue", () => {
@@ -135,8 +135,8 @@ describe("Masthead.vue", () => {
     });
 
     it("should highlight the active tab", () => {
-        expect(wrapper.find("#analysis").classes("active")).toBe(false);
-        expect(wrapper.find("#shared").classes("active")).toBe(true);
+        expect(wrapper.find("#analysis").classes("active")).toBe(true);
+        expect(wrapper.find("#shared").classes("active")).toBe(false);
     });
 
     it("should display window manager button", async () => {

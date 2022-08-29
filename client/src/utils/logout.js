@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getGalaxyInstance } from "app";
 
 const POST_LOGOUT_URL = "root/login?is_logout_redirect=true";
 
