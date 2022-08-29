@@ -6,7 +6,6 @@ import multiprocessing
 import os
 import shutil
 import subprocess
-import threading
 import time
 from datetime import datetime
 
@@ -31,7 +30,6 @@ from galaxy.util import (
     which,
 )
 from galaxy.util.path import safe_relpath
-from galaxy.util.sleeper import Sleeper
 from .s3_multipart_upload import multipart_upload
 from ..objectstore import ConcreteObjectStore
 
@@ -200,17 +198,6 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             self.use_axel = True
         else:
             self.use_axel = False
-
-    def start_cache_monitor(self):
-        # Clean cache only if value is set in galaxy.ini
-        if self.cache_size != -1 and self.enable_cache_monitor:
-            # Convert GBs to bytes for comparison
-            self.cache_size = self.cache_size * 1073741824
-            # Helper for interruptable sleep
-            self.sleeper = Sleeper()
-            self.cache_monitor_thread = threading.Thread(target=self.__cache_monitor)
-            self.cache_monitor_thread.start()
-            log.info("Cache cleaner manager started")
 
     def _configure_connection(self):
         log.debug("Configuring S3 Connection")

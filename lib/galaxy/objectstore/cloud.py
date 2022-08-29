@@ -20,7 +20,6 @@ from galaxy.util import (
     umask_fix_perms,
     unlink,
 )
-from galaxy.util.sleeper import Sleeper
 from .s3 import parse_config_xml
 from ..objectstore import ConcreteObjectStore
 
