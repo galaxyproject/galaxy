@@ -1853,7 +1853,7 @@ provides a demonstration of using this tag.
 </test>
 ```
 
-Note that this tool uses ``assign_primary_output="true"`` for ``<discover_data_sets>``. Hence, the content of the first discovered dataset (which is the first in the alphabetically sorted list of discovered designations) is checked directly in the ``<output>`` tag of the test.
+Note that this tool uses ``assign_primary_output="true"`` for ``<discover_datasets>``. Hence, the content of the first discovered dataset (which is the first in the alphabetically sorted list of discovered designations) is checked directly in the ``<output>`` tag of the test.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:complexContent>
