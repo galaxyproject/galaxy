@@ -11,10 +11,12 @@ import requests
 
 from galaxy.tool_util.verify.interactor import GalaxyInteractorApi
 from galaxy_test.base import api_asserts
-from galaxy_test.base.api_util import baseauth_headers
-from galaxy_test.base.api_util import get_admin_api_key as get_galaxy_admin_api_key
-from galaxy_test.base.api_util import get_user_api_key as get_galaxy_user_key
-from galaxy_test.base.api_util import TEST_USER
+from galaxy_test.base.api_util import (
+    baseauth_headers,
+    get_admin_api_key as get_galaxy_admin_api_key,
+    get_user_api_key as get_galaxy_user_key,
+    TEST_USER,
+)
 from galaxy_test.base.uses_shed_api import UsesShedApi
 from galaxy_test.driver.testcase import DrivenFunctionalTestCase
 from .api_util import (
