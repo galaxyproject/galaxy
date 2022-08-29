@@ -268,7 +268,6 @@ class JSAppLauncher(BaseUIController):
         Should not be used with url_for -- see
         (https://github.com/galaxyproject/galaxy/issues/1878) for why.
         """
-        self._check_require_login(trans)
         return self._bootstrapped_client(trans, **kwd)
 
     # This includes contextualized user options in the bootstrapped data; we

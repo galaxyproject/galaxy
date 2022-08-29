@@ -34,7 +34,6 @@ module.exports = (env = {}, argv = {}) => {
     const buildconfig = {
         mode: targetEnv,
         entry: {
-            login: ["polyfills", "bundleEntries", "entry/login"],
             analysis: ["polyfills", "bundleEntries", "entry/analysis"],
             generic: ["polyfills", "bundleEntries", "entry/generic"],
         },

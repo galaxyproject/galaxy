@@ -43,7 +43,7 @@ export async function watchHistoryOnce(store) {
     const checkForUpdate = new Date();
     const history = await getCurrentHistoryFromServer(lastUpdateTime);
     store.commit("setLastCheckedTime", { checkForUpdate });
-    if (!history) {
+    if (!history || !history.id) {
         return;
     }
 

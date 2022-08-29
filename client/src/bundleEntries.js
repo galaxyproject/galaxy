@@ -62,7 +62,6 @@ export function multiHistory(options) {
 }
 
 // Previously wandering around as window.thing = thing in the onload script
-export { default as panels } from "layout/panel";
 export { show_in_overlay, hide_modal, show_message, show_modal, Modal } from "layout/modal";
 export { make_popupmenu, make_popup_menus } from "ui/popupmenu";
 export { render_embedded_items } from "mvc/embedded-objects";
@@ -75,7 +74,6 @@ export function chart(options) {
 }
 
 export { initMasthead } from "components/Masthead/initMasthead";
-export { panelManagement } from "onload/globalInits/panelManagement";
 export { mountMakoTags } from "components/Tags";
 export { mountWorkflowEditor } from "components/Workflow/Editor/mount";
 export { mountPageEditor } from "components/PageEditor/mount";
