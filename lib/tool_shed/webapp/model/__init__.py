@@ -11,6 +11,10 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from mercurial import (
+    hg,
+    ui,
+)
 from sqlalchemy import (
     Boolean,
     Column,
@@ -414,11 +418,6 @@ class Repository(Base, Dictifiable, _HasTable):
 
     @property
     def hg_repo(self):
-        from mercurial import (
-            hg,
-            ui,
-        )
-
         if not WEAK_HG_REPO_CACHE.get(self):
             WEAK_HG_REPO_CACHE[self] = hg.cachedlocalrepo(hg.repository(ui.ui(), self.repo_path().encode("utf-8")))
         return WEAK_HG_REPO_CACHE[self].fetch()[0]

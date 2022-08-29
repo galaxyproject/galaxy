@@ -1322,9 +1322,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
     def _tool_from_lineage_version(self, lineage_tool_version):
         if lineage_tool_version.id_based:
-            return self._tools_by_id.get(lineage_tool_version.id, None)
+            return self._tools_by_id.get(lineage_tool_version.id)
         else:
-            return self._tool_versions_by_id.get(lineage_tool_version.id, {}).get(lineage_tool_version.version, None)
+            return self._tool_versions_by_id.get(lineage_tool_version.id, {}).get(lineage_tool_version.version)
 
     def _build_filter_method(self, trans):
         context = Bunch(toolbox=self, trans=trans)

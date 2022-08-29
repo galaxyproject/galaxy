@@ -43,8 +43,6 @@ from . import (
 # Set a 10 minute timeout for repository installation.
 repository_installation_timeout = 600
 
-# Dial ClientCookie logging down (very noisy)
-logging.getLogger("ClientCookie.cookies").setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 tc.options["equiv_refresh_interval"] = 0
 
