@@ -87,8 +87,8 @@ def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
     if resolution_cache is not None:
         try:
             cached_namespace = resolution_cache.get(cache_key)
-            if cached_namespace and repo_name not in cached_namespace:
-                return False
+            if cached_namespace:
+                return repo_name in cached_namespace
         except KeyError:
             # mulled_resolution_cache may be beaker CacheManager instance, which raises KeyError if key is not present on `.get`
             pass
