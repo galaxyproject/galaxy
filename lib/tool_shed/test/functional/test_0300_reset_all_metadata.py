@@ -1,22 +1,14 @@
-import os
-
 from ..base.twilltestcase import (
     common,
     ShedTwillTestCase,
 )
 
-datatypes_repository_name = "emboss_datatypes_0020"
-datatypes_repository_description = "Galaxy applicable data formats used by Emboss tools."
-datatypes_repository_long_description = (
-    "Galaxy applicable data formats used by Emboss tools.  This repository contains no tools."
-)
+column_maker_repository_name = "column_maker_0020"
+column_maker_repository_description = "A flexible aligner."
+column_maker_repository_long_description = "A flexible aligner and methylation caller for Bisulfite-Seq applications."
+
 emboss_repository_description = "Galaxy wrappers for Emboss version 5.0.0 tools"
 emboss_repository_long_description = "Galaxy wrappers for Emboss version 5.0.0 tools"
-workflow_filename = "Workflow_for_0060_filter_workflow_repository.ga"
-workflow_name = "Workflow for 0060_filter_workflow_repository"
-
-emboss_datatypes_repository_name = "emboss_datatypes_0050"
-emboss_datatypes_repository_description = "Datatypes for emboss"
 
 emboss_repository_name = "emboss_0050"
 emboss_5_repository_name = "emboss_5_0050"
@@ -168,7 +160,7 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
             )
 
     def test_0015_create_datatypes_0020_repository(self):
-        """Create and populate the emboss_datatypes_0020 repository."""
+        """Create and populate the column_maker_0020 repository."""
         global running_standalone
         if running_standalone:
             self.login(email=common.admin_email, username=common.admin_username)
@@ -178,21 +170,21 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
             )
             self.login(email=common.test_user_1_email, username=common.test_user_1_name)
             repository = self.get_or_create_repository(
-                name="emboss_datatypes_0020",
-                description=datatypes_repository_description,
-                long_description=datatypes_repository_long_description,
+                name="column_maker_0020",
+                description=column_maker_repository_description,
+                long_description=column_maker_repository_long_description,
                 owner=common.test_user_1_name,
                 category_id=self.security.encode_id(category_0020.id),
                 strings_displayed=[],
             )
             self.upload_file(
                 repository,
-                filename="emboss/datatypes/datatypes_conf.xml",
+                filename="column_maker/column_maker.tar",
                 filepath=None,
-                valid_tools_only=False,
-                uncompress_file=False,
+                valid_tools_only=True,
+                uncompress_file=True,
                 remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded datatypes_conf.xml.",
+                commit_message="Uploaded column_maker tarball.",
                 strings_displayed=[],
                 strings_not_displayed=[],
             )
@@ -237,22 +229,22 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 description="Testing repository dependencies by revision.",
             )
             self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-            datatypes_repository = self.get_or_create_repository(
-                name="emboss_datatypes_0030",
-                description=datatypes_repository_description,
-                long_description=datatypes_repository_long_description,
+            column_maker_repository = self.get_or_create_repository(
+                name="column_maker_0030",
+                description=column_maker_repository_description,
+                long_description=column_maker_repository_long_description,
                 owner=common.test_user_1_name,
                 category_id=self.security.encode_id(category_0030.id),
                 strings_displayed=[],
             )
             self.upload_file(
-                datatypes_repository,
-                filename="emboss/datatypes/datatypes_conf.xml",
+                column_maker_repository,
+                filename="column_maker/column_maker.tar",
                 filepath=None,
-                valid_tools_only=False,
+                valid_tools_only=True,
                 uncompress_file=True,
                 remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded datatypes_conf.xml.",
+                commit_message="Uploaded column_maker tarball.",
                 strings_displayed=[],
                 strings_not_displayed=[],
             )
@@ -351,8 +343,8 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
         """Create the dependency structure for test 0030."""
         global running_standalone
         if running_standalone:
-            datatypes_repository = self.test_db_util.get_repository_by_name_and_owner(
-                "emboss_datatypes_0030", common.test_user_1_name
+            column_maker_repository = self.test_db_util.get_repository_by_name_and_owner(
+                "column_maker_0030", common.test_user_1_name
             )
             emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
                 "emboss_0030", common.test_user_1_name
@@ -364,11 +356,11 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 "emboss_6_0030", common.test_user_1_name
             )
             repository_dependencies_path = self.generate_temp_path("test_0330", additional_paths=["emboss"])
-            datatypes_tuple = (
+            column_maker_tuple = (
                 self.url,
-                datatypes_repository.name,
-                datatypes_repository.user.username,
-                self.get_repository_tip(datatypes_repository),
+                column_maker_repository.name,
+                column_maker_repository.user.username,
+                self.get_repository_tip(column_maker_repository),
             )
             emboss_5_tuple = (
                 self.url,
@@ -384,12 +376,12 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
             )
             self.create_repository_dependency(
                 repository=emboss_5_repository,
-                repository_tuples=[datatypes_tuple],
+                repository_tuples=[column_maker_tuple],
                 filepath=repository_dependencies_path,
             )
             self.create_repository_dependency(
                 repository=emboss_6_repository,
-                repository_tuples=[datatypes_tuple],
+                repository_tuples=[column_maker_tuple],
                 filepath=repository_dependencies_path,
             )
             self.create_repository_dependency(
@@ -548,31 +540,7 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
             )
 
     def test_0075_create_emboss_datatypes_repository(self):
-        """Create and populate emboss_datatypes_0050."""
-        global running_standalone
-        if running_standalone:
-            self.login(email=common.admin_email, username=common.admin_username)
-            category = self.create_category(name=category_0050_name, description=category_0050_description)
-            self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-            repository = self.get_or_create_repository(
-                name=emboss_datatypes_repository_name,
-                description=datatypes_repository_description,
-                long_description=datatypes_repository_long_description,
-                owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
-                strings_displayed=[],
-            )
-            self.upload_file(
-                repository,
-                filename="emboss/datatypes/datatypes_conf.xml",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=False,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded datatypes_conf.xml.",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
+        """noop now..."""
 
     def test_0080_create_emboss_repository(self):
         """Create and populate emboss_0050."""
@@ -693,9 +661,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
             convert_repository = self.test_db_util.get_repository_by_name_and_owner(
                 convert_repository_name, common.test_user_1_name
             )
-            datatypes_repository = self.test_db_util.get_repository_by_name_and_owner(
-                emboss_datatypes_repository_name, common.test_user_1_name
-            )
             emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
                 emboss_repository_name, common.test_user_1_name
             )
@@ -739,12 +704,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 emboss_repository.user.username,
                 self.get_repository_tip(emboss_repository),
             )
-            datatypes_tuple = (
-                self.url,
-                datatypes_repository.name,
-                datatypes_repository.user.username,
-                self.get_repository_tip(datatypes_repository),
-            )
             bismark_tuple = (
                 self.url,
                 bismark_repository.name,
@@ -758,65 +717,15 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 repository=column_repository, repository_tuples=[convert_tuple], filepath=dependency_xml_path
             )
             self.create_repository_dependency(
-                repository=datatypes_repository, repository_tuples=[bismark_tuple], filepath=dependency_xml_path
-            )
-            self.create_repository_dependency(
-                repository=emboss_repository, repository_tuples=[datatypes_tuple], filepath=dependency_xml_path
+                repository=emboss_repository, repository_tuples=[bismark_tuple], filepath=dependency_xml_path
             )
             self.create_repository_dependency(
                 repository=freebayes_repository,
-                repository_tuples=[freebayes_tuple, datatypes_tuple, emboss_tuple, column_tuple],
+                repository_tuples=[freebayes_tuple, bismark_tuple, emboss_tuple, column_tuple],
                 filepath=dependency_xml_path,
             )
             self.create_repository_dependency(
                 repository=filtering_repository, repository_tuples=[emboss_tuple], filepath=dependency_xml_path
-            )
-
-    def test_0105_create_filtering_repository(self):
-        """Create and populate the filtering_0060 repository."""
-        self.login(email=common.admin_email, username=common.admin_username)
-        category_0060 = self.create_category(
-            name="Test 0060 Workflow Features", description="Test 0060 - Workflow Features"
-        )
-        self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        workflow_repository = self.get_or_create_repository(
-            name="filtering_0060",
-            description="Galaxy's filtering tool",
-            long_description="Long description of Galaxy's filtering tool",
-            owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category_0060.id),
-            strings_displayed=[],
-        )
-        if self.repository_is_new(workflow_repository):
-            workflow = open(
-                self.get_filename("filtering_workflow/Workflow_for_0060_filter_workflow_repository.ga")
-            ).read()
-            workflow = workflow.replace("__TEST_TOOL_SHED_URL__", self.url.replace("http://", ""))
-            workflow_filepath = self.generate_temp_path("test_0360", additional_paths=["filtering_workflow"])
-            if not os.path.exists(workflow_filepath):
-                os.makedirs(workflow_filepath)
-            open(os.path.join(workflow_filepath, workflow_filename), "w+").write(workflow)
-            self.upload_file(
-                workflow_repository,
-                filename=workflow_filename,
-                filepath=workflow_filepath,
-                valid_tools_only=True,
-                uncompress_file=False,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded filtering workflow.",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
-            self.upload_file(
-                workflow_repository,
-                filename="filtering/filtering_2.2.0.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded filtering 2.2.0 tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0110_reset_metadata_on_all_repositories(self):
