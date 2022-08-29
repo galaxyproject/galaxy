@@ -39,7 +39,7 @@ export default {
     props: {
         newUser: {
             type: Object,
-            required: true,
+            default: null,
         },
     },
     data() {
