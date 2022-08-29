@@ -90,7 +90,7 @@ def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
     return parse_obj_as(DatatypeConverterList, converters)
 
 
-def _get_edam_details(datatypes_registry: Registry, edam_ids: Dict[str, str]):
+def _get_edam_details(datatypes_registry: Registry, edam_ids: Dict[str, str]) -> Dict[str, Dict]:
     details_dict = {}
     for (format, edam_iri) in edam_ids.items():
         edam_details = datatypes_registry.edam.get(edam_iri, {})
@@ -106,7 +106,7 @@ def _get_edam_details(datatypes_registry: Registry, edam_ids: Dict[str, str]):
 
 def view_edam_formats(
     datatypes_registry: Registry, detailed: Optional[bool] = False
-) -> Union[Dict[str, str], DatatypesEDAMDetailsDict]:
+) -> Union[Dict[str, str], Dict[str, Dict[str, str]]]:
     if detailed:
         return _get_edam_details(datatypes_registry, datatypes_registry.edam_formats)
     else:
@@ -115,7 +115,7 @@ def view_edam_formats(
 
 def view_edam_data(
     datatypes_registry: Registry, detailed: Optional[bool] = False
-) -> Union[Dict[str, str], DatatypesEDAMDetailsDict]:
+) -> Union[Dict[str, str], Dict[str, Dict[str, str]]]:
     if detailed:
         return _get_edam_details(datatypes_registry, datatypes_registry.edam_data)
     else:

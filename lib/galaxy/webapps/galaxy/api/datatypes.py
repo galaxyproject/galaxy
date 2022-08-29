@@ -3,6 +3,7 @@ API operations allowing clients to determine datatype supported by Galaxy.
 """
 import logging
 from typing import (
+    cast,
     Dict,
     List,
     Optional,
@@ -122,14 +123,15 @@ class FastAPIDatatypes:
     )
     async def edam_formats(self) -> Dict[str, str]:
         """Gets a map of datatypes and their corresponding EDAM formats."""
-        return view_edam_formats(self.datatypes_registry)
+        return cast(Dict[str, str], view_edam_formats(self.datatypes_registry))
 
     @router.get(
         "/api/datatypes/edam_formats/detailed",
         summary="Returns a dictionary of datatypes and EDAM format details",
         response_description="Dictionary of EDAM format details containing the EDAM iri, label, and definition",
+        response_model=DatatypesEDAMDetailsDict,
     )
-    async def edam_formats_detailed(self) -> DatatypesEDAMDetailsDict:
+    async def edam_formats_detailed(self):
         """Gets a map of datatypes and their corresponding EDAM formats.
         EDAM formats contain the EDAM iri, label, and definition."""
         return view_edam_formats(self.datatypes_registry, True)
@@ -141,14 +143,15 @@ class FastAPIDatatypes:
     )
     async def edam_data(self) -> Dict[str, str]:
         """Gets a map of datatypes and their corresponding EDAM data."""
-        return view_edam_data(self.datatypes_registry)
+        return cast(Dict[str, str], view_edam_data(self.datatypes_registry))
 
     @router.get(
         "/api/datatypes/edam_data/detailed",
         summary="Returns a dictionary of datatypes and EDAM data details",
         response_description="Dictionary of EDAM data details containing the EDAM iri, label, and definition",
+        response_model=DatatypesEDAMDetailsDict,
     )
-    async def edam_data_detailed(self) -> DatatypesEDAMDetailsDict:
+    async def edam_data_detailed(self):
         """Gets a map of datatypes and their corresponding EDAM data.
         EDAM data contains the EDAM iri, label, and definition."""
         return view_edam_data(self.datatypes_registry, True)
