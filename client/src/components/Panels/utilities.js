@@ -6,8 +6,7 @@ export function filterToolSections(layout, results) {
             if (section.elems) {
                 section.elems.forEach((el) => {
                     if (
-                        (!el.text && results.includes(el.id)) ||
-                        (el.tool_shed_repository && results.includes(el.tool_shed_repository.name))
+                        (!el.text && results.includes(el.id))
                     ) {
                         toolRes.push(el);
                     }
@@ -56,8 +55,7 @@ export function filterTools(layout, results) {
             if (section.elems) {
                 section.elems.forEach((el) => {
                     if (
-                        (!el.text && results.includes(el.id)) ||
-                        (el.tool_shed_repository && results.includes(el.tool_shed_repository.name))
+                        (!el.text && results.includes(el.id))
                     ) {
                         toolsResults.push(el);
                     }
