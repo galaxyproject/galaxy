@@ -186,16 +186,10 @@
         ## TODO: Some visualizations (and more?) currently use this config, should be refactored.
         window.galaxy_config = galaxyConfig;
 
-        var panelConfig = Object.assign(galaxyConfig, {
-            rightPanelSelector: '#right',
-            leftPanelSelector: '#left'
-        });
-
         config.addInitialization(function() {
-            console.log("base/base_panels.mako, panelConfig init");
-            console.log("runs an init function named in python config", panelConfig);
+            console.log("runs an init function named in python config", galaxyConfig);
             try {
-                var initFn = panelConfig.app.jscript;
+                var initFn = galaxyConfig.app.jscript;
                 if (initFn in window.bundleEntries) {
                     window.bundleEntries[initFn]();
                 } else {
