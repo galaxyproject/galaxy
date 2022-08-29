@@ -29,6 +29,7 @@ export function useDetailedDatatypes() {
                 return {
                     extension: type.extension,
                     description: type.description,
+                    descriptionUrl: type.description_url,
                     edamFormat: typeEDAMFormat.prefix_IRI,
                     edamFormatLabel: typeEDAMFormat.label,
                     edamFormatDefinition: typeEDAMFormat.definition,

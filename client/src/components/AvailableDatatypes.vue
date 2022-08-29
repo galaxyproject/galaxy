@@ -40,7 +40,15 @@ const edamLink = (edamIRI) => `https://edamontology.github.io/edam-browser/#${ed
         <DelayedInput placeholder="filter extensions" class="mb-3" :delay="200" @change="(val) => (filter = val)" />
         <b-table striped small sort-icon-left sort-by="extension" :items="filteredDatatypes" :fields="fields">
             <template v-slot:cell(extension)="row">
-                <span v-b-tooltip.hover :title="row.item.description">
+                <a
+                    v-if="row.item.descriptionUrl"
+                    v-b-tooltip.hover
+                    target="_blank"
+                    :title="row.item.description"
+                    :href="row.item.descriptionUrl">
+                    {{ row.item.extension }}
+                </a>
+                <span v-else v-b-tooltip.hover :title="row.item.description">
                     {{ row.item.extension }}
                 </span>
             </template>
