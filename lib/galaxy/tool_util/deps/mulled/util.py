@@ -68,7 +68,7 @@ def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
     cache_key = NAMESPACE_HAS_REPO_NAME_KEY
     if resolution_cache is not None:
         try:
-            return repo_name in resolution_cache.get(cache_key)
+            return repo_name in resolution_cache[cache_key]
         except KeyError:
             pass
     next_page = None

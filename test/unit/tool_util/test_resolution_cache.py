@@ -1,4 +1,5 @@
 import time
+from collections import namedtuple
 
 import pytest
 from beaker.cache import CacheManager
@@ -27,6 +28,13 @@ def resolution_cache(tmpdir):
     )
     resolution_cache.mulled_resolution_cache = cm
     return resolution_cache
+
+
+def test_resolution_cache_namespace_missing():
+    ResolutionCache = namedtuple("ResolutionCache", ("mulled_resolution_cache",))
+    assert not _namespace_has_repo_name(
+        "bioconda", "mytool3000", resolution_cache=ResolutionCache(mulled_resolution_cache={"a": "b"})
+    )
 
 
 def test_resolution_cache_namepace_has_repo_name(resolution_cache):
