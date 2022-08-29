@@ -192,10 +192,6 @@
         });
 
         config.addInitialization(function() {
-            console.log("base/base_panels.mako, panel init");
-        });
-
-        config.addInitialization(function() {
             console.log("base/base_panels.mako, panelConfig init");
             console.log("runs an init function named in python config", panelConfig);
             try {

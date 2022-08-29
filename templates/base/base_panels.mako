@@ -57,11 +57,6 @@
             leftPanelSelector: '#left'
         };
 
-        // "late javascripts"
-        config.addInitialization(function() {
-            console.log("base/base_panels.mako, panel init");
-        });
-
     </script>
 
     %if t.webapp.name == 'galaxy' and app.config.ga_code:
