@@ -2034,7 +2034,7 @@ test_data:
         """
                 summary = self._run_workflow(workflow_text, test_data=test_data, history_id=history_id)
                 jobs = summary.jobs
-                assert len(jobs) == 4, "4 jobs expected, got %d jobs" % len(jobs)
+                assert len(jobs) == 2, "2 jobs expected, got %d jobs" % len(jobs)
 
                 content = self.dataset_populator.get_history_dataset_content(history_id)
                 self.assertEqual(
@@ -2274,7 +2274,6 @@ input_c:
             def filter_jobs_by_tool(tool_id):
                 return [j for j in summary.jobs if j["tool_id"] == tool_id]
 
-            assert len(filter_jobs_by_tool("__DATA_FETCH__")) == 1, jobs
             assert len(filter_jobs_by_tool("exit_code_from_file")) == 2, jobs
             assert len(filter_jobs_by_tool("__FILTER_FAILED_DATASETS__")) == 1, jobs
             # Follow proves one job was filtered out of the result of cat1

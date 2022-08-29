@@ -669,6 +669,12 @@ class BaseDatasetPopulator(BasePopulator):
         assert jobs_response.status_code == 200
         return jobs_response.json()
 
+    def invocation_jobs(self, invocation_id: str) -> List[Dict[str, Any]]:
+        query_params = {"invocation_id": invocation_id, "order_by": "create_time"}
+        jobs_response = self._get("jobs", query_params)
+        assert jobs_response.status_code == 200
+        return jobs_response.json()
+
     def active_history_jobs(self, history_id: str) -> list:
         all_history_jobs = self.history_jobs(history_id)
         active_jobs = [j for j in all_history_jobs if j["state"] in ["new", "upload", "waiting", "queued", "running"]]
@@ -1784,7 +1790,7 @@ class BaseWorkflowPopulator(BasePopulator):
                 # complete.
                 if wait:
                     workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
-                jobs.extend(self.dataset_populator.history_jobs(history_id))
+                jobs.extend(self.dataset_populator.invocation_jobs(invocation_id))
         return RunJobsSummary(
             history_id=history_id,
             workflow_id=workflow_id,
