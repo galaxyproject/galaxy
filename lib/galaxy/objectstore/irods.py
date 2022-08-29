@@ -84,8 +84,13 @@ def parse_config_xml(config_xml):
         if cm_xml:
             enabled = bool(cm_xml[0].get("enabled", False))
             cache_limit = float(cm_xml[0].get("cache_limit", 0.9))
-            interval = int(cm_xml[0].get("interval", 30))
-            startup_delay = int(cm_xml[0].get("startup_delay", 5))
+            interval = int(cm_xml[0].get("interval", 300))
+            startup_delay = int(cm_xml[0].get("startup_delay", 60))
+        else:
+            enabled = False
+            cache_limit = 0.9
+            interval = 300
+            startup_delay = 60
 
         attrs = ("type", "path")
         e_xml = config_xml.findall("extra_dir")
@@ -152,7 +157,7 @@ class CloudConfigMixin:
                 "path": self.staging_path,
             },
             "cache_monitor": {
-                "enabled": self.cache_monitor_enabed,
+                "enabled": self.cache_monitor_enabled,
                 "cache_limit": self.cache_monitor_cache_limit,
                 "interval": self.cache_monitor_interval,
                 "startup_delay": self.cache_monitor_startup_delay
@@ -231,6 +236,9 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             self.cache_monitor_startup_delay = cache_monitor_dict.get("startup_delay", 5)
         else:
             self.cache_monitor_enabled = False
+            self.cache_monitor_cache_limit = 0.9
+            self.cache_monitor_interval = 30
+            self.cache_monitor_startup_delay = 5
 
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         if not extra_dirs:
@@ -260,7 +268,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self._initialize()
 
     def _initialize(self):
-        self.start_cache_monitor()
+        if self.cache_size != -1 and self.cache_monitor_enabled:
+            self.start_cache_monitor()
 
     def shutdown(self):
         # This call will cleanup all the connections in the connection pool

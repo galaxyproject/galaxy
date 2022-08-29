@@ -441,19 +441,8 @@ class ConcreteObjectStore(BaseObjectStore):
     def __cache_monitor(self):
         time.sleep(self.cache_monitor_startup_delay)  # Wait for things to load before starting the monitor
         while self.running:
-            total_size = 0
             # Is this going to be too expensive of an operation to be done frequently?
-            file_list = []
-            for dirpath, _, filenames in os.walk(self.staging_path):
-                for filename in filenames:
-                    filepath = os.path.join(dirpath, filename)
-                    file_size = os.path.getsize(filepath)
-                    total_size += file_size
-                    # Get the time given file was last accessed
-                    last_access_time = time.localtime(os.stat(filepath)[7])
-                    # Compose a tuple of the access time and the file path
-                    file_tuple = last_access_time, filepath, file_size
-                    file_list.append(file_tuple)
+            total_size, file_list = get_cache_size_files(self.staging_path)
             # Sort the file list (based on access time)
             file_list.sort()
             # Initiate cleaning once we reach cache_monitor_cache_limit percntage of the defined cache size?
@@ -1308,6 +1297,24 @@ def config_to_dict(config):
         "object_store_cache_path": config.object_store_cache_path,
         "gid": config.gid,
     }
+
+# Returns cache size and cache files. For each file, we get
+# last access time, file path, and file size.
+def get_cache_size_files(cache_path):
+    cache_size = 0
+    file_list = []
+
+    for dirpath, _, filenames in os.walk(cache_path):
+        for filename in filenames:
+            file_path = os.path.join(dirpath, filename)
+            file_size = os.path.getsize(file_path)
+            cache_size += file_size
+            # Get the time given file was last accessed
+            last_access_time = time.localtime(os.stat(file_path)[7])
+            # Compose a tuple of the access time and the file path
+            file_tuple = last_access_time, file_path, file_size
+            file_list.append(file_tuple)
+    return cache_size, file_list
 
 
 class ObjectStorePopulator:
