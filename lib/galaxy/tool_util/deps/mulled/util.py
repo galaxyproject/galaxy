@@ -59,6 +59,24 @@ def quay_repository(namespace, pkg_name, session=None):
     return data
 
 
+def _get_namespace(namespace):
+    next_page = None
+    repo_names = []
+    repos_headers = {"Accept-encoding": "gzip", "Accept": "application/json"}
+    while True:
+        repos_parameters = {"public": "true", "namespace": namespace, "next_page": next_page}
+        repos_response = requests.get(
+            QUAY_REPOSITORY_API_ENDPOINT, headers=repos_headers, params=repos_parameters, timeout=MULLED_SOCKET_TIMEOUT
+        )
+        repos_response_json = repos_response.json()
+        repos = repos_response_json["repositories"]
+        repo_names += [r["name"] for r in repos]
+        next_page = repos_response_json.get("next_page")
+        if not next_page:
+            break
+    return repo_names
+
+
 def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
     """
     Get all quay containers in the biocontainers repo
@@ -74,20 +92,7 @@ def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
         except KeyError:
             # mulled_resolution_cache may be beaker CacheManager instance, which raises KeyError if key is not present on `.get`
             pass
-    next_page = None
-    repo_names = []
-    repos_headers = {"Accept-encoding": "gzip", "Accept": "application/json"}
-    while True:
-        repos_parameters = {"public": "true", "namespace": namespace, "next_page": next_page}
-        repos_response = requests.get(
-            QUAY_REPOSITORY_API_ENDPOINT, headers=repos_headers, params=repos_parameters, timeout=MULLED_SOCKET_TIMEOUT
-        )
-        repos_response_json = repos_response.json()
-        repos = repos_response_json["repositories"]
-        repo_names += [r["name"] for r in repos]
-        next_page = repos_response_json.get("next_page")
-        if not next_page:
-            break
+    repo_names = _get_namespace(namespace)
     if resolution_cache is not None:
         resolution_cache[cache_key] = repo_names
     return repo_name in repo_names

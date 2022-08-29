@@ -29,10 +29,13 @@ def container_registry():
     return ContainerRegistry(app_info)
 
 
-def test_container_registry(container_registry):
+def test_container_registry(container_registry, mocker):
+    mocker.patch('galaxy.tool_util.deps.mulled.util._get_namespace', return_value=["samtools"])
     tool_info = ToolInfo(requirements=[ToolRequirement(name="samtools", version="1.10", type="package")])
     container_description = container_registry.find_best_container_description(
-        [DOCKER_CONTAINER_TYPE], tool_info
+        [DOCKER_CONTAINER_TYPE],
+        tool_info,
+        install=False,
     )
     assert container_description.type == "docker"
     assert "samtools:1.10" in container_description.identifier
