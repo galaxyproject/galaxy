@@ -419,6 +419,12 @@ class ConcreteObjectStore(BaseObjectStore):
         self.name = config_dict.get("name", None)
         self.description = config_dict.get("description", None)
 
+        self.cache_size != -1
+        self.cache_monitor_enabled = CACHE_MONITOR_ENABLED
+        self.cache_monitor_cache_limit = CACHE_MONITOR_CACHE_LIMIT
+        self.cache_monitor_interval = CACHE_MONITOR_INTERVAL
+        self.cache_monitor_startup_delay = CACHE_MONITOR_STARTUP_DELAY
+
     def to_dict(self):
         rval = super().to_dict()
         rval["store_by"] = self.store_by
@@ -438,8 +444,6 @@ class ConcreteObjectStore(BaseObjectStore):
     def start_cache_monitor(self):
         # Clean cache only if value is set in galaxy.ini
         if self.cache_size != -1 and self.cache_monitor_enabled:
-            # Convert GBs to bytes for comparison
-            self.cache_size = self.cache_size * ONE_GIGA_BYTE
             # Helper for interruptable sleep
             self.sleeper = Sleeper()
             self.cache_monitor_thread = threading.Thread(target=self.__cache_monitor)
@@ -453,8 +457,10 @@ class ConcreteObjectStore(BaseObjectStore):
             total_size, file_list = get_cache_size_files(self.staging_path)
             # Sort the file list (based on access time)
             file_list.sort()
-            # Initiate cleaning once we reach cache_monitor_cache_limit percntage of the defined cache size?
-            cache_limit = self.cache_size * self.cache_monitor_cache_limit
+            # Initiate cleaning once we reach cache_monitor_cache_limit percentage of the defined cache size?
+            # Convert GBs to bytes for comparison
+            cache_size_in_gb = self.cache_size * ONE_GIGA_BYTE
+            cache_limit = cache_size_in_gb * self.cache_monitor_cache_limit
             if total_size > cache_limit:
                 log.info(
                     "Initiating cache cleaning: current cache size: %s; clean until smaller than: %s",
