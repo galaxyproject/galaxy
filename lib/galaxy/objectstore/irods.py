@@ -29,6 +29,7 @@ from galaxy.util import (
     unlink,
 )
 from galaxy.util.path import safe_relpath
+from . import get_cache_monitor_attributes, get_cache_monitor_values
 from ..objectstore import DiskObjectStore
 
 IRODS_IMPORT_MESSAGE = "The Python irods package is required to use this feature, please install it"
@@ -81,16 +82,7 @@ def parse_config_xml(config_xml):
         staging_path = c_xml[0].get("path", None)
 
         cm_xml = config_xml.findall("cache_monitor")
-        if cm_xml:
-            enabled = bool(cm_xml[0].get("enabled", False))
-            cache_limit = float(cm_xml[0].get("cache_limit", 0.9))
-            interval = int(cm_xml[0].get("interval", 300))
-            startup_delay = int(cm_xml[0].get("startup_delay", 60))
-        else:
-            enabled = False
-            cache_limit = 0.9
-            interval = 300
-            startup_delay = 60
+        enabled, cache_limit, interval, startup_delay = get_cache_monitor_attributes(cm_xml)
 
         attrs = ("type", "path")
         e_xml = config_xml.findall("extra_dir")
@@ -229,16 +221,10 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             _config_dict_error("cache->path")
 
         cache_monitor_dict = config_dict["cache_monitor"]
-        if cache_monitor_dict is not None:
-            self.cache_monitor_enabled = cache_monitor_dict.get("enabled", False)
-            self.cache_monitor_cache_limit = cache_monitor_dict.get("cache_limit", 0.9)
-            self.cache_monitor_interval = cache_monitor_dict.get("interval", 30)
-            self.cache_monitor_startup_delay = cache_monitor_dict.get("startup_delay", 5)
-        else:
-            self.cache_monitor_enabled = False
-            self.cache_monitor_cache_limit = 0.9
-            self.cache_monitor_interval = 30
-            self.cache_monitor_startup_delay = 5
+        self.cache_monitor_enabled, \
+            self.cache_monitor_cache_limit, \
+            self.cache_monitor_interval, \
+            self.cache_monitor_startup_delay = get_cache_monitor_values(cache_monitor_dict)
 
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         if not extra_dirs:

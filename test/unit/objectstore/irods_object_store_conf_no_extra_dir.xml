@@ -5,6 +5,7 @@
     <zone name="tempZone" />
     <connection host="localhost" port="1247" timeout="30" poolsize="3"/>
     <cache path="database/object_store_cache" size="1000" />
+    <cache_monitor enabled="True" cache_limit="0.9" interval="300" startup_delay="30"/>
     <!--<extra_dir type="job_work" path="database/job_working_directory_irods"/>-->
     <!--<extra_dir type="temp" path="database/tmp_irods"/>-->
 </object_store>

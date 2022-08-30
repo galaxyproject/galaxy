@@ -31,6 +31,10 @@ def test_parse_valid_config_xml():
     assert config["connection"]["timeout"] == 30
     assert config["cache"]["path"] == "database/object_store_cache"
     assert config["cache"]["size"] == 1000
+    assert config["cache_monitor"]["enabled"]
+    assert config["cache_monitor"]["cache_limit"] == 0.9
+    assert config["cache_monitor"]["interval"] == 300
+    assert config["cache_monitor"]["startup_delay"] == 30
     assert config["extra_dirs"][0]["type"] == "job_work"
     assert config["extra_dirs"][0]["path"] == "database/job_working_directory_irods"
     assert config["extra_dirs"][1]["type"] == "temp"

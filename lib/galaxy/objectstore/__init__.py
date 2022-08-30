@@ -44,6 +44,14 @@ NO_SESSION_ERROR_MESSAGE = (
 )
 
 ONE_GIGA_BYTE = 1024 * 1024 * 1024
+# Cache monitor default values
+CACHE_MONITOR_ENABLED = False
+# When 90% pf cache is filled, start the cleanup
+CACHE_MONITOR_CACHE_LIMIT = 0.9
+# Check how much of cache is filled once every 300 seconds
+CACHE_MONITOR_INTERVAL = 300
+# Delay cache monitoring for 60 seconds to give app time to startup
+CACHE_MONITOR_STARTUP_DELAY = 60
 
 log = logging.getLogger(__name__)
 
@@ -1316,6 +1324,38 @@ def get_cache_size_files(cache_path):
             file_tuple = last_access_time, file_path, file_size
             file_list.append(file_tuple)
     return cache_size, file_list
+
+
+# Get cache monitor attributes from object store's XML config
+def get_cache_monitor_attributes(xml_element):
+    if xml_element:
+        enabled = bool(xml_element[0].get("enabled", CACHE_MONITOR_ENABLED))
+        cache_limit = float(xml_element[0].get("cache_limit", CACHE_MONITOR_CACHE_LIMIT))
+        interval = int(xml_element[0].get("interval", CACHE_MONITOR_INTERVAL))
+        startup_delay = int(xml_element[0].get("startup_delay", CACHE_MONITOR_STARTUP_DELAY))
+    else:
+        enabled = CACHE_MONITOR_ENABLED
+        cache_limit = CACHE_MONITOR_CACHE_LIMIT
+        interval = CACHE_MONITOR_INTERVAL
+        startup_delay = CACHE_MONITOR_STARTUP_DELAY
+
+    return enabled, cache_limit, interval, startup_delay
+
+
+# Get cache monitor values from cache monitor dictionary
+def get_cache_monitor_values(cache_monitor_dict):
+    if cache_monitor_dict is not None:
+        enabled = cache_monitor_dict.get("enabled", CACHE_MONITOR_ENABLED)
+        cache_limit = cache_monitor_dict.get("cache_limit", CACHE_MONITOR_CACHE_LIMIT)
+        interval = cache_monitor_dict.get("interval", CACHE_MONITOR_INTERVAL)
+        startup_delay = cache_monitor_dict.get("startup_delay", CACHE_MONITOR_STARTUP_DELAY)
+    else:
+        enabled = CACHE_MONITOR_ENABLED
+        cache_limit = CACHE_MONITOR_CACHE_LIMIT
+        interval = CACHE_MONITOR_INTERVAL
+        startup_delay = CACHE_MONITOR_STARTUP_DELAY
+
+    return enabled, cache_limit, interval, startup_delay
 
 
 class ObjectStorePopulator:

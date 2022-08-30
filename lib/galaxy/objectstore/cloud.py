@@ -20,6 +20,7 @@ from galaxy.util import (
     umask_fix_perms,
     unlink,
 )
+from . import get_cache_monitor_values
 from .s3 import parse_config_xml
 from ..objectstore import ConcreteObjectStore
 
@@ -61,7 +62,12 @@ class CloudConfigMixin:
                 "size": self.cache_size,
                 "path": self.staging_path,
             },
-            "enable_cache_monitor": False,
+            "cache_monitor": {
+                "enabled": self.cache_monitor_enabled,
+                "cache_limit": self.cache_monitor_cache_limit,
+                "interval": self.cache_monitor_interval,
+                "startup_delay": self.cache_monitor_startup_delay
+            },
         }
 
 
@@ -81,7 +87,6 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         bucket_dict = config_dict["bucket"]
         connection_dict = config_dict.get("connection", {})
         cache_dict = config_dict["cache"]
-        self.enable_cache_monitor = config_dict.get("enable_cache_monitor", True)
 
         self.provider = config_dict["provider"]
         self.credentials = config_dict["auth"]
@@ -97,7 +102,11 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
 
         self.cache_size = cache_dict.get("size", -1)
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
-
+        cache_monitor_dict = config_dict["cache_monitor"]
+        self.cache_monitor_enabled, \
+            self.cache_monitor_cache_limit, \
+            self.cache_monitor_interval, \
+            self.cache_monitor_startup_delay = get_cache_monitor_values(cache_monitor_dict)
         self._initialize()
 
     def _initialize(self):
@@ -106,7 +115,10 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
 
         self.conn = self._get_connection(self.provider, self.credentials)
         self.bucket = self._get_bucket(self.bucket_name)
-        self.start_cache_monitor()
+
+        if self.cache_size != -1 and self.cache_monitor_enabled:
+            self.start_cache_monitor()
+
         # Test if 'axel' is available for parallel download and pull the key into cache
         try:
             subprocess.call("axel")

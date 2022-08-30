@@ -491,6 +491,7 @@ S3_TEST_CONFIG = """<object_store type="s3">
      <auth access_key="access_moo" secret_key="secret_cow" />
      <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
      <cache path="database/object_store_cache" size="1000" />
+     <cache_monitor enabled="True" cache_limit="0.9" interval="300" startup_delay="30"/>
      <extra_dir type="job_work" path="database/job_working_directory_s3"/>
      <extra_dir type="temp" path="database/tmp_s3"/>
 </object_store>
@@ -510,6 +511,12 @@ bucket:
 cache:
   path: database/object_store_cache
   size: 1000
+
+cache_monitor:
+  enabled: True
+  cache_limit: 0.9
+  interval: 300
+  startup_delay: 30
 
 extra_dirs:
 - type: job_work
@@ -536,11 +543,17 @@ def test_config_parse_s3():
 
             assert object_store.cache_size == 1000
             assert object_store.staging_path == "database/object_store_cache"
+
+            assert object_store.cache_monitor_enabled
+            assert object_store.cache_monitor_cache_limit == 0.9
+            assert object_store.cache_monitor_interval == 300
+            assert object_store.cache_monitor_startup_delay == 30
+
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_s3"
             assert object_store.extra_dirs["temp"] == "database/tmp_s3"
 
             as_dict = object_store.to_dict()
-            _assert_has_keys(as_dict, ["auth", "bucket", "connection", "cache", "extra_dirs", "type"])
+            _assert_has_keys(as_dict, ["auth", "bucket", "connection", "cache", "cache_monitor", "extra_dirs", "type"])
 
             _assert_key_has_value(as_dict, "type", "s3")
 
@@ -548,6 +561,7 @@ def test_config_parse_s3():
             bucket_dict = as_dict["bucket"]
             connection_dict = as_dict["connection"]
             cache_dict = as_dict["cache"]
+            cache_monitor_dict = as_dict["cache_monitor"]
 
             _assert_key_has_value(auth_dict, "access_key", "access_moo")
             _assert_key_has_value(auth_dict, "secret_key", "secret_cow")
@@ -563,6 +577,11 @@ def test_config_parse_s3():
             _assert_key_has_value(cache_dict, "size", 1000)
             _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
 
+            _assert_key_has_value(cache_monitor_dict, "enabled", True)
+            _assert_key_has_value(cache_monitor_dict, "cache_limit", 0.9)
+            _assert_key_has_value(cache_monitor_dict, "interval", 300)
+            _assert_key_has_value(cache_monitor_dict, "startup_delay", 30)
+
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
 
@@ -571,6 +590,7 @@ CLOUD_AWS_TEST_CONFIG = """<object_store type="cloud" provider="aws">
      <auth access_key="access_moo" secret_key="secret_cow" />
      <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
      <cache path="database/object_store_cache" size="1000" />
+     <cache_monitor enabled="True" cache_limit="0.9" interval="300" startup_delay="30"/>
      <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
      <extra_dir type="temp" path="database/tmp_cloud"/>
 </object_store>
@@ -592,6 +612,12 @@ cache:
   path: database/object_store_cache
   size: 1000
 
+cache_monitor:
+  enabled: True
+  cache_limit: 0.9
+  interval: 300
+  startup_delay: 30
+
 extra_dirs:
 - type: job_work
   path: database/job_working_directory_cloud
@@ -605,6 +631,7 @@ CLOUD_AZURE_TEST_CONFIG = """<object_store type="cloud" provider="azure">
      tenant="and_some_tenant_info" />
      <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
      <cache path="database/object_store_cache" size="1000" />
+     <cache_monitor enabled="True" cache_limit="0.9" interval="300" startup_delay="30"/>
      <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
      <extra_dir type="temp" path="database/tmp_cloud"/>
 </object_store>
@@ -627,6 +654,12 @@ cache:
   path: database/object_store_cache
   size: 1000
 
+cache_monitor:
+  enabled: True
+  cache_limit: 0.9
+  interval: 300
+  startup_delay: 30
+
 extra_dirs:
 - type: job_work
   path: database/job_working_directory_cloud
@@ -639,6 +672,7 @@ CLOUD_GOOGLE_TEST_CONFIG = """<object_store type="cloud" provider="google">
      <auth credentials_file="gcp.config" />
      <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
      <cache path="database/object_store_cache" size="1000" />
+     <cache_monitor enabled="True" cache_limit="0.9" interval="300" startup_delay="30"/>
      <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
      <extra_dir type="temp" path="database/tmp_cloud"/>
 </object_store>
@@ -657,6 +691,12 @@ bucket:
 cache:
   path: database/object_store_cache
   size: 1000
+
+cache_monitor:
+  enabled: True
+  cache_limit: 0.9
+  interval: 300
+  startup_delay: 30
 
 extra_dirs:
 - type: job_work
@@ -707,6 +747,7 @@ def test_config_parse_cloud():
             bucket_dict = as_dict["bucket"]
             connection_dict = as_dict["connection"]
             cache_dict = as_dict["cache"]
+            cache_monitor_dict = as_dict["cache_monitor"]
 
             provider = as_dict["provider"]
             if provider == "aws":
@@ -731,7 +772,10 @@ def test_config_parse_cloud():
             _assert_key_has_value(cache_dict, "size", 1000.0)
             _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
 
-            _assert_key_has_value(as_dict, "enable_cache_monitor", False)
+            _assert_key_has_value(cache_monitor_dict, "enabled", True)
+            _assert_key_has_value(cache_monitor_dict, "cache_limit", 0.9)
+            _assert_key_has_value(cache_monitor_dict, "interval", 300)
+            _assert_key_has_value(cache_monitor_dict, "startup_delay", 30)
 
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2

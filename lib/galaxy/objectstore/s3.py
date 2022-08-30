@@ -30,6 +30,7 @@ from galaxy.util import (
     which,
 )
 from galaxy.util.path import safe_relpath
+from . import get_cache_monitor_attributes, get_cache_monitor_values
 from .s3_multipart_upload import multipart_upload
 from ..objectstore import ConcreteObjectStore
 
@@ -67,8 +68,10 @@ def parse_config_xml(config_xml):
 
         c_xml = config_xml.findall("cache")[0]
         cache_size = float(c_xml.get("size", -1))
-
         staging_path = c_xml.get("path", None)
+
+        cm_xml = config_xml.findall("cache_monitor")
+        enabled, cache_limit, interval, startup_delay = get_cache_monitor_attributes(cm_xml)
 
         tag, attrs = "extra_dir", ("type", "path")
         extra_dirs = config_xml.findall(tag)
@@ -98,6 +101,12 @@ def parse_config_xml(config_xml):
             "cache": {
                 "size": cache_size,
                 "path": staging_path,
+            },
+            "cache_monitor": {
+                "enabled": enabled,
+                "cache_limit": cache_limit,
+                "interval": interval,
+                "startup_delay": startup_delay,
             },
             "extra_dirs": extra_dirs,
         }
@@ -129,7 +138,12 @@ class CloudConfigMixin:
                 "size": self.cache_size,
                 "path": self.staging_path,
             },
-            "enable_cache_monitor": False,
+            "cache_monitor": {
+                "enabled": self.cache_monitor_enabled,
+                "cache_limit": self.cache_monitor_cache_limit,
+                "interval": self.cache_monitor_interval,
+                "startup_delay": self.cache_monitor_startup_delay
+            },
         }
 
 
@@ -151,7 +165,6 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         bucket_dict = config_dict["bucket"]
         connection_dict = config_dict.get("connection", {})
         cache_dict = config_dict["cache"]
-        self.enable_cache_monitor = config_dict.get("enable_cache_monitor", True)
 
         self.access_key = auth_dict.get("access_key")
         self.secret_key = auth_dict.get("secret_key")
@@ -168,6 +181,12 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
 
         self.cache_size = cache_dict.get("size", -1)
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
+
+        cache_monitor_dict = config_dict["cache_monitor"]
+        self.cache_monitor_enabled, \
+            self.cache_monitor_cache_limit, \
+            self.cache_monitor_interval, \
+            self.cache_monitor_startup_delay = get_cache_monitor_values(cache_monitor_dict)
 
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         self.extra_dirs.update(extra_dirs)
@@ -192,7 +211,10 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
 
         self._configure_connection()
         self._bucket = self._get_bucket(self.bucket)
-        self.start_cache_monitor()
+
+        if self.cache_size != -1 and self.cache_monitor_enabled:
+            self.start_cache_monitor()
+
         # Test if 'axel' is available for parallel download and pull the key into cache
         if which("axel"):
             self.use_axel = True
