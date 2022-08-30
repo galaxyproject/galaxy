@@ -4,6 +4,7 @@ import shutil
 
 import pytest
 
+from galaxy.datatypes.data import Text
 from galaxy.datatypes.registry import Registry
 from galaxy.util.checkers import (
     is_bz2,
@@ -117,4 +118,13 @@ def upload_datatype_helper(instance, test_data, temp_file, delete_cache_dir=Fals
             )
         )
         temp_file.flush()
-        assert md5_hash_file(test_data.path) == md5_hash_file(temp_file.name)
+        expected_hash = md5_hash_file(test_data.path)
+        test_hash = md5_hash_file(temp_file.name)
+        message = f"Expected md5 sum '{expected_hash}' for {os.path.relpath(test_data.path)}, but test file md5sum is {test_hash}."
+        if expected_hash != test_hash:
+            if isinstance(datatype, Text):
+                with open(test_data.path, "rb") as fh:
+                    fh.seek(-1, os.SEEK_END)
+                    if fh.read() != b"\n":
+                        message = f"{message} You need to add a final newline to {os.path.relpath(test_data.path)}."
+        assert expected_hash == test_hash, message
