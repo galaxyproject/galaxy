@@ -32,16 +32,14 @@ export function fetchMenu(options = {}) {
     // Visualization tab.
     //
     if (Galaxy.config.visualizations_visible) {
-        if (Galaxy.config.visualizations_visible) {
-            menu.push({
-                id: "visualization",
-                title: _l("Visualize"),
-                tooltip: _l("Visualize datasets"),
-                disabled: !Galaxy.user.id,
-                url: "visualizations",
-                target: "__use_router__",
-            });
-        }
+        menu.push({
+            id: "visualization",
+            title: _l("Visualize"),
+            tooltip: _l("Visualize datasets"),
+            disabled: !Galaxy.user.id,
+            url: "visualizations",
+            target: "__use_router__",
+        });
     }
 
     //
