@@ -55,6 +55,10 @@ export default {
             type: String,
             default: null,
         },
+        initialActiveTab: {
+            type: String,
+            default: "analysis",
+        },
         mastheadState: {
             type: Object,
             default: null,
@@ -66,12 +70,17 @@ export default {
     },
     data() {
         return {
+            activeTab: this.initialActiveTab,
             baseTabs: [],
             extensionTabs: [],
-            activeTab: "analysis",
             windowTab: this.mastheadState.windowManager.getTab(),
             windowToggle: false,
         };
+    },
+    watch: {
+        $route() {
+            this.updateTab();
+        },
     },
     computed: {
         brandTitle() {
@@ -98,13 +107,13 @@ export default {
         updateTab() {
             const currentRoute = this.$route?.path;
             let matchedId = null;
-            for (let tab of this.baseTabs) {
+            for (const tab of this.baseTabs) {
                 const tabId = tab.id;
                 if (currentRoute == `/${tab.url}`) {
                     matchedId = tabId;
                     break;
                 } else if (tab.menu) {
-                    for (let item of tab.menu) {
+                    for (const item of tab.menu) {
                         if (currentRoute == `/${item.url}`) {
                             matchedId = tabId;
                             break;

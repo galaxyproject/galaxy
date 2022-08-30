@@ -135,8 +135,8 @@ describe("Masthead.vue", () => {
     });
 
     it("should highlight the active tab", () => {
-        expect(wrapper.find("#analysis").classes("active")).toBe(true);
-        expect(wrapper.find("#shared").classes("active")).toBe(false);
+        expect(wrapper.find("#analysis").classes("active")).toBe(false);
+        expect(wrapper.find("#shared").classes("active")).toBe(true);
     });
 
     it("should display window manager button", async () => {
