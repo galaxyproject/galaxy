@@ -1,6 +1,6 @@
 <template>
     <CurrentUser v-slot="{ user }">
-        <UserHistories v-if="user" v-slot="{ histories, handlers, historiesLoading, currentHistoryId }" :user="user">
+        <UserHistories v-if="user" v-slot="{ histories, handlers, historiesLoading, currentHistory }" :user="user">
             <b-alert v-if="historiesLoading || histories.length === 0" class="m-2" variant="info" show>
                 <LoadingSpan message="Loading Histories" />
             </b-alert>
@@ -62,7 +62,7 @@
                     :histories="histories"
                     :histories-filter="historiesFilter"
                     :data-sets-filter="dataSetsFilter"
-                    :current-history-id="currentHistoryId"
+                    :current-history="currentHistory"
                     :handlers="handlers" />
             </div>
         </UserHistories>

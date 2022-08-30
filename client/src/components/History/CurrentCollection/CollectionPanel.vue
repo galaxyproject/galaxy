@@ -9,7 +9,7 @@
         :contents-url="contentsUrl"
         :offset="offset">
         <ExpandedItems v-slot="{ isExpanded, setExpanded }" :scope-key="dsc.id" :get-item-key="(item) => item.id">
-            <section class="dataset-collection-panel d-flex flex-column">
+            <section class="dataset-collection-panel w-100 d-flex flex-column">
                 <section>
                     <CollectionNavigation
                         :history="history"

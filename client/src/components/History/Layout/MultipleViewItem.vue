@@ -1,10 +1,17 @@
 <template>
     <div class="d-flex flex-column align-items-center">
+        <CurrentCollection
+            v-if="selectedCollections.length && selectedCollections[0].history_id === source.id"
+            :history="currentHistory"
+            :selected-collections.sync="selectedCollections"
+            @view-collection="onViewCollection" />
         <HistoryPanel
+            v-else
             :history="source"
             :data-sets-filter="dataSetsFilter"
             v-on="handlers"
-            @view-collection="onViewCollection" />
+            @view-collection="onViewCollection">
+        </HistoryPanel>
         <b-button
             size="sm"
             class="my-1"
@@ -19,16 +26,20 @@
 
 <script>
 import HistoryPanel from "components/History/CurrentHistory/HistoryPanel";
+import CurrentCollection from "components/History/CurrentCollection/CollectionPanel";
 
 export default {
-    components: { HistoryPanel },
+    components: {
+        HistoryPanel,
+        CurrentCollection,
+    },
     props: {
         source: {
             type: Object,
             required: true,
         },
-        currentHistoryId: {
-            type: String,
+        currentHistory: {
+            type: Object,
             required: true,
         },
         handlers: {
@@ -39,14 +50,20 @@ export default {
             type: String,
             default: null,
         },
-        onViewCollection: {
-            type: Function,
-            required: true,
-        },
+    },
+    data() {
+        return {
+            selectedCollections: [],
+        };
     },
     computed: {
         sameToCurrent() {
-            return this.currentHistoryId === this.source.id;
+            return this.currentHistory.id === this.source.id;
+        },
+    },
+    methods: {
+        onViewCollection(collection) {
+            this.selectedCollections = [...this.selectedCollections, collection];
         },
     },
 };

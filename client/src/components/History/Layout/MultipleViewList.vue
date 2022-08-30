@@ -7,7 +7,7 @@
         :data-component="MultipleViewItem"
         :data-sources="filteredHistories"
         :direction="'horizontal'"
-        :extra-props="{ currentHistoryId, handlers, dataSetsFilter, onViewCollection }"
+        :extra-props="{ currentHistory, handlers, dataSetsFilter }"
         :item-style="{ minWidth: '15rem', maxWidth: '15rem' }"
         item-class="d-flex mx-1"
         class="flex-grow-1"
@@ -33,8 +33,8 @@ export default {
             type: Array,
             required: true,
         },
-        currentHistoryId: {
-            type: String,
+        currentHistory: {
+            type: Object,
             required: true,
         },
         handlers: {
@@ -51,7 +51,9 @@ export default {
         },
     },
     data() {
-        return { MultipleViewItem };
+        return {
+            MultipleViewItem,
+        };
     },
     computed: {
         filteredHistories() {
@@ -63,9 +65,6 @@ export default {
                 return history.name.toLowerCase().includes(filter);
             });
         },
-    },
-    methods: {
-        onViewCollection(collection) {},
     },
 };
 </script>
