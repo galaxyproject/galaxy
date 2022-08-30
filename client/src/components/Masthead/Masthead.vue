@@ -68,14 +68,35 @@ export default {
         return {
             baseTabs: [],
             extensionTabs: [],
-            currentTab: "analysis",
+            activeTab: "analysis",
             windowTab: this.mastheadState.windowManager.getTab(),
             windowToggle: false,
         };
     },
     computed: {
-        activeTab() {
-            /*const currentRoute = this.$route.path;
+        brandTitle() {
+            let brandTitle = this.displayGalaxyBrand ? "Galaxy " : "";
+            if (this.brand) {
+                brandTitle += this.brand;
+            }
+            return brandTitle;
+        },
+        tabs() {
+            const tabs = [].concat(this.baseTabs, this.extensionTabs);
+            return tabs.map(this._tabToJson);
+        },
+    },
+    created() {
+        this.baseTabs = fetchMenu(this.menuOptions);
+        this.updateTab();
+        loadWebhookMenuItems(this.extensionTabs);
+    },
+    methods: {
+        addItem(item) {
+            this.tabs.push(item);
+        },
+        updateTab() {
+            const currentRoute = this.$route?.path;
             let matchedId = null;
             for (let tab of this.baseTabs) {
                 const tabId = tab.id;
@@ -91,28 +112,8 @@ export default {
                     }
                 }
             }
-            this.currentTab = matchedId || this.currentTab;*/
-            return this.currentTab;
-        },
-        brandTitle() {
-            let brandTitle = this.displayGalaxyBrand ? "Galaxy " : "";
-            if (this.brand) {
-                brandTitle += this.brand;
-            }
-            return brandTitle;
-        },
-        tabs() {
-            const tabs = [].concat(this.baseTabs, this.extensionTabs);
-            return tabs.map(this._tabToJson);
-        },
-    },
-    created() {
-        this.baseTabs = fetchMenu(this.menuOptions);
-        loadWebhookMenuItems(this.extensionTabs);
-    },
-    methods: {
-        addItem(item) {
-            this.tabs.push(item);
+            this.activeTab = matchedId || this.activeTab;
+            return this.activeTab;
         },
         onWindowToggle() {
             this.windowToggle = !this.windowToggle;
