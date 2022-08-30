@@ -703,6 +703,16 @@ admin:
         type: xpath
         selector: "//label[@for='prevent-job-dispatching']/strong"
       cutoff: '#cutoff'
+      table: '.jobs-table'
+      filter_link_user: '.job-filter-link-user'
+      filter_link_tool: '.job-filter-link-tool-id'
+      filter_link_handler: '.job-filter-link-handler'
+      filter_link_runner: '.job-filter-link-runner'
+      filter_link_by_user: '.job-filter-link-user[data-user="${user}"]'
+      filter_link_by_tool: '.job-filter-link-tool-id[data-tool-id="${tool_id}"]'
+      filter_link_by_handler: '.job-filter-link-handler[data-handler="${handler}"]'
+      filter_link_by_runner: '.job-filter-link-runner[data-runner="${runner}"]'
+      filter_query: '.index-filter-query'
 
   toolshed:
     selectors:

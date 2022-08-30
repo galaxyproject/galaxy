@@ -9,7 +9,7 @@
                     autocomplete="off"
                     :placeholder="placeholder | localize"
                     data-description="filter index input"
-                    class="search-query"
+                    class="search-query index-filter-query"
                     :size="size"
                     @input="input"
                     @keyup.esc="onReset" />
