@@ -3,6 +3,7 @@ import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 import Masthead from "../components/Masthead/Masthead";
 import { mountVueComponent } from "../utils/mountVueComponent";
+import { fetchMenu } from "entry/analysis/menu";
 
 export class MastheadState {
     // Used to be a Backbone View - not pretty but keep all window wide listeners,
@@ -27,13 +28,13 @@ export function mountMasthead(el, options, mastheadState) {
     return mountVueComponent(Masthead)(
         {
             el: el,
-            mastheadState: mastheadState,
             displayGalaxyBrand: options.display_galaxy_brand,
+            baseTabs: fetchMenu(options),
             brand: options.brand,
             brandLink: staticUrlToPrefixed(appRoot, options.logo_url),
             brandImage: staticUrlToPrefixed(appRoot, options.logo_src),
             brandImageSecondary: staticUrlToPrefixed(appRoot, options.logo_src_secondary),
-            menuOptions: options,
+            windowTab: mastheadState.windowManager.getTab(),
         },
         el
     );

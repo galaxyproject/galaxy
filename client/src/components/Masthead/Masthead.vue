@@ -12,7 +12,7 @@
                 :key="`tab-${idx}`"
                 :tab="tab"
                 :active-tab="activeTab" />
-            <masthead-item :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
+            <masthead-item v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
         </b-navbar-nav>
         <quota-meter />
     </b-navbar>
@@ -62,7 +62,7 @@ export default {
             type: String,
             default: "analysis",
         },
-        mastheadState: {
+        windowTab: {
             type: Object,
             default: null,
         },
@@ -71,7 +71,6 @@ export default {
         return {
             activeTab: this.initialActiveTab,
             extensionTabs: [],
-            windowTab: this.mastheadState.windowManager.getTab(),
             windowToggle: false,
         };
     },

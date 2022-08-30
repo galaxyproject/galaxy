@@ -5,13 +5,13 @@
             <Masthead
                 v-if="showMasthead"
                 id="masthead"
-                :masthead-state="mastheadState"
                 :display-galaxy-brand="config.display_galaxy_brand"
                 :brand="config.brand"
                 :brand-link="staticUrlToPrefixed(config.logo_url)"
                 :brand-image="staticUrlToPrefixed(config.logo_src)"
                 :brand-image-secondary="staticUrlToPrefixed(config.logo_src_secondary)"
-                :base-tabs="baseTabs" />
+                :base-tabs="baseTabs"
+                :window-tab="windowTab" />
             <alert
                 v-if="config.message_box_visible && config.message_box_content"
                 id="messagebox"
@@ -67,6 +67,9 @@ export default {
                 return masthead.toLowerCase() != "true";
             }
             return true;
+        },
+        windowTab() {
+            return this.mastheadState.windowManager.getTab();
         },
     },
     watch: {
