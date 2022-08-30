@@ -2,6 +2,7 @@
 This script is intended to be invoked by the db.sh script.
 """
 
+import logging
 import os
 import sys
 from argparse import (
@@ -12,6 +13,9 @@ from argparse import (
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 from galaxy.model.migrations.dbscript import DbScript
+
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 
 def exec_upgrade(args: Namespace) -> None:
