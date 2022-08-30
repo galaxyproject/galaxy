@@ -27,9 +27,11 @@ export function prependPath(path) {
  * @returns The absolute URL path.
  */
 export function absPath(path) {
-    const relativePath = hasRoot(path) ? path : prependPath(path);
+    // Root path here may be '/' or '/galaxy' for example.  we always append the
+    // base '/' and then clean up duplicates.
+    const relativePath = `/${hasRoot(path) ? path : prependPath(path)}`.replace(slashCleanup, "/");
     const server = window.location.origin;
-    return `${server}/${relativePath}`.replace(slashCleanup, "/");
+    return `${server}${relativePath}`;
 }
 
 /**
