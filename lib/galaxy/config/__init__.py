@@ -457,6 +457,11 @@ class BaseAppConfiguration(HasDynamicProperties):
             return value
 
         for key, value in kwargs.items():
+            if key in self.schema._deprecated_aliases:
+                new_key = self.schema._deprecated_aliases[key]
+                log.warning(f"Option {key} has been deprecated in favor of {new_key}")
+                key = new_key
+
             if key in self.schema.app_schema:
                 value = convert_datatype(key, value)
                 if value and self.deprecated_dirs:

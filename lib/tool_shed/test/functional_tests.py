@@ -16,6 +16,7 @@ sys.path[0:1] = [os.path.join(galaxy_root, "lib")]
 # This is for the tool shed application.
 from galaxy.webapps.galaxy.buildapp import app_factory as galaxy_app_factory
 from galaxy_test.driver import driver_util
+from tool_shed.test.base.api_util import get_admin_api_key
 from tool_shed.webapp import buildapp as toolshedbuildapp
 
 log = driver_util.build_logger()
@@ -88,6 +89,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
         toolshed_database_conf = driver_util.database_conf(shed_db_path, prefix="TOOL_SHED")
         kwargs = dict(
             admin_users="test@bx.psu.edu",
+            bootstrap_admin_api_key=get_admin_api_key(),
             allow_user_creation=True,
             allow_user_deletion=True,
             datatype_converters_config_file="datatype_converters_conf.xml.sample",

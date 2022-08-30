@@ -1,5 +1,6 @@
 import os
 from contextlib import contextmanager
+from typing import Optional
 from urllib.parse import (
     urlencode,
     urljoin,
@@ -81,6 +82,7 @@ class UsesCeleryTasks:
 
 class UsesApiTestCaseMixin:
     url: str
+    _galaxy_interactor: Optional["ApiTestInteractor"] = None
 
     def tearDown(self):
         if os.environ.get("GALAXY_TEST_EXTERNAL") is None:
@@ -104,9 +106,14 @@ class UsesApiTestCaseMixin:
     def _setup_interactor(self):
         self.user_api_key = get_user_api_key()
         self.master_api_key = get_admin_api_key()
-        self.galaxy_interactor = self._get_interactor()
+        self._galaxy_interactor = self._get_interactor()
 
-    def _get_interactor(self, api_key=None):
+    @property
+    def galaxy_interactor(self) -> "ApiTestInteractor":
+        assert self._galaxy_interactor is not None
+        return self._galaxy_interactor
+
+    def _get_interactor(self, api_key=None) -> "ApiTestInteractor":
         return ApiTestInteractor(self, api_key=api_key)
 
     def _setup_user(self, email, password=None, is_admin=True):

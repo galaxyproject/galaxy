@@ -147,7 +147,8 @@ OPTION_ACTIONS = {
     "serve_xss_vulnerable_mimetypes": _ProductionUnsafe(True),
     "use_printdebug": _ProductionUnsafe(True),
     "id_secret": _ProductionUnsafe("USING THE DEFAULT IS NOT SECURE!"),
-    "master_api_key": _ProductionUnsafe("changethis"),
+    "master_api_key": _RenameAction("bootstrap_admin_api_key"),
+    "bootstrap_admin_api_key": _ProductionUnsafe("changethis"),
     "external_service_type_config_file": _DeprecatedAndDroppedAction(),
     "external_service_type_path": _DeprecatedAndDroppedAction(),
     "enable_sequencer_communication": _DeprecatedAndDroppedAction(),
@@ -358,7 +359,7 @@ def _validate(args, app_desc):
         ordered_dump(raw_config, config_p)
 
     def _clean(p, k, v):
-        return k not in ["reloadable", "path_resolves_to", "per_host"]
+        return k not in ["reloadable", "path_resolves_to", "per_host", "deprecated_alias"]
 
     clean_schema = remap(app_desc.schema.raw_schema, _clean)
     with tempfile.NamedTemporaryFile("w", suffix=".yml") as fp:

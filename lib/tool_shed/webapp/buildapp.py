@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 
 class CommunityWebApplication(galaxy.webapps.base.webapp.WebApplication):
-    pass
+    injection_aware: bool = True
 
 
 def add_ui_controllers(webapp, app):

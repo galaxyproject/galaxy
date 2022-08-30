@@ -261,7 +261,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         Find a user by API key.
         """
-        if self.check_master_api_key(api_key=api_key):
+        if self.check_bootstrap_admin_api_key(api_key=api_key):
             return schema.BootstrapAdminUser()
         sa_session = sa_session or self.app.model.session
         try:
@@ -276,14 +276,14 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             raise exceptions.AuthenticationFailed("Provided API key has expired.")
         return provided_key.user
 
-    def check_master_api_key(self, api_key):
-        master_api_key = getattr(self.app.config, "master_api_key", None)
-        if not master_api_key:
+    def check_bootstrap_admin_api_key(self, api_key):
+        bootstrap_admin_api_key = getattr(self.app.config, "bootstrap_admin_api_key", None)
+        if not bootstrap_admin_api_key:
             return False
         # Hash keys to make them the same size, so we can do safe comparison.
-        master_hash = hashlib.sha256(util.smart_str(master_api_key)).hexdigest()
+        bootstrap_hash = hashlib.sha256(util.smart_str(bootstrap_admin_api_key)).hexdigest()
         provided_hash = hashlib.sha256(util.smart_str(api_key)).hexdigest()
-        return util.safe_str_cmp(master_hash, provided_hash)
+        return util.safe_str_cmp(bootstrap_hash, provided_hash)
 
     # ---- admin
     def is_admin(self, user: Optional[model.User], trans=None) -> bool:
