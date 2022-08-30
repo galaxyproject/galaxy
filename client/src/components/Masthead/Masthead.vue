@@ -126,7 +126,6 @@ export default {
         },
         _tabToJson(el) {
             const defaults = {
-                visible: true,
                 target: "_parent",
             };
             let asJson;
