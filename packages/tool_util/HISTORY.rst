@@ -10,6 +10,7 @@ History
 
 * Fix lint context error level
 * Pin galaxy-util to >= 22.1
+* Fix biocontainer resolution without beaker cache
 
 22.1.1 (2022-08-22)
 --------------------
