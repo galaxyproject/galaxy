@@ -558,6 +558,31 @@ steps:
         editor.node.output_data_row(output_name="out_file1", extension="bam").wait_for_visible()
         self.assert_not_connected("create_2#out_file1", "checksum#input")
 
+    @selenium_test
+    def test_change_datatype_post_job_action_lost_regression(self):
+        self.open_in_workflow_editor(
+            """
+class: GalaxyWorkflow
+inputs: []
+steps:
+  - tool_id: create_2
+    label: create_2
+    outputs:
+      out_file1:
+        change_datatype: bam
+  - tool_id: metadata_bam
+    label: metadata_bam
+    in:
+      input_bam: create_2/out_file1
+"""
+        )
+        self.assert_connected("create_2#out_file1", "metadata_bam#input_bam")
+        editor = self.components.workflow_editor
+        node = editor.node._(label="create_2")
+        node.wait_for_and_click()
+        self.assert_connected("create_2#out_file1", "metadata_bam#input_bam")
+
+    @selenium_test
     def test_change_datatype_in_subworkflow(self):
         self.open_in_workflow_editor(
             """
