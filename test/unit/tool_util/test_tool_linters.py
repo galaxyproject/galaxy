@@ -686,11 +686,18 @@ TESTS_DISCOVER_OUTPUTS = """
     <tests>
         <!-- this should be fine -->
         <test>
-            <output name="data_name" count="2">
-                <discovered_data/>
+            <output name="data_name">
+                <discovered_dataset/>
             </output>
             <output_collection name="collection_name">
-                <element count="2">
+                <element count="2"/>
+            </output_collection>
+        </test>
+        <!-- this should be fine as well -->
+        <test>
+            <output name="data_name" count="2"/>
+            <output_collection name="collection_name">
+                <element>
                     <element/>
                 </element>
             </output_collection>
@@ -1492,19 +1499,19 @@ def test_tests_discover_outputs(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_DISCOVER_OUTPUTS)
     run_lint(lint_ctx, tests.lint_tsts, tool_source)
     assert (
-        "Test 2: test output 'data_name' must have a 'count' attribute and/or 'discovered_datasets' children"
+        "Test 3: test output 'data_name' must have a 'count' attribute and/or 'discovered_dataset' children"
         in lint_ctx.error_messages
     )
     assert (
-        "Test 2: test collection 'collection_name' must have a 'count' attribute or 'element' children"
-        in lint_ctx.error_messages
-    )
-    assert (
-        "Test 2: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute"
+        "Test 3: test collection 'collection_name' must have a 'count' attribute or 'element' children"
         in lint_ctx.error_messages
     )
     assert (
         "Test 3: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 4: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute"
         in lint_ctx.error_messages
     )
     assert not lint_ctx.warn_messages

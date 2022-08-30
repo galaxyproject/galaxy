@@ -57,7 +57,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools)
         # Test default metadata stuff
         assert created_hda_1.visible
 
-        # Since discovered_datasets not specified, older name based pattern
+        # Since discover_datasets not specified, older name based pattern
         # didn't result in a dbkey being set.
         assert created_hda_1.dbkey == "?"
 
