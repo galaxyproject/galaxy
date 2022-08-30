@@ -419,7 +419,7 @@ class ConcreteObjectStore(BaseObjectStore):
         self.name = config_dict.get("name", None)
         self.description = config_dict.get("description", None)
 
-        self.cache_size != -1
+        self.cache_size = -1
         self.cache_monitor_enabled = CACHE_MONITOR_ENABLED
         self.cache_monitor_cache_limit = CACHE_MONITOR_CACHE_LIMIT
         self.cache_monitor_interval = CACHE_MONITOR_INTERVAL
