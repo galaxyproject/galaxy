@@ -1,0 +1,24 @@
+runners:
+  local_qc:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+  local_cat:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+  local_upload:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+execution:
+  default: local_upload
+  environments:
+    local_qc:
+      runner: local_qc
+    local_cat:
+      runner: local_cat
+    local_upload:
+      runner: local_upload
+tools:
+  - id: cat
+    environment: local_cat
+  - id: qc_stdout
+    environment: local_qc
