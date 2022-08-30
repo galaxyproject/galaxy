@@ -129,23 +129,6 @@ class InstalledRepositoryManager:
                 )
         self.install_model.session.add(repository)
         self.install_model.session.flush()
-        if repository.includes_datatypes:
-            if tool_path:
-                repository_install_dir = os.path.abspath(os.path.join(tool_path, relative_install_dir))
-            else:
-                repository_install_dir = os.path.abspath(relative_install_dir)
-            # Activate proprietary datatypes.
-            cdl = custom_datatype_manager.CustomDatatypeLoader(self.app)
-            installed_repository_dict = cdl.load_installed_datatypes(
-                repository, repository_install_dir, deactivate=False
-            )
-            if installed_repository_dict:
-                converter_path = installed_repository_dict.get("converter_path")
-                if converter_path is not None:
-                    cdl.load_installed_datatype_converters(installed_repository_dict, deactivate=False)
-                display_path = installed_repository_dict.get("display_path")
-                if display_path is not None:
-                    cdl.load_installed_display_applications(installed_repository_dict, deactivate=False)
 
     def add_entry_to_installed_repository_dependencies_of_installed_repositories(self, repository):
         """
@@ -714,19 +697,6 @@ class InstalledRepositoryManager:
         if repository.includes_data_managers:
             dmh = data_manager.DataManagerHandler(app=self.app)
             dmh.remove_from_data_manager(repository)
-        if repository.includes_datatypes:
-            # Deactivate proprietary datatypes.
-            cdl = custom_datatype_manager.CustomDatatypeLoader(app=self.app)
-            installed_repository_dict = cdl.load_installed_datatypes(
-                repository, repository_install_dir, deactivate=True
-            )
-            if installed_repository_dict:
-                converter_path = installed_repository_dict.get("converter_path")
-                if converter_path is not None:
-                    cdl.load_installed_datatype_converters(installed_repository_dict, deactivate=True)
-                display_path = installed_repository_dict.get("display_path")
-                if display_path is not None:
-                    cdl.load_installed_display_applications(installed_repository_dict, deactivate=True)
         if remove_from_disk:
             try:
                 # Remove the repository from disk.

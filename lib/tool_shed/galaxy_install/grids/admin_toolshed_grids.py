@@ -20,14 +20,6 @@ def generate_deprecated_repository_img_str(include_mouse_over=False):
     return f"<img src=\"{url_for('/static')}/images/icon_error_sml.gif\" {deprecated_tip_str}/>"
 
 
-def generate_includes_workflows_img_str(include_mouse_over=False):
-    if include_mouse_over:
-        deprecated_tip_str = 'class="icon-button" title="This repository contains exported workflows"'
-    else:
-        deprecated_tip_str = ""
-    return f"<img src=\"{url_for('/static')}/images/fugue/gear.png\" {deprecated_tip_str}/>"
-
-
 def generate_latest_revision_img_str(include_mouse_over=False):
     if include_mouse_over:
         latest_revision_tip_str = (
@@ -79,8 +71,6 @@ class InstalledRepositoryGrid(grids.Grid):
                     tool_shed_status_str += generate_revision_updates_img_str(include_mouse_over=True)
                 if tool_shed_repository.upgrade_available:
                     tool_shed_status_str += generate_revision_upgrades_img_str(include_mouse_over=True)
-                if tool_shed_repository.includes_workflows:
-                    tool_shed_status_str += generate_includes_workflows_img_str(include_mouse_over=True)
             else:
                 tool_shed_status_str = generate_unknown_img_str(include_mouse_over=True)
             return tool_shed_status_str
@@ -235,9 +225,6 @@ class InstalledRepositoryGrid(grids.Grid):
         legend_str += f"{generate_latest_revision_img_str()}&nbsp;&nbsp;This is the latest installable revision of this repository<br/>"
         legend_str += (
             f"{generate_deprecated_repository_img_str()}&nbsp;&nbsp;This repository is deprecated in the Tool Shed<br/>"
-        )
-        legend_str += (
-            f"{generate_includes_workflows_img_str()}&nbsp;&nbsp;This repository contains exported workflows<br/>"
         )
         legend_str += f"{generate_unknown_img_str()}&nbsp;&nbsp;Unable to get information from the Tool Shed<br/>"
         return legend_str

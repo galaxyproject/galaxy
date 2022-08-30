@@ -241,6 +241,3 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
             ["Valid tools", "BLAST top hit", "Make a table", datatypes_repository.installed_changeset_revision]
         )
         self.display_installed_repository_manage_page(tool_repository, strings_displayed=strings_displayed)
-        strings_displayed = ["Datatypes", "blastxml", "blastdbp", "blastdbn", "BlastXml", "BlastNucDb", "BlastProtDb"]
-        strings_displayed.extend(["application/xml", "text/html"])
-        self.display_installed_repository_manage_page(datatypes_repository, strings_displayed=strings_displayed)

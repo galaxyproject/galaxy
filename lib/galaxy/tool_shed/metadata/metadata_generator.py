@@ -223,79 +223,6 @@ class MetadataGenerator:
             log.debug(f"Loaded Data Manager tool_files: {tool_file}")
         return metadata_dict
 
-    def generate_datatypes_metadata(self, tv, repository_files_dir, datatypes_config, metadata_dict):
-        """Update the received metadata_dict with information from the parsed datatypes_config."""
-        tree, error_message = parse_xml(datatypes_config)
-        if tree is None:
-            return metadata_dict
-        root = tree.getroot()
-        repository_datatype_code_files = []
-        datatype_files = root.find("datatype_files")
-        if datatype_files is not None:
-            for elem in datatype_files.findall("datatype_file"):
-                name = elem.get("name", None)
-                repository_datatype_code_files.append(name)
-            metadata_dict["datatype_files"] = repository_datatype_code_files
-        datatypes = []
-        registration = root.find("registration")
-        if registration is not None:
-            for elem in registration.findall("datatype"):
-                converters = []
-                display_app_containers = []
-                datatypes_dict = {}
-                # Handle defined datatype attributes.
-                display_in_upload = elem.get("display_in_upload", None)
-                if display_in_upload:
-                    datatypes_dict["display_in_upload"] = display_in_upload
-                dtype = elem.get("type", None)
-                if dtype:
-                    datatypes_dict["dtype"] = dtype
-                extension = elem.get("extension", None)
-                if extension:
-                    datatypes_dict["extension"] = extension
-                max_optional_metadata_filesize = elem.get("max_optional_metadata_filesize", None)
-                if max_optional_metadata_filesize:
-                    datatypes_dict["max_optional_metadata_filesize"] = max_optional_metadata_filesize
-                mimetype = elem.get("mimetype", None)
-                if mimetype:
-                    datatypes_dict["mimetype"] = mimetype
-                subclass = elem.get("subclass", None)
-                if subclass:
-                    datatypes_dict["subclass"] = subclass
-                # Handle defined datatype converters and display applications.
-                for sub_elem in elem:
-                    if sub_elem.tag == "converter":
-                        # <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
-                        tool_config = sub_elem.attrib["file"]
-                        target_datatype = sub_elem.attrib["target_datatype"]
-                        # Parse the tool_config to get the guid.
-                        tool_config_path = get_config_from_disk(tool_config, repository_files_dir)
-                        full_path = os.path.abspath(tool_config_path)
-                        tool, valid, error_message = tv.load_tool_from_config(
-                            self.app.security.encode_id(self.repository.id), full_path
-                        )
-                        if tool is None:
-                            guid = None
-                        else:
-                            guid = suc.generate_tool_guid(self.repository_clone_url, tool)
-                        converter_dict = dict(tool_config=tool_config, guid=guid, target_datatype=target_datatype)
-                        converters.append(converter_dict)
-                    elif sub_elem.tag == "display":
-                        # <display file="ucsc/bigwig.xml" />
-                        # Should we store more than this?
-                        display_file = sub_elem.attrib["file"]
-                        display_app_dict = dict(display_file=display_file)
-                        display_app_containers.append(display_app_dict)
-                if converters:
-                    datatypes_dict["converters"] = converters
-                if display_app_containers:
-                    datatypes_dict["display_app_containers"] = display_app_containers
-                if datatypes_dict:
-                    datatypes.append(datatypes_dict)
-            if datatypes:
-                metadata_dict["datatypes"] = datatypes
-        return metadata_dict
-
     def generate_environment_dependency_metadata(self, elem, valid_tool_dependencies_dict):
         """
         The value of env_var_name must match the value of the "set_environment" type
@@ -374,10 +301,6 @@ class MetadataGenerator:
         # Create ValidationContext to load and validate tools, data tables and datatypes
         with ValidationContext.from_app(app=self.app, work_dir=work_dir) as validation_context:
             tv = ToolValidator(validation_context)
-            # Handle proprietary datatypes, if any.
-            datatypes_config = get_config_from_disk(suc.DATATYPES_CONFIG_FILENAME, files_dir)
-            if datatypes_config:
-                metadata_dict = self.generate_datatypes_metadata(tv, files_dir, datatypes_config, metadata_dict)
             # Get the relative path to all sample files included in the repository for storage in
             # the repository's metadata.
             sample_file_metadata_paths, sample_file_copy_paths = self.get_sample_files_from_disk(
@@ -728,10 +651,7 @@ class MetadataGenerator:
         # Determine if the tool should be loaded into the tool panel.  Examples of valid tools that
         # should not be displayed in the tool panel are datatypes converters and DataManager tools
         # (which are of type 'manage_data').
-        datatypes = metadata_dict.get("datatypes", None)
-        add_to_tool_panel_attribute = self.set_add_to_tool_panel_attribute_for_tool(
-            tool=tool, guid=guid, datatypes=datatypes
-        )
+        add_to_tool_panel_attribute = self._set_add_to_tool_panel_attribute_for_tool(tool)
         tool_dict = dict(
             id=tool.id,
             guid=guid,
@@ -1120,32 +1040,15 @@ class MetadataGenerator:
                 return repository_dependency_tup, is_valid, error_message
         return repository_dependency_tup, is_valid, error_message
 
-    def set_add_to_tool_panel_attribute_for_tool(self, tool, guid, datatypes):
+    def _set_add_to_tool_panel_attribute_for_tool(self, tool):
         """
         Determine if a tool should be loaded into the Galaxy tool panel.  Examples of valid tools that
-        should not be displayed in the tool panel are datatypes converters and DataManager tools.
+        should not be displayed in the tool panel are DataManager tools.
         """
         if hasattr(tool, "tool_type"):
             if tool.tool_type in ["manage_data"]:
                 # We have a DataManager tool.
                 return False
-        if datatypes:
-            for datatype_dict in datatypes:
-                converters = datatype_dict.get("converters", None)
-                # [{"converters":
-                #    [{"target_datatype": "gff",
-                #      "tool_config": "bed_to_gff_converter.xml",
-                #      "guid": "localhost:9009/repos/test/bed_to_gff_converter/CONVERTER_bed_to_gff_0/2.0.0"}],
-                #   "display_in_upload": "true",
-                #   "dtype": "galaxy.datatypes.interval:Bed",
-                #   "extension": "bed"}]
-                if converters:
-                    for converter_dict in converters:
-                        converter_guid = converter_dict.get("guid", None)
-                        if converter_guid:
-                            if converter_guid == guid:
-                                # We have a datatypes converter.
-                                return False
         return True
 
     def set_changeset_revision(self, changeset_revision):

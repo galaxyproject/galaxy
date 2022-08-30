@@ -48,7 +48,6 @@ class UpdateRepositoryManager:
             if encoded_update_dict:
                 update_dict = tool_shed_decode(encoded_update_dict)
                 includes_data_managers = update_dict.get("includes_data_managers", False)
-                includes_datatypes = update_dict.get("includes_datatypes", False)
                 includes_tools = update_dict.get("includes_tools", False)
                 includes_tools_for_display_in_tool_panel = update_dict.get(
                     "includes_tools_for_display_in_tool_panel", False
@@ -62,7 +61,7 @@ class UpdateRepositoryManager:
                 changeset_revision = update_dict.get("changeset_revision", None)
                 ctx_rev = update_dict.get("ctx_rev", None)
             changeset_revision_dict["includes_data_managers"] = includes_data_managers
-            changeset_revision_dict["includes_datatypes"] = includes_datatypes
+            changeset_revision_dict["includes_datatypes"] = False
             changeset_revision_dict["includes_tools"] = includes_tools
             changeset_revision_dict[
                 "includes_tools_for_display_in_tool_panel"

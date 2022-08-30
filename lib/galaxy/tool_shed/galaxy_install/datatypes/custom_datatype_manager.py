@@ -13,7 +13,7 @@ class CustomDatatypeLoader:
     def __init__(self, app):
         self.app = app
 
-    def alter_config_and_load_proprietary_datatypes(
+    def _alter_config_and_load_proprietary_datatypes(
         self, datatypes_config, relative_install_dir, deactivate=False, override=True
     ):
         """
@@ -33,7 +33,7 @@ class CustomDatatypeLoader:
         if registration is None:
             # We have valid XML, but not a valid custom datatypes definition.
             return None, None
-        converter_path, display_path = self.get_converter_and_display_paths(registration, relative_install_dir)
+        converter_path, display_path = self._get_converter_and_display_paths(registration, relative_install_dir)
         if converter_path:
             # Path to datatype converters
             registration.attrib["proprietary_converter_path"] = converter_path
@@ -85,7 +85,7 @@ class CustomDatatypeLoader:
         )
         return converter_path, display_path
 
-    def create_repository_dict_for_proprietary_datatypes(
+    def _create_repository_dict_for_proprietary_datatypes(
         self, tool_shed, name, owner, installed_changeset_revision, tool_dicts, converter_path=None, display_path=None
     ):
         return dict(
@@ -98,7 +98,7 @@ class CustomDatatypeLoader:
             display_path=display_path,
         )
 
-    def get_converter_and_display_paths(self, registration_elem, relative_install_dir):
+    def _get_converter_and_display_paths(self, registration_elem, relative_install_dir):
         """
         Find the relative path to data type converters and display applications included
         in installed tool shed repositories.
@@ -159,12 +159,12 @@ class CustomDatatypeLoader:
         repository_dict = None
         datatypes_config = get_config_from_disk(DATATYPES_CONFIG_FILENAME, relative_install_dir)
         if datatypes_config:
-            converter_path, display_path = self.alter_config_and_load_proprietary_datatypes(
+            converter_path, display_path = self._alter_config_and_load_proprietary_datatypes(
                 datatypes_config, relative_install_dir, deactivate=deactivate
             )
             if converter_path or display_path:
                 # Create a dictionary of tool shed repository related information.
-                repository_dict = self.create_repository_dict_for_proprietary_datatypes(
+                repository_dict = self._create_repository_dict_for_proprietary_datatypes(
                     tool_shed=repository.tool_shed,
                     name=repository.name,
                     owner=repository.owner,
