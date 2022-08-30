@@ -8,7 +8,7 @@
         <b-navbar-nav>
             <masthead-item
                 v-for="(tab, idx) in tabs"
-                v-show="!(tab.hidden === undefined ? false : tab.hidden)"
+                v-show="tab.hidden !== true"
                 :key="`tab-${idx}`"
                 :tab="tab"
                 :active-tab="activeTab" />
@@ -89,8 +89,7 @@ export default {
             return brandTitle;
         },
         tabs() {
-            const tabs = [].concat(this.baseTabs, this.extensionTabs);
-            return tabs.map(this._tabToJson);
+            return [].concat(this.baseTabs, this.extensionTabs);
         },
     },
     created() {
@@ -106,12 +105,12 @@ export default {
             let matchedId = null;
             for (const tab of this.baseTabs) {
                 const tabId = tab.id;
-                if (currentRoute == `/${tab.url}`) {
+                if (currentRoute == tab.url) {
                     matchedId = tabId;
                     break;
                 } else if (tab.menu) {
                     for (const item of tab.menu) {
-                        if (currentRoute == `/${item.url}`) {
+                        if (currentRoute == item.url) {
                             matchedId = tabId;
                             break;
                         }
@@ -123,18 +122,6 @@ export default {
         },
         onWindowToggle() {
             this.windowToggle = !this.windowToggle;
-        },
-        _tabToJson(el) {
-            const defaults = {
-                target: "_parent",
-            };
-            let asJson;
-            if (el.toJSON instanceof Function) {
-                asJson = el.toJSON();
-            } else {
-                asJson = el;
-            }
-            return Object.assign({}, defaults, asJson);
         },
     },
 };

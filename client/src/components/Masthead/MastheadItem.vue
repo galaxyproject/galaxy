@@ -5,7 +5,7 @@
         v-b-tooltip.hover.bottom
         v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
         :class="classes"
-        :href="formatUrl(tab.url)"
+        :href="tab.url"
         :target="tab.target || '_parent'"
         :link-classes="linkClasses"
         :title="tab.tooltip"
@@ -36,7 +36,7 @@
             <b-dropdown-item
                 v-else-if="item.hidden !== true"
                 :key="`item-${idx}`"
-                :href="formatUrl(item.url)"
+                :href="item.url"
                 :target="item.target || '_parent'"
                 role="menuitem"
                 :active="item.disabled"
@@ -136,22 +136,15 @@ export default {
             } else if (!tab.menu) {
                 event.preventDefault();
                 const Galaxy = getGalaxyInstance();
-                if (tab.target === "__use_router__" && this.$router) {
-                    this.$router.push(`/${tab.url}`);
+                if (!tab.target && this.$router) {
+                    this.$router.push(tab.url);
                 } else {
                     try {
-                        Galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });
+                        Galaxy.frame.add({ ...tab, url: tab.url });
                     } catch (err) {
                         console.warn("Missing frame element on galaxy instance", err);
                     }
                 }
-            }
-        },
-        formatUrl(url) {
-            if (typeof url === "string" && url.indexOf("//") === -1 && url.charAt(0) != "/") {
-                return getAppRoot() + url;
-            } else {
-                return url;
             }
         },
     },
