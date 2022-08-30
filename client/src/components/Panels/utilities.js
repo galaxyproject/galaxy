@@ -1,81 +1,136 @@
-export function filterToolSections(layout, results) {
-    if (results) {
-        results = normalize_results(results);
-        const filteredLayout = layout.map((section) => {
-            var toolRes = [];
-            if (section.elems) {
-                section.elems.forEach((el) => {
-                    if (!el.text && results.includes(el.id)
-                    ) {
-                        toolRes.push(el);
-                    }
-                });
-            }
-            // sort tools in section by rank in results
-            toolRes.sort((tool1, tool2) => {
-                return results.indexOf(tool1.id) - results.indexOf(tool2.id);
-            });
+import { orderBy } from "lodash";
+
+export function filterToolSections(tools, results) {
+    let toolsResults = [];
+    let toolsResultsSection = [];
+
+    if (hasResults(results)) {
+        results = normalizeResults(results);
+        toolsResults = tools.map((section) => {
+            tools = flattenToolsSection(section);
+            toolsResultsSection = mapToolsResults(tools, results);
+            toolsResultsSection = sortToolsResults(toolsResultsSection);
 
             return {
                 ...section,
-                elems: toolRes,
+                elems: toolsResultsSection,
             };
         });
-        // filter out categories without tools in results
-        return filteredLayout
-            .filter((section) => {
-                const isSection = section.elems && section.elems.length > 0;
-                const isMatchedTool = !section.text && results.includes(section.id);
-                return isSection || isMatchedTool;
-            })
-            .sort((sect1, sect2) => {
-                if (sect1.elems.length == 0 || sect2.elems.length == 0) {
-                    return 0;
-                }
-                return results.indexOf(sect1.elems[0].id) - results.indexOf(sect2.elems[0].id);
-            });
+
+        toolsResults = deleteEmptySections(toolsResults, results);
     } else {
-        return layout;
+        toolsResults = tools;
     }
+
+    return toolsResults
 }
 
-export function filterTools(layout, results) {
-    // do not consider expression tools, unless requested by the workflow editor
-    layout = layout.filter((section) => section.name !== "Expression Tools");
-    if (results) {
-        results = normalize_results(results);
-        var toolsResults = [];
-        if (results.length < 1) {
-            return toolsResults;
-        }
-        // iterate through each section and add each tool that is in the results to
-        // toolsResults, sort by search ranking
-        layout.map((section) => {
-            if (section.elems) {
-                section.elems.forEach((el) => {
-                    if (!el.text && results.includes(el.id)) {
-                        toolsResults.push(el);
-                    }
-                });
-            } else if (!section.text && results.includes(section.id)) {
-                toolsResults.push(section);
+export function filterTools(tools, results) {
+    let toolsResults = [];
+    
+    if (hasResults(results)) {
+        tools = normalizeTools(tools);
+        results = normalizeResults(results);
+        toolsResults = mapToolsResults(tools, results);
+        toolsResults = sortToolsResults(toolsResults);
+    } else {
+        toolsResults = tools;
+    }
+
+    return toolsResults;
+}
+
+function normalizeTools(tools) {
+    let normalizedTools = [];
+
+    normalizedTools = hideToolsSection(tools, "Expression Tools");
+    normalizedTools = flattenTools(normalizedTools);
+
+    return normalizedTools;
+}
+
+function flattenToolsSection(section) {
+    let flattenTools = [];
+
+    if (section.elems) {
+        section.elems.forEach((elem) => {
+            if (!elem.text) {
+                flattenTools.push(elem);
             }
         });
-        return toolsResults.sort((tool1, tool2) => {
-            return results.indexOf(tool1.id) - results.indexOf(tool2.id);
-        });
-    } else {
-        return layout;
+    } else if (!section.text) {
+        flattenTools.push(section);
     }
+
+    return flattenTools;
 }
 
-function normalize_results(results) {
-    var norm_results = [];
+function normalizeResults(results) {
+    let normalizedResults = [];
+
+    if (hasResults(results)) {
         results.forEach((result) => {
-        norm_results.push(result);
-            if (result.includes("/repos/")) {
-            norm_results.push(result.split("/repos/")[1].split("/")[2]);
-            }
+            normalizedResults.push(result);
         });
-    return norm_results;
+    } else {
+        normalizedResults = results;
+    }
+
+    return normalizedResults;
+}
+
+function mapToolsResults(tools, results) {
+    let toolsResults = [];
+    let apiSort = {};
+
+    toolsResults = tools
+        //TODO what was the purpose of the following clause? !el.text
+        .filter(tool => /*!el.text && */results.includes(tool.id))
+        .map(tool => {
+            apiSort = {apiSort: results.indexOf(tool.id)};
+            Object.assign(tool, apiSort);
+            return tool;
+        });
+
+    return toolsResults;
+}
+function sortToolsResults(toolsResults) {
+    toolsResults = orderBy(toolsResults, ['apiSort'], ['asc']);
+
+    return toolsResults;
+}
+
+function deleteEmptySections(tools, results) {
+    tools = tools
+        .filter((section) => {
+            const isSection = section.elems && section.elems.length > 0;
+            const isMatchedTool = !section.text && results.includes(section.id);
+            return isSection || isMatchedTool;
+        })
+        .sort((sect1, sect2) => {
+            if (sect1.elems.length == 0 || sect2.elems.length == 0) {
+                return 0;
+            }
+            return results.indexOf(sect1.elems[0].id) - results.indexOf(sect2.elems[0].id);
+        });
+    
+    return tools;
+}
+
+function hideToolsSection(tools, sectionName) {
+    return tools.filter((section) => section.name !== sectionName);
+}
+
+function flattenTools(tools) {
+    let normalizedTools = [];
+
+    tools.forEach((section) => {
+        normalizedTools = normalizedTools.concat(flattenToolsSection(section));
+    });
+    
+    return normalizedTools;
+}
+
+function hasResults(results) {
+    return Array.isArray(results) && results.length > 0;
 }
