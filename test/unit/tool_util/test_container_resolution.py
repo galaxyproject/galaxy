@@ -1,11 +1,18 @@
 from subprocess import CalledProcessError
 
+import pytest
+
+from galaxy.tool_util.deps.container_classes import DOCKER_CONTAINER_TYPE
 from galaxy.tool_util.deps.container_resolvers.mulled import (
     CachedMulledDockerContainerResolver,
     CachedMulledSingularityContainerResolver,
     MulledDockerContainerResolver,
 )
-from galaxy.tool_util.deps.dependencies import ToolInfo
+from galaxy.tool_util.deps.containers import ContainerRegistry
+from galaxy.tool_util.deps.dependencies import (
+    AppInfo,
+    ToolInfo,
+)
 from galaxy.tool_util.deps.requirements import ToolRequirement
 
 SINGULARITY_IMAGES = (
@@ -13,6 +20,28 @@ SINGULARITY_IMAGES = (
     "baz:2.22",
     "mulled-v2-fe8a3b846bc50d24e5df78fa0b562c43477fe9ce:9f946d13f673ab2903cb0da849ad42916d619d18-0",
 )
+
+
+@pytest.fixture
+def container_registry():
+    app_info = AppInfo(
+        involucro_auto_init=True,
+        enable_mulled_containers=True,
+        container_image_cache_path=".",
+    )
+    return ContainerRegistry(app_info)
+
+
+def test_container_registry(container_registry, mocker):
+    mocker.patch("galaxy.tool_util.deps.mulled.util._get_namespace", return_value=["samtools"])
+    tool_info = ToolInfo(requirements=[ToolRequirement(name="samtools", version="1.10", type="package")])
+    container_description = container_registry.find_best_container_description(
+        [DOCKER_CONTAINER_TYPE],
+        tool_info,
+        install=False,
+    )
+    assert container_description.type == "docker"
+    assert "samtools:1.10" in container_description.identifier
 
 
 def test_docker_container_resolver_detects_docker_cli_absent(mocker):

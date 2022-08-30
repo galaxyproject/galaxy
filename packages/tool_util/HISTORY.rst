@@ -3,6 +3,18 @@ History
 
 .. to_doc
 
+22.1.2 (2022-08-29)
+-------------------
+
+* Fix lint context error level
+* Pin galaxy-util to >= 22.1
+* Fix biocontainer resolution without beaker cache
+
+22.1.1 (2022-08-22)
+--------------------
+
+* First release from the 22.01 branch of Galaxy
+
 ---------------------
 21.9.2 (2021-11-23)
 ---------------------
