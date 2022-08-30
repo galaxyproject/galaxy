@@ -29,7 +29,7 @@
                     There are no valid filters applied. Please add filters to the menu in the Tool Panel.
                 </b-alert>
                 <b-alert v-else-if="!itemsLoaded || itemsLoaded.length == 0" class="m-2" variant="danger" show>
-                    No tools found for selected filter(s): {{ filterSettings }}
+                    No tools found for the entered filters.
                 </b-alert>
                 <div v-else>
                     <ToolAdvancedSearchResults :tools="itemsLoaded" />
