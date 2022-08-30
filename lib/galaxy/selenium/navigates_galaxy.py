@@ -237,7 +237,10 @@ class NavigatesGalaxy(HasDriver):
     def home(self) -> None:
         """Return to root Galaxy page and wait for some basic widgets to appear."""
         self.get()
-        self.components.masthead._.wait_for_visible()
+        try:
+            self.components.masthead._.wait_for_visible()
+        except SeleniumTimeoutException as e:
+            raise ClientBuildException(e)
 
     def go_to_trs_search(self) -> None:
         self.driver.get(self.build_url("workflows/trs_search"))
@@ -2141,4 +2144,10 @@ class NotLoggedInException(SeleniumTimeoutException):
     def __init__(self, timeout_exception, user_info, dom_message):
         template = "Waiting for UI to reflect user logged in but it did not occur. API indicates no user is currently logged in. %s API response was [%s]. %s"
         msg = template % (dom_message, user_info, timeout_exception.msg)
+        super().__init__(msg=msg, screen=timeout_exception.screen, stacktrace=timeout_exception.stacktrace)
+
+
+class ClientBuildException(SeleniumTimeoutException):
+    def __init__(self, timeout_exception: SeleniumTimeoutException):
+        msg = f"Error waiting for Galaxy masthead to appear, this frequently means there is a problem with the client build and the Galaxy client is broken. {timeout_exception.msg}"
         super().__init__(msg=msg, screen=timeout_exception.screen, stacktrace=timeout_exception.stacktrace)
