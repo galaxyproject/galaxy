@@ -1,7 +1,7 @@
 <template>
     <div
         :id="contentId"
-        :class="['content-item m-1 p-0 rounded content-buttons', contentCls]"
+        :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls]"
         :data-hid="id"
         :data-state="state">
         <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @click.stop="onClick">
