@@ -1,6 +1,6 @@
 import { getGalaxyInstance } from "app";
+import { prependPath } from "utils/redirect";
 import _l from "utils/localization";
-
 import { userLogout } from "utils/logout";
 
 export function fetchMenu(options = {}) {
@@ -11,7 +11,7 @@ export function fetchMenu(options = {}) {
     //
     menu.push({
         id: "analysis",
-        url: "/",
+        url: prependPath("/"),
         tooltip: _l("Tools and Current History"),
         icon: "fa-home",
         target: "_top",
@@ -62,7 +62,7 @@ export function fetchMenu(options = {}) {
             menu: [
                 {
                     title: _l("Data Libraries"),
-                    url: "/libraries",
+                    url: prependPath("/libraries"),
                     target: "_top",
                 },
                 {
@@ -92,7 +92,7 @@ export function fetchMenu(options = {}) {
         menu.push({
             id: "admin",
             title: _l("Admin"),
-            url: "/admin",
+            url: prependPath("/admin"),
             tooltip: _l("Administer this Galaxy"),
             cls: "admin-only",
             target: "_top",
@@ -169,8 +169,9 @@ export function fetchMenu(options = {}) {
                 id: "user",
                 title: _l("Login or Register"),
                 cls: "loggedout-only",
-                url: "/login",
+                url: prependPath("/login"),
                 tooltip: _l("Log in or register a new account"),
+                target: "_top",
             };
         } else {
             userTab = {
@@ -178,7 +179,8 @@ export function fetchMenu(options = {}) {
                 title: _l("Login"),
                 cls: "loggedout-only",
                 tooltip: _l("Login"),
-                url: "/login",
+                url: prependPath("/login"),
+                target: "_top",
             };
         }
     } else {

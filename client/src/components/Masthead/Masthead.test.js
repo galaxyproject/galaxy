@@ -79,13 +79,12 @@ describe("Masthead.vue", () => {
 
         windowManager = new WindowManager({});
 
+        const windowTab = windowManager.getTab();
         wrapper = mount(Masthead, {
             propsData: {
                 baseTabs,
+                windowTab,
                 initialActiveTab,
-                mastheadState: {
-                    windowManager,
-                },
             },
             store,
             localVue,
