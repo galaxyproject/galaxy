@@ -1,5 +1,5 @@
-galaxy-util>=20.1.0.dev0
-galaxy-containers
+galaxy-util>=22.1
+galaxy-containers>=22.1
 lxml
 pydantic
 pyyaml
