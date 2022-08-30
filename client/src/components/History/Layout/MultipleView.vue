@@ -90,6 +90,11 @@ export default {
             historiesFilter: "",
         };
     },
+    created() {
+        return setTimeout(() => {
+            document.getElementById("left").__vue__.hide();
+        }, 1000);
+    },
     methods: {
         updateHistoriesFilter(filter) {
             this.historiesFilter = filter;
