@@ -35,6 +35,18 @@ export function absPath(path) {
 }
 
 /**
+ * (Safely) Prepends the configured app root to given url
+ * @param {String} path
+ * @returns The relative URL or original path.
+ */
+export function safePath(path) {
+    if (path && path.startsWith("/")) {
+        return prependPath(path);
+    }
+    return path;
+}
+
+/**
  * Checks if the path already has the app root.
  * @param {String} path
  * @returns true if the given path starts with the app root.

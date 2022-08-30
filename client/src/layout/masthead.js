@@ -1,40 +1,18 @@
-import { WindowManager } from "layout/window-manager";
-import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload/loadConfig";
 import Masthead from "../components/Masthead/Masthead";
 import { mountVueComponent } from "../utils/mountVueComponent";
 import { fetchMenu } from "entry/analysis/menu";
+import { safePath } from "utils/redirect";
 
-export class MastheadState {
-    // Used to be a Backbone View - not pretty but keep all window wide listeners,
-    // global state, etc... related to the Masthead here to keep the VueJS component
-    // more isolated, testable, etc.. (clean)
-
-    constructor(Galaxy = null) {
-        Galaxy = Galaxy || getGalaxyInstance();
-        if (!Galaxy.frame) {
-            Galaxy.frame = new WindowManager();
-        }
-        this.windowManager = Galaxy.frame;
-    }
-}
-
-function staticUrlToPrefixed(appRoot, url) {
-    return url?.startsWith("/") ? `${appRoot}${url.substring(1)}` : url;
-}
-
-export function mountMasthead(el, options, mastheadState) {
-    const appRoot = getAppRoot();
+export function mountMasthead(el, options) {
     return mountVueComponent(Masthead)(
         {
             el: el,
             displayGalaxyBrand: options.display_galaxy_brand,
             baseTabs: fetchMenu(options),
             brand: options.brand,
-            brandLink: staticUrlToPrefixed(appRoot, options.logo_url),
-            brandImage: staticUrlToPrefixed(appRoot, options.logo_src),
-            brandImageSecondary: staticUrlToPrefixed(appRoot, options.logo_src_secondary),
-            windowTab: mastheadState.windowManager.getTab(),
+            brandLink: safePath(options.logo_url),
+            brandImage: safePath(options.logo_src),
+            brandImageSecondary: safePath(options.logo_src_secondary),
         },
         el
     );
