@@ -97,9 +97,9 @@ def lint_tsts(tool_xml, lint_ctx):
             discover_datasets = corresponding_output.find(".//discover_datasets")
             if discover_datasets is not None:
                 if output.tag == "output":
-                    if "count" not in output.attrib and output.find("./discovered_datasets") is None:
+                    if "count" not in output.attrib and output.find("./discovered_dataset") is None:
                         lint_ctx.error(
-                            f"Test {test_idx}: test output '{name}' must have a 'count' attribute and/or 'discovered_datasets' children",
+                            f"Test {test_idx}: test output '{name}' must have a 'count' attribute and/or 'discovered_dataset' children",
                             node=output,
                         )
                         pass
