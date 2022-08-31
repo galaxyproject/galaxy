@@ -308,7 +308,7 @@ def mull_targets(
     if singularity:
         if not os.path.exists(singularity_image_dir):
             safe_makedirs(singularity_image_dir)
-        with open(os.path.join(singularity_image_dir, "Singularity.def"), "w+") as sin_def:
+        with open(os.path.join(singularity_image_dir, "Singularity.def"), "w") as sin_def:
             fill_template = SINGULARITY_TEMPLATE % {
                 "container_test": test,
                 "base_image": dest_base_image or DEFAULT_BASE_IMAGE,

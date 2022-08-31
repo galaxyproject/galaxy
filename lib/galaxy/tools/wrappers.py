@@ -510,7 +510,7 @@ class HasDatasets:
     def paths_as_file(self, sep: str = "\n") -> str:
         contents = sep.join(map(str, self))
         with tempfile.NamedTemporaryFile(
-            mode="w+", prefix="gx_file_list", dir=self.job_working_directory, delete=False
+            mode="w", prefix="gx_file_list", dir=self.job_working_directory, delete=False
         ) as fh:
             fh.write(contents)
             filepath = fh.name
