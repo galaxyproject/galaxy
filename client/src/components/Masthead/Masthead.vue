@@ -7,11 +7,12 @@
         </b-navbar-brand>
         <b-navbar-nav>
             <masthead-item
-                v-for="(tab, idx) in tabs"
+                v-for="(tab, idx) in allTabs"
                 v-show="tab.hidden !== true"
                 :key="`tab-${idx}`"
                 :tab="tab"
-                :active-tab="activeTab" />
+                :active-tab="activeTab"
+                @open-url="$emit('open-url', $event)" />
             <masthead-item v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
         </b-navbar-nav>
         <quota-meter />
@@ -40,7 +41,7 @@ export default {
             type: Boolean,
             default: true,
         },
-        baseTabs: {
+        tabs: {
             type: Array,
             default: () => [],
         },
@@ -89,8 +90,8 @@ export default {
             }
             return brandTitle;
         },
-        tabs() {
-            return [].concat(this.baseTabs, this.extensionTabs);
+        allTabs() {
+            return [].concat(this.tabs, this.extensionTabs);
         },
     },
     created() {
@@ -99,14 +100,14 @@ export default {
     },
     methods: {
         addItem(item) {
-            this.tabs.push(item);
+            this.allTabs.push(item);
         },
         getPath(url) {
             return safePath(url);
         },
         updateTab() {
             const currentRoute = this.$route?.path;
-            this.activeTab = getActiveTab(currentRoute, this.baseTabs) || this.activeTab;
+            this.activeTab = getActiveTab(currentRoute, this.tabs) || this.activeTab;
         },
         onWindowToggle() {
             this.windowToggle = !this.windowToggle;

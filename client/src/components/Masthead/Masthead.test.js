@@ -15,7 +15,7 @@ describe("Masthead.vue", () => {
     let wrapper;
     let localVue;
     let windowManager;
-    let baseTabs;
+    let tabs;
     let store;
     let state;
     let actions;
@@ -53,7 +53,7 @@ describe("Masthead.vue", () => {
             },
         });
 
-        baseTabs = [
+        tabs = [
             // Main Analysis Tab..
             {
                 id: "analysis",
@@ -81,7 +81,7 @@ describe("Masthead.vue", () => {
         const windowTab = windowManager.getTab();
         wrapper = mount(Masthead, {
             propsData: {
-                baseTabs,
+                tabs,
                 windowTab,
                 initialActiveTab,
             },
@@ -91,8 +91,8 @@ describe("Masthead.vue", () => {
     });
 
     it("test basic active tab matching", () => {
-        expect(getActiveTab("root", baseTabs)).toBe("analysis");
-        expect(getActiveTab("_menu_url", baseTabs)).toBe("shared");
+        expect(getActiveTab("root", tabs)).toBe("analysis");
+        expect(getActiveTab("_menu_url", tabs)).toBe("shared");
     });
 
     it("should disable brand when displayGalaxyBrand is true", async () => {

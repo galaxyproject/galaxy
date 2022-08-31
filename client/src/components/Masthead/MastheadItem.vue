@@ -53,7 +53,6 @@ import Vue from "vue";
 import { VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
 import { BNavItem, BNavItemDropdown, BDropdownItem } from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
 
 Vue.use(VBPopoverPlugin);
 Vue.use(VBTooltipPlugin);
@@ -105,9 +104,6 @@ export default {
                 [this.tab.icon, this.tab.icon],
             ]);
         },
-        galaxyIframe() {
-            return document.getElementById("galaxy_main");
-        },
     },
     mounted() {
         window.addEventListener("blur", this.hideDropdown);
@@ -135,15 +131,10 @@ export default {
                 }, 3000);
             } else if (!tab.menu) {
                 event.preventDefault();
-                const Galaxy = getGalaxyInstance();
                 if (!tab.target && this.$router) {
                     this.$router.push(tab.url);
                 } else {
-                    try {
-                        Galaxy.frame.add({ ...tab, url: tab.url });
-                    } catch (err) {
-                        console.warn("Missing frame element on galaxy instance", err);
-                    }
+                    this.$emit("open-url", { ...tab, url: tab.url });
                 }
             }
         },

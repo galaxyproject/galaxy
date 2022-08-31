@@ -10,8 +10,9 @@
                 :logo-url="config.logo_url"
                 :logo-src="config.logo_src"
                 :logo-src-secondary="config.logo_src_secondary"
-                :base-tabs="baseTabs"
-                :window-tab="windowTab" />
+                :tabs="tabs"
+                :window-tab="windowTab"
+                @open-url="openUrl" />
             <alert
                 v-if="config.message_box_visible && config.message_box_content"
                 id="messagebox"
@@ -58,7 +59,7 @@ export default {
         };
     },
     computed: {
-        baseTabs() {
+        tabs() {
             return fetchMenu(this.config);
         },
         showMasthead() {
@@ -90,6 +91,11 @@ export default {
                 return "Are you sure you want to leave the page?";
             }
         };
+    },
+    methods: {
+        openUrl(urlObj) {
+            this.windowManager.add(urlObj);
+        },
     },
 };
 </script>
