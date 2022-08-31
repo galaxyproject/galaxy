@@ -670,7 +670,6 @@ class WorkflowsAPIController(
             "inputs": module.get_all_inputs(connectable_only=True),
             "outputs": module.get_all_outputs(),
             "config_form": module.get_config_form(),
-            "post_job_actions": module.get_post_job_actions(inputs),
         }
 
     @expose_api
