@@ -94,7 +94,11 @@ export default {
     },
     methods: {
         openUrl(urlObj) {
-            this.windowManager.add(urlObj);
+            if (!urlObj.target) {
+                this.$router.push(urlObj.url);
+            } else {
+                this.windowManager.add(urlObj);
+            }
         },
     },
 };

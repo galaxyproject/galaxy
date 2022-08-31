@@ -131,11 +131,7 @@ export default {
                 }, 3000);
             } else if (!tab.menu) {
                 event.preventDefault();
-                if (!tab.target && this.$router) {
-                    this.$router.push(tab.url);
-                } else {
-                    this.$emit("open-url", { ...tab, url: tab.url });
-                }
+                this.$emit("open-url", { ...tab });
             }
         },
     },
