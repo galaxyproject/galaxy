@@ -22,7 +22,7 @@ const localVue = createLocalVue();
 
 localVue.use(Vuex);
 
-describe("JobMetrics/JobMetrics.vue", () => {
+describe("JobParameters/JobParameters.vue", () => {
     let actions;
     let state;
     let store;
