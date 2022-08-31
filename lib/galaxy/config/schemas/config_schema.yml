@@ -1981,7 +1981,7 @@ mapping:
           their HTML sanitized on display.  This can be manually edited or manipulated
           through the Admin control panel -- see "Manage Allowlist"
 
-          The value of this option will be resolved with respect to <mutable_config_dir>.
+          The value of this option will be resolved with respect to <managed_config_dir>.
 
       serve_xss_vulnerable_mimetypes:
         type: bool
