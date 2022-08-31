@@ -24,6 +24,7 @@ import MastheadItem from "./MastheadItem";
 import { loadWebhookMenuItems } from "./_webhooks";
 import QuotaMeter from "./QuotaMeter.vue";
 import { safePath } from "utils/redirect";
+import { getActiveTab } from "./utilities";
 
 export default {
     name: "Masthead",
@@ -105,23 +106,7 @@ export default {
         },
         updateTab() {
             const currentRoute = this.$route?.path;
-            let matchedId = null;
-            for (const tab of this.baseTabs) {
-                const tabId = tab.id;
-                if (currentRoute == tab.url) {
-                    matchedId = tabId;
-                    break;
-                } else if (tab.menu) {
-                    for (const item of tab.menu) {
-                        if (currentRoute == item.url) {
-                            matchedId = tabId;
-                            break;
-                        }
-                    }
-                }
-            }
-            this.activeTab = matchedId || this.activeTab;
-            return this.activeTab;
+            this.activeTab = getActiveTab(currentRoute, this.baseTabs) || this.activeTab;
         },
         onWindowToggle() {
             this.windowToggle = !this.windowToggle;

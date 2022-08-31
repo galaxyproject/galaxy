@@ -6,6 +6,7 @@ import { WindowManager } from "layout/window-manager";
 import { loadWebhookMenuItems } from "./_webhooks";
 import { userStore } from "store/userStore";
 import { configStore } from "store/configStore";
+import { getActiveTab } from "./utilities";
 
 jest.mock("app");
 jest.mock("./_webhooks");
@@ -76,9 +77,7 @@ describe("Masthead.vue", () => {
         ];
 
         const initialActiveTab = "shared";
-
         windowManager = new WindowManager({});
-
         const windowTab = windowManager.getTab();
         wrapper = mount(Masthead, {
             propsData: {
@@ -89,6 +88,11 @@ describe("Masthead.vue", () => {
             store,
             localVue,
         });
+    });
+
+    it("test basic active tab matching", () => {
+        expect(getActiveTab("root", baseTabs)).toBe("analysis");
+        expect(getActiveTab("_menu_url", baseTabs)).toBe("shared");
     });
 
     it("should disable brand when displayGalaxyBrand is true", async () => {
