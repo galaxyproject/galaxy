@@ -221,33 +221,6 @@ class ToolDependency:
         return [self.name, self.version, self.type]
 
 
-class Workflow:
-    """Workflow object."""
-
-    def __init__(
-        self,
-        id=None,
-        workflow_name=None,
-        steps=None,
-        format_version=None,
-        annotation=None,
-        repository_metadata_id=None,
-        repository_id=None,
-    ):
-        """
-        When rendered in the tool shed, repository_metadata_id will have a value and repository_id will
-        be None.  When rendered in Galaxy, repository_id will have a value and repository_metadata_id will
-        be None.
-        """
-        self.id = id
-        self.workflow_name = workflow_name
-        self.steps = steps
-        self.format_version = format_version
-        self.annotation = annotation
-        self.repository_metadata_id = repository_metadata_id
-        self.repository_id = repository_id
-
-
 class UtilityContainerManager:
     def __init__(self, app):
         self.app = app
@@ -690,57 +663,6 @@ class UtilityContainerManager:
         else:
             tool_dependencies_root_folder = None
         return folder_id, tool_dependencies_root_folder
-
-    def build_workflows_folder(
-        self, folder_id, workflows, repository_metadata_id=None, repository_id=None, label="Workflows"
-    ):
-        """
-        Return a folder hierarchy containing workflow objects for each workflow dictionary in the
-        received workflows list.  When this method is called from the tool shed, repository_metadata_id
-        will have a value and repository_id will be None.  When this method is called from Galaxy,
-        repository_id will have a value only if the repository is not currenlty being installed and
-        repository_metadata_id will be None.
-        """
-        if workflows:
-            workflow_id = 0
-            folder_id += 1
-            workflows_root_folder = Folder(id=folder_id, key="root", label="root", parent=None)
-            folder_id += 1
-            folder = Folder(id=folder_id, key="workflows", label=label, parent=workflows_root_folder)
-            workflows_root_folder.folders.append(folder)
-            # Insert a header row.
-            workflow_id += 1
-            workflow = Workflow(
-                id=workflow_id,
-                workflow_name="Name",
-                steps="steps",
-                format_version="format-version",
-                annotation="annotation",
-                repository_metadata_id=repository_metadata_id,
-                repository_id=repository_id,
-            )
-            folder.workflows.append(workflow)
-            for workflow_tup in workflows:
-                workflow_dict = workflow_tup[1]
-                steps = workflow_dict.get("steps", [])
-                if steps:
-                    steps = str(len(steps))
-                else:
-                    steps = "unknown"
-                workflow_id += 1
-                workflow = Workflow(
-                    id=workflow_id,
-                    workflow_name=workflow_dict.get("name", ""),
-                    steps=steps,
-                    format_version=workflow_dict.get("format-version", ""),
-                    annotation=workflow_dict.get("annotation", ""),
-                    repository_metadata_id=repository_metadata_id,
-                    repository_id=repository_id,
-                )
-                folder.workflows.append(workflow)
-        else:
-            workflows_root_folder = None
-        return folder_id, workflows_root_folder
 
     def generate_repository_dependencies_folder_label_from_key(
         self,

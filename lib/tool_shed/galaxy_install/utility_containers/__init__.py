@@ -21,7 +21,6 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
         repository_dependencies,
         tool_dependencies,
         valid_tools,
-        workflows,
         valid_data_managers,
         invalid_data_managers,
         data_managers_errors,
@@ -126,15 +125,6 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
                 )
                 containers_dict["valid_tools"] = valid_tools_root_folder
             # Workflows container.
-            if workflows:
-                folder_id, workflows_root_folder = self.build_workflows_folder(
-                    folder_id=folder_id,
-                    workflows=workflows,
-                    repository_metadata_id=None,
-                    repository_id=repository_id,
-                    label="Workflows",
-                )
-                containers_dict["workflows"] = workflows_root_folder
             if valid_data_managers:
                 folder_id, valid_data_managers_root_folder = self.build_data_managers_folder(
                     folder_id=folder_id, data_managers=valid_data_managers, label="Valid Data Managers"

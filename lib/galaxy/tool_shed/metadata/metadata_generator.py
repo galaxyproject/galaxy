@@ -786,17 +786,6 @@ class MetadataGenerator:
             )
         return metadata_dict, error_message
 
-    def generate_workflow_metadata(self, relative_path, exported_workflow_dict, metadata_dict):
-        """
-        Update the received metadata_dict with changes that have been applied to the
-        received exported_workflow_dict.
-        """
-        if "workflows" in metadata_dict:
-            metadata_dict["workflows"].append((relative_path, exported_workflow_dict))
-        else:
-            metadata_dict["workflows"] = [(relative_path, exported_workflow_dict)]
-        return metadata_dict
-
     def get_invalid_file_tups(self):
         return self.invalid_file_tups
 

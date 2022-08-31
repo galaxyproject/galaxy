@@ -451,7 +451,6 @@ class DependencyDisplayer:
             repository_dependencies=installed_repository_dependencies,
             tool_dependencies=installed_tool_dependencies,
             valid_tools=None,
-            workflows=None,
             valid_data_managers=None,
             invalid_data_managers=None,
             data_managers_errors=None,
@@ -542,8 +541,6 @@ class DependencyDisplayer:
                 missing_tool_dependencies = repository_missing_tool_dependencies
             # Handle valid tools.
             valid_tools = metadata.get("tools", None)
-            # Handle workflows.
-            workflows = metadata.get("workflows", None)
             # Handle Data Managers
             valid_data_managers = None
             invalid_data_managers = None
@@ -563,7 +560,6 @@ class DependencyDisplayer:
                 repository_dependencies=installed_repository_dependencies,
                 tool_dependencies=installed_tool_dependencies,
                 valid_tools=valid_tools,
-                workflows=workflows,
                 valid_data_managers=valid_data_managers,
                 invalid_data_managers=invalid_data_managers,
                 data_managers_errors=data_managers_errors,
