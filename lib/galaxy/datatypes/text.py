@@ -1290,6 +1290,7 @@ class PithyaResult(Json):
         return False
 
 
+@build_sniff_from_prefix
 class Castep(Text):
     """Report on a CASTEP calculation"""
 
