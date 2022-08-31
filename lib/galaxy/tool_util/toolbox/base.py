@@ -193,7 +193,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
         for edam_view in listify(self.app.config.edam_panel_views):
             mode = EdamPanelMode[edam_view]
-            tool_panel_views_list.append(EdamToolPanelView(self.app.config.edam_toolbox_ontology_path, mode=mode))
+            tool_panel_views_list.append(EdamToolPanelView(self.app.datatypes_registry.edam, mode=mode))
 
         if view_sources is not None:
             for definition in view_sources.get_definitions():

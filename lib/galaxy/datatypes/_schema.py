@@ -98,3 +98,29 @@ class DatatypeConverter(BaseModel):
 
 class DatatypeConverterList(BaseModel):
     __root__: List[DatatypeConverter] = Field(title="List of data type converters", default=[])
+
+
+class DatatypeEDAMDetails(BaseModel):
+    prefix_IRI: str = Field(
+        ...,  # Mark this field as required
+        title="Prefix IRI",
+        description="The EDAM prefixed Resource Identifier",
+        example="format_1782",
+    )
+    label: Optional[str] = Field(
+        title="Label",
+        description="The EDAM label",
+        example="NCBI gene report format",
+    )
+    definition: Optional[str] = Field(
+        title="Definition",
+        description="The EDAM definition",
+        example="Entry (gene) format of the NCBI database.",
+    )
+
+
+class DatatypesEDAMDetailsDict(BaseModel):
+    __root__: Dict[str, DatatypeEDAMDetails] = Field(
+        title="Dict of EDAM details for formats",
+        default={},
+    )

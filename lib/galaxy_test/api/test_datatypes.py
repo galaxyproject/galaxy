@@ -89,6 +89,13 @@ class DatatypesApiTestCase(ApiTestCase):
         edam_formats = response.json()
         assert isinstance(edam_formats, dict)
         assert edam_formats["ab1"] == "format_3000"
+        response = self._get("datatypes/edam_formats/detailed")
+        self._assert_status_code_is(response, 200)
+        edam_formats = response.json()
+        assert isinstance(edam_formats, dict)
+        assert isinstance(edam_formats["afg"], dict)
+        assert edam_formats["afg"]["prefix_IRI"] == "format_3582"
+        assert edam_formats["afg"]["label"] == "afg"
 
     def test_edam_data(self):
         response = self._get("datatypes/edam_data")
@@ -96,6 +103,12 @@ class DatatypesApiTestCase(ApiTestCase):
         edam_data = response.json()
         assert isinstance(edam_data, dict)
         assert edam_data["ab1"] == "data_0924"
+        response = self._get("datatypes/edam_data/detailed")
+        edam_data = response.json()
+        assert isinstance(edam_data, dict)
+        assert isinstance(edam_data["afg"], dict)
+        assert edam_data["afg"]["prefix_IRI"] == "data_0925"
+        assert edam_data["afg"]["label"] == "Sequence assembly"
 
     def _index_datatypes(self, data=None):
         data = data or {}
