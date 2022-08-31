@@ -443,7 +443,6 @@ class DependencyDisplayer:
         gucm = GalaxyUtilityContainerManager(self.app)
         containers_dict = gucm.build_repository_containers(
             repository=None,
-            datatypes=None,
             invalid_tools=None,
             missing_repository_dependencies=missing_repository_dependencies,
             missing_tool_dependencies=missing_tool_dependencies,
@@ -478,8 +477,6 @@ class DependencyDisplayer:
         """
         metadata = repository.metadata_
         if metadata:
-            # Handle proprietary datatypes.
-            datatypes = metadata.get("datatypes", None)
             # Handle invalid tools.
             invalid_tools = metadata.get("invalid_tools", None)
             # Handle README files.
@@ -552,7 +549,6 @@ class DependencyDisplayer:
             gucm = GalaxyUtilityContainerManager(self.app)
             containers_dict = gucm.build_repository_containers(
                 repository=repository,
-                datatypes=datatypes,
                 invalid_tools=invalid_tools,
                 missing_repository_dependencies=missing_repository_dependencies,
                 missing_tool_dependencies=missing_tool_dependencies,

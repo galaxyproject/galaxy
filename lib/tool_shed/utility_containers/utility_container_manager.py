@@ -68,28 +68,6 @@ class DataManager:
         self.data_tables = data_tables
 
 
-class Datatype:
-    """Datatype object"""
-
-    def __init__(
-        self,
-        id=None,
-        extension=None,
-        type=None,
-        mimetype=None,
-        subclass=None,
-        converters=None,
-        display_app_containers=None,
-    ):
-        self.id = id
-        self.extension = extension
-        self.type = type
-        self.mimetype = mimetype
-        self.subclass = subclass
-        self.converters = converters
-        self.display_app_containers = display_app_containers
-
-
 class InvalidDataManager:
     """Invalid data Manager object"""
 
@@ -256,71 +234,6 @@ class UtilityContainerManager:
         else:
             data_managers_root_folder = None
         return folder_id, data_managers_root_folder
-
-    def build_datatypes_folder(self, folder_id, datatypes, label="Datatypes"):
-        """Return a folder hierarchy containing datatypes."""
-        if datatypes:
-            datatype_id = 0
-            folder_id += 1
-            datatypes_root_folder = Folder(id=folder_id, key="root", label="root", parent=None)
-            folder_id += 1
-            folder = Folder(id=folder_id, key="datatypes", label=label, parent=datatypes_root_folder)
-            datatypes_root_folder.folders.append(folder)
-            # Insert a header row.
-            datatype_id += 1
-            datatype = Datatype(
-                id=datatype_id, extension="extension", type="type", mimetype="mimetype", subclass="subclass"
-            )
-            folder.datatypes.append(datatype)
-            for datatypes_dict in datatypes:
-                # {"converters":
-                #    [{"target_datatype": "gff",
-                #      "tool_config": "bed_to_gff_converter.xml",
-                #      "guid": "localhost:9009/repos/test/bed_to_gff_converter/CONVERTER_bed_to_gff_0/2.0.0"}],
-                # "display_in_upload": "true",
-                # "dtype": "galaxy.datatypes.interval:Bed",
-                # "extension": "bed"}
-                # TODO: converters and display_app information is not currently rendered.  Should it be?
-                # Handle defined converters, if any.
-                converters = datatypes_dict.get("converters", None)
-                if converters:
-                    num_converters = len(converters)
-                else:
-                    num_converters = 0
-                # Handle defined display applications, if any.
-                display_app_containers = datatypes_dict.get("display_app_containers", None)
-                if display_app_containers:
-                    num_display_app_containers = len(display_app_containers)
-                else:
-                    num_display_app_containers = 0
-                datatype_id += 1
-                try:
-                    extension = datatypes_dict.get("extension", "")
-                    type = datatypes_dict.get("dtype", "")
-                    mimetype = datatypes_dict.get("mimetype", "")
-                    subclass = datatypes_dict.get("subclass", "")
-                    converters = num_converters
-                    display_app_containers = num_display_app_containers
-                except Exception as e:
-                    extension = str(e)
-                    type = "unknown"
-                    mimetype = "unknown"
-                    subclass = "unknown"
-                    converters = "unknown"
-                    display_app_containers = "unknown"
-                datatype = Datatype(
-                    id=datatype_id,
-                    extension=extension,
-                    type=type,
-                    mimetype=mimetype,
-                    subclass=subclass,
-                    converters=converters,
-                    display_app_containers=display_app_containers,
-                )
-                folder.datatypes.append(datatype)
-        else:
-            datatypes_root_folder = None
-        return folder_id, datatypes_root_folder
 
     def build_invalid_data_managers_folder(self, folder_id, data_managers, error_messages=None, label=None):
         """Return a folder hierarchy containing invalid Data Managers."""

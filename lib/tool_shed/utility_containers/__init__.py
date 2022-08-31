@@ -262,12 +262,6 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
             lock.acquire(True)
             try:
                 folder_id = 0
-                # Datatypes container.
-                if metadata:
-                    if "datatypes" not in exclude and "datatypes" in metadata:
-                        datatypes = metadata["datatypes"]
-                        folder_id, datatypes_root_folder = self.build_datatypes_folder(folder_id, datatypes)
-                        containers_dict["datatypes"] = datatypes_root_folder
                 # Invalid repository dependencies container.
                 if metadata:
                     if (
