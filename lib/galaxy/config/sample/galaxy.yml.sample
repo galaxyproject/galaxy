@@ -160,15 +160,6 @@ gravity:
     # Must match ``tus_upload_store`` setting in ``galaxy:`` section.
     # upload_dir:
 
-    # Comma-separated string of enabled tusd hooks.
-    # Leave at the default value to require authorization at upload creation time.
-    # This means Galaxy's web process does not need to be running after creating the initial
-    # upload request.
-    # Set to empty string to disable all authorization. This means data can be uploaded (but not processed)
-    # without the Galaxy web process being available.
-    # You can find a list of available hooks at https://github.com/tus/tusd/blob/master/docs/hooks.md#list-of-available-hooks.
-    # hooks_enabled_events: pre-create
-
     # Extra arguments to pass to tusd command line.
     # extra_args:
 
@@ -1429,7 +1420,7 @@ galaxy:
   # edited or manipulated through the Admin control panel -- see "Manage
   # Allowlist"
   # The value of this option will be resolved with respect to
-  # <mutable_config_dir>.
+  # <managed_config_dir>.
   #sanitize_allowlist_file: sanitize_allowlist.txt
 
   # By default Galaxy will serve non-HTML tool output that may
@@ -1920,7 +1911,7 @@ galaxy:
   # if you need to bootstrap Galaxy, in particular to create a real
   # admin user account via API. You should probably not set this on a
   # production server.
-  #master_api_key: null
+  #bootstrap_admin_api_key: null
 
   # Enable tool tags (associating tools with tags).  This has its own
   # option since its implementation has a few performance implications
