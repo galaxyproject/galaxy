@@ -2,7 +2,7 @@
  * Temporary function used to mount the masthead inside the current application.
  * This function is exposed with the rest of the page-globals in bundledEntries.
  */
-import { mountMasthead } from "../../layout/masthead";
+import { mountMasthead } from "layout/masthead";
 import $ from "jquery";
 
 export function initMasthead(config, container) {

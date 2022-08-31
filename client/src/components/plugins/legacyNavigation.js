@@ -13,7 +13,7 @@ export function iframeAdd({ path, title = "Galaxy", $router = null }) {
     if (Galaxy.frame && Galaxy.frame.active) {
         Galaxy.frame.add({
             title: _l(title),
-            url: prependPath(path),
+            url: path,
         });
         return true;
     } else if ($router) {
