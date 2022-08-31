@@ -14,9 +14,9 @@ export function mountMasthead(el, options) {
             displayGalaxyBrand: options.display_galaxy_brand,
             baseTabs: fetchMenu(options),
             brand: options.brand,
-            brandLink: options.logo_url,
-            brandImage: options.logo_src,
-            brandImageSecondary: options.logo_src_secondary,
+            logoUrl: options.logo_url,
+            logoSrc: options.logo_src,
+            logoSrcSecondary: options.logo_src_secondary,
             windowTab: windowManager.getTab(),
         },
         el

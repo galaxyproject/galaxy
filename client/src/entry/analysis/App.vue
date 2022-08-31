@@ -7,9 +7,9 @@
                 id="masthead"
                 :display-galaxy-brand="config.display_galaxy_brand"
                 :brand="config.brand"
-                :brand-link="getPath(config.logo_url)"
-                :brand-image="getPath(config.logo_src)"
-                :brand-image-secondary="getPath(config.logo_src_secondary)"
+                :logo-url="config.logo_url"
+                :logo-src="config.logo_src"
+                :logo-src-secondary="config.logo_src_secondary"
                 :base-tabs="baseTabs"
                 :window-tab="windowTab" />
             <alert
@@ -43,7 +43,6 @@ import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy";
 import { fetchMenu } from "entry/analysis/menu";
-import { safePath } from "utils/redirect";
 import { WindowManager } from "layout/window-manager";
 
 export default {
@@ -91,11 +90,6 @@ export default {
                 return "Are you sure you want to leave the page?";
             }
         };
-    },
-    methods: {
-        getPath(url) {
-            return safePath(url);
-        },
     },
 };
 </script>

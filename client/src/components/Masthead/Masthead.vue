@@ -1,8 +1,8 @@
 <template>
     <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-center">
-        <b-navbar-brand :href="brandLink" aria-label="homepage">
-            <img alt="logo" class="navbar-brand-image" :src="brandImage" />
-            <img v-if="brandImageSecondary" alt="logo" class="navbar-brand-image" :src="brandImageSecondary" />
+        <b-navbar-brand :href="getPath(logoUrl)" aria-label="homepage">
+            <img alt="logo" class="navbar-brand-image" :src="getPath(logoSrc)" />
+            <img v-if="logoSrcSecondary" alt="logo" class="navbar-brand-image" :src="getPath(logoSrcSecondary)" />
             <span class="navbar-brand-title">{{ brandTitle }}</span>
         </b-navbar-brand>
         <b-navbar-nav>
@@ -23,6 +23,7 @@ import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import MastheadItem from "./MastheadItem";
 import { loadWebhookMenuItems } from "./_webhooks";
 import QuotaMeter from "./QuotaMeter.vue";
+import { safePath } from "utils/redirect";
 
 export default {
     name: "Masthead",
@@ -46,21 +47,21 @@ export default {
             type: String,
             default: null,
         },
-        brandLink: {
-            type: String,
-            default: null,
-        },
-        brandImage: {
-            type: String,
-            default: null,
-        },
-        brandImageSecondary: {
-            type: String,
-            default: null,
-        },
         initialActiveTab: {
             type: String,
             default: "analysis",
+        },
+        logoUrl: {
+            type: String,
+            default: null,
+        },
+        logoSrc: {
+            type: String,
+            default: null,
+        },
+        logoSrcSecondary: {
+            type: String,
+            default: null,
         },
         windowTab: {
             type: Object,
@@ -98,6 +99,9 @@ export default {
     methods: {
         addItem(item) {
             this.tabs.push(item);
+        },
+        getPath(url) {
+            return safePath(url);
         },
         updateTab() {
             const currentRoute = this.$route?.path;
