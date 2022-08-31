@@ -2,12 +2,12 @@
     <CurrentUser v-slot="{ user }">
         <ToolCard
             v-if="hasData"
-            :id="node.config_form.id"
+            :id="configForm.id"
             :user="user"
-            :version="node.config_form.version"
-            :title="node.config_form.name"
-            :description="node.config_form.description"
-            :options="node.config_form"
+            :version="configForm.version"
+            :title="configForm.name"
+            :description="configForm.description"
+            :options="configForm"
             :message-text="messageText"
             :message-variant="messageVariant"
             @onChangeVersion="onChangeVersion"
@@ -15,14 +15,14 @@
             <template v-slot:body>
                 <FormElement
                     id="__label"
-                    :value="node.label"
+                    :value="nodeLabel"
                     title="Label"
                     help="Add a step label."
                     :error="errorLabel"
                     @input="onLabel" />
                 <FormElement
                     id="__annotation"
-                    :value="node.annotation"
+                    :value="nodeAnnotation"
                     title="Step Annotation"
                     :area="true"
                     help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
@@ -34,7 +34,14 @@
                     text-enable="Set in Advance"
                     text-disable="Set at Runtime"
                     @onChange="onChange" />
-                <FormSection :id="nodeId" :get-node="getNode" :datatypes="datatypes" @onChange="onChangeSection" />
+                <FormSection
+                    :id="nodeId"
+                    :node-inputs="nodeInputs"
+                    :node-outputs="nodeOutputs"
+                    :node-active-outputs="nodeActiveOutputs"
+                    :datatypes="datatypes"
+                    :post-job-actions="postJobActions"
+                    @onChange="onChangePostJobActions" />
             </template>
         </ToolCard>
     </CurrentUser>
@@ -58,6 +65,34 @@ export default {
         FormSection,
     },
     props: {
+        nodeId: {
+            type: String,
+            required: true,
+        },
+        nodeAnnotation: {
+            type: String,
+            required: true,
+        },
+        nodeLabel: {
+            type: String,
+            required: true,
+        },
+        nodeInputs: {
+            type: Array,
+            required: true,
+        },
+        nodeOutputs: {
+            type: Array,
+            required: true,
+        },
+        nodeActiveOutputs: {
+            type: Object,
+            required: true,
+        },
+        configForm: {
+            type: Object,
+            required: true,
+        },
         datatypes: {
             type: Array,
             required: true,
@@ -66,40 +101,33 @@ export default {
             type: Function,
             required: true,
         },
-        getNode: {
-            type: Function,
+        postJobActions: {
+            type: Object,
             required: true,
         },
     },
     data() {
         return {
             mainValues: {},
-            sectionValues: {},
             messageText: "",
             messageVariant: "success",
         };
     },
     computed: {
-        node() {
-            return this.getNode();
-        },
         workflow() {
             return this.getManager();
         },
         id() {
-            return `${this.node.id}:${this.node.config_form.id}`;
-        },
-        nodeId() {
-            return this.node.id;
+            return `${this.nodeId}:${this.configForm.id}`;
         },
         hasData() {
-            return !!this.node.config_form;
+            return !!this.configForm;
         },
         errorLabel() {
-            return checkLabels(this.node.id, this.node.label, this.workflow.nodes);
+            return checkLabels(this.nodeId, this.nodeLabel, this.workflow.nodes);
         },
         inputs() {
-            const inputs = this.node.config_form.inputs;
+            const inputs = this.configForm.inputs;
             Utils.deepeach(inputs, (input) => {
                 if (input.type) {
                     if (["data", "data_collection"].indexOf(input.type) != -1) {
@@ -126,35 +154,34 @@ export default {
             return inputs;
         },
         errors() {
-            return this.node.config_form.errors;
+            return this.configForm.errors;
         },
     },
     methods: {
         onAnnotation(newAnnotation) {
-            this.$emit("onAnnotation", this.node.id, newAnnotation);
+            this.$emit("onAnnotation", this.nodeId, newAnnotation);
         },
         onLabel(newLabel) {
-            this.$emit("onLabel", this.node.id, newLabel);
+            this.$emit("onLabel", this.nodeId, newLabel);
         },
         onChange(values) {
             this.mainValues = values;
             this.postChanges();
         },
-        onChangeSection(values) {
-            this.sectionValues = values;
-            this.postChanges();
+        onChangePostJobActions(postJobActions) {
+            this.$emit("onChangePostJobActions", this.nodeId, postJobActions);
         },
         onChangeVersion(newVersion) {
-            this.messageText = `Now you are using '${this.node.config_form.name}' version ${newVersion}.`;
+            this.messageText = `Now you are using '${this.configForm.name}' version ${newVersion}.`;
             this.postChanges(newVersion);
         },
         onUpdateFavorites(user, newFavorites) {
             user.preferences["favorites"] = newFavorites;
         },
         postChanges(newVersion) {
-            const payload = Object.assign({}, this.mainValues, this.sectionValues);
+            const payload = Object.assign({}, this.mainValues);
             console.debug("FormTool - Posting changes.", payload);
-            const options = this.node.config_form;
+            const options = this.configForm;
             let toolId = options.id;
             let toolVersion = options.version;
             if (newVersion) {
@@ -162,7 +189,7 @@ export default {
                 toolVersion = newVersion;
                 console.debug("FormTool - Tool version changed.", toolId, toolVersion);
             }
-            this.$emit("onSetData", this.node.id, {
+            this.$emit("onSetData", this.nodeId, {
                 tool_id: toolId,
                 tool_version: toolVersion,
                 type: "tool",

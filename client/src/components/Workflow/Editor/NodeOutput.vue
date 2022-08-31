@@ -80,6 +80,9 @@ export default {
             }
             return extensions;
         },
+        effectiveOutput() {
+            return { ...this.output, extensions: this.extensions };
+        },
     },
     watch: {
         label() {
@@ -88,10 +91,10 @@ export default {
                 this.$emit("onChange");
             });
         },
-        output(newOutput) {
+        effectiveOutput(newOutput) {
             const oldTerminal = this.terminal;
             if (oldTerminal instanceof this.terminalClassForOutput(newOutput)) {
-                oldTerminal.update({ ...newOutput, extensions: this.extensions });
+                oldTerminal.update(newOutput);
                 oldTerminal.destroyInvalidConnections();
             } else {
                 // create new terminal, connect like old terminal, destroy old terminal
