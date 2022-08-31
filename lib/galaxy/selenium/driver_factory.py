@@ -25,7 +25,7 @@ DEFAULT_SELENIUM_REMOTE_PORT = "4444"
 DEFAULT_SELENIUM_REMOTE_HOST = "127.0.0.1"
 DEFAULT_WINDOW_WIDTH = 1280
 DEFAULT_WINDOW_HEIGHT = 1000
-VALID_LOCAL_BROWSERS = ["CHROME", "FIREFOX", "OPERA"]
+VALID_LOCAL_BROWSERS = ["CHROME", "FIREFOX"]
 
 
 class ConfiguredDriver:
@@ -87,7 +87,6 @@ def get_local_driver(browser=DEFAULT_BROWSER, headless=False) -> WebDriver:
     driver_to_class = {
         "CHROME": webdriver.Chrome,
         "FIREFOX": webdriver.Firefox,
-        "OPERA": webdriver.Opera,
     }
     driver_class = driver_to_class[browser]
     if browser == "CHROME":
@@ -114,7 +113,7 @@ def get_remote_driver(host, port, browser=DEFAULT_BROWSER) -> WebDriver:
     # docker run -d -p 4444:4444 -v /dev/shm:/dev/shm selenium/standalone-chrome:3.0.1-aluminum
     if browser == "auto":
         browser = "CHROME"
-    assert browser in ["CHROME", "EDGE", "ANDROID", "FIREFOX", "INTERNETEXPLORER", "IPAD", "IPHONE", "OPERA", "SAFARI"]
+    assert browser in ["CHROME", "EDGE", "ANDROID", "FIREFOX", "INTERNETEXPLORER", "IPAD", "IPHONE", "SAFARI"]
     desired_capabilities = getattr(DesiredCapabilities, browser)
     desired_capabilities["loggingPrefs"] = LOGGING_PREFS
     executor = f"http://{host}:{port}/wd/hub"

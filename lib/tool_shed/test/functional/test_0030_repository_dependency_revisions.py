@@ -3,11 +3,9 @@ from ..base.twilltestcase import (
     ShedTwillTestCase,
 )
 
-datatypes_repository_name = "emboss_datatypes_0030"
-datatypes_repository_description = "Galaxy applicable data formats used by Emboss tools."
-datatypes_repository_long_description = (
-    "Galaxy applicable data formats used by Emboss tools.  This repository contains no tools."
-)
+column_maker_repository_name = "column_maker_0030"
+column_maker_repository_description = "Add column"
+column_maker_repository_long_description = "Compute an expression on every row"
 
 emboss_repository_name = "emboss_0030"
 emboss_5_repository_name = "emboss_5_0030"
@@ -84,28 +82,29 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
             strings_not_displayed=[],
         )
 
-    def test_0020_create_emboss_datatypes_repository(self):
+    def test_0020_create_dependent_repository(self):
         """Create and populate the emboss_datatypes_0030 repository."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         category = self.test_db_util.get_category_by_name("Test 0030 Repository Dependency Revisions")
         repository = self.get_or_create_repository(
-            name=datatypes_repository_name,
-            description=emboss_repository_description,
-            long_description=emboss_repository_long_description,
+            name=column_maker_repository_name,
+            description=column_maker_repository_description,
+            long_description=column_maker_repository_long_description,
             owner=common.test_user_1_name,
             category_id=self.security.encode_id(category.id),
         )
-        self.upload_file(
-            repository,
-            filename="emboss/datatypes/datatypes_conf.xml",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded datatypes_conf.xml.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        if self.repository_is_new(repository):
+            self.upload_file(
+                repository,
+                filename="column_maker/column_maker.tar",
+                filepath=None,
+                valid_tools_only=False,
+                uncompress_file=True,
+                remove_repo_files_not_in_tar=False,
+                commit_message="Uploaded bismark tarball.",
+                strings_displayed=[],
+                strings_not_displayed=[],
+            )
 
     def test_0025_create_emboss_repository(self):
         """Create and populate the emboss_0030 repository."""
@@ -132,21 +131,23 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
 
     def test_0030_generate_repository_dependencies_for_emboss_5(self):
         """Generate a repository_dependencies.xml file specifying emboss_datatypes and upload it to the emboss_5 repository."""
-        datatypes_repository = self.test_db_util.get_repository_by_name_and_owner(
-            datatypes_repository_name, common.test_user_1_name
+        column_maker_repository = self.test_db_util.get_repository_by_name_and_owner(
+            column_maker_repository_name, common.test_user_1_name
         )
         emboss_5_repository = self.test_db_util.get_repository_by_name_and_owner(
             emboss_5_repository_name, common.test_user_1_name
         )
         repository_dependencies_path = self.generate_temp_path("test_0030", additional_paths=["emboss5"])
-        datatypes_tuple = (
+        column_maker_tuple = (
             self.url,
-            datatypes_repository.name,
-            datatypes_repository.user.username,
-            self.get_repository_tip(datatypes_repository),
+            column_maker_repository.name,
+            column_maker_repository.user.username,
+            self.get_repository_tip(column_maker_repository),
         )
         self.create_repository_dependency(
-            repository=emboss_5_repository, repository_tuples=[datatypes_tuple], filepath=repository_dependencies_path
+            repository=emboss_5_repository,
+            repository_tuples=[column_maker_tuple],
+            filepath=repository_dependencies_path,
         )
 
     def test_0035_generate_repository_dependencies_for_emboss_6(self):
@@ -154,18 +155,20 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
         emboss_6_repository = self.test_db_util.get_repository_by_name_and_owner(
             emboss_6_repository_name, common.test_user_1_name
         )
-        datatypes_repository = self.test_db_util.get_repository_by_name_and_owner(
-            datatypes_repository_name, common.test_user_1_name
+        column_maker_repository = self.test_db_util.get_repository_by_name_and_owner(
+            column_maker_repository_name, common.test_user_1_name
         )
         repository_dependencies_path = self.generate_temp_path("test_0030", additional_paths=["emboss6"])
-        datatypes_tuple = (
+        column_maker_tuple = (
             self.url,
-            datatypes_repository.name,
-            datatypes_repository.user.username,
-            self.get_repository_tip(datatypes_repository),
+            column_maker_repository.name,
+            column_maker_repository.user.username,
+            self.get_repository_tip(column_maker_repository),
         )
         self.create_repository_dependency(
-            repository=emboss_6_repository, repository_tuples=[datatypes_tuple], filepath=repository_dependencies_path
+            repository=emboss_6_repository,
+            repository_tuples=[column_maker_tuple],
+            filepath=repository_dependencies_path,
         )
 
     def test_0040_generate_repository_dependency_on_emboss_5(self):
@@ -212,15 +215,15 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
         repository_metadata = [
             (metadata.metadata, metadata.changeset_revision) for metadata in self.get_repository_metadata(repository)
         ]
-        datatypes_repository = self.test_db_util.get_repository_by_name_and_owner(
-            datatypes_repository_name, common.test_user_1_name
+        column_maker_repository = self.test_db_util.get_repository_by_name_and_owner(
+            column_maker_repository_name, common.test_user_1_name
         )
-        datatypes_tip = self.get_repository_tip(datatypes_repository)
+        column_maker_tip = self.get_repository_tip(column_maker_repository)
         strings_displayed = []
         # Iterate through all metadata revisions and check for repository dependencies.
         for _metadata, changeset_revision in repository_metadata:
-            # Add the dependency description and datatypes repository details to the strings to check.
-            strings_displayed = ["emboss_datatypes_0030", "user1", datatypes_tip]
+            # Add the dependency description and bismark repository details to the strings to check.
+            strings_displayed = ["column_maker_0030", "user1", column_maker_tip]
             strings_displayed.extend(["Tool dependencies", "emboss", "5.0.0", "package"])
             self.display_manage_repository_page(
                 repository, changeset_revision=changeset_revision, strings_displayed=strings_displayed
@@ -237,8 +240,8 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
         emboss_6_repository = self.test_db_util.get_repository_by_name_and_owner(
             emboss_6_repository_name, common.test_user_1_name
         )
-        datatypes_repository = self.test_db_util.get_repository_by_name_and_owner(
-            datatypes_repository_name, common.test_user_1_name
+        column_maker_repository = self.test_db_util.get_repository_by_name_and_owner(
+            column_maker_repository_name, common.test_user_1_name
         )
-        for repository in [emboss_repository, emboss_5_repository, emboss_6_repository, datatypes_repository]:
+        for repository in [emboss_repository, emboss_5_repository, emboss_6_repository, column_maker_repository]:
             self.verify_unchanged_repository_metadata(repository)

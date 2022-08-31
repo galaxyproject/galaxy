@@ -5,11 +5,20 @@ this should be reusable by tool shed and pulsar as well.
 import os
 import os.path
 import sys
-from configparser import ConfigParser
+from configparser import (
+    BasicInterpolation,
+    ConfigParser,
+    Error,
+)
 from functools import partial
 from itertools import (
     product,
     starmap,
+)
+from typing import (
+    cast,
+    Iterable,
+    Optional,
 )
 
 import yaml
@@ -129,17 +138,39 @@ def _read_from_yaml_file(path):
 
 def nice_config_parser(path):
     parser = NicerConfigParser(path, defaults=__default_properties(path))
-    parser.optionxform = str  # Don't lower-case keys
     with open(path) as f:
         parser.read_file(f)
     return parser
 
 
+class _InterpolateWrapper:
+    def __init__(self, original: Optional[BasicInterpolation] = None):
+        self._original = original or BasicInterpolation()
+
+    def __getattr__(self, name):
+        return getattr(self._original, name)
+
+    def before_get(self, parser, section, option, value, defaults):
+        try:
+            return self._original.before_get(parser, section, option, value, defaults)
+        except Error:
+            e = cast(Error, sys.exc_info()[1])
+            args = list(e.args)
+            args[0] = f"Error in file {parser.filename}: {e}"
+            e.args = tuple(args)
+            e.message = args[0]
+            raise
+
+
 class NicerConfigParser(ConfigParser):
     def __init__(self, filename, *args, **kw):
+        kw["interpolation"] = _InterpolateWrapper()
         ConfigParser.__init__(self, *args, **kw)
         self.filename = filename
-        self._interpolation = self.InterpolateWrapper(self._interpolation)
+
+    def optionxform(self, optionstr: str) -> str:
+        # Don't lower-case keys
+        return str(super().optionxform(optionstr))
 
     def defaults(self):
         """Return the defaults, with their values interpolated (with the
@@ -147,28 +178,10 @@ class NicerConfigParser(ConfigParser):
 
         Mainly to support defaults using values such as %(here)s
         """
-        defaults = ConfigParser.defaults(self).copy()
+        defaults = dict(ConfigParser.defaults(self))
         for key, val in defaults.items():
             defaults[key] = self.get("DEFAULT", key) or val
         return defaults
-
-    class InterpolateWrapper:
-        def __init__(self, original):
-            self._original = original
-
-        def __getattr__(self, name):
-            return getattr(self._original, name)
-
-        def before_get(self, parser, section, option, value, defaults):
-            try:
-                return self._original.before_get(parser, section, option, value, defaults)
-            except Exception:
-                e = sys.exc_info()[1]
-                args = list(e.args)
-                args[0] = f"Error in file {parser.filename}: {e}"
-                e.args = tuple(args)
-                e.message = args[0]
-                raise
 
 
 def _running_from_source():
@@ -195,7 +208,7 @@ def __get_all_configs(dirs, names):
 
 
 def __find_config_files(names, exts=None, dirs=None, include_samples=False):
-    sample_names = []
+    sample_names: Iterable[str] = []
     if isinstance(names, str):
         names = [names]
     if not dirs:

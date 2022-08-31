@@ -4,13 +4,10 @@ and a more expanded set of data for admin in AdminConfigSerializer.
 
 Used by both the API and bootstrapped data.
 """
-import json
 import logging
-import os
 import sys
 from typing import (
     Any,
-    cast,
     Dict,
     List,
 )
@@ -19,13 +16,10 @@ from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.markdown_util import weasyprint_available
 from galaxy.schema import SerializationParams
-from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.structured_app import StructuredApp
 from galaxy.web.framework.base import server_starttime
 
 log = logging.getLogger(__name__)
-
-VERSION_JSON_FILE = "version.json"
 
 
 class ConfigurationManager:
@@ -48,25 +42,17 @@ class ConfigurationManager:
             "version_major": self._app.config.version_major,
             "version_minor": self._app.config.version_minor,
         }
-        # Try loading extra version info
-        json_file = os.path.join(self._app.config.root, VERSION_JSON_FILE)  # TODO: add this to schema
-        json_file = os.environ.get("GALAXY_VERSION_JSON_FILE", json_file)
-        try:
-            with open(json_file) as f:
-                extra_info = json.load(f)
-        except OSError:
-            log.info("Galaxy extra version JSON file %s not loaded.", json_file)
-        else:
-            version_info["extra"] = extra_info
+        if self._app.config.version_extra:
+            version_info["extra"] = self._app.config.version_extra
         return version_info
 
     def decode_id(
         self,
-        encoded_id: EncodedDatabaseIdField,
+        encoded_id: str,
     ) -> Dict[str, int]:
         # Handle the special case for library folders
         if (len(encoded_id) % 16 == 1) and encoded_id.startswith("F"):
-            encoded_id = cast(EncodedDatabaseIdField, encoded_id[1:])
+            encoded_id = encoded_id[1:]
         decoded_id = self._app.security.decode_id(encoded_id)
         return {"decoded_id": decoded_id}
 
@@ -183,6 +169,7 @@ class ConfigSerializer(base.ModelSerializer):
             "ftp_upload_site": _use_config,
             "version_major": _defaults_to(None),
             "version_minor": _defaults_to(None),
+            "version_extra": _use_config,
             "require_login": _use_config,
             "inactivity_box_content": _use_config,
             "visualizations_visible": _use_config,

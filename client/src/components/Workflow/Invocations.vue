@@ -65,7 +65,10 @@
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
             <template v-slot:cell(execute)="data">
-                <WorkflowRunButton :id="getWorkflowByInstanceId(data.item.workflow_id).id" :root="root" />
+                <WorkflowRunButton
+                    v-if="getStoredWorkflowIdByInstanceId(data.item.workflow_id)"
+                    :id="getStoredWorkflowIdByInstanceId(data.item.workflow_id)"
+                    :root="root" />
             </template>
         </b-table>
         <b-pagination
@@ -122,7 +125,7 @@ export default {
         };
     },
     computed: {
-        ...mapGetters(["getWorkflowNameByInstanceId", "getWorkflowByInstanceId"]),
+        ...mapGetters(["getWorkflowNameByInstanceId", "getWorkflowByInstanceId", "getStoredWorkflowIdByInstanceId"]),
         ...mapGetters("history", ["getHistoryById", "getHistoryNameById"]),
         title() {
             let title = `Workflow Invocations`;
@@ -187,19 +190,19 @@ export default {
 .invocations-table {
     min-width: 40rem;
 }
-.table::v-deep .col-name {
+.table:deep(.col-name) {
     width: 40%;
 }
-.table::v-deep .col-history {
+.table:deep(.col-history) {
     width: 20%;
 }
-.table::v-deep .col-small {
+.table:deep(.col-small) {
     width: 100px;
 }
-.table::v-deep .col-button {
+.table:deep(.col-button) {
     width: 50px;
 }
-.table::v-deep .truncate {
+.table:deep(.truncate) {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;

@@ -53,6 +53,7 @@
   <tool file="filter_param_value_ref_attribute.xml" />
   <tool file="filter_static_regexp.xml" />
   <tool file="select_from_dataset.xml" />
+  <tool file="select_from_csvdataset.xml" />
   <tool file="select_from_dataset_optional.xml" />
   <tool file="drill_down.xml" />
   <tool file="dbkey_filter_input.xml" />

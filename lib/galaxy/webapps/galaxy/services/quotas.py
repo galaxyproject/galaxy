@@ -21,7 +21,7 @@ from galaxy.quota._schema import (
     QuotaSummaryList,
     UpdateQuotaParams,
 )
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.web import url_for
 from galaxy.webapps.galaxy.services.base import ServiceBase
@@ -37,7 +37,7 @@ class QuotasService(ServiceBase):
         self.quota_manager = quota_manager
 
     def index(self, trans: ProvidesUserContext, deleted: bool = False) -> QuotaSummaryList:
-        """Displays a collection (list) of quotas."""
+        """Displays a list of quotas."""
         rval = []
         query = trans.sa_session.query(model.Quota)
         if deleted:
@@ -47,29 +47,31 @@ class QuotasService(ServiceBase):
             route = "quota"
             query = query.filter(model.Quota.deleted == false())
         for quota in query:
-            item = quota.to_dict(value_mapper={"id": trans.security.encode_id})
-            encoded_id = trans.security.encode_id(quota.id)
-            item["url"] = self._url_for(route, id=encoded_id)
+            item = quota.to_dict(value_mapper={"id": DecodedDatabaseIdField.encode})
+            encoded_id = DecodedDatabaseIdField.encode(quota.id)
+            item["url"] = url_for(route, id=encoded_id)
             rval.append(item)
-        return QuotaSummaryList.parse_obj(rval)
+        return QuotaSummaryList.construct(__root__=rval)
 
-    def show(self, trans: ProvidesUserContext, id: EncodedDatabaseIdField, deleted: bool = False) -> QuotaDetails:
+    def show(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, deleted: bool = False) -> QuotaDetails:
         """Displays information about a quota."""
         quota = self.quota_manager.get_quota(trans, id, deleted=deleted)
-        rval = quota.to_dict(view="element", value_mapper={"id": trans.security.encode_id, "total_disk_usage": float})
-        return QuotaDetails.parse_obj(rval)
+        rval = quota.to_dict(
+            view="element", value_mapper={"id": DecodedDatabaseIdField.encode, "total_disk_usage": float}
+        )
+        return QuotaDetails.construct(**rval)
 
     def create(self, trans: ProvidesUserContext, params: CreateQuotaParams) -> CreateQuotaResult:
         """Creates a new quota."""
         payload = params.dict()
         self.validate_in_users_and_groups(trans, payload)
         quota, message = self.quota_manager.create_quota(payload)
-        item = quota.to_dict(value_mapper={"id": trans.security.encode_id})
-        item["url"] = self._url_for("quota", id=trans.security.encode_id(quota.id))
+        item = quota.to_dict(value_mapper={"id": DecodedDatabaseIdField.encode})
+        item["url"] = url_for("quota", id=DecodedDatabaseIdField.encode(quota.id))
         item["message"] = message
-        return CreateQuotaResult.parse_obj(item)
+        return CreateQuotaResult.construct(**item)
 
-    def update(self, trans: ProvidesUserContext, id: EncodedDatabaseIdField, params: UpdateQuotaParams) -> str:
+    def update(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, params: UpdateQuotaParams) -> str:
         """Modifies a quota."""
         payload = params.dict()
         self.validate_in_users_and_groups(trans, payload)
@@ -96,7 +98,7 @@ class QuotasService(ServiceBase):
         return "; ".join(messages)
 
     def delete(
-        self, trans: ProvidesUserContext, id: EncodedDatabaseIdField, payload: Optional[DeleteQuotaPayload] = None
+        self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, payload: Optional[DeleteQuotaPayload] = None
     ) -> str:
         """Marks a quota as deleted."""
         quota = self.quota_manager.get_quota(
@@ -107,7 +109,7 @@ class QuotasService(ServiceBase):
             message += self.quota_manager.purge_quota(quota)
         return message
 
-    def undelete(self, trans: ProvidesUserContext, id: EncodedDatabaseIdField) -> str:
+    def undelete(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> str:
         """Restores a previously deleted quota."""
         quota = self.quota_manager.get_quota(trans, id, deleted=True)
         return self.quota_manager.undelete_quota(quota)
@@ -146,9 +148,3 @@ class QuotasService(ServiceBase):
             raise Exception(msg)
         payload["in_users"] = list(map(str, new_in_users))
         payload["in_groups"] = list(map(str, new_in_groups))
-
-    def _url_for(self, *args, **kargs):
-        try:
-            return url_for(*args, **kargs)
-        except AttributeError:
-            return "*deprecated attribute not filled in by FastAPI server*"

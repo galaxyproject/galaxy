@@ -1,4 +1,4 @@
-include *.rst *.txt LICENSE
+include *.rst *.txt LICENSE */py.typed
 include galaxy/datatypes/set_metadata_tool.xml
 include galaxy/datatypes/converters/*.xml
 graft galaxy/datatypes/display_applications/configs/

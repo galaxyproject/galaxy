@@ -1,9 +1,13 @@
 import os
+import zlib
 from urllib.parse import quote
 
 import zipstream
 
 from .path import safe_walk
+
+CRC32_MIN = 1444
+CRC32_MAX = 1459
 
 
 class ZipstreamWrapper:
@@ -15,11 +19,13 @@ class ZipstreamWrapper:
                 allowZip64=True, compression=zipstream.ZIP_STORED if upstream_gzip else zipstream.ZIP_DEFLATED
             )
         self.files = []
+        self.directories = set()
         self.size = 0
 
     def response(self):
         if self.upstream_mod_zip:
-            yield "\n".join(self.files).encode()
+            dir_lines = [f"0 0 @directory {directory}" for directory in self.directories]
+            yield "\n".join(dir_lines + self.files).encode()
         else:
             yield from iter(self.archive)
 
@@ -38,7 +44,16 @@ class ZipstreamWrapper:
         if self.upstream_mod_zip:
             # calculating crc32 would defeat the point of using mod-zip, but if we ever calculate hashsums we should consider this
             crc32 = "-"
+            # We do have to calculate the crc32 for files that are between 1444 and 1459 bytes in size, xref: https://github.com/evanmiller/mod_zip/issues/44#issuecomment-656660686
+            # Oddly that seems to be only true for usegalaxy.org (nginx version 1.12.2), and works fine locally (nginx 1.19.10).
+            # May have been fixed in nginx 1.17.0
+            if CRC32_MIN <= os.path.getsize(path) <= CRC32_MAX:
+                with open(path, "rb") as contents:
+                    crc32 = hex(zlib.crc32(contents.read()))[2:]
             line = f"{crc32} {size} {quote(path)} {archive_name}"
+            head, tail = os.path.split(archive_name)
+            if head:
+                self.directories.add(head)
             self.files.append(line)
         else:
             self.size += size

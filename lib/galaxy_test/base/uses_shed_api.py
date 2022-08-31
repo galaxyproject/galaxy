@@ -6,7 +6,9 @@ from galaxy_test.base.api_asserts import assert_status_code_is
 
 
 class UsesShedApi:
-    galaxy_interactor: GalaxyInteractorApi
+    @property
+    def galaxy_interactor(self) -> GalaxyInteractorApi:
+        ...
 
     def delete_repo_request(self, payload):
         return self.galaxy_interactor._delete("tool_shed_repositories", data=payload, admin=True)

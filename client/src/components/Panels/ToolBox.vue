@@ -6,7 +6,7 @@
                     <h4 v-localize class="m-1">Tools</h4>
                     <div class="panel-header-buttons">
                         <b-button-group>
-                            <favorites-button v-if="isUser" :query="query" @onFavorites="onQuery" />
+                            <favorites-button :query="query" @onFavorites="onQuery" />
                             <panel-view-button
                                 v-if="panelViews && Object.keys(panelViews).length > 1"
                                 :panel-views="panelViews"

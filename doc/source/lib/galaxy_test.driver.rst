@@ -17,6 +17,14 @@ galaxy\_test.driver.driver\_util module
    :undoc-members:
    :show-inheritance:
 
+galaxy\_test.driver.integration\_setup module
+---------------------------------------------
+
+.. automodule:: galaxy_test.driver.integration_setup
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy\_test.driver.integration\_util module
 --------------------------------------------
 

@@ -123,6 +123,7 @@ from galaxy.model.item_attrs import (
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
+from galaxy.objectstore import ObjectStore
 from galaxy.security import get_permitted_actions
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.validate_user_input import validate_password_str
@@ -3452,7 +3453,7 @@ class Dataset(Base, StorableObject, Serializable, _HasTable):
 
     permitted_actions = get_permitted_actions(filter="DATASET")
     file_path = "/tmp/"
-    object_store = None  # This get initialized in mapping.py (method init) by app.py
+    object_store: Optional[ObjectStore] = None  # This get initialized in mapping.py (method init) by app.py
     engine = None
 
     def __init__(
@@ -3568,18 +3569,21 @@ class Dataset(Base, StorableObject, Serializable, _HasTable):
         else:
             return self.object_store.size(self)
 
-    def get_size(self, nice_size=False):
+    def get_size(self, nice_size=False, calculate_size=True):
         """Returns the size of the data on disk"""
         if self.file_size:
             if nice_size:
                 return galaxy.util.nice_size(self.file_size)
             else:
                 return self.file_size
-        else:
+        elif calculate_size:
+            # Hopefully we only reach this branch in sessionless mode
             if nice_size:
                 return galaxy.util.nice_size(self._calculate_size())
             else:
                 return self._calculate_size()
+        else:
+            return self.file_size or 0
 
     def set_size(self, no_extra_files=False):
         """Sets the size of the data on disk.
@@ -3809,8 +3813,10 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
 
     states = Dataset.states
+    _state: str
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
+    purged: bool
 
     class validated_states(str, Enum):
         UNKNOWN = "unknown"
@@ -4018,11 +4024,11 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
         self.clear_associated_files()
         _get_datatypes_registry().change_datatype(self, new_ext)
 
-    def get_size(self, nice_size=False):
+    def get_size(self, nice_size=False, calculate_size=True):
         """Returns the size of the data on disk"""
         if nice_size:
-            return galaxy.util.nice_size(self.dataset.get_size())
-        return self.dataset.get_size()
+            return galaxy.util.nice_size(self.dataset.get_size(calculate_size=calculate_size))
+        return self.dataset.get_size(calculate_size=calculate_size)
 
     def set_size(self, **kwds):
         """Sets and gets the size of the data on disk"""

@@ -84,7 +84,7 @@ export default {
             return this.tab.menu;
         },
         popoverNote() {
-            return `Please <a href="${getAppRoot()}login">login or register</a> to use this feature.`;
+            return `Please <a href="${getAppRoot()}login">log in or register</a> to use this feature.`;
         },
         classes() {
             const isActiveTab = this.tab.id == this.activeTab;
@@ -143,8 +143,6 @@ export default {
                 const Galaxy = getGalaxyInstance();
                 if (tab.target === "__use_router__" && this.$router) {
                     this.$router.push(`/${tab.url}`);
-                } else if (tab.target === "__use_router__" && typeof Galaxy.page !== "undefined") {
-                    Galaxy.page.router.executeUseRouter(this.formatUrl(tab.url));
                 } else {
                     try {
                         Galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });

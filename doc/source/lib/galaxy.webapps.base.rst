@@ -9,6 +9,14 @@ galaxy.webapps.base package
 Submodules
 ----------
 
+galaxy.webapps.base.api module
+------------------------------
+
+.. automodule:: galaxy.webapps.base.api
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.webapps.base.controller module
 -------------------------------------
 

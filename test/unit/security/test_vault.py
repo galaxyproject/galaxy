@@ -2,7 +2,6 @@ import os
 import string
 import tempfile
 import unittest
-from abc import ABC
 
 from cryptography.fernet import InvalidToken
 
@@ -17,7 +16,7 @@ from galaxy.security.vault import (
 )
 
 
-class VaultTestBase(ABC):
+class VaultTestBase:
     vault: Vault
 
     def test_read_write_secret(self):

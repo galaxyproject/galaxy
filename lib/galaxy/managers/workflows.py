@@ -43,7 +43,9 @@ from galaxy import (
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.managers import sharable
+from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.executables import artifact_class
 from galaxy.model import StoredWorkflow
 from galaxy.model.index_filter_util import (
     append_user_filter,
@@ -90,8 +92,6 @@ from galaxy.workflow.refactor.schema import (
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.resources import get_resource_mapper_function
 from galaxy.workflow.steps import attach_ordered_steps
-from .base import decode_id
-from .executables import artifact_class
 
 log = logging.getLogger(__name__)
 
@@ -242,19 +242,19 @@ class WorkflowsManager(sharable.SharableModelManager):
                     trans.app.model.Workflow.uuid == workflow_uuid,
                 )
             )
-        elif by_stored_id:
-            workflow_id = decode_id(self.app, workflow_id)
-            workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
-                trans.app.model.StoredWorkflow.id == workflow_id
-            )
         else:
-            workflow_id = decode_id(self.app, workflow_id)
-            workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
-                and_(
-                    trans.app.model.StoredWorkflow.id == trans.app.model.Workflow.stored_workflow_id,
-                    trans.app.model.Workflow.id == workflow_id,
+            workflow_id = workflow_id if isinstance(workflow_id, int) else decode_id(self.app, workflow_id)
+            if by_stored_id:
+                workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
+                    trans.app.model.StoredWorkflow.id == workflow_id
                 )
-            )
+            else:
+                workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
+                    and_(
+                        trans.app.model.StoredWorkflow.id == trans.app.model.Workflow.stored_workflow_id,
+                        trans.app.model.Workflow.id == workflow_id,
+                    )
+                )
         stored_workflow = workflow_query.options(
             joinedload("annotations"),
             joinedload("tags"),
@@ -368,7 +368,9 @@ class WorkflowsManager(sharable.SharableModelManager):
         return workflow_invocation
 
     def get_invocation_report(self, trans, invocation_id, **kwd):
-        decoded_workflow_invocation_id = trans.security.decode_id(invocation_id)
+        decoded_workflow_invocation_id = (
+            trans.security.decode_id(invocation_id) if isinstance(invocation_id, str) else invocation_id
+        )
         workflow_invocation = self.get_invocation(trans, decoded_workflow_invocation_id)
         generator_plugin_type = kwd.get("generator_plugin_type")
         runtime_report_config_json = kwd.get("runtime_report_config_json")
@@ -1092,7 +1094,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "outputs": module.get_all_outputs(),
                 "config_form": config_form,
                 "annotation": annotation_str,
-                "post_job_actions": {},
+                "post_job_actions": module.get_post_job_actions({}),
                 "uuid": str(step.uuid) if step.uuid else None,
                 "workflow_outputs": [],
             }

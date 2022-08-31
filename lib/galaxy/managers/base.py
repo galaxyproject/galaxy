@@ -28,6 +28,7 @@ attribute change to a model object.
 import datetime
 import logging
 import re
+from functools import partial
 from typing import (
     Any,
     Callable,
@@ -68,6 +69,7 @@ log = logging.getLogger(__name__)
 class ParsedFilter(NamedTuple):
     filter_type: str  # orm_function, function, or orm
     filter: Any
+    case_insensitive: bool = False
 
 
 parsed_filter = ParsedFilter
@@ -163,7 +165,7 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
     controller mixin code - however whenever possible the managers for a
     particular model should be used to load objects.
     """
-    decoded_id = decode_id(trans.app, id)
+    decoded_id = id if isinstance(id, int) else decode_id(trans.app, id)
     try:
         item_class = get_class(class_name)
         assert item_class is not None
@@ -203,8 +205,11 @@ def munge_lists(listA, listB):
     return listA + listB
 
 
+U = TypeVar("U", bound=model._HasTable)
+
+
 # -----------------------------------------------------------------------------
-class ModelManager:
+class ModelManager(Generic[U]):
     """
     Base class for all model/resource managers.
 
@@ -212,7 +217,7 @@ class ModelManager:
     over the ORM.
     """
 
-    model_class: Type[model._HasTable]
+    model_class: Type[U]
     foreign_key_name: str
     app: BasicSharedApp
 
@@ -313,14 +318,14 @@ class ModelManager:
         return query
 
     # .... query resolution
-    def one(self, **kwargs):
+    def one(self, **kwargs) -> Query:
         """
         Sends kwargs to build the query and returns one and only one model.
         """
         query = self.query(**kwargs)
         return self._one_with_recast_errors(query)
 
-    def _one_with_recast_errors(self, query):
+    def _one_with_recast_errors(self, query: Query) -> Query:
         """
         Call sqlalchemy's one and recast errors to serializable errors if any.
 
@@ -347,7 +352,7 @@ class ModelManager:
             return None
 
     # NOTE: at this layer, all ids are expected to be decoded and in int form
-    def by_id(self, id: int):
+    def by_id(self, id: int) -> Query:
         """
         Gets a model by primary id.
         """
@@ -479,10 +484,8 @@ class ModelManager:
                 in_order.append(item_dict[id])
         return in_order
 
-    def create(self, flush=True, *args, **kwargs):
-        """
-        Generically create a new model.
-        """
+    def create(self, flush: bool = True, *args: Any, **kwargs: Any) -> U:
+        """Generically create a new model."""
         # override in subclasses
         item = self.model_class(*args, **kwargs)
         self.session().add(item)
@@ -1168,6 +1171,7 @@ class ModelFilterParser(HasAModelManager):
         allowed_ops = column_map["op"]
         if op not in allowed_ops:
             return None
+
         converted_op = self._convert_op_string_to_fn(column, op)
         if not converted_op:
             return None
@@ -1180,9 +1184,12 @@ class ModelFilterParser(HasAModelManager):
             val_parser = val_parser.get(op)
         if val_parser:
             val = val_parser(val)
+        if op == "contains":
+            # Do we want to make this configurable ?
+            val = val.lower()
 
         orm_filter = converted_op(val)
-        return self.parsed_filter(filter_type="orm", filter=orm_filter)
+        return self.parsed_filter(filter_type="orm", filter=orm_filter, case_insensitive=op == "contains")
 
     #: these are the easier/shorter string equivalents to the python operator fn names that need '__' around them
     UNDERSCORED_OPS = ("lt", "le", "eq", "ne", "ge", "gt")
@@ -1204,6 +1211,8 @@ class ModelFilterParser(HasAModelManager):
         op_fn = getattr(column, fn_name, None)
         if not op_fn or not callable(op_fn):
             return None
+        if op_string == "contains":
+            op_fn = partial(op_fn, autoescape=True)
         return op_fn
 
     # ---- preset fn_filters: dictionaries of standard filter ops for standard datatypes
@@ -1211,7 +1220,7 @@ class ModelFilterParser(HasAModelManager):
         return {
             "op": {
                 "eq": lambda i, v: v == getattr(i, key),
-                "contains": lambda i, v: v in getattr(i, key),
+                "contains": lambda i, v: v in partial(getattr(i, key), autoescape=True),  # type: ignore[operator]
             }
         }
 

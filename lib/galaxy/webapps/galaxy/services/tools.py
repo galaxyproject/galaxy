@@ -32,8 +32,8 @@ from galaxy.schema.fetch_data import (
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tools import Tool
 from galaxy.tools.search import ToolBoxSearch
+from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
 from galaxy.webapps.galaxy.services.base import ServiceBase
-from ._fetch_util import validate_and_normalize_targets
 
 log = logging.getLogger(__name__)
 
@@ -132,8 +132,8 @@ class ToolsService(ServiceBase):
         # dataset upload.
         history_id = payload.get("history_id")
         if history_id:
-            decoded_id = self.decode_id(history_id)
-            target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
+            history_id = trans.security.decode_id(history_id) if isinstance(history_id, str) else history_id
+            target_history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
         else:
             target_history = None
 
@@ -244,32 +244,11 @@ class ToolsService(ServiceBase):
         :return type: dict
         """
         panel_view = view or self.config.default_panel_view
-        tool_name_boost = self.config.get("tool_name_boost", 9)
-        tool_id_boost = self.config.get("tool_id_boost", 9)
-        tool_section_boost = self.config.get("tool_section_boost", 3)
-        tool_description_boost = self.config.get("tool_description_boost", 2)
-        tool_label_boost = self.config.get("tool_label_boost", 1)
-        tool_stub_boost = self.config.get("tool_stub_boost", 5)
-        tool_help_boost = self.config.get("tool_help_boost", 0.5)
-        tool_search_limit = self.config.get("tool_search_limit", 20)
-        tool_enable_ngram_search = self.config.get("tool_enable_ngram_search", False)
-        tool_ngram_minsize = self.config.get("tool_ngram_minsize", 3)
-        tool_ngram_maxsize = self.config.get("tool_ngram_maxsize", 4)
 
         results = self.toolbox_search.search(
             q=q,
             panel_view=panel_view,
-            tool_name_boost=tool_name_boost,
-            tool_id_boost=tool_id_boost,
-            tool_section_boost=tool_section_boost,
-            tool_description_boost=tool_description_boost,
-            tool_label_boost=tool_label_boost,
-            tool_stub_boost=tool_stub_boost,
-            tool_help_boost=tool_help_boost,
-            tool_search_limit=tool_search_limit,
-            tool_enable_ngram_search=tool_enable_ngram_search,
-            tool_ngram_minsize=tool_ngram_minsize,
-            tool_ngram_maxsize=tool_ngram_maxsize,
+            config=self.config,
         )
         return results
 

@@ -38,6 +38,7 @@
                         <HistoryMessages :history="history" />
                         <HistoryCounter
                             :history="history"
+                            :is-watching="isWatching"
                             :last-checked="lastChecked"
                             :filter-text.sync="filterText"
                             @reloadContents="reloadContents" />
@@ -91,7 +92,7 @@
                                     No data found for selected filter.
                                 </b-alert>
                             </div>
-                            <Listing
+                            <ListingLayout
                                 v-else
                                 :offset="listOffset"
                                 :items="itemsLoaded"
@@ -100,8 +101,8 @@
                                 <template v-slot:item="{ item, currentOffset }">
                                     <ContentItem
                                         v-if="!invisible[item.hid]"
-                                        is-history-item
                                         :id="item.hid"
+                                        is-history-item
                                         :item="item"
                                         :name="item.name"
                                         :expand-dataset="isExpanded(item)"
@@ -119,7 +120,7 @@
                                         @undelete="onUndelete(item)"
                                         @unhide="onUnhide(item)" />
                                 </template>
-                            </Listing>
+                            </ListingLayout>
                         </div>
                     </section>
                 </section>
@@ -137,7 +138,7 @@ import { deleteContent, updateContentFields } from "components/History/model/que
 import { getHighlights } from "components/History/Content/model/highlights";
 import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
-import Listing from "components/History/Layout/Listing";
+import ListingLayout from "components/History/Layout/ListingLayout";
 import HistoryCounter from "./HistoryCounter";
 import HistoryOperations from "./HistoryOperations/Index";
 import HistoryDetails from "./HistoryDetails";
@@ -164,7 +165,7 @@ export default {
         HistorySelectionOperations,
         HistorySelectionStatus,
         LoadingSpan,
-        Listing,
+        ListingLayout,
         SelectedItems,
         SelectionChangeWarning,
         OperationErrorDialog,
@@ -210,6 +211,9 @@ export default {
         /** @returns {Date} */
         lastChecked() {
             return this.$store.getters.getLastCheckedTime();
+        },
+        isWatching() {
+            return this.$store.getters.getWatchingVisibility();
         },
     },
     watch: {

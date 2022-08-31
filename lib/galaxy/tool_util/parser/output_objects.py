@@ -324,7 +324,7 @@ class ToolOutputCollectionStructure:
             )
         if dataset_collector_descriptions and (structured_like or collection_type_from_rules):
             raise ValueError(
-                "Cannot specify dynamic structure (discovered_datasets) and collection type attributes structured_like or collection_type_from_rules."
+                "Cannot specify dynamic structure (discover_datasets) and collection type attributes structured_like or collection_type_from_rules."
             )
         self.dynamic = bool(dataset_collector_descriptions)
 

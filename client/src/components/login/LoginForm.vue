@@ -3,7 +3,9 @@
         <div class="row justify-content-md-center">
             <template v-if="!confirmURL">
                 <div class="col col-lg-6">
-                    <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
+                    <b-alert :show="messageShow" :variant="messageVariant">
+                        {{ messageText }}
+                    </b-alert>
                     <b-form id="login" @submit.prevent="submitGalaxyLogin()">
                         <b-card no-body header="Welcome to Galaxy, please log in">
                             <b-card-body>
@@ -125,9 +127,7 @@ export default {
     },
     methods: {
         toggleLogin() {
-            if (this.$root.toggleLogin) {
-                this.$root.toggleLogin();
-            }
+            this.$emit("toggle-login");
         },
         submitGalaxyLogin(method) {
             if (localStorage.getItem("redirect_url")) {

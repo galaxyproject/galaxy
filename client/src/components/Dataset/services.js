@@ -45,16 +45,6 @@ export class Services {
         }
     }
 
-    async setHistory(id) {
-        const url = `${this.root}history/set_as_current?id=${id}`;
-        try {
-            const response = await axios.get(url);
-            return response.data;
-        } catch (e) {
-            this._errorMessage(e);
-        }
-    }
-
     async updateTags(item_id, item_class, item_tags) {
         const url = `${this.root}api/tags`;
         try {

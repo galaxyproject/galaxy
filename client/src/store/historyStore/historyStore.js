@@ -32,7 +32,14 @@ const mutations = {
         Vue.delete(state.histories, doomed.id);
     },
     setHistories(state, newHistories = []) {
+        const currentHistoryId = state.currentHistoryId;
+        const currentHistory = state.histories[currentHistoryId];
         const newMap = newHistories.reduce((acc, h) => ({ ...acc, [h.id]: h }), {});
+        if (currentHistory) {
+            // The incoming history list contains less information than the current history
+            // so we restore the existing current history since it gets updated regularly anyway
+            newMap[currentHistoryId] = currentHistory;
+        }
         Vue.set(state, "histories", newMap);
     },
     setHistoriesLoading(state, isLoading) {
@@ -145,10 +152,8 @@ const actions = {
         commit("setCurrentHistoryId", history.id);
     },
     async setCurrentHistory({ dispatch, getters }, id) {
-        if (id !== getters.currentHistoryId) {
-            const changedHistory = await setCurrentHistoryOnServer(id);
-            dispatch("selectHistory", changedHistory);
-        }
+        const changedHistory = await setCurrentHistoryOnServer(id);
+        return dispatch("selectHistory", changedHistory);
     },
     setHistory({ commit }, history) {
         commit("setHistory", history);

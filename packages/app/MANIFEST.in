@@ -1,4 +1,4 @@
-include *.rst *.txt LICENSE
+include *.rst *.txt LICENSE */py.typed
 include galaxy/dependencies/*.txt
 include galaxy/dependencies/*.sh
 include galaxy/jobs/runners/util/job_script/*.sh

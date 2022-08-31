@@ -74,7 +74,7 @@ export default {
             return [
                 {
                     text: "Tool Data Tables",
-                    to: "/",
+                    to: "/admin/data_manager",
                 },
                 {
                     text: this.dataTableName,

@@ -2,7 +2,6 @@ import sys
 from typing import (
     Dict,
     Optional,
-    Type,
 )
 
 try:
@@ -88,12 +87,11 @@ class MockStatsClient:
         pass
 
 
-GalaxyStatsdClient: Type[VanillaGalaxyStatsdClient]
 # Replace stats collector if in pytest environment
 if "pytest" in sys.modules:
     GalaxyStatsdClient = PyTestGalaxyStatsdClient
 else:
-    GalaxyStatsdClient = VanillaGalaxyStatsdClient
+    GalaxyStatsdClient = VanillaGalaxyStatsdClient  # type: ignore[assignment,misc]
 
 
 __all__ = ("GalaxyStatsdClient",)

@@ -21,7 +21,7 @@ from galaxy import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     SetSlugPayload,
     ShareWithPayload,
@@ -31,19 +31,19 @@ from galaxy.schema.schema import (
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
-from galaxy.webapps.galaxy.services.visualizations import VisualizationsService
-from . import (
+from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.services.visualizations import VisualizationsService
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["visualizations"])
 
-VisualizationIdPathParam: EncodedDatabaseIdField = Path(
+VisualizationIdPathParam: DecodedDatabaseIdField = Path(
     ..., title="Visualization ID", description="The encoded database identifier of the Visualization."
 )
 
@@ -59,7 +59,7 @@ class FastAPIVisualizations:
     def sharing(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+        id: DecodedDatabaseIdField = VisualizationIdPathParam,
     ) -> SharingStatus:
         """Return the sharing status of the item."""
         return self.service.shareable_service.sharing(trans, id)
@@ -71,7 +71,7 @@ class FastAPIVisualizations:
     def enable_link_access(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+        id: DecodedDatabaseIdField = VisualizationIdPathParam,
     ) -> SharingStatus:
         """Makes this item accessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.enable_link_access(trans, id)
@@ -83,7 +83,7 @@ class FastAPIVisualizations:
     def disable_link_access(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+        id: DecodedDatabaseIdField = VisualizationIdPathParam,
     ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.disable_link_access(trans, id)
@@ -95,7 +95,7 @@ class FastAPIVisualizations:
     def publish(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+        id: DecodedDatabaseIdField = VisualizationIdPathParam,
     ) -> SharingStatus:
         """Makes this item publicly available by a URL link and return the current sharing status."""
         return self.service.shareable_service.publish(trans, id)
@@ -107,7 +107,7 @@ class FastAPIVisualizations:
     def unpublish(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+        id: DecodedDatabaseIdField = VisualizationIdPathParam,
     ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
         return self.service.shareable_service.unpublish(trans, id)
@@ -119,7 +119,7 @@ class FastAPIVisualizations:
     def share_with_users(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+        id: DecodedDatabaseIdField = VisualizationIdPathParam,
         payload: ShareWithPayload = Body(...),
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
@@ -133,7 +133,7 @@ class FastAPIVisualizations:
     def set_slug(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+        id: DecodedDatabaseIdField = VisualizationIdPathParam,
         payload: SetSlugPayload = Body(...),
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""

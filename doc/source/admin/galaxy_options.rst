@@ -1071,19 +1071,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``cluster_files_directory``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If using a cluster, Galaxy will write job scripts and
-    stdout/stderr to this directory.
-    The value of this option will be resolved with respect to
-    <data_dir>.
-:Default: ``pbs``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``template_cache_path``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -2576,12 +2563,55 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~
+``log_destination``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Log destination, defaults to special value "stdout" that logs to
+    standard output. If set to anything else, then it will be
+    interpreted as a path that will be used as the log file, and
+    logging to stdout will be disabled.
+:Default: ``stdout``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``log_rotate_size``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Size of log file at which size it will be rotated as per the
+    documentation in
+    https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+    If log_rotate_count is not also set, no log rotation will be
+    performed. A value of 0 (the default) means no rotation. Size can
+    be a number of bytes or a human-friendly representation like "100
+    MB" or "1G".
+:Default: ``0``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``log_rotate_count``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Number of log file backups to keep, per the documentation in
+    https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+    Any additional rotated log files will automatically be pruned. If
+    log_rotate_size is not also set, no log rotation will be
+    performed. A value of 0 (the default) means no rotation.
+:Default: ``0``
+:Type: int
+
+
 ~~~~~~~~~~~~~
 ``log_level``
 ~~~~~~~~~~~~~
 
 :Description:
-    Verbosity of console log messages.  Acceptable values can be found
+    Verbosity of console log messages. Acceptable values can be found
     here: https://docs.python.org/library/logging.html#logging-levels
     A custom debug level of "TRACE" is available for even more
     verbosity.
@@ -2594,9 +2624,8 @@
 ~~~~~~~~~~~
 
 :Description:
-    Controls where and how the server logs messages. If unset, the
-    default is to log all messages to standard output at the level
-    defined by the `log_level` configuration option. Configuration is
+    Controls where and how the server logs messages. If set, overrides
+    all settings in the log_* configuration options. Configuration is
     described in the documentation at:
     https://docs.galaxyproject.org/en/master/admin/config_logging.html
 :Default: ``None``
@@ -3049,11 +3078,20 @@
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
-:Default: ``9.0``
+    In tool search, a query match against a tool's name text will
+    receive this score multiplier.
+:Default: ``20.0``
+:Type: float
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_name_exact_multiplier``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If a search query matches a tool name exactly, the score will be
+    multiplied by this factor.
+:Default: ``10.0``
 :Type: float
 
 
@@ -3062,11 +3100,10 @@
 ~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
-:Default: ``9.0``
+    In tool search, a query match against a tool's ID text will
+    receive this score multiplier. The query must be an exact match
+    against ID in order to be counted as a match.
+:Default: ``20.0``
 :Type: float
 
 
@@ -3075,10 +3112,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
+    In tool search, a query match against a tool's section text will
+    receive this score multiplier.
 :Default: ``3.0``
 :Type: float
 
@@ -3088,11 +3123,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
-:Default: ``2.0``
+    In tool search, a query match against a tool's description text
+    will receive this score multiplier.
+:Default: ``8.0``
 :Type: float
 
 
@@ -3101,10 +3134,8 @@
 ~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
+    In tool search, a query match against a tool's label text will
+    receive this score multiplier.
 :Default: ``1.0``
 :Type: float
 
@@ -3114,11 +3145,10 @@
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
-:Default: ``5.0``
+    A stub is parsed from the GUID as "owner/repo/tool_id". In tool
+    search, a query match against a tool's stub text will receive this
+    score multiplier.
+:Default: ``2.0``
 :Type: float
 
 
@@ -3127,10 +3157,22 @@
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
+    In tool search, a query match against a tool's help text will
+    receive this score multiplier.
+:Default: ``1.0``
+:Type: float
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``tool_help_bm25f_k1``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The lower this parameter, the greater the diminishing reward for
+    term frequency in the help text. A higher K1 increases the level
+    of reward for additional occurences of a term. The default value
+    will provide a slight increase in score for the first, second and
+    third occurrence and little reward thereafter.
 :Default: ``0.5``
 :Type: float
 
@@ -3140,8 +3182,8 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Limits the number of results in toolbox search.  Can be used to
-    tweak how many results will appear.
+    Limits the number of results in toolbox search. Use to set the
+    maximum number of tool search results to display.
 :Default: ``20``
 :Type: int
 
@@ -3151,9 +3193,11 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable/ disable Ngram-search for tools. It makes tool search
-    results tolerant for spelling mistakes in the query by dividing
-    the query into multiple ngrams and search for each ngram
+    Disabling this will prevent partial matches on tool names.
+    Enable/disable Ngram-search for tools. It makes tool search
+    results tolerant for spelling mistakes in the query, and will also
+    match query substrings e.g. "genome" will match "genomics" or
+    "metagenome".
 :Default: ``true``
 :Type: bool
 
@@ -3163,7 +3207,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set minimum size of ngrams
+    Set minimum character length of ngrams
 :Default: ``3``
 :Type: int
 
@@ -3173,9 +3217,21 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set maximum size of ngrams
+    Set maximum character length of ngrams
 :Default: ``4``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``tool_ngram_factor``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Ngram matched scores will be multiplied by this factor. Should
+    always be below 1, because an ngram match is a partial match of a
+    search term.
+:Default: ``0.2``
+:Type: float
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

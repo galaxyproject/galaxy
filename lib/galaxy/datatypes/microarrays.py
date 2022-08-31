@@ -104,6 +104,7 @@ class Gal(GenericMicroarrayFile):
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Try to guess if the file is a Gal file.
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('test.gal')
         >>> Gal().sniff(fname)
@@ -145,6 +146,7 @@ class Gpr(GenericMicroarrayFile):
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Try to guess if the file is a Gpr file.
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('test.gpr')
         >>> Gpr().sniff(fname)

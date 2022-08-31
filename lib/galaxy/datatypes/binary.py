@@ -149,6 +149,7 @@ class Cel(Binary):
     def sniff(self, filename):
         """
         Try to guess if the file is a Cel file.
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('affy_v_agcc.cel')
         >>> Cel().sniff(fname)
@@ -246,6 +247,7 @@ class Meryldb(CompressedArchive):
     def sniff(self, filename):
         """
         Try to guess if the file is a Cel file.
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('affy_v_agcc.cel')
         >>> Meryldb().sniff(fname)
@@ -1242,6 +1244,7 @@ class Loom(H5):
 class Anndata(H5):
     """
     Class describing an HDF5 anndata files: http://anndata.rtfd.io
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> Anndata().sniff(get_test_fname('pbmc3k_tiny.h5ad'))
     True
@@ -3678,6 +3681,7 @@ class Vel(Binary):
 class DAA(Binary):
     """
     Class describing an DAA (diamond alignment archive) file
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('diamond.daa')
     >>> DAA().sniff(fname)
@@ -3702,6 +3706,7 @@ class DAA(Binary):
 class RMA6(Binary):
     """
     Class describing an RMA6 (MEGAN6 read-match archive) file
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('diamond.rma6')
     >>> RMA6().sniff(fname)
@@ -3725,6 +3730,7 @@ class RMA6(Binary):
 class DMND(Binary):
     """
     Class describing an DMND file
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('diamond_db.dmnd')
     >>> DMND().sniff(fname)
@@ -3779,6 +3785,7 @@ class ICM(Binary):
 class Parquet(Binary):
     """
     Class describing Apache Parquet file (https://parquet.apache.org/)
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('example.parquet')
     >>> Parquet().sniff(fname)
@@ -3801,6 +3808,7 @@ class Parquet(Binary):
 class BafTar(CompressedArchive):
     """
     Base class for common behavior of tar files of directory-based raw file formats
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('brukerbaf.d.tar')
     >>> BafTar().sniff(fname)
@@ -3892,6 +3900,7 @@ class MassLynxTar(BafTar):
 class WiffTar(BafTar):
     """
     A tar'd up .wiff/.scan pair containing Sciex WIFF format data
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('some.wiff.tar')
     >>> WiffTar().sniff(fname)
@@ -3921,6 +3930,7 @@ class Pretext(Binary):
     """
     PretextMap contact map file
     Try to guess if the file is a Pretext file.
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('sample.pretext')
     >>> Pretext().sniff(fname)
@@ -3952,6 +3962,7 @@ class Pretext(Binary):
 class JP2(Binary):
     """
     JPEG 2000 binary image format
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.jp2')
     >>> JP2().sniff(fname)

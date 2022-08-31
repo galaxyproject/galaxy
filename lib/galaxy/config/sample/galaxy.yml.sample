@@ -160,6 +160,15 @@ gravity:
     # Must match ``tus_upload_store`` setting in ``galaxy:`` section.
     # upload_dir:
 
+    # Comma-separated string of enabled tusd hooks.
+    # Leave at the default value to require authorization at upload creation time.
+    # This means Galaxy's web process does not need to be running after creating the initial
+    # upload request.
+    # Set to empty string to disable all authorization. This means data can be uploaded (but not processed)
+    # without the Galaxy web process being available.
+    # You can find a list of available hooks at https://github.com/tus/tusd/blob/master/docs/hooks.md#list-of-available-hooks.
+    # hooks_enabled_events: pre-create
+
     # Extra arguments to pass to tusd command line.
     # extra_args:
 
@@ -686,12 +695,6 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <data_dir>.
   #job_working_directory: jobs_directory
-
-  # If using a cluster, Galaxy will write job scripts and stdout/stderr
-  # to this directory.
-  # The value of this option will be resolved with respect to
-  # <data_dir>.
-  #cluster_files_directory: pbs
 
   # Mako templates are compiled as needed and cached for reuse, this
   # directory is used for the cache
@@ -1351,14 +1354,35 @@ galaxy:
   # "loggers" section does not appear in this configuration file.
   #auto_configure_logging: true
 
-  # Verbosity of console log messages.  Acceptable values can be found
+  # Log destination, defaults to special value "stdout" that logs to
+  # standard output. If set to anything else, then it will be
+  # interpreted as a path that will be used as the log file, and logging
+  # to stdout will be disabled.
+  #log_destination: stdout
+
+  # Size of log file at which size it will be rotated as per the
+  # documentation in
+  # https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+  # If log_rotate_count is not also set, no log rotation will be
+  # performed. A value of 0 (the default) means no rotation. Size can be
+  # a number of bytes or a human-friendly representation like "100 MB"
+  # or "1G".
+  #log_rotate_size: '0'
+
+  # Number of log file backups to keep, per the documentation in
+  # https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+  # Any additional rotated log files will automatically be pruned. If
+  # log_rotate_size is not also set, no log rotation will be performed.
+  # A value of 0 (the default) means no rotation.
+  #log_rotate_count: 0
+
+  # Verbosity of console log messages. Acceptable values can be found
   # here: https://docs.python.org/library/logging.html#logging-levels A
   # custom debug level of "TRACE" is available for even more verbosity.
   #log_level: DEBUG
 
-  # Controls where and how the server logs messages. If unset, the
-  # default is to log all messages to standard output at the level
-  # defined by the `log_level` configuration option. Configuration is
+  # Controls where and how the server logs messages. If set, overrides
+  # all settings in the log_* configuration options. Configuration is
   # described in the documentation at:
   # https://docs.galaxyproject.org/en/master/admin/config_logging.html
   #logging: null
@@ -1565,62 +1589,68 @@ galaxy:
   # Available formats are currently 'zip', 'gz', and 'bz2'.
   #disable_library_comptypes: null
 
-  # Boosts are used to customize this instance's toolbox search. The
-  # higher the boost, the more importance the scoring algorithm gives to
-  # the given field.  Section refers to the tool group in the tool
-  # panel.  Rest of the fields are tool's attributes.
-  #tool_name_boost: 9.0
+  # In tool search, a query match against a tool's name text will
+  # receive this score multiplier.
+  #tool_name_boost: 20.0
 
-  # Boosts are used to customize this instance's toolbox search. The
-  # higher the boost, the more importance the scoring algorithm gives to
-  # the given field.  Section refers to the tool group in the tool
-  # panel.  Rest of the fields are tool's attributes.
-  #tool_id_boost: 9.0
+  # If a search query matches a tool name exactly, the score will be
+  # multiplied by this factor.
+  #tool_name_exact_multiplier: 10.0
 
-  # Boosts are used to customize this instance's toolbox search. The
-  # higher the boost, the more importance the scoring algorithm gives to
-  # the given field.  Section refers to the tool group in the tool
-  # panel.  Rest of the fields are tool's attributes.
+  # In tool search, a query match against a tool's ID text will receive
+  # this score multiplier. The query must be an exact match against ID
+  # in order to be counted as a match.
+  #tool_id_boost: 20.0
+
+  # In tool search, a query match against a tool's section text will
+  # receive this score multiplier.
   #tool_section_boost: 3.0
 
-  # Boosts are used to customize this instance's toolbox search. The
-  # higher the boost, the more importance the scoring algorithm gives to
-  # the given field.  Section refers to the tool group in the tool
-  # panel.  Rest of the fields are tool's attributes.
-  #tool_description_boost: 2.0
+  # In tool search, a query match against a tool's description text will
+  # receive this score multiplier.
+  #tool_description_boost: 8.0
 
-  # Boosts are used to customize this instance's toolbox search. The
-  # higher the boost, the more importance the scoring algorithm gives to
-  # the given field.  Section refers to the tool group in the tool
-  # panel.  Rest of the fields are tool's attributes.
+  # In tool search, a query match against a tool's label text will
+  # receive this score multiplier.
   #tool_label_boost: 1.0
 
-  # Boosts are used to customize this instance's toolbox search. The
-  # higher the boost, the more importance the scoring algorithm gives to
-  # the given field.  Section refers to the tool group in the tool
-  # panel.  Rest of the fields are tool's attributes.
-  #tool_stub_boost: 5.0
+  # A stub is parsed from the GUID as "owner/repo/tool_id". In tool
+  # search, a query match against a tool's stub text will receive this
+  # score multiplier.
+  #tool_stub_boost: 2.0
 
-  # Boosts are used to customize this instance's toolbox search. The
-  # higher the boost, the more importance the scoring algorithm gives to
-  # the given field.  Section refers to the tool group in the tool
-  # panel.  Rest of the fields are tool's attributes.
-  #tool_help_boost: 0.5
+  # In tool search, a query match against a tool's help text will
+  # receive this score multiplier.
+  #tool_help_boost: 1.0
 
-  # Limits the number of results in toolbox search.  Can be used to
-  # tweak how many results will appear.
+  # The lower this parameter, the greater the diminishing reward for
+  # term frequency in the help text. A higher K1 increases the level of
+  # reward for additional occurences of a term. The default value will
+  # provide a slight increase in score for the first, second and third
+  # occurrence and little reward thereafter.
+  #tool_help_bm25f_k1: 0.5
+
+  # Limits the number of results in toolbox search. Use to set the
+  # maximum number of tool search results to display.
   #tool_search_limit: 20
 
-  # Enable/ disable Ngram-search for tools. It makes tool search results
-  # tolerant for spelling mistakes in the query by dividing the query
-  # into multiple ngrams and search for each ngram
+  # Disabling this will prevent partial matches on tool names.
+  # Enable/disable Ngram-search for tools. It makes tool search results
+  # tolerant for spelling mistakes in the query, and will also match
+  # query substrings e.g. "genome" will match "genomics" or
+  # "metagenome".
   #tool_enable_ngram_search: true
 
-  # Set minimum size of ngrams
+  # Set minimum character length of ngrams
   #tool_ngram_minsize: 3
 
-  # Set maximum size of ngrams
+  # Set maximum character length of ngrams
   #tool_ngram_maxsize: 4
+
+  # Ngram matched scores will be multiplied by this factor. Should
+  # always be below 1, because an ngram match is a partial match of a
+  # search term.
+  #tool_ngram_factor: 0.2
 
   # Set tool test data directory. The test framework sets this value to
   # 'test-data,https://github.com/galaxyproject/galaxy-test-data.git'

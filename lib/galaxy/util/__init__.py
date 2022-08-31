@@ -55,11 +55,17 @@ except ImportError:
 LXML_AVAILABLE = True
 try:
     from lxml import etree
-    from lxml.etree import _Element as Element
+    from lxml.etree import (
+        _Element as Element,
+        ElementTree,
+    )
 except ImportError:
     LXML_AVAILABLE = False
     import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
-    from xml.etree.ElementTree import Element  # noqa: F401  # type: ignore[assignment,no-redef]
+    from xml.etree.ElementTree import (  # noqa: F401
+        Element,
+        ElementTree,
+    )
 
 try:
     import docutils.core as docutils_core
@@ -317,10 +323,10 @@ def parse_xml_string(xml_string, strip_whitespace=True):
 
 
 def parse_xml_string_to_etree(xml_string, strip_whitespace=True):
-    return etree.ElementTree(parse_xml_string(xml_string=xml_string, strip_whitespace=strip_whitespace))
+    return ElementTree(parse_xml_string(xml_string=xml_string, strip_whitespace=strip_whitespace))
 
 
-def xml_to_string(elem, pretty=False):
+def xml_to_string(elem, pretty=False) -> str:
     """
     Returns a string from an xml tree.
     """
@@ -1006,7 +1012,7 @@ def asbool(obj):
     return bool(obj)
 
 
-def string_as_bool(string: str) -> bool:
+def string_as_bool(string: typing.Any) -> bool:
     if str(string).lower() in ("true", "yes", "on", "1"):
         return True
     else:

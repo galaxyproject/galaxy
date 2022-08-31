@@ -8,7 +8,7 @@
             <JobDetailsProvider
                 v-if="!datasetLoading"
                 v-slot="{ result: jobDetails, loading }"
-                :jobId="dataset.creating_job"
+                :job-id="dataset.creating_job"
                 @error="onError">
                 <div v-if="!loading">
                     <div class="page-container edit-attr">
@@ -24,7 +24,10 @@
                         :tool-stderr="jobDetails.tool_stderr"
                         :job-stderr="jobDetails.job_stderr"
                         :job-messages="jobDetails.job_messages" />
-                    <JobProblemProvider v-slot="{ result: jobProblems }" :jobId="dataset.creating_job" @error="onError">
+                    <JobProblemProvider
+                        v-slot="{ result: jobProblems }"
+                        :job-id="dataset.creating_job"
+                        @error="onError">
                         <div v-if="jobProblems && (jobProblems.has_duplicate_inputs || jobProblems.has_empty_inputs)">
                             <h3 class="common_problems mt-3">Detected Common Potential Problems</h3>
                             <p v-if="jobProblems.has_empty_inputs" id="dataset-error-has-empty-inputs">

@@ -320,11 +320,11 @@ class UniqueValueFilter(Filter):
 
     def filter_options(self, options, trans, other_values):
         rval = []
-        skip_list = []
+        seen = set()
         for fields in options:
-            if fields[self.column] not in skip_list:
+            if fields[self.column] not in seen:
                 rval.append(fields)
-                skip_list.append(fields[self.column])
+                seen.add(fields[self.column])
         return rval
 
 
@@ -380,7 +380,7 @@ class AttributeValueSplitterFilter(Filter):
         self.columns = [d_option.column_spec_to_index(column) for column in columns.split(",")]
 
     def filter_options(self, options, trans, other_values):
-        attr_names = []
+        attr_names = set()
         rval = []
         for fields in options:
             for column in self.columns:
@@ -390,7 +390,7 @@ class AttributeValueSplitterFilter(Filter):
                         name = ary[0]
                         if name not in attr_names:
                             rval.append(fields[0:column] + [name] + fields[column:])
-                            attr_names.append(name)
+                            attr_names.add(name)
         return rval
 
 

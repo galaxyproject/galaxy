@@ -686,11 +686,18 @@ TESTS_DISCOVER_OUTPUTS = """
     <tests>
         <!-- this should be fine -->
         <test>
-            <output name="data_name" count="2">
-                <discovered_data/>
+            <output name="data_name">
+                <discovered_dataset/>
             </output>
             <output_collection name="collection_name">
-                <element count="2">
+                <element count="2"/>
+            </output_collection>
+        </test>
+        <!-- this should be fine as well -->
+        <test>
+            <output name="data_name" count="2"/>
+            <output_collection name="collection_name">
+                <element>
                     <element/>
                 </element>
             </output_collection>
@@ -1492,19 +1499,19 @@ def test_tests_discover_outputs(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_DISCOVER_OUTPUTS)
     run_lint(lint_ctx, tests.lint_tsts, tool_source)
     assert (
-        "Test 2: test output 'data_name' must have a 'count' attribute and/or 'discovered_datasets' children"
+        "Test 3: test output 'data_name' must have a 'count' attribute and/or 'discovered_dataset' children"
         in lint_ctx.error_messages
     )
     assert (
-        "Test 2: test collection 'collection_name' must have a 'count' attribute or 'element' children"
-        in lint_ctx.error_messages
-    )
-    assert (
-        "Test 2: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute"
+        "Test 3: test collection 'collection_name' must have a 'count' attribute or 'element' children"
         in lint_ctx.error_messages
     )
     assert (
         "Test 3: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 4: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute"
         in lint_ctx.error_messages
     )
     assert not lint_ctx.warn_messages
@@ -1657,9 +1664,9 @@ def test_linting_cwl_tool(lint_ctx):
         tool_source = tool_sources[0][1]
         lint_tool_source_with(lint_ctx, tool_source)
     assert "Tool defines a version [0.0.1]." in lint_ctx.valid_messages
-    assert "Tool defines a name [tool]." in lint_ctx.valid_messages
-    assert "Tool defines an id [tool]." in lint_ctx.valid_messages
-    assert "Tool specifies profile version [16.04]." in lint_ctx.valid_messages
+    assert "Tool defines a name [tool.cwl]." in lint_ctx.valid_messages
+    assert "Tool defines an id [tool.cwl]." in lint_ctx.valid_messages
+    assert "Tool specifies profile version [17.09]." in lint_ctx.valid_messages
     assert "CWL appears to be valid." in lint_ctx.info_messages
     assert "Description of tool is empty or absent." in lint_ctx.warn_messages
     assert "Tool does not specify a DockerPull source." in lint_ctx.warn_messages

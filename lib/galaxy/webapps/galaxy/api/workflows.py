@@ -46,7 +46,7 @@ from galaxy.managers.workflows import (
     WorkflowUpdateOptions,
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
@@ -79,6 +79,14 @@ from galaxy.webapps.base.controller import (
     UsesStoredWorkflowMixin,
 )
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from galaxy.webapps.galaxy.api import (
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    IndexQueryTag,
+    Router,
+    search_query_param,
+)
 from galaxy.webapps.galaxy.services.base import (
     ConsumesModelStores,
     ServesExportStores,
@@ -97,14 +105,6 @@ from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
-from . import (
-    BaseGalaxyAPIController,
-    depends,
-    DependsOnTrans,
-    IndexQueryTag,
-    Router,
-    search_query_param,
-)
 
 log = logging.getLogger(__name__)
 
@@ -1452,11 +1452,11 @@ class WorkflowsAPIController(
         return self.invocations_service.serialize_workflow_invocation(invocation, params)
 
 
-StoredWorkflowIDPathParam: EncodedDatabaseIdField = Path(
+StoredWorkflowIDPathParam: DecodedDatabaseIdField = Path(
     ..., title="Stored Workflow ID", description="The encoded database identifier of the Stored Workflow."
 )
 
-InvocationIDPathParam: EncodedDatabaseIdField = Path(
+InvocationIDPathParam: DecodedDatabaseIdField = Path(
     ..., title="Invocation ID", description="The encoded database identifier of the Invocation."
 )
 
@@ -1557,7 +1557,7 @@ class FastAPIWorkflows:
         skip_step_counts: bool = SkipStepCountsQueryParam,
     ) -> List[Dict[str, Any]]:
         """Lists stored workflows viewable by the user."""
-        payload = WorkflowIndexPayload(
+        payload = WorkflowIndexPayload.construct(
             show_published=show_published,
             show_hidden=show_hidden,
             show_deleted=show_deleted,
@@ -1581,7 +1581,7 @@ class FastAPIWorkflows:
     def sharing(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Return the sharing status of the item."""
         return self.service.shareable_service.sharing(trans, id)
@@ -1593,7 +1593,7 @@ class FastAPIWorkflows:
     def enable_link_access(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Makes this item accessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.enable_link_access(trans, id)
@@ -1605,7 +1605,7 @@ class FastAPIWorkflows:
     def disable_link_access(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.disable_link_access(trans, id)
@@ -1617,7 +1617,7 @@ class FastAPIWorkflows:
     def publish(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Makes this item publicly available by a URL link and return the current sharing status."""
         return self.service.shareable_service.publish(trans, id)
@@ -1629,7 +1629,7 @@ class FastAPIWorkflows:
     def unpublish(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
         return self.service.shareable_service.unpublish(trans, id)
@@ -1641,7 +1641,7 @@ class FastAPIWorkflows:
     def share_with_users(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         payload: ShareWithPayload = Body(...),
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
@@ -1655,7 +1655,7 @@ class FastAPIWorkflows:
     def set_slug(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         payload: SetSlugPayload = Body(...),
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""
@@ -1669,7 +1669,7 @@ class FastAPIWorkflows:
     def prepare_store_download(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        invocation_id: EncodedDatabaseIdField = InvocationIDPathParam,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         payload: PrepareStoreDownloadPayload = Body(...),
     ) -> AsyncFile:
         return self.invocations_service.prepare_store_download(
@@ -1685,7 +1685,7 @@ class FastAPIWorkflows:
     def write_store(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        invocation_id: EncodedDatabaseIdField = InvocationIDPathParam,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         payload: WriteStoreToPayload = Body(...),
     ) -> AsyncTaskResultSummary:
         rval = self.invocations_service.write_store(

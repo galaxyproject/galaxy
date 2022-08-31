@@ -1,16 +1,36 @@
 """
-Module for building and searching the index of tools
-installed within this Galaxy. Before changing index-building
-or searching related parts it is deeply recommended to read
-through the library docs at https://whoosh.readthedocs.io.
+Module for building and searching the index of installed tools.
+
+Before changing index-building or searching related parts it is highly
+recommended to read the docs at https://whoosh.readthedocs.io.
+
+Schema - this is how we define the index, both for building and searching. A
+    field is created for each data element that we want to add e.g. tool name,
+    tool ID, description. The type of field and its attributes define how
+    entries for that field will be indexed and ultimately how they can be
+    searched. Score weighting (boost) is added here on a per-field bases, to
+    allow matches to important fields like "name" to receive a higher score.
+
+Tokenizers - these take an attribute (e.g. name) and parse it into "tokens" to
+    be stored in the index. Can be done in many ways for different search
+    functionality. For example, the IDTokenizer creates one token for an entire
+    entry, resulting in an index field that requires a full-field match. The
+    default tokenizer will break an entry into words, so that single word
+    matches are possible.
+
+Filters - various filters are available for processing content as the index is
+    built. A StopFilter removes common articles 'a', 'for', 'and' etc. A
+    StemmingFilter removes suffixes from words to create a 'base work' e.g.
+    stemming -> stem; opened -> open; philosophy -> philosoph.
+
 """
 import logging
 import os
 import re
+import shutil
 from typing import (
     Dict,
     List,
-    Tuple,
     Union,
 )
 
@@ -18,10 +38,10 @@ from whoosh import (
     analysis,
     index,
 )
-from whoosh.analysis import StandardAnalyzer
 from whoosh.fields import (
     ID,
     KEYWORD,
+    NGRAMWORDS,
     Schema,
     TEXT,
 )
@@ -31,10 +51,12 @@ from whoosh.qparser import (
 )
 from whoosh.scoring import (
     BM25F,
+    Frequency,
     MultiWeighting,
 )
 from whoosh.writing import AsyncWriter
 
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.util import ExecutionTimer
 from galaxy.web.framework.helpers import to_unicode
 
@@ -44,16 +66,19 @@ CanConvertToFloat = Union[str, int, float]
 CanConvertToInt = Union[str, int, float]
 
 
-def get_or_create_index(index_dir: str, schema: Schema) -> index.Index:
+def get_or_create_index(index_dir, schema):
+    """Get or create a reference to the index."""
     if not os.path.exists(index_dir):
         os.makedirs(index_dir)
     if index.exists_in(index_dir):
         idx = index.open_dir(index_dir)
-        try:
-            assert idx.schema == schema
+        if idx.schema == schema:
             return idx
-        except AssertionError:
-            log.warning("Index at '%s' uses outdated schema, creating new index", index_dir)
+    log.warning(f"Index at '{index_dir}' uses outdated schema, creating a new index")
+
+    # Delete the old index and return a new index reference
+    shutil.rmtree(index_dir)
+    os.makedirs(index_dir)
     return index.create_in(index_dir, schema=schema)
 
 
@@ -68,7 +93,12 @@ class ToolBoxSearch:
         for panel_view in toolbox.panel_views():
             panel_view_id = panel_view.id
             panel_index_dir = os.path.join(index_dir, panel_view_id)
-            panel_searches[panel_view_id] = ToolPanelViewSearch(panel_view_id, panel_index_dir, index_help=index_help)
+            panel_searches[panel_view_id] = ToolPanelViewSearch(
+                panel_view_id,
+                panel_index_dir,
+                index_help=index_help,
+                config=toolbox.app.config,
+            )
         self.panel_searches = panel_searches
         # We keep track of how many times the tool index has been rebuilt.
         # We start at -1, so that after the first index the count is at 0,
@@ -95,39 +125,111 @@ class ToolPanelViewSearch:
     the Whoosh search library.
     """
 
-    def __init__(self, panel_view_id: str, index_dir: str, index_help: bool = True):
-        self.schema = Schema(
-            id=ID(stored=True, unique=True),
-            old_id=ID,
-            stub=KEYWORD,
-            name=TEXT(analyzer=analysis.SimpleAnalyzer()),
-            description=TEXT,
-            section=TEXT,
-            help=TEXT,
-            labels=KEYWORD,
-        )
+    def __init__(
+        self,
+        panel_view_id: str,
+        index_dir: str,
+        config: GalaxyAppConfiguration,
+        index_help: bool = True,
+    ):
+        """Build the schema and validate against the index."""
+        schema_conf = {
+            # The stored ID field is not searchable
+            "id": ID(stored=True, unique=True),
+            # This exact field is searchable by exact matches only
+            "id_exact": TEXT(
+                field_boost=(config.tool_id_boost * config.tool_name_exact_multiplier),
+                analyzer=analysis.IDTokenizer() | analysis.LowercaseFilter(),
+            ),
+            # The primary name field is searchable by exact match only, and is
+            # eligible for massive score boosting. A secondary ngram or text
+            # field for name is added below
+            "name_exact": TEXT(
+                field_boost=(config.tool_name_boost * config.tool_name_exact_multiplier),
+                analyzer=analysis.IDTokenizer() | analysis.LowercaseFilter(),
+            ),
+            # The owner/repo/tool_id parsed from the GUID
+            "stub": KEYWORD(field_boost=float(config.tool_stub_boost)),
+            # The section where the tool is listed in the tool panel
+            "section": TEXT(field_boost=float(config.tool_section_boost)),
+            # Short description defined in the tool XML
+            "description": TEXT(
+                field_boost=config.tool_description_boost,
+                analyzer=analysis.StemmingAnalyzer(),
+            ),
+            # Help text parsed from the tool XML
+            "help": TEXT(field_boost=config.tool_help_boost, analyzer=analysis.StemmingAnalyzer()),
+            "labels": KEYWORD(field_boost=float(config.tool_label_boost)),
+        }
+
+        if config.tool_enable_ngram_search:
+            schema_conf.update(
+                {
+                    "name": NGRAMWORDS(
+                        minsize=config.tool_ngram_minsize,
+                        maxsize=config.tool_ngram_maxsize,
+                        field_boost=(float(config.tool_name_boost) * config.tool_ngram_factor),
+                    ),
+                }
+            )
+        else:
+            schema_conf.update(
+                {
+                    "name": TEXT(
+                        field_boost=float(config.tool_name_boost),
+                    ),
+                }
+            )
+
+        self.schema = Schema(**schema_conf)
         self.rex = analysis.RegexTokenizer()
         self.index_dir = index_dir
         self.panel_view_id = panel_view_id
         self.index = self._index_setup()
 
     def _index_setup(self) -> index.Index:
-        return get_or_create_index(index_dir=self.index_dir, schema=self.schema)
+        """Get or create a reference to the index."""
+        return get_or_create_index(self.index_dir, self.schema)
 
     def build_index(self, tool_cache, toolbox, index_help: bool = True) -> None:
-        """
-        Prepare search index for tools loaded in toolbox.
-        Use `tool_cache` to determine which tools need indexing and which tools should be expired.
+        """Prepare search index for tools loaded in toolbox.
+
+        Use `tool_cache` to determine which tools need indexing and which
+        should be removed.
         """
         log.debug(f"Starting to build toolbox index of panel {self.panel_view_id}.")
         execution_timer = ExecutionTimer()
+
         with self.index.reader() as reader:
             # Index ocasionally contains empty stored fields
-            indexed_tool_ids = {f["id"] for f in reader.all_stored_fields() if f}
-        tool_ids_to_remove = (indexed_tool_ids - set(tool_cache._tool_paths_by_id.keys())).union(
+            self.indexed_tool_ids = {f["id"] for f in reader.all_stored_fields() if f}
+
+        tool_ids_to_remove = self._get_tools_to_remove(tool_cache)
+        tools_to_index = self._get_tool_list(
+            toolbox,
+            tool_cache,
+        )
+
+        with AsyncWriter(self.index) as writer:
+            for tool_id in tool_ids_to_remove:
+                writer.delete_by_term("id", tool_id)
+            for tool in tools_to_index:
+                add_doc_kwds = self._create_doc(
+                    tool=tool,
+                    index_help=index_help,
+                )
+                # Add tool document to index (or overwrite if existing)
+                writer.update_document(**add_doc_kwds)
+
+        log.debug(f"Toolbox index of panel {self.panel_view_id}" f" finished {execution_timer}")
+
+    def _get_tools_to_remove(self, tool_cache) -> list:
+        """Return list of tool IDs to be removed from index."""
+        tool_ids_to_remove = (self.indexed_tool_ids - set(tool_cache._tool_paths_by_id.keys())).union(
             tool_cache._removed_tool_ids
         )
-        for indexed_tool_id in indexed_tool_ids:
+
+        for indexed_tool_id in self.indexed_tool_ids:
             indexed_tool = tool_cache.get_tool_by_id(indexed_tool_id)
             if indexed_tool:
                 if indexed_tool.is_latest_version:
@@ -136,48 +238,58 @@ class ToolPanelViewSearch:
                 if latest_version and latest_version.hidden:
                     continue
             tool_ids_to_remove.add(indexed_tool_id)
-        with AsyncWriter(self.index) as writer:
-            for tool_id in tool_ids_to_remove:
-                writer.delete_by_term("id", tool_id)
-            for tool_id in tool_cache._new_tool_ids - indexed_tool_ids:
-                tool = toolbox.get_tool(tool_id)
-                if tool and tool.is_latest_version and toolbox.panel_has_tool(tool, self.panel_view_id):
-                    if tool.hidden:
-                        # we check if there is an older tool we can return
-                        if tool.lineage:
-                            for tool_version in reversed(tool.lineage.get_versions()):
-                                tool = tool_cache.get_tool_by_id(tool_version.id)
-                                if tool and not tool.hidden:
-                                    tool_id = tool.id
-                                    break
-                            else:
-                                continue
-                        else:
-                            continue
-                    add_doc_kwds = self._create_doc(tool_id=tool_id, tool=tool, index_help=index_help)
-                    writer.update_document(**add_doc_kwds)
-        log.debug(f"Toolbox index of panel {self.panel_view_id} finished {execution_timer}")
 
-    def _create_doc(self, tool_id: str, tool, index_help: bool = True) -> Dict[str, str]:
-        #  Do not add data managers to the public index
+        return list(tool_ids_to_remove)
+
+    def _get_tool_list(self, toolbox, tool_cache) -> list:
+        """Return list of tools to add and remove from index."""
+        tools_to_index = []
+
+        for tool_id in tool_cache._new_tool_ids - self.indexed_tool_ids:
+            tool = toolbox.get_tool(tool_id)
+            if tool and tool.is_latest_version and toolbox.panel_has_tool(tool, self.panel_view_id):
+                if tool.hidden:
+                    # Check if there is an older tool we can return
+                    if tool.lineage:
+                        tool_versions = reversed(tool.lineage.get_versions())
+                        for tool_version in tool_versions:
+                            tool = tool_cache.get_tool_by_id(tool_version.id)
+                            if tool and not tool.hidden:
+                                break
+                    else:
+                        continue
+                tools_to_index.append(tool)
+
+        return tools_to_index
+
+    def _create_doc(
+        self,
+        tool,
+        index_help: bool = True,
+    ) -> Dict[str, str]:
+        def clean(string):
+            """Remove hyphens as they are Whoosh wildcards."""
+            if "-" in string:
+                return (" ").join(token.text for token in self.rex(to_unicode(tool.name)))
+            else:
+                return string
+
         if tool.tool_type == "manage_data":
+            #  Do not add data managers to the public index
             return {}
         add_doc_kwds = {
-            "id": tool_id,
+            "id": to_unicode(tool.id),
+            "id_exact": to_unicode(tool.id),
+            "name": clean(tool.name),
             "description": to_unicode(tool.description),
             "section": to_unicode(tool.get_panel_section()[1] if len(tool.get_panel_section()) == 2 else ""),
             "help": to_unicode(""),
         }
-        if tool.name.find("-") != -1:
-            # Replace hyphens, since they are wildcards in Whoosh causing false positives
-            add_doc_kwds["name"] = (" ").join(token.text for token in self.rex(to_unicode(tool.name)))
-        else:
-            add_doc_kwds["name"] = to_unicode(tool.name)
         if tool.guid:
             # Create a stub consisting of owner, repo, and tool from guid
             slash_indexes = [m.start() for m in re.finditer("/", tool.guid)]
             id_stub = tool.guid[(slash_indexes[1] + 1) : slash_indexes[4]]
-            add_doc_kwds["stub"] = (" ").join(token.text for token in self.rex(to_unicode(id_stub)))
+            add_doc_kwds["stub"] = clean(id_stub)
         else:
             add_doc_kwds["stub"] = to_unicode(id)
         if tool.labels:
@@ -188,100 +300,49 @@ class ToolPanelViewSearch:
                 try:
                     add_doc_kwds["help"] = to_unicode(raw_help)
                 except Exception:
-                    # Don't fail to build index just because help can't be converted.
+                    # Don't fail to build index when help fails to parse
                     pass
+
+        add_doc_kwds["name_exact"] = add_doc_kwds["name"]
+
         return add_doc_kwds
 
     def search(
         self,
         q: str,
-        tool_name_boost: CanConvertToFloat,
-        tool_id_boost: CanConvertToFloat,
-        tool_section_boost: CanConvertToFloat,
-        tool_description_boost: CanConvertToFloat,
-        tool_label_boost: CanConvertToFloat,
-        tool_stub_boost: CanConvertToFloat,
-        tool_help_boost: CanConvertToFloat,
-        tool_search_limit: CanConvertToFloat,
-        tool_enable_ngram_search: bool,
-        tool_ngram_minsize: CanConvertToInt,
-        tool_ngram_maxsize: CanConvertToInt,
+        config: GalaxyAppConfiguration,
     ) -> List[str]:
-        """
-        Perform search on the in-memory index. Weight in the given boosts.
-        """
+        """Perform search on the in-memory index."""
         # Change field boosts for searcher
         self.searcher = self.index.searcher(
             weighting=MultiWeighting(
-                BM25F(),
-                old_id=BM25F(old_id_B=float(tool_id_boost)),
-                name=BM25F(name_B=float(tool_name_boost)),
-                section=BM25F(section_B=float(tool_section_boost)),
-                description=BM25F(description_B=float(tool_description_boost)),
-                labels=BM25F(labels_B=float(tool_label_boost)),
-                stub=BM25F(stub_B=float(tool_stub_boost)),
-                help=BM25F(help_B=float(tool_help_boost)),
+                Frequency(),
+                help=BM25F(K1=config.tool_help_bm25f_k1),
             )
         )
-        # Use OrGroup to change the default operation for joining multiple terms to logical OR.
-        # This means e.g. for search 'bowtie of king arthur' a document that only has 'bowtie' will be a match.
-        # https://whoosh.readthedocs.io/en/latest/api/qparser.html#whoosh.qparser.MultifieldPlugin
-        # However this changes scoring i.e. searching 'bowtie of king arthur' a document with 'arthur arthur arthur'
-        # would have a higher score than a document with 'bowtie arthur' which is usually unexpected for a user.
-        # Hence we introduce a bonus on multi-hits using the 'factory()' method using a scaling factor between 0-1.
-        # https://whoosh.readthedocs.io/en/latest/parsing.html#searching-for-any-terms-instead-of-all-terms-by-default
-        # Adding the FuzzyTermPlugin to account for misspellings and typos, using a max distance of 2
-        og = OrGroup.factory(0.9)
+        fields = [
+            "id",
+            "id_exact",
+            "name",
+            "name_exact",
+            "description",
+            "section",
+            "help",
+            "labels",
+            "stub",
+        ]
         self.parser = MultifieldParser(
-            ["name", "old_id", "description", "section", "help", "labels", "stub"], schema=self.schema, group=og
+            fields,
+            schema=self.schema,
+            group=OrGroup,  # We need OR grouping to match StopList phrases
+        )
+        cleaned_query = " ".join(token.text for token in self.rex(q.lower()))
+        parsed_query = self.parser.parse(cleaned_query)
+        hits = self.searcher.search(
+            parsed_query,
+            limit=float(config.tool_search_limit),
+            sortedby="",
+            terms=True,
         )
 
-        cleaned_query = q.lower()
-        if tool_enable_ngram_search is True:
-            rval = self._search_ngrams(cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit)
-            return rval
-        else:
-            cleaned_query = " ".join(token.text for token in self.rex(cleaned_query))
-            # Use asterisk Whoosh wildcard so e.g. 'bow' easily matches 'bowtie'
-            parsed_query = self.parser.parse(f"*{cleaned_query}*")
-            hits = self.searcher.search(parsed_query, limit=float(tool_search_limit), sortedby="")
-            return [hit["id"] for hit in hits]
-
-    def _search_ngrams(
-        self,
-        cleaned_query: str,
-        tool_ngram_minsize: CanConvertToInt,
-        tool_ngram_maxsize: CanConvertToInt,
-        tool_search_limit: CanConvertToFloat,
-    ) -> List[str]:
-        """
-        Break tokens into ngrams and search on those instead.
-        This should make searching more resistant to typos and unfinished words.
-        See docs at https://whoosh.readthedocs.io/en/latest/ngrams.html
-        """
-        hits_with_score: Dict[str, float] = {}
-        token_analyzer = StandardAnalyzer() | analysis.NgramFilter(
-            minsize=int(tool_ngram_minsize), maxsize=int(tool_ngram_maxsize)
-        )
-        ngrams = [token.text for token in token_analyzer(cleaned_query)]
-        for query in ngrams:
-            # Get the tool list with respective scores for each qgram
-            curr_hits = self.searcher.search(self.parser.parse(f"*{query}*"), limit=float(tool_search_limit))
-            for i, curr_hit in enumerate(curr_hits):
-                is_present = False
-                for prev_hit in hits_with_score:
-                    # Check if the tool appears again for the next qgram search
-                    if curr_hit["id"] == prev_hit:
-                        is_present = True
-                        # Add the current score with the previous one if the
-                        # tool appears again for the next qgram
-                        hits_with_score[prev_hit] = curr_hits.score(i) + hits_with_score[prev_hit]
-                # Add the tool if not present to the collection with its score
-                if not is_present:
-                    hits_with_score[curr_hit["id"]] = curr_hits.score(i)
-        # Sort the results based on aggregated BM25 score in decreasing order of scores
-        hits_with_score_list: List[Tuple[str, float]] = sorted(
-            hits_with_score.items(), key=lambda x: x[1], reverse=True
-        )
-        # Return the tool ids
-        return [item[0] for item in hits_with_score_list[0 : int(tool_search_limit)]]
+        return [hit["id"] for hit in hits[: config.tool_search_limit]]

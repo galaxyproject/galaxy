@@ -41,8 +41,6 @@ import base64
 import contextlib
 import json
 import os
-import random
-import string
 import tarfile
 import tempfile
 import time
@@ -100,6 +98,7 @@ from galaxy.util import (
 from galaxy.util.resources import resource_string
 from . import api_asserts
 from .api import ApiTestInteractor
+from .api_util import random_name
 
 FILE_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
 FILE_MD5 = "37b59762b59fff860460522d271bc111"
@@ -1293,13 +1292,8 @@ class BaseDatasetPopulator(BasePopulator):
 
         return imported_history_id
 
-    def get_random_name(self, prefix=None, suffix=None, len=10):
-        # stolen from navigates_galaxy.py
-        return "{}{}{}".format(
-            prefix or "",
-            "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(len)),
-            suffix or "",
-        )
+    def get_random_name(self, prefix: Optional[str] = None, suffix: Optional[str] = None, len: int = 10) -> str:
+        return random_name(prefix=prefix, suffix=suffix, len=len)
 
     def wait_for_dataset(
         self, history_id: str, dataset_id: str, assert_ok: bool = False, timeout: timeout_type = DEFAULT_TIMEOUT
@@ -2662,7 +2656,7 @@ class BaseDatasetCollectionPopulator:
         return element_identifiers
 
     def __create(self, payload, wait=False):
-        # Create a colleciton - either from existing datasets using collection creation API
+        # Create a collection - either from existing datasets using collection creation API
         # or from direct uploads with the fetch API. Dispatch on "targets" keyword in payload
         # to decide which to use.
         if "targets" not in payload:

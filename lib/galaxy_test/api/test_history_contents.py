@@ -9,13 +9,13 @@ from typing import (
 )
 
 from galaxy.webapps.galaxy.services.history_contents import DirectionOptions
+from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
     skip_without_tool,
 )
-from ._framework import ApiTestCase
 
 TEST_SOURCE_URI = "http://google.com/dataset.txt"
 TEST_HASH_FUNCTION = "MD5"
@@ -163,6 +163,19 @@ class HistoryContentsApiTestCase(ApiTestCase):
         contents_response = self._get(f"histories/{self.history_id}/contents?details={hda1['id']}")
         hda_details = self.__check_for_hda(contents_response, hda1)
         self.__assert_hda_has_full_details(hda_details)
+
+    def test_index_detail_parameter_error(self):
+        hda1 = self.dataset_populator.new_dataset(self.history_id)
+        # Invalid details should return 400
+        contents_response = self._get(f"histories/{self.history_id}/contents?v=dev&details= ")
+        self._assert_status_code_is(contents_response, 400)
+        # Empty IDs should return 400
+        contents_response = self._get(f"histories/{self.history_id}/contents?v=dev&details=,,{hda1['id']}")
+        self._assert_status_code_is(contents_response, 400)
+
+        # Invalid IDs should return 400
+        contents_response = self._get(f"histories/{self.history_id}/contents?v=dev&details={hda1['id']}, ,{hda1['id']}")
+        self._assert_status_code_is(contents_response, 400)
 
     def test_show_hda(self):
         hda1 = self.dataset_populator.new_dataset(self.history_id)
@@ -421,7 +434,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert post_combined_count == pre_combined_count + 1
         assert pre_dataset_count == post_dataset_count
 
-        # Test show dataset colleciton.
+        # Test show dataset collection.
         collection_url = f"histories/{self.history_id}/contents/dataset_collections/{dataset_collection['id']}"
         show_response = self._get(collection_url)
         self._assert_status_code_is(show_response, 200)
@@ -824,6 +837,33 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert len(contents_response) == expected_num_datasets + expected_num_collections
         contents_response = self._get(f"histories/{history_id}/contents?types=dataset&types=dataset_collection").json()
         assert len(contents_response) == expected_num_datasets + expected_num_collections
+
+    def test_index_filter_by_name_ignores_case(self):
+        history_id = self.dataset_populator.new_history()
+        self.dataset_populator.new_dataset(history_id, name="AC")
+        self.dataset_populator.new_dataset(history_id, name="ac")
+        self.dataset_populator.new_dataset(history_id, name="Bc")
+
+        contains_text = "a"
+        contents_response = self._get(
+            f"histories/{history_id}/contents?v=dev&q=name-contains&qv={contains_text}"
+        ).json()
+        assert len(contents_response) == 2
+        contains_text = "b"
+        contents_response = self._get(
+            f"histories/{history_id}/contents?v=dev&q=name-contains&qv={contains_text}"
+        ).json()
+        assert len(contents_response) == 1
+        contains_text = "c"
+        contents_response = self._get(
+            f"histories/{history_id}/contents?v=dev&q=name-contains&qv={contains_text}"
+        ).json()
+        assert len(contents_response) == 3
+        contains_text = "%"
+        contents_response = self._get(
+            f"histories/{history_id}/contents?v=dev&q=name-contains&qv={contains_text}"
+        ).json()
+        assert len(contents_response) == 0
 
     def test_elements_datatypes_field(self):
         history_id = self.dataset_populator.new_history()

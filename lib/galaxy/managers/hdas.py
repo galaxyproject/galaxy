@@ -11,6 +11,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Optional,
 )
 
 from sqlalchemy.orm.session import object_session
@@ -89,7 +90,7 @@ class HDAManager(
         return self.list(filters=filters)
 
     # .... security and permissions
-    def is_accessible(self, hda, user, **kwargs):
+    def is_accessible(self, item: model.HistoryDatasetAssociation, user: Optional[model.User], **kwargs: Any) -> bool:
         """
         Override to allow owners (those that own the associated history).
         """
@@ -98,15 +99,17 @@ class HDAManager(
         #   I can not access that dataset even if it's in my history
         # if self.is_owner( hda, user, **kwargs ):
         #     return True
-        return super().is_accessible(hda, user, **kwargs)
+        return super().is_accessible(item, user, **kwargs)
 
-    def is_owner(self, hda, user, current_history=None, **kwargs):
+    def is_owner(self, item: model._HasTable, user: Optional[model.User], current_history=None, **kwargs: Any) -> bool:
         """
         Use history to see if current user owns HDA.
         """
         if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
             return True
-        history = hda.history
+        if not isinstance(item, model.HistoryDatasetAssociation):
+            raise TypeError('"item" must be of type HistoryDatasetAssociation.')
+        history = item.history
         if history is None:
             raise HistoryDatasetAssociationNoHistoryException
         # allow anonymous user to access current history
@@ -119,7 +122,9 @@ class HDAManager(
         return history.user == user
 
     # .... create and copy
-    def create(self, history=None, dataset=None, flush=True, **kwargs):
+    def create(
+        self, flush: bool = True, history=None, dataset=None, *args: Any, **kwargs: Any
+    ) -> model.HistoryDatasetAssociation:
         """
         Create a new hda optionally passing in it's history and dataset.
 
@@ -141,7 +146,7 @@ class HDAManager(
             self.session().flush()
         return hda
 
-    def materialize(self, request: MaterializeDatasetInstanceTaskRequest):
+    def materialize(self, request: MaterializeDatasetInstanceTaskRequest) -> None:
         request_user: RequestUser = request.user
         materializer = materializer_factory(
             True,  # attached...
@@ -159,10 +164,15 @@ class HDAManager(
         history.add_dataset(new_hda, set_hid=True)
         self.session().flush()
 
-    def copy(self, hda, history=None, hide_copy=False, flush=True, **kwargs):
+    def copy(
+        self, item: Any, history=None, hide_copy: bool = False, flush: bool = True, **kwargs: Any
+    ) -> model.HistoryDatasetAssociation:
         """
         Copy hda, including annotation and tags, add to history and return the given HDA.
         """
+        if not isinstance(item, model.HistoryDatasetAssociation):
+            raise TypeError()
+        hda = item
         copy = hda.copy(parent_id=kwargs.get("parent_id"), copy_hid=False, copy_tags=hda.tags, flush=flush)
         if hide_copy:
             copy.visible = False

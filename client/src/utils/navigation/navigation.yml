@@ -78,9 +78,12 @@ preferences:
     manage_api_key: '#edit-preferences-api-key'
     current_email: "#user-preferences-current-email"
     get_new_key: '#submit'
+    api_key_input: "[data-label='Current API key:'] > input"
     delete_account: '#delete-account'
     delete_account_input: '#name-input'
     delete_account_ok_btn: '.modal-footer .btn-primary'
+    email_input: "input[id='email']"
+    username_input: "input[id='username']"
 
 toolbox_filters:
   selectors:
@@ -287,9 +290,8 @@ history_panel:
     options_use_legacy_history: 'a[data-description="switch to legacy history view"]'
 
     collection_menu_button: '.collection-menu'
-    collection_menu_edit_attributes:
-      type: xpath
-      selector: '//button[@title="Edit attributes"]'
+    collection_menu_edit_attributes: '.edit-btn'
+
     new_history_button: '.history-new-button'
     multi_view_button: '.history-view-multi-button'
     histories_operation_menu: '[data-description="history options"]'
@@ -513,6 +515,7 @@ workflows:
     pager_page_previous: '.gx-workflows-grid-pager .gx-grid-pager-prev button'
     pager_page_active: '.gx-workflows-grid-pager .gx-grid-pager-page.active button'
     run_button: '[data-workflow-run*="${id}"]'
+    bookmark_link: '.workflow-bookmark-link'
     workflow_with_name:
       type: xpath
       selector: '//span[@class="workflow-dropdown-name" and text() = "${workflow_name}"]'
@@ -577,6 +580,10 @@ workflow_editor:
       destroy: '${_} .node-destroy'
       clone: '${_} .node-clone'
 
+
+      output_data_row:
+        type: xpath
+        selector: '//div[contains(@class, "output-data-row") and contains(string(), "${output_name} (${extension})")]'
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
 
@@ -859,6 +866,7 @@ libraries:
       private_dataset_icon: '.fa-key'
       open_location_details_btn: '.details-btn'
       location_details_ok_btn: '#details-modal .btn-primary'
+      add_history_items: '#dataset_add_bulk'
 
     labels:
       from_history: 'from History'

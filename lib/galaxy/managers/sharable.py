@@ -12,9 +12,12 @@ A sharable Galaxy object:
 import logging
 import re
 from typing import (
+    Any,
+    List,
     Optional,
     Set,
     Type,
+    TYPE_CHECKING,
 )
 
 from sqlalchemy import (
@@ -43,6 +46,9 @@ from galaxy.schema.schema import (
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import ready_name_for_url
 
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Query
+
 log = logging.getLogger(__name__)
 
 
@@ -70,17 +76,17 @@ class SharableModelManager(
         self.tag_handler = app[GalaxyTagHandler]
 
     # .... has a user
-    def by_user(self, user, filters=None, **kwargs):
+    def by_user(self, user: User, **kwargs: Any) -> List[Any]:
         """
         Return list for all items (of model_class type) associated with the given
         `user`.
         """
         user_filter = self.model_class.table.c.user_id == user.id
-        filters = self._munge_filters(user_filter, filters)
+        filters = self._munge_filters(user_filter, kwargs.get("filters", None))
         return self.list(filters=filters, **kwargs)
 
     # .... owned/accessible interfaces
-    def is_owner(self, item, user, **kwargs):
+    def is_owner(self, item: "Query", user: Optional[User], **kwargs: Any) -> bool:
         """
         Return true if this sharable belongs to `user` (or `user` is an admin).
         """
@@ -89,7 +95,7 @@ class SharableModelManager(
             return True
         return item.user == user
 
-    def is_accessible(self, item, user, **kwargs):
+    def is_accessible(self, item: "Query", user: Optional[User], **kwargs: Any) -> bool:
         """
         If the item is importable, is owned by `user`, or (the valid) `user`
         is in 'users shared with' list for the item: return True.
@@ -256,7 +262,6 @@ class SharableModelManager(
         This method must be overridden in managers that need to change permissions of internal elements
         contained associated with the given item.
         """
-        pass
 
     def update_current_sharing_with_users(self, item, new_users_shared_with: Set[User], flush=True):
         """Updates the currently list of users this item is shared with by adding new

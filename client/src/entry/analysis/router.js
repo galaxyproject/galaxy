@@ -3,13 +3,19 @@ import VueRouter from "vue-router";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 
-// modules
+// these modules are mounted below the masthead.
 import Analysis from "entry/analysis/modules/Analysis";
 import Home from "entry/analysis/modules/Home";
+import Login from "entry/analysis/modules/Login";
 import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
+
+// routes
+import AdminRoutes from "entry/analysis/routes/admin-routes";
+import LibraryRoutes from "entry/analysis/routes/library-routes";
 
 // child components
 import Citations from "components/Citation/Citations";
+import AboutGalaxy from "components/AboutGalaxy.vue";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
 import CustomBuilds from "components/User/CustomBuilds";
 import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
@@ -26,7 +32,6 @@ import HistoryView from "components/HistoryView";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
-import Libraries from "components/Libraries";
 import NewUserConfirmation from "components/login/NewUserConfirmation";
 import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
 import Sharing from "components/Sharing/Sharing";
@@ -95,6 +100,10 @@ export function getRouter(Galaxy) {
                         alias: "root",
                         component: Home,
                         props: (route) => ({ config: Galaxy.config, query: route.query }),
+                    },
+                    {
+                        path: "about",
+                        component: AboutGalaxy,
                     },
                     {
                         path: "custom_builds",
@@ -200,10 +209,6 @@ export function getRouter(Galaxy) {
                         path: "jobs/:jobId/view",
                         component: JobDetails,
                         props: true,
-                    },
-                    {
-                        path: "libraries",
-                        component: Libraries,
                     },
                     {
                         path: "login/confirm",
@@ -415,7 +420,10 @@ export function getRouter(Galaxy) {
                     },
                 ],
             },
+            { path: "/login/start", component: Login },
             { path: "/workflows/edit", component: WorkflowEditorModule },
+            ...AdminRoutes,
+            ...LibraryRoutes,
         ],
     });
 }

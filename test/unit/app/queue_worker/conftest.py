@@ -1,5 +1,6 @@
 import os
 import tempfile
+from typing import Optional
 
 import pytest
 
@@ -12,7 +13,7 @@ from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.util import which
 
 
-def create_base_test(connection, amqp_type, amqp_connection=None):
+def create_base_test(connection, amqp_type: str, amqp_connection: Optional[str] = None):
     app = galaxy_mock.MockApp(database_connection=connection)
     app.config.database_connection = connection
     app.config.amqp_internal_connection = amqp_connection or "sqlalchemy+%s" % app.config.database_connection

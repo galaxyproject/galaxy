@@ -4,6 +4,7 @@ Contains functionality needed in every web interface
 import logging
 from typing import (
     Any,
+    Callable,
     Optional,
 )
 
@@ -267,7 +268,6 @@ class JSAppLauncher(BaseUIController):
         Should not be used with url_for -- see
         (https://github.com/galaxyproject/galaxy/issues/1878) for why.
         """
-        self._check_require_login(trans)
         return self._bootstrapped_client(trans, **kwd)
 
     # This includes contextualized user options in the bootstrapped data; we
@@ -404,7 +404,10 @@ class SharableItemSecurityMixin:
 
 
 class UsesLibraryMixinItems(SharableItemSecurityMixin):
-    def get_library_folder(self, trans, id, check_ownership=False, check_accessible=True):
+
+    get_object: Callable
+
+    def get_library_folder(self, trans, id: int, check_ownership=False, check_accessible=True):
         return self.get_object(trans, id, "LibraryFolder", check_ownership=False, check_accessible=check_accessible)
 
     def get_library_dataset_dataset_association(self, trans, id, check_ownership=False, check_accessible=True):
@@ -452,7 +455,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
             # Slight misuse of ItemOwnershipException?
             raise exceptions.ItemOwnershipException("User cannot add to library item.")
 
-    def _copy_hdca_to_library_folder(self, trans, hda_manager, from_hdca_id, folder_id, ldda_message=""):
+    def _copy_hdca_to_library_folder(self, trans, hda_manager, from_hdca_id: int, folder_id: int, ldda_message=""):
         """
         Fetches the collection identified by `from_hcda_id` and dispatches individual collection elements to
         _copy_hda_to_library_folder
@@ -478,7 +481,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         ]
 
     def _copy_hda_to_library_folder(
-        self, trans, hda_manager, from_hda_id, folder_id, ldda_message="", element_identifier=None
+        self, trans, hda_manager, from_hda_id: int, folder_id: int, ldda_message="", element_identifier=None
     ):
         """
         Copies hda ``from_hda_id`` to library folder ``folder_id``, optionally
@@ -488,7 +491,6 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         in its payload.
         """
         log.debug(f"_copy_hda_to_library_folder: {str((from_hda_id, folder_id, ldda_message))}")
-        # PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')
         # TODO: allow name and other, editable ldda attrs?
         if ldda_message:
             ldda_message = sanitize_html(ldda_message)

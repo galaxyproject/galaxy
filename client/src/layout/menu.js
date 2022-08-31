@@ -57,13 +57,6 @@ export function userLogoutClient() {
 
 export function fetchMenu(options = {}) {
     const Galaxy = getGalaxyInstance();
-    const { version_minor, version_major } = Galaxy.config;
-    const { release_doc_base_url } = options;
-    const versionUserDocumentationUrl =
-        version_minor == "dev"
-            ? "https://docs.galaxyproject.org/en/latest/releases/index.html"
-            : `${release_doc_base_url}${version_major}/releases/${version_major}_announce_user.html`;
-
     const menu = [];
     //
     // Analyze data tab.
@@ -211,9 +204,9 @@ export function fetchMenu(options = {}) {
                 url: "welcome/new",
             },
             {
-                title: _l("Galaxy Version: " + Galaxy.config.version_major),
-                url: versionUserDocumentationUrl,
-                target: "_blank",
+                title: _l("About"),
+                url: "about",
+                target: "__use_router__",
             },
             {
                 title: _l("Terms and Conditions"),

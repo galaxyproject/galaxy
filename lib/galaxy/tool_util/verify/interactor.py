@@ -122,7 +122,7 @@ class GalaxyInteractorApi:
         )
         if kwds.get("user_api_key_is_admin_key", False):
             self.master_api_key = self.api_key
-        self.keep_outputs_dir = kwds["keep_outputs_dir"]
+        self.keep_outputs_dir = kwds.get("keep_outputs_dir", None)
         self.download_attempts = kwds.get("download_attempts", 1)
         self.download_sleep = kwds.get("download_sleep", 1)
         # Local test data directories.
@@ -142,18 +142,15 @@ class GalaxyInteractorApi:
     def supports_test_data_download(self):
         return self.target_galaxy_version >= Version("19.01")
 
-    def __get_user_key(self, user_key, admin_key, test_user=None):
+    def __get_user_key(self, user_key: Optional[str], admin_key: Optional[str], test_user: Optional[str] = None) -> str:
         if not test_user:
             test_user = "test@bx.psu.edu"
         if user_key:
             return user_key
-        test_user = self.ensure_user_with_email(test_user)
-        return self._post(f"users/{test_user['id']}/api_key", key=admin_key).json()
-
-    # def get_tools(self):
-    #    response = self._get("tools?in_panel=false")
-    #    assert response.status_code == 200, "Non 200 response from tool index API. [%s]" % response.content
-    #    return response.json()
+        test_user_response = self.ensure_user_with_email(test_user)
+        if not admin_key:
+            raise Exception("Must specify either a user key or admin key to interact with the Galaxy API")
+        return self._post(f"users/{test_user_response['id']}/api_key", key=admin_key).json()
 
     def get_tests_summary(self):
         response = self._get("tools/tests_summary")
@@ -1331,14 +1328,6 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
             found_exceptions.append(e)
 
     job_stdio = galaxy_interactor.get_job_stdio(job["id"])
-
-    if testdef.num_outputs is not None:
-        expected = testdef.num_outputs
-        actual = len(data_list) + len(data_collection_list)
-        if expected != actual:
-            message = f"Incorrect number of outputs - expected {expected}, found {actual}: datasets {data_list.keys()} collections {data_collection_list.keys()}"
-            error = AssertionError(message)
-            register_exception(error)
 
     if testdef.num_outputs is not None:
         expected = testdef.num_outputs

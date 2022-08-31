@@ -16,11 +16,11 @@ runners:
     load: galaxy.jobs.runners.drmaa:DRMAAJobRunner
     # Override the $DRMAA_LIBRARY_PATH environment variable
     drmaa_library_path: /sge/lib/libdrmaa.so
-  cli: 
+  cli:
     load: galaxy.jobs.runners.cli:ShellJobRunner
-  condor: 
+  condor:
     load: galaxy.jobs.runners.condor:CondorJobRunner
-  slurm: 
+  slurm:
     load: galaxy.jobs.runners.slurm:SlurmJobRunner
   dynamic:
     # The dynamic runner is not a real job running plugin and is
@@ -38,7 +38,7 @@ runners:
     # The shared file system needs to be exposed to k8s through a Persistent Volume (rw) and a Persistent
     # Volume Claim. An example of a Persistent Volume could be, in yaml (access modes, reclaim policy and
     # path are relevant) (persistent_volume.yaml):
-    # 
+    #
     #     kind: PersistentVolume
     #     apiVersion: v1
     #     metadata:
@@ -217,7 +217,7 @@ runners:
     # Chronos is a framework for the Apache Mesos software; a software which manages
     # computer clusters. Specifically, Chronos runs of top of Mesos and it's used
     # for job orchestration.
-    # 
+    #
     # This runner requires a shared file system where the directories of
     # `job_working_directory`, `file_path` and `new_file_path` settings defined on
     # the `galaxy.ini` file are shared amongst the Mesos agents (i.e. nodes which
@@ -254,7 +254,7 @@ runners:
     # AMQP does not guarantee that a published message is received by
     # the AMQP server, so Galaxy/Pulsar can request that the consumer
     # acknowledge messages and will resend them if acknowledgement is
-    # not received after a configurable timeout. 
+    # not received after a configurable timeout.
     #amqp_acknowledge: false
 
     # Galaxy reuses Pulsar's persistence_directory parameter (via the
@@ -328,7 +328,7 @@ runners:
 
     # Specify a complete description of the Pulsar app
     # to create. If this configuration defines more than
-    # one manager - you can specify the manager name 
+    # one manager - you can specify the manager name
     # using the "manager" destination parameter. For more
     # information on configuring a Pulsar app see:
     #  https://github.com/galaxyproject/pulsar/blob/master/app.yml.sample
@@ -483,7 +483,7 @@ execution:
       # command.
       #docker_auto_rm: true
 
-      # Override which user to launch Docker container as - defaults to 
+      # Override which user to launch Docker container as - defaults to
       # Galaxy's user id. For remote job execution (e.g. Pulsar) set to
       # remote job user. Leave empty to not use the -u argument with
       # Docker.
@@ -491,7 +491,7 @@ execution:
 
       # Pass extra arguments to the docker run command not covered by the
       # above options.
-      #docker_run_extra_arguments: 
+      #docker_run_extra_arguments:
 
       # Following command can be used to tweak docker command.
       #docker_cmd: /usr/local/custom_docker/docker
@@ -524,7 +524,7 @@ execution:
       runner: local
       # Enable Singularity execution of tools with the follow property.
       singularity_enabled: true
-      
+
       # See the above documentation for docker_volumes, singularity_volumes works
       # almost the same way. The only difference is that $default will expand with
       # rw directories that in Docker would expand as ro if any of subdirectories are rw.
@@ -543,6 +543,11 @@ execution:
       # Following option can be used to tweak sudo command used by
       # default.
       #singularity_sudo_cmd: /usr/bin/sudo -extra_param
+
+      # Singularity by default passes most host environment variables into the container.
+      # This may be a security or configuration issue, hence galaxy passes the `--cleanenv`
+      # argument by default. You can turn this off by setting singularity_cleanenv to `false`.
+      #singularity_cleanenv: true
 
       # Pass extra arguments to the singularity exec command not covered by the
       # above options.
@@ -776,11 +781,11 @@ execution:
        runner: pulsar_rest
        # URL of Pulsar server.
        url: https://examle.com:8913/
-       
+
        # If set, private_token must match token in remote Pulsar's
        # configuration.
        private_token: 123456789changeme
-       
+
        # Uncomment the following statement to disable file staging (e.g.
        # if there is a shared file system between Galaxy and the Pulsar
        # server). Alternatively action can be set to 'copy' - to replace
@@ -797,7 +802,7 @@ execution:
        # for more details and examples.
        #file_action_config: file_actions.yaml
        #file_actions: {}
-       
+
        # The non-legacy Pulsar runners will attempt to resolve Galaxy
        # dependencies remotely - to enable this set a tool_dependency_dir
        # in Pulsar's configuration (can work with all the same dependency
@@ -810,21 +815,21 @@ execution:
        # Uncomment following option to enable setting metadata on remote
        # Pulsar server. The 'use_remote_datatypes' option is available for
        # determining whether to use remotely configured datatypes or local
-       # ones (both alternatives are a little brittle). 
+       # ones (both alternatives are a little brittle).
        #remote_metadata: true
        #use_remote_datatypes: false
        #remote_property_galaxy_home: /path/to/remote/galaxy-central
-       
+
        # If remote Pulsar server is configured to run jobs as the real user,
        # uncomment the following line to pass the current Galaxy user
-       # along. 
+       # along.
        #submit_user: $__user_name__
-       
+
        # Various other submission parameters can be passed along to the Pulsar
        # whose use will depend on the remote Pulsar's configured job manager.
        # For instance:
        #submit_native_specification: -P bignodes -R y -pe threads 8
-       
+
        # Disable parameter rewriting and rewrite generated commands
        # instead. This may be required if remote host is Windows machine
        # but probably not otherwise.
@@ -926,7 +931,7 @@ execution:
     # handler will be reused for the resubmitted job. The ``environment`` attribute
     # is optional, if not present the job's original environment will be reused for the
     # re-submission. The ``delay`` attribute is optional, if present it will cause the job to
-    # delay for that number of seconds before being re-submitted. 
+    # delay for that number of seconds before being re-submitted.
     short_fast:
       runner: slurm
       native_specification: '--time=00:05:00 --nodes=1'
@@ -979,7 +984,7 @@ execution:
       # Mount the godocker volumes volumes must be separated by commas.
       #godocker_volumes: home,galaxy
 
-      # If a tool execution in container requires galaxy virtualenv, 
+      # If a tool execution in container requires galaxy virtualenv,
       # then enable it by setting the value to true.
       # Disable venv by setting the value to false.
       virtualenv: false
@@ -1002,7 +1007,7 @@ execution:
 # Tools can be configured to use specific destinations or handlers,
 # identified by either the "id" or "tags" attribute.  If assigned to
 # a tag, a handler or destination that matches that tag will be
-# chosen at random. 
+# chosen at random.
 tools:
 - id: bwa
   handler: handler0
@@ -1010,23 +1015,23 @@ tools:
   handler: handler1
 - id: bar
   enviroment: dynamic
-- 
+-
   # Next example defines resource group to insert into tool interface
   # and pass to dynamic destination (as resource_params argument).
   id: longbar
   environment: dynamic
   resources: all
-- 
+-
   # Pick a handler randomly from those declaring this tag.
   id: baz
   handler: special_handlers
   environment: bigmem
-- 
+-
   # legacy trackerster parameter for tool mapping
   id: foo
   handler: handler0
   source: trackster
-- 
+-
   # Classes can be used to map groups of tools - the current classes include
   # - local (these special tools that aren't parameterized for remote execution - expression tools, upload, etc..)
   # - requires_galaxy (these special tools require Galaxy's Python environment during execution)
@@ -1055,18 +1060,18 @@ resources:
 # handle jobs for the same environment. To prevent this, assign all
 # jobs for a specific environment to a single handler.
 limits:
-- 
+-
   # Limit on the number of jobs a user with a registered Galaxy
   # account can have active across all environments.
   type: registered_user_concurrent_jobs
   value: 2
 
-- 
+-
   # Likewise, but for unregistered/anonymous users.
   type: anonymous_user_concurrent_jobs
   value: 1
 
-- 
+-
   # The number of jobs a user can have active in the specified
   # environment, or across all environments identified by the
   # specified tag. (formerly: concurrent_jobs)
@@ -1103,7 +1108,7 @@ limits:
   type: walltime
   value: '24:00:00'
 
-- 
+-
   # Total walltime that jobs may not exceed during a set period.
   # If total walltime of finished jobs exceeds this value, any
   # new jobs are paused.  `window` is a number in days,
@@ -1112,7 +1117,7 @@ limits:
   window: 30
   value: '24:00:00'
 
-- 
+-
   # Size that any defined tool output can grow to before the job
   # will be terminated. This does not include temporary files
   # created by the job. Format is flexible, e.g.:

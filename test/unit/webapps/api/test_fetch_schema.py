@@ -10,7 +10,7 @@ from galaxy.schema.fetch_data import (
     UrlDataElement,
 )
 
-HISTORY_ID = "abcdef0123456789"
+HISTORY_ID = "378807ae895b74ff"
 example_payload = {
     "targets": [
         {
@@ -69,7 +69,7 @@ ftp_hdca_target = {
 }
 
 recursive_archive_payload = {
-    "history_id": "f3f73e481f432006",
+    "history_id": "70583a56914a26f9",
     "targets": [
         {
             "destination": {"type": "library", "name": "My Cool Library"},
@@ -82,7 +82,7 @@ recursive_archive_payload = {
 
 
 nested_element_regression_payload = {
-    "history_id": "80a1fcbe9fcb3c61",
+    "history_id": "c369577e3c21d7b7",
     "targets": [
         {
             "destination": {"type": "hdca"},

@@ -19,4 +19,4 @@ def create_database_objects(engine):
 
 def configure_model_mapping(engine):
     # TODO: do we need to load local galaxy security policy?
-    return ModelMapping([install_model], engine=engine)
+    return ModelMapping([install_model], engine)

@@ -41,6 +41,14 @@ galaxy.webapps.galaxy.api.cloudauthz module
    :undoc-members:
    :show-inheritance:
 
+galaxy.webapps.galaxy.api.common module
+---------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.common
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.webapps.galaxy.api.configuration module
 ----------------------------------------------
 
@@ -313,6 +321,14 @@ galaxy.webapps.galaxy.api.roles module
    :undoc-members:
    :show-inheritance:
 
+galaxy.webapps.galaxy.api.sanitize\_allow module
+------------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.sanitize_allow
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.webapps.galaxy.api.search module
 ---------------------------------------
 
@@ -321,10 +337,26 @@ galaxy.webapps.galaxy.api.search module
    :undoc-members:
    :show-inheritance:
 
+galaxy.webapps.galaxy.api.short\_term\_storage module
+-----------------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.short_term_storage
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.webapps.galaxy.api.tags module
 -------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.tags
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.webapps.galaxy.api.tasks module
+--------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.tasks
    :members:
    :undoc-members:
    :show-inheritance:

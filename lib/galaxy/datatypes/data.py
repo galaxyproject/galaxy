@@ -1,4 +1,3 @@
-import abc
 import logging
 import mimetypes
 import os
@@ -119,7 +118,7 @@ def get_params_and_input_name(converter, deps, target_context=None):
     return params, input_name
 
 
-class DataMeta(abc.ABCMeta):
+class DataMeta(type):
     """
     Metaclass for Data class.  Sets up metadata spec.
     """

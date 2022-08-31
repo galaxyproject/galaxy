@@ -114,7 +114,6 @@ def create_or_update_tool_shed_repository(
     tool_shed = get_tool_shed_from_clone_url(repository_clone_url)
     if not owner:
         owner = get_repository_owner_from_clone_url(repository_clone_url)
-    includes_datatypes = "datatypes" in metadata_dict
     if status in [app.install_model.ToolShedRepository.installation_status.DEACTIVATED]:
         deleted = True
         uninstalled = False
@@ -137,7 +136,7 @@ def create_or_update_tool_shed_repository(
         tool_shed_repository.changeset_revision = current_changeset_revision
         tool_shed_repository.ctx_rev = ctx_rev
         tool_shed_repository.metadata_ = metadata_dict
-        tool_shed_repository.includes_datatypes = includes_datatypes
+        tool_shed_repository.includes_datatypes = False
         tool_shed_repository.deleted = deleted
         tool_shed_repository.uninstalled = uninstalled
         tool_shed_repository.status = status
@@ -154,7 +153,7 @@ def create_or_update_tool_shed_repository(
             changeset_revision=current_changeset_revision,
             ctx_rev=ctx_rev,
             metadata_=metadata_dict,
-            includes_datatypes=includes_datatypes,
+            includes_datatypes=False,
             dist_to_shed=dist_to_shed,
             deleted=deleted,
             uninstalled=uninstalled,

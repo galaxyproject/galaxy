@@ -517,7 +517,7 @@ class WorkflowRefactorExecutor:
         # TODO: find workflow outputs that need to be dropped and report them
         upgrade_inputs = step.module.get_all_inputs()
         upgrade_outputs = step.module.get_all_outputs()
-        upgrade_output_names = [u["name"] for u in upgrade_outputs]
+        upgrade_output_names = {u["name"] for u in upgrade_outputs}
         upgrade_order_index = step_def["id"]
         upgrade_label = step_def.get("label")
         all_input_connections = step_def.get("input_connections")

@@ -53,7 +53,6 @@ PATH_CONFIG_PROPERTIES = [
     "builds_file_path",
     "citation_cache_data_dir",
     "citation_cache_lock_dir",
-    "cluster_files_directory",
     "container_resolvers_config_file",
     "data_manager_config_file",
     "datatypes_config_file",
@@ -198,7 +197,7 @@ DO_NOT_TEST = [
     "markdown_export_css",  # default not used?
     "markdown_export_css_pages",  # default not used?
     "markdown_export_css_invocation_reports",  # default not used?
-    "master_api_key",  # broken: default value assigned outside of config/
+    "bootstrap_admin_api_key",  # broken: default value assigned outside of config/
     "migrated_tools_config",  # needs more work (should work)
     "monitor_thread_join_timeout",  # broken: default overridden
     "new_file_path",  # value overridden for testing

@@ -45,18 +45,12 @@ export function redirect(path) {
     redirectToUrl(prependPath(path));
 }
 
-// arbitrary Galaxy wrapper
-export function useGalaxy(fn) {
-    return fn(getGalaxyInstance());
-}
-
 // wrapper for navigation to be used as mixin
 export const legacyNavigationMixin = {
     methods: {
         redirect,
         iframeAdd,
         iframeRedirect,
-        useGalaxy,
         prependPath,
     },
 };

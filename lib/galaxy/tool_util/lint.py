@@ -3,46 +3,44 @@
 LintContext: a container for LintMessages
 LintMessage: the actual message and level
 
-The idea is to define a LintContext and to apply a linting function `foo` on a
-`target`. The `level` (defined by `LintLevel`) determines which linting messages
-are shown.
+The idea is to define a LintContext and to apply a linting function ``foo`` on a
+``target``. The ``level`` (defined by ``LintLevel``) determines which linting
+messages are shown::
 
-```
-lint_ctx = LintContext(level) # level is the reporting level
-lint_ctx.lint(..., lint_func = foo, lint_target = target, ...)
-```
 
-The `lint` function essentially calls `foo(target, self)`. Hence
-the function `foo` must have two parameters
+    lint_ctx = LintContext(level) # level is the reporting level
+    lint_ctx.lint(..., lint_func = foo, lint_target = target, ...)
+
+The ``lint`` function essentially calls ``foo(target, self)``. Hence
+the function ``foo`` must have two parameters:
 
 1. the object to lint
 2. the lint context
 
-In `foo` the lint context can be used to add LintMessages to the lint context by
-using its `valid`, `info`, `warn`, and `error` functions:
+In ``foo`` the lint context can be used to add LintMessages to the lint context
+by using its ``valid``, ``info``, ``warn``, and ``error`` functions::
 
-```
-lint_foo(target, lint_ctx):
-    lint_ctx.error("target is screwed")
-```
 
-Calling `lint` prints out the messages emmited by the linter
+    lint_foo(target, lint_ctx):
+        lint_ctx.error("target is screwed")
+
+Calling ``lint`` prints out the messages emmited by the linter
 function immediately. Which messages are shown can be determined with the
-`level` argument of the LintContext constructor. If set to `SILENT`,
+``level`` argument of the ``LintContext`` constructor. If set to ``SILENT``,
 no messages will be printed.
 
 For special lint targets it might be useful to have additional information
-in the lint messages. This can be achieved by sublassing `LintMessage`.
-See for instance `XMLLintMessageLine` which has an additional agrument `node`
-in its constructor which is used to determine the line and filename in
+in the lint messages. This can be achieved by subclassing ``LintMessage``.
+See for instance ``XMLLintMessageLine`` which has an additional argument
+``node`` in its constructor which is used to determine the line and filename in
 an XML document that caused the message.
 
 In order to use this.
 
 - the lint context needs to be initialized with the additional parameter
-  `lint_message_class=XMLLintMessageLine`
+  ``lint_message_class=XMLLintMessageLine``
 - the additional parameter needs to be added as well to calls adding messages
-  to the lint context, e.g. `lint_ctx.error("some message", node=X)`. Note
+  to the lint context, e.g. ``lint_ctx.error("some message", node=X)``. Note
   that the additional properties must be given as keyword arguments.
 """
 
@@ -256,10 +254,9 @@ class LintContext:
     def failed(self, fail_level: Union[LintLevel, str]) -> bool:
         if isinstance(fail_level, str):
             fail_level = LintLevel[fail_level.upper()]
-
         found_warns = self.found_warns
         found_errors = self.found_errors
-        if fail_level >= LintLevel.WARN:
+        if fail_level == LintLevel.WARN:
             lint_fail = found_warns or found_errors
         elif fail_level >= LintLevel.ERROR:
             lint_fail = found_errors

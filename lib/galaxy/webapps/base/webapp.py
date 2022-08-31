@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 import mako.lookup
 import mako.runtime
 from apispec import APISpec
+from paste.urlmap import URLMap
 from sqlalchemy import (
     and_,
     true,
@@ -47,6 +48,7 @@ from galaxy.web.framework import (
     helpers,
     url_for,
 )
+from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
 
 try:
     from importlib.resources import files  # type: ignore[attr-defined]
@@ -639,6 +641,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 # client app route
                 # TODO: might be better as '/:username/login', '/:username/logout'
                 url_for(controller="root", action="login"),
+                url_for(controller="login", action="start"),
                 # mako app routes
                 url_for(controller="user", action="login"),
                 url_for(controller="user", action="logout"),
@@ -1114,10 +1117,6 @@ def default_url_path(path):
 
 
 def build_url_map(app, global_conf, **local_conf):
-    from paste.urlmap import URLMap
-
-    from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
-
     urlmap = URLMap()
     # Merge the global and local configurations
     conf = global_conf.copy()

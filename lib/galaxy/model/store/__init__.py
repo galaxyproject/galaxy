@@ -23,6 +23,7 @@ from typing import (
     Set,
     Tuple,
     Type,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -64,6 +65,10 @@ from ..item_attrs import (
 )
 from ... import model
 
+if TYPE_CHECKING:
+    from galaxy.managers.workflows import WorkflowContentsManager
+
+
 ObjectKeyType = Union[str, int]
 
 ATTRS_FILENAME_HISTORY = "history_attrs.txt"
@@ -98,6 +103,7 @@ class StoreAppProtocol(Protocol):
     security: IdEncodingHelper
     model: GalaxyModelMapping
     file_sources: ConfiguredFileSources
+    workflow_contents_manager: "WorkflowContentsManager"
 
 
 class ImportDiscardedDataType(Enum):
@@ -136,7 +142,7 @@ class ImportOptions:
 
 class SessionlessContext:
     def __init__(self):
-        self.objects = defaultdict(dict)
+        self.objects: Dict[Any, Any] = defaultdict(dict)
 
     def flush(self):
         pass
@@ -354,9 +360,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 self.dataset_state_serialized = False
 
             if "id" in dataset_attrs and self.import_options.allow_edit and not self.sessionless:
-                dataset_instance = self.sa_session.query(getattr(model, dataset_attrs["model_class"])).get(
-                    dataset_attrs["id"]
-                )
+                dataset_instance: model.DatasetInstance = self.sa_session.query(
+                    getattr(model, dataset_attrs["model_class"])
+                ).get(dataset_attrs["id"])
                 attributes = [
                     "name",
                     "extension",
@@ -387,7 +393,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     metadata = {"dbkey": "?"}
 
                 model_class = dataset_attrs.get("model_class", "HistoryDatasetAssociation")
-                dataset_instance: model.DatasetInstance
                 if model_class == "HistoryDatasetAssociation":
                     # Create dataset and HDA.
                     dataset_instance = model.HistoryDatasetAssociation(
@@ -634,9 +639,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 and not self.sessionless
                 and self.import_options.allow_edit
             ):
-                library_folder = self.sa_session.query(model.LibraryFolder).get(
-                    self.app.security.decode_id(library_attrs["id"])
-                )
+                library_folder = self.sa_session.query(model.LibraryFolder).get(library_attrs["id"])
                 import_folder(library_attrs, root_folder=library_folder)
             else:
                 assert self.import_options.allow_library_creation

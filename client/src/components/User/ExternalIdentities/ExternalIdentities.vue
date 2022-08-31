@@ -17,7 +17,7 @@
             <p>
                 Users with existing Galaxy user accounts (e.g., via Galaxy username and password) can associate their
                 account with their 3rd party identities. For instance, if a user associates their Galaxy account with
-                their Google account, then they can login to Galaxy either using their Galaxy username and password, or
+                their Google account, then they can log in to Galaxy either using their Galaxy username and password, or
                 their Google account. Whichever method they use they will be assuming same Galaxy user account, hence
                 having access to the same histories, workflows, datasets, libraries, etc.
             </p>

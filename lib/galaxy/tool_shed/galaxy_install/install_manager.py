@@ -8,7 +8,6 @@ from galaxy import (
     exceptions,
     util,
 )
-from galaxy.tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
@@ -202,44 +201,7 @@ class InstallRepositoryManager:
                 repository_tools_tups,
             )
         if "datatypes" in irmm_metadata_dict:
-            self.update_tool_shed_repository_status(
-                tool_shed_repository,
-                self.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES,
-            )
-            if not tool_shed_repository.includes_datatypes:
-                tool_shed_repository.includes_datatypes = True
-            self.install_model.context.add(tool_shed_repository)
-            self.install_model.context.flush()
-            files_dir = relative_install_dir
-            if shed_config_dict.get("tool_path"):
-                files_dir = os.path.join(shed_config_dict["tool_path"], files_dir)
-            datatypes_config = hg_util.get_config_from_disk(suc.DATATYPES_CONFIG_FILENAME, files_dir)
-            # Load data types required by tools.
-            cdl = custom_datatype_manager.CustomDatatypeLoader(self.app)
-            converter_path, display_path = cdl.alter_config_and_load_proprietary_datatypes(
-                datatypes_config, files_dir, override=False
-            )
-            if converter_path or display_path:
-                # Create a dictionary of tool shed repository related information.
-                repository_dict = cdl.create_repository_dict_for_proprietary_datatypes(
-                    tool_shed=tool_shed,
-                    name=tool_shed_repository.name,
-                    owner=tool_shed_repository.owner,
-                    installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
-                    tool_dicts=irmm_metadata_dict.get("tools", []),
-                    converter_path=converter_path,
-                    display_path=display_path,
-                )
-            if converter_path:
-                # Load proprietary datatype converters
-                self.app.datatypes_registry.load_datatype_converters(
-                    self.app.toolbox, installed_repository_dict=repository_dict, use_cached=True
-                )
-            if display_path:
-                # Load proprietary datatype display applications
-                self.app.datatypes_registry.load_display_applications(
-                    self.app, installed_repository_dict=repository_dict
-                )
+            log.warning("Ignoring tool shed datatypes... these have been deprecated.")
 
     def handle_tool_shed_repositories(self, installation_dict):
         # The following installation_dict entries are all required.

@@ -5,6 +5,7 @@ import glob
 import logging
 import os
 from typing import (
+    Any,
     Dict,
     List,
     Optional,
@@ -31,7 +32,7 @@ log = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletable.PurgableManagerMixin):
+class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManagerMixin, deletable.PurgableManagerMixin):
     """
     Manipulate datasets: the components contained in DatasetAssociations/DatasetInstances/HDAs/LDDAs
     """
@@ -92,13 +93,13 @@ class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletabl
     # .... accessibility
     # datasets can implement the accessible interface, but accessibility is checked in an entirely different way
     #   than those resources that have a user attribute (histories, pages, etc.)
-    def is_accessible(self, dataset, user, **kwargs):
+    def is_accessible(self, item: Any, user: Optional[model.User], **kwargs) -> bool:
         """
         Is this dataset readable/viewable to user?
         """
         if self.user_manager.is_admin(user, trans=kwargs.get("trans")):
             return True
-        if self.has_access_permission(dataset, user):
+        if self.has_access_permission(item, user):
             return True
         return False
 
@@ -190,7 +191,7 @@ class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.Purgable
             "extra_files_path": self.serialize_extra_files_path,
             "permissions": self.serialize_permissions,
             "total_size": lambda item, key, **context: int(item.get_total_size()),
-            "file_size": lambda item, key, **context: int(item.get_size()),
+            "file_size": lambda item, key, **context: int(item.get_size(calculate_size=False)),
         }
         self.serializers.update(serializers)
 
@@ -237,7 +238,10 @@ class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.Purgable
 
 # ============================================================================= AKA DatasetInstanceManager
 class DatasetAssociationManager(
-    base.ModelManager, secured.AccessibleManagerMixin, secured.OwnableManagerMixin, deletable.PurgableManagerMixin
+    base.ModelManager[model.DatasetInstance],
+    secured.AccessibleManagerMixin,
+    secured.OwnableManagerMixin,
+    deletable.PurgableManagerMixin,
 ):
     """
     DatasetAssociation/DatasetInstances are intended to be working
@@ -256,12 +260,12 @@ class DatasetAssociationManager(
         super().__init__(app)
         self.dataset_manager = DatasetManager(app)
 
-    def is_accessible(self, dataset_assoc, user, **kwargs):
+    def is_accessible(self, item, user: Optional[model.User], **kwargs: Any) -> bool:
         """
         Is this DA accessible to `user`?
         """
         # defer to the dataset
-        return self.dataset_manager.is_accessible(dataset_assoc.dataset, user, **kwargs)
+        return self.dataset_manager.is_accessible(item.dataset, user, **kwargs)
 
     def delete(self, item, flush: bool = True, stop_job: bool = False, **kwargs):
         """
@@ -471,16 +475,8 @@ class DatasetAssociationManager(
                 raise exceptions.InternalServerError("An error occurred and the dataset is NOT private.")
         elif action == "set_permissions":
 
-            def to_role_id(encoded_role_id):
-                role_id = base.decode_id(self.app, encoded_role_id)
-                return role_id
-
             def parameters_roles_or_none(role_type):
-                encoded_role_ids = kwd.get(role_type, kwd.get(f"{role_type}_ids[]", None))
-                if encoded_role_ids is not None:
-                    return list(map(to_role_id, encoded_role_ids))
-                else:
-                    return None
+                return kwd.get(role_type, kwd.get(f"{role_type}_ids[]"))
 
             access_roles = parameters_roles_or_none("access")
             manage_roles = parameters_roles_or_none("manage")
@@ -522,9 +518,9 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
             "extra_files_path": self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_extra_files_path),
             "permissions": self._proxy_to_dataset(serializer=self.dataset_serializer.serialize_permissions),
             # TODO: do the sizes proxy accurately/in the same way?
-            "size": lambda item, key, **context: int(item.get_size()),
+            "size": lambda item, key, **context: int(item.get_size(calculate_size=False)),
             "file_size": lambda item, key, **context: self.serializers["size"](item, key, **context),
-            "nice_size": lambda item, key, **context: item.get_size(nice_size=True),
+            "nice_size": lambda item, key, **context: item.get_size(nice_size=True, calculate_size=False),
             # common to lddas and hdas - from mapping.py
             "copied_from_history_dataset_association_id": self.serialize_id,
             "copied_from_library_dataset_dataset_association_id": self.serialize_id,

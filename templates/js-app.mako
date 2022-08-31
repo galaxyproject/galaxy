@@ -30,6 +30,9 @@
     </head>
 
     <body scroll="no" class="full-content">
+        <!-- Provide mount point for application -->
+        <div id="app"></div>
+
         ${ js_disabled_warning() }
         ${ javascripts() }
         ${ javascript_app() }

@@ -32,18 +32,18 @@ class ToolDataManager:
     def index(self) -> ToolDataEntryList:
         """Return all tool data tables."""
         data_tables = [table.to_dict() for table in self.data_tables.values()]
-        return ToolDataEntryList.parse_obj(data_tables)
+        return ToolDataEntryList.construct(__root__=data_tables)
 
     def show(self, table_name: str) -> ToolDataDetails:
         """Get details of a given data table"""
         data_table = self._data_table(table_name)
         element_view = data_table.to_dict(view="element")
-        return ToolDataDetails.parse_obj(element_view)
+        return ToolDataDetails.construct(**element_view)
 
     def show_field(self, table_name: str, field_name: str) -> ToolDataField:
         """Get information about a partiular field in a tool data table"""
         field = self._data_table_field(table_name, field_name)
-        return ToolDataField.parse_obj(field.to_dict())
+        return ToolDataField.construct(**field.to_dict())
 
     def reload(self, table_name: str) -> ToolDataDetails:
         """Reloads a tool data table."""
