@@ -659,7 +659,7 @@ class RepositoriesController(BaseAPIController):
     @web.legacy_expose_api
     def reset_metadata_on_repository(self, trans, payload, **kwd):
         """
-        PUT /api/repositories/reset_metadata_on_repository
+        POST /api/repositories/reset_metadata_on_repository
 
         Resets all metadata on a specified repository in the Tool Shed.
 

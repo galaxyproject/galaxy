@@ -10,9 +10,12 @@ from galaxy_test.base import api_asserts
 from galaxy_test.base.api_util import random_name
 from tool_shed_client.schema import (
     Category,
+    GetOrderedInstallableRevisionsRequest,
     OrderedInstallableRevisions,
     Repository,
     RepositoryUpdate,
+    ResetMetadataOnRepositoryRequest,
+    ResetMetadataOnRepositoryResponse,
 )
 from .api_util import ShedApiInteractor
 
@@ -101,13 +104,19 @@ class ToolShedPopulator:
         return Category(**response.json())
 
     def get_ordered_installable_revisions(self, owner: str, name: str) -> OrderedInstallableRevisions:
-        params = {
-            "owner": owner,
-            "name": name,
-        }
-        revisions_response = self._api_interactor.get("repositories/get_ordered_installable_revisions", params=params)
+        request = GetOrderedInstallableRevisionsRequest(owner=owner, name=name)
+        revisions_response = self._api_interactor.get(
+            "repositories/get_ordered_installable_revisions", params=request.dict()
+        )
         api_asserts.assert_status_code_is_ok(revisions_response)
         return OrderedInstallableRevisions(__root__=revisions_response.json())
+
+    def reset_metadata(self, repository: HasRepositoryId) -> ResetMetadataOnRepositoryResponse:
+        repository_id = self._repository_id(repository)
+        request = ResetMetadataOnRepositoryRequest(repository_id=repository_id)
+        reset_response = self._api_interactor.post("repositories/reset_metadata_on_repository", json=request.dict())
+        reset_response.raise_for_status()
+        return ResetMetadataOnRepositoryResponse(**reset_response.json())
 
     def _repository_id(self, has_id: HasRepositoryId) -> str:
         if isinstance(has_id, Repository):
