@@ -528,37 +528,6 @@ class RepositoriesController(BaseAPIController):
         return response_dict
 
     @web.legacy_expose_api
-    def repository_ids_for_setting_metadata(self, trans, my_writable=False, **kwd):
-        """
-        GET /api/repository_ids_for_setting_metadata
-
-        Displays a collection (list) of repository ids ordered for setting metadata.
-
-        :param key: the API key of the Tool Shed user.
-        :param my_writable (optional): if the API key is associated with an admin user in the Tool Shed, setting this param value
-                                       to True will restrict resetting metadata to only repositories that are writable by the user
-                                       in addition to those repositories of type tool_dependency_definition.  This param is ignored
-                                       if the current user is not an admin user, in which case this same restriction is automatic.
-        """
-        if trans.user_is_admin:
-            my_writable = util.asbool(my_writable)
-        else:
-            my_writable = True
-        handled_repository_ids = []
-        repository_ids = []
-        rmm = repository_metadata_manager.RepositoryMetadataManager(self.app, trans.user)
-        query = rmm.get_query_for_setting_metadata_on_repositories(my_writable=my_writable, order=False)
-        # Make sure repositories of type tool_dependency_definition are first in the list.
-        for repository in query:
-            if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
-                repository_ids.append(trans.security.encode_id(repository.id))
-        # Now add all remaining repositories to the list.
-        for repository in query:
-            if repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
-                repository_ids.append(trans.security.encode_id(repository.id))
-        return repository_ids
-
-    @web.legacy_expose_api
     def reset_metadata_on_repositories(self, trans, payload, **kwd):
         """
         PUT /api/repositories/reset_metadata_on_repositories
