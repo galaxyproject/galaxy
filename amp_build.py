@@ -110,7 +110,9 @@ def main():
                                              metadata={'name': 'galaxy', 
                                                        'version': VERSION, 
                                                        'install_path': 'galaxy'},
-                                             hooks={'config': 'amp_hook_config.py'},
+                                             hooks={'config': 'amp_hook_config.py',
+                                                    'start': 'amp_hook_start.py',
+                                                    'stop': 'amp_hook_stop.py'},
                                              defaults=Path("amp_config.default"))                                            
                 logging.info(f"New package in {new_package}")    
             except Exception as e:
