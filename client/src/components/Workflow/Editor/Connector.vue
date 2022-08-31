@@ -1,11 +1,11 @@
 <template>
-    <svg class="ribbon" :style="style">
+    <g class="ribbon">
         <path class="ribbon-outer" :d="line" stroke-width="6" fill="none"></path>
         <path class="ribbon-inner" :d="line" stroke-width="4" fill="none"></path>
-    </svg>
+    </g>
 </template>
 <script>
-import * as d3 from "d3";
+import { svg } from "d3";
 
 export default {
     props: {
@@ -25,36 +25,22 @@ export default {
         endY: {
             type: Number,
         },
-        cpShift: {
-            type: Number,
-            default: 0,
-        },
-        width: {
-            default: 800,
-            type: Number,
-        },
-        height: {
-            default: 800,
-            type: Number,
-        },
-        left: {
-            default: 800,
-            type: Number,
-        },
-        top: {
-            default: 800,
-            type: Number,
-        },
+    },
+    data() {
+        return {
+            lineShift: 30,
+        };
+    },
+    beforeDestroy() {
+        console.log("Destroying connector");
+        // this.terminal.destroy();
     },
     computed: {
-        style() {
-            return {
-                position: "absolute",
-                width: `${this.width}px`,
-                height: `${this.height}px`,
-                left: `${this.left}px`,
-                top: `${this.top}px`,
-            };
+        left() {
+            return Math.min(this.startX, this.endX);
+        },
+        top() {
+            return Math.max(this.startY, this.endY);
         },
         offsetStart() {
             return 0;
@@ -65,15 +51,14 @@ export default {
         lineData() {
             const data = [
                 { x: this.startX, y: this.startY + this.offsetStart },
-                { x: this.startX + this.cpShift, y: this.startY + this.offsetStart },
-                { x: this.endX - this.cpShift, y: this.endY + this.offsetEnd },
+                { x: this.startX + this.lineShift, y: this.startY + this.offsetStart },
+                { x: this.endX - this.lineShift, y: this.endY + this.offsetEnd },
                 { x: this.endX, y: this.endY + this.offsetEnd },
             ];
-            console.log(data);
             return data;
         },
         path() {
-            return d3.svg
+            return svg
                 .line()
                 .x(function (d) {
                     return d.x;

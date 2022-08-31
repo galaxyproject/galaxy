@@ -58,7 +58,7 @@
             }
         }
         .workflow-canvas {
-            #canvas-viewport {
+            .canvas-viewport {
                 @extend .rounded;
                 background: $workflow-editor-bg;
                 background-size: $workflow-editor-grid-size $workflow-editor-grid-size;
@@ -67,7 +67,7 @@
                 width: 100%;
                 height: 100%;
                 position: relative;
-                overflow: hidden;
+                overflow: scroll;
             }
             .ribbon {
                 .ribbon-outer {
@@ -194,7 +194,9 @@
             display: flex;
         }
         #canvas-container {
-            position: absolute;
+            border-radius: 5px;
+                position: relative;
+                overflow: scroll;
             width: 100%;
             height: 100%;
         }

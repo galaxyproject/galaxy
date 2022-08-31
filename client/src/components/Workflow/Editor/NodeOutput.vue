@@ -9,8 +9,24 @@
             <i :class="['mark-terminal', activeClass]" />
         </div>
         {{ label }}
-        <draggable-wrapper :id="id" :output-name="output.name" :class="terminalClass" :zoom="canvasManager.zoomLevel">
-            <div class="icon" />
+        <draggable-wrapper
+            :id="id"
+            :class="terminalClass"
+            :output-name="output.name"
+            @start="isDragging = true"
+            @stop="isDragging = false"
+            @move="onMove"
+            v-on="$listeners">
+            <!-- Let's put a draggable connector here. How do we manage disconnects? How do we get start/end coordinates ? -->
+            <!--
+                <workflow-connector
+                    v-for="connection in connections"
+                    :start-x="startX"
+                    :end-x="endX"
+                    :start-y="startY"
+                    :end-y="endY"></workflow-connector>
+                    -->
+            <span><div class="icon" ref="terminal"></div></span>
         </draggable-wrapper>
     </div>
 </template>
@@ -19,18 +35,15 @@
 import Terminals from "./modules/terminals";
 import { OutputDragging } from "./modules/dragging";
 import DraggableWrapper from "./Draggable";
-import Connector from "./modules/connector";
+import WorkflowConnector from "./Connector";
 
 export default {
     components: {
         DraggableWrapper,
+        WorkflowConnector,
     },
     props: {
         output: {
-            type: Object,
-            required: true,
-        },
-        canvasManager: {
             type: Object,
             required: true,
         },
@@ -46,13 +59,56 @@ export default {
             type: Object,
             required: true,
         },
+        rootOffset: {
+            type: Object,
+            required: true,
+        },
+        offsetX: {
+            type: Number,
+            required: true,
+        },
+        offsetY: {
+            type: Number,
+            required: true,
+        },
     },
     data() {
         return {
             isMultiple: false,
+            isDragging: false,
+            initX: 0,
+            initY: 0,
+            deltaX: 0,
+            deltaY: 0,
         };
     },
+    mounted() {
+        const rect = this.$refs.terminal.getBoundingClientRect();
+        console.log(rect);
+        this.initX = rect.left + rect.width / 2 - this.rootOffset.left;
+        this.initY = rect.top + rect.height / 2 - this.rootOffset.top;
+    },
     computed: {
+        startX() {
+            return this.initX + this.offsetX;
+        },
+        startY() {
+            return this.initY + this.offsetY;
+        },
+        endX() {
+            return this.startX + this.deltaX;
+        },
+        endY() {
+            return this.startY + this.deltaY;
+        },
+        dragPosition() {
+            return {
+                startX: this.startX,
+                endX: this.endX,
+                startY: this.startY,
+                endY: this.endY,
+            };
+        },
         id() {
             const node = this.getNode();
             return `node-${node.id}-output-${this.output.name}`;
@@ -93,38 +149,28 @@ export default {
         },
     },
     watch: {
+        isDragging() {
+            console.log("is dragging ?", this.isDragging);
+        },
+        dragPosition() {
+            this.$emit("onDragConnector", this.dragPosition);
+        },
         label() {
             // See discussion at: https://github.com/vuejs/vue/issues/8030
             this.$nextTick(() => {
                 this.$emit("onChange");
             });
         },
-        // output(newOutput) {
-        //     const oldTerminal = this.terminal;
-        //     if (oldTerminal instanceof this.terminalClassForOutput(newOutput)) {
-        //         oldTerminal.update({ ...newOutput, extensions: this.extensions });
-        //         oldTerminal.destroyInvalidConnections();
-        //     } else {
-        //         // create new terminal, connect like old terminal, destroy old terminal
-        //         // this might be a little buggy, we should replace this with proper vue components
-        //         this.$emit("onRemove", this.output);
-        //         this.createTerminal(newOutput);
-        //         this.terminal.connectors = oldTerminal.connectors.map((c) => {
-        //             return new Connector(this.getManager().canvasManager, this.terminal, c.inputHandle);
-        //         });
-        //         this.terminal.destroyInvalidConnections();
-        //         oldTerminal.destroy();
-        //     }
-        // },
     },
-    // mounted() {
-    //     this.createTerminal(this.output);
-    // },
     beforeDestroy() {
         this.$emit("onRemove", this.output);
         // this.terminal.destroy();
     },
     methods: {
+        onMove(e) {
+            this.deltaX = e.data.x;
+            this.deltaY = e.data.y;
+        },
         inputDragStart(e) {
             console.log("inputDragStart", e);
         },
@@ -136,55 +182,6 @@ export default {
         },
         onDrop(e) {
             console.log("onDrop", e);
-        },
-        terminalClassForOutput(output) {
-            let terminalClass = Terminals.OutputTerminal;
-            if (output.collection) {
-                terminalClass = Terminals.OutputCollectionTerminal;
-            } else if (output.parameter) {
-                terminalClass = Terminals.OutputParameterTerminal;
-            }
-            return terminalClass;
-        },
-        createTerminal(output) {
-            const terminalClass = this.terminalClassForOutput(output);
-            const parameters = {
-                node: this.getNode(),
-                name: output.name,
-                element: this.$refs.terminal,
-                optional: output.optional,
-            };
-            if (output.collection) {
-                const collection_type = output.collection_type;
-                const collection_type_source = output.collection_type_source;
-                this.terminal = new terminalClass({
-                    ...parameters,
-                    collection_type: collection_type,
-                    collection_type_source: collection_type_source,
-                    datatypes: this.extensions,
-                });
-            } else if (output.parameter) {
-                this.terminal = new terminalClass({
-                    ...parameters,
-                    type: output.type,
-                });
-            } else {
-                this.terminal = new terminalClass({
-                    ...parameters,
-                    datatypes: this.extensions,
-                });
-            }
-            new OutputDragging(this.getManager(), this.canvasManager, {
-                el: this.$refs.terminal,
-                terminal: this.terminal,
-            });
-            this.terminal.on("change", this.onChange.bind(this));
-            this.terminal.emit("change");
-            this.$emit("onAdd", this.output, this.terminal);
-            this.$store.commit("setOutputTerminal", {
-                outputTerminalId: this.terminal.element.id,
-                outputTerminal: this.terminal,
-            });
         },
         onChange() {
             // this.isMultiple = this.terminal.isMappedOver();

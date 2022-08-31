@@ -30,10 +30,6 @@ export default {
             type: Object,
             required: true,
         },
-        canvasManager: {
-            type: Object,
-            required: true,
-        },
     },
     data() {
         return {
@@ -57,61 +53,11 @@ export default {
             return cls;
         },
     },
-    watch: {
-        // input: function (newInput) {
-        //     const oldTerminal = this.terminal;
-        //     if (oldTerminal instanceof this.terminalClassForInput(newInput)) {
-        //         oldTerminal.update(newInput);
-        //         oldTerminal.destroyInvalidConnections();
-        //     } else {
-        //         // create new terminal, connect like old terminal, destroy old terminal
-        //         // this might be a little buggy, the terminals and connectors should be vue components
-        //         this.$emit("onRemove", this.input);
-        //         const newTerminal = this.createTerminal(newInput);
-        //         newTerminal.connectors = this.terminal.connectors.map((c) => {
-        //             return new Connector(this.getManager().canvasManager, c.outputHandle, newTerminal);
-        //         });
-        //         newTerminal.destroyInvalidConnections();
-        //         this.terminal = newTerminal;
-        //         oldTerminal.destroy();
-        //     }
-        // },
-    },
-    // mounted() {
-    //     this.terminal = this.createTerminal(this.input);
-    // },
     beforeDestroy() {
         this.$emit("onRemove", this.input);
         this.onRemove();
     },
     methods: {
-        terminalClassForInput(input) {
-            let terminalClass = Terminals.InputTerminal;
-            if (input.input_type == "dataset_collection") {
-                terminalClass = Terminals.InputCollectionTerminal;
-            } else if (input.input_type == "parameter") {
-                terminalClass = Terminals.InputParameterTerminal;
-            }
-            return terminalClass;
-        },
-        // createTerminal(input) {
-        //     const terminalClass = this.terminalClassForInput(input);
-        //     const terminal = new terminalClass({
-        //         node: this.getNode(),
-        //         datatypesMapper: this.datatypesMapper,
-        //         name: input.name,
-        //         input: input,
-        //         element: this.$refs.terminal,
-        //     });
-        //     terminal.on("change", this.onChange.bind(this));
-        //     new InputDragging(this.getManager(), this.canvasManager, {
-        //         el: this.$refs.terminal,
-        //         terminal: terminal,
-        //     });
-        //     this.$emit("onAdd", this.input, terminal);
-        //     this.$store.commit("setInputTerminal", { inputTerminalId: terminal.element.id, inputTerminal: terminal });
-        //     return terminal;
-        // },
         onChange() {
             this.isMultiple = this.terminal.isMappedOver();
             this.$emit("onChange");

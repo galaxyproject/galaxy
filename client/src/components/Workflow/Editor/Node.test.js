@@ -16,7 +16,6 @@ describe("Node", () => {
                 type: "tool",
                 step: {},
                 getManager: () => {},
-                getCanvasManager: () => {},
                 datatypesMapper: {},
             },
             localVue,

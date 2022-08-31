@@ -1,9 +1,9 @@
 <template>
     <draggable-wrapper
         :position="step.position || defaultPosition"
-        :zoom="canvasManager.zoomLevel"
         @updatePosition="onUpdatePosition"
         @click="makeActive"
+        @move="onMove"
         :id="idString"
         :name="name"
         :node-label="label"
@@ -67,7 +67,6 @@
                 :get-node="getNode"
                 :get-manager="getManager"
                 :datatypes-mapper="datatypesMapper"
-                :canvas-manager="canvasManager"
                 @onAdd="onAddInput"
                 @onRemove="onRemoveInput"
                 @onDisconnect="onDisconnect"
@@ -80,7 +79,11 @@
                 :post-job-actions="postJobActions"
                 :get-node="getNode"
                 :get-manager="getManager"
-                :canvas-manager="canvasManager"
+                :root-offset="rootOffset"
+                :offset-x="offset.x"
+                :offset-y="offset.y"
+                v-on="$listeners"
+                @stop="onStop"
                 @onAdd="onAddOutput"
                 @onRemove="onRemoveOutput"
                 @onToggle="onToggleOutput"
@@ -100,6 +103,7 @@ import NodeInput from "./NodeInput";
 import NodeOutput from "./NodeOutput";
 import DraggableWrapper from "./Draggable";
 import { ActiveOutputs } from "./modules/outputs";
+
 Vue.use(BootstrapVue);
 
 const OFFSET_RANGE = 100;
@@ -137,10 +141,6 @@ export default {
             type: Function,
             default: null,
         },
-        getCanvasManager: {
-            type: Function,
-            default: null,
-        },
         datatypesMapper: {
             type: Object,
             default: null,
@@ -149,10 +149,13 @@ export default {
             type: String,
             default: null,
         },
+        rootOffset: {
+            type: Object,
+            required: true,
+        },
     },
     data() {
         return {
-            canvasManager: null,
             popoverShow: false,
             inputs: [],
             outputs: [],
@@ -168,6 +171,10 @@ export default {
             highlight: false,
             scrolledTo: false,
             mouseDown: {},
+            offset: {
+                x: 0,
+                y: 0,
+            },
         };
     },
     computed: {
@@ -237,7 +244,6 @@ export default {
         },
     },
     created() {
-        this.canvasManager = this.getCanvasManager();
         this.activeOutputs = new ActiveOutputs();
         this.element = this.$el;
         this.content_id = this.contentId;
@@ -251,6 +257,13 @@ export default {
     },
 
     methods: {
+        onMove(e) {
+            const { x, y } = e.data;
+            this.offset = { x, y };
+        },
+        onStop() {
+            console.log("onStop called");
+        },
         onUpdatePosition(position) {
             const newStep = { ...this.step, position };
             this.$emit("onUpdateStep", newStep.id, newStep);
@@ -260,8 +273,8 @@ export default {
             console.log("mouseDownOffset", this.mouseDown);
         },
         onDrag(e) {
-            const left = this.step.position.left + (e.offsetX - this.mouseDown.offsetX) / this.canvasManager.canvasZoom;
-            const top = this.step.position.top + (e.offsetY - this.mouseDown.offsetY) / this.canvasManager.canvasZoom;
+            const left = this.step.position.left + (e.offsetX - this.mouseDown.offsetX);
+            const top = this.step.position.top + (e.offsetY - this.mouseDown.offsetY);
             const newStep = { ...this.step, position: { left, top } };
             console.log({ left, top, e });
             this.$emit("onUpdateStep", newStep.id, newStep);

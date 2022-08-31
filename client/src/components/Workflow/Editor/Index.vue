@@ -528,8 +528,8 @@ export default {
             this.showSaveAsModal = true;
         },
         onLayout() {
-            this.canvasManager.drawOverview();
-            this.canvasManager.scrollToNodes();
+            // this.canvasManager.drawOverview();
+            // this.canvasManager.scrollToNodes();
             return import(/* webpackChunkName: "workflowLayout" */ "./modules/layout.js").then((layout) => {
                 layout.autoLayout(this);
             });

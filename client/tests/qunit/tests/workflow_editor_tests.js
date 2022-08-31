@@ -47,9 +47,6 @@ function buildNode(propsData) {
     propsData.getManager = () => {
         return {};
     };
-    propsData.getCanvasManager = () => {
-        return {};
-    };
     propsData.datatypesMapper = testDatatypesMapper;
     return new component({
         propsData: propsData,

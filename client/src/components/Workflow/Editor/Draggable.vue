@@ -1,17 +1,22 @@
 <template>
-    <div
-        ref="drag"
-        draggable="true"
-        @drag.stop="onDrag"
-        @dragend.stop="onDragEnd"
-        @mousedown.stop="onMouseDown"
-        @click="$emit('click')">
+    <draggable
+        :draggable-options="draggableOptions"
+        @move="move"
+        :stop="stopPropagation"
+        :start="stopPropagation"
+        :drag="stopPropagation"
+        v-on="$listeners">
         <slot></slot>
-    </div>
+    </draggable>
 </template>
 
 <script>
+import { Draggable } from "@braks/revue-draggable";
+
 export default {
+    components: {
+        Draggable,
+    },
     props: {
         position: {
             type: Object,
@@ -30,6 +35,11 @@ export default {
         };
     },
     computed: {
+        draggableOptions() {
+            return {
+                defaultPosition: null,
+            };
+        },
         localPosition() {
             if (this.position) {
                 return this.position;
@@ -39,22 +49,29 @@ export default {
         },
     },
     methods: {
-        onMouseDown(e) {
-            this.mouseDown = { offsetX: e.offsetX, offsetY: e.offsetY };
-            if (!this.position) {
-                const { top, left } = this.$refs.drag.getBoundingClientRect();
-                this._localPosition = { top: top + window.scrollY, left: left + window.scrollX };
-            }
+        stopPropagation(e) {
+            e.stopPropagation();
         },
-        onDrag(e) {
-            const left = this.localPosition.left + (e.offsetX - this.mouseDown.offsetX) / this.zoom;
-            const top = this.localPosition.top + (e.offsetY - this.mouseDown.offsetY) / this.zoom;
-            this.$emit("updatePosition", { left, top });
+        move(e) {
+            console.log("moveEvent", e);
+            e.event.stopPropagation();
         },
-        onDragEnd(e) {
-            // this.onDrag(e);
-            this.$emit("dragEnd");
-        },
+        // onMouseDown(e) {
+        //     this.mouseDown = { offsetX: e.offsetX, offsetY: e.offsetY };
+        //     if (!this.position) {
+        //         const { top, left } = this.$refs.drag.getBoundingClientRect();
+        //         this._localPosition = { top: top + window.scrollY, left: left + window.scrollX };
+        //     }
+        // },
+        // onDrag(e) {
+        //     const left = this.localPosition.left + (e.offsetX - this.mouseDown.offsetX) / this.zoom;
+        //     const top = this.localPosition.top + (e.offsetY - this.mouseDown.offsetY) / this.zoom;
+        //     this.$emit("updatePosition", { left, top });
+        // },
+        // onDragEnd(e) {
+        //     // this.onDrag(e);
+        //     this.$emit("dragEnd");
+        // },
     },
 };
 </script>

@@ -1,19 +1,29 @@
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
-        <ZoomControl v-if="!checkWheeled" :zoom-level="zoomLevel" @onZoom="onZoom" />
-        <b-button
-            v-else
-            v-b-tooltip.hover
-            class="reset-wheel"
-            variant="light"
-            title="Show Zoom Buttons"
-            size="sm"
-            aria-label="Show Zoom Buttons"
-            @click="resetWheel">
-            Zoom Controls
-        </b-button>
-        <div id="canvas-viewport" @dragover.prevent @drop.prevent>
+        <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoom" />
+        <div
+            class="canvas-viewport"
+            @dragover.prevent
+            @drop.prevent
+            @mousemove="handleMove"
+            @mouseup="handleUp"
+            @mousedown="handleDown">
             <div id="canvas-container" ref="canvas">
+                <svg width="100%" height="100%">
+                    <connector :startX="0" :endX="100" :startY="0" :endY="100"></connector>
+                    <connector
+                        v-if="draggingConnection"
+                        :startX="draggingConnection.startX"
+                        :endX="draggingConnection.endX"
+                        :startY="draggingConnection.startY"
+                        :endY="draggingConnection.endY"></connector>
+                    <!--
+                        <workflow-connection
+                            v-for="(step, key) in steps"
+                            :key="`${key}-c`"
+                            :step="step">
+                            -->
+                </svg>
                 <WorkflowNode
                     v-for="(step, key) in steps"
                     :id="key"
@@ -24,17 +34,13 @@
                     :step="step"
                     :datatypes-mapper="datatypesMapper"
                     :get-manager="getManager"
-                    :get-canvas-manager="getCanvasManager"
                     :activeNodeId="activeNodeId"
+                    :root-offset="rootOffset"
+                    @stop="onStop"
+                    @onDragConnector="onDragConnector"
                     @onActivate="onActivate"
                     @onRemove="onRemove"
                     v-on="$listeners" />
-                <workflow-connection
-                    v-for="(step, key) in steps"
-                    :key="`${key}-c`"
-                    :step="step"
-                    :canvas-manager="canvasManager"
-                    :get-manager="getManager" />
             </div>
         </div>
         <div class="workflow-overview" aria-hidden="true">
@@ -52,18 +58,21 @@ import WorkflowCanvas from "./modules/canvas";
 import ZoomControl from "./ZoomControl";
 import WorkflowNode from "./Node";
 import WorkflowConnection from "./WorkflowConnection";
+import Connector from "./Connector.vue";
 
 export default {
     components: {
+        Connector,
         WorkflowNode,
         ZoomControl,
         WorkflowConnection,
     },
     data() {
         return {
+            zoomLevel: 1,
             isWheeled: false,
-            canvasManager: null,
-            zoomLevel: 7,
+            rootOffset: { left: 0, top: 0 },
+            draggingConnection: null,
         };
     },
     props: {
@@ -82,20 +91,33 @@ export default {
     },
     mounted() {
         // canvas overview management
-        this.canvasManager = new WorkflowCanvas(this.getManager(), this.$refs.canvas);
-        this.canvasManager.drawOverview();
-        this.canvasManager.scrollToNodes();
+        const rootRect = this.$refs.canvas.getBoundingClientRect();
+        this.rootOffset = { top: rootRect.top, left: rootRect.left };
+        console.log(`root offset: ${this.rootOffset}`);
+
+        // this.canvasManager = new WorkflowCanvas(this.getManager(), this.$refs.canvas);
+        // this.canvasManager.drawOverview();
+        // this.canvasManager.scrollToNodes();
     },
     methods: {
-        getCanvasManager() {
-            return this.canvasManager;
+        onStop() {
+            console.log("onStop");
+            this.draggingConnection = null;
+        },
+        onDragConnector(vector) {
+            this.draggingConnection = vector;
+        },
+        handleMove(e) {
+            // console.log(e);
+        },
+        handleUp(e) {
+            console.log(e);
+        },
+        handleDown(e) {
+            console.log(e);
         },
         onZoom(zoomLevel) {
-            this.zoomLevel = this.canvasManager.setZoom(zoomLevel);
-        },
-        resetWheel() {
-            this.zoomLevel = this.canvasManager.zoomLevel;
-            this.canvasManager.isWheeled = false;
+            this.zoomLevel = zoomLevel;
         },
         onActivate(nodeId) {
             console.log("onNodeId", nodeId);
@@ -114,12 +136,6 @@ export default {
     computed: {
         activeNodeId() {
             return this.$store.getters.getActiveNode();
-        },
-        checkWheeled() {
-            if (this.canvasManager != null) {
-                return this.canvasManager.isWheeled;
-            }
-            return this.isWheeled;
         },
     },
 };
