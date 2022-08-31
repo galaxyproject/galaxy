@@ -22,7 +22,7 @@ import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import DatasetList from "components/Dataset/DatasetList";
-import AvailableDatatypes from "components/AvailableDatatypes";
+import AvailableDatatypes from "components/AvailableDatatypes/AvailableDatatypes";
 import DisplayStructured from "components/DisplayStructured";
 import FormGeneric from "components/Form/FormGeneric";
 import Grid from "components/Grid/Grid";
