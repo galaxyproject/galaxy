@@ -75,6 +75,7 @@ def quay_repository(namespace, pkg_name, session=None):
 
 
 def _get_namespace(namespace: str) -> List[str]:
+    log.debug(f"Querying {QUAY_REPOSITORY_API_ENDPOINT} for repos within {namespace}")
     next_page = None
     repo_names = []
     repos_headers = {"Accept-encoding": "gzip", "Accept": "application/json"}

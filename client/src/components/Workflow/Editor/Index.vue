@@ -135,15 +135,31 @@
                                     v-if="hasActiveNodeTool"
                                     :key="activeNodeId"
                                     :get-manager="getManager"
-                                    :get-node="getNode"
+                                    :node-id="activeNodeId"
+                                    :node-annotation="activeNodeAnnotation"
+                                    :node-label="activeNodeLabel"
+                                    :node-inputs="activeNodeInputs"
+                                    :node-outputs="activeNodeOutputs"
+                                    :node-active-outputs="activeNodeActiveOutputs"
+                                    :config-form="activeNodeConfigForm"
                                     :datatypes="datatypes"
+                                    :post-job-actions="postJobActions"
+                                    @onChangePostJobActions="onChangePostJobActions"
                                     @onAnnotation="onAnnotation"
                                     @onLabel="onLabel"
                                     @onSetData="onSetData" />
                                 <FormDefault
                                     v-else-if="hasActiveNodeDefault"
+                                    :node-name="activeNodeName"
+                                    :node-id="activeNodeId"
+                                    :node-content-id="activeNodeContentId"
+                                    :node-annotation="activeNodeAnnotation"
+                                    :node-label="activeNodeLabel"
+                                    :node-type="activeNodeType"
+                                    :node-outputs="activeNodeOutputs"
+                                    :node-active-outputs="activeNodeActiveOutputs"
+                                    :config-form="activeNodeConfigForm"
                                     :get-manager="getManager"
-                                    :get-node="getNode"
                                     :datatypes="datatypes"
                                     @onAnnotation="onAnnotation"
                                     @onLabel="onLabel"
@@ -299,8 +315,38 @@ export default {
         showLint() {
             return this.showInPanel == "lint";
         },
+        postJobActions() {
+            return this.activeNode.postJobActions;
+        },
         activeNodeId() {
             return this.activeNode && this.activeNode.id;
+        },
+        activeNodeName() {
+            return this.activeNode?.name;
+        },
+        activeNodeContentId() {
+            return this.activeNode && this.activeNode.contentId;
+        },
+        activeNodeLabel() {
+            return this.activeNode?.label;
+        },
+        activeNodeAnnotation() {
+            return this.activeNode?.annotation;
+        },
+        activeNodeConfigForm() {
+            return this.activeNode?.config_form;
+        },
+        activeNodeInputs() {
+            return this.activeNode?.inputs;
+        },
+        activeNodeOutputs() {
+            return this.activeNode?.outputs;
+        },
+        activeNodeActiveOutputs() {
+            return this.activeNode?.activeOutputs;
+        },
+        activeNodeType() {
+            return this.activeNode?.type;
         },
         hasActiveNodeDefault() {
             return this.activeNode && this.activeNode.type != "tool";
@@ -431,6 +477,10 @@ export default {
         },
         onChange() {
             this.hasChanges = true;
+        },
+        onChangePostJobActions(nodeId, postJobActions) {
+            Vue.set(this.nodes[nodeId], "postJobActions", postJobActions);
+            this.onChange();
         },
         onRemove(node) {
             delete this.nodes[node.id];
