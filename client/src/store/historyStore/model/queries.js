@@ -128,7 +128,7 @@ export async function deleteHistoryById(id, purge = false) {
  */
 export async function updateHistoryFields(id, payload) {
     const url = `api/histories/${id}`;
-    const response = await axios.put(prependPath(url), payload, { params: stdHistoryParams });
+    const response = await axios.put(prependPath(url), payload, { params: extendedHistoryParams });
     const props = doResponse(response);
     return new History(props);
 }
