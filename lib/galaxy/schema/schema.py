@@ -925,6 +925,11 @@ class HistorySummary(HistoryBase):
         title="Published",
         description="Whether this resource is currently publicly available to all users.",
     )
+    count: int = Field(
+        ...,
+        title="Count",
+        description="The number of items in the history.",
+    )
     annotation: Optional[str] = AnnotationField
     tags: TagCollection
 

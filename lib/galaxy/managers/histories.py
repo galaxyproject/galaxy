@@ -427,7 +427,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
                 "name",
                 "deleted",
                 "purged",
-                # 'count'
+                "count",
                 "url",
                 # TODO: why these?
                 "published",
