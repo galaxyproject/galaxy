@@ -1,6 +1,7 @@
 <template>
     <draggable
         :draggable-options="draggableOptions"
+        @start="onDragStart"
         @move="move"
         :stop="stopPropagation"
         :start="stopPropagation"
@@ -49,6 +50,10 @@ export default {
         },
     },
     methods: {
+        onDragStart(e) {
+            console.log("mousedown", e);
+            this.$emit("mousedown", e);
+        },
         stopPropagation(e) {
             e.stopPropagation();
         },
