@@ -258,8 +258,12 @@ export default {
 
     methods: {
         onMove(e) {
-            const { x, y } = e.data;
-            this.offset = { x, y };
+            const { deltaX, deltaY } = e.data;
+            this.offset = { x: this.offset.x + deltaX, y: this.offset.y + deltaY };
+            this.onUpdatePosition({
+                top: this.step.position.top + deltaY,
+                left: this.step.position.left + deltaX,
+            });
         },
         onStop() {
             console.log("onStop called");

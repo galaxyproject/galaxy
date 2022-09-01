@@ -14,26 +14,15 @@
             :class="terminalClass"
             :output-name="output.name"
             @start="isDragging = true"
-            @stop="isDragging = false"
+            @stop="onStopDragging"
             @move="onMove"
             v-on="$listeners">
-            <!-- Let's put a draggable connector here. How do we manage disconnects? How do we get start/end coordinates ? -->
-            <!--
-                <workflow-connector
-                    v-for="connection in connections"
-                    :start-x="startX"
-                    :end-x="endX"
-                    :start-y="startY"
-                    :end-y="endY"></workflow-connector>
-                    -->
-            <span><div class="icon" ref="terminal"></div></span>
+            <div class="icon" ref="terminal"></div>
         </draggable-wrapper>
     </div>
 </template>
 
 <script>
-import Terminals from "./modules/terminals";
-import { OutputDragging } from "./modules/dragging";
 import DraggableWrapper from "./Draggable";
 import WorkflowConnector from "./Connector";
 
@@ -153,7 +142,9 @@ export default {
             console.log("is dragging ?", this.isDragging);
         },
         dragPosition() {
-            this.$emit("onDragConnector", this.dragPosition);
+            if (this.isDragging) {
+                this.$emit("onDragConnector", this.dragPosition);
+            }
         },
         label() {
             // See discussion at: https://github.com/vuejs/vue/issues/8030
@@ -168,8 +159,13 @@ export default {
     },
     methods: {
         onMove(e) {
-            this.deltaX = e.data.x;
-            this.deltaY = e.data.y;
+            this.deltaX += e.data.deltaX;
+            this.deltaY += e.data.deltaY;
+        },
+        onStopDragging() {
+            this.isDragging = false;
+            this.deltaX = 0;
+            this.deltaY = 0;
         },
         inputDragStart(e) {
             console.log("inputDragStart", e);

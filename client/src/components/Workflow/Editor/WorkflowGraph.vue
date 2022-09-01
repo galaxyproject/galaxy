@@ -10,7 +10,6 @@
             @mousedown="handleDown">
             <div id="canvas-container" ref="canvas">
                 <svg width="100%" height="100%">
-                    <connector :startX="0" :endX="100" :startY="0" :endY="100"></connector>
                     <connector
                         v-if="draggingConnection"
                         :startX="draggingConnection.startX"
@@ -54,7 +53,6 @@
     </div>
 </template>
 <script>
-import WorkflowCanvas from "./modules/canvas";
 import ZoomControl from "./ZoomControl";
 import WorkflowNode from "./Node";
 import WorkflowConnection from "./WorkflowConnection";
