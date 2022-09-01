@@ -144,7 +144,7 @@ const showVersions = computed(() => props.options.versions?.length > 1);
     left: -0.5rem;
     right: -0.5rem;
     height: 50px;
-    background: linear-gradient($white 75%, rgba(255, 255, 255, 0));
+    background: linear-gradient($white 75%, change-color($white, $alpha: 0));
 }
 
 .fa-wrench {
