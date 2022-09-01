@@ -447,7 +447,7 @@ class ConcreteObjectStore(BaseObjectStore):
         return self.store_by
 
     @staticmethod
-    def __cache_monitor(*args, **kwargs):
+    def _cache_monitor(*args, **kwargs):
         stop_cache_monitor_event = args[0]
         sleeper = args[1]
 
@@ -472,11 +472,11 @@ class ConcreteObjectStore(BaseObjectStore):
                 # the limit - maybe delete additional #%?
                 # For now, delete enough to leave at least 10% of the total cache free
                 delete_this_much = total_size - cache_limit
-                ConcreteObjectStore.__clean_cache(file_list, delete_this_much)
+                ConcreteObjectStore._clean_cache(file_list, delete_this_much)
             sleeper.sleep(kwargs['cache_monitor_interval'])  # Test cache size every 30 seconds?
 
     @staticmethod
-    def __clean_cache(file_list, delete_this_much):
+    def _clean_cache(file_list, delete_this_much):
         """Keep deleting files from the file_list until the size of the deleted
         files is greater than the value in delete_this_much parameter.
 
@@ -510,7 +510,7 @@ class ConcreteObjectStore(BaseObjectStore):
                 return
 
     def start_cache_monitor(self, cache_monitor_args):
-        self.cache_monitor_thread = threading.Thread(target=ConcreteObjectStore.__cache_monitor,
+        self.cache_monitor_thread = threading.Thread(target=ConcreteObjectStore._cache_monitor,
                                                      args=(self.stop_cache_monitor_event, self.sleeper),
                                                      kwargs=cache_monitor_args,
                                                      name='CacheMonitorThread')
