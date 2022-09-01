@@ -73,16 +73,22 @@ export default {
     },
     mounted() {
         const rect = this.$refs.terminal.getBoundingClientRect();
-        console.log(rect);
         this.initX = rect.left + rect.width / 2 - this.rootOffset.left;
         this.initY = rect.top + rect.height / 2 - this.rootOffset.top;
+        this.position;
     },
     computed: {
+        position() {
+            return { startX: this.startX, startY: this.startY };
+        },
         startX() {
-            return this.initX + this.offsetX;
+            const newX = this.initX + this.offsetX;
+            return newX;
         },
         startY() {
-            return this.initY + this.offsetY;
+            const newY = this.initY + this.offsetY;
+            // this.$store.commit("workflowState/setOutputTerminalPosition", this.getNode().id, this.output.name, newY);
+            return newY;
         },
         endX() {
             return this.startX + this.deltaX;
@@ -138,6 +144,14 @@ export default {
         },
     },
     watch: {
+        position(position) {
+            console.log("updating position", position);
+            this.$store.commit("workflowState/setOutputTerminalPosition", {
+                stepId: this.getNode().id,
+                outputName: this.output.name,
+                position,
+            });
+        },
         isDragging() {
             console.log("is dragging ?", this.isDragging);
         },

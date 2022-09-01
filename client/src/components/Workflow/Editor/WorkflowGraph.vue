@@ -7,7 +7,7 @@
             @drop.prevent
             @mousemove="handleMove"
             @mouseup="handleUp"
-            @mousedown="handleDown">
+            @mousedown.prevent.stop="handleDown">
             <div id="canvas-container" ref="canvas">
                 <svg width="100%" height="100%">
                     <connector
@@ -16,12 +16,13 @@
                         :endX="draggingConnection.endX"
                         :startY="draggingConnection.startY"
                         :endY="draggingConnection.endY"></connector>
-                    <!--
-                        <workflow-connection
-                            v-for="(step, key) in steps"
-                            :key="`${key}-c`"
-                            :step="step">
-                            -->
+                    <connector
+                        v-for="connection in connections"
+                        :key="connection.id"
+                        :startX="connection.startX"
+                        :endX="connection.endX"
+                        :startY="connection.startY"
+                        :endY="connection.endY"></connector>
                 </svg>
                 <WorkflowNode
                     v-for="(step, key) in steps"
@@ -133,7 +134,35 @@ export default {
     },
     computed: {
         activeNodeId() {
-            return this.$store.getters.getActiveNode();
+            return this.$store.getters["workflowState/getActiveNode"]();
+        },
+        connections() {
+            const connections = [];
+            Object.entries(this.steps).forEach(([stepId, step]) => {
+                Object.entries(step.input_connections).forEach(([input_name, outputArray]) => {
+                    if (!Array.isArray(outputArray)) {
+                        outputArray = [outputArray];
+                    }
+                    outputArray.forEach((output) => {
+                        const outputPos = this.$store.getters["workflowState/getOutputTerminalPosition"](
+                            output.id,
+                            output.output_name
+                        );
+                        const inputPos = this.$store.getters["workflowState/getInputTerminalPosition"](
+                            step.id,
+                            input_name
+                        );
+                        if (inputPos && outputPos) {
+                            connections.push({
+                                id: `${step.id}-${input_name}-${output.id}-${output.output_name}`,
+                                ...inputPos,
+                                ...outputPos,
+                            });
+                        }
+                    });
+                });
+            });
+            return connections;
         },
     },
 };

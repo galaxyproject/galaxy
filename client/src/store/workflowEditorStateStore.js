@@ -7,11 +7,12 @@ export const state = {
 
 import Vue from "vue";
 const getters = {
-    getInputTerminal: (state) => (inputTerminalId) => {
-        return state.inputTerminals[inputTerminalId];
+    getInputTerminalPosition: (state) => (stepId, inputName) => {
+        console.log("getting input for", stepId, inputName);
+        return state.inputTerminals[stepId]?.[inputName];
     },
-    getOutputTerminal: (state) => (outputTerminalId) => {
-        return state.outputTerminals[outputTerminalId];
+    getOutputTerminalPosition: (state) => (stepId, outputName) => {
+        return state.outputTerminals[stepId]?.[outputName];
     },
     getActiveNode: (state) => () => {
         return state.activeNode;
@@ -21,11 +22,19 @@ const getters = {
 const actions = {};
 
 const mutations = {
-    setInputTerminal: (state, { inputTerminalId, inputTerminal }) => {
-        Vue.set(state.inputTerminals, inputTerminalId, inputTerminal);
+    setInputTerminalPosition: (state, { stepId, inputName, position }) => {
+        if (!state.inputTerminals[stepId]) {
+            Vue.set(state.inputTerminals, stepId, { [inputName]: position });
+        } else {
+            Vue.set(state.inputTerminals[stepId], inputName, position);
+        }
     },
-    setOutputTerminal: (state, { outputTerminalId, outputTerminal }) => {
-        Vue.set(state.outputTerminals, outputTerminalId, outputTerminal);
+    setOutputTerminalPosition: (state, { stepId, outputName, position }) => {
+        if (!state.outputTerminals[stepId]) {
+            Vue.set(state.outputTerminals, stepId, { [outputName]: position });
+        } else {
+            Vue.set(state.outputTerminals[stepId], outputName, position);
+        }
     },
     setConnection: (state, { source, target, connection }) => {
         if (!state.connections[source]) {

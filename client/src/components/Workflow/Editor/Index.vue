@@ -76,7 +76,8 @@
                     @onChange="onChange"
                     @onDisconnect="onDisconnect"
                     @onRemove="onRemove"
-                    @onUpdateStep="onUpdateStep">
+                    @onUpdateStep="onUpdateStep"
+                    @onUpdateStepPosition="onUpdateStepPosition">
                 </workflow-graph>
             </div>
             <SidePanel id="right" side="right">
@@ -364,6 +365,10 @@ export default {
         onUpdateStep(stepId, step) {
             console.log("updating step");
             this.steps[stepId] = step;
+        },
+        onUpdateStepPosition(stepId, position) {
+            console.log("updating step position");
+            // this.steps[stepId].position = position;
         },
         onDisconnect(nodeId, inputName) {
             delete this.steps[nodeId].input_connections[inputName];

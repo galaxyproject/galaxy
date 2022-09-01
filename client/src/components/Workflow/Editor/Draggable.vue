@@ -39,6 +39,7 @@ export default {
         draggableOptions() {
             return {
                 defaultPosition: null,
+                mouseDown: this.stopPropagation,
             };
         },
         localPosition() {

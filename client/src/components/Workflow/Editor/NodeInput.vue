@@ -1,7 +1,7 @@
 <template>
     <div class="form-row dataRow input-data-row" @mouseover="mouseOver" @mouseleave="mouseLeave">
         <div :id="id" :input-name="input.name" :class="terminalClass" @drop="onDrop">
-            <div class="icon" />
+            <div ref="terminal" class="icon" />
         </div>
         <div v-if="showRemove" class="delete-terminal" @click="onRemove" />
         {{ label }}
@@ -9,9 +9,6 @@
 </template>
 
 <script>
-import Terminals from "./modules/terminals";
-import { InputDragging } from "./modules/dragging";
-import Connector from "./modules/connector";
 export default {
     props: {
         input: {
@@ -30,12 +27,31 @@ export default {
             type: Object,
             required: true,
         },
+        rootOffset: {
+            type: Object,
+            required: true,
+        },
+        offsetX: {
+            type: Number,
+            required: true,
+        },
+        offsetY: {
+            type: Number,
+            required: true,
+        },
     },
     data() {
         return {
             showRemove: false,
             isMultiple: false,
+            initX: 0,
+            initY: 0,
         };
+    },
+    mounted() {
+        const rect = this.$refs.terminal.getBoundingClientRect();
+        this.initX = rect.left + rect.width / 2 - this.rootOffset.left;
+        this.initY = rect.top + rect.height / 2 - this.rootOffset.top;
     },
     computed: {
         id() {
@@ -52,10 +68,29 @@ export default {
             }
             return cls;
         },
+        startX() {
+            return this.initX + this.offsetX;
+        },
+        startY() {
+            return this.initY + this.offsetY;
+        },
+        position() {
+            return { endX: this.startX, endY: this.startY };
+        },
     },
     beforeDestroy() {
         this.$emit("onRemove", this.input);
         this.onRemove();
+    },
+    watch: {
+        position(position) {
+            console.log(position);
+            this.$store.commit("workflowState/setInputTerminalPosition", {
+                stepId: this.getNode().id,
+                inputName: this.input.name,
+                position,
+            });
+        },
     },
     methods: {
         onChange() {
@@ -67,9 +102,6 @@ export default {
         },
         mouseOver(e) {
             console.log("mousOver");
-            // if (this.terminal.connectors.length > 0) {
-            //     this.showRemove = true;
-            // }
         },
         mouseLeave() {
             this.showRemove = false;

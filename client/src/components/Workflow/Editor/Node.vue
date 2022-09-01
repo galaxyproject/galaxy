@@ -67,6 +67,9 @@
                 :get-node="getNode"
                 :get-manager="getManager"
                 :datatypes-mapper="datatypesMapper"
+                :root-offset="rootOffset"
+                :offset-x="offset.x"
+                :offset-y="offset.y"
                 @onAdd="onAddInput"
                 @onRemove="onRemoveInput"
                 @onDisconnect="onDisconnect"
@@ -269,26 +272,14 @@ export default {
             console.log("onStop called");
         },
         onUpdatePosition(position) {
-            const newStep = { ...this.step, position };
-            this.$emit("onUpdateStep", newStep.id, newStep);
+            this.$emit("onUpdateStepPosition", this.step.id, position);
         },
         onMouseDown(e) {
             this.mouseDown = { offsetX: e.offsetX, offsetY: e.offsetY };
             console.log("mouseDownOffset", this.mouseDown);
         },
-        onDrag(e) {
-            const left = this.step.position.left + (e.offsetX - this.mouseDown.offsetX);
-            const top = this.step.position.top + (e.offsetY - this.mouseDown.offsetY);
-            const newStep = { ...this.step, position: { left, top } };
-            console.log({ left, top, e });
-            this.$emit("onUpdateStep", newStep.id, newStep);
-        },
-        onDragEnd(e) {
-            // this.$emit("onChange");
-            // this.canvasManager.drawOverview();
-            console.log("end");
-        },
         onChange() {
+            console.log("onChange triggered");
             this.$emit("onChange");
         },
         onAddInput(input, terminal) {
@@ -345,7 +336,6 @@ export default {
         setNode(data) {
             this.initData(data);
             this.$emit("onChange");
-            this.$emit("onActivate", this.id);
         },
         setAnnotation(annotation) {
             this.annotation = annotation;
