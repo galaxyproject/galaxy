@@ -141,8 +141,8 @@ const showVersions = computed(() => props.options.versions?.length > 1);
     display: block;
     position: absolute;
     top: -$margin-h;
-    left: -$margin-v;
-    right: -$margin-v;
+    left: -0.5rem;
+    right: -0.5rem;
     height: 50px;
     background: linear-gradient($white 75%, transparent);
 }

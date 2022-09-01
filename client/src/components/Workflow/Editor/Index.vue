@@ -129,8 +129,8 @@
                                     @onUpgrade="onUpgrade" />
                             </div>
                         </div>
-                        <div ref="right-panel" class="unified-panel-body workflow-right">
-                            <div class="m-2">
+                        <div ref="right-panel" class="unified-panel-body workflow-right p-2">
+                            <div>
                                 <FormTool
                                     v-if="hasActiveNodeTool"
                                     :key="activeNodeId"
