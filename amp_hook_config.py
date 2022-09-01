@@ -95,13 +95,18 @@ def main():
     # that shows how to set up an administration user.  galaxy_configure.py is based 
     # heavily on those things.
     try:
-        p = subprocess.run([galaxy_python, amp_root /  "amp_bootstrap/galaxy_configure.py", 
+        p = subprocess.run([galaxy_python, amp_root /  "galaxy/galaxy_configure.py", 
                             config['galaxy']['admin_username'], config['galaxy']['admin_password'], config['galaxy']['id_secret']],
                         check=True, stdout=subprocess.PIPE, encoding='utf-8')
         if not p.stdout.startswith('user_id='):
             raise ValueError("Galaxy configuration didn't return a user_id")
         (_, config['galaxy']['user_id']) = p.stdout.splitlines()[0].split('=', 1)
         logging.info(f"Galaxy user ID: {config['galaxy']['user_id']}")
+        # write this value to data/config/galaxy_user.yaml
+        with open(amp_root / "data/package_config/galaxy_user.yaml", "w") as f:
+            yaml.safe_dump({'galaxy': {'user_id': config['galaxy']['user_id']},
+                            'amp': {'galaxy_port': config['amp']['galaxy_port']}}, f)
+
     except Exception as e:
         logging.error(f"Galaxy database config failed: {e}")
         exit(1)
