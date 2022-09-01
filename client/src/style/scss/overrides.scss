@@ -201,4 +201,10 @@ table.info_data_table th:nth-child(1) {
         // differentiate disabled items more
         color: #bfc7cf !important;
     }
+
+    .dropdown-item.active {
+        background-color: unset;
+        color: $brand-primary !important;
+        font-weight: 600;
+    }
 }

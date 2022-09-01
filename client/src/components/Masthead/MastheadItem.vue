@@ -40,7 +40,8 @@
                 :href="formatUrl(item.url)"
                 :target="item.target || '_parent'"
                 role="menuitem"
-                :disabled="item.disabled === true"
+                :active="item.disabled"
+                :disabled="item.disabled"
                 @click="open(item, $event)">
                 {{ item.title }}
             </b-dropdown-item>
