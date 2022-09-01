@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const props = defineProps({
     version: {
@@ -14,7 +15,7 @@ const props = defineProps({
 
 const emit = defineEmits(["onChangeVersion"]);
 
-const availableVersions = computed(() => props.versions?.filter((v) => v !== props.version).reverse());
+const availableVersions = computed(() => [...props.versions].reverse());
 </script>
 
 <template>
@@ -31,8 +32,17 @@ const availableVersions = computed(() => props.versions?.filter((v) => v !== pro
         <template v-slot:button-content>
             <span class="fa fa-cubes" />
         </template>
-        <b-dropdown-item v-for="v of availableVersions" :key="v" @click="emit('onChangeVersion', v)">
-            <span class="fa fa-cube" /> <span v-localize>Switch to</span> {{ v }}
+        <b-dropdown-item
+            v-for="v of availableVersions"
+            :key="v"
+            :disabled="v === props.version"
+            @click="() => emit('onChangeVersion', v)">
+            <span v-if="v !== props.version">
+                <span class="fa fa-cube" /> <span v-localize>Switch to</span> {{ v }}
+            </span>
+            <span v-else class="text-primary">
+                <FontAwesomeIcon icon="fas fa-check" /> <span v-localize>Selected</span> {{ v }}
+            </span>
         </b-dropdown-item>
     </b-dropdown>
 </template>
