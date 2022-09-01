@@ -28,10 +28,6 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        ## for mobile browsers, don't scale up
-        <meta name = "viewport" content = "maximum-scale=1.0">
-        ## force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
-        <meta http-equiv="x-ua-compatible" content="ie=edge,chrome=1">
 
         <title>
             Galaxy

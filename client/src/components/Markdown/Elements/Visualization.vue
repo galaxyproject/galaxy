@@ -2,7 +2,7 @@
     <b-card body-class="embed-responsive embed-responsive-4by3">
         <LoadingSpan v-if="loading" class="m-2" message="Loading Visualization" />
         <div v-else-if="error" class="m-2">{{ error }}</div>
-        <iframe v-else class="embed-responsive-item" :src="visualizationUrl" />
+        <iframe v-else title="Galaxy Visualization Frame" class="embed-responsive-item" :src="visualizationUrl" />
     </b-card>
 </template>
 

@@ -140,7 +140,7 @@ describe("Masthead.vue", () => {
     });
 
     it("should display window manager button", async () => {
-        expect(wrapper.find("#enable-window-manager a span").classes("fa-th")).toBe(true);
+        expect(wrapper.find("#enable-window-manager a span.fa-th").exists()).toBe(true);
         expect(windowManager.active).toBe(false);
         await wrapper.find("#enable-window-manager a").trigger("click");
         expect(windowManager.active).toBe(true);

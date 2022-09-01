@@ -3,19 +3,19 @@
         <ToolForm v-if="isTool && !isUpload" v-bind="toolParams" />
         <WorkflowRun v-else-if="isWorkflow" v-bind="workflowParams" />
         <div v-else-if="isController" :src="controllerParams" />
-        <CenterPanel v-else src="welcome" />
+        <CenterFrame v-else src="welcome" />
     </div>
 </template>
 
 <script>
 import decodeUriComponent from "decode-uri-component";
-import CenterPanel from "entry/analysis/modules/CenterPanel";
+import CenterFrame from "entry/analysis/modules/CenterFrame";
 import ToolForm from "components/Tool/ToolForm";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun";
 
 export default {
     components: {
-        CenterPanel,
+        CenterFrame,
         ToolForm,
         WorkflowRun,
     },

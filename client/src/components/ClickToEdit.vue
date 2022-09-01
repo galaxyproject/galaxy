@@ -17,7 +17,6 @@
                         <b-form-input
                             ref="clickToEditInput"
                             :value="debouncedValue"
-                            :autofocus="true"
                             :placeholder="placeholder"
                             :state="stateValidator(debouncedValue, localValue)"
                             @input="input"

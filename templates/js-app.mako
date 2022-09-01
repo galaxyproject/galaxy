@@ -1,13 +1,9 @@
 <%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
 <!DOCTYPE HTML>
-<html>
+<html lang="en">
     <!--js-app.mako-->
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        ## For mobile browsers, don't scale up
-        <meta name="viewport" content="maximum-scale=1.0">
-        ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
-        <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 
         <title>
             Galaxy
@@ -31,7 +27,9 @@
 
     <body scroll="no" class="full-content">
         <!-- Provide mount point for application -->
-        <div id="app"></div>
+        <main>
+            <div id="app"></div>
+        </main>
 
         ${ js_disabled_warning() }
         ${ javascripts() }
