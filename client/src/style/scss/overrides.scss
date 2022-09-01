@@ -199,7 +199,7 @@ table.info_data_table th:nth-child(1) {
         cursor: default;
 
         // differentiate disabled items more
-        color: #bfc7cf;
+        color: lighten($text-color, 50%);
     }
 
     .dropdown-item.active {
