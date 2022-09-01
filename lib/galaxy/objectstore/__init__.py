@@ -419,12 +419,16 @@ class ConcreteObjectStore(BaseObjectStore):
         self.name = config_dict.get("name", None)
         self.description = config_dict.get("description", None)
 
-        self.cache_size = -1
-        self.staging_path = ''
-        self.cache_monitor_enabled = CACHE_MONITOR_ENABLED
-        self.cache_monitor_cache_limit = CACHE_MONITOR_CACHE_LIMIT
-        self.cache_monitor_interval = CACHE_MONITOR_INTERVAL
-        self.cache_monitor_startup_delay = CACHE_MONITOR_STARTUP_DELAY
+        # This Event object is initialized to False
+        # It is set to True in shutdown(), causing
+        # the cache monitor thread to return/terminate
+        self.stop_cache_monitor_event = threading.Event()
+        # Helper for interruptable sleep
+        self.sleeper = Sleeper()
+
+    def shutdown(self):
+        super().shutdown()
+        self.stop_cache_monitor_event.set()
 
     def to_dict(self):
         rval = super().to_dict()
@@ -442,26 +446,21 @@ class ConcreteObjectStore(BaseObjectStore):
     def _get_store_by(self, obj):
         return self.store_by
 
-    def start_cache_monitor(self):
-        # Clean cache only if value is set in galaxy.ini
-        if self.cache_size != -1 and self.cache_monitor_enabled:
-            # Helper for interruptable sleep
-            self.sleeper = Sleeper()
-            self.cache_monitor_thread = threading.Thread(target=self.__cache_monitor)
-            self.cache_monitor_thread.start()
-            log.info("Cache cleaner manager started")
+    @staticmethod
+    def __cache_monitor(*args, **kwargs):
+        stop_cache_monitor_event = args[0]
+        sleeper = args[1]
 
-    def __cache_monitor(self):
-        time.sleep(self.cache_monitor_startup_delay)  # Wait for things to load before starting the monitor
-        while self.running:
+        time.sleep(kwargs['cache_monitor_startup_delay'])  # Wait for things to load before starting the monitor
+        while not stop_cache_monitor_event.is_set():
             # Is this going to be too expensive of an operation to be done frequently?
-            total_size, file_list = get_cache_size_files(self.staging_path)
+            total_size, file_list = get_cache_size_files(kwargs['staging_path'])
             # Sort the file list (based on access time)
             file_list.sort()
             # Initiate cleaning once we reach cache_monitor_cache_limit percentage of the defined cache size?
             # Convert GBs to bytes for comparison
-            cache_size_in_gb = self.cache_size * ONE_GIGA_BYTE
-            cache_limit = cache_size_in_gb * self.cache_monitor_cache_limit
+            cache_size_in_gb = kwargs['cache_size'] * ONE_GIGA_BYTE
+            cache_limit = cache_size_in_gb * kwargs['cache_monitor_cache_limit']
             if total_size > cache_limit:
                 log.info(
                     "Initiating cache cleaning: current cache size: %s; clean until smaller than: %s",
@@ -473,10 +472,11 @@ class ConcreteObjectStore(BaseObjectStore):
                 # the limit - maybe delete additional #%?
                 # For now, delete enough to leave at least 10% of the total cache free
                 delete_this_much = total_size - cache_limit
-                self.__clean_cache(file_list, delete_this_much)
-            self.sleeper.sleep(self.cache_monitor_interval)  # Test cache size every 30 seconds?
+                ConcreteObjectStore.__clean_cache(file_list, delete_this_much)
+            sleeper.sleep(kwargs['cache_monitor_interval'])  # Test cache size every 30 seconds?
 
-    def __clean_cache(self, file_list, delete_this_much):
+    @staticmethod
+    def __clean_cache(file_list, delete_this_much):
         """Keep deleting files from the file_list until the size of the deleted
         files is greater than the value in delete_this_much parameter.
 
@@ -508,6 +508,14 @@ class ConcreteObjectStore(BaseObjectStore):
             else:
                 log.debug("Cache cleaning done. Total space freed: %s", convert_bytes(deleted_amount))
                 return
+
+    def start_cache_monitor(self, cache_monitor_args):
+        self.cache_monitor_thread = threading.Thread(target=ConcreteObjectStore.__cache_monitor,
+                                                     args=(self.stop_cache_monitor_event, self.sleeper),
+                                                     kwargs=cache_monitor_args,
+                                                     name='CacheMonitorThread')
+        self.cache_monitor_thread.start()
+        log.info("Cache monitor started")
 
 
 class DiskObjectStore(ConcreteObjectStore):

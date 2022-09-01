@@ -213,7 +213,14 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         self._bucket = self._get_bucket(self.bucket)
 
         if self.cache_size != -1 and self.cache_monitor_enabled:
-            self.start_cache_monitor()
+            cache_monitor_args = {
+                'cache_monitor_cache_limit': self.cache_monitor_cache_limit,
+                'cache_monitor_interval': self.cache_monitor_interval,
+                'cache_monitor_startup_delay': self.cache_monitor_startup_delay,
+                'staging_path': self.staging_path,
+                'cache_size': self.cache_size
+            }
+            self.start_cache_monitor(cache_monitor_args)
 
         # Test if 'axel' is available for parallel download and pull the key into cache
         if which("axel"):

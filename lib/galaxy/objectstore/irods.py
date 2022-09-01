@@ -255,7 +255,14 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
     def _initialize(self):
         if self.cache_size != -1 and self.cache_monitor_enabled:
-            self.start_cache_monitor()
+            cache_monitor_args = {
+                'cache_monitor_cache_limit': self.cache_monitor_cache_limit,
+                'cache_monitor_interval': self.cache_monitor_interval,
+                'cache_monitor_startup_delay': self.cache_monitor_startup_delay,
+                'staging_path': self.staging_path,
+                'cache_size': self.cache_size
+            }
+            self.start_cache_monitor(cache_monitor_args)
 
     def shutdown(self):
         # This call will cleanup all the connections in the connection pool
