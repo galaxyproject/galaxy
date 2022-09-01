@@ -1148,6 +1148,13 @@ export default {
                 this.addColumnRegexReplacement = null;
             }
         },
+        addColumnRegexGroupCount: function (oldVal, newVal) {
+            if (oldVal != newVal) {
+                if (newVal < 1) {
+                    this.addColumnRegexGroupCount = 1;
+                }
+            }
+        },
     },
     created() {
         if (this.elementsType !== "collection_contents") {
