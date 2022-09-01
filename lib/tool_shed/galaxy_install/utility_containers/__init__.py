@@ -13,7 +13,6 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
     def build_repository_containers(
         self,
         repository,
-        datatypes,
         invalid_tools,
         missing_repository_dependencies,
         missing_tool_dependencies,
@@ -21,7 +20,6 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
         repository_dependencies,
         tool_dependencies,
         valid_tools,
-        workflows,
         valid_data_managers,
         invalid_data_managers,
         data_managers_errors,
@@ -49,19 +47,13 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
         # some of these links require the repository id.  However we need to be careful because sometimes the
         # repository object is None.
         if repository:
-            repository_id = repository.id
             changeset_revision = repository.changeset_revision
         else:
-            repository_id = None
             changeset_revision = None
         lock = threading.Lock()
         lock.acquire(True)
         try:
             folder_id = 0
-            # Datatypes container.
-            if datatypes:
-                folder_id, datatypes_root_folder = self.build_datatypes_folder(folder_id, datatypes)
-                containers_dict["datatypes"] = datatypes_root_folder
             # Invalid tools container.
             if invalid_tools:
                 folder_id, invalid_tools_root_folder = self.build_invalid_tools_folder(
@@ -126,15 +118,6 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
                 )
                 containers_dict["valid_tools"] = valid_tools_root_folder
             # Workflows container.
-            if workflows:
-                folder_id, workflows_root_folder = self.build_workflows_folder(
-                    folder_id=folder_id,
-                    workflows=workflows,
-                    repository_metadata_id=None,
-                    repository_id=repository_id,
-                    label="Workflows",
-                )
-                containers_dict["workflows"] = workflows_root_folder
             if valid_data_managers:
                 folder_id, valid_data_managers_root_folder = self.build_data_managers_folder(
                     folder_id=folder_id, data_managers=valid_data_managers, label="Valid Data Managers"

@@ -443,7 +443,6 @@ class DependencyDisplayer:
         gucm = GalaxyUtilityContainerManager(self.app)
         containers_dict = gucm.build_repository_containers(
             repository=None,
-            datatypes=None,
             invalid_tools=None,
             missing_repository_dependencies=missing_repository_dependencies,
             missing_tool_dependencies=missing_tool_dependencies,
@@ -451,7 +450,6 @@ class DependencyDisplayer:
             repository_dependencies=installed_repository_dependencies,
             tool_dependencies=installed_tool_dependencies,
             valid_tools=None,
-            workflows=None,
             valid_data_managers=None,
             invalid_data_managers=None,
             data_managers_errors=None,
@@ -479,8 +477,6 @@ class DependencyDisplayer:
         """
         metadata = repository.metadata_
         if metadata:
-            # Handle proprietary datatypes.
-            datatypes = metadata.get("datatypes", None)
             # Handle invalid tools.
             invalid_tools = metadata.get("invalid_tools", None)
             # Handle README files.
@@ -542,8 +538,6 @@ class DependencyDisplayer:
                 missing_tool_dependencies = repository_missing_tool_dependencies
             # Handle valid tools.
             valid_tools = metadata.get("tools", None)
-            # Handle workflows.
-            workflows = metadata.get("workflows", None)
             # Handle Data Managers
             valid_data_managers = None
             invalid_data_managers = None
@@ -555,7 +549,6 @@ class DependencyDisplayer:
             gucm = GalaxyUtilityContainerManager(self.app)
             containers_dict = gucm.build_repository_containers(
                 repository=repository,
-                datatypes=datatypes,
                 invalid_tools=invalid_tools,
                 missing_repository_dependencies=missing_repository_dependencies,
                 missing_tool_dependencies=missing_tool_dependencies,
@@ -563,7 +556,6 @@ class DependencyDisplayer:
                 repository_dependencies=installed_repository_dependencies,
                 tool_dependencies=installed_tool_dependencies,
                 valid_tools=valid_tools,
-                workflows=workflows,
                 valid_data_managers=valid_data_managers,
                 invalid_data_managers=invalid_data_managers,
                 data_managers_errors=data_managers_errors,
