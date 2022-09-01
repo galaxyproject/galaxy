@@ -1,32 +1,45 @@
 <template>
-    <virtual-list
-        v-if="filteredHistories.length"
-        :keeps="10"
-        :estimate-size="histories.length"
-        :data-key="'id'"
-        :data-component="MultipleViewItem"
-        :data-sources="filteredHistories"
-        :direction="'horizontal'"
-        :extra-props="{ currentHistory, handlers, dataSetsFilter }"
-        :item-style="{ minWidth: '15rem', maxWidth: '15rem' }"
-        item-class="d-flex mx-1"
-        class="flex-grow-1"
-        style="overflow: auto hidden"
-        wrap-class="row container flex-nowrap h-100 m-0">
-    </virtual-list>
-    <b-alert v-else class="m-2" variant="info" show>
-        <span v-if="historiesFilter" class="font-weight-bold">No History found with this filter.</span>
-        <span v-else class="font-weight-bold">No History found.</span>
-    </b-alert>
+    <div class="list-container d-flex h-100 w-auto overflow-auto">
+        <virtual-list
+            v-if="selectedHistories.length"
+            :keeps="10"
+            :estimate-size="histories.length"
+            :data-key="'id'"
+            :data-component="MultipleViewItem"
+            :data-sources="selectedHistories"
+            :direction="'horizontal'"
+            :extra-props="{ currentHistory, handlers, dataSetsFilter, removeHistoryFromList }"
+            :item-style="{ width: '15rem' }"
+            item-class="d-flex mx-1 mt-1"
+            class="d-flex"
+            wrap-class="row flex-nowrap m-0">
+        </virtual-list>
+
+        <div
+            v-b-modal.select-histories-modal
+            class="history-picker text-primary d-flex m-3 p-5 align-items-center text-nowrap">
+            Select histories
+        </div>
+
+        <SelectorModal
+            id="select-histories-modal"
+            :multiple="true"
+            :histories="histories"
+            :current-history-id="currentHistory.id"
+            title="Select histories"
+            @selectHistories="addHistoriesToList" />
+    </div>
 </template>
 
 <script>
 import VirtualList from "vue-virtual-scroll-list";
 import MultipleViewItem from "./MultipleViewItem";
+import SelectorModal from "components/History/Modals/SelectorModal";
 
 export default {
     components: {
         VirtualList,
+        SelectorModal,
     },
     props: {
         histories: {
@@ -41,10 +54,6 @@ export default {
             type: Object,
             required: true,
         },
-        historiesFilter: {
-            type: String,
-            default: "",
-        },
         dataSetsFilter: {
             type: String,
             default: "",
@@ -53,18 +62,35 @@ export default {
     data() {
         return {
             MultipleViewItem,
+            selectedHistories: [],
         };
     },
-    computed: {
-        filteredHistories() {
-            if (!this.historiesFilter) {
-                return this.histories;
-            }
-            const filter = this.historiesFilter.toLowerCase();
-            return this.histories?.filter((history) => {
-                return history.name.toLowerCase().includes(filter);
+    created() {
+        this.selectedHistories = [this.histories[0]];
+    },
+    methods: {
+        addHistoriesToList(histories) {
+            histories.forEach((history) => {
+                if (!this.selectedHistories.includes(history)) {
+                    this.selectedHistories.push(history);
+                }
+            });
+        },
+        removeHistoryFromList(history) {
+            this.selectedHistories = this.selectedHistories.filter((item) => {
+                return item.id !== history.id;
             });
         },
     },
 };
 </script>
+
+<style lang="scss">
+.list-container {
+    width: fit-content;
+
+    .history-picker {
+        border: dotted lightgray;
+    }
+}
+</style>
