@@ -6,61 +6,31 @@
             </b-alert>
 
             <div v-else-if="histories.length" id="histories" class="d-flex flex-column h-100">
-                <b-container>
-                    <b-row>
-                        <b-col>
-                            <b-input-group>
-                                <DebouncedInput v-slot="{ value, input }" v-model="historiesFilter">
-                                    <b-form-input
-                                        size="sm"
-                                        :class="historiesFilter && 'font-weight-bold'"
-                                        :value="value"
-                                        :placeholder="'search histories' | localize"
-                                        data-description="filter text input"
-                                        @input="input"
-                                        @keyup.esc="updateHistoriesFilter('')" />
-                                </DebouncedInput>
-                                <b-input-group-append>
-                                    <b-button
-                                        size="sm"
-                                        data-description="show deleted filter toggle"
-                                        @click="updateHistoriesFilter('')">
-                                        <icon icon="times" />
-                                    </b-button>
-                                </b-input-group-append>
-                            </b-input-group>
-                        </b-col>
-
-                        <b-col>
-                            <b-input-group>
-                                <DebouncedInput v-slot="{ value, input }" v-model="dataSetsFilter">
-                                    <b-form-input
-                                        size="sm"
-                                        :class="dataSetsFilter && 'font-weight-bold'"
-                                        :value="value"
-                                        :placeholder="'search all datasets' | localize"
-                                        data-description="filter text input"
-                                        @input="input"
-                                        @keyup.esc="updateDataSetsFilter('')" />
-                                </DebouncedInput>
-                                <b-input-group-append>
-                                    <b-button
-                                        size="sm"
-                                        data-description="show deleted filter toggle"
-                                        @click="updateDataSetsFilter('')">
-                                        <icon icon="times" />
-                                    </b-button>
-                                </b-input-group-append>
-                            </b-input-group>
-                        </b-col>
-                    </b-row>
-                </b-container>
+                <b-input-group class="m-auto w-25">
+                    <DebouncedInput v-slot="{ value, input }" v-model="dataSetsFilter">
+                        <b-form-input
+                            size="sm"
+                            :class="dataSetsFilter && 'font-weight-bold'"
+                            :value="value"
+                            :placeholder="'search datasets  in selected histories' | l"
+                            data-description="filter text input"
+                            @input="input"
+                            @keyup.esc="updateDataSetsFilter('')" />
+                    </DebouncedInput>
+                    <b-input-group-append>
+                        <b-button
+                            size="sm"
+                            data-description="show deleted filter toggle"
+                            @click="updateDataSetsFilter('')">
+                            <icon icon="times" />
+                        </b-button>
+                    </b-input-group-append>
+                </b-input-group>
 
                 <hr class="w-100" />
 
                 <multiple-view-list
                     :histories="histories"
-                    :histories-filter="historiesFilter"
                     :data-sets-filter="dataSetsFilter"
                     :current-history="currentHistory"
                     :handlers="handlers" />
@@ -87,7 +57,6 @@ export default {
     data() {
         return {
             dataSetsFilter: "",
-            historiesFilter: "",
         };
     },
     created() {
@@ -96,9 +65,6 @@ export default {
         }, 1000);
     },
     methods: {
-        updateHistoriesFilter(filter) {
-            this.historiesFilter = filter;
-        },
         updateDataSetsFilter(filter) {
             this.dataSetsFilter = filter;
         },
