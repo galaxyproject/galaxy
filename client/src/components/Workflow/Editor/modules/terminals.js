@@ -333,6 +333,11 @@ class BaseInputTerminal extends Terminal {
     }
     _producesAcceptableDatatype(other) {
         // other is a non-collection output...
+
+        if (other instanceof OutputParameterTerminal) {
+            return new ConnectionAcceptable(false, "Cannot connect workflow parameter to data input.");
+        }
+
         for (const t in this.datatypes) {
             const thisDatatype = this.datatypes[t];
             if (thisDatatype == "input") {
