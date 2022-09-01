@@ -47,15 +47,16 @@ class ShedRepositoriesApiTestCase(ShedApiTestCase):
     # used by getRepository in TS client.
     def test_metadata_simple(self):
         populator = self.populator
-        repository_id = populator.setup_column_maker_repo(prefix="repoformetadata").id
-        metadata_response = self.api_interactor.get(f"repositories/{repository_id}/metadata")
-        api_asserts.assert_status_code_is_ok(metadata_response)
-        metadata_for_revisions = metadata_response.json()
+        repository = populator.setup_column_maker_repo(prefix="repoformetadata")
+        repository_metadata = populator.get_metadata(repository)
+        metadata_for_revisions = repository_metadata.__root__
         assert len(metadata_for_revisions) == 1
         only_key = list(metadata_for_revisions.keys())[0]
         assert only_key.startswith("0:")
         only_revision = list(metadata_for_revisions.values())[0]
-        api_asserts.assert_has_keys(only_revision, "repository", "repository_dependencies", "numeric_revision")
+        assert only_revision
+        assert only_revision.downloadable
+        assert not only_revision.malicious
 
     def test_index_simple(self):
         populator = self.populator

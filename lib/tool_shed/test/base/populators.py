@@ -1,4 +1,8 @@
-from typing import Union
+from typing import (
+    Any,
+    Dict,
+    Union,
+)
 
 import requests
 
@@ -13,6 +17,7 @@ from tool_shed_client.schema import (
     GetOrderedInstallableRevisionsRequest,
     OrderedInstallableRevisions,
     Repository,
+    RepositoryMetadata,
     RepositoryUpdate,
     ResetMetadataOnRepositoryRequest,
     ResetMetadataOnRepositoryResponse,
@@ -49,6 +54,10 @@ class ToolShedPopulator:
         )
         assert response.is_ok
         return repository
+
+    def setup_column_maker_and_get_metadata(self, prefix=DEFAULT_PREFIX) -> RepositoryMetadata:
+        repository = self.setup_column_maker_repo(prefix=prefix)
+        return self.get_metadata(repository)
 
     def update_column_maker_repo(self, repository: HasRepositoryId) -> requests.Response:
         response = self.upload_revision(
@@ -111,12 +120,23 @@ class ToolShedPopulator:
         api_asserts.assert_status_code_is_ok(revisions_response)
         return OrderedInstallableRevisions(__root__=revisions_response.json())
 
+    def get_metadata(self, repository: HasRepositoryId) -> RepositoryMetadata:
+        repository_id = self._repository_id(repository)
+        metadata_response = self._api_interactor.get(f"repositories/{repository_id}/metadata")
+        api_asserts.assert_status_code_is_ok(metadata_response)
+        return RepositoryMetadata(__root__=metadata_response.json())
+
     def reset_metadata(self, repository: HasRepositoryId) -> ResetMetadataOnRepositoryResponse:
         repository_id = self._repository_id(repository)
         request = ResetMetadataOnRepositoryRequest(repository_id=repository_id)
         reset_response = self._api_interactor.post("repositories/reset_metadata_on_repository", json=request.dict())
-        reset_response.raise_for_status()
+        api_asserts.assert_status_code_is_ok(reset_response)
         return ResetMetadataOnRepositoryResponse(**reset_response.json())
+
+    def guid(self, repository: Repository, tool_id: str, tool_version: str) -> str:
+        url = self._api_interactor.url
+        base = url.split("://")[1].split("/")[0]
+        return f"{base}/repos/{repository.owner}/{repository.name}/{tool_id}/{tool_version}"
 
     def _repository_id(self, has_id: HasRepositoryId) -> str:
         if isinstance(has_id, Repository):
