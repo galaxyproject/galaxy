@@ -29,6 +29,7 @@ from sqlalchemy.engine import (
     CursorResult,
     Engine,
 )
+from sqlalchemy.exc import OperationalError
 
 from galaxy.model import Base as gxy_base
 from galaxy.model.database_utils import (
@@ -361,7 +362,14 @@ class DatabaseStateVerifier:
 
     def _handle_no_database(self) -> bool:
         url = get_url_string(self.engine)
-        if not database_exists(url):
+
+        try:
+            # connect using the database name from the sqlalchemy engine
+            exists = database_exists(url, database=self.engine.url.database)
+        except OperationalError:
+            exists = False
+
+        if not exists:
             self._create_database(url)
             self._initialize_database()
             return True
