@@ -40,6 +40,7 @@ const mutations = {
 };
 
 export const workflowStateStore = {
+    namespaced: true,
     state,
     getters,
     actions,

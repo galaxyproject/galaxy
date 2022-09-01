@@ -287,7 +287,7 @@ export default {
             return this.nodes[this.activeNodeId];
         },
         activeNodeId() {
-            return this.$store.getters.getActiveNode();
+            return this.$store.getters["workflowState/getActiveNode"]();
         },
         activeNodeName() {
             return this.activeNode?.name;
@@ -463,7 +463,7 @@ export default {
                 tool_state: JSON.parse(JSON.stringify(node.tool_state)),
                 post_job_actions: JSON.parse(JSON.stringify(node.postJobActions)),
             });
-            this.$store.commit("setActiveNode", newId);
+            this.$store.commit("workflowState/setActiveNode", newId);
         },
         onInsertTool(tool_id, tool_name) {
             this._insertStep(tool_id, tool_name, "tool");
@@ -640,7 +640,7 @@ export default {
                 content_id: contentId,
                 type: type,
             });
-            this.$store.commit("setActiveNode", this.nodeIndex);
+            this.$store.commit("workflowState/setActiveNode", this.nodeIndex);
         },
         async _loadEditorData(data) {
             const report = data.report || {};

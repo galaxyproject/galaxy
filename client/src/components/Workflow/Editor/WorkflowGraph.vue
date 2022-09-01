@@ -120,12 +120,12 @@ export default {
         onActivate(nodeId) {
             console.log("onNodeId", nodeId);
             if (this.activeNodeId != nodeId) {
-                this.$store.commit("setActiveNode", nodeId);
-                this.canvasManager.drawOverview();
+                this.$store.commit("workflowState/setActiveNode", nodeId);
+                // this.canvasManager.drawOverview();
             }
         },
         onDeactivate() {
-            this.$store.commit("setActiveNode", null);
+            this.$store.commit("workflowState/setActiveNode", null);
         },
         onRemove(nodeId) {
             this.$emit("onRemove", nodeId);
