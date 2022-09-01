@@ -199,12 +199,12 @@ table.info_data_table th:nth-child(1) {
         cursor: default;
 
         // differentiate disabled items more
-        color: #bfc7cf !important;
+        color: #bfc7cf;
     }
 
     .dropdown-item.active {
         background-color: unset;
-        color: $brand-primary !important;
+        color: $brand-primary;
         font-weight: 600;
     }
 }
