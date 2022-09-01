@@ -86,7 +86,7 @@ const showVersions = computed(() => props.options.versions?.length > 1);
                     <span itemprop="description">{{ description }}</span>
                     <span>(Galaxy Version {{ version }})</span>
                 </div>
-                <div class="d-flex flex-nowrap align-items-start">
+                <div class="d-flex flex-nowrap align-items-start flex-gapx-1">
                     <b-button-group class="tool-card-buttons">
                         <ToolFavoriteButton v-if="hasUser" :id="props.id" @onSetError="onSetError" />
                         <ToolVersionsButton
@@ -153,14 +153,6 @@ const showVersions = computed(() => props.options.versions?.length > 1);
 
 .tool-card-buttons {
     height: 2em;
-}
-
-.flex-gapx-1 {
-    column-gap: 0.25em;
-}
-
-.sticky-top {
-    z-index: 800;
 }
 
 .portlet-backdrop {

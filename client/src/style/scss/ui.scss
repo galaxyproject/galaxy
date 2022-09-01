@@ -471,3 +471,8 @@ $ui-margin-horizontal-large: $margin-v * 2;
         stroke-width: 1;
     }
 }
+
+/* Gap utility for flexbox. Bootstrap Gap ony works for grid */
+.flex-gapx-1 {
+    column-gap: 0.25rem;
+}

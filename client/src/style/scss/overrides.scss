@@ -208,3 +208,8 @@ table.info_data_table th:nth-child(1) {
         font-weight: 600;
     }
 }
+
+// show sticky elements behind dropdown-menus
+.sticky-top {
+    z-index: 800;
+}
