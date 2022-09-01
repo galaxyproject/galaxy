@@ -12,15 +12,26 @@
             v-on="handlers"
             @view-collection="onViewCollection">
         </HistoryPanel>
-        <b-button
-            size="sm"
-            class="my-1"
-            :disabled="sameToCurrent"
-            :variant="sameToCurrent ? 'disabled' : 'outline-info'"
-            :title="sameToCurrent ? 'Current History' : 'Switch to this history'"
-            @click="handlers.setCurrentHistory(source)">
-            {{ sameToCurrent ? "Current History" : "Switch to" }}
-        </b-button>
+
+        <div class="flex-row flex-grow-0">
+            <b-button
+                size="sm"
+                class="my-1"
+                :disabled="sameToCurrent"
+                :variant="sameToCurrent ? 'disabled' : 'outline-info'"
+                :title="sameToCurrent ? 'Current History' : 'Switch to this history'"
+                @click="handlers.setCurrentHistory(source)">
+                {{ sameToCurrent ? "Current History" : "Switch to" }}
+            </b-button>
+            <b-button
+                size="sm"
+                class="my-1"
+                variant="outline-danger"
+                title="Hide this history from the list"
+                @click="removeHistoryFromList(source)">
+                Hide
+            </b-button>
+        </div>
     </div>
 </template>
 
@@ -49,6 +60,10 @@ export default {
         dataSetsFilter: {
             type: String,
             default: null,
+        },
+        removeHistoryFromList: {
+            type: Function,
+            required: true,
         },
     },
     data() {
