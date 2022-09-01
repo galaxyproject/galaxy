@@ -129,7 +129,7 @@ export default {
                 .then((data) => {
                     this.hasParameterErrors = data.has_parameter_errors;
                     this.parameters = data.parameters;
-                    this.outputs = data.outputs;
+                    this.outputs = data.outputs || {};
                 })
                 .catch((e) => {
                     console.error(e);
