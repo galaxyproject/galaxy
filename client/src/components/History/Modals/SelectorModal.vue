@@ -6,7 +6,6 @@
 
         <b-table
             striped
-            no-sort-reset
             hover
             sticky-header="50vh"
             primary-key="id"
@@ -25,10 +24,6 @@
             @filtered="onFiltered">
             <template v-slot:cell(tags)="row">
                 <stateless-tags :value="row.item.tags" :disabled="true" />
-            </template>
-            <template v-slot:cell(published)="data">
-                <span v-if="data.value" class="fa fa-check text-success" />
-                <span v-else class="fa fa-times text-danger" />
             </template>
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
@@ -89,8 +84,7 @@ export default {
         this.fields = [
             { key: "name", sortable: true },
             { key: "tags", sortable: true },
-            { key: "count", label: "Length", sortable: true },
-            { key: "published", sortable: false },
+            { key: "count", label: "Items", sortable: true },
             { key: "update_time", label: "Updated", sortable: true },
         ];
     },
