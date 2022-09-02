@@ -5,13 +5,13 @@
                 <LoadingSpan message="Loading Histories" />
             </b-alert>
             <div v-else-if="histories.length" id="histories" class="d-flex flex-column h-100">
-                <b-input-group class="m-auto w-25">
+                <b-input-group class="w-100">
                     <DebouncedInput v-slot="{ value, input }" v-model="filter">
                         <b-form-input
                             size="sm"
                             :class="filter && 'font-weight-bold'"
                             :value="value"
-                            :placeholder="'search datasets  in selected histories' | l"
+                            :placeholder="'search datasets in selected histories' | l"
                             data-description="filter text input"
                             @input="input"
                             @keyup.esc="updateFilter('')" />
@@ -22,7 +22,6 @@
                         </b-button>
                     </b-input-group-append>
                 </b-input-group>
-                <hr class="w-100" />
                 <multiple-view-list
                     :histories="histories"
                     :filter="filter"
@@ -67,7 +66,6 @@ export default {
     },
     methods: {
         updateFilter(filter) {
-            console.log("updateFilter", filter);
             this.filter = filter;
         },
     },

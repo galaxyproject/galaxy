@@ -13,7 +13,7 @@
             :show-controls="false"
             v-on="handlers"
             @view-collection="onViewCollection" />
-
+        <hr class="w-100 m-2" />
         <div class="flex-row flex-grow-0">
             <b-button
                 size="sm"

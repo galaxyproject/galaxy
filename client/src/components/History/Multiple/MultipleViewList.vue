@@ -71,7 +71,8 @@ export default {
     methods: {
         addHistoriesToList(histories) {
             histories.forEach((history) => {
-                if (!this.selectedHistories.includes(history)) {
+                const historyExists = this.selectedHistories.find((h) => h.id == history.id);
+                if (!historyExists) {
                     this.selectedHistories.push({ id: history.id });
                 }
             });
