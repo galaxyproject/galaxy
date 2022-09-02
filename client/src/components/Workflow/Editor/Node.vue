@@ -86,7 +86,7 @@
                 :offset-x="offset.x"
                 :offset-y="offset.y"
                 v-on="$listeners"
-                @stop="onStop"
+                @stopDragging="onStopDragging"
                 @onAdd="onAddOutput"
                 @onRemove="onRemoveOutput"
                 @onToggle="onToggleOutput"
@@ -268,8 +268,9 @@ export default {
                 left: this.step.position.left + deltaX,
             });
         },
-        onStop() {
-            console.log("onStop called");
+        onStopDragging() {
+            console.log("onStopDragging called");
+            this.$emit("stopDragging");
         },
         onUpdatePosition(position) {
             this.$emit("onUpdateStepPosition", this.step.id, position);

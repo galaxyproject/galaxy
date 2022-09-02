@@ -3,7 +3,7 @@
         :draggable-options="draggableOptions"
         @start="onDragStart"
         @move="move"
-        :stop="stopPropagation"
+        :stop="onStopDragging"
         :start="stopPropagation"
         :drag="stopPropagation"
         v-on="$listeners">
@@ -55,6 +55,11 @@ export default {
             console.log("mousedown", e);
             this.$emit("mousedown", e);
         },
+        onStopDragging(e) {
+            console.log("stopDragging");
+            e.stopPropagation();
+            this.$emit("stopDragging");
+        },
         stopPropagation(e) {
             e.stopPropagation();
         },
@@ -62,22 +67,6 @@ export default {
             console.log("moveEvent", e);
             e.event.stopPropagation();
         },
-        // onMouseDown(e) {
-        //     this.mouseDown = { offsetX: e.offsetX, offsetY: e.offsetY };
-        //     if (!this.position) {
-        //         const { top, left } = this.$refs.drag.getBoundingClientRect();
-        //         this._localPosition = { top: top + window.scrollY, left: left + window.scrollX };
-        //     }
-        // },
-        // onDrag(e) {
-        //     const left = this.localPosition.left + (e.offsetX - this.mouseDown.offsetX) / this.zoom;
-        //     const top = this.localPosition.top + (e.offsetY - this.mouseDown.offsetY) / this.zoom;
-        //     this.$emit("updatePosition", { left, top });
-        // },
-        // onDragEnd(e) {
-        //     // this.onDrag(e);
-        //     this.$emit("dragEnd");
-        // },
     },
 };
 </script>

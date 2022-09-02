@@ -341,7 +341,8 @@ export default {
             }
         },
         steps(newSteps, oldSteps) {
-            this.hasChanges = true;
+            console.log("steps watch triggered");
+            // this.hasChanges = true;
             this.nodeIndex = Math.max(...Object.keys(newSteps).map((k) => parseInt(k))) + 1;
         },
         nodes(newNodes, oldNodes) {
@@ -368,7 +369,7 @@ export default {
         },
         onUpdateStepPosition(stepId, position) {
             console.log("updating step position");
-            // this.steps[stepId].position = position;
+            this.steps[stepId].position = position;
         },
         onDisconnect(nodeId, inputName) {
             delete this.steps[nodeId].input_connections[inputName];
@@ -541,7 +542,7 @@ export default {
         },
         onAttributes() {
             this._ensureParametersSet();
-            this.onDeactivate();
+            this.$store.commit("workflowState/setActiveNode", null);
             this.showInPanel = "attributes";
         },
         onAnnotation(nodeId, newAnnotation) {

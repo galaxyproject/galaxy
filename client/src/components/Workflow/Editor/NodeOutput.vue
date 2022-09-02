@@ -14,9 +14,8 @@
             :class="terminalClass"
             :output-name="output.name"
             @start="isDragging = true"
-            @stop="onStopDragging"
-            @move="onMove"
-            v-on="$listeners">
+            @stopDragging="onStopDragging"
+            @move="onMove">
             <div class="icon" ref="terminal"></div>
         </draggable-wrapper>
     </div>
@@ -79,7 +78,7 @@ export default {
     },
     computed: {
         position() {
-            return { startX: this.startX, startY: this.startY };
+            return Object.freeze({ startX: this.startX, startY: this.startY });
         },
         startX() {
             const newX = this.initX + this.offsetX;
@@ -156,6 +155,7 @@ export default {
             console.log("is dragging ?", this.isDragging);
         },
         dragPosition() {
+            console.log("dragPosition", this.endX);
             if (this.isDragging) {
                 this.$emit("onDragConnector", this.dragPosition);
             }
@@ -180,6 +180,7 @@ export default {
             this.isDragging = false;
             this.deltaX = 0;
             this.deltaY = 0;
+            this.$emit("stopDragging");
         },
         inputDragStart(e) {
             console.log("inputDragStart", e);
@@ -195,7 +196,8 @@ export default {
         },
         onChange() {
             // this.isMultiple = this.terminal.isMappedOver();
-            this.$emit("onChange");
+            console.log("onChange");
+            // this.$emit("onChange");
         },
         onToggle() {
             this.$emit("onToggle", this.output.name);

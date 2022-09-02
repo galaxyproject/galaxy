@@ -23,66 +23,18 @@ export async function fromSimple(workflow, data, appendData = false) {
 }
 
 export function toSimple(workflow) {
-    const nodes = {};
-    const canvasZoom = workflow.canvasManager.canvasZoom;
+    console.log("to Simple");
+    const steps = {};
     _rectifyOutputs(workflow);
     Object.values(workflow.nodes).forEach((node) => {
-        const input_connections = {};
-        Object.values(node.inputTerminals).forEach((t) => {
-            input_connections[t.name] = null;
-            // There should only be 0 or 1 connectors, so this is
-            // really a sneaky if statement
-            const cons = [];
-            t.connectors.forEach((c, i) => {
-                if (c.outputHandle) {
-                    const con_dict = {
-                        id: c.outputHandle.node.id,
-                        output_name: c.outputHandle.name,
-                    };
-                    const input_subworkflow_step_id = t.attributes.input.input_subworkflow_step_id;
-                    if (input_subworkflow_step_id !== undefined) {
-                        con_dict.input_subworkflow_step_id = input_subworkflow_step_id;
-                    }
-                    cons[i] = con_dict;
-                    input_connections[t.name] = cons;
-                }
-            });
-        });
-        const postJobActions = {};
-        if (node.postJobActions) {
-            Object.values(node.postJobActions).forEach((act) => {
-                const pja = {
-                    action_type: act.action_type,
-                    output_name: act.output_name,
-                    action_arguments: act.action_arguments,
-                };
-                postJobActions[act.action_type + act.output_name] = null;
-                postJobActions[act.action_type + act.output_name] = pja;
-            });
-        }
-        const node_data = {
-            id: node.id,
-            type: node.type,
-            content_id: node.content_id,
-            tool_version: node.config_form ? node.config_form.version : null,
-            tool_state: node.tool_state,
-            errors: node.errors,
-            input_connections: input_connections,
-            position: _scaledNodePosition(node.element, canvasZoom),
-            annotation: node.annotation,
-            post_job_actions: node.postJobActions,
-            uuid: node.uuid,
-            label: node.label,
-            workflow_outputs: node.activeOutputs.getAll(),
-        };
-        nodes[node.id] = node_data;
+        steps[node.id] = node.step;
     });
     const report = workflow.report;
     const license = workflow.license;
     const creator = workflow.creator;
     const annotation = workflow.annotation;
     const name = workflow.name;
-    return { steps: nodes, report, license, creator, annotation, name };
+    return { steps, report, license, creator, annotation, name };
 }
 
 function _scaledNodePosition(element, canvasZoom) {

@@ -39,6 +39,7 @@ galaxyStorage.config({
     storeName: "galaxyStore",
 });
 
+// smh vuex-persistence incurs a 100ms penalty on commit (at least for the workflowState store)
 const panelsPersistence = new VuexPersistence({
     storage: galaxyStorage,
     asyncStorage: true,
@@ -53,7 +54,7 @@ const panelsPersistence = new VuexPersistence({
 
 export function createStore() {
     const storeConfig = {
-        plugins: [createCache(), panelsPersistence.plugin],
+        plugins: [createCache()],
         modules: {
             collectionAttributesStore: collectionAttributesStore,
             collectionElements: collectionElementsStore,

@@ -46,7 +46,11 @@ export default {
             isMultiple: false,
             initX: 0,
             initY: 0,
+            nodeId: null,
         };
+    },
+    created() {
+        this.nodeId = this.getNode().id;
     },
     mounted() {
         const rect = this.$refs.terminal.getBoundingClientRect();
@@ -75,7 +79,7 @@ export default {
             return this.initY + this.offsetY;
         },
         position() {
-            return { endX: this.startX, endY: this.startY };
+            return Object.freeze({ endX: this.startX, endY: this.startY });
         },
     },
     beforeDestroy() {
@@ -84,9 +88,13 @@ export default {
     },
     watch: {
         position(position) {
-            console.log(position);
+            console.log({
+                stepId: this.nodeId,
+                inputName: this.input.name,
+                position,
+            });
             this.$store.commit("workflowState/setInputTerminalPosition", {
-                stepId: this.getNode().id,
+                stepId: this.nodeId,
                 inputName: this.input.name,
                 position,
             });
@@ -102,6 +110,7 @@ export default {
         },
         mouseOver(e) {
             console.log("mousOver");
+            // }
         },
         mouseLeave() {
             this.showRemove = false;

@@ -13,17 +13,9 @@ export default {
             type: String,
             required: false,
         },
-        startX: {
-            type: Number,
-        },
-        startY: {
-            type: Number,
-        },
-        endX: {
-            type: Number,
-        },
-        endY: {
-            type: Number,
+        position: {
+            type: Object,
+            required: true,
         },
     },
     data() {
@@ -36,12 +28,6 @@ export default {
         // this.terminal.destroy();
     },
     computed: {
-        left() {
-            return Math.min(this.startX, this.endX);
-        },
-        top() {
-            return Math.max(this.startY, this.endY);
-        },
         offsetStart() {
             return 0;
         },
@@ -50,10 +36,10 @@ export default {
         },
         lineData() {
             const data = [
-                { x: this.startX, y: this.startY + this.offsetStart },
-                { x: this.startX + this.lineShift, y: this.startY + this.offsetStart },
-                { x: this.endX - this.lineShift, y: this.endY + this.offsetEnd },
-                { x: this.endX, y: this.endY + this.offsetEnd },
+                { x: this.position.startX, y: this.position.startY + this.offsetStart },
+                { x: this.position.startX + this.lineShift, y: this.position.startY + this.offsetStart },
+                { x: this.position.endX - this.lineShift, y: this.position.endY + this.offsetEnd },
+                { x: this.position.endX, y: this.position.endY + this.offsetEnd },
             ];
             return data;
         },

@@ -1,3 +1,7 @@
+.canvas-svg {
+    // not sure if hack or not ...
+    overflow: visible;
+}
 .workflow-client {
     .workflow-panel {
         background: $white;
@@ -218,11 +222,11 @@
             z-index: 10;
         }
         canvas {
-            position: absolute;
+            position: relative;
             z-index: 10;
         }
         canvas.dragging {
-            position: absolute;
+            position: relative;
             z-index: 1000;
         }
     }

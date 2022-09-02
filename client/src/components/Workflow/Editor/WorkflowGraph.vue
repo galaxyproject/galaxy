@@ -9,20 +9,12 @@
             @mouseup="handleUp"
             @mousedown.prevent.stop="handleDown">
             <div id="canvas-container" ref="canvas">
-                <svg width="100%" height="100%">
-                    <connector
-                        v-if="draggingConnection"
-                        :startX="draggingConnection.startX"
-                        :endX="draggingConnection.endX"
-                        :startY="draggingConnection.startY"
-                        :endY="draggingConnection.endY"></connector>
-                    <connector
+                <svg class="canvas-svg">
+                    <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
+                    <terminal-connector
                         v-for="connection in connections"
                         :key="connection.id"
-                        :startX="connection.startX"
-                        :endX="connection.endX"
-                        :startY="connection.startY"
-                        :endY="connection.endY"></connector>
+                        :connection="connection"></terminal-connector>
                 </svg>
                 <WorkflowNode
                     v-for="(step, key) in steps"
@@ -36,7 +28,7 @@
                     :get-manager="getManager"
                     :activeNodeId="activeNodeId"
                     :root-offset="rootOffset"
-                    @stop="onStop"
+                    @stopDragging="onStopDragging"
                     @onDragConnector="onDragConnector"
                     @onActivate="onActivate"
                     @onRemove="onRemove"
@@ -56,15 +48,15 @@
 <script>
 import ZoomControl from "./ZoomControl";
 import WorkflowNode from "./Node";
-import WorkflowConnection from "./WorkflowConnection";
-import Connector from "./Connector.vue";
+import RawConnector from "./Connector";
+import TerminalConnector from "./TerminalConnector";
 
 export default {
     components: {
-        Connector,
+        RawConnector,
+        TerminalConnector,
         WorkflowNode,
         ZoomControl,
-        WorkflowConnection,
     },
     data() {
         return {
@@ -99,7 +91,7 @@ export default {
         // this.canvasManager.scrollToNodes();
     },
     methods: {
-        onStop() {
+        onStopDragging() {
             console.log("onStop");
             this.draggingConnection = null;
         },
@@ -137,6 +129,7 @@ export default {
             return this.$store.getters["workflowState/getActiveNode"]();
         },
         connections() {
+            console.log("connection fired");
             const connections = [];
             Object.entries(this.steps).forEach(([stepId, step]) => {
                 Object.entries(step.input_connections).forEach(([input_name, outputArray]) => {
@@ -144,21 +137,14 @@ export default {
                         outputArray = [outputArray];
                     }
                     outputArray.forEach((output) => {
-                        const outputPos = this.$store.getters["workflowState/getOutputTerminalPosition"](
-                            output.id,
-                            output.output_name
-                        );
-                        const inputPos = this.$store.getters["workflowState/getInputTerminalPosition"](
-                            step.id,
-                            input_name
-                        );
-                        if (inputPos && outputPos) {
-                            connections.push({
-                                id: `${step.id}-${input_name}-${output.id}-${output.output_name}`,
-                                ...inputPos,
-                                ...outputPos,
-                            });
-                        }
+                        const connection = {
+                            id: `${step.id}-${input_name}-${output.id}-${output.output_name}`,
+                            inputStepId: step.id,
+                            inputName: input_name,
+                            outputStepId: output.id,
+                            outputName: output.output_name,
+                        };
+                        connections.push(connection);
                     });
                 });
             });
