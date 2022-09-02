@@ -8,7 +8,7 @@
             :data-component="MultipleViewItem"
             :data-sources="selectedHistories"
             :direction="'horizontal'"
-            :extra-props="{ currentHistory, handlers, dataSetsFilter, removeHistoryFromList }"
+            :extra-props="{ currentHistory, handlers, filter, removeHistoryFromList }"
             :item-style="{ width: '15rem' }"
             item-class="d-flex mx-1 mt-1"
             class="d-flex"
@@ -54,7 +54,7 @@ export default {
             type: Object,
             required: true,
         },
-        dataSetsFilter: {
+        filter: {
             type: String,
             default: "",
         },

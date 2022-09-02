@@ -173,7 +173,7 @@ export default {
     props: {
         listOffset: { type: Number, default: 0 },
         history: { type: Object, required: true },
-        dataSetsFilter: { type: String, default: "" },
+        filter: { type: String, default: "" },
     },
     data() {
         return {
@@ -229,7 +229,7 @@ export default {
                 this.resetHighlights();
             }
         },
-        dataSetsFilter(newVal) {
+        filter(newVal) {
             this.filterText = newVal;
         },
     },

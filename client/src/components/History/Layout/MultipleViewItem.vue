@@ -5,12 +5,7 @@
             :history="currentHistory"
             :selected-collections.sync="selectedCollections"
             @view-collection="onViewCollection" />
-        <HistoryPanel
-            v-else
-            :history="source"
-            :data-sets-filter="dataSetsFilter"
-            v-on="handlers"
-            @view-collection="onViewCollection">
+        <HistoryPanel v-else :history="source" :filter="filter" v-on="handlers" @view-collection="onViewCollection">
         </HistoryPanel>
 
         <div class="flex-row flex-grow-0">
@@ -57,7 +52,7 @@ export default {
             type: Object,
             required: true,
         },
-        dataSetsFilter: {
+        filter: {
             type: String,
             default: null,
         },

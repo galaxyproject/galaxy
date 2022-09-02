@@ -7,21 +7,18 @@
 
             <div v-else-if="histories.length" id="histories" class="d-flex flex-column h-100">
                 <b-input-group class="m-auto w-25">
-                    <DebouncedInput v-slot="{ value, input }" v-model="dataSetsFilter">
+                    <DebouncedInput v-slot="{ value, input }" v-model="filter">
                         <b-form-input
                             size="sm"
-                            :class="dataSetsFilter && 'font-weight-bold'"
+                            :class="filter && 'font-weight-bold'"
                             :value="value"
                             :placeholder="'search datasets  in selected histories' | l"
                             data-description="filter text input"
                             @input="input"
-                            @keyup.esc="updateDataSetsFilter('')" />
+                            @keyup.esc="updateFilter('')" />
                     </DebouncedInput>
                     <b-input-group-append>
-                        <b-button
-                            size="sm"
-                            data-description="show deleted filter toggle"
-                            @click="updateDataSetsFilter('')">
+                        <b-button size="sm" data-description="show deleted filter toggle" @click="updateFilter('')">
                             <icon icon="times" />
                         </b-button>
                     </b-input-group-append>
@@ -31,7 +28,7 @@
 
                 <multiple-view-list
                     :histories="histories"
-                    :data-sets-filter="dataSetsFilter"
+                    :filter="filter"
                     :current-history="currentHistory"
                     :handlers="handlers" />
             </div>
@@ -56,7 +53,7 @@ export default {
     },
     data() {
         return {
-            dataSetsFilter: "",
+            filter: "",
         };
     },
     created() {
@@ -65,8 +62,9 @@ export default {
         }, 1000);
     },
     methods: {
-        updateDataSetsFilter(filter) {
-            this.dataSetsFilter = filter;
+        updateFilter(filter) {
+            console.log("updateFilter", filter);
+            this.filter = filter;
         },
     },
 };
