@@ -65,13 +65,14 @@ export default {
         };
     },
     created() {
-        this.selectedHistories = [this.histories[0]];
+        const firstHistory = this.histories[0];
+        this.selectedHistories = [{ id: firstHistory.id }];
     },
     methods: {
         addHistoriesToList(histories) {
             histories.forEach((history) => {
                 if (!this.selectedHistories.includes(history)) {
-                    this.selectedHistories.push(history);
+                    this.selectedHistories.push({ id: history.id });
                 }
             });
         },
