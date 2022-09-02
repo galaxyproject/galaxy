@@ -5,10 +5,9 @@ from ..base.api import ShedApiTestCase
 COLUMN_MAKER_PATH = resource_path(__package__, "../test_data/column_maker/column_maker.tar")
 
 
-# Things seemingly not used by Galaxy, Planemo, or Ephemeris...
+# Things seemingly *NOT* used by Galaxy, Planemo, or Ephemeris...
 #   (perhaps we can delete instead of test?)...
 # - reset_metadata_on_repository
-# - repository_ids_for_setting_metadata
 # - reset_metadata_on_repositories
 # - remove_repository_registry_entry
 # - get_repository_revision_install_info

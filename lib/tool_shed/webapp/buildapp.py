@@ -142,7 +142,6 @@ def app_pair(global_conf, load_app_kwds=None, **kwargs):
             "get_ordered_installable_revisions": "GET",
             "get_installable_revisions": "GET",
             "remove_repository_registry_entry": "POST",
-            "repository_ids_for_setting_metadata": "GET",
             "reset_metadata_on_repositories": "POST",
             "reset_metadata_on_repository": "POST",
         },
