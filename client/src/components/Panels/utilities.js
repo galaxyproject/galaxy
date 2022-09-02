@@ -1,136 +1,124 @@
 import { orderBy } from "lodash";
 
-export function filterToolSections(tools, results) {
-    let toolsResults = [];
-    let toolsResultsSection = [];
-
-    if (hasResults(results)) {
-        results = normalizeResults(results);
-        toolsResults = tools.map((section) => {
-            tools = flattenToolsSection(section);
-            toolsResultsSection = mapToolsResults(tools, results);
-            toolsResultsSection = sortToolsResults(toolsResultsSection);
-
-            return {
-                ...section,
-                elems: toolsResultsSection,
-            };
-        });
-
-        toolsResults = deleteEmptySections(toolsResults, results);
-    } else {
-        toolsResults = tools;
+export class toolSearch {
+    constructor() {
+        this.toolsResults = [];
+        this.toolsResultsSortLabel = "apiSort";
+        this.toolsResultsSectionHide = "Expression Tools";
     }
 
-    return toolsResults
-}
+    filter(tools, results) {
+        if (this.hasResults(results)) {
+            tools = this.normalizeTools(tools);
+            this.toolsResults = this.mapToolsResults(tools, results);
+            this.toolsResults = this.sortToolsResults(this.toolsResults);
+        } else {
+            this.toolsResults = tools;
+        }
 
-export function filterTools(tools, results) {
-    let toolsResults = [];
-    
-    if (hasResults(results)) {
-        tools = normalizeTools(tools);
-        results = normalizeResults(results);
-        toolsResults = mapToolsResults(tools, results);
-        toolsResults = sortToolsResults(toolsResults);
-    } else {
-        toolsResults = tools;
+        return this.toolsResults;
     }
 
-    return toolsResults;
-}
+    filterSections(tools, results) {
+        let toolsResultsSection = [];
 
-function normalizeTools(tools) {
-    let normalizedTools = [];
+        if (this.hasResults(results)) {
+            this.toolsResults = tools.map((section) => {
+                tools = this.flattenToolsSection(section);
+                toolsResultsSection = this.mapToolsResults(tools, results);
+                toolsResultsSection = this.sortToolsResults(toolsResultsSection);
 
-    normalizedTools = hideToolsSection(tools, "Expression Tools");
-    normalizedTools = flattenTools(normalizedTools);
+                return {
+                    ...section,
+                    elems: toolsResultsSection,
+                };
+            });
+            this.toolsResults = this.deleteEmptySections(this.toolsResults, results);
+        } else {
+            this.toolsResults = tools;
+        }
 
-    return normalizedTools;
-}
-
-function flattenToolsSection(section) {
-    let flattenTools = [];
-
-    if (section.elems) {
-        section.elems.forEach((elem) => {
-            if (!elem.text) {
-                flattenTools.push(elem);
-            }
-        });
-    } else if (!section.text) {
-        flattenTools.push(section);
+        return this.toolsResults
     }
 
-    return flattenTools;
-}
+    normalizeTools(tools) {
+        tools = this.hideToolsSection(tools);
+        tools = this.flattenTools(tools);
 
-function normalizeResults(results) {
-    let normalizedResults = [];
-
-    if (hasResults(results)) {
-        results.forEach((result) => {
-            normalizedResults.push(result);
-        });
-    } else {
-        normalizedResults = results;
+        return tools;
     }
 
-    return normalizedResults;
-}
+    flattenToolsSection(section) {
+        let flattenTools = [];
 
-function mapToolsResults(tools, results) {
-    let toolsResults = [];
-    let apiSort = {};
+        if (section.elems) {
+            section.elems.forEach((elem) => {
+                if (!elem.text) {
+                    flattenTools.push(elem);
+                }
+            });
+        } else if (!section.text) {
+            flattenTools.push(section);
+        }
 
-    toolsResults = tools
-        //TODO what was the purpose of the following clause? !el.text
-        .filter(tool => /*!el.text && */results.includes(tool.id))
-        .map(tool => {
-            apiSort = {apiSort: results.indexOf(tool.id)};
-            Object.assign(tool, apiSort);
-            return tool;
+        return flattenTools;
+    }
+
+    mapToolsResults(tools, results) {
+        this.toolsResults = tools
+            //TODO what was the purpose of the following clause? !el.text; might be hyphen or breakline; so should see if can add it backx
+            .filter(tool => /*!el.text && */results.includes(tool.id))
+            .map(tool => {
+                Object.assign(tool, this.setSort(tool, results));
+                return tool;
+            });
+
+        return this.toolsResults;
+    }
+
+    setSort(tool, results) {
+        return {[this.toolsResultsSortLabel]: results.indexOf(tool.id)};
+    }
+
+    sortToolsResults(toolsResults) {
+        return orderBy(toolsResults, [this.toolsResultsSortLabel], ["asc"]);
+    }
+
+    deleteEmptySections(tools, results) {
+        let isSection = false;
+        let isMatchedTool = false;
+
+        tools = tools
+            .filter((section) => {
+                isSection = section.elems && section.elems.length > 0;
+                isMatchedTool = !section.text && results.includes(section.id);
+                return isSection || isMatchedTool;
+            })
+            .sort((sect1, sect2) => {
+                if (sect1.elems.length == 0 || sect2.elems.length == 0) {
+                    return 0;
+                }
+                return results.indexOf(sect1.elems[0].id) - results.indexOf(sect2.elems[0].id);
+            });
+        
+        return tools;
+    }
+
+    hideToolsSection(tools) {
+        return tools.filter((section) => section.name !== this.toolsPanelSectionHide);
+    }
+
+    flattenTools(tools) {
+        let normalizedTools = [];
+
+        tools.forEach((section) => {
+            normalizedTools = normalizedTools.concat(this.flattenToolsSection(section));
         });
+        
+        return normalizedTools;
+    }
 
-    return toolsResults;
-}
-function sortToolsResults(toolsResults) {
-    toolsResults = orderBy(toolsResults, ['apiSort'], ['asc']);
-
-    return toolsResults;
-}
-
-function deleteEmptySections(tools, results) {
-    tools = tools
-        .filter((section) => {
-            const isSection = section.elems && section.elems.length > 0;
-            const isMatchedTool = !section.text && results.includes(section.id);
-            return isSection || isMatchedTool;
-        })
-        .sort((sect1, sect2) => {
-            if (sect1.elems.length == 0 || sect2.elems.length == 0) {
-                return 0;
-            }
-            return results.indexOf(sect1.elems[0].id) - results.indexOf(sect2.elems[0].id);
-        });
-    
-    return tools;
-}
-
-function hideToolsSection(tools, sectionName) {
-    return tools.filter((section) => section.name !== sectionName);
-}
-
-function flattenTools(tools) {
-    let normalizedTools = [];
-
-    tools.forEach((section) => {
-        normalizedTools = normalizedTools.concat(flattenToolsSection(section));
-    });
-    
-    return normalizedTools;
-}
-
-function hasResults(results) {
-    return Array.isArray(results) && results.length > 0;
+    hasResults(results) {
+        return Array.isArray(results) && results.length > 0;
+    }
 }
