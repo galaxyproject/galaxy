@@ -32,6 +32,10 @@
                     :current-history="currentHistory"
                     :handlers="handlers" />
             </div>
+
+            <b-alert v-else class="m-2" variant="info" show>
+                <span v-localize class="font-weight-bold">No History found.</span>
+            </b-alert>
         </UserHistories>
     </CurrentUser>
 </template>
