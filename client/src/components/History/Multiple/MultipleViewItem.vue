@@ -5,8 +5,13 @@
             :history="getHistory"
             :selected-collections.sync="selectedCollections"
             @view-collection="onViewCollection" />
-        <HistoryPanel v-else :history="getHistory" :filter="filter" v-on="handlers" @view-collection="onViewCollection">
-        </HistoryPanel>
+        <HistoryPanel
+            v-else
+            :history="getHistory"
+            :filter="filter"
+            :show-controls="false"
+            v-on="handlers"
+            @view-collection="onViewCollection" />
 
         <div class="flex-row flex-grow-0">
             <b-button

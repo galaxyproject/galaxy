@@ -27,9 +27,10 @@
                 :filter-text="filterText"
                 :total-items-in-query="totalItemsInQuery"
                 @query-selection-break="querySelectionBreak = true">
-                <section class="history-layout d-flex flex-column">
+                <section class="history-layout d-flex flex-column w-100">
                     <slot name="navigation" :history="history" />
                     <HistoryFilters
+                        v-if="showControls"
                         class="content-operations-filters mx-3"
                         :filter-text.sync="filterText"
                         :show-advanced.sync="showAdvanced" />
@@ -37,12 +38,14 @@
                         <HistoryDetails :history="history" @update:history="$emit('updateHistory', $event)" />
                         <HistoryMessages :history="history" />
                         <HistoryCounter
+                            v-if="showControls"
                             :history="history"
                             :is-watching="isWatching"
                             :last-checked="lastChecked"
                             :filter-text.sync="filterText"
                             @reloadContents="reloadContents" />
                         <HistoryOperations
+                            v-if="showControls"
                             :history="history"
                             :show-selection="showSelection"
                             :expanded-count="expandedCount"
@@ -174,6 +177,7 @@ export default {
         listOffset: { type: Number, default: 0 },
         history: { type: Object, required: true },
         filter: { type: String, default: "" },
+        showControls: { type: Boolean, default: true },
     },
     data() {
         return {
@@ -283,7 +287,7 @@ export default {
             }
         },
         onOperationError(error) {
-            console.debug("OPERATION ERROR", error);
+            console.debug("HistoryPanel - Operation error.", error);
             this.operationError = error;
         },
         async toggleHighlights(item) {
