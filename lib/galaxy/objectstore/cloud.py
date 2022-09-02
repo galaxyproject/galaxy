@@ -66,7 +66,7 @@ class CloudConfigMixin:
                 "enabled": self.cache_monitor_enabled,
                 "cache_limit": self.cache_monitor_cache_limit,
                 "interval": self.cache_monitor_interval,
-                "startup_delay": self.cache_monitor_startup_delay
+                "startup_delay": self.cache_monitor_startup_delay,
             },
         }
 

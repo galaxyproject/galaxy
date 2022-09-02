@@ -88,7 +88,7 @@ def test_cache_monitor():
         "cache_monitor_interval": config["cache_monitor"]["interval"],
         "cache_monitor_startup_delay": config["cache_monitor"]["startup_delay"],
         "staging_path": cache_dir.name,
-        "cache_size": config["cache"]["size"]
+        "cache_size": config["cache"]["size"],
     }
 
     # This Event object is initialized to False

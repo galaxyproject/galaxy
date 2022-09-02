@@ -220,7 +220,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
                 "cache_monitor_interval": self.cache_monitor_interval,
                 "cache_monitor_startup_delay": self.cache_monitor_startup_delay,
                 "staging_path": self.staging_path,
-                "cache_size": self.cache_size
+                "cache_size": self.cache_size,
             }
             self.start_cache_monitor(cache_monitor_args)
 
