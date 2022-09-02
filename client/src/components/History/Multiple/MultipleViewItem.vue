@@ -2,10 +2,10 @@
     <div id="list-item" class="d-flex flex-column align-items-center">
         <CurrentCollection
             v-if="selectedCollections.length && selectedCollections[0].history_id === source.id"
-            :history="currentHistory"
+            :history="getHistory"
             :selected-collections.sync="selectedCollections"
             @view-collection="onViewCollection" />
-        <HistoryPanel v-else :history="source" :filter="filter" v-on="handlers" @view-collection="onViewCollection">
+        <HistoryPanel v-else :history="getHistory" :filter="filter" v-on="handlers" @view-collection="onViewCollection">
         </HistoryPanel>
 
         <div class="flex-row flex-grow-0">
@@ -31,6 +31,7 @@
 </template>
 
 <script>
+import { mapGetters } from "vuex";
 import HistoryPanel from "components/History/CurrentHistory/HistoryPanel";
 import CurrentCollection from "components/History/CurrentCollection/CollectionPanel";
 
@@ -67,8 +68,12 @@ export default {
         };
     },
     computed: {
+        ...mapGetters({ getHistoryById: "history/getHistoryById" }),
         sameToCurrent() {
             return this.currentHistory.id === this.source.id;
+        },
+        getHistory() {
+            return this.getHistoryById(this.source.id);
         },
     },
     methods: {
