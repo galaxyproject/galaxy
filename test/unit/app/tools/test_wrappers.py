@@ -160,10 +160,12 @@ def test_input_value_wrapper_comparison(tool):
     assert bool(wrapper) is True, wrapper
     assert str(wrapper) == "truevalue"
     assert wrapper == "truevalue"
+    assert wrapper == "true"
     wrapper = valuewrapper(tool, False, "boolean")
     assert bool(wrapper) is False, wrapper
     assert str(wrapper) == "falsevalue"
     assert wrapper == "falsevalue"
+    assert wrapper == "false"
 
 
 @with_mock_tool
