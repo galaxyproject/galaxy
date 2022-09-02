@@ -1,6 +1,6 @@
 <template>
     <div id="list-item" class="d-flex flex-column align-items-center">
-        <CurrentCollection
+        <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0].history_id === source.id"
             :history="getHistory"
             :selected-collections.sync="selectedCollections"
@@ -38,12 +38,12 @@
 <script>
 import { mapGetters } from "vuex";
 import HistoryPanel from "components/History/CurrentHistory/HistoryPanel";
-import CurrentCollection from "components/History/CurrentCollection/CollectionPanel";
+import CollectionPanel from "components/History/CurrentCollection/CollectionPanel";
 
 export default {
     components: {
         HistoryPanel,
-        CurrentCollection,
+        CollectionPanel,
     },
     props: {
         source: {
