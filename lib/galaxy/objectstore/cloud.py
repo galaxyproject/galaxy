@@ -103,10 +103,12 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         self.cache_size = cache_dict.get("size", -1)
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         cache_monitor_dict = config_dict["cache_monitor"]
-        self.cache_monitor_enabled, \
-            self.cache_monitor_cache_limit, \
-            self.cache_monitor_interval, \
-            self.cache_monitor_startup_delay = get_cache_monitor_values(cache_monitor_dict)
+        (
+            self.cache_monitor_enabled,
+            self.cache_monitor_cache_limit,
+            self.cache_monitor_interval,
+            self.cache_monitor_startup_delay,
+        ) = get_cache_monitor_values(cache_monitor_dict)
         self._initialize()
 
     def _initialize(self):
@@ -118,11 +120,11 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
 
         if self.cache_size != -1 and self.cache_monitor_enabled:
             cache_monitor_args = {
-                'cache_monitor_cache_limit': self.cache_monitor_cache_limit,
-                'cache_monitor_interval': self.cache_monitor_interval,
-                'cache_monitor_startup_delay': self.cache_monitor_startup_delay,
-                'staging_path': self.staging_path,
-                'cache_size': self.cache_size
+                "cache_monitor_cache_limit": self.cache_monitor_cache_limit,
+                "cache_monitor_interval": self.cache_monitor_interval,
+                "cache_monitor_startup_delay": self.cache_monitor_startup_delay,
+                "staging_path": self.staging_path,
+                "cache_size": self.cache_size,
             }
             self.start_cache_monitor(cache_monitor_args)
 

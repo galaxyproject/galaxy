@@ -451,16 +451,16 @@ class ConcreteObjectStore(BaseObjectStore):
         stop_cache_monitor_event = args[0]
         sleeper = args[1]
 
-        time.sleep(kwargs['cache_monitor_startup_delay'])  # Wait for things to load before starting the monitor
+        time.sleep(kwargs["cache_monitor_startup_delay"])  # Wait for things to load before starting the monitor
         while not stop_cache_monitor_event.is_set():
             # Is this going to be too expensive of an operation to be done frequently?
-            total_size, file_list = get_cache_size_files(kwargs['staging_path'])
+            total_size, file_list = get_cache_size_files(kwargs["staging_path"])
             # Sort the file list (based on access time)
             file_list.sort()
             # Initiate cleaning once we reach cache_monitor_cache_limit percentage of the defined cache size?
             # Convert GBs to bytes for comparison
-            cache_size_in_gb = kwargs['cache_size'] * ONE_GIGA_BYTE
-            cache_limit = cache_size_in_gb * kwargs['cache_monitor_cache_limit']
+            cache_size_in_gb = kwargs["cache_size"] * ONE_GIGA_BYTE
+            cache_limit = cache_size_in_gb * kwargs["cache_monitor_cache_limit"]
             if total_size > cache_limit:
                 log.info(
                     "Initiating cache cleaning: current cache size: %s; clean until smaller than: %s",
@@ -473,7 +473,7 @@ class ConcreteObjectStore(BaseObjectStore):
                 # For now, delete enough to leave at least 10% of the total cache free
                 delete_this_much = total_size - cache_limit
                 ConcreteObjectStore._clean_cache(file_list, delete_this_much)
-            sleeper.sleep(kwargs['cache_monitor_interval'])  # Test cache size every 30 seconds?
+            sleeper.sleep(kwargs["cache_monitor_interval"])  # Test cache size every 30 seconds?
 
     @staticmethod
     def _clean_cache(file_list, delete_this_much):
@@ -510,10 +510,12 @@ class ConcreteObjectStore(BaseObjectStore):
                 return
 
     def start_cache_monitor(self, cache_monitor_args):
-        self.cache_monitor_thread = threading.Thread(target=ConcreteObjectStore._cache_monitor,
-                                                     args=(self.stop_cache_monitor_event, self.sleeper),
-                                                     kwargs=cache_monitor_args,
-                                                     name='CacheMonitorThread')
+        self.cache_monitor_thread = threading.Thread(
+            target=ConcreteObjectStore._cache_monitor,
+            args=(self.stop_cache_monitor_event, self.sleeper),
+            kwargs=cache_monitor_args,
+            name="CacheMonitorThread",
+        )
         self.cache_monitor_thread.start()
         log.info("Cache monitor started")
 

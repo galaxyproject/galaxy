@@ -142,7 +142,7 @@ class CloudConfigMixin:
                 "enabled": self.cache_monitor_enabled,
                 "cache_limit": self.cache_monitor_cache_limit,
                 "interval": self.cache_monitor_interval,
-                "startup_delay": self.cache_monitor_startup_delay
+                "startup_delay": self.cache_monitor_startup_delay,
             },
         }
 
@@ -183,10 +183,12 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
 
         cache_monitor_dict = config_dict["cache_monitor"]
-        self.cache_monitor_enabled, \
-            self.cache_monitor_cache_limit, \
-            self.cache_monitor_interval, \
-            self.cache_monitor_startup_delay = get_cache_monitor_values(cache_monitor_dict)
+        (
+            self.cache_monitor_enabled,
+            self.cache_monitor_cache_limit,
+            self.cache_monitor_interval,
+            self.cache_monitor_startup_delay,
+        ) = get_cache_monitor_values(cache_monitor_dict)
 
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         self.extra_dirs.update(extra_dirs)
@@ -214,11 +216,11 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
 
         if self.cache_size != -1 and self.cache_monitor_enabled:
             cache_monitor_args = {
-                'cache_monitor_cache_limit': self.cache_monitor_cache_limit,
-                'cache_monitor_interval': self.cache_monitor_interval,
-                'cache_monitor_startup_delay': self.cache_monitor_startup_delay,
-                'staging_path': self.staging_path,
-                'cache_size': self.cache_size
+                "cache_monitor_cache_limit": self.cache_monitor_cache_limit,
+                "cache_monitor_interval": self.cache_monitor_interval,
+                "cache_monitor_startup_delay": self.cache_monitor_startup_delay,
+                "staging_path": self.staging_path,
+                "cache_size": self.cache_size
             }
             self.start_cache_monitor(cache_monitor_args)
 

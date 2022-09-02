@@ -69,8 +69,8 @@ def test_cache_monitor():
     NUM_FILES = 12
     FILE_SIZE_MB = 100 * 1024 * 1024
     for idx in range(NUM_FILES):
-        with open(os.path.join(cache_dir.name, 'a_file_' + str(idx)), 'wb') as f:
-            f.write(str.encode('0') * FILE_SIZE_MB)
+        with open(os.path.join(cache_dir.name, "a_file_" + str(idx)), "wb") as f:
+            f.write(str.encode("0") * FILE_SIZE_MB)
 
     # Confirm total size and number of files in cache
     total_size, file_list = get_cache_size_files(cache_dir.name)
@@ -84,11 +84,11 @@ def test_cache_monitor():
 
     # Setup cache monitor argument dictionary
     cache_monitor_args = {
-        'cache_monitor_cache_limit': config["cache_monitor"]["cache_limit"],
-        'cache_monitor_interval': config["cache_monitor"]["interval"],
-        'cache_monitor_startup_delay': config["cache_monitor"]["startup_delay"],
-        'staging_path': cache_dir.name,
-        'cache_size': config["cache"]["size"]
+        "cache_monitor_cache_limit": config["cache_monitor"]["cache_limit"],
+        "cache_monitor_interval": config["cache_monitor"]["interval"],
+        "cache_monitor_startup_delay": config["cache_monitor"]["startup_delay"],
+        "staging_path": cache_dir.name,
+        "cache_size": config["cache"]["size"]
     }
 
     # This Event object is initialized to False
@@ -101,10 +101,9 @@ def test_cache_monitor():
     # Pass the Event object, the sleeper object, and the cache monitor argument dictionary
     # to the cache_monitor method
     args = (stop_cache_monitor_event, sleeper)
-    cache_monitor_thread = threading.Thread(target=ConcreteObjectStore._cache_monitor,
-                                            args=args,
-                                            kwargs=cache_monitor_args,
-                                            name='CacheMonitorThread')
+    cache_monitor_thread = threading.Thread(
+        target=ConcreteObjectStore._cache_monitor, args=args, kwargs=cache_monitor_args, name="CacheMonitorThread"
+    )
     cache_monitor_thread.start()
 
     # Wait startup_delay + interval seconds, for cache monitor to
