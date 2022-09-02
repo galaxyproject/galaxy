@@ -16,7 +16,7 @@
                         :selected-collections="selectedCollections"
                         v-on="$listeners" />
                     <CollectionDetails :dsc="dsc" :writeable="isRoot" @update:dsc="updateDsc(dsc, $event)" />
-                    <CollectionOperations v-if="isRoot" :dsc="dsc" />
+                    <CollectionOperations v-if="isRoot && showControls" :dsc="dsc" />
                 </section>
                 <section class="position-relative flex-grow-1 scroller">
                     <div>
@@ -62,6 +62,7 @@ export default {
     props: {
         history: { type: Object, required: true },
         selectedCollections: { type: Array, required: true },
+        showControls: { type: Boolean, default: true },
     },
     data() {
         return {

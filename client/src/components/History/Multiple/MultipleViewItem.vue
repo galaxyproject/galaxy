@@ -4,6 +4,7 @@
             v-if="selectedCollections.length && selectedCollections[0].history_id === source.id"
             :history="getHistory"
             :selected-collections.sync="selectedCollections"
+            :show-controls="false"
             @view-collection="onViewCollection" />
         <HistoryPanel
             v-else
