@@ -1,10 +1,9 @@
 <template>
     <CurrentUser v-slot="{ user }">
         <UserHistories v-if="user" v-slot="{ histories, handlers, historiesLoading, currentHistory }" :user="user">
-            <b-alert v-if="historiesLoading || histories.length === 0" class="m-2" variant="info" show>
+            <b-alert v-if="historiesLoading" class="m-2" variant="info" show>
                 <LoadingSpan message="Loading Histories" />
             </b-alert>
-
             <div v-else-if="histories.length" id="histories" class="d-flex flex-column h-100">
                 <b-input-group class="m-auto w-25">
                     <DebouncedInput v-slot="{ value, input }" v-model="filter">
@@ -23,17 +22,14 @@
                         </b-button>
                     </b-input-group-append>
                 </b-input-group>
-
                 <hr class="w-100" />
-
                 <multiple-view-list
                     :histories="histories"
                     :filter="filter"
                     :current-history="currentHistory"
                     :handlers="handlers" />
             </div>
-
-            <b-alert v-else class="m-2" variant="info" show>
+            <b-alert v-else class="m-2" variant="danger" show>
                 <span v-localize class="font-weight-bold">No History found.</span>
             </b-alert>
         </UserHistories>
