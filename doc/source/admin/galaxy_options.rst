@@ -2735,7 +2735,7 @@
     edited or manipulated through the Admin control panel -- see
     "Manage Allowlist"
     The value of this option will be resolved with respect to
-    <mutable_config_dir>.
+    <managed_config_dir>.
 :Default: ``sanitize_allowlist.txt``
 :Type: str
 
@@ -3798,9 +3798,9 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``master_api_key``
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``bootstrap_admin_api_key``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     API key that allows performing some admin actions without actually
