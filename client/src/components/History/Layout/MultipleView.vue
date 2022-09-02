@@ -42,6 +42,10 @@ import DebouncedInput from "components/DebouncedInput";
 import CurrentUser from "components/providers/CurrentUser";
 import UserHistories from "components/providers/UserHistories";
 import MultipleViewList from "./MultipleViewList";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faTimes);
 
 export default {
     components: {

@@ -2,8 +2,7 @@
     <div class="list-container d-flex h-100 w-auto overflow-auto">
         <virtual-list
             v-if="selectedHistories.length"
-            :keeps="10"
-            :estimate-size="histories.length"
+            :estimate-size="selectedHistories.length"
             :data-key="'id'"
             :data-component="MultipleViewItem"
             :data-sources="selectedHistories"
