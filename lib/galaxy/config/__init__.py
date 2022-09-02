@@ -49,6 +49,7 @@ from galaxy.util.properties import (
     read_properties_from_file,
     running_from_source,
 )
+from galaxy.util.themes import flatten_theme
 from ..version import (
     VERSION_MAJOR,
     VERSION_MINOR,
@@ -664,6 +665,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "file_path",
         "tool_data_table_config_path",
         "tool_config_file",
+        "themes_file",
     }
 
     add_sample_file_to_defaults = {
@@ -713,6 +715,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     pretty_datetime_format: str
     visualization_plugins_directory: str
     galaxy_infrastructure_url: str
+    themes: Dict[str, Dict[str, str]]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -1163,6 +1166,16 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 "backupCount": log_rotate_count,
             }
             LOGGING_CONFIG_DEFAULT["root"]["handlers"].append("files")
+
+        # Load and flatten themes into css variables
+        self.themes = {}
+
+        if self._path_exists(self.themes_file):
+            with open(self.themes_file) as f:
+                themes = yaml.safe_load(f)
+
+                for key, val in themes.items():
+                    self.themes[key] = flatten_theme(val)
 
     def _configure_dataset_storage(self):
         # The default for `file_path` has changed in 20.05; we may need to fall back to the old default

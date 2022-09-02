@@ -1,5 +1,5 @@
 <template>
-    <div id="app">
+    <div id="app" :style="theme">
         <div id="everything">
             <div id="background" />
             <Masthead
@@ -64,6 +64,10 @@ export default {
             }
             return true;
         },
+        theme() {
+            // proof of concept. todo: refactor to allow theme switching
+            return this.config.themes["blue"];
+        },
     },
     watch: {
         confirmation() {
@@ -90,3 +94,7 @@ export default {
     },
 };
 </script>
+
+<style lang="scss">
+@import "custom_theme_variables.scss";
+</style>

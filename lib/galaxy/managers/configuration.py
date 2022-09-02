@@ -197,6 +197,7 @@ class ConfigSerializer(base.ModelSerializer):
             "enable_celery_tasks": _use_config,
             "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
             "welcome_directory": _use_config,
+            "themes": _use_config,
         }
 
 

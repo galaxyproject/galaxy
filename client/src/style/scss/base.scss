@@ -345,7 +345,7 @@ body {
 #masthead {
     @extend .p-0;
     @extend .mb-0;
-    background-color: $brand-masthead;
+    background-color: var(--masthead-background-color);
     height: $masthead-height;
     .navbar-nav {
         height: $masthead-height;

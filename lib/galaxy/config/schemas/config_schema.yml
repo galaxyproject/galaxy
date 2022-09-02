@@ -3601,3 +3601,12 @@ mapping:
         default: true
         required: false
         desc: Display built-in converters in the tool panel.
+
+      themes_file:
+        type: str
+        default: themes.yml
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          Optional file containing one or more themes for galaxy. If several themes
+          are defined, users can choose their preferd theme in the client.
