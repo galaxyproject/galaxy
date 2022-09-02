@@ -29,7 +29,10 @@ from galaxy.util import (
     unlink,
 )
 from galaxy.util.path import safe_relpath
-from . import get_cache_monitor_attributes, get_cache_monitor_values
+from . import (
+    get_cache_monitor_attributes,
+    get_cache_monitor_values,
+)
 from ..objectstore import DiskObjectStore
 
 IRODS_IMPORT_MESSAGE = "The Python irods package is required to use this feature, please install it"

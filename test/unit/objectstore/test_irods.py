@@ -1,11 +1,15 @@
 import os
 import tempfile
-import time
 import threading
+import time
 
 import pytest
 
-from galaxy.objectstore import get_cache_size_files, ConcreteObjectStore, ONE_GIGA_BYTE
+from galaxy.objectstore import (
+    ConcreteObjectStore,
+    get_cache_size_files,
+    ONE_GIGA_BYTE,
+)
 from galaxy.objectstore.irods import parse_config_xml
 from galaxy.util import parse_xml
 from galaxy.util.sleeper import Sleeper

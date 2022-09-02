@@ -30,7 +30,10 @@ from galaxy.util import (
     which,
 )
 from galaxy.util.path import safe_relpath
-from . import get_cache_monitor_attributes, get_cache_monitor_values
+from . import (
+    get_cache_monitor_attributes,
+    get_cache_monitor_values,
+)
 from .s3_multipart_upload import multipart_upload
 from ..objectstore import ConcreteObjectStore
 
