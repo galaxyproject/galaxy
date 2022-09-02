@@ -9,30 +9,34 @@
             @mouseup="handleUp"
             @mousedown.prevent.stop="handleDown">
             <div id="canvas-container" ref="canvas">
-                <svg class="canvas-svg">
+                <svg class="canvas-svg" width="100%" height="100%" ref="svg">
                     <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
                     <terminal-connector
                         v-for="connection in connections"
                         :key="connection.id"
                         :connection="connection"></terminal-connector>
+                    <foreignObject style="overflow: visible">
+                        <div xmlns="http://www.w3.org/1999/xhtml">
+                            <WorkflowNode
+                                v-for="(step, key) in steps"
+                                :id="key"
+                                :key="key"
+                                :name="step.name"
+                                :type="step.type"
+                                :content-id="step.content_id"
+                                :step="step"
+                                :datatypes-mapper="datatypesMapper"
+                                :get-manager="getManager"
+                                :activeNodeId="activeNodeId"
+                                :root-offset="rootOffset"
+                                @stopDragging="onStopDragging"
+                                @onDragConnector="onDragConnector"
+                                @onActivate="onActivate"
+                                @onRemove="onRemove"
+                                v-on="$listeners" />
+                        </div>
+                    </foreignObject>
                 </svg>
-                <WorkflowNode
-                    v-for="(step, key) in steps"
-                    :id="key"
-                    :key="key"
-                    :name="step.name"
-                    :type="step.type"
-                    :content-id="step.content_id"
-                    :step="step"
-                    :datatypes-mapper="datatypesMapper"
-                    :get-manager="getManager"
-                    :activeNodeId="activeNodeId"
-                    :root-offset="rootOffset"
-                    @stopDragging="onStopDragging"
-                    @onDragConnector="onDragConnector"
-                    @onActivate="onActivate"
-                    @onRemove="onRemove"
-                    v-on="$listeners" />
             </div>
         </div>
         <div class="workflow-overview" aria-hidden="true">
@@ -83,7 +87,7 @@ export default {
     mounted() {
         // canvas overview management
         const rootRect = this.$refs.canvas.getBoundingClientRect();
-        this.rootOffset = { top: rootRect.top, left: rootRect.left };
+        this.rootOffset = { top: rootRect.top, left: rootRect.left, width: rootRect.width, height: rootRect.height };
         console.log(`root offset: ${this.rootOffset}`);
 
         // this.canvasManager = new WorkflowCanvas(this.getManager(), this.$refs.canvas);
@@ -125,6 +129,16 @@ export default {
         },
     },
     computed: {
+        viewbox() {
+            let maxWidth = this.rootOffset.width;
+            let maxHeight = this.rootOffset.height;
+            Object.entries(this.steps).forEach(([stepId, step]) => {
+                console.log(step);
+                maxWidth = Math.max(step.position.left, maxWidth);
+                maxHeight = Math.max(step.position.top, maxHeight);
+            });
+            return `0 0 ${maxWidth} ${maxHeight}`;
+        },
         activeNodeId() {
             return this.$store.getters["workflowState/getActiveNode"]();
         },
