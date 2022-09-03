@@ -33,35 +33,33 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { zoomLevels, defaultZoomLevel } from "./modules/canvas";
 
 Vue.use(BootstrapVue);
 
 export default {
-    props: {
-        zoomLevel: {
-            type: Number,
-            required: true,
-        },
-    },
     data() {
         return {
-            zoomDefault: defaultZoomLevel,
+            zoomLevel: 1,
+            zoomLevels: [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4],
+            zoomDefault: 1,
         };
     },
     computed: {
         zoomPercentage() {
-            return Math.floor(zoomLevels[this.zoomLevel] * 100);
+            return Math.floor(this.zoomLevel * 100);
         },
     },
     methods: {
         onZoomIn() {
-            this.$emit("onZoom", this.zoomLevel + 1);
+            this.zoomLevel = this.zoomLevels[this.zoomLevels.indexOf(this.zoomLevel) + 1];
+            this.$emit("onZoom", this.zoomLevel);
         },
         onZoomOut() {
-            this.$emit("onZoom", this.zoomLevel - 1);
+            this.zoomLevel = this.zoomLevels[this.zoomLevels.indexOf(this.zoomLevel) - 1];
+            this.$emit("onZoom", this.zoomLevel);
         },
         onZoomReset() {
+            this.zoomLevel = this.zoomDefault;
             this.$emit("onZoom", this.zoomDefault);
         },
     },

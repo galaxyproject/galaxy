@@ -10,32 +10,34 @@
             @mousedown.prevent.stop="handleDown">
             <div id="canvas-container" ref="canvas">
                 <svg class="canvas-svg" width="100%" height="100%" ref="svg">
-                    <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
-                    <terminal-connector
-                        v-for="connection in connections"
-                        :key="connection.id"
-                        :connection="connection"></terminal-connector>
-                    <foreignObject style="overflow: visible">
-                        <div xmlns="http://www.w3.org/1999/xhtml">
-                            <WorkflowNode
-                                v-for="(step, key) in steps"
-                                :id="key"
-                                :key="key"
-                                :name="step.name"
-                                :type="step.type"
-                                :content-id="step.content_id"
-                                :step="step"
-                                :datatypes-mapper="datatypesMapper"
-                                :get-manager="getManager"
-                                :activeNodeId="activeNodeId"
-                                :root-offset="rootOffset"
-                                @stopDragging="onStopDragging"
-                                @onDragConnector="onDragConnector"
-                                @onActivate="onActivate"
-                                @onRemove="onRemove"
-                                v-on="$listeners" />
-                        </div>
-                    </foreignObject>
+                    <g :transform="transform">
+                        <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
+                        <terminal-connector
+                            v-for="connection in connections"
+                            :key="connection.id"
+                            :connection="connection"></terminal-connector>
+                        <foreignObject style="overflow: visible">
+                            <div xmlns="http://www.w3.org/1999/xhtml">
+                                <WorkflowNode
+                                    v-for="(step, key) in steps"
+                                    :id="key"
+                                    :key="key"
+                                    :name="step.name"
+                                    :type="step.type"
+                                    :content-id="step.content_id"
+                                    :step="step"
+                                    :datatypes-mapper="datatypesMapper"
+                                    :get-manager="getManager"
+                                    :activeNodeId="activeNodeId"
+                                    :root-offset="rootOffset"
+                                    @stopDragging="onStopDragging"
+                                    @onDragConnector="onDragConnector"
+                                    @onActivate="onActivate"
+                                    @onRemove="onRemove"
+                                    v-on="$listeners" />
+                            </div>
+                        </foreignObject>
+                    </g>
                 </svg>
             </div>
         </div>
@@ -129,7 +131,12 @@ export default {
         },
     },
     computed: {
+        transform() {
+            return `scale(${this.zoomLevel})`;
+        },
         viewbox() {
+            // TODO: this is the next thing to do, we need to build an appropriate viewbox
+            // so that elements don't move out of the svg area.
             let maxWidth = this.rootOffset.width;
             let maxHeight = this.rootOffset.height;
             Object.entries(this.steps).forEach(([stepId, step]) => {
