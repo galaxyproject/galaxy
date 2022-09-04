@@ -9419,6 +9419,11 @@ sver-compat@^1.5.0:
     es6-iterator "^2.0.1"
     es6-symbol "^3.1.1"
 
+svg-pan-zoom@3.6.0:
+  version "3.6.0"
+  resolved "https://registry.yarnpkg.com/svg-pan-zoom/-/svg-pan-zoom-3.6.0.tgz#31d8137d7e079e8f059effd85c7605b0567b6e4b"
+  integrity sha512-ZBEL2z/n/W2fLLFzn3NTQgd+7QEfbrKvKmu29U3qvMflmJgLaWkwKbOzWJYESFidTiGYMHkijAKmY6m64moyYg==
+
 svg-pathdata@^6.0.3:
   version "6.0.3"
   resolved "https://registry.npmjs.org/svg-pathdata/-/svg-pathdata-6.0.3.tgz"
@@ -10087,6 +10092,13 @@ vue-style-loader@^4.1.0:
   dependencies:
     hash-sum "^1.0.2"
     loader-utils "^1.0.2"
+
+vue-svg-pan-zoom@1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/vue-svg-pan-zoom/-/vue-svg-pan-zoom-1.1.0.tgz#7f104366a51d6fa3d4b0f798788c05296d811436"
+  integrity sha512-H/KuL+zuSsZtQETFyE68Ms6YfMjfvLCtBKYcFc/o2NZsP6dlV3+XJfywjqZJKPsFUYJkFvX6XgNe+BKUqnkzzQ==
+  dependencies:
+    svg-pan-zoom "3.6.0"
 
 vue-template-compiler@^2.7.8:
   version "2.7.8"
