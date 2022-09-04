@@ -89,7 +89,6 @@ GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_ADM
 GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD = os.environ.get(
     "GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD", DEFAULT_ADMIN_PASSWORD
 )
-GALAXY_TEST_SELENIUM_BETA_HISTORY = os.environ.get("GALAXY_TEST_SELENIUM_BETA_HISTORY", "0") == "1"
 
 # JS code to execute in Galaxy JS console to setup localStorage of session for logging and
 # logging "flatten" messages because it seems Selenium (with Chrome at least) only grabs
@@ -251,8 +250,6 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     # will be used to login.
     ensure_registered = False
 
-    ensure_beta_history = GALAXY_TEST_SELENIUM_BETA_HISTORY
-
     # Override this in subclasses to annotate that an admin user
     # is required for the test to run properly. Override admin user
     # login info with GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL /
@@ -292,8 +289,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         """
         if self.ensure_registered:
             self.login()
-            if self.ensure_beta_history:
-                self.use_beta_history()
+            self.use_beta_history()
 
     def tear_down_selenium(self):
         self.tear_down_driver()
