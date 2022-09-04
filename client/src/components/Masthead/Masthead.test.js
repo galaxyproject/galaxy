@@ -3,13 +3,12 @@ import { default as Masthead } from "./Masthead.vue";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import { WindowManager } from "layout/window-manager";
-import { fetchMenu } from "layout/menu";
 import { loadWebhookMenuItems } from "./_webhooks";
 import { userStore } from "store/userStore";
 import { configStore } from "store/configStore";
+import { getActiveTab } from "./utilities";
 
 jest.mock("app");
-jest.mock("layout/menu");
 jest.mock("./_webhooks");
 
 describe("Masthead.vue", () => {
@@ -21,10 +20,6 @@ describe("Masthead.vue", () => {
     let state;
     let actions;
 
-    function stubFetchMenu() {
-        return tabs;
-    }
-
     function stubLoadWebhooks(items) {
         items.push({
             id: "extension",
@@ -34,7 +29,6 @@ describe("Masthead.vue", () => {
         });
     }
 
-    fetchMenu.mockImplementation(stubFetchMenu);
     loadWebhookMenuItems.mockImplementation(stubLoadWebhooks);
 
     beforeEach(() => {
@@ -81,26 +75,24 @@ describe("Masthead.vue", () => {
                 hidden: true,
             },
         ];
+
         const initialActiveTab = "shared";
-
-        // window manager assumes this is a Backbone collection - mock that out.
-        tabs.add = (x) => {
-            tabs.push(x);
-            return x;
-        };
         windowManager = new WindowManager({});
-        const mastheadState = {
-            windowManager,
-        };
-
+        const windowTab = windowManager.getTab();
         wrapper = mount(Masthead, {
             propsData: {
-                mastheadState,
+                tabs,
+                windowTab,
                 initialActiveTab,
             },
             store,
             localVue,
         });
+    });
+
+    it("test basic active tab matching", () => {
+        expect(getActiveTab("root", tabs)).toBe("analysis");
+        expect(getActiveTab("_menu_url", tabs)).toBe("shared");
     });
 
     it("should disable brand when displayGalaxyBrand is true", async () => {
@@ -115,7 +107,7 @@ describe("Masthead.vue", () => {
         expect(wrapper.findAll("li.nav-item").length).toBe(5);
         // Ensure specified link title respected.
         expect(wrapper.find("#analysis a").text()).toBe("Analyze");
-        expect(wrapper.find("#analysis a").attributes("href")).toBe("/root");
+        expect(wrapper.find("#analysis a").attributes("href")).toBe("root");
     });
 
     it("should render tab items with menus", () => {
@@ -124,7 +116,7 @@ describe("Masthead.vue", () => {
         expect(wrapper.find("#shared").classes("dropdown")).toBe(true);
 
         expect(wrapper.findAll("#shared .dropdown-menu li").length).toBe(1);
-        expect(wrapper.find("#shared .dropdown-menu li a").attributes().href).toBe("/_menu_url");
+        expect(wrapper.find("#shared .dropdown-menu li a").attributes().href).toBe("_menu_url");
         expect(wrapper.find("#shared .dropdown-menu li a").attributes().target).toBe("_menu_target");
         expect(wrapper.find("#shared .dropdown-menu li a").text()).toBe("_menu_title");
     });

@@ -14,7 +14,6 @@ addInitialization((Galaxy) => {
         router: router,
         store: store,
     });
-    Galaxy.router = router;
 });
 
 window.addEventListener("load", () => standardInit("app"));

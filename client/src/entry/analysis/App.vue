@@ -5,13 +5,14 @@
             <Masthead
                 v-if="showMasthead"
                 id="masthead"
-                :masthead-state="mastheadState"
                 :display-galaxy-brand="config.display_galaxy_brand"
                 :brand="config.brand"
-                :brand-link="staticUrlToPrefixed(config.logo_url)"
-                :brand-image="staticUrlToPrefixed(config.logo_src)"
-                :brand-image-secondary="staticUrlToPrefixed(config.logo_src_secondary)"
-                :menu-options="config" />
+                :logo-url="config.logo_url"
+                :logo-src="config.logo_src"
+                :logo-src-secondary="config.logo_src_secondary"
+                :tabs="tabs"
+                :window-tab="windowTab"
+                @open-url="openUrl" />
             <alert
                 v-if="config.message_box_visible && config.message_box_content"
                 id="messagebox"
@@ -37,12 +38,13 @@
     </div>
 </template>
 <script>
-import { MastheadState } from "layout/masthead";
 import Modal from "mvc/ui/ui-modal";
 import Masthead from "components/Masthead/Masthead.vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy";
+import { fetchMenu } from "entry/analysis/menu";
+import { WindowManager } from "layout/window-manager";
 
 export default {
     components: {
@@ -52,17 +54,23 @@ export default {
         return {
             config: getGalaxyInstance().config,
             confirmation: null,
-            mastheadState: new MastheadState(),
             resendUrl: `${getAppRoot()}user/resend_verification`,
+            windowManager: new WindowManager(),
         };
     },
     computed: {
+        tabs() {
+            return fetchMenu(this.config);
+        },
         showMasthead() {
             const masthead = this.$route.query.hide_masthead;
             if (masthead !== undefined) {
                 return masthead.toLowerCase() != "true";
             }
             return true;
+        },
+        windowTab() {
+            return this.windowManager.getTab();
         },
     },
     watch: {
@@ -75,17 +83,22 @@ export default {
         const Galaxy = getGalaxyInstance();
         Galaxy.currHistoryPanel = new HistoryPanelProxy();
         Galaxy.modal = new Modal.View();
+        Galaxy.frame = this.windowManager;
     },
     created() {
         window.onbeforeunload = () => {
-            if (this.confirmation || this.mastheadState.windowManager.beforeUnload()) {
+            if (this.confirmation || this.windowManager.beforeUnload()) {
                 return "Are you sure you want to leave the page?";
             }
         };
     },
     methods: {
-        staticUrlToPrefixed(url) {
-            return url?.startsWith("/") ? `${getAppRoot()}${url.substring(1)}` : url;
+        openUrl(urlObj) {
+            if (!urlObj.target) {
+                this.$router.push(urlObj.url);
+            } else {
+                this.windowManager.add(urlObj);
+            }
         },
     },
 };

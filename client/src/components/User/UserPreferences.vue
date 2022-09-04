@@ -63,7 +63,7 @@ import axios from "axios";
 import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import ConfigProvider from "components/providers/ConfigProvider";
-import { userLogoutAll } from "layout/menu";
+import { userLogoutAll } from "utils/logout";
 import UserDeletion from "./UserDeletion";
 
 import "@fortawesome/fontawesome-svg-core";

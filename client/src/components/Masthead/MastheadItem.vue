@@ -5,8 +5,7 @@
         v-b-tooltip.hover.bottom
         v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
         :class="classes"
-        :style="styles"
-        :href="formatUrl(tab.url)"
+        :href="tab.url"
         :target="tab.target || '_parent'"
         :link-classes="linkClasses"
         :title="tab.tooltip"
@@ -28,7 +27,6 @@
         v-b-tooltip.hover.bottom
         v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
         :class="classes"
-        :style="styles"
         :text="tab.title"
         href="#"
         :title="tab.tooltip"
@@ -38,7 +36,7 @@
             <b-dropdown-item
                 v-else-if="item.hidden !== true"
                 :key="`item-${idx}`"
-                :href="formatUrl(item.url)"
+                :href="item.url"
                 :target="item.target || '_parent'"
                 role="menuitem"
                 :active="item.disabled"
@@ -55,7 +53,6 @@ import Vue from "vue";
 import { VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
 import { BNavItem, BNavItemDropdown, BDropdownItem } from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
 
 Vue.use(VBPopoverPlugin);
 Vue.use(VBTooltipPlugin);
@@ -107,14 +104,6 @@ export default {
                 [this.tab.icon, this.tab.icon],
             ]);
         },
-        styles() {
-            return {
-                visibility: this.tab.visible ? "visible" : "hidden",
-            };
-        },
-        galaxyIframe() {
-            return document.getElementById("galaxy_main");
-        },
     },
     mounted() {
         window.addEventListener("blur", this.hideDropdown);
@@ -142,23 +131,7 @@ export default {
                 }, 3000);
             } else if (!tab.menu) {
                 event.preventDefault();
-                const Galaxy = getGalaxyInstance();
-                if (tab.target === "__use_router__" && this.$router) {
-                    this.$router.push(`/${tab.url}`);
-                } else {
-                    try {
-                        Galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });
-                    } catch (err) {
-                        console.warn("Missing frame element on galaxy instance", err);
-                    }
-                }
-            }
-        },
-        formatUrl(url) {
-            if (typeof url === "string" && url.indexOf("//") === -1 && url.charAt(0) != "/") {
-                return getAppRoot() + url;
-            } else {
-                return url;
+                this.$emit("open-url", { ...tab });
             }
         },
     },
