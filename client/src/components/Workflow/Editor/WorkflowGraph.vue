@@ -1,44 +1,46 @@
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
         <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoom" />
-        <div
-            class="canvas-viewport"
-            @dragover.prevent
-            @drop.prevent
-            @mousemove="handleMove"
-            @mouseup="handleUp"
-            @mousedown.prevent.stop="handleDown">
+        <div class="canvas-viewport" @dragover.prevent @drop.prevent>
             <div id="canvas-container" ref="canvas">
-                <svg class="canvas-svg" width="100%" height="100%" ref="svg">
-                    <g :transform="transform">
-                        <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
-                        <terminal-connector
-                            v-for="connection in connections"
-                            :key="connection.id"
-                            :connection="connection"></terminal-connector>
-                        <foreignObject style="overflow: visible">
-                            <div xmlns="http://www.w3.org/1999/xhtml">
-                                <WorkflowNode
-                                    v-for="(step, key) in steps"
-                                    :id="key"
-                                    :key="key"
-                                    :name="step.name"
-                                    :type="step.type"
-                                    :content-id="step.content_id"
-                                    :step="step"
-                                    :datatypes-mapper="datatypesMapper"
-                                    :get-manager="getManager"
-                                    :activeNodeId="activeNodeId"
-                                    :root-offset="rootOffset"
-                                    @stopDragging="onStopDragging"
-                                    @onDragConnector="onDragConnector"
-                                    @onActivate="onActivate"
-                                    @onRemove="onRemove"
-                                    v-on="$listeners" />
-                            </div>
-                        </foreignObject>
-                    </g>
-                </svg>
+                <SvgPanZoom
+                    style="width: 100%; height: 100%"
+                    :minZoom="0.1"
+                    :zoomEnabled="true"
+                    :controlIconsEnabled="true"
+                    :fit="false"
+                    :center="false">
+                    <svg class="canvas-svg" width="100%" height="100%" ref="svg">
+                        <g :transform="transform">
+                            <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
+                            <terminal-connector
+                                v-for="connection in connections"
+                                :key="connection.id"
+                                :connection="connection"></terminal-connector>
+                            <foreignObject style="overflow: visible">
+                                <div xmlns="http://www.w3.org/1999/xhtml">
+                                    <WorkflowNode
+                                        v-for="(step, key) in steps"
+                                        :id="key"
+                                        :key="key"
+                                        :name="step.name"
+                                        :type="step.type"
+                                        :content-id="step.content_id"
+                                        :step="step"
+                                        :datatypes-mapper="datatypesMapper"
+                                        :get-manager="getManager"
+                                        :activeNodeId="activeNodeId"
+                                        :root-offset="rootOffset"
+                                        @stopDragging="onStopDragging"
+                                        @onDragConnector="onDragConnector"
+                                        @onActivate="onActivate"
+                                        @onRemove="onRemove"
+                                        v-on="$listeners" />
+                                </div>
+                            </foreignObject>
+                        </g>
+                    </svg>
+                </SvgPanZoom>
             </div>
         </div>
         <div class="workflow-overview" aria-hidden="true">
@@ -55,11 +57,13 @@
 import ZoomControl from "./ZoomControl";
 import WorkflowNode from "./Node";
 import RawConnector from "./Connector";
+import SvgPanZoom from "vue-svg-pan-zoom";
 import TerminalConnector from "./TerminalConnector";
 
 export default {
     components: {
         RawConnector,
+        SvgPanZoom,
         TerminalConnector,
         WorkflowNode,
         ZoomControl,
