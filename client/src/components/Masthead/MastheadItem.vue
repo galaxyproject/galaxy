@@ -5,7 +5,7 @@
         v-b-tooltip.hover.bottom
         v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
         :class="classes"
-        :href="tab.url"
+        :href="getPath(tab.url)"
         :target="tab.target || '_parent'"
         :link-classes="linkClasses"
         :title="tab.tooltip"
@@ -36,7 +36,7 @@
             <b-dropdown-item
                 v-else-if="item.hidden !== true"
                 :key="`item-${idx}`"
-                :href="item.url"
+                :href="getPath(item.url)"
                 :target="item.target || '_parent'"
                 role="menuitem"
                 :active="item.disabled"
@@ -52,7 +52,7 @@
 import Vue from "vue";
 import { VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
 import { BNavItem, BNavItemDropdown, BDropdownItem } from "bootstrap-vue";
-import { getAppRoot } from "onload/loadConfig";
+import { safePath } from "utils/redirect";
 
 Vue.use(VBPopoverPlugin);
 Vue.use(VBTooltipPlugin);
@@ -83,7 +83,7 @@ export default {
             return this.tab.menu;
         },
         popoverNote() {
-            return `Please <a href="${getAppRoot()}login">log in or register</a> to use this feature.`;
+            return `Please <a href="${safePath("/login")}">log in or register</a> to use this feature.`;
         },
         classes() {
             const isActiveTab = this.tab.id == this.activeTab;
@@ -116,6 +116,9 @@ export default {
             if (this.$refs.dropdown) {
                 this.$refs.dropdown.hide();
             }
+        },
+        getPath(url) {
+            return safePath(url);
         },
         open(tab, event) {
             if (tab.onclick) {
