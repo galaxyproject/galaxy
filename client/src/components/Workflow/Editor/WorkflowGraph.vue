@@ -104,15 +104,6 @@ export default {
         onDragConnector(vector) {
             this.draggingConnection = vector;
         },
-        handleMove(e) {
-            // console.log(e);
-        },
-        handleUp(e) {
-            console.log(e);
-        },
-        handleDown(e) {
-            console.log(e);
-        },
         onZoom(zoomLevel) {
             this.zoomLevel = zoomLevel;
         },

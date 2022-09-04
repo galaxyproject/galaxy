@@ -2,7 +2,7 @@
     <draggable-wrapper
         :position="step.position || defaultPosition"
         @updatePosition="onUpdatePosition"
-        @mousedown="makeActive"
+        @mouseup="makeActive"
         @move="onMove"
         :id="idString"
         :name="name"
