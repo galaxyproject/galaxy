@@ -6,6 +6,7 @@ TODO: pan when objects are dragged out of viewport
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
         <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoomButton" />
+        <b-button @click="onPan">Pan!</b-button>
         <div class="canvas-viewport" @dragover.prevent @drop.prevent>
             <div id="canvas-container" ref="canvas">
                 <SvgPanZoom
@@ -125,6 +126,10 @@ export default {
         },
         registerSvgPanZoom(svgpanzoom) {
             this.svgpanzoom = svgpanzoom;
+        },
+        onPan(pan) {
+            console.log("pan!");
+            this.svgpanzoom.panBy({ x: 10, y: 10 });
         },
         onActivate(nodeId) {
             console.log("onNodeId", nodeId);
