@@ -1,17 +1,24 @@
+<!--
+TODO: pan when objects are dragged out of viewport
+
+
+-->
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
-        <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoom" />
+        <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoomButton" />
         <div class="canvas-viewport" @dragover.prevent @drop.prevent>
             <div id="canvas-container" ref="canvas">
                 <SvgPanZoom
                     style="width: 100%; height: 100%"
                     :minZoom="0.1"
                     :zoomEnabled="true"
-                    :controlIconsEnabled="true"
+                    :controlIconsEnabled="false"
                     :fit="false"
-                    :center="false">
+                    :center="false"
+                    :on-zoom="onZoom"
+                    @svgpanzoom="registerSvgPanZoom">
                     <svg class="canvas-svg" width="100%" height="100%" ref="svg">
-                        <g :transform="transform">
+                        <g>
                             <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
                             <terminal-connector
                                 v-for="connection in connections"
@@ -70,10 +77,10 @@ export default {
     },
     data() {
         return {
-            zoomLevel: 1,
             isWheeled: false,
             rootOffset: { left: 0, top: 0 },
             draggingConnection: null,
+            svgpanzoom: null,
         };
     },
     props: {
@@ -109,7 +116,16 @@ export default {
             this.draggingConnection = vector;
         },
         onZoom(zoomLevel) {
-            this.zoomLevel = zoomLevel;
+            console.log("new ZoomLevel");
+            // SvgZoomPanel returns array
+            this.$store.commit("workflowState/setScale", zoomLevel?.[0]);
+        },
+        onZoomButton(zoomLevel) {
+            this.$store.commit("workflowState/setScale", zoomLevel);
+            this.svgpanzoom.zoom(zoomLevel);
+        },
+        registerSvgPanZoom(svgpanzoom) {
+            this.svgpanzoom = svgpanzoom;
         },
         onActivate(nodeId) {
             console.log("onNodeId", nodeId);
@@ -126,20 +142,8 @@ export default {
         },
     },
     computed: {
-        transform() {
-            return `scale(${this.zoomLevel})`;
-        },
-        viewbox() {
-            // TODO: this is the next thing to do, we need to build an appropriate viewbox
-            // so that elements don't move out of the svg area.
-            let maxWidth = this.rootOffset.width;
-            let maxHeight = this.rootOffset.height;
-            Object.entries(this.steps).forEach(([stepId, step]) => {
-                console.log(step);
-                maxWidth = Math.max(step.position.left, maxWidth);
-                maxHeight = Math.max(step.position.top, maxHeight);
-            });
-            return `0 0 ${maxWidth} ${maxHeight}`;
+        zoomLevel() {
+            return this.$store.getters["workflowState/getScale"]();
         },
         activeNodeId() {
             return this.$store.getters["workflowState/getActiveNode"]();

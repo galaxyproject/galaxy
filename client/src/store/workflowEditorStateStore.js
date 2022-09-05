@@ -3,6 +3,7 @@ export const state = {
     outputTerminals: {},
     connections: {},
     activeNode: null,
+    scale: 1,
 };
 
 import Vue from "vue";
@@ -16,6 +17,9 @@ const getters = {
     },
     getActiveNode: (state) => () => {
         return state.activeNode;
+    },
+    getScale: (state) => () => {
+        return state.scale;
     },
 };
 
@@ -45,6 +49,9 @@ const mutations = {
     },
     setActiveNode: (state, nodeId) => {
         state.activeNode = nodeId;
+    },
+    setScale: (state, scale) => {
+        state.scale = scale;
     },
 };
 

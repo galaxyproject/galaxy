@@ -1,3 +1,4 @@
+<!-- TODO: implement pan when dragged object leaves viewport -->
 <template>
     <draggable
         :draggable-options="draggableOptions"
@@ -30,6 +31,9 @@ export default {
         };
     },
     computed: {
+        scale() {
+            return this.$store.getters["workflowState/getScale"]();
+        },
         draggableOptions() {
             return {
                 mouseDown: this.stopPropagation,
@@ -38,11 +42,9 @@ export default {
     },
     methods: {
         onDragStart(e) {
-            console.log("mousedown", e);
             this.$emit("mousedown", e);
         },
         onStopDragging(e) {
-            console.log("stopDragging");
             e.stopPropagation();
             this.$emit("stopDragging");
             this.$emit("mouseup");
@@ -51,7 +53,10 @@ export default {
             e.stopPropagation();
         },
         move(e) {
-            console.log("moveEvent", e);
+            // supposedly draggable can apply the scale if passed in the draggable-option prop,
+            // but it doesn't, so we do it manually here.
+            e.data.deltaX /= this.scale;
+            e.data.deltaY /= this.scale;
             e.event.stopPropagation();
         },
     },

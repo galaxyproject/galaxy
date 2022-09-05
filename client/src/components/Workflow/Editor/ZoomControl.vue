@@ -37,10 +37,18 @@ import BootstrapVue from "bootstrap-vue";
 Vue.use(BootstrapVue);
 
 export default {
+    props: {
+        zoomLevel: {
+            type: Number,
+            default: 1,
+        },
+    },
     data() {
         return {
-            zoomLevel: 1,
-            zoomLevels: [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4],
+            zoomLevels: [
+                0.1, 0.2, 0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9,
+                10,
+            ],
             zoomDefault: 1,
         };
     },
@@ -48,18 +56,27 @@ export default {
         zoomPercentage() {
             return Math.floor(this.zoomLevel * 100);
         },
+        index() {
+            let index = this.zoomLevels.indexOf(this.zoomLevel);
+            if (index < 0) {
+                const closest = this.zoomLevels.reduce((prev, curr) => {
+                    return Math.abs(curr - this.zoomLevel) < Math.abs(prev - this.zoomLevel) ? curr : prev;
+                });
+                index = this.zoomLevels.indexOf(closest);
+            }
+            return index;
+        },
     },
     methods: {
         onZoomIn() {
-            this.zoomLevel = this.zoomLevels[this.zoomLevels.indexOf(this.zoomLevel) + 1];
-            this.$emit("onZoom", this.zoomLevel);
+            const zoomLevel = this.zoomLevels[this.index + 1];
+            this.$emit("onZoom", zoomLevel);
         },
         onZoomOut() {
-            this.zoomLevel = this.zoomLevels[this.zoomLevels.indexOf(this.zoomLevel) - 1];
-            this.$emit("onZoom", this.zoomLevel);
+            const zoomLevel = this.zoomLevels[this.index - 1];
+            this.$emit("onZoom", zoomLevel);
         },
         onZoomReset() {
-            this.zoomLevel = this.zoomDefault;
             this.$emit("onZoom", this.zoomDefault);
         },
     },
