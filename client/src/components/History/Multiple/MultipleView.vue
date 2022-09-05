@@ -4,7 +4,7 @@
             <b-alert v-if="historiesLoading" class="m-2" variant="info" show>
                 <LoadingSpan message="Loading Histories" />
             </b-alert>
-            <div v-else-if="histories.length" id="histories" class="d-flex flex-column h-100">
+            <div v-else-if="histories.length" class="multi-history-panel d-flex flex-column h-100">
                 <b-input-group class="w-100">
                     <DebouncedInput v-slot="{ value, input }" v-model="filter">
                         <b-form-input
