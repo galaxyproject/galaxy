@@ -7,9 +7,16 @@
         </b-navbar-brand>
         <b-navbar-nav>
             <masthead-item
-                v-for="(tab, idx) in tabs"
+                v-for="(tab, idx) in baseTabsJson"
                 v-show="!(tab.hidden === undefined ? false : tab.hidden)"
                 :key="`tab-${idx}`"
+                :tab="tab"
+                :active-tab="activeTab" />
+            <theme-selector v-if="menuOptions.themes && Object.keys(menuOptions).length > 2" />
+            <masthead-item
+                v-for="(tab, idx) in extensionTabsJson"
+                v-show="!(tab.hidden === undefined ? false : tab.hidden)"
+                :key="`tab-etx-${idx}`"
                 :tab="tab"
                 :active-tab="activeTab" />
             <masthead-item :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
@@ -24,6 +31,7 @@ import MastheadItem from "./MastheadItem";
 import { fetchMenu } from "layout/menu";
 import { loadWebhookMenuItems } from "./_webhooks";
 import QuotaMeter from "./QuotaMeter.vue";
+import ThemeSelector from "./ThemeSelector";
 
 export default {
     name: "Masthead",
@@ -33,6 +41,7 @@ export default {
         BNavbarNav,
         MastheadItem,
         QuotaMeter,
+        ThemeSelector,
     },
     props: {
         displayGalaxyBrand: {
@@ -85,9 +94,11 @@ export default {
             }
             return brandTitle;
         },
-        tabs() {
-            const tabs = [].concat(this.baseTabs, this.extensionTabs);
-            return tabs.map(this._tabToJson);
+        baseTabsJson() {
+            return this.baseTabs.map(this._tabToJson);
+        },
+        extensionTabsJson() {
+            return this.extensionTabs.map(this._tabToJson);
         },
     },
     created() {
