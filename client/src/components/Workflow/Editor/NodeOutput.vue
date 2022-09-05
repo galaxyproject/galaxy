@@ -13,6 +13,8 @@
             :id="id"
             :class="terminalClass"
             :output-name="output.name"
+            :root-offset="rootOffset"
+            @pan-by="onPanBy"
             @start="isDragging = true"
             @stopDragging="onStopDragging"
             @move="onMove">
@@ -172,7 +174,12 @@ export default {
         // this.terminal.destroy();
     },
     methods: {
+        onPanBy(panBy) {
+            console.log("panning by", panBy);
+            this.$emit("pan-by", panBy);
+        },
         onMove(e) {
+            console.log("deltax", e.data.deltaX);
             this.deltaX += e.data.deltaX;
             this.deltaY += e.data.deltaY;
         },

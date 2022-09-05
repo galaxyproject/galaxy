@@ -39,6 +39,7 @@ TODO: pan when objects are dragged out of viewport
                                     :get-manager="getManager"
                                     :activeNodeId="activeNodeId"
                                     :root-offset="rootOffset"
+                                    @pan-by="onPan"
                                     @stopDragging="onStopDragging"
                                     @onDragConnector="onDragConnector"
                                     @onActivate="onActivate"
@@ -100,7 +101,14 @@ export default {
     mounted() {
         // canvas overview management
         const rootRect = this.$refs.canvas.getBoundingClientRect();
-        this.rootOffset = { top: rootRect.top, left: rootRect.left, width: rootRect.width, height: rootRect.height };
+        this.rootOffset = {
+            top: rootRect.top,
+            left: rootRect.left,
+            width: rootRect.width,
+            height: rootRect.height,
+            bottom: rootRect.bottom,
+            right: rootRect.right,
+        };
         console.log(`root offset: ${this.rootOffset}`);
 
         // this.canvasManager = new WorkflowCanvas(this.getManager(), this.$refs.canvas);
@@ -128,8 +136,8 @@ export default {
             this.svgpanzoom = svgpanzoom;
         },
         onPan(pan) {
-            console.log("pan!");
-            this.svgpanzoom.panBy({ x: 10, y: 10 });
+            console.log("pan!", pan);
+            this.svgpanzoom.panBy(pan);
         },
         onActivate(nodeId) {
             console.log("onNodeId", nodeId);
