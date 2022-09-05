@@ -1,5 +1,5 @@
 <template>
-    <b-modal ref="modal" v-bind="$attrs" :title="title | l" :hide-footer="!multiple" v-on="$listeners">
+    <b-modal ref="modal" v-bind="$attrs" :title="title | l" v-on="$listeners" footer-class="justify-content-between">
         <b-form-group :description="'Filter histories' | l">
             <b-form-input v-model="filter" type="search" :placeholder="'Search Filter' | l" />
         </b-form-group>
@@ -29,11 +29,9 @@
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
         </b-table>
-
-        <b-pagination v-model="currentPage" :total-rows="totalRows" :per-page="perPage" align="center" />
-
         <template v-slot:modal-footer>
-            <b-button v-if="multiple" variant="primary" @click="addSelected"> Add Selected </b-button>
+            <b-pagination v-model="currentPage" :total-rows="totalRows" :per-page="perPage" />
+            <b-button v-if="multiple" variant="primary" @click="addSelected">Add Selected</b-button>
         </template>
     </b-modal>
 </template>
