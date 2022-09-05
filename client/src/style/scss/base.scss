@@ -355,16 +355,16 @@ body {
             min-height: 100%;
             display: flex;
             align-items: center;
-            &.active {
-                background: darken($brand-masthead, 10%);
+            &.show, &.active {
+                background: var(--masthead-list-background-color-show);
             }
             .nav-link {
                 position: relative;
                 cursor: pointer;
                 text-decoration: none;
-                color: $brand-masthead-text;
+                color: var(--masthead-text-color);
                 &:hover {
-                    color: $brand-masthead-text-hover;
+                    color: var(--masthead-text-color-hover);
                 }
                 &.nav-icon {
                     font-size: 1.3em;
@@ -377,7 +377,7 @@ body {
                     }
                 }
                 &.toggle {
-                    color: $brand-masthead-text-hover;
+                    color: var(--masthead-text-color-hover);
                 }
             }
         }
@@ -389,7 +389,7 @@ body {
         font-size: 1.25rem;
         left: 0.8rem;
         line-height: 0rem;
-        color: $brand-masthead-text-active;
+        color: var(--masthead-text-color-active);
         text-decoration: none;
         .navbar-brand-image {
             display: inline;
@@ -398,7 +398,7 @@ body {
             max-height: 2rem;
         }
         .navbar-brand-title {
-            color: $brand-masthead-text;
+            color: var(--masthead-text-color);
         }
     }
 }
