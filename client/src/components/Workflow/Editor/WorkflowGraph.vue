@@ -25,25 +25,24 @@ TODO: pan when objects are dragged out of viewport
                                 :key="connection.id"
                                 :connection="connection"></terminal-connector>
                             <foreignObject style="overflow: visible">
-                                <div xmlns="http://www.w3.org/1999/xhtml">
-                                    <WorkflowNode
-                                        v-for="(step, key) in steps"
-                                        :id="key"
-                                        :key="key"
-                                        :name="step.name"
-                                        :type="step.type"
-                                        :content-id="step.content_id"
-                                        :step="step"
-                                        :datatypes-mapper="datatypesMapper"
-                                        :get-manager="getManager"
-                                        :activeNodeId="activeNodeId"
-                                        :root-offset="rootOffset"
-                                        @stopDragging="onStopDragging"
-                                        @onDragConnector="onDragConnector"
-                                        @onActivate="onActivate"
-                                        @onRemove="onRemove"
-                                        v-on="$listeners" />
-                                </div>
+                                <WorkflowNode
+                                    xmlns="http://www.w3.org/1999/xhtml"
+                                    v-for="(step, key) in steps"
+                                    :id="key"
+                                    :key="key"
+                                    :name="step.name"
+                                    :type="step.type"
+                                    :content-id="step.content_id"
+                                    :step="step"
+                                    :datatypes-mapper="datatypesMapper"
+                                    :get-manager="getManager"
+                                    :activeNodeId="activeNodeId"
+                                    :root-offset="rootOffset"
+                                    @stopDragging="onStopDragging"
+                                    @onDragConnector="onDragConnector"
+                                    @onActivate="onActivate"
+                                    @onRemove="onRemove"
+                                    v-on="$listeners" />
                             </foreignObject>
                         </g>
                     </svg>
