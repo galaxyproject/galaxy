@@ -195,7 +195,7 @@ to step 3 in the process below.
 
 2. Submit a pull request to `Starforge Recipes`_.
 
-3. Add the new dependency to the `[tool.poetry.dependencies]` (or to `[tool.poetry.dev-dependencies]` if only needed for Galaxy development) section of `pyproject.toml` .
+3. Add the new dependency to the `[tool.poetry.dependencies]` (or to `[tool.poetry.group.dev.dependencies]` if only needed for Galaxy development) section of `pyproject.toml` .
 4. Run `make update-dependencies` to update the requirements file in `lib/galaxy/dependencies`_.
 5. Submit a pull request to Galaxy with your changes.
 

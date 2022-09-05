@@ -27,7 +27,7 @@ docs: ## Generate HTML documentation.
 # Run following commands to setup the Python portion of the requirements:
 #   $ ./scripts/common_startup.sh
 #   $ . .venv/bin/activate
-#   $ pip install -r lib/galaxy/dependencies/dev-requirements.txt
+#   $ pip install -r requirements.txt -r lib/galaxy/dependencies/dev-requirements.txt
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 
