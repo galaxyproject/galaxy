@@ -1679,13 +1679,13 @@ class NavigatesGalaxy(HasDriver):
 
         selector = self.history_panel_wait_for_hid_state(collection_hid, "ok", multi_history_panel=True)
         self.click(selector)
-        next_level_element_selector = selector
         for _ in range(len(collection_type.split(":")) - 1):
-            next_level_element_selector = next_level_element_selector.descendant(".dataset-collection-element")
-            self.wait_for_and_click(next_level_element_selector)
+            selector = self.history_panel_wait_for_hid_state(1, "ok", multi_history_panel=True)
+            self.click(selector)
 
-        dataset_selector = next_level_element_selector.descendant(".dataset")
+        dataset_selector = self.history_panel_wait_for_hid_state(1, "ok", multi_history_panel=True)
         self.wait_for_and_click(dataset_selector)
+        self.history_panel_wait_for_hid_state(1, "ok", multi_history_panel=True)
 
     def history_panel_item_view_dataset_details(self, hid):
         if not self.is_beta_history():
