@@ -84,6 +84,7 @@ export default {
         this.fields = [
             { key: "name", sortable: true },
             { key: "tags", sortable: true },
+            { key: "count", label: "Items", sortable: true },
             { key: "update_time", label: "Updated", sortable: true },
         ];
     },

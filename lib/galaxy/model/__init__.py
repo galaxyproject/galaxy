@@ -2596,6 +2596,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     def empty(self):
         return self.hid_counter is None or self.hid_counter == 1
 
+    @property
+    def count(self):
+        return self.hid_counter - 1
+
     def add_pending_items(self, set_output_hid=True):
         # These are assumed to be either copies of existing datasets or new, empty datasets,
         # so we don't need to set the quota.
