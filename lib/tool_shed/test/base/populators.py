@@ -1,8 +1,4 @@
-from typing import (
-    Any,
-    Dict,
-    Union,
-)
+from typing import Union
 
 import requests
 
@@ -18,9 +14,13 @@ from tool_shed_client.schema import (
     OrderedInstallableRevisions,
     Repository,
     RepositoryMetadata,
+    RepositorySearchRequest,
+    RepositorySearchResults,
     RepositoryUpdate,
     ResetMetadataOnRepositoryRequest,
     ResetMetadataOnRepositoryResponse,
+    ToolSearchRequest,
+    ToolSearchResults,
 )
 from .api_util import ShedApiInteractor
 
@@ -105,6 +105,10 @@ class ToolShedPopulator:
         api_asserts.assert_status_code_is_ok(response)
         return Repository(**response.json())
 
+    def reindex(self):
+        index_response = self._admin_api_interactor.put("tools/build_search_index")
+        index_response.raise_for_status()
+
     def new_category(self, prefix=DEFAULT_PREFIX) -> Category:
         name = random_name(prefix=prefix)
         body = {"name": name, "description": "testcreaterepo"}
@@ -132,6 +136,22 @@ class ToolShedPopulator:
         reset_response = self._api_interactor.post("repositories/reset_metadata_on_repository", json=request.dict())
         api_asserts.assert_status_code_is_ok(reset_response)
         return ResetMetadataOnRepositoryResponse(**reset_response.json())
+
+    def tool_search_query(self, query: str) -> ToolSearchResults:
+        return self.tool_search(ToolSearchRequest(q=query))
+
+    def tool_search(self, search_request: ToolSearchRequest) -> ToolSearchResults:
+        search_response = self._api_interactor.get("tools", params=search_request.dict())
+        api_asserts.assert_status_code_is_ok(search_response)
+        return ToolSearchResults(**search_response.json())
+
+    def repo_search_query(self, query: str) -> RepositorySearchResults:
+        return self.repo_search(RepositorySearchRequest(q=query))
+
+    def repo_search(self, repo_search_request: RepositorySearchRequest) -> RepositorySearchResults:
+        search_response = self._api_interactor.get("repositories", params=repo_search_request.dict())
+        api_asserts.assert_status_code_is_ok(search_response)
+        return RepositorySearchResults(**search_response.json())
 
     def guid(self, repository: Repository, tool_id: str, tool_version: str) -> str:
         url = self._api_interactor.url

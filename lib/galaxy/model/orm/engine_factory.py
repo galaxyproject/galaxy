@@ -48,7 +48,7 @@ def pretty_stack():
 
 
 def build_engine(
-    url,
+    url: str,
     engine_options=None,
     database_query_profiling_proxy=False,
     trace_logger=None,

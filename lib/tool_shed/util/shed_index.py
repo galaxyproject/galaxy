@@ -40,7 +40,7 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
 
     Returns a tuple with number of repos and tools that were indexed.
     """
-    model = ts_mapping.init(file_path, dburi, engine_options={}, create_tables=False)
+    model = ts_mapping.init(dburi, engine_options={}, create_tables=False)
     sa_session = model.session
     repo_index, tool_index = _get_or_create_index(whoosh_index_dir)
 
@@ -66,8 +66,15 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
             repo_index_writer.add_document(**repo)
 
             #  Tools get their own index
+            tool_index_writer.delete_by_term("repo_id", repo_id)
             for tool in tools_list:
-                tool_index_writer.add_document(**tool)
+                tool_contents = tool.copy()
+                # tool_id = tool_contents["id"]
+                # tool_contents["path"] = f"{repo_id}/{tool_id}"
+                tool_contents["repo_owner_username"] = repo.get("repo_owner_username")
+                tool_contents["repo_name"] = repo.get("name")
+                tool_contents["repo_id"] = repo_id
+                tool_index_writer.add_document(**tool_contents)
                 tools_indexed += 1
 
             repos_indexed += 1

@@ -91,3 +91,13 @@ class ShedRepositoriesApiTestCase(ShedApiTestCase):
         assert len(metadata_response.repository_status) == 1
         revisions = populator.get_ordered_installable_revisions(repository.owner, repository.name)
         assert len(revisions.__root__) == 1
+
+    def test_repository_search(self):
+        populator = self.populator
+        repository = populator.setup_column_maker_repo(prefix="repoforreposearch")
+        populator.reindex()
+        results = populator.repo_search_query("repoforreposearch")
+        assert len(results.hits) == 1
+        first_hit = results.hits[0]
+        assert first_hit.repository.name == repository.name
+        assert first_hit.repository.times_downloaded == 0

@@ -70,9 +70,7 @@ class UniverseApplication(BasicSharedApp, SentryClientMixin, HaltableContainer):
         # Set up the Tool Shed database engine and ORM.
         from tool_shed.webapp.model import mapping
 
-        model: mapping.ToolShedModelMapping = mapping.init(
-            self.config.file_path, db_url, self.config.database_engine_options
-        )
+        model: mapping.ToolShedModelMapping = mapping.init(db_url, self.config.database_engine_options)
         self.model = model
         self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)
         self._register_singleton(idencoding.IdEncodingHelper, self.security)

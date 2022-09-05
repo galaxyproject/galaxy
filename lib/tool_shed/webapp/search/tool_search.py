@@ -5,8 +5,8 @@ import os
 import whoosh.index
 from whoosh import scoring
 from whoosh.fields import (
+    ID,
     Schema,
-    STORED,
     TEXT,
 )
 from whoosh.qparser import MultifieldParser
@@ -26,7 +26,7 @@ schema = Schema(
     version=TEXT(stored=True),
     repo_name=TEXT(stored=True),
     repo_owner_username=TEXT(stored=True),
-    repo_id=STORED,
+    repo_id=ID(stored=True),
 )
 
 

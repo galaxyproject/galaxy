@@ -65,3 +65,4 @@ class ShedApiInteractor:
 
     get = decorate_method(requests.get)
     post = decorate_method(requests.post)
+    put = decorate_method(requests.put)

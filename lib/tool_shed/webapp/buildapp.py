@@ -201,8 +201,14 @@ def app_pair(global_conf, load_app_kwds=None, **kwargs):
         action="create",
         conditions=dict(method=["POST"]),
     )
+    webapp.mapper.connect(
+        "tools",
+        "/api/tools/build_search_index",
+        controller="tools",
+        action="build_search_index",
+        conditions=dict(method=["PUT"]),
+    )
     webapp.mapper.connect("tools", "/api/tools", controller="tools", action="index", conditions=dict(method=["GET"]))
-    webapp.mapper.connect("json", "/api/tools/json", controller="tools", action="json", conditions=dict(method=["GET"]))
     webapp.mapper.connect(
         "version", "/api/version", controller="configuration", action="version", conditions=dict(method=["GET"])
     )
