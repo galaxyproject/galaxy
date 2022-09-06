@@ -66,7 +66,7 @@ class Interval(Tabular):
     MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
     MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
     MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
-    MetadataElement(name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0)
+    MetadataElement(name="strandCol", default=0, desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0)
     MetadataElement(name="nameCol", desc="Name/Identifier column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0)
     MetadataElement(name="columns", default=3, desc="Number of columns", readonly=True, visible=False)
 
@@ -386,7 +386,7 @@ class Bed(Interval):
     MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
     MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
     MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
-    MetadataElement(name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0)
+    MetadataElement(name="strandCol", default=0, desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0)
     MetadataElement(name="columns", default=3, desc="Number of columns", readonly=True, visible=False)
     MetadataElement(name="viz_filter_cols", desc="Score column for visualization", default=[4], param=metadata.ColumnParameter, optional=True, multiple=True)
     # do we need to repeat these? they are the same as should be inherited from interval type
@@ -567,7 +567,7 @@ class BedStrict(Bed):
     MetadataElement(name="chromCol", default=1, desc="Chrom column", readonly=True, param=metadata.MetadataParameter)
     MetadataElement(name="startCol", default=2, desc="Start column", readonly=True, param=metadata.MetadataParameter)  # TODO: start and end should be able to be set to these or the proper thick[start/end]?
     MetadataElement(name="endCol", default=3, desc="End column", readonly=True, param=metadata.MetadataParameter)
-    MetadataElement(name="strandCol", desc="Strand column (click box & select)", readonly=True, param=metadata.MetadataParameter, no_value=0, optional=True)
+    MetadataElement(name="strandCol", default=0, desc="Strand column (click box & select)", readonly=True, param=metadata.MetadataParameter, no_value=0, optional=True)
     MetadataElement(name="nameCol", desc="Name/Identifier column (click box & select)", readonly=True, param=metadata.MetadataParameter, no_value=0, optional=True)
     MetadataElement(name="columns", default=3, desc="Number of columns", readonly=True, visible=False)
 
@@ -1420,7 +1420,7 @@ class ENCODEPeak(Interval):
     MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
     MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
     MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
-    MetadataElement(name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0)
+    MetadataElement(name="strandCol", default=0, desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0)
     MetadataElement(name="columns", default=3, desc="Number of columns", readonly=True, visible=False)
 
     def sniff(self, filename):
