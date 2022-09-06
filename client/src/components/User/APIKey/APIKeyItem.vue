@@ -17,7 +17,10 @@
         </b-input-group>
 
         <b-row class="flex-column align-items-center">
-            <UtcDate class="text-black-50 small mb-2" :date="item.create_time" mode="pretty" />
+            <span class="small text-black-50 mb-1">
+                created on
+                <UtcDate class="text-black-50 small mb-2" :date="item.create_time" mode="pretty" />
+            </span>
 
             <b-button size="small" variant="outline-danger" @click="toggleDeleteModal">
                 <icon icon="trash" />
@@ -32,6 +35,7 @@
 </template>
 
 <script>
+import { mapGetters } from "vuex";
 import svc from "./model/service";
 import UtcDate from "components/UtcDate";
 import CopyToClipboard from "components/CopyToClipboard";
@@ -54,12 +58,15 @@ export default {
             showModal: false,
         };
     },
+    computed: {
+        ...mapGetters("user", ["currentUser"]),
+    },
     methods: {
         toggleDeleteModal() {
             this.$refs.modal.toggle();
         },
         deleteKey() {
-            svc.deleteAPIKey(this.item.key)
+            svc.deleteAPIKey(this.currentUser.id, this.item.key)
                 .then(() => this.$emit("listAPIKeys"))
                 .catch((err) => (this.errorMessage = err.message));
         },

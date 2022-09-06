@@ -1,8 +1,8 @@
 <template>
-    <section class="api-key">
+    <section class="api-key d-flex flex-column">
         <h2 v-localize>Manage API Keys</h2>
 
-        <span v-localize>
+        <span v-localize class="mb-2">
             An API key will allow you to access via web API. Please note that this key acts as an alternate means to
             access your account and should be treated with the same care as your login password.
         </span>
@@ -11,20 +11,23 @@
             {{ errorMessage }}
         </b-alert>
 
-        <b-container class="mt-2">
-            <b-alert v-if="loading" class="m-2" variant="info" show>
-                <LoadingSpan message="Loading API keys" />
-            </b-alert>
+        <b-alert v-if="loading" class="m-2" variant="info" show>
+            <LoadingSpan message="Loading API keys" />
+        </b-alert>
 
-            <b-row v-else-if="!loading && !items.length" class="text-center">
-                <b-button variant="primary" :disabled="createLoading" @click.prevent="createNewAPIKey">
-                    <icon v-if="!createLoading" icon="plus" />
-                    <icon v-else icon="spinner" spin />
-                    <span v-localize>Create a new key</span>
-                </b-button>
-            </b-row>
+        <b-button
+            v-else-if="!loading && !items.length"
+            variant="primary"
+            :disabled="createLoading"
+            class="create-button"
+            @click.prevent="createNewAPIKey">
+            <icon v-if="!createLoading" icon="plus" />
+            <icon v-else icon="spinner" spin />
+            <span v-localize>Create a new key</span>
+        </b-button>
 
-            <b-row v-else cols="1">
+        <b-container v-else class="mt-2">
+            <b-row cols="1">
                 <b-col class="mb-2">
                     <a-p-i-key-item :item="items[0]" @listAPIKeys="listAPIKeys" />
                 </b-col>
@@ -37,6 +40,7 @@
 import svc from "./model/service";
 import APIKeyItem from "./APIKeyItem";
 import LoadingSpan from "components/LoadingSpan";
+import { getGalaxyInstance } from "app";
 
 export default {
     components: {
@@ -51,6 +55,11 @@ export default {
             errorMessage: null,
         };
     },
+    computed: {
+        currentUserId() {
+            return getGalaxyInstance().user.id;
+        },
+    },
     mounted() {
         this.listAPIKeys();
     },
@@ -58,7 +67,7 @@ export default {
         listAPIKeys() {
             this.loading = true;
 
-            svc.listAPIKeys()
+            svc.listAPIKeys(this.currentUserId)
                 .then((items) => (this.items = items))
                 .catch((err) => (this.errorMessage = err.message))
                 .finally(() => (this.loading = false));
@@ -66,7 +75,7 @@ export default {
         createNewAPIKey() {
             this.createLoading = true;
 
-            svc.createNewAPIKey()
+            svc.createNewAPIKey(this.currentUserId)
                 .then(() => this.listAPIKeys())
                 .catch((err) => (this.errorMessage = err.message))
                 .finally(() => (this.createLoading = false));
@@ -74,3 +83,9 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.create-button {
+    max-width: 10rem;
+}
+</style>
