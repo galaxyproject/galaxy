@@ -517,9 +517,9 @@ class NavigatesGalaxy(HasDriver):
     def get_api_key(self, force=False):
         # If force is false, use the form inputs API and allow the key to be absent.
         if not force:
-            return self.api_get(f"users/{self.get_user_id()}/api_key/inputs")["inputs"][0]["value"]
+            return self.api_get(f"users/{self.get_user_id()}/api_key")[0]["key"]
         else:
-            return self.api_post(f"users/{self.get_user_id()}/api_key")
+            return self.api_post(f"users/{self.get_user_id()}/api_key")[0]["key"]
 
     def get_user_id(self):
         user = self.get_logged_in_user()
