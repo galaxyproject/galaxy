@@ -23,7 +23,7 @@ const getters = {
         (state) =>
         ({ filterSettings }) => {
             // if no filters
-            if (Object.keys(filterSettings).length == 0 || filterSettings == {}) {
+            if (Object.keys(filterSettings).length == 0) {
                 return [];
             }
             const allTools = state.toolsList[0];

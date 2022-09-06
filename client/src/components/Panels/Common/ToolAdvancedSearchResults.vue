@@ -54,18 +54,24 @@
                 </template>
             </b-table>
         </b-overlay>
+        <ScrollToTopButton :offset="offset" />
     </div>
 </template>
 
 <script>
+const loadTimeout = 100;
+const defaultBufferLen = 4;
 import _l from "utils/localization";
-import { getAppRoot } from "onload/loadConfig";
 import infiniteScroll from "vue-infinite-scroll";
 import { openGlobalUploadModal } from "components/Upload";
-import axios from "axios";
+import { fetchData } from "./services";
+import ScrollToTopButton from "./ScrollToTopButton";
 
 export default {
     directives: { infiniteScroll },
+    components: {
+        ScrollToTopButton,
+    },
     props: {
         tools: {
             type: Array,
@@ -75,8 +81,9 @@ export default {
     data() {
         return {
             buffer: {},
-            bufferLen: 4,
+            bufferLen: defaultBufferLen,
             busy: false,
+            offset: 0,
             fields: [
                 {
                     key: "name",
@@ -113,6 +120,12 @@ export default {
             await this.fetchHelp(index);
         });
     },
+    beforeDestroy() {
+        document.removeEventListener("scroll", this.onScroll, true);
+    },
+    mounted() {
+        document.addEventListener("scroll", this.onScroll, true);
+    },
     methods: {
         onOpen(tool) {
             if (tool.id === "upload1") {
@@ -124,17 +137,20 @@ export default {
                 this.$router.push({ path: `/?tool_id=${encodeURIComponent(toolId)}&version=${toolVersion}` });
             }
         },
+        onScroll(e) {
+            this.offset = e.target.scrollTop;
+        },
         async loadMore() {
             if (this.buffer.length < this.tools.length) {
                 this.busy = true;
                 setTimeout(() => {
-                    this.bufferLen += 4;
+                    this.bufferLen += defaultBufferLen;
                     this.buffer = this.tools.slice(0, this.bufferLen);
                     this.buffer.forEach(async (tool, index) => {
                         await this.fetchHelp(index);
                     });
                     this.busy = false;
-                }, 100);
+                }, loadTimeout);
             }
         },
         toggleHelp(row) {
@@ -145,25 +161,14 @@ export default {
             const id = this.buffer[index]["id"];
             if (!this.buffer[index]["is_fetched"]) {
                 this.buffer[index]["is_fetched"] = true; // tags the tool's help as being fetched
-                this.busy = true;
-                let helpText = "";
-                let summary = null;
-                await axios
-                    .get(`${getAppRoot()}api/tools/${id}/build`)
-                    .then((response) => {
-                        helpText = response.data.help;
-                    })
-                    .catch((error) => {
-                        console.error(error);
-                    });
-                this.busy = false;
-                if (helpText && helpText != "\n") {
-                    summary = this.parseHelp(helpText);
-                } else {
-                    helpText = ""; // for cases where helpText == '\n'
-                }
-                this.buffer[index]["summary"] = summary;
-                this.buffer[index]["help_text"] = helpText;
+                await fetchData(`api/tools/${id}/build`).then((response) => {
+                    if (response.help && response.help != "\n") {
+                        this.buffer[index]["help_text"] = response.help;
+                        this.buffer[index]["summary"] = this.parseHelp(response.help);
+                    } else {
+                        this.buffer[index]["help_text"] = ""; // for cases where helpText == '\n'
+                    }
+                });
                 this.$refs.toolTable.refresh();
             }
         },

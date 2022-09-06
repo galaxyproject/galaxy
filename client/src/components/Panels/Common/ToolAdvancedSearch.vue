@@ -26,23 +26,14 @@
                     <LoadingSpan message="Loading Advanced Search Results" />
                 </b-alert>
                 <b-alert v-else-if="!hasFilters" class="m-2" variant="secondary" show>
-                    There are no valid filters applied. Please add filters to the menu in the Tool Panel.
+                    Please add filters to the menu in the Tool Panel.
                 </b-alert>
-                <b-alert v-else-if="!itemsLoaded || itemsLoaded.length == 0" class="m-2" variant="danger" show>
+                <b-alert v-else-if="!itemsLoaded || itemsLoaded.length == 0" class="m-2" variant="info" show>
                     No tools found for the entered filters.
                 </b-alert>
                 <div v-else>
                     <ToolAdvancedSearchResults :tools="itemsLoaded" />
                 </div>
-                <b-button
-                    v-if="hasFilters && !loading && offset > 200"
-                    v-b-tooltip.noninteractive.hover
-                    class="ui-btn-back-to-top btn-circle"
-                    title="Scroll To Top"
-                    variant="info"
-                    @click="scrollToTop">
-                    <i class="fa fa-arrow-up" />
-                </b-button>
             </div>
         </section>
     </ToolsProvider>
@@ -77,11 +68,6 @@ export default {
             default: "",
         },
     },
-    data() {
-        return {
-            offset: 0,
-        };
-    },
     computed: {
         filterSettings() {
             const newFilterSettings = {};
@@ -98,20 +84,6 @@ export default {
         },
         hasFilters() {
             return Object.keys(this.filterSettings).length;
-        },
-    },
-    beforeDestroy() {
-        document.querySelector(".center-panel").removeEventListener("scroll", this.onScroll, true);
-    },
-    mounted() {
-        document.querySelector(".center-panel").addEventListener("scroll", this.onScroll, true);
-    },
-    methods: {
-        onScroll(e) {
-            this.offset = e.target.scrollTop;
-        },
-        scrollToTop() {
-            document.querySelector(".center-panel").scrollTop = 0;
         },
     },
 };
