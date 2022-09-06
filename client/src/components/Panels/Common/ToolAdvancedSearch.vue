@@ -1,6 +1,6 @@
 <template>
     <ToolsProvider v-slot="{ loading, result: itemsLoaded }" :filter-settings="filterSettings">
-        <section class="overflow-auto h-100" @scroll="onScroll">
+        <section class="overflow-auto h-100" @scroll="onScroll" ref="scrollable">
             <div class="mb-2">
                 <span class="row mb-1">
                     <span class="col">
@@ -35,7 +35,7 @@
                     <ToolAdvancedSearchResults :tools="itemsLoaded" />
                 </div>
             </div>
-            <ScrollToTopButton :offset="offset" />
+            <ScrollToTopButton :target="$refs.scrollable" :offset="offset" />
         </section>
     </ToolsProvider>
 </template>

@@ -17,10 +17,14 @@ export default {
             type: Number,
             default: 0,
         },
+        target: {
+            type: HTMLElement,
+            default: null,
+        },
     },
     methods: {
         scrollToTop() {
-            document.querySelector(".center-panel").scrollTop = 0;
+            this.target.scrollTop = 0;
         },
     },
 };
