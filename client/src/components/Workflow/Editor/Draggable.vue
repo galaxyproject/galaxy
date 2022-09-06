@@ -30,12 +30,13 @@ export default {
     },
     data() {
         return {
-            mouseDown: {},
             isPanning: false,
-            nudge: 23,
+            // Maximum distance to move per pan
+            maxDeltaPerPan: 8,
+            // 60hz seems pretty common, should result in smooth panning
+            refreshRate: 1000 / 60,
             panBy: {},
             timeout: null,
-            lastEvent: null,
             programmaticDelta: { x: 0, y: 0 },
         };
     },
@@ -56,17 +57,16 @@ export default {
                 if (doMove) {
                     // we need to move in the opposite direction of the pan
                     const data = {
-                        ...this.lastEvent.data,
                         deltaX: (this.panBy.x / this.scale) * -1,
                         deltaY: (this.panBy.y / this.scale) * -1,
                     };
-                    this.$emit("move", { ...this.lastEvent, data });
+                    this.$emit("move", { event: {}, data });
                     this.programmaticDelta.x -= this.panBy.x;
                     this.programmaticDelta.y -= this.panBy.y;
                 }
                 this.timeout = setTimeout(() => {
                     this.emitPan();
-                }, 50);
+                }, this.refreshRate);
             }
         },
         onDragStart(e) {
@@ -85,11 +85,12 @@ export default {
         move(e) {
             clearTimeout(this.timeout);
             if (this.rootOffset) {
-                const panBy = { x: 0, y: 0 };
+                // Limit pan to maxDeltaPerPan
+                const deltaX = Math.min(Math.abs(e.data.deltaX), this.maxDeltaPerPan);
+                const deltaY = Math.min(Math.abs(e.data.deltaY), this.maxDeltaPerPan);
+                // Check if we're out of bounds
                 let doPan = false;
-                // don't pan faster than 23
-                const deltaX = Math.min(Math.abs(e.data.deltaX), 23);
-                const deltaY = Math.min(Math.abs(e.data.deltaY), 23);
+                const panBy = { x: 0, y: 0 };
                 if (e.event.clientX - this.rootOffset.left < 0) {
                     panBy["x"] = deltaX;
                     doPan = true;
@@ -108,7 +109,6 @@ export default {
                 }
                 this.panBy = panBy;
                 this.isPanning = doPan;
-                this.lastEvent = e;
                 this.emitPan(false);
             }
             // if we have moved the panel programmatically we need to "fix" the delta
@@ -121,6 +121,9 @@ export default {
             e.data.deltaY /= this.scale;
             e.event.stopPropagation();
         },
+    },
+    beforeDestroy() {
+        clearTimeout(this.timeout);
     },
 };
 </script>

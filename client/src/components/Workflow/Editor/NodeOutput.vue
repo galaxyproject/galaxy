@@ -83,13 +83,10 @@ export default {
             return Object.freeze({ startX: this.startX, startY: this.startY });
         },
         startX() {
-            const newX = this.initX + this.offsetX;
-            return newX;
+            return this.initX + this.offsetX;
         },
         startY() {
-            const newY = this.initY + this.offsetY;
-            // this.$store.commit("workflowState/setOutputTerminalPosition", this.getNode().id, this.output.name, newY);
-            return newY;
+            return this.initY + this.offsetY;
         },
         endX() {
             return this.startX + this.deltaX;
@@ -153,9 +150,6 @@ export default {
                 position,
             });
         },
-        isDragging() {
-            console.log("is dragging ?", this.isDragging);
-        },
         dragPosition() {
             console.log("dragPosition", this.endX);
             if (this.isDragging) {
@@ -171,15 +165,12 @@ export default {
     },
     beforeDestroy() {
         this.$emit("onRemove", this.output);
-        // this.terminal.destroy();
     },
     methods: {
         onPanBy(panBy) {
-            console.log("panning by", panBy);
             this.$emit("pan-by", panBy);
         },
         onMove(e) {
-            console.log("deltax", e.data.deltaX);
             this.deltaX += e.data.deltaX;
             this.deltaY += e.data.deltaY;
         },

@@ -1,12 +1,6 @@
-<!--
-TODO: pan when objects are dragged out of viewport
-
-
--->
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
         <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoomButton" />
-        <b-button @click="onPan">Pan!</b-button>
         <div class="canvas-viewport" @dragover.prevent @drop.prevent>
             <div id="canvas-container" ref="canvas">
                 <SvgPanZoom
@@ -117,14 +111,12 @@ export default {
     },
     methods: {
         onStopDragging() {
-            console.log("onStop");
             this.draggingConnection = null;
         },
         onDragConnector(vector) {
             this.draggingConnection = vector;
         },
         onZoom(zoomLevel) {
-            console.log("new ZoomLevel");
             // SvgZoomPanel returns array
             this.$store.commit("workflowState/setScale", zoomLevel?.[0]);
         },
@@ -136,7 +128,6 @@ export default {
             this.svgpanzoom = svgpanzoom;
         },
         onPan(pan) {
-            console.log("pan!", pan);
             this.svgpanzoom.panBy(pan);
         },
         onActivate(nodeId) {
