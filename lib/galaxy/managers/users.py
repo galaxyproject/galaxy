@@ -359,7 +359,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return trans.user
 
     # ---- api keys
-    def create_api_key(self, user: model.User) -> str:
+    def create_api_key(self, user: model.User) -> model.APIKeys:
         """
         Create and return an API key for `user`.
         """
