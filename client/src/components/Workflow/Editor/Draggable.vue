@@ -27,6 +27,11 @@ export default {
             type: Object,
             required: false,
         },
+        applyScale: {
+            type: Boolean,
+            required: false,
+            default: true,
+        },
     },
     data() {
         return {
@@ -42,7 +47,10 @@ export default {
     },
     computed: {
         scale() {
-            return this.$store.getters["workflowState/getScale"]();
+            if (this.applyScale) {
+                return this.$store.getters["workflowState/getScale"]();
+            }
+            return 1;
         },
         draggableOptions() {
             return {
