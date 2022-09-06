@@ -20,6 +20,7 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.celery.tasks import compute_dataset_hash
 from galaxy.datatypes import dataproviders
 from galaxy.managers.base import ModelSerializer
 from galaxy.managers.context import ProvidesHistoryContext
@@ -43,14 +44,17 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHDA,
     AnyHistoryContentItem,
+    AsyncTaskResultSummary,
     DatasetAssociationRoles,
     DatasetSourceId,
     DatasetSourceType,
     Model,
     UpdateDatasetPermissionsPayload,
 )
+from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
 from galaxy.schema.types import RelativeUrl
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.util.hash_util import HashFunctionNameEnum
 from galaxy.util.path import safe_walk
 from galaxy.visualization.data_providers.genome import (
     BamDataProvider,
@@ -59,7 +63,10 @@ from galaxy.visualization.data_providers.genome import (
 )
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.webapps.base.controller import UsesVisualizationMixin
-from galaxy.webapps.galaxy.services.base import ServiceBase
+from galaxy.webapps.galaxy.services.base import (
+    async_task_summary,
+    ServiceBase,
+)
 
 log = logging.getLogger(__name__)
 
@@ -183,6 +190,16 @@ class DeleteDatasetBatchPayload(Model):
             "*Warning*: this is a destructive operation."
         ),
     )
+
+
+class ComputeDatasetHashPayload(Model):
+    hash_function: Optional[HashFunctionNameEnum] = Field(
+        default=HashFunctionNameEnum.md5, description="Hash function name to use to compute dataset hashes."
+    )
+    extra_files_path: Optional[str] = Field(default=None, description="If set, extra files path to compute a hash for.")
+
+    class Config:
+        use_enum_values = True  # When using .dict()
 
 
 class DatasetErrorMessage(Model):
@@ -373,6 +390,23 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             result.append(DatasetInheritanceChainEntry(name=f"{dep[0].name}", dep=dep[1]))
 
         return DatasetInheritanceChain(__root__=result)
+
+    def compute_hash(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_id: DecodedDatabaseIdField,
+        payload: ComputeDatasetHashPayload,
+        hda_ldda: DatasetSourceType = DatasetSourceType.hda,
+    ) -> AsyncTaskResultSummary:
+        dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(dataset_id, trans.user)
+        request = ComputeDatasetHashTaskRequest(
+            dataset_id=dataset_instance.dataset.id,
+            extra_files_path=payload.extra_files_path,
+            hash_function=payload.hash_function,
+            user=trans.async_request_user,
+        )
+        result = compute_dataset_hash.delay(request=request)
+        return async_task_summary(result)
 
     def update_permissions(
         self,

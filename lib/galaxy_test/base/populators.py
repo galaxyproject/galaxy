@@ -640,6 +640,24 @@ class BaseDatasetPopulator(BasePopulator):
     def get_job_details(self, job_id: str, full: bool = False) -> Response:
         return self._get(f"jobs/{job_id}", {"full": full})
 
+    def compute_hash(
+        self,
+        dataset_id: str,
+        hash_function: Optional[str] = "MD5",
+        extra_files_path: Optional[str] = None,
+        wait: bool = True,
+    ) -> Response:
+        data: Dict[str, Any] = dict()
+        if hash_function:
+            data["hash_function"] = hash_function
+        if extra_files_path:
+            data["extra_files_path"] = extra_files_path
+        put_response = self._put(f"datasets/{dataset_id}/hash", data, json=True)
+        api_asserts.assert_status_code_is_ok(put_response)
+        if wait:
+            self.wait_on_task(put_response)
+        return put_response
+
     def cancel_history_jobs(self, history_id: str, wait=True) -> None:
         active_jobs = self.active_history_jobs(history_id)
         for active_job in active_jobs:
