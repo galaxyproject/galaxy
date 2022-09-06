@@ -38,7 +38,7 @@ export class toolSearch {
             this.toolsResults = tools;
         }
 
-        return this.toolsResults
+        return this.toolsResults;
     }
 
     normalizeTools(tools) {
@@ -49,7 +49,7 @@ export class toolSearch {
     }
 
     flattenToolsSection(section) {
-        let flattenTools = [];
+        const flattenTools = [];
 
         if (section.elems) {
             section.elems.forEach((elem) => {
@@ -66,9 +66,8 @@ export class toolSearch {
 
     mapToolsResults(tools, results) {
         this.toolsResults = tools
-            //TODO what was the purpose of the following clause? !el.text; might be hyphen or breakline; so should see if can add it backx
-            .filter(tool => /*!el.text && */results.includes(tool.id))
-            .map(tool => {
+            .filter((tool) => !tool.text && results.includes(tool.id))
+            .map((tool) => {
                 Object.assign(tool, this.setSort(tool, results));
                 return tool;
             });
@@ -77,7 +76,7 @@ export class toolSearch {
     }
 
     setSort(tool, results) {
-        return {[this.toolsResultsSortLabel]: results.indexOf(tool.id)};
+        return { [this.toolsResultsSortLabel]: results.indexOf(tool.id) };
     }
 
     sortToolsResults(toolsResults) {
@@ -100,7 +99,7 @@ export class toolSearch {
                 }
                 return results.indexOf(sect1.elems[0].id) - results.indexOf(sect2.elems[0].id);
             });
-        
+
         return tools;
     }
 
@@ -114,7 +113,7 @@ export class toolSearch {
         tools.forEach((section) => {
             normalizedTools = normalizedTools.concat(this.flattenToolsSection(section));
         });
-        
+
         return normalizedTools;
     }
 
