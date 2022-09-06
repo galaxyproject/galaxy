@@ -60,7 +60,6 @@ export default {
                         deltaX: (this.panBy.x / this.scale) * -1,
                         deltaY: (this.panBy.y / this.scale) * -1,
                     };
-                    console.log("move data", data);
                     this.$emit("move", { ...this.lastEvent, data });
                     this.programmaticDelta.x -= this.panBy.x;
                     this.programmaticDelta.y -= this.panBy.y;
@@ -88,20 +87,23 @@ export default {
             if (this.rootOffset) {
                 const panBy = { x: 0, y: 0 };
                 let doPan = false;
+                // don't pan faster than 23
+                const deltaX = Math.min(Math.abs(e.data.deltaX), 23);
+                const deltaY = Math.min(Math.abs(e.data.deltaY), 23);
                 if (e.event.clientX - this.rootOffset.left < 0) {
-                    panBy["x"] = e.data.deltaX * -1;
+                    panBy["x"] = deltaX;
                     doPan = true;
                 }
                 if (e.event.clientY - this.rootOffset.top < 0) {
-                    panBy["y"] = e.data.deltaY * -1;
+                    panBy["y"] = deltaY;
                     doPan = true;
                 }
                 if (this.rootOffset.right - e.event.clientX < 0) {
-                    panBy["x"] = e.data.deltaX * -1;
+                    panBy["x"] = -deltaX;
                     doPan = true;
                 }
                 if (this.rootOffset.bottom - e.event.clientY < 0) {
-                    panBy["y"] = e.data.deltaY * -1;
+                    panBy["y"] = -deltaY;
                     doPan = true;
                 }
                 this.panBy = panBy;
