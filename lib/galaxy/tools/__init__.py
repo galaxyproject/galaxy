@@ -234,7 +234,6 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "Convert characters1": packaging.version.parse("1.0.1"),
     "substitutions1": packaging.version.parse("1.0.1"),
     "winSplitter": packaging.version.parse("1.0.1"),
-    "Interval2Maf1": packaging.version.parse("1.0.1+galaxy0"),
 }
 
 REQUIRE_FULL_DIRECTORY = {

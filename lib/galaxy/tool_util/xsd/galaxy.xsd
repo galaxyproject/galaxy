@@ -4226,7 +4226,7 @@ that has been selected as the value of the parameter named ``input1``.
 </options>
 ```
 
-The [interval2maf](https://github.com/galaxyproject/galaxy/blob/dev/tools/maf/interval2maf.xml)
+The [gff_filter_by_feature_count](tools/filters/gff/gff_filter_by_feature_count.xml)
 tool makes use of this tag with files from a history, and the
 [star_fusion](https://github.com/galaxyproject/tools-iuc/blob/master/tools/star_fusion/star_fusion.xml)
 tool makes use of this to reference a data table.
