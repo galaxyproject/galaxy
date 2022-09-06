@@ -129,9 +129,9 @@ class UsersApiTestCase(ApiTestCase):
     def test_create_api_key(self):
         user = self._setup_user(TEST_USER_EMAIL)
         user_id = user["id"]
-        response = self._put(f"users/{user_id}/api_key/inputs", admin=True)
+        response = self._post(f"users/{user_id}/api_key", admin=True)
         self._assert_status_code_is_ok(response)
-        assert response.json()["inputs"][0]["name"] == "api-key"
+        assert response.json()[0]["key"]
 
     @skip_without_tool("cat1")
     def test_favorites(self):
