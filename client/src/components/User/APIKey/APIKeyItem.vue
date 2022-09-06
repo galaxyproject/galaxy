@@ -1,6 +1,11 @@
 <template>
     <b-card class="text-center">
-        <b-input-group class="mb-2" @mouseover="hover = true" @mouseleave="hover = false">
+        <b-input-group
+            class="mb-2"
+            @blur="hover = false"
+            @focus="hover = true"
+            @mouseover="hover = true"
+            @mouseleave="hover = false">
             <b-input-group-prepend>
                 <b-input-group-text>
                     <icon icon="key" />
