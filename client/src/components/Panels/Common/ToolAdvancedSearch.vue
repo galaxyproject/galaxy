@@ -1,6 +1,6 @@
 <template>
     <ToolsProvider v-slot="{ loading, result: itemsLoaded }" :filter-settings="filterSettings">
-        <section>
+        <section class="overflow-auto h-100" @scroll="onScroll">
             <div class="mb-2">
                 <span class="row mb-1">
                     <span class="col">
@@ -35,6 +35,7 @@
                     <ToolAdvancedSearchResults :tools="itemsLoaded" />
                 </div>
             </div>
+            <ScrollToTopButton :offset="offset" />
         </section>
     </ToolsProvider>
 </template>
@@ -43,12 +44,14 @@
 import LoadingSpan from "components/LoadingSpan";
 import { ToolsProvider } from "components/providers/storeProviders";
 import ToolAdvancedSearchResults from "./ToolAdvancedSearchResults";
+import ScrollToTopButton from "./ScrollToTopButton";
 
 export default {
     components: {
         LoadingSpan,
         ToolAdvancedSearchResults,
         ToolsProvider,
+        ScrollToTopButton,
     },
     props: {
         name: {
@@ -68,6 +71,11 @@ export default {
             default: "",
         },
     },
+    data() {
+        return {
+            offset: 0,
+        };
+    },
     computed: {
         filterSettings() {
             const newFilterSettings = {};
@@ -84,6 +92,11 @@ export default {
         },
         hasFilters() {
             return Object.keys(this.filterSettings).length;
+        },
+    },
+    methods: {
+        onScroll(e) {
+            this.offset = e.target.scrollTop;
         },
     },
 };

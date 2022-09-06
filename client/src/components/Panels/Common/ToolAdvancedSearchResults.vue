@@ -54,7 +54,6 @@
                 </template>
             </b-table>
         </b-overlay>
-        <ScrollToTopButton :offset="offset" />
     </div>
 </template>
 
@@ -65,13 +64,9 @@ import _l from "utils/localization";
 import infiniteScroll from "vue-infinite-scroll";
 import { openGlobalUploadModal } from "components/Upload";
 import { fetchData } from "./services";
-import ScrollToTopButton from "./ScrollToTopButton";
 
 export default {
     directives: { infiniteScroll },
-    components: {
-        ScrollToTopButton,
-    },
     props: {
         tools: {
             type: Array,
@@ -83,7 +78,6 @@ export default {
             buffer: {},
             bufferLen: defaultBufferLen,
             busy: false,
-            offset: 0,
             fields: [
                 {
                     key: "name",
@@ -120,12 +114,6 @@ export default {
             await this.fetchHelp(index);
         });
     },
-    beforeDestroy() {
-        document.removeEventListener("scroll", this.onScroll, true);
-    },
-    mounted() {
-        document.addEventListener("scroll", this.onScroll, true);
-    },
     methods: {
         onOpen(tool) {
             if (tool.id === "upload1") {
@@ -136,9 +124,6 @@ export default {
                 const toolVersion = tool.version;
                 this.$router.push({ path: `/?tool_id=${encodeURIComponent(toolId)}&version=${toolVersion}` });
             }
-        },
-        onScroll(e) {
-            this.offset = e.target.scrollTop;
         },
         async loadMore() {
             if (this.buffer.length < this.tools.length) {
