@@ -241,6 +241,9 @@ steps:
     label: tool_exec
     in:
       inttest: input_int
+  cat1:
+    # regression test, ensures connecting works in the presence of data input terminals
+    tool_id: cat1
 """
         )
         self.screenshot("workflow_editor_parameter_connection_simple")

@@ -67,6 +67,7 @@
   <tool file="metadata.xml" />
   <tool file="metadata_bam.xml" />
   <tool file="metadata_bcf.xml" />
+  <tool file="metadata_bed.xml" />
   <tool file="metadata_biom1.xml" />
   <tool file="metadata_column_names.xml" />
   <tool file="strict_shell.xml" />

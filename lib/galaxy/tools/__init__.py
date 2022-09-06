@@ -1206,7 +1206,7 @@ class Tool(Dictifiable):
         if getattr(self, "tool_shed", None):
             tool_dir = Path(self.tool_dir)
             for repo_dir in itertools.chain([tool_dir], tool_dir.parents):
-                if repo_dir.name == self.repository_name:
+                if repo_dir.name == self.repository_name and repo_dir.parent.name == self.installed_changeset_revision:
                     return str(repo_dir)
             else:
                 log.error(f"Problem finding repository dir for tool '{self.id}'")
