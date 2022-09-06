@@ -89,11 +89,15 @@ class FastAPIHistories:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get("/api/users/{user_id}/api_key", summary="Return user's API keys")
-    def get_api_keys(self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam):
+    def get_api_keys(
+        self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
+    ):
         return self.service.get_api_keys(trans)
 
     @router.post("/api/users/{user_id}/api_key", summary="Creates a new API key")
-    def create_api_key(self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam):
+    def create_api_key(
+        self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
+    ):
         return self.service.create_api_key(trans)
 
     @router.delete(
@@ -102,7 +106,10 @@ class FastAPIHistories:
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def delete_api_key(
-        self, api_key: str, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
+        self,
+        api_key: str,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParam,
     ):
         self.service.delete_api_key(api_key, trans)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
