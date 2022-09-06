@@ -17,7 +17,11 @@ import string
 import time
 from glob import glob
 from tempfile import NamedTemporaryFile
-from typing import List
+from typing import (
+    BinaryIO,
+    List,
+    Optional,
+)
 
 import refgenconf
 import requests
@@ -41,6 +45,8 @@ TOOL_DATA_TABLE_CONF_XML = """<?xml version="1.0"?>
 
 
 class ToolDataPathFiles:
+    update_time: float
+
     def __init__(self, tool_data_path):
         self.tool_data_path = os.path.abspath(tool_data_path)
         self.update_time = 0
@@ -67,7 +73,7 @@ class ToolDataPathFiles:
             )
             self.update_time = time.time()
         except Exception:
-            log.exception()
+            log.exception("Failed to update _tool_data_path_files")
             self._tool_data_path_files = set()
 
     def exists(self, path):
@@ -520,7 +526,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                         filename = f"{corrected_filename}.sample"
                         found = True
 
-            errors = []
+            errors: List[str] = []
             if found:
                 self.extend_data_with(filename, errors=errors)
                 self._update_version()
@@ -647,7 +653,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         if not self.allow_duplicate_entries:
             self._deduplicate_data()
 
-    def parse_file_fields(self, filename, errors=None, here="__HERE__"):
+    def parse_file_fields(self, filename, errors: Optional[List[str]] = None, here="__HERE__"):
         """
         Parse separated lines from file and return a list of tuples.
 
@@ -783,10 +789,11 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
             if filename is None:
                 # If we reach this point, there is no data table with a corresponding .loc file.
                 raise MessageException(
-                    f"Unable to determine filename for persisting data table '{self.name}' values: '{self.fields}'."
+                    f"Unable to determine filename for persisting data table '{self.name}' values: '{fields}'."
                 )
             else:
                 log.debug("Persisting changes to file: %s", filename)
+                data_table_fh: BinaryIO
                 with FileLock(filename):
                     try:
                         if os.path.exists(filename):
@@ -802,8 +809,8 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                     except OSError as e:
                         log.exception("Error opening data table file (%s): %s", filename, e)
                         raise
-                fields = f"{self.separator.join(fields)}\n"
-                data_table_fh.write(fields.encode("utf-8"))
+                fields_collapsed = f"{self.separator.join(fields)}\n"
+                data_table_fh.write(fields_collapsed.encode("utf-8"))
 
     def _remove_entry(self, values):
 
