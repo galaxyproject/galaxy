@@ -4063,10 +4063,6 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
     def hashes(self):
         return self.dataset.hashes
 
-    def get_raw_data(self):
-        """Returns the full data. To stream it open the file_name and read/write as needed"""
-        return self.datatype.get_raw_data(self)
-
     def get_mime(self):
         """Returns the mime type of the data"""
         try:

@@ -206,14 +206,6 @@ class Data(metaclass=DataMeta):
             return cls.allow_datatype_change
         return cls.composite_type is None
 
-    def get_raw_data(self, dataset):
-        """Returns the full data. To stream it open the file_name and read/write as needed"""
-        try:
-            return open(dataset.file_name, "rb").read(-1)
-        except OSError:
-            log.exception("%s reading a file that does not exist %s", self.__class__.__name__, dataset.file_name)
-            return ""
-
     def dataset_content_needs_grooming(self, file_name):
         """This function is called on an output dataset file after the content is initially generated."""
         return False
