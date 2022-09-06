@@ -40,7 +40,7 @@ class UsersService(ServiceBase):
         result = []
         api_keys = self.api_key_manager.get_api_keys(trans.user)
         if api_keys:
-            # Only return the last created key
+            # TODO: Return all the scoped keys when ready
             result.append({"key": api_keys[0].key, "create_time": api_keys[0].create_time})
         return result
 
