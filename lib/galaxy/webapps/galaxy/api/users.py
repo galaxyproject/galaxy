@@ -7,6 +7,7 @@ import logging
 import re
 
 from fastapi import (
+    Path,
     Response,
     status,
 )
@@ -33,6 +34,7 @@ from galaxy.model import (
     User,
     UserAddress,
 )
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,
@@ -67,6 +69,8 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["users"])
 
+UserIdPathParam: DecodedDatabaseIdField = Path(..., title="User ID", description="The ID of the user to get.")
+
 
 @router.cbv
 class FastAPIHistories:
@@ -84,20 +88,22 @@ class FastAPIHistories:
         self.service.recalculate_disk_usage(trans)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    @router.get("/api/user/api_keys", summary="Returns all API keys")
-    def get_api_keys(self, trans: ProvidesUserContext = DependsOnTrans):
+    @router.get("/api/users/{user_id}/api_key", summary="Return user's API keys")
+    def get_api_keys(self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam):
         return self.service.get_api_keys(trans)
 
-    @router.post("/api/user/api_keys", summary="Creates a new API key")
-    def create_api_key(self, trans: ProvidesUserContext = DependsOnTrans):
+    @router.post("/api/users/{user_id}/api_key", summary="Creates a new API key")
+    def create_api_key(self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam):
         return self.service.create_api_key(trans)
 
     @router.delete(
-        "/api/user/api_keys/{api_key}",
+        "/api/users/{user_id}/api_key/{api_key}",
         summary="Delete the API key with given key",
         status_code=status.HTTP_204_NO_CONTENT,
     )
-    def delete_api_key(self, api_key: str, trans: ProvidesUserContext = DependsOnTrans):
+    def delete_api_key(
+        self, api_key: str, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
+    ):
         self.service.delete_api_key(api_key, trans)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -873,59 +879,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             "toolbox_section_filters": {"title": "Sections", "config": trans.app.config.user_tool_section_filters},
             "toolbox_label_filters": {"title": "Labels", "config": trans.app.config.user_tool_label_filters},
         }
-
-    @expose_api
-    def api_key(self, trans, id, payload=None, **kwd):
-        """
-        Create API key.
-        """
-        payload = payload or {}
-        user = self._get_user(trans, id)
-        return self.api_key_manager.create_api_key(user)
-
-    @expose_api
-    def get_or_create_api_key(self, trans, id, payload=None, **kwd):
-        """
-        Unified 'get or create' for API key
-        """
-        payload = payload or {}
-        user = self._get_user(trans, id)
-        return self.api_key_manager.get_or_create_api_key(user)
-
-    @expose_api
-    def get_api_key(self, trans, id, payload=None, **kwd):
-        """
-        Get API key inputs.
-        """
-        payload = payload or {}
-        user = self._get_user(trans, id)
-        return self._build_inputs_api_key(user)
-
-    @expose_api
-    def set_api_key(self, trans, id, payload=None, **kwd):
-        """
-        Get API key inputs with new API key.
-        """
-        payload = payload or {}
-        user = self._get_user(trans, id)
-        self.api_key_manager.create_api_key(user)
-        return self._build_inputs_api_key(user, message="Generated a new web API key.")
-
-    def _build_inputs_api_key(self, user, message=""):
-        """
-        Build API key inputs.
-        """
-        inputs = [
-            {
-                "name": "api-key",
-                "type": "text",
-                "label": "Current API key:",
-                "value": user.api_keys[0].key if user.api_keys else "Not available.",
-                "readonly": True,
-                "help": " An API key will allow you to access via web API. Please note that this key acts as an alternate means to access your account and should be treated with the same care as your login password.",
-            }
-        ]
-        return {"message": message, "inputs": inputs}
 
     @expose_api
     def get_custom_builds(self, trans, id, payload=None, **kwd):
