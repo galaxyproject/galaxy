@@ -190,6 +190,31 @@ INPUTS_DATA_PARAM = """
 </tool>
 """
 
+INPUTS_DATA_PARAM_OPTIONS = """
+<tool>
+    <inputs>
+        <param name="valid_name" type="data" format="txt">
+            <options>
+                <filter type="data_meta" key="dbkey"/>
+            </options>
+        </param>
+    </inputs>
+</tool>
+"""
+
+INPUTS_DATA_PARAM_INVALIDOPTIONS = """
+<tool>
+    <inputs>
+        <param name="valid_name" type="data" format="txt">
+            <options/>
+            <options from_file="blah">
+                <filter type="expression"/>
+            </options>
+        </param>
+    </inputs>
+</tool>
+"""
+
 INPUTS_CONDITIONAL = """
 <tool>
     <inputs>
@@ -1012,6 +1037,31 @@ def test_inputs_data_param(lint_ctx):
     assert not lint_ctx.error_messages
 
 
+def test_inputs_data_param_options(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_DATA_PARAM_OPTIONS)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    assert not lint_ctx.valid_messages
+    assert "Found 1 input parameters." in lint_ctx.info_messages
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_inputs_data_param_invalidoptions(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_DATA_PARAM_INVALIDOPTIONS)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    assert not lint_ctx.valid_messages
+    assert "Found 1 input parameters." in lint_ctx.info_messages
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.warn_messages
+    assert "Data parameter [valid_name] contains multiple options elements." in lint_ctx.error_messages
+    assert (
+        'Data parameter [valid_name] for filters only type="data_meta" and key="dbkey" are allowed, found type="expression" and key="None"'
+        in lint_ctx.error_messages
+    )
+    assert len(lint_ctx.error_messages) == 2
+
+
 def test_inputs_conditional(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_CONDITIONAL)
     run_lint(lint_ctx, inputs.lint_inputs, tool_source)
@@ -1197,7 +1247,7 @@ def test_inputs_type_child_combinations(lint_ctx):
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
     assert (
-        "Parameter [text_param] './options' tags are only allowed for parameters of type ['select', 'drill_down']"
+        "Parameter [text_param] './options' tags are only allowed for parameters of type ['data', 'select', 'drill_down']"
         in lint_ctx.error_messages
     )
     assert (
