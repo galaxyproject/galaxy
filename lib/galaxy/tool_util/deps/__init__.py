@@ -431,7 +431,7 @@ class CachedDependencyManager(DependencyManager):
             (dep.name, dep.version, dep.exact, dep.dependency_type) for dep in resolved_dependencies
         ]
         hash_str = json.dumps(sorted(resolved_dependencies))
-        return hash_util.new_secure_hash(hash_str)[:8]  # short hash
+        return hash_util.new_insecure_hash(hash_str)[:8]  # short hash
 
     def get_hashed_dependencies_path(self, resolved_dependencies):
         """

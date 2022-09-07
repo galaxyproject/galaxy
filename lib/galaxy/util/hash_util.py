@@ -90,9 +90,25 @@ def md5_hash_file(path: Union[str, os.PathLike]) -> Optional[str]:
         return None
 
 
-def new_secure_hash(text_type: Union[bytes, str]) -> str:
+def new_secure_hash_v2(text_type: Union[bytes, str]) -> str:
+    """More modern version of new_secure_hash.
+
+    Certain passwords are set via new_insecure_hash (previously new_secure_hash),
+    so that needs to remain for legacy purposes.
     """
-    Returns the hexdigest of the sha1 hash of the argument `text_type`.
+    assert text_type is not None
+    return sha512(smart_str(text_type)).hexdigest()
+
+
+def new_insecure_hash(text_type: Union[bytes, str]) -> str:
+    """Returns the hexdigest of the sha1 hash of the argument `text_type`.
+
+    Previously called new_secure_hash, but this should not be considered
+    secure - SHA1 is no longer considered a secure hash and has been broken
+    since the early 2000s.
+
+    use_pbkdf2 should be set by default and galaxy.security.passwords should
+    be the default used for passwords in Galaxy.
     """
     assert text_type is not None
     return sha1(smart_str(text_type)).hexdigest()
@@ -110,4 +126,4 @@ def is_hashable(value: Any) -> bool:
     return True
 
 
-__all__ = ("md5", "hashlib", "sha1", "sha", "new_secure_hash", "hmac_new", "is_hashable")
+__all__ = ("md5", "hashlib", "sha1", "sha", "new_insecure_hash", "new_secure_hash_v2", "hmac_new", "is_hashable")

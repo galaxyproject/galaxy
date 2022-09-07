@@ -146,7 +146,7 @@ from galaxy.util.form_builder import (
     WorkflowField,
     WorkflowMappingField,
 )
-from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.hash_util import new_insecure_hash
 from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -638,7 +638,7 @@ class User(Base, Dictifiable, RepresentById):
         if User.use_pbkdf2:
             self.password = galaxy.security.passwords.hash_password(cleartext)
         else:
-            self.password = new_secure_hash(text_type=cleartext)
+            self.password = new_insecure_hash(text_type=cleartext)
         self.last_password_change = now()
 
     def set_random_password(self, length=16):
