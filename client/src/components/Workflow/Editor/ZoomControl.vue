@@ -70,11 +70,15 @@ export default {
     methods: {
         onZoomIn() {
             const zoomLevel = this.zoomLevels[this.index + 1];
-            this.$emit("onZoom", zoomLevel);
+            if (zoomLevel) {
+                this.$emit("onZoom", zoomLevel);
+            }
         },
         onZoomOut() {
             const zoomLevel = this.zoomLevels[this.index - 1];
-            this.$emit("onZoom", zoomLevel);
+            if (zoomLevel) {
+                this.$emit("onZoom", zoomLevel);
+            }
         },
         onZoomReset() {
             this.$emit("onZoom", this.zoomDefault);

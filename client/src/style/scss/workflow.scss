@@ -1,6 +1,17 @@
+.vue-pan-zoom-scene {
+    width: 100%;
+    height: 100%;
+}
 .canvas-svg {
     // not sure if hack or not ...
     overflow: visible;
+    display: block;
+    }
+
+    .nodeArea {
+        position: absolute;
+        top: 0px;
+        left: 0px;
 }
 .workflow-client {
     .workflow-panel {

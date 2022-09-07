@@ -2,51 +2,51 @@
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
         <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoomButton" />
         <div class="canvas-viewport" @dragover.prevent @drop.prevent>
-            <div id="canvas-container" ref="canvas">
-                <Draggable style="width: 100%; height: 100%" @move="onPanContainer" :apply-scale="false">
-                    <SvgPanZoom
-                        style="width: 100%; height: 100%"
-                        :minZoom="0.1"
-                        :panEnabled="false"
-                        :zoomEnabled="true"
-                        :controlIconsEnabled="false"
-                        :fit="false"
-                        :center="false"
-                        :on-zoom="onZoom"
-                        @svgpanzoom="registerSvgPanZoom">
-                        <svg class="canvas-svg" width="100%" height="100%" ref="svg">
-                            <g>
-                                <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
-                                <terminal-connector
-                                    v-for="connection in connections"
-                                    :key="connection.id"
-                                    :connection="connection"></terminal-connector>
-                                <foreignObject style="overflow: visible">
-                                    <WorkflowNode
-                                        xmlns="http://www.w3.org/1999/xhtml"
-                                        v-for="(step, key) in steps"
-                                        :id="key"
-                                        :key="key"
-                                        :name="step.name"
-                                        :type="step.type"
-                                        :content-id="step.content_id"
-                                        :step="step"
-                                        :datatypes-mapper="datatypesMapper"
-                                        :get-manager="getManager"
-                                        :activeNodeId="activeNodeId"
-                                        :root-offset="rootOffset"
-                                        @pan-by="onPan"
-                                        @stopDragging="onStopDragging"
-                                        @onDragConnector="onDragConnector"
-                                        @onActivate="onActivate"
-                                        @onRemove="onRemove"
-                                        v-on="$listeners" />
-                                </foreignObject>
-                            </g>
-                        </svg>
-                    </SvgPanZoom>
-                </Draggable>
-            </div>
+            <panZoom
+                style="width: 100%; height: 100%"
+                selector=".zoomable"
+                :options="panZoomOptions"
+                @init="onInitPanZoom"
+                @transform="onTransform">
+                <div id="canvas-container" ref="canvas">
+                    <!--
+                    <Draggable style="width: 100%; height: 100%" @move="onPanContainer" :apply-scale="false">
+                        -->
+                    <svg class="canvas-svg" width="100%" height="100%" ref="svg">
+                        <g class="zoomable">
+                            <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
+                            <terminal-connector
+                                v-for="connection in connections"
+                                :key="connection.id"
+                                :connection="connection"></terminal-connector>
+                        </g>
+                    </svg>
+                    <div class="nodeArea" ref="nodes" :style="style">
+                        <!-- this div is only necessary so that we synchronize zoom and pan to the svg coordinates -->
+                        <WorkflowNode
+                            v-for="(step, key) in steps"
+                            :id="key"
+                            :key="key"
+                            :name="step.name"
+                            :type="step.type"
+                            :content-id="step.content_id"
+                            :step="step"
+                            :datatypes-mapper="datatypesMapper"
+                            :get-manager="getManager"
+                            :activeNodeId="activeNodeId"
+                            :root-offset="rootOffset"
+                            @pan-by="onPan"
+                            @stopDragging="onStopDragging"
+                            @onDragConnector="onDragConnector"
+                            @onActivate="onActivate"
+                            @onRemove="onRemove"
+                            v-on="$listeners" />
+                    </div>
+                    <!--
+                    </Draggable>
+                    -->
+                </div>
+            </panZoom>
         </div>
         <div class="workflow-overview" aria-hidden="true">
             <div class="workflow-overview-body">
@@ -62,15 +62,17 @@
 import ZoomControl from "./ZoomControl";
 import WorkflowNode from "./Node";
 import RawConnector from "./Connector";
-import SvgPanZoom from "vue-svg-pan-zoom";
 import TerminalConnector from "./TerminalConnector";
 import Draggable from "./Draggable.vue";
+import panZoom from "vue-panzoom";
+import Vue from "vue";
+// install plugin
+Vue.use(panZoom);
 
 export default {
     components: {
         Draggable,
         RawConnector,
-        SvgPanZoom,
         TerminalConnector,
         WorkflowNode,
         ZoomControl,
@@ -80,7 +82,13 @@ export default {
             isWheeled: false,
             rootOffset: { left: 0, top: 0 },
             draggingConnection: null,
-            svgpanzoom: null,
+            panzoom: null,
+            panZoomOptions: {
+                transformOrigin: null,
+                minZoom: 0.1,
+                maxZoom: 10,
+            },
+            transform: null,
         };
     },
     props: {
@@ -115,28 +123,34 @@ export default {
         // this.canvasManager.scrollToNodes();
     },
     methods: {
+        setScale(scale) {
+            this.$store.commit("workflowState/setScale", scale);
+        },
+        onTransform(e) {
+            this.transform = e.getTransform();
+            this.setScale(this.transform.scale);
+        },
         onStopDragging() {
             this.draggingConnection = null;
         },
         onDragConnector(vector) {
             this.draggingConnection = vector;
         },
-        onZoom(zoomLevel) {
-            // SvgZoomPanel returns array
-            this.$store.commit("workflowState/setScale", zoomLevel?.[0]);
-        },
         onZoomButton(zoomLevel) {
-            this.$store.commit("workflowState/setScale", zoomLevel);
-            this.svgpanzoom.zoom(zoomLevel);
+            this.panzoom.zoomAbs(
+                this.rootOffset.left + this.rootOffset.width / 2,
+                this.rootOffset.top + this.rootOffset.height / 2,
+                zoomLevel
+            );
         },
-        registerSvgPanZoom(svgpanzoom) {
-            this.svgpanzoom = svgpanzoom;
+        onInitPanZoom(panzoomInstance) {
+            this.panzoom = panzoomInstance;
         },
         onPan(pan) {
-            this.svgpanzoom.panBy(pan);
+            this.panzoom.moveBy(pan.x, pan.y);
         },
         onPanContainer(e) {
-            this.svgpanzoom.panBy({ x: e.data.deltaX, y: e.data.deltaY });
+            this.panzoom.moveBy(e.data.deltaX, e.data.deltaY);
         },
         onActivate(nodeId) {
             console.log("onNodeId", nodeId);
@@ -153,6 +167,11 @@ export default {
         },
     },
     computed: {
+        style() {
+            if (this.transform) {
+                return `transform: matrix(${this.transform.scale}, 0, 0, ${this.transform.scale}, ${this.transform.x}, ${this.transform.y})`;
+            }
+        },
         zoomLevel() {
             return this.$store.getters["workflowState/getScale"]();
         },
