@@ -1,6 +1,7 @@
 from typing import (
     Dict,
     List,
+    Optional,
 )
 
 from pydantic import Field
@@ -27,6 +28,12 @@ class ToolDataEntryList(Model):
     __root__: List[ToolDataEntry] = Field(
         title="A list with details on individual data tables.",
     )
+
+    def find_entry(self, name: str) -> Optional[ToolDataEntry]:
+        for entry in self.__root__:
+            if entry.name == name:
+                return entry
+        return None
 
 
 class ToolDataDetails(ToolDataEntry):

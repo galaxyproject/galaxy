@@ -31,8 +31,7 @@ class ToolDataManager:
 
     def index(self) -> ToolDataEntryList:
         """Return all tool data tables."""
-        data_tables = [table.to_dict() for table in self.data_tables.values()]
-        return ToolDataEntryList.construct(__root__=data_tables)
+        return self._app.tool_data_tables.index()
 
     def show(self, table_name: str) -> ToolDataDetails:
         """Get details of a given data table"""

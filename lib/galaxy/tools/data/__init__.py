@@ -33,6 +33,10 @@ from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.filelock import FileLock
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.template import fill_template
+from ._schema import (
+    ToolDataEntry,
+    ToolDataEntryList,
+)
 
 log = logging.getLogger(__name__)
 
@@ -101,6 +105,10 @@ class ToolDataTableManager(Dictifiable):
             if not single_config_filename:
                 continue
             self.load_from_config_file(single_config_filename, self.tool_data_path, from_shed_config=False)
+
+    def index(self) -> ToolDataEntryList:
+        data_tables = [ToolDataEntry(**table.to_dict()) for table in self.data_tables.values()]
+        return ToolDataEntryList.construct(__root__=data_tables)
 
     def __getitem__(self, key):
         return self.data_tables.__getitem__(key)
