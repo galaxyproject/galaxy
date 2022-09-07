@@ -54,7 +54,7 @@ export default {
     },
     computed: {
         zoomPercentage() {
-            return Math.floor(this.zoomLevel * 100);
+            return Math.round(this.zoomLevel * 100);
         },
         index() {
             let index = this.zoomLevels.indexOf(this.zoomLevel);

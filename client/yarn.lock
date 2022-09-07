@@ -2277,13 +2277,6 @@ ajv@^8.0.0, ajv@^8.8.0:
     require-from-string "^2.0.2"
     uri-js "^4.2.2"
 
-amator@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/amator/-/amator-1.1.0.tgz#08c6b60bc93aec2b61bbfc0c4d677d30323cc0f1"
-  integrity sha512-V5+aH8pe+Z3u/UG3L3pG3BaFQGXAyXHVQDroRwjPHdh08bcUEchAVsU1MCuJSCaU5o60wTK6KaE6te5memzgYw==
-  dependencies:
-    bezier-easing "^2.0.3"
-
 amdi18n-loader@^0.9.3:
   version "0.9.3"
   resolved "https://registry.npmjs.org/amdi18n-loader/-/amdi18n-loader-0.9.3.tgz"
@@ -2788,11 +2781,6 @@ bent@~7.3.6:
     bytesish "^0.4.1"
     caseless "~0.12.0"
     is-stream "^2.0.0"
-
-bezier-easing@^2.0.3:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/bezier-easing/-/bezier-easing-2.1.0.tgz#c04dfe8b926d6ecaca1813d69ff179b7c2025d86"
-  integrity sha512-gbIqZ/eslnUFC1tjEvtz0sgx+xTK20wDnYMIA27VA04R7w6xxXQPZDbibjA9DTWZRA2CXtwHykkVzlCaAJAZig==
 
 big.js@^5.2.2:
   version "5.2.2"
@@ -7303,11 +7291,6 @@ next-tick@^1.1.0:
   resolved "https://registry.npmjs.org/next-tick/-/next-tick-1.1.0.tgz"
   integrity sha512-CXdUiJembsNjuToQvxayPZF9Vqht7hewsvy2sOWafLvi2awflj9mOC6bHIg50orX8IJvWKY9wYQ/zB2kogPslQ==
 
-ngraph.events@^1.2.2:
-  version "1.2.2"
-  resolved "https://registry.yarnpkg.com/ngraph.events/-/ngraph.events-1.2.2.tgz#3ceb92d676a04a4e7ce60a09fa8e17a4f0346d7f"
-  integrity sha512-JsUbEOzANskax+WSYiAPETemLWYXmixuPAlmZmhIbIj6FH/WDgEGCGnRwUQBK0GjOnVm8Ui+e5IJ+5VZ4e32eQ==
-
 nise@^5.1.1:
   version "5.1.1"
   resolved "https://registry.npmjs.org/nise/-/nise-5.1.1.tgz"
@@ -7667,15 +7650,6 @@ p-try@^2.0.0:
   version "2.2.0"
   resolved "https://registry.npmjs.org/p-try/-/p-try-2.2.0.tgz"
   integrity sha512-R4nPAVTAU0B9D35/Gk3uJf/7XYbQcyohSKdvAxIRSNghFl4e71hVoGnBNQz9cWaXxO2I10KTC+3jMdvvoKw6dQ==
-
-panzoom@^9.4.0:
-  version "9.4.3"
-  resolved "https://registry.yarnpkg.com/panzoom/-/panzoom-9.4.3.tgz#195c4031bb643f2e6c42f1de0ca87cc10e224042"
-  integrity sha512-xaxCpElcRbQsUtIdwlrZA90P90+BHip4Vda2BC8MEb4tkI05PmR6cKECdqUCZ85ZvBHjpI9htJrZBxV5Gp/q/w==
-  dependencies:
-    amator "^1.1.0"
-    ngraph.events "^1.2.2"
-    wheel "^1.0.0"
 
 parent-module@^1.0.0:
   version "1.0.1"
@@ -9445,6 +9419,11 @@ sver-compat@^1.5.0:
     es6-iterator "^2.0.1"
     es6-symbol "^3.1.1"
 
+svg-pan-zoom@3.6.0:
+  version "3.6.0"
+  resolved "https://registry.yarnpkg.com/svg-pan-zoom/-/svg-pan-zoom-3.6.0.tgz#31d8137d7e079e8f059effd85c7605b0567b6e4b"
+  integrity sha512-ZBEL2z/n/W2fLLFzn3NTQgd+7QEfbrKvKmu29U3qvMflmJgLaWkwKbOzWJYESFidTiGYMHkijAKmY6m64moyYg==
+
 svg-pathdata@^6.0.3:
   version "6.0.3"
   resolved "https://registry.npmjs.org/svg-pathdata/-/svg-pathdata-6.0.3.tgz"
@@ -10089,13 +10068,6 @@ vue-observe-visibility@^1.0.0:
   resolved "https://registry.npmjs.org/vue-observe-visibility/-/vue-observe-visibility-1.0.0.tgz"
   integrity sha512-s5TFh3s3h3Mhd3jaz3zGzkVHKHnc/0C/gNr30olO99+yw2hl3WBhK3ng3/f9OF+qkW4+l7GkmwfAzDAcY3lCFg==
 
-vue-panzoom@1.1.3:
-  version "1.1.3"
-  resolved "https://registry.yarnpkg.com/vue-panzoom/-/vue-panzoom-1.1.3.tgz#5d1caae505e066bb899bcc4da2d6d6875a1d8e2c"
-  integrity sha512-iGiTo76HR5hCQd8xob+qZW/3T0pLHs3jZab4MiWSbeo71MIOPikCw1Xr6+kmCUzpde0Nx4oiDmG+fOpuX9j8xQ==
-  dependencies:
-    panzoom "^9.4.0"
-
 vue-prismjs@^1.2.0:
   version "1.2.0"
   resolved "https://registry.npmjs.org/vue-prismjs/-/vue-prismjs-1.2.0.tgz"
@@ -10120,6 +10092,13 @@ vue-style-loader@^4.1.0:
   dependencies:
     hash-sum "^1.0.2"
     loader-utils "^1.0.2"
+
+vue-svg-pan-zoom@1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/vue-svg-pan-zoom/-/vue-svg-pan-zoom-1.1.0.tgz#7f104366a51d6fa3d4b0f798788c05296d811436"
+  integrity sha512-H/KuL+zuSsZtQETFyE68Ms6YfMjfvLCtBKYcFc/o2NZsP6dlV3+XJfywjqZJKPsFUYJkFvX6XgNe+BKUqnkzzQ==
+  dependencies:
+    svg-pan-zoom "3.6.0"
 
 vue-template-compiler@^2.7.8:
   version "2.7.8"
@@ -10387,11 +10366,6 @@ whatwg-url@^8.0.0, whatwg-url@^8.5.0:
     lodash "^4.7.0"
     tr46 "^2.1.0"
     webidl-conversions "^6.1.0"
-
-wheel@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/wheel/-/wheel-1.0.0.tgz#6cf46e06a854181adb8649228077f8b0d5c574ce"
-  integrity sha512-XiCMHibOiqalCQ+BaNSwRoZ9FDTAvOsXxGHXChBugewDj7HC8VBIER71dEOiRH1fSdLbRCQzngKTSiZ06ZQzeA==
 
 which-boxed-primitive@^1.0.2:
   version "1.0.2"

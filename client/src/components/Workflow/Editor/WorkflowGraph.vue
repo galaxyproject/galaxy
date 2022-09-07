@@ -2,25 +2,29 @@
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
         <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoomButton" />
         <div class="canvas-viewport" @dragover.prevent @drop.prevent>
-            <panZoom
-                style="width: 100%; height: 100%"
-                selector=".zoomable"
-                :options="panZoomOptions"
-                @init="onInitPanZoom"
-                @transform="onTransform">
-                <div id="canvas-container" ref="canvas">
-                    <!--
-                    <Draggable style="width: 100%; height: 100%" @move="onPanContainer" :apply-scale="false">
-                        -->
-                    <svg class="canvas-svg" width="100%" height="100%" ref="svg">
-                        <g class="zoomable">
-                            <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
-                            <terminal-connector
-                                v-for="connection in connections"
-                                :key="connection.id"
-                                :connection="connection"></terminal-connector>
-                        </g>
-                    </svg>
+            <div id="canvas-container" ref="canvas">
+                <Draggable style="width: 100%; height: 100%" @move="onPanContainer" :apply-scale="false">
+                    <SvgPanZoom
+                        style="width: 100%; height: 100%"
+                        :minZoom="0.1"
+                        :panEnabled="false"
+                        :zoomEnabled="true"
+                        :controlIconsEnabled="false"
+                        :fit="false"
+                        :center="false"
+                        :on-zoom="onZoom"
+                        :onUpdatedCTM="onUpdatedCTM"
+                        @svgpanzoom="registerSvgPanZoom">
+                        <svg class="canvas-svg" width="100%" height="100%" ref="svg">
+                            <g class="zoomable">
+                                <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
+                                <terminal-connector
+                                    v-for="connection in connections"
+                                    :key="connection.id"
+                                    :connection="connection"></terminal-connector>
+                            </g>
+                        </svg>
+                    </SvgPanZoom>
                     <div class="nodeArea" ref="nodes" :style="style">
                         <!-- this div is only necessary so that we synchronize zoom and pan to the svg coordinates -->
                         <WorkflowNode
@@ -42,11 +46,8 @@
                             @onRemove="onRemove"
                             v-on="$listeners" />
                     </div>
-                    <!--
-                    </Draggable>
-                    -->
-                </div>
-            </panZoom>
+                </Draggable>
+            </div>
         </div>
         <div class="workflow-overview" aria-hidden="true">
             <div class="workflow-overview-body">
@@ -64,15 +65,13 @@ import WorkflowNode from "./Node";
 import RawConnector from "./Connector";
 import TerminalConnector from "./TerminalConnector";
 import Draggable from "./Draggable.vue";
-import panZoom from "vue-panzoom";
-import Vue from "vue";
-// install plugin
-Vue.use(panZoom);
+import SvgPanZoom from "vue-svg-pan-zoom";
 
 export default {
     components: {
         Draggable,
         RawConnector,
+        SvgPanZoom,
         TerminalConnector,
         WorkflowNode,
         ZoomControl,
@@ -82,12 +81,7 @@ export default {
             isWheeled: false,
             rootOffset: { left: 0, top: 0 },
             draggingConnection: null,
-            panzoom: null,
-            panZoomOptions: {
-                transformOrigin: null,
-                minZoom: 0.1,
-                maxZoom: 10,
-            },
+            svgpanzoom: null,
             transform: null,
         };
     },
@@ -123,12 +117,15 @@ export default {
         // this.canvasManager.scrollToNodes();
     },
     methods: {
+        onUpdatedCTM(CTM) {
+            this.transform = CTM;
+        },
         setScale(scale) {
             this.$store.commit("workflowState/setScale", scale);
         },
-        onTransform(e) {
-            this.transform = e.getTransform();
-            this.setScale(this.transform.scale);
+        onZoom(zoomLevel) {
+            // SvgZoomPanel returns array
+            this.setScale(zoomLevel?.[0]);
         },
         onStopDragging() {
             this.draggingConnection = null;
@@ -137,20 +134,17 @@ export default {
             this.draggingConnection = vector;
         },
         onZoomButton(zoomLevel) {
-            this.panzoom.zoomAbs(
-                this.rootOffset.left + this.rootOffset.width / 2,
-                this.rootOffset.top + this.rootOffset.height / 2,
-                zoomLevel
-            );
+            this.setScale(zoomLevel);
+            this.svgpanzoom.zoom(zoomLevel);
         },
-        onInitPanZoom(panzoomInstance) {
-            this.panzoom = panzoomInstance;
+        registerSvgPanZoom(svgpanzoom) {
+            this.svgpanzoom = svgpanzoom;
         },
         onPan(pan) {
-            this.panzoom.moveBy(pan.x, pan.y);
+            this.svgpanzoom.panBy(pan);
         },
         onPanContainer(e) {
-            this.panzoom.moveBy(e.data.deltaX, e.data.deltaY);
+            this.svgpanzoom.panBy({ x: e.data.deltaX, y: e.data.deltaY });
         },
         onActivate(nodeId) {
             console.log("onNodeId", nodeId);
@@ -169,7 +163,7 @@ export default {
     computed: {
         style() {
             if (this.transform) {
-                return `transform: matrix(${this.transform.scale}, 0, 0, ${this.transform.scale}, ${this.transform.x}, ${this.transform.y})`;
+                return `transform: matrix(${this.transform.a}, ${this.transform.b}, ${this.transform.c}, ${this.transform.d}, ${this.transform.e}, ${this.transform.f})`;
             }
         },
         zoomLevel() {
