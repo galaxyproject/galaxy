@@ -1136,11 +1136,7 @@ class BCSLts(Json):
         content = open(file_prefix.filename, "r").read()
         keywords = ['"edges":', '"nodes":', '"ordering":', '"initial":']
         if all(keyword in content for keyword in keywords):
-            try:
-                json.load(open(file_prefix.filename, "r"))
-                return True
-            except Exception:
-                return False
+            return self._looks_like_json(file_prefix)
         return False
 
 
@@ -1273,11 +1269,7 @@ class PithyaResult(Json):
         content = open(file_prefix.filename, "r").read()
         keywords = ['"variables":', '"states":', '"parameter_values":', '"results":']
         if all(keyword in content for keyword in keywords):
-            try:
-                json.load(open(file_prefix.filename, "r"))
-                return True
-            except Exception:
-                return False
+            return self._looks_like_json(file_prefix)
         return False
 
 
