@@ -35,14 +35,12 @@ const availableVersions = computed(() => [...props.versions].reverse());
         <b-dropdown-item
             v-for="v of availableVersions"
             :key="v"
-            :disabled="v === props.version"
+            :active="v === props.version"
             @click="() => emit('onChangeVersion', v)">
             <span v-if="v !== props.version">
                 <span class="fa fa-cube" /> <span v-localize>Switch to</span> {{ v }}
             </span>
-            <span v-else class="text-primary">
-                <FontAwesomeIcon icon="fas fa-check" /> <span v-localize>Selected</span> {{ v }}
-            </span>
+            <span v-else> <FontAwesomeIcon icon="fas fa-check" /> <span v-localize>Selected</span> {{ v }} </span>
         </b-dropdown-item>
     </b-dropdown>
 </template>
