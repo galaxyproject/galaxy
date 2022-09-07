@@ -1,6 +1,7 @@
 <template>
     <span class="zoom-control float-right btn-group-horizontal">
         <b-button
+            :disabled="isMin"
             v-b-tooltip.hover
             role="button"
             class="fa fa-minus"
@@ -20,6 +21,7 @@
             {{ zoomPercentage }}%
         </b-button>
         <b-button
+            :disabled="isMax"
             v-b-tooltip.hover
             role="button"
             class="fa fa-plus"
@@ -53,6 +55,12 @@ export default {
         };
     },
     computed: {
+        isMin() {
+            return Math.round(this.zoomLevel * 100) == Math.round(this.zoomLevels[0] * 100);
+        },
+        isMax() {
+            return Math.round(this.zoomLevel * 100) == Math.round(this.zoomLevels.at(-1) * 100);
+        },
         zoomPercentage() {
             return Math.round(this.zoomLevel * 100);
         },
