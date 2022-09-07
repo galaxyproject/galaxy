@@ -92,7 +92,7 @@ class UsesApiTestCaseMixin:
     def tearDown(self):
         if os.environ.get("GALAXY_TEST_EXTERNAL") is None:
             # Only kill running jobs after test for managed test instances
-            for job in self.galaxy_interactor.get("jobs?state=running&?user_details=true").json():
+            for job in self.galaxy_interactor.get("jobs?state=running").json():
                 self._delete(f"jobs/{job['id']}")
 
     def _api_url(self, path, params=None, use_key=None, use_admin_key=None):
