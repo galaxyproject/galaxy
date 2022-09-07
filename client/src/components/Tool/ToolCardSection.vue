@@ -1,18 +1,20 @@
 <script setup>
 const props = defineProps({
-    title: String,
+    title: {
+        type: String,
+        required: true,
+    },
 });
 </script>
 
 <template>
     <div class="mt-2 mb-4">
-        <div v-if="title" class="title-bar my-2">
+        <div class="title-bar my-2">
             <div class="stripe"></div>
             <h2>{{ props.title }}</h2>
             <div class="stripe"></div>
         </div>
 
-        <div v-else class="stripe"></div>
         <slot />
     </div>
 </template>

@@ -88,15 +88,13 @@
                                 @onClick="onExecute(config, currentHistoryId)" />
                         </template>
                         <template v-slot:buttons>
-                            <ToolCardSection>
-                                <ButtonSpinner
-                                    id="execute"
-                                    title="Run Tool"
-                                    class="mt-3"
-                                    :wait="showExecuting"
-                                    :tooltip="tooltip"
-                                    @onClick="onExecute(config, currentHistoryId)" />
-                            </ToolCardSection>
+                            <ButtonSpinner
+                                id="execute"
+                                title="Run Tool"
+                                class="mt-3 mb-3"
+                                :wait="showExecuting"
+                                :tooltip="tooltip"
+                                @onClick="onExecute(config, currentHistoryId)" />
                         </template>
                     </ToolCard>
                 </div>
