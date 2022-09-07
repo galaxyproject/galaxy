@@ -24,12 +24,12 @@ const props = defineProps({
 
 .title-bar {
     display: grid;
-    grid-template-columns: 1em auto 1fr;
+    grid-template-columns: 1rem auto 1fr;
     align-items: center;
-    gap: 1em;
+    gap: 1rem;
 
     h2 {
-        font-size: 1.25em;
+        font-size: $h4-font-size;
         margin: 0;
         font-weight: 700;
     }
