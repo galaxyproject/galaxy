@@ -1103,8 +1103,8 @@ class BCSLmodel(Text):
         """
         Determines whether the file is in .bcsl.model format
         """
-        keywords = ["#! rules", "#! inits", "#! definitions"]
-        return any(keyword in file_prefix.contents_header for keyword in keywords)
+        reg = r"^#! rules|^#! inits|^#! definitions"
+        return re.search(reg, file_prefix.contents_header, re.MULTILINE) is not None
 
 
 @build_sniff_from_prefix
