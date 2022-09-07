@@ -232,7 +232,7 @@ handling of issues follows the procedures described in ISSUES_.
 
 
 .. _CODE_OF_CONDUCT: https://github.com/galaxyproject/galaxy/blob/dev/CODE_OF_CONDUCT.md
-.. _SECURITY_POLICY: https://github.com/galaxyproject/galaxy/blob/dev/SECURITY_POLICY.md
+.. _SECURITY_POLICY: https://github.com/galaxyproject/galaxy/blob/dev/SECURITY.md
 .. _Apache Software Foundation voting rules: https://www.apache.org/foundation/voting.html
 .. _ISSUES: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/issues.rst
 .. _ISSUE_REPORT: https://github.com/galaxyproject/galaxy/issues/
