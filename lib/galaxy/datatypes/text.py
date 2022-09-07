@@ -1154,7 +1154,7 @@ class StormSample(Text):
         Determines whether the file is in .storm.sample format
         """
         keywords = ["Storm-pars", "Result (initial states)"]
-        return all(keyword in file_prefix.content_headers for keyword in keywords)
+        return all(keyword in file_prefix.contents_header for keyword in keywords)
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
@@ -1179,7 +1179,7 @@ class StormCheck(Text):
         Determines whether the file is in .storm.check format
         """
         keywords = ["Storm ", "Result (for initial states)"]
-        return all(keyword in file_prefix.content_headers for keyword in keywords)
+        return all(keyword in file_prefix.contents_header for keyword in keywords)
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
@@ -1207,7 +1207,7 @@ class CTLresult(Text):
         Determines whether the file is in .ctl.result format
         """
         keywords = ["Result:", "Number of satisfying states:"]
-        return all(keyword in file_prefix.content_headers for keyword in keywords)
+        return all(keyword in file_prefix.contents_header for keyword in keywords)
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
@@ -1233,7 +1233,7 @@ class PithyaProperty(Text):
         """
         Determines whether the file is in .pithya.property format
         """
-        return re.search(r":\?[a-zA-Z0-9_]+[ ]*=", file_prefix.content_headers) is not None
+        return re.search(r":\?[a-zA-Z0-9_]+[ ]*=", file_prefix.contents_header) is not None
 
 
 @build_sniff_from_prefix
@@ -1247,7 +1247,7 @@ class PithyaModel(Text):
         Determines whether the file is in .pithya.model format
         """
         keywords = ["VARS", "EQ", "THRES"]
-        return all(keyword in file_prefix.header_contents for keyword in keywords)
+        return all(keyword in file_prefix.contents_header for keyword in keywords)
 
 
 @build_sniff_from_prefix
