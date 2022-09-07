@@ -5,7 +5,7 @@
         class="ui-btn-back-to-top btn-circle"
         title="Scroll To Top"
         variant="info"
-        @click="scrollToTop">
+        @click="$emit('click')">
         <i class="fa fa-arrow-up" />
     </b-button>
 </template>
@@ -16,15 +16,6 @@ export default {
         offset: {
             type: Number,
             default: 0,
-        },
-        target: {
-            type: HTMLElement,
-            default: null,
-        },
-    },
-    methods: {
-        scrollToTop() {
-            this.target.scrollTop = 0;
         },
     },
 };

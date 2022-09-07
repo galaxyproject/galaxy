@@ -35,7 +35,7 @@
                     <ToolAdvancedSearchResults :tools="itemsLoaded" />
                 </div>
             </div>
-            <ScrollToTopButton :target="$refs.scrollable" :offset="offset" />
+            <ScrollToTopButton :offset="offset" @click="scrollToTop"/>
         </section>
     </ToolsProvider>
 </template>
@@ -97,6 +97,9 @@ export default {
     methods: {
         onScroll(e) {
             this.offset = e.target.scrollTop;
+        },
+        scrollToTop() {
+            this.$refs.scrollable.scrollTop = 0;
         },
     },
 };
