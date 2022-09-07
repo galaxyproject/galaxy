@@ -19,14 +19,14 @@ library.add(faDatabase, faTable, faBars, faUser, faCog);
 const { config } = useConfig();
 
 Vue.use(BootstrapVue);
-const components = defineComponent({
+const components = {
     DatabaseEditTab,
     SuitableConvertersTab,
     ChangeDatatypeTab,
     FontAwesomeIcon,
     DbKeyProvider,
     SuitableConvertersProvider,
-});
+};
 const props = defineProps({
     collection_id: {
         type: String,
