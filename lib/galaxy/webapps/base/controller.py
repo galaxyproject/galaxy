@@ -389,7 +389,7 @@ class CreatesApiKeysMixin:
     Deprecated - please use api_keys.ApiKeyManager for new development.
     """
 
-    def create_api_key(self, trans, user):
+    def create_api_key(self, trans, user: model.User) -> model.APIKeys:
         return api_keys.ApiKeyManager(trans.app).create_api_key(user)
 
 

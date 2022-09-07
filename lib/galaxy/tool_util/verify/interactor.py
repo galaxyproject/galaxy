@@ -166,7 +166,7 @@ class GalaxyInteractorApi:
         test_user_response = self.ensure_user_with_email(test_user)
         if not admin_key:
             raise Exception("Must specify either a user key or admin key to interact with the Galaxy API")
-        return self._post(f"users/{test_user_response['id']}/api_key", key=admin_key).json()
+        return self._post(f"users/{test_user_response['id']}/api_key", key=admin_key).json()["key"]
 
     def get_tests_summary(self):
         response = self._get("tools/tests_summary")

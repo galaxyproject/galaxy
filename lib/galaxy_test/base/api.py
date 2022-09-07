@@ -129,7 +129,7 @@ class UsesApiTestCaseMixin:
 
     def _setup_user_get_key(self, email, password=None, is_admin=True) -> Tuple[Dict[str, Any], str]:
         user = self._setup_user(email, password, is_admin)
-        return user, self._post(f"users/{user['id']}/api_key", admin=True).json()
+        return user, self._post(f"users/{user['id']}/api_key", admin=True).json()["key"]
 
     @contextmanager
     def _different_user(self, email=OTHER_USER, anon=False):

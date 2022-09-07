@@ -57,13 +57,13 @@ from galaxy.webapps.base.controller import (
     UsesTagsMixin,
 )
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
-from galaxy.webapps.galaxy.services.users import UsersService
-from . import (
+from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.services.users import UsersService
 
 log = logging.getLogger(__name__)
 
@@ -92,13 +92,13 @@ class FastAPIHistories:
     def get_api_keys(
         self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
     ):
-        return self.service.get_api_keys(trans)
+        return self.service.get_api_keys(trans, user_id)
 
     @router.post("/api/users/{user_id}/api_key", summary="Creates a new API key")
     def create_api_key(
         self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
     ):
-        return self.service.create_api_key(trans)
+        return self.service.create_api_key(trans, user_id)
 
     @router.delete(
         "/api/users/{user_id}/api_key/{api_key}",
@@ -111,7 +111,7 @@ class FastAPIHistories:
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParam,
     ):
-        self.service.delete_api_key(api_key, trans)
+        self.service.delete_api_key(api_key, trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

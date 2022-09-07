@@ -1,3 +1,8 @@
+from typing import (
+    Any,
+    Dict,
+)
+
 from galaxy import exceptions as glx_exceptions
 from galaxy.managers import api_keys
 from galaxy.managers.context import ProvidesUserContext
@@ -36,22 +41,29 @@ class UsersService(ServiceBase):
                 kwargs={"user_id": trans.user.id},
             )
 
-    def get_api_keys(self, trans: ProvidesUserContext):
+    def get_api_keys(self, trans: ProvidesUserContext, user_id: int):
+        user = self._get_user(trans, user_id)
         result = []
-        api_keys = self.api_key_manager.get_api_keys(trans.user)
+        api_keys = self.api_key_manager.get_api_keys(user)
         if api_keys:
             # TODO: Return all the scoped keys when ready
             result.append({"key": api_keys[0].key, "create_time": api_keys[0].create_time})
         return result
 
-    def create_api_key(self, trans: ProvidesUserContext):
-        api_key = self.api_key_manager.create_api_key(trans.user)
+    def create_api_key(self, trans: ProvidesUserContext, user_id: int) -> Dict[str, Any]:
+        user = self._get_user(trans, user_id)
+        api_key = self.api_key_manager.create_api_key(user)
         result = {"key": api_key.key, "create_time": api_key.create_time}
         return result
 
-    def delete_api_key(
-        self,
-        api_key: str,
-        trans: ProvidesUserContext,
-    ):
-        self.api_key_manager.delete_api_key(trans.user, api_key)
+    def delete_api_key(self, api_key: str, trans: ProvidesUserContext, user_id: int):
+        user = self._get_user(trans, user_id)
+        self.api_key_manager.delete_api_key(user, api_key)
+
+    def _get_user(self, trans, user_id):
+        user = trans.user
+        if user and user.id != user_id:
+            glx_exceptions.InsufficientPermissionsException()
+        if trans.user_is_admin and user.id != user_id:
+            user = self.user_manager.by_id(user_id)
+        return user

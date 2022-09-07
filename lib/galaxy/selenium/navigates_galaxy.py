@@ -519,7 +519,7 @@ class NavigatesGalaxy(HasDriver):
         if not force:
             return self.api_get(f"users/{self.get_user_id()}/api_key")[0]["key"]
         else:
-            return self.api_post(f"users/{self.get_user_id()}/api_key")[0]["key"]
+            return self.api_post(f"users/{self.get_user_id()}/api_key")["key"]
 
     def get_user_id(self):
         user = self.get_logged_in_user()
