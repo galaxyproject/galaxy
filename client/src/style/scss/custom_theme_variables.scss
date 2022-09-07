@@ -1,9 +1,9 @@
 @import "theme/blue.scss";
 
 html {
-    --masthead-background-color: #{$brand-masthead};
-    --masthead-text-color: #{$brand-masthead-text};
-    --masthead-text-color-hover: #{$brand-masthead-text-hover};
-    --masthead-text-color-active: #{$brand-masthead-text-active};
-    --masthead-list-background-color-show: #{darken($brand-masthead, 10%)};
+    --masthead-bg: #{$masthead-bg};
+    --masthead-text-color: #{$masthead-text-color};
+    --masthead-text-hover: #{$masthead-text-hover};
+    --masthead-text-active: #{$masthead-text-active};
+    --masthead-list-active: #{darken($masthead-bg, 10%)};
 }
