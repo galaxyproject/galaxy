@@ -26,7 +26,7 @@ const getters = {
             if (Object.keys(filterSettings).length == 0) {
                 return [];
             }
-            const allTools = state.toolsList[0];
+            const allTools = state.toolsList;
             const returnedTools = [];
 
             for (const tool in allTools) {
@@ -60,7 +60,7 @@ const actions = {
     fetchAllTools: async ({ state, commit }) => {
         // Preventing store from being populated for every search: we fetch again only if:
         // store isn't already populated (initial fetch)
-        if (!state.toolsList[0]) {
+        if (state.toolsList.length === 0) {
             console.log("fetching all tools once");
             const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=False`);
             commit("saveTools", { toolsData: data });
@@ -73,7 +73,7 @@ const mutations = {
         Vue.set(state.toolById, toolId, toolData);
     },
     saveTools: (state, { toolsData }) => {
-        Vue.set(state.toolsList, 0, toolsData);
+        state.toolsList = toolsData;
     },
 };
 

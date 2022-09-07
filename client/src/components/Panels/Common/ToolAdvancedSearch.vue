@@ -35,7 +35,7 @@
                     <ToolAdvancedSearchResults :tools="itemsLoaded" />
                 </div>
             </div>
-            <ScrollToTopButton :offset="offset" @click="scrollToTop"/>
+            <ScrollToTopButton :offset="offset" @click="scrollToTop" />
         </section>
     </ToolsProvider>
 </template>
