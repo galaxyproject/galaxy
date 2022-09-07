@@ -123,15 +123,6 @@ def main():
             counter += 1
         f.write("</toolbox>\n")
 
-    logging.info("Creating the MGM configuration file")
-    with open(amp_root / "galaxy/tools/amp_mgms/amp_mgm.ini", "w") as f:
-        for s in config['mgms']:
-            f.write(f'[{s}]\n')
-            for k,v in config['mgms'][s].items():
-                f.write(f'{k} = {v}\n')
-
-
-
 
 if __name__ == "__main__":
     main()

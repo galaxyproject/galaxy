@@ -8,13 +8,8 @@ import tempfile
 from pathlib import Path
 import shutil
 import sys
-import yaml
-from datetime import datetime
 import os
 import subprocess
-import time
-import tarfile
-import io
 from lib.galaxy.version import VERSION
 from amp.package import *
 
@@ -49,7 +44,8 @@ def main():
                   # parts of galaxy we don't use
                   'test', 'test-data', 'contrib', 'display_applications', 'doc', 'hooks', 'tool-data', 'run_tests.sh',
                   # packaging system stuff
-                  'amp_build.py', 'amp_config.default', 'amp_hook_config.py'
+                  'amp_build.py', 'amp_config.user_defaults', 'amp_hook_config.py', 'amp_config.system_defaults',
+                  'amp_hook_start.py', 'amp_hook_stop.py',
                   ):            
             logging.debug(f"Removing entry {n}")
             if Path(builddir, n).exists():
@@ -105,15 +101,13 @@ def main():
         else:
             # Create the package
             try:
-                new_package = create_package(Path(args.destdir), 
-                                             Path(builddir),
-                                             metadata={'name': 'galaxy', 
-                                                       'version': VERSION, 
-                                                       'install_path': 'galaxy'},
+                new_package = create_package("galaxy", VERSION, "galaxy",
+                                             Path(args.destdir), Path(builddir),
                                              hooks={'config': 'amp_hook_config.py',
                                                     'start': 'amp_hook_start.py',
                                                     'stop': 'amp_hook_stop.py'},
-                                             defaults=Path("amp_config.default"))                                            
+                                             system_defaults=Path("amp_config.system_defaults"),
+                                             user_defaults=Path("amp_config.user_defaults")) 
                 logging.info(f"New package in {new_package}")    
             except Exception as e:
                 logging.error(f"Failed to build backage: {e}")
