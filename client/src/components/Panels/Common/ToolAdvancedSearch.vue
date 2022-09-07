@@ -1,6 +1,6 @@
 <template>
     <ToolsProvider v-slot="{ loading, result: itemsLoaded }" :filter-settings="filterSettings">
-        <section class="overflow-auto h-100" @scroll="onScroll" ref="scrollable">
+        <section class="overflow-auto h-100" @scroll="onScroll">
             <div class="mb-2">
                 <span class="row mb-1">
                     <span class="col">
@@ -99,7 +99,7 @@ export default {
             this.offset = e.target.scrollTop;
         },
         scrollToTop() {
-            this.$refs.scrollable.scrollTop = 0;
+            this.$el.scrollTop = 0;
         },
     },
 };
