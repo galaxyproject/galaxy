@@ -1,3 +1,24 @@
+"""
+Testing approach:
+- Use a test database, store revision scripts in a different location; leave the rest unchanged.
+- Use alembic api for setup and accessing the database.
+- Run command as subprocess, verify captured output + database state.
+
+1. Setup staging environment:
+    - Create staging location (/tmp)
+    - Create test database (sqlite in /tmp)
+    - Copy production alembic.ini to staging location, overwriting:
+        - sqlalchemy.url (url of test database)
+        - version_locations (staging location)
+        - script_location (lib/galaxy/model/migrations/alembic/)
+    - Create gxy and tsi branches
+        
+2. For each test case:
+    - Optionally, use alembic api for any setup
+    - Run command as a subprocess, capture output
+    - Run assertions against captured output
+    - Optionally, use alembic api to access database; verify database state
+"""
 import os
 import re
 import subprocess
@@ -118,7 +139,9 @@ def write_config_file(config_file_path, config_text):
 
 
 def create_alembic_branches(config, gxy_versions_dir, tsi_versions_dir):
-    """Create gxy and tsi branches"""
+    """
+    Create gxy and tsi branches (required for galaxy's alembic setup; included with 22.05 release)
+    """
     alembic.command.revision(
         config, branch_label=GXY_BRANCH_LABEL, head="base", rev_id=GXY_BASE_ID, version_path=gxy_versions_dir
     )
