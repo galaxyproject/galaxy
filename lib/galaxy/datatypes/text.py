@@ -1103,9 +1103,8 @@ class BCSLmodel(Text):
         """
         Determines whether the file is in .bcsl.model format
         """
-        content = open(file_prefix.filename, "r").read()
         keywords = ["#! rules", "#! inits", "#! definitions"]
-        return any(keyword in content for keyword in keywords)
+        return any(keyword in file_prefix.contents_header for keyword in keywords)
 
 
 @build_sniff_from_prefix
@@ -1158,9 +1157,8 @@ class StormSample(Text):
         """
         Determines whether the file is in .storm.sample format
         """
-        content = open(file_prefix.filename, "r").read()
         keywords = ["Storm-pars", "Result (initial states)"]
-        return all(keyword in content for keyword in keywords)
+        return all(keyword in file_prefix.content_headers for keyword in keywords)
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
@@ -1184,17 +1182,17 @@ class StormCheck(Text):
         """
         Determines whether the file is in .storm.check format
         """
-        content = open(file_prefix.filename, "r").read()
         keywords = ["Storm ", "Result (for initial states)"]
-        return all(keyword in content for keyword in keywords)
+        return all(keyword in file_prefix.content_headers for keyword in keywords)
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
-            result = open(dataset.file_name, "r")
-            answer = ""
-            for line in result.readlines():
-                if "Result (for initial states):" in line:
-                    answer = line.split()[-1]
+            with open(dataset.file_name, "r") as result:
+                answer = ""
+                for line in result:
+                    if "Result (for initial states):" in line:
+                        answer = line.split()[-1]
+                        break
             dataset.peek = "Model checking result: {}".format(answer)
             dataset.blurb = nice_size(dataset.get_size())
         else:
@@ -1212,17 +1210,16 @@ class CTLresult(Text):
         """
         Determines whether the file is in .ctl.result format
         """
-        content = open(file_prefix.filename, "r").read()
         keywords = ["Result:", "Number of satisfying states:"]
-        return all(keyword in content for keyword in keywords)
+        return all(keyword in file_prefix.content_headers for keyword in keywords)
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
-            result = open(dataset.file_name, "r")
-            answer = ""
-            for line in result.readlines():
-                if "Result:" in line:
-                    answer = line.split()[-1]
+            with open(dataset.file_name, "r") as result:
+                answer = ""
+                for line in result:
+                    if "Result:" in line:
+                        answer = line.split()[-1]
             dataset.peek = "Model checking result: {}".format(answer)
             dataset.blurb = nice_size(dataset.get_size())
         else:
@@ -1240,10 +1237,7 @@ class PithyaProperty(Text):
         """
         Determines whether the file is in .pithya.property format
         """
-        content = open(file_prefix.filename, "r").read()
-        if re.search(r":\?[a-zA-Z0-9_]+[ ]*=", content) is not None:
-            return True
-        return False
+        return re.search(r":\?[a-zA-Z0-9_]+[ ]*=", file_prefix.content_headers) is not None
 
 
 @build_sniff_from_prefix
@@ -1256,11 +1250,8 @@ class PithyaModel(Text):
         """
         Determines whether the file is in .pithya.model format
         """
-        content = open(file_prefix.filename, "r").read()
         keywords = ["VARS", "EQ", "THRES"]
-        if all(keyword in content for keyword in keywords):
-            return True
-        return False
+        return all(keyword in file_prefix.header_contents for keyword in keywords)
 
 
 @build_sniff_from_prefix
