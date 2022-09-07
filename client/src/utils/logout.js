@@ -1,30 +1,30 @@
 import axios from "axios";
 import { getGalaxyInstance } from "app";
-
-const POST_LOGOUT_URL = "root/login?is_logout_redirect=true";
+import { safePath } from "utils/redirect";
 
 /**
  * Handles user logout.  Invalidates the current session, checks to see if we
  * need to log out of OIDC too, and goes to our POST_LOGOUT_URL (or some other
  * configured redirect). */
 export function userLogout(logoutAll = false) {
-    const galaxy = getGalaxyInstance();
-    const session_csrf_token = galaxy.session_csrf_token;
-    const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}&logout_all=${logoutAll}`;
+    const Galaxy = getGalaxyInstance();
+    const post_user_logout_href = Galaxy.config.post_user_logout_href;
+    const session_csrf_token = Galaxy.session_csrf_token;
+    const url = `/user/logout?session_csrf_token=${session_csrf_token}&logout_all=${logoutAll}`;
     axios
-        .get(url)
+        .get(safePath(url))
         .then((response) => {
-            if (galaxy.user) {
-                galaxy.user.clearSessionStorage();
+            if (Galaxy.user) {
+                Galaxy.user.clearSessionStorage();
             }
             // Check if we need to logout of OIDC IDP
-            if (galaxy.config.enable_oidc) {
+            if (Galaxy.config.enable_oidc) {
                 const provider = localStorage.getItem("galaxy-provider");
                 if (provider) {
                     localStorage.removeItem("galaxy-provider");
-                    return axios.get(`${galaxy.root}authnz/logout?provider=${provider}`);
+                    return axios.get(safePath(`/authnz/logout?provider=${provider}`));
                 }
-                return axios.get(`${galaxy.root}authnz/logout`);
+                return axios.get(safePath("/authnz/logout"));
             } else {
                 // Otherwise pass through the initial logout response
                 return response;
@@ -34,7 +34,7 @@ export function userLogout(logoutAll = false) {
             if (response.data?.redirect_uri) {
                 window.top.location.href = response.data.redirect_uri;
             } else {
-                window.top.location.href = `${galaxy.root}${POST_LOGOUT_URL}`;
+                window.top.location.href = safePath(post_user_logout_href);
             }
         });
 }
@@ -49,7 +49,8 @@ export function userLogoutAll() {
  * serverside. Currently only used when marking an account deleted -- any
  * subsequent navigation after the deletion API request would fail otherwise */
 export function userLogoutClient() {
-    const galaxy = getGalaxyInstance();
-    galaxy.user?.clearSessionStorage();
-    window.top.location.href = `${galaxy.root}${POST_LOGOUT_URL}`;
+    const Galaxy = getGalaxyInstance();
+    Galaxy.user?.clearSessionStorage();
+    const post_user_logout_href = Galaxy.config.post_user_logout_href;
+    window.top.location.href = safePath(post_user_logout_href);
 }

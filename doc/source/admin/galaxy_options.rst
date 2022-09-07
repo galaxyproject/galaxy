@@ -3337,6 +3337,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``post_user_logout_href``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This is the default url to which users are redirected after they
+    log out.
+:Default: ``/root/login?is_logout_redirect=true``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``normalize_remote_user_email``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

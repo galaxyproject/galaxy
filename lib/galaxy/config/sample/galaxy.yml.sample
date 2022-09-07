@@ -160,6 +160,18 @@ gravity:
     # Must match ``tus_upload_store`` setting in ``galaxy:`` section.
     # upload_dir:
 
+    # Comma-separated string of enabled tusd hooks.
+    # 
+    # Leave at the default value to require authorization at upload creation time.
+    # This means Galaxy's web process does not need to be running after creating the initial
+    # upload request.
+    # 
+    # Set to empty string to disable all authorization. This means data can be uploaded (but not processed)
+    # without the Galaxy web process being available.
+    # 
+    # You can find a list of available hooks at https://github.com/tus/tusd/blob/master/docs/hooks.md#list-of-available-hooks.
+    # hooks_enabled_events: pre-create
+
     # Extra arguments to pass to tusd command line.
     # extra_args:
 
@@ -1693,6 +1705,10 @@ galaxy:
   # If use_remote_user is enabled, you can set this to a URL that will
   # log your users out.
   #remote_user_logout_href: null
+
+  # This is the default url to which users are redirected after they log
+  # out.
+  #post_user_logout_href: /root/login?is_logout_redirect=true
 
   # If your proxy and/or authentication source does not normalize e-mail
   # addresses or user names being passed to Galaxy - set this option to

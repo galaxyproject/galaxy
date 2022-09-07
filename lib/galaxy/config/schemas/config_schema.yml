@@ -2427,6 +2427,13 @@ mapping:
           If use_remote_user is enabled, you can set this to a URL that will log your
           users out.
 
+      post_user_logout_href:
+        type: str
+        default: /root/login?is_logout_redirect=true
+        required: false
+        desc: |
+          This is the default url to which users are redirected after they log out.
+
       normalize_remote_user_email:
         type: bool
         default: false

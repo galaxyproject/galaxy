@@ -145,6 +145,7 @@ class ConfigSerializer(base.ModelSerializer):
             "prefer_custos_login": _use_config,
             "enable_quotas": _use_config,
             "remote_user_logout_href": _use_config,
+            "post_user_logout_href": _use_config,
             "datatypes_disable_auto": _use_config,
             "allow_user_dataset_purge": _defaults_to(False),  # schema default is True
             "ga_code": _use_config,

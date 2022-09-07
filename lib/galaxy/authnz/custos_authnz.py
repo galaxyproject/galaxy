@@ -243,11 +243,11 @@ class CustosAuthnz(IdentityProvider):
         except Exception as e:
             return False, f"Failed to disconnect provider {provider}: {util.unicodify(e)}", None
 
-    def logout(self, trans, post_logout_redirect_url=None):
+    def logout(self, trans, post_user_logout_href=None):
         try:
             redirect_url = self.config["end_session_endpoint"]
-            if post_logout_redirect_url is not None:
-                redirect_url += f"?redirect_uri={quote(post_logout_redirect_url)}"
+            if post_user_logout_href is not None:
+                redirect_url += f"?redirect_uri={quote(post_user_logout_href)}"
             return redirect_url
         except Exception as e:
             log.error("Failed to generate logout redirect_url", exc_info=e)
