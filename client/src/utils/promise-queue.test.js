@@ -19,4 +19,17 @@ describe("test last-queue", () => {
         });
         expect(results).toEqual([0, x]);
     });
+
+    it("should only resolve the last promise for each key", async () => {
+        const results = [];
+        for (let i = 0; i < x; i++) {
+            lastQueue.enqueue(testPromise, i, i).then((response) => {
+                results.push(response);
+            });
+        }
+        await lastQueue.enqueue(testPromise, x, x).then((response) => {
+            results.push(response);
+        });
+        expect(results).toEqual([...Array(x + 1).keys()]);
+    });
 });
