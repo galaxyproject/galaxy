@@ -81,7 +81,7 @@
                     </section>
                     <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
                         <div>
-                            <div v-if="loading && !itemsLoaded">
+                            <div v-if="loading && itemsLoaded && itemsLoaded.length === 0">
                                 <b-alert class="m-2" variant="info" show>
                                     <LoadingSpan message="Loading History" />
                                 </b-alert>
