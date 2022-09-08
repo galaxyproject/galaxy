@@ -91,8 +91,8 @@ def tmp_directory():
         yield tmp_dir
 
 
-@pytest.fixture()
-def config(url_factory, alembic_env_dir, alembic_config_text, tmp_directory, monkeypatch):
+@pytest.fixture(params=["one database", "two databases"])
+def config(url_factory, alembic_env_dir, alembic_config_text, tmp_directory, monkeypatch, request):
     """
     Construct Config object for staging; setup staging env.
     """
@@ -100,17 +100,19 @@ def config(url_factory, alembic_env_dir, alembic_config_text, tmp_directory, mon
     tsi_versions_dir = os.path.join(tmp_directory, "versions_tsi")
     version_locations = f"{gxy_versions_dir};{tsi_versions_dir}"
 
-    dburl = url_factory()
+    gxy_dburl = url_factory()
+    tsi_dburl = gxy_dburl if request.param == "one database" else url_factory()
+
     config_file_path = os.path.join(tmp_directory, "alembic.ini")
-    update_config_for_staging(alembic_config_text, alembic_env_dir, version_locations, dburl)
+    update_config_for_staging(alembic_config_text, alembic_env_dir, version_locations, gxy_dburl)
     write_config_file(config_file_path, alembic_config_text)
 
     alembic_cfg = Config(config_file_path)
     create_alembic_branches(alembic_cfg, gxy_versions_dir, tsi_versions_dir)
 
     monkeypatch.setenv("ALEMBIC_CONFIG", config_file_path)
-    monkeypatch.setenv("GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION", dburl)
-    monkeypatch.setenv("GALAXY_CONFIG_OVERRIDE_INSTALL_DATABASE_CONNECTION", dburl)
+    monkeypatch.setenv("GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION", gxy_dburl)
+    monkeypatch.setenv("GALAXY_INSTALL_CONFIG_OVERRIDE_INSTALL_DATABASE_CONNECTION", tsi_dburl)
 
     return alembic_cfg
 
@@ -275,23 +277,21 @@ class TestUpgradeCommand:
         assert completed.returncode == 0
         assert "Running upgrade gxy0 -> 1" in completed.stderr
         assert "Running upgrade 1 -> 2" in completed.stderr
+        assert "Running upgrade  -> tsi0" in completed.stderr
 
         heads = get_db_heads(config)
-        assert len(heads) == 2
         assert "2" in heads
-        assert TSI_BASE_ID in heads
 
         alembic.command.revision(config, rev_id="3", head="2")
 
-        # next upgrade: upgrades gxy to 3, no effect on tsi
+        # next upgrade: upgrades gxy to 3
         completed = run_command(f"./db.sh upgrade")
         assert completed.returncode == 0
         assert "Running upgrade 2 -> 3" in completed.stderr
+        assert "tsi0" not in completed.stderr  # no effect on tsi
 
         heads = get_db_heads(config)
-        assert len(heads) == 2
         assert "3" in heads
-        assert TSI_BASE_ID in heads
 
     def test_upgrade_cmd_sql_only(self, config):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
@@ -328,7 +328,7 @@ class TestUpgradeCommand:
         alembic.command.revision(config, rev_id="d", head="c")
         alembic.command.revision(config, rev_id="e", head="d")
 
-        # upgrades gxy to b: none + 2 (none > base > a)
+        # upgrades gxy to b: none + 2 (none -> base -> a)
         completed = run_command(f"./db.sh upgrade +3")
         assert completed.returncode == 0
         assert "Running upgrade  -> gxy0" in completed.stderr
@@ -338,7 +338,7 @@ class TestUpgradeCommand:
         heads = get_db_heads(config)
         assert heads == ("b",)
 
-        # upgrades gxy to d relative to b: b + 2 (b > c > d)
+        # upgrades gxy to d relative to b: b + 2 (b -> c -> d)
         completed = run_command(f"./db.sh upgrade b+2")
         assert completed.returncode == 0
         assert "Running upgrade b -> c" in completed.stderr
@@ -355,7 +355,7 @@ class TestDowngradeCommand:
         alembic.command.revision(config, rev_id="3", head="2")
         alembic.command.upgrade(config, "heads")
 
-        completed = run_command(f"./db.sh downgrade 1")  # downgrade gxy to 1, no effect on tsi
+        completed = run_command(f"./db.sh downgrade 1")  # downgrade gxy to 1
         assert completed.returncode == 0
         assert "Running downgrade 3 -> 2" in completed.stderr
         assert "Running downgrade 2 -> 1" in completed.stderr
@@ -364,8 +364,48 @@ class TestDowngradeCommand:
         assert len(heads) == 2
         assert "1" in heads
 
+    def test_downgrade_cmd_sql_only(self, config):
+        alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
+        alembic.command.revision(config, rev_id="2", head="1")
+        alembic.command.revision(config, rev_id="3", head="2")
+        alembic.command.upgrade(config, "heads")
 
-# TODO add same type of test cases as in TestUpgradeCommand
+        completed = run_command(f"./db.sh downgrade --sql 3:1")  # downgrade gxy to 1, no effect on tsi
+        assert completed.returncode == 0
+        assert "UPDATE alembic_version SET version_num='2'" in completed.stdout
+        assert "UPDATE alembic_version SET version_num='1'" in completed.stdout
+
+    def test_downgrade_cmd_missing_revision_arg_error(self):
+        completed = run_command(f"./db.sh downgrade")
+        assert completed.returncode == 2
+        assert "the following arguments are required: revision" in completed.stderr
+
+    def test_downgrade_cmd_with_relative_revision_syntax(self, config):
+        alembic.command.revision(config, rev_id="a", head=GXY_BASE_ID)
+        alembic.command.revision(config, rev_id="b", head="a")
+        alembic.command.revision(config, rev_id="c", head="b")
+        alembic.command.revision(config, rev_id="d", head="c")
+        alembic.command.revision(config, rev_id="e", head="d")
+        alembic.command.upgrade(config, "heads")
+
+        # downgrades gxy to c: e - 2 (e -> d -> c)
+        completed = run_command(f"./db.sh downgrade -2")
+
+        assert completed.returncode == 0
+        assert "Running downgrade e -> d" in completed.stderr
+        assert "Running downgrade d -> c" in completed.stderr
+
+        heads = get_db_heads(config)
+        assert "c" in heads
+
+        # downgrades gxy to a relative to c: c - 2 (c -> b -> a)
+        completed = run_command(f"./db.sh downgrade c-2")
+        assert completed.returncode == 0
+        assert "Running downgrade c -> b" in completed.stderr
+        assert "Running downgrade b -> a" in completed.stderr
+
+        heads = get_db_heads(config)
+        assert "a" in heads
 
 
 class TestDbVersionCommand:
@@ -382,6 +422,3 @@ class TestDbVersionCommand:
         completed = run_command(f"./db.sh dbversion")
         assert completed.returncode == 0
         assert "2 (head)" in completed.stdout
-
-
-# TODO test for 2 separate databases: gxy and tsi
