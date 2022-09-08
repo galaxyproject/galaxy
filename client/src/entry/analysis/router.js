@@ -33,6 +33,7 @@ import HistoryImport from "components/HistoryImport";
 import HistoryView from "components/History/HistoryView";
 import HistoryMultipleView from "components/History/Multiple/MultipleView";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
+import InvocationExport from "components/Workflow/InvocationExport/InvocationExport";
 import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
 import NewUserConfirmation from "components/login/NewUserConfirmation";
@@ -379,6 +380,13 @@ export function getRouter(Galaxy) {
                         component: InvocationReport,
                         props: (route) => ({
                             invocationId: route.query.id,
+                        }),
+                    },
+                    {
+                        path: "workflows/invocations/:invocationId/export",
+                        component: InvocationExport,
+                        props: (route) => ({
+                            invocationId: route.params.invocationId,
                         }),
                     },
                     {
