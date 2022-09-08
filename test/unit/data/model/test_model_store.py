@@ -334,6 +334,28 @@ def test_import_export_invocation():
     import_model_store.perform_import(history=h2)
 
 
+def test_export_invocation_to_ro_crate():
+    app = _mock_app()
+    workflow_invocation = _setup_invocation(app)
+
+    temp_directory = mkdtemp()
+    with store.ROCrateModelExportStore("/Users/jxc755/workspace/galaxy/crate", app=app) as export_store:
+        export_store.export_workflow_invocation(workflow_invocation)
+    assert False
+
+
+def test_export_invocation_to_ro_crate_archive():
+    app = _mock_app()
+    workflow_invocation = _setup_invocation(app)
+
+    temp_directory = mkdtemp()
+    with store.ROCrateArchiveModelExportStore(
+        "/Users/jxc755/workspace/galaxy/crate_tmp/crate.zip", app=app
+    ) as export_store:
+        export_store.export_workflow_invocation(workflow_invocation)
+    assert False
+
+
 def test_finalize_job_state():
     """Verify jobs are given finalized states on import."""
     app, h, temp_directory, import_history = _setup_simple_export({"for_edit": False})
