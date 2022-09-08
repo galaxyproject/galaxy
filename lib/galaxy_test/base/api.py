@@ -1,11 +1,6 @@
 import os
 from contextlib import contextmanager
-from typing import (
-    Any,
-    Dict,
-    Optional,
-    Tuple,
-)
+from typing import Optional
 from urllib.parse import (
     urlencode,
     urljoin,
@@ -121,14 +116,11 @@ class UsesApiTestCaseMixin:
     def _get_interactor(self, api_key=None) -> "ApiTestInteractor":
         return ApiTestInteractor(self, api_key=api_key)
 
-    def _setup_user(self, email, password=None, is_admin=True):
-        self.galaxy_interactor.ensure_user_with_email(email, password=password)
-        users = self._get("users", admin=is_admin).json()
-        user = [user for user in users if user["email"] == email][0]
-        return user
+    def _setup_user(self, email, password=None):
+        return self.galaxy_interactor.ensure_user_with_email(email, password=password)
 
-    def _setup_user_get_key(self, email, password=None, is_admin=True) -> Tuple[Dict[str, Any], str]:
-        user = self._setup_user(email, password, is_admin)
+    def _setup_user_get_key(self, email, password=None):
+        user = self._setup_user(email, password)
         return user, self._post(f"users/{user['id']}/api_key", admin=True).json()["key"]
 
     @contextmanager
