@@ -6,9 +6,9 @@ from requests import (
     put,
 )
 
+from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.api_asserts import assert_object_id_error
 from galaxy_test.base.populators import skip_without_tool
-from ._framework import ApiTestCase
 
 TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"
 TEST_USER_EMAIL_DELETE = "user_for_delete_test@bx.psu.edu"
@@ -126,12 +126,51 @@ class UsersApiTestCase(ApiTestCase):
         assert len(response["addresses"]) == 1
         assert response["addresses"][0]["desc"] == "_desc"
 
-    def test_create_api_key(self):
-        user = self._setup_user(TEST_USER_EMAIL)
-        user_id = user["id"]
-        response = self._post(f"users/{user_id}/api_key", admin=True)
+    def test_manage_api_key(self):
+        with self._different_user("manage-api-key-test@user.com"):
+            user_id = self._get_current_user_id()
+            response = self._get(f"users/{user_id}/api_key")
+            if response.status_code == 204:
+                # No API key yet, create new
+                response = self._post(f"users/{user_id}/api_key")
+                self._assert_status_code_is_ok(response)
+            user_api_key = response.json()["key"]
+            assert user_api_key
+            # Delete user API key
+            response = self._delete(f"users/{user_id}/api_key/{user_api_key}")
+            self._assert_status_code_is(response, 204)
+            # No API key anymore, so the request fails with 401
+            response = self._get(f"users/{user_id}/api_key")
+            self._assert_status_code_is(response, 401)
+            # create new as admin
+            response = self._post(f"users/{user_id}/api_key", admin=True)
+            self._assert_status_code_is_ok(response)
+            new_api_key = response.json()["key"]
+            assert new_api_key
+            assert new_api_key != user_api_key
+
+    def test_only_admin_can_manage_other_users_api_key(self):
+        with self._different_user():
+            other_user_id = self._get_current_user_id()
+            response = self._get(f"users/{other_user_id}/api_key")
+            other_user_api_key = response.json()["key"]
+        current_user_id = self._get_current_user_id()
+        # Users cannot access other users API keys
+        assert current_user_id != other_user_id
+        response = self._get(f"users/{other_user_id}/api_key")
+        self._assert_status_code_is(response, 403)
+        response = self._post(f"users/{other_user_id}/api_key")
+        self._assert_status_code_is(response, 403)
+        response = self._delete(f"users/{other_user_id}/api_key/{other_user_api_key}")
+        self._assert_status_code_is(response, 403)
+
+        # Admins can access other users API keys
+        response = self._get(f"users/{other_user_id}/api_key", admin=True)
         self._assert_status_code_is_ok(response)
-        assert response.json()["key"]
+        response = self._post(f"users/{other_user_id}/api_key", admin=True)
+        self._assert_status_code_is_ok(response)
+        response = self._delete(f"users/{other_user_id}/api_key/{other_user_api_key}", admin=True)
+        self._assert_status_code_is_ok(response)
 
     @skip_without_tool("cat1")
     def test_favorites(self):
@@ -189,3 +228,9 @@ class UsersApiTestCase(ApiTestCase):
         self._assert_has_keys(userB, "id", "username", "total_disk_usage")
         assert userA["id"] == userB["id"]
         assert userA["username"] == userB["username"]
+
+    def _get_current_user_id(self):
+        users_response = self._get("users")
+        users = users_response.json()
+        assert len(users) == 1
+        return users[0]["id"]
