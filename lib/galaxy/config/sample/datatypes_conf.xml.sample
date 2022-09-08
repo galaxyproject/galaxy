@@ -925,6 +925,15 @@
     <!-- Povray script -->
     <datatype extension="pov" type="galaxy.datatypes.text:Text" subclass="true" display_in_upload="true"/>
     <!-- End Structural Materials datatypes -->
+    <!-- Sybila types -->
+    <datatype extension="pithya.result" type="galaxy.datatypes.text:PithyaResult" mimetype="application/json" display_in_upload="true"/>
+    <datatype extension="pithya.property" type="galaxy.datatypes.text:PithyaProperty" display_in_upload="true" />
+    <datatype extension="pithya.model" type="galaxy.datatypes.text:PithyaModel" display_in_upload="true" />
+    <datatype extension="bcsl.ts" type="galaxy.datatypes.text:BCSLts" mimetype="application/json" display_in_upload="true"/>
+    <datatype extension="bcsl.model" type="galaxy.datatypes.text:BCSLmodel" display_in_upload="true"/>
+    <datatype extension="storm.sample" type="galaxy.datatypes.text:StormSample" display_in_upload="true"/>
+    <datatype extension="storm.check" type="galaxy.datatypes.text:StormCheck" display_in_upload="true"/>
+    <datatype extension="ctl.result" type="galaxy.datatypes.text:CTLresult" display_in_upload="true"/>
     <!-- CASTEP types -->
     <datatype extension="castep" type="galaxy.datatypes.text:Castep" display_in_upload="true"/>
     <datatype extension="param" type="galaxy.datatypes.text:Param" display_in_upload="true"/>
@@ -1123,6 +1132,8 @@
     <sniffer type="galaxy.datatypes.text:Biom1"/>
     <sniffer type="galaxy.datatypes.text:ImgtJson"/>
     <sniffer type="galaxy.datatypes.text:GeoJson"/>
+    <sniffer type="galaxy.datatypes.text:PithyaResult"/>
+    <sniffer type="galaxy.datatypes.text:BCSLts"/>
     <sniffer type="galaxy.datatypes.text:Json"/>
     <sniffer type="galaxy.datatypes.genetics:GenotypeMatrix"/>
     <sniffer type="galaxy.datatypes.genetics:DataIn"/>
@@ -1181,6 +1192,7 @@
     <sniffer type="galaxy.datatypes.speech:TextGrid" />
     <sniffer type="galaxy.datatypes.speech:BPF" />
     <sniffer type="galaxy.datatypes.text:Castep" />
+    <sniffer type="galaxy.datatypes.text:CTLresult"/>
     <sniffer type="galaxy.datatypes.text:FormattedDensity" />
     <sniffer type="galaxy.datatypes.text:Param" />
     <sniffer type="galaxy.datatypes.text:Yaml" />
@@ -1196,5 +1208,10 @@
     <sniffer type="galaxy.datatypes.binary:OxliSubset"/>
     <sniffer type="galaxy.datatypes.binary:OxliGraphLabels"/>
     <sniffer type="galaxy.datatypes.neo4j:Neo4jDBzip"/>
+    <sniffer type="galaxy.datatypes.text:PithyaProperty"/>
+    <sniffer type="galaxy.datatypes.text:PithyaModel"/>
+    <sniffer type="galaxy.datatypes.text:BCSLmodel"/>
+    <sniffer type="galaxy.datatypes.text:StormSample"/>
+    <sniffer type="galaxy.datatypes.text:StormCheck"/>
   </sniffers>
 </datatypes>
