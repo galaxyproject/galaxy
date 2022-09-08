@@ -31,12 +31,15 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
 from os.path import relpath
+<<<<<<< HEAD
 from pathlib import Path
 from typing import (
     Any,
     Optional,
     overload,
 )
+=======
+>>>>>>> 18a6e028d7 (More tool data table typing and testing.)
 from urllib.parse import (
     urlencode,
     urlparse,
@@ -284,7 +287,7 @@ def unique_id(KEY_SIZE=128):
     return md5(random_bits).hexdigest()
 
 
-def parse_xml(fname: typing.Union[str, Path], strip_whitespace=True, remove_comments=True):
+def parse_xml(fname: typing.Union[str, os.PathLike], strip_whitespace=True, remove_comments=True):
     """Returns a parsed xml tree"""
     parser = None
     if remove_comments and LXML_AVAILABLE:

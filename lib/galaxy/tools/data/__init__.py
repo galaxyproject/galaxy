@@ -18,9 +18,14 @@ import time
 from glob import glob
 from tempfile import NamedTemporaryFile
 from typing import (
+    Any,
     BinaryIO,
+    Dict,
     List,
     Optional,
+    Set,
+    Type,
+    Union,
 )
 
 import refgenconf
@@ -56,12 +61,12 @@ class ToolDataPathFiles:
         self.update_time = 0
 
     @property
-    def tool_data_path_files(self):
+    def tool_data_path_files(self) -> Set[str]:
         if time.time() - self.update_time > 1:
             self.update_files()
         return self._tool_data_path_files
 
-    def update_files(self):
+    def update_files(self) -> None:
         try:
             content = os.walk(self.tool_data_path)
             self._tool_data_path_files = set(
@@ -80,7 +85,7 @@ class ToolDataPathFiles:
             log.exception("Failed to update _tool_data_path_files")
             self._tool_data_path_files = set()
 
-    def exists(self, path):
+    def exists(self, path: str) -> bool:
         path = os.path.abspath(path)
         if path in self.tool_data_path_files:
             return True
@@ -88,11 +93,20 @@ class ToolDataPathFiles:
             return os.path.exists(path)
 
 
+ConfigFilesT = Union[str, os.PathLike, List[Union[str, os.PathLike]]]
+
+
 class ToolDataTableManager(Dictifiable):
     """Manages a collection of tool data tables"""
 
+    data_tables: Dict[str, "ToolDataTable"]
+
     def __init__(
-        self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None, other_config_dict=None
+        self,
+        tool_data_path: str,
+        config_filename: Optional[ConfigFilesT] = None,
+        tool_data_table_config_path_set=None,
+        other_config_dict=None,
     ):
         self.tool_data_path = tool_data_path
         # This stores all defined data table entries from both the tool_data_table_conf.xml file and the shed_tool_data_table_conf.xml file
@@ -110,41 +124,43 @@ class ToolDataTableManager(Dictifiable):
         data_tables = [ToolDataEntry(**table.to_dict()) for table in self.data_tables.values()]
         return ToolDataEntryList.construct(__root__=data_tables)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str):
         return self.data_tables.__getitem__(key)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value):
         return self.data_tables.__setitem__(key, value)
 
-    def __contains__(self, key):
+    def __contains__(self, key: str):
         return self.data_tables.__contains__(key)
 
-    def get(self, name, default=None):
+    def get(self, name: str, default=None):
         try:
             return self[name]
         except KeyError:
             return default
 
-    def set(self, name, value):
+    def set(self, name: str, value):
         self[name] = value
 
-    def get_tables(self):
+    def get_tables(self) -> Dict[str, "ToolDataTable"]:
         return self.data_tables
 
-    def to_dict(self):
+    def to_dict(self, view: str = "collection", value_mapper=None):
         return {name: data_table.to_dict(view="export") for name, data_table in self.data_tables.items()}
 
-    def to_json(self, path):
+    def to_json(self, path: Union[str, os.PathLike]) -> None:
         with open(path, "w") as out:
             out.write(json.dumps(self.to_dict()))
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, d: Dict[str, Any]):
         tdtm = cls.__new__(cls)
         tdtm.data_tables = {name: ToolDataTable.from_dict(data) for name, data in d.items()}
         return tdtm
 
-    def load_from_config_file(self, config_filename, tool_data_path, from_shed_config=False):
+    def load_from_config_file(
+        self, config_filename: ConfigFilesT, tool_data_path: Union[str, os.PathLike], from_shed_config: bool = False
+    ):
         """
         This method is called under 3 conditions:
 
@@ -155,9 +171,12 @@ class ToolDataTableManager(Dictifiable):
            Galaxy instance.  In this case, we have 2 entry types to handle, files whose root tag is <tables>, for example:
         """
         table_elems = []
+        config_filenames: List[Union[str, os.PathLike]]
         if not isinstance(config_filename, list):
-            config_filename = [config_filename]
-        for filename in config_filename:
+            config_filenames = [config_filename]
+        else:
+            config_filenames = config_filename
+        for filename in config_filenames:
             tree = util.parse_xml(filename)
             root = tree.getroot()
             for table_elem in root.findall("table"):
@@ -297,8 +316,9 @@ class ToolDataTableManager(Dictifiable):
         return list(table_names)
 
 
-class ToolDataTable:
+class ToolDataTable(Dictifiable):
     type_key: str
+    data: List
 
     @classmethod
     def from_elem(
@@ -409,7 +429,7 @@ class ToolDataTable:
         return self._update_version()
 
 
-class TabularToolDataTable(ToolDataTable, Dictifiable):
+class TabularToolDataTable(ToolDataTable):
     """
     Data stored in a tabular / separated value format on disk, allows multiple
     files to be merged but all must have the same column definitions:
@@ -1101,4 +1121,5 @@ def expand_here_template(content, here=None):
 
 
 # Registry of tool data types by type_key
-tool_data_table_types = {cls.type_key: cls for cls in [TabularToolDataTable, RefgenieToolDataTable]}
+tool_data_table_types_list: List[Type[ToolDataTable]] = [TabularToolDataTable, RefgenieToolDataTable]
+tool_data_table_types = {cls.type_key: cls for cls in tool_data_table_types_list}

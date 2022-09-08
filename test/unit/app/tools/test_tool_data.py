@@ -154,3 +154,10 @@ def test_reload_by_name(tdt_manager, tmp_path):
 
 def test_merging_tables(merged_tdt_manager):
     assert len(merged_tdt_manager["testbeta"].data) == 2
+
+
+def test_to_json(merged_tdt_manager, tmp_path):
+    json_path = tmp_path / "as_json.json"
+    assert not json_path.exists()
+    merged_tdt_manager.to_json(json_path)
+    assert json_path.exists()
