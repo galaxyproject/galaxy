@@ -1663,7 +1663,7 @@ class FastAPIWorkflows:
 
     @router.post(
         "/api/invocations/{invocation_id}/prepare_store_download",
-        summary="Prepare a worklfow invocation export-style download.",
+        summary="Prepare a workflow invocation export-style download.",
     )
     def prepare_store_download(
         self,
@@ -1679,7 +1679,7 @@ class FastAPIWorkflows:
 
     @router.post(
         "/api/invocations/{invocation_id}/write_store",
-        summary="Prepare a worklfow invocation export-style download and write to supplied URI.",
+        summary="Prepare a workflow invocation export-style download and write to supplied URI.",
     )
     def write_store(
         self,
