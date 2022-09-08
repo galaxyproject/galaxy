@@ -14,6 +14,7 @@ from typing import (
 )
 
 import pytest
+from rocrate.rocrate import ROCrate
 from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy import model
@@ -332,6 +333,75 @@ def test_import_export_invocation():
         temp_directory, app=app, user=workflow_invocation.user, import_options=store.ImportOptions()
     )
     import_model_store.perform_import(history=h2)
+
+
+def validate_crate_metadata(as_dict):
+    assert as_dict["@context"] == "https://w3id.org/ro/crate/1.1/context"
+
+
+def validate_has_pl_galaxy(ro_crate: ROCrate):
+    found = False
+    for e in ro_crate.get_entities():
+        if e.id == "https://w3id.org/workflowhub/workflow-ro-crate#galaxy":
+            found = True
+            assert e.url == "https://galaxyproject.org/"
+    assert found
+
+
+def validate_has_mit_license(ro_crate: ROCrate):
+    found_license = False
+    for e in ro_crate.get_entities():
+        if e.id == "./":
+            assert e["license"] == "MIT"
+            found_license = True
+    assert found_license
+
+
+def validate_has_readme(ro_crate: ROCrate):
+    found_readme = False
+    for e in ro_crate.get_entities():
+        if e.id == "README.md":
+            assert e.type == "File"
+            assert e["encodingFormat"] == "text/markdown"
+            # assert e["about"] == "./"
+            found_readme = True
+    assert found_readme
+
+
+def validate_crate_directory(crate_directory):
+    metadata_json_path = crate_directory / "ro-crate-metadata.json"
+    with metadata_json_path.open() as f:
+        metadata_json = json.load(f)
+    validate_crate_metadata(metadata_json)
+    crate = ROCrate(crate_directory)
+    validate_has_pl_galaxy(crate)
+    validate_has_mit_license(crate)
+    validate_has_readme(crate)
+    # print(json.dumps(metadata_json, indent=4))
+
+
+def test_export_invocation_to_ro_crate(tmp_path):
+    app = _mock_app()
+    workflow_invocation = _setup_invocation(app)
+
+    crate_directory = tmp_path / "crate"
+    with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
+        export_store.export_workflow_invocation(workflow_invocation)
+    validate_crate_directory(crate_directory)
+
+
+def test_export_invocation_to_ro_crate_archive(tmp_path):
+    app = _mock_app()
+    workflow_invocation = _setup_invocation(app)
+
+    crate_zip = tmp_path / "crate.zip"
+    with store.ROCrateArchiveModelExportStore(crate_zip, app=app) as export_store:
+        export_store.export_workflow_invocation(workflow_invocation)
+    compressed_file = CompressedFile(crate_zip)
+    assert compressed_file.file_type == "zip"
+    compressed_file.extract(tmp_path)
+    crate_directory = tmp_path / "crate"
+    validate_crate_directory(crate_directory)
 
 
 def test_finalize_job_state():
@@ -665,6 +735,7 @@ def _setup_invocation(app):
     workflow_step_1.type = "data_input"
     sa_session.add(workflow_step_1)
     workflow_1 = _workflow_from_steps(u, [workflow_step_1])
+    workflow_1.license = "MIT"
     sa_session.add(workflow_1)
     workflow_invocation = _invocation_for_workflow(u, workflow_1)
     invocation_step = model.WorkflowInvocationStep()

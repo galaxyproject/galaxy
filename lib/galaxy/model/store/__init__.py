@@ -29,6 +29,11 @@ from typing import (
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
+from rocrate.model.computationalworkflow import (
+    ComputationalWorkflow,
+    WorkflowDescription,
+)
+from rocrate.rocrate import ROCrate
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import expression
 from typing_extensions import Protocol
@@ -2116,6 +2121,130 @@ class DirectoryModelExportStore(ModelExportStore):
         return isinstance(exc_val, TypeError)
 
 
+class WriteCrates:
+    def _generate_markdown_readme(self):
+        markdown_parts: List[str] = []
+        if self._is_single_invocation_export():
+            invocation = self.included_invocations[0]
+            name = invocation.workflow.name
+            create_time = invocation.create_time
+            markdown_parts.append("# Galaxy Workflow Invocation Export")
+            markdown_parts.append("")
+            markdown_parts.append(f"This crate describes the invocation of workflow {name} executed at {create_time}.")
+        else:
+            markdown_parts.append("# Galaxy Dataset Export")
+
+        return "\n".join(markdown_parts)
+
+    def _is_single_invocation_export(self):
+        return len(self.included_invocations) == 1
+
+    def _init_crate(self):
+        ro_crate = ROCrate()
+
+        markdown_path = os.path.join(self.export_directory, "README.md")
+        with open(markdown_path, "w") as f:
+            f.write(self._generate_markdown_readme())
+
+        properties = {
+            "name": "README.md",
+            "encodingFormat": "text/markdown",
+            "about": {"@id": "./"},
+        }
+        ro_crate.add_file(
+            markdown_path,
+            dest_path="README.md",
+            properties=properties,
+        )
+
+        for dataset, _ in self.included_datasets.values():
+            if dataset.dataset.id in self.dataset_id_to_path:
+                file_name, _ = self.dataset_id_to_path[dataset.dataset.id]
+                name = dataset.name
+                encoding_format = dataset.datatype.get_mime()
+                properties = {
+                    "name": name,
+                    "encodingFormat": encoding_format,
+                }
+                ro_crate.add_file(
+                    file_name,
+                    dest_path=file_name,
+                    properties=properties,
+                )
+
+        workflows_directory = self.workflows_directory
+        for filename in os.listdir(workflows_directory):
+            workflow_cls = ComputationalWorkflow if not filename.endswith(".cwl") else WorkflowDescription
+            lang = "galaxy" if not filename.endswith(".cwl") else "cwl"
+            dest_path = os.path.join("workflows", filename)
+            ro_crate.add_workflow(
+                source=os.path.join(workflows_directory, filename),
+                dest_path=dest_path,
+                main=False,
+                cls=workflow_cls,
+                lang=lang,
+            )
+
+        found_workflow_licenses = set()
+        for workflow_invocation in self.included_invocations:
+            workflow = workflow_invocation.workflow
+            license = workflow.license
+            if license:
+                found_workflow_licenses.add(license)
+        if len(found_workflow_licenses) == 1:
+            ro_crate.license = next(iter(found_workflow_licenses))
+
+        # TODO: license per workflow
+        # TODO: API options to license workflow outputs seprately
+        # TODO: Export report as PDF and stick it in here
+        return ro_crate
+
+
+class ROCrateModelExportStore(DirectoryModelExportStore, WriteCrates):
+    def __init__(self, crate_directory, **kwds):
+        self.crate_directory = crate_directory
+        super().__init__(crate_directory, export_files="symlink", **kwds)
+
+    def _finalize(self):
+        super()._finalize()
+        ro_crate = self._init_crate()
+        ro_crate.write(self.crate_directory)
+
+
+class ROCrateArchiveModelExportStore(DirectoryModelExportStore, WriteCrates):
+    def __init__(self, uri, **kwds):
+        temp_output_dir = tempfile.mkdtemp()
+        self.temp_output_dir = temp_output_dir
+        if "://" in str(uri):
+            self.out_file = os.path.join(temp_output_dir, "out")
+            self.file_source_uri = uri
+            export_directory = os.path.join(temp_output_dir, "export")
+        else:
+            self.out_file = uri
+            self.file_source_uri = None
+            export_directory = temp_output_dir
+        super().__init__(export_directory, **kwds)
+
+    def _finalize(self):
+        super()._finalize()
+        ro_crate = self._init_crate()
+        ro_crate.write(self.export_directory)
+        out_file_name = str(self.out_file)
+        if out_file_name.endswith(".zip"):
+            out_file = out_file_name[: -len(".zip")]
+        else:
+            out_file = out_file_name
+        rval = shutil.make_archive(out_file, "zip", self.export_directory)
+        if not self.file_source_uri:
+            shutil.move(rval, self.out_file)
+        else:
+            file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
+            file_source = file_source_path.file_source
+            assert os.path.exists(self.out_file)
+            file_source.write_from(file_source_path.path, self.out_file)
+        shutil.rmtree(self.temp_output_dir)
+
+
 class TarModelExportStore(DirectoryModelExportStore):
     def __init__(self, uri, gzip=True, **kwds):
         self.gzip = gzip
@@ -2182,7 +2311,9 @@ class BagArchiveModelExportStore(BagDirectoryModelExportStore):
 
 
 def get_export_store_factory(app, download_format: str, export_files=None) -> Callable[[str], ModelExportStore]:
-    export_store_class: Union[Type[TarModelExportStore], Type[BagArchiveModelExportStore]]
+    export_store_class: Union[
+        Type[TarModelExportStore], Type[BagArchiveModelExportStore], Type[ROCrateArchiveModelExportStore]
+    ]
     export_store_class_kwds = {
         "app": app,
         "export_files": export_files,
@@ -2194,6 +2325,8 @@ def get_export_store_factory(app, download_format: str, export_files=None) -> Ca
     elif download_format in ["tar"]:
         export_store_class = TarModelExportStore
         export_store_class_kwds["gzip"] = False
+    elif download_format == "rocrate.zip":
+        export_store_class = ROCrateArchiveModelExportStore
     elif download_format.startswith("bag."):
         bag_archiver = download_format[len("bag.") :]
         if bag_archiver not in ["zip", "tar", "tgz"]:

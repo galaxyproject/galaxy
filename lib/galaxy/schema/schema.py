@@ -1301,6 +1301,7 @@ class ModelStoreFormat(str, Enum):
     BAG_DOT_ZIP = "bag.zip"
     BAG_DOT_TAR = "bag.tar"
     BAG_DOT_TGZ = "bag.tgz"
+    ROCRATE_ZIP = "rocrate.zip"
 
 
 class StoreContentSource(Model):
