@@ -17,6 +17,46 @@ from galaxy.workflow.modules import module_factory
 log = logging.getLogger(__name__)
 
 
+class TransformerBlock(Layer):
+    def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1):
+        super(TransformerBlock, self).__init__()
+        self.att = MultiHeadAttention(num_heads=num_heads,
+            key_dim=embed_dim,
+            dropout=rate,
+        )
+        self.ffn = Sequential(
+            [Dense(ff_dim, activation="relu"),
+             Dense(embed_dim),]
+        )
+        self.layernorm1 = LayerNormalization(epsilon=1e-6)
+        self.layernorm2 = LayerNormalization(epsilon=1e-6)
+        self.dropout1 = Dropout(rate)
+        self.dropout2 = Dropout(rate)
+
+
+    def call(self, inputs, training):
+        attn_output, attention_scores = self.att(inputs, inputs, inputs, return_attention_scores=True, training=training)
+        attn_output = self.dropout1(attn_output, training=training)
+        out1 = self.layernorm1(inputs + attn_output)
+        ffn_output = self.ffn(out1)
+        ffn_output = self.dropout2(ffn_output, training=training)
+        return self.layernorm2(out1 + ffn_output), attention_scores
+
+
+class TokenAndPositionEmbedding(Layer):
+    def __init__(self, maxlen, vocab_size, embed_dim):
+        super(TokenAndPositionEmbedding, self).__init__()
+        self.token_emb = Embedding(input_dim=vocab_size, output_dim=embed_dim, mask_zero=True)
+        self.pos_emb = Embedding(input_dim=maxlen, output_dim=embed_dim, mask_zero=True)
+
+    def call(self, x):
+        maxlen = tf.shape(x)[-1]
+        positions = tf.range(start=0, limit=maxlen, delta=1)
+        positions = self.pos_emb(positions)
+        x = self.token_emb(x)
+        return x + positions
+
+
 class ToolRecommendations:
     def __init__(self):
         self.tool_recommendation_model_path = None
@@ -33,6 +73,19 @@ class ToolRecommendations:
         self.compatible_tools = None
         self.standard_connections = None
         self.max_seq_len = 25
+
+    def create_transformer_model(self, maxlen, vocab_size):
+        inputs = Input(shape=(maxlen,))
+        embedding_layer = TokenAndPositionEmbedding(maxlen, vocab_size, embed_dim)
+        x = embedding_layer(inputs)
+        transformer_block = TransformerBlock(embed_dim, num_heads, ff_dim)
+        x, weights = transformer_block(x)
+        x = GlobalAveragePooling1D()(x)
+        x = Dropout(dropout)(x)
+        x = Dense(ff_dim, activation="relu")(x)
+        x = Dropout(dropout)(x)
+        outputs = Dense(vocab_size, activation="sigmoid")(x)
+        return Model(inputs=inputs, outputs=[outputs, weights])
 
     def get_predictions(self, trans, tool_sequence, remote_model_url):
         """
@@ -52,7 +105,11 @@ class ToolRecommendations:
         """
         Create model and associated dictionaries for recommendations
         """
-        if not self.graph:
+        import tensorflow as tf
+        self.tool_recommendation_model_path = self.__download_model(remote_model_url)
+        trained_model = h5py.File(self.tool_recommendation_model_path, "r")
+
+        '''if not self.graph:
             # import moves from the top of file: in case the tool recommendation feature is disabled,
             # keras is not downloaded because of conditional requirement and Galaxy does not build
             try:
@@ -88,7 +145,8 @@ class ToolRecommendations:
                     except Exception as e:
                         log.exception(e)
                         trans.response.status = 400
-                        return False
+                        return False'''
+            
             # set the dictionary of tools
             self.model_data_dictionary = json.loads(trained_model["data_dictionary"][()])
             self.reverse_dictionary = {v: k for k, v in self.model_data_dictionary.items()}
