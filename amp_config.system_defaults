@@ -2,6 +2,13 @@ galaxy:
     # galaxy root URL
     root: /rest/galaxy
 
+
+    # this should be a random string of 5-56 characters that is used to generate encoded
+    # ids between the galaxy instance and the client.  Because AMP stores various IDs as
+    # part of its operation, changing this value after the initial setup will make all of
+    # the data inaccessable.
+    id_secret: CHANGE ME
+
     # generic uwsgi settings -- these are copied as-is into the UWSGI
     # section of the configuration file.  Generally there's no need to mess
     # with these.  Note:  that section of the yaml file isn't really yaml, so

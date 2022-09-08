@@ -12,6 +12,7 @@ from pathlib import Path
 import os
 import yaml
 import subprocess
+import random
 from amp.config import load_amp_config
 from amp.logging import setup_logging
 
@@ -63,13 +64,18 @@ def main():
         # the admin user
         galaxy['admin_users']  = config['galaxy']['admin_username']
         
-        # id_secret -- fail if it hasn't been changed
+        # id_secret -- set it if we haven't yet.
         if config['galaxy']['id_secret'] == 'CHANGE ME':
-            logging.error("The galaxy id_secret needs to be changed for successful installation")
-            exit(1)
-        else:
-            galaxy['id_secret'] = config['galaxy']['id_secret']
-
+            # create a new random id_secret and save it to the runtime
+            # config area
+            logging.info("Generating a new id_secret")
+            id_secret = "".join(random.choices("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", k=16))
+            rdata = {'galaxy': {'id_secret': id_secret}}
+            with open(amp_root / "data/package_config/galaxy_idsecret.yaml", "w") as x:
+                yaml.safe_dump(rdata, x)
+            config = load_amp_config()
+        
+        galaxy['id_secret'] = config['galaxy']['id_secret']
         f.write(yaml.safe_dump({'galaxy': galaxy}))
         f.write("\n")
 

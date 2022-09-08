@@ -7,12 +7,6 @@ galaxy:
     admin_username: myuser@example.edu
     admin_password: my admin password
 
-    # this should be a random string of 5-56 characters that is used to generate encoded
-    # ids between the galaxy instance and the client.  Because AMP stores various IDs as
-    # part of its operation, changing this value after the initial setup will make all of
-    # the data inaccessable.
-    id_secret: CHANGE ME
-
     # this section is for populating the menu in the galaxy
     # workflow editor.
     toolbox:
