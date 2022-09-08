@@ -44,14 +44,18 @@ TSI_CONFIG_PREFIX = "GALAXY_INSTALL_CONFIG_"
 
 class DbScript:
     """
-    Used to manage the gxy db.
-    The upgrade command is called on both: gxy and tsi. Reason: if this is the first alembic command on this branch,
-    the upgrade command will stamp the alembic_version table: we need that for both branches.
+    Facade for common database schema migration operations on the gxy branch.
+    When the gxy and tsi branches are persisted in the same database, some
+    alembic commands will display output on the state on both branches (e.g.
+    history, version, dbversion). The upgrade command is executed on both
+    branches: gxy and tsi (the upgrade command ensures the branch has been
+    initialized by stamping its version in the alembic_version table).
     """
 
     def __init__(self, config_file: Optional[str] = None) -> None:
         self.alembic_config = self._get_alembic_cfg()
         self._set_dburl(config_file)
+        self.alembic_config.set_main_option("sqlalchemy.url", self.gxy_url)
 
     def upgrade(self, args: argparse.Namespace) -> None:
         def upgrade_to_revision(rev):
@@ -60,11 +64,14 @@ class DbScript:
         if args.revision:
             revision = self._parse_revision(args.revision)
             upgrade_to_revision(revision)
-        else:  # Run for each model
+        else:
             self.alembic_config.set_main_option("sqlalchemy.url", self.gxy_url)
             upgrade_to_revision("gxy@head")
-            self.alembic_config.set_main_option("sqlalchemy.url", self.tsi_url)
-            upgrade_to_revision("tsi@head")
+            try:
+                self.alembic_config.set_main_option("sqlalchemy.url", self.tsi_url)
+                upgrade_to_revision("tsi@head")
+            finally:
+                self.alembic_config.set_main_option("sqlalchemy.url", self.gxy_url)
 
     def downgrade(self, args: argparse.Namespace) -> None:
         revision = self._parse_revision(args.revision)
