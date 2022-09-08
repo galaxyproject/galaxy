@@ -88,7 +88,7 @@ def main() -> None:
         aliases=["u"],
         parents=[config_arg_parser, sql_arg_parser],
     )
-    upgrade_cmd_parser.add_argument("revision", help="Revision identifier", nargs="?", default="heads")
+    upgrade_cmd_parser.add_argument("revision", help="Revision identifier", nargs="?")
 
     downgrade_cmd_parser = add_parser(
         "downgrade",

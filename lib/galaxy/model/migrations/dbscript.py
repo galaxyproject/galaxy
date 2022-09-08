@@ -54,11 +54,21 @@ class DbScript:
         self._set_dburl(config_file)
 
     def upgrade(self, args: argparse.Namespace) -> None:
-        revision = self._parse_revision(args.revision)
-        command.upgrade(self.alembic_config, revision, args.sql)
+        def upgrade_to_revision(rev):
+            command.upgrade(self.alembic_config, rev, args.sql)
+
+        if args.revision:
+            revision = self._parse_revision(args.revision)
+            upgrade_to_revision(revision)
+        else:  # Run for each model
+            self.alembic_config.set_main_option("sqlalchemy.url", self.gxy_url)
+            upgrade_to_revision("gxy@head")
+            self.alembic_config.set_main_option("sqlalchemy.url", self.tsi_url)
+            upgrade_to_revision("tsi@head")
 
     def downgrade(self, args: argparse.Namespace) -> None:
-        command.downgrade(self.alembic_config, args.revision, args.sql)
+        revision = self._parse_revision(args.revision)
+        command.downgrade(self.alembic_config, revision, args.sql)
 
     def revision(self, args: argparse.Namespace) -> None:
         """Create revision script for the gxy branch only."""
@@ -87,10 +97,6 @@ class DbScript:
         gxy_config, tsi_config = self._get_configuration(config_file)
         self.gxy_url = gxy_config.url
         self.tsi_url = tsi_config.url
-        self._set_url(self.gxy_url)
-
-    def _set_url(self, url: str) -> None:
-        self.alembic_config.set_main_option("sqlalchemy.url", url)
 
     def _parse_revision(self, rev):
         # Relative revision identifier requires a branch label
