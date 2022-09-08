@@ -58,8 +58,6 @@ universe_wsgi.ini
 reports_wsgi.ini
 reports.ini
 tool_shed_wsgi.ini
-
-# Config files.
 datatypes_conf.xml
 tool_conf.xml
 external_service_types_conf.xml
@@ -123,6 +121,8 @@ htmlcov
 run_unit_tests.html
 test/unit/**.log
 .tox
+tool_test_output.html
+tool_test_output.json
 
 # Project files
 *.kpf
