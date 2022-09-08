@@ -1,7 +1,7 @@
 <template>
     <div class="form-row dataRow input-data-row" @mouseover="mouseOver" @mouseleave="mouseLeave">
         <div :id="id" :input-name="input.name" :class="terminalClass" @drop="onDrop">
-            <div ref="terminal" class="icon" />
+            <div ref="el" class="icon" />
         </div>
         <div v-if="showRemove" class="delete-terminal" @click="onRemove" />
         {{ label }}
@@ -9,7 +9,15 @@
 </template>
 
 <script>
+import { reactive, ref } from "vue";
+import { useElementBounding } from "@vueuse/core";
+
 export default {
+    setup() {
+        const el = ref(null);
+        const position = reactive(useElementBounding(el));
+        return { el, position };
+    },
     props: {
         input: {
             type: Object,
@@ -44,20 +52,22 @@ export default {
         return {
             showRemove: false,
             isMultiple: false,
-            initX: 0,
-            initY: 0,
             nodeId: null,
         };
     },
     created() {
         this.nodeId = this.getNode().id;
     },
-    mounted() {
-        const rect = this.$refs.terminal.getBoundingClientRect();
-        this.initX = rect.left + rect.width / 2 - this.rootOffset.left;
-        this.initY = rect.top + rect.height / 2 - this.rootOffset.top;
-    },
     computed: {
+        terminalPosition() {
+            return Object.freeze({ endX: this.startX, endY: this.startY });
+        },
+        initX() {
+            return this.position.left + this.position.width / 2 - this.rootOffset.left;
+        },
+        initY() {
+            return this.position.top + this.position.height / 2 - this.rootOffset.top;
+        },
         id() {
             const node = this.getNode();
             return `node-${node.id}-input-${this.input.name}`;
@@ -78,16 +88,13 @@ export default {
         startY() {
             return this.initY + this.offsetY;
         },
-        position() {
-            return Object.freeze({ endX: this.startX, endY: this.startY });
-        },
     },
     beforeDestroy() {
         this.$emit("onRemove", this.input);
         this.onRemove();
     },
     watch: {
-        position(position) {
+        terminalPosition(position) {
             console.log({
                 stepId: this.nodeId,
                 inputName: this.input.name,

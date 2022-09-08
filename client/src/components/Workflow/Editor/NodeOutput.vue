@@ -10,6 +10,7 @@
         </div>
         {{ label }}
         <draggable-wrapper
+            ref="el"
             :id="id"
             :class="terminalClass"
             :output-name="output.name"
@@ -26,8 +27,15 @@
 <script>
 import DraggableWrapper from "./Draggable";
 import WorkflowConnector from "./Connector";
+import { reactive, ref } from "vue";
+import { useElementBounding } from "@vueuse/core";
 
 export default {
+    setup() {
+        const el = ref(null);
+        const position = reactive(useElementBounding(el));
+        return { el, position };
+    },
     components: {
         DraggableWrapper,
         WorkflowConnector,
@@ -66,21 +74,19 @@ export default {
         return {
             isMultiple: false,
             isDragging: false,
-            initX: 0,
-            initY: 0,
             deltaX: 0,
             deltaY: 0,
         };
     },
-    mounted() {
-        const rect = this.$refs.terminal.getBoundingClientRect();
-        this.initX = rect.left + rect.width / 2 - this.rootOffset.left;
-        this.initY = rect.top + rect.height / 2 - this.rootOffset.top;
-        this.position;
-    },
     computed: {
-        position() {
+        terminalPosition() {
             return Object.freeze({ startX: this.startX, startY: this.startY });
+        },
+        initX() {
+            return this.position.left + this.position.width / 2 - this.rootOffset.left;
+        },
+        initY() {
+            return this.position.top + this.position.height / 2 - this.rootOffset.top;
         },
         startX() {
             return this.initX + this.offsetX;
@@ -142,7 +148,7 @@ export default {
         },
     },
     watch: {
-        position(position) {
+        terminalPosition(position) {
             console.log("updating position", position);
             this.$store.commit("workflowState/setOutputTerminalPosition", {
                 stepId: this.getNode().id,

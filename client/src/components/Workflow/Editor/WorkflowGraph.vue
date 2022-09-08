@@ -2,7 +2,7 @@
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
         <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoomButton" />
         <div class="canvas-viewport" @dragover.prevent @drop.prevent>
-            <div id="canvas-container" ref="canvas">
+            <div id="canvas-container" ref="el">
                 <Draggable style="width: 100%; height: 100%" @move="onPanContainer" :apply-scale="false">
                     <SvgPanZoom
                         style="width: 100%; height: 100%"
@@ -38,7 +38,7 @@
                             :datatypes-mapper="datatypesMapper"
                             :get-manager="getManager"
                             :activeNodeId="activeNodeId"
-                            :root-offset="rootOffset"
+                            :root-offset="position"
                             @pan-by="onPan"
                             @stopDragging="onStopDragging"
                             @onDragConnector="onDragConnector"
@@ -66,8 +66,15 @@ import RawConnector from "./Connector";
 import TerminalConnector from "./TerminalConnector";
 import Draggable from "./Draggable.vue";
 import SvgPanZoom from "vue-svg-pan-zoom";
+import { reactive, ref } from "vue";
+import { useElementBounding } from "@vueuse/core";
 
 export default {
+    setup() {
+        const el = ref(null);
+        const position = reactive(useElementBounding(el));
+        return { el, position };
+    },
     components: {
         Draggable,
         RawConnector,
@@ -79,7 +86,6 @@ export default {
     data() {
         return {
             isWheeled: false,
-            rootOffset: { left: 0, top: 0 },
             draggingConnection: null,
             svgpanzoom: null,
             transform: null,
@@ -98,23 +104,6 @@ export default {
             type: Object,
             default: null,
         },
-    },
-    mounted() {
-        // canvas overview management
-        const rootRect = this.$refs.canvas.getBoundingClientRect();
-        this.rootOffset = {
-            top: rootRect.top,
-            left: rootRect.left,
-            width: rootRect.width,
-            height: rootRect.height,
-            bottom: rootRect.bottom,
-            right: rootRect.right,
-        };
-        console.log(`root offset: ${this.rootOffset}`);
-
-        // this.canvasManager = new WorkflowCanvas(this.getManager(), this.$refs.canvas);
-        // this.canvasManager.drawOverview();
-        // this.canvasManager.scrollToNodes();
     },
     methods: {
         onUpdatedCTM(CTM) {
