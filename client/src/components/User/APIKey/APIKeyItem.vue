@@ -12,7 +12,7 @@
                 </b-input-group-text>
             </b-input-group-prepend>
 
-            <b-input :type="hover ? 'text' : 'password'" :value="item.key" disabled />
+            <b-input :type="hover ? 'text' : 'password'" :value="item.key" disabled data-test-id="api-key-input" />
 
             <b-input-group-append>
                 <b-input-group-text>
