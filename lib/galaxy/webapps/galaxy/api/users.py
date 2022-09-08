@@ -25,7 +25,6 @@ from galaxy import (
 )
 from galaxy.exceptions import ObjectInvalid
 from galaxy.managers import (
-    api_keys,
     base as managers_base,
     users,
 )
@@ -34,6 +33,7 @@ from galaxy.model import (
     User,
     UserAddress,
 )
+from galaxy.schema import APIKeyModel
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.security.validate_user_input import (
     validate_email,
@@ -70,6 +70,7 @@ log = logging.getLogger(__name__)
 router = Router(tags=["users"])
 
 UserIdPathParam: DecodedDatabaseIdField = Path(..., title="User ID", description="The ID of the user to get.")
+APIKeyPathParam: str = Path(..., title="API Key", description="The API key of the user.")
 
 
 @router.cbv
@@ -88,30 +89,43 @@ class FastAPIHistories:
         self.service.recalculate_disk_usage(trans)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    @router.get("/api/users/{user_id}/api_key", summary="Return user's API keys")
-    def get_api_keys(
+    @router.get(
+        "/api/users/{user_id}/api_key",
+        summary="Return the user's API key",
+        responses={
+            200: {
+                "model": APIKeyModel,
+                "description": "The API key of the user.",
+            },
+            204: {
+                "description": "The user doesn't have an API key.",
+            },
+        },
+    )
+    def get_api_key(
         self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
     ):
-        return self.service.get_api_keys(trans, user_id)
+        api_key = self.service.get_api_key(trans, user_id)
+        return api_key if api_key else Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    @router.post("/api/users/{user_id}/api_key", summary="Creates a new API key")
+    @router.post("/api/users/{user_id}/api_key", summary="Creates a new API key for the user")
     def create_api_key(
         self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
-    ):
+    ) -> APIKeyModel:
         return self.service.create_api_key(trans, user_id)
 
     @router.delete(
         "/api/users/{user_id}/api_key/{api_key}",
-        summary="Delete the API key with given key",
+        summary="Delete the given API key of the user",
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def delete_api_key(
         self,
-        api_key: str,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParam,
+        api_key: str = APIKeyPathParam,
     ):
-        self.service.delete_api_key(api_key, trans, user_id)
+        self.service.delete_api_key(trans, user_id, api_key)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -119,7 +133,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
     user_manager: users.UserManager = depends(users.UserManager)
     user_serializer: users.UserSerializer = depends(users.UserSerializer)
     user_deserializer: users.UserDeserializer = depends(users.UserDeserializer)
-    api_key_manager: api_keys.ApiKeyManager = depends(api_keys.ApiKeyManager)
 
     @expose_api
     def index(self, trans: ProvidesUserContext, deleted="False", f_email=None, f_name=None, f_any=None, **kwd):
