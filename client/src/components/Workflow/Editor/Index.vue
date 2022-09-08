@@ -69,7 +69,6 @@
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
                     :get-manager="getManager"
-                    @onAdd="onAdd"
                     @onUpdate="onUpdate"
                     @onClone="onClone"
                     @onCreate="onInsertTool"
@@ -250,7 +249,6 @@ export default {
             parameters: null,
             steps: {},
             hasChanges: false,
-            nodes: {},
             nodeIndex: 0,
             datatypesMapper: null,
             datatypes: [],
@@ -274,6 +272,9 @@ export default {
         };
     },
     computed: {
+        nodes() {
+            return this.$store.getters["workflowState/getNodes"]();
+        },
         showAttributes() {
             return this.showInPanel == "attributes";
         },
@@ -342,11 +343,8 @@ export default {
         },
         steps(newSteps, oldSteps) {
             console.log("steps watch triggered");
-            // this.hasChanges = true;
-            this.nodeIndex = Math.max(...Object.keys(newSteps).map((k) => parseInt(k))) + 1;
-        },
-        nodes(newNodes, oldNodes) {
             this.hasChanges = true;
+            this.nodeIndex = Math.max(...Object.keys(newSteps).map((k) => parseInt(k))) + 1;
         },
         hasChanges() {
             this.$emit("update:confirmation", this.hasChanges);
@@ -420,10 +418,6 @@ export default {
             await fromSimple(this, response.workflow);
             this._loadEditorData(response.workflow);
         },
-        onAdd(node) {
-            console.log("onAdd", node);
-            this.nodes[node.id] = node;
-        },
         onUpdate(node) {
             getModule({
                 type: node.type,
@@ -448,7 +442,6 @@ export default {
             this.onChange();
         },
         onRemove(nodeId) {
-            delete this.nodes[nodeId];
             Vue.delete(this.steps, nodeId);
             this.showInPanel = "attributes";
         },

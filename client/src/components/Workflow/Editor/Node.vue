@@ -180,6 +180,17 @@ export default {
             },
         };
     },
+    created() {
+        this.$store.commit("workflowState/setNode", this);
+        this.activeOutputs = new ActiveOutputs();
+        this.content_id = this.contentId;
+        // initialize node data
+        if (this.step.config_form) {
+            this.initData(this.step);
+        } else {
+            this.$emit("onUpdate", this);
+        }
+    },
     computed: {
         title() {
             return this.label || this.name;
@@ -246,19 +257,6 @@ export default {
             }
         },
     },
-    created() {
-        this.activeOutputs = new ActiveOutputs();
-        this.element = this.$el;
-        this.content_id = this.contentId;
-        // initialize node data
-        this.$emit("onAdd", this);
-        if (this.step.config_form) {
-            this.initData(this.step);
-        } else {
-            this.$emit("onUpdate", this);
-        }
-    },
-
     methods: {
         onMove(e) {
             const { deltaX, deltaY } = e.data;
@@ -387,6 +385,9 @@ export default {
         offsetVaryPosition(offsetRange) {
             return Math.floor(Math.random() * offsetRange);
         },
+    },
+    beforeDestroy() {
+        this.$store.commit("workflowState/deleteNode", this.id);
     },
 };
 </script>
