@@ -36,7 +36,6 @@ from typing import (
     Any,
     Optional,
     overload,
-    Union,
 )
 from urllib.parse import (
     urlencode,
@@ -1091,7 +1090,7 @@ def roundify(amount, sfs=2):
 
 
 @overload
-def unicodify(
+def unicodify(  # type: ignore[misc]
     value: Literal[None],
     encoding: str = DEFAULT_ENCODING,
     error: str = "replace",
@@ -1103,7 +1102,7 @@ def unicodify(
 
 @overload
 def unicodify(
-    value: Union[str, bytes, int, float, bool, Exception],  # Anything but None, but this seems fine for now
+    value: Any,
     encoding: str = DEFAULT_ENCODING,
     error: str = "replace",
     strip_null: bool = False,
