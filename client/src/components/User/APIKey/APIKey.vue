@@ -1,6 +1,6 @@
 <template>
     <section class="api-key d-flex flex-column">
-        <h2 v-localize>Manage API Keys</h2>
+        <h2 v-localize>Manage API Key</h2>
 
         <span v-localize class="mb-2">
             An API key will allow you to access via web API. Please note that this key acts as an alternate means to
@@ -26,10 +26,10 @@
             <span v-localize>Create a new key</span>
         </b-button>
 
-        <b-container v-else class="mt-2">
+        <b-container v-else-if="items.length" class="mt-2">
             <b-row cols="1">
-                <b-col class="mb-2">
-                    <a-p-i-key-item :item="items[0]" @listAPIKeys="listAPIKeys" />
+                <b-col v-for="(item, index) in items" :key="index" class="mb-2">
+                    <APIKeyItem :item="item" @listAPIKeys="listAPIKeys" />
                 </b-col>
             </b-row>
         </b-container>
