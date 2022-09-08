@@ -1,7 +1,10 @@
 import codecs
 import collections
 import logging
-from typing import Optional
+from typing import (
+    Optional,
+    Union,
+)
 
 from Crypto.Cipher import Blowfish
 from Crypto.Random import get_random_bytes
@@ -102,15 +105,18 @@ class IdEncodingHelper:
         # Encrypt
         return codecs.encode(self.id_cipher.encrypt(s), "hex")
 
-    def decode_guid(self, session_key):
+    def decode_guid(self, session_key: Union[bytes, str]) -> str:
         # Session keys are strings
         try:
             decoded_session_key = codecs.decode(session_key, "hex")
-            return unicodify(self.id_cipher.decrypt(decoded_session_key)).lstrip("!")
+            stripped_decoded_session_key = unicodify(self.id_cipher.decrypt(decoded_session_key)).lstrip("!")
+            # Ensure session key is hexadecimal value
+            int(stripped_decoded_session_key, 16)
+            return stripped_decoded_session_key
         except TypeError:
-            raise galaxy.exceptions.MalformedId(f"Malformed guid '{session_key}' specified, unable to decode.")
+            raise galaxy.exceptions.MalformedId(f"Malformed guid '{session_key!r}' specified, unable to decode.")
         except ValueError:
-            raise galaxy.exceptions.MalformedId(f"Wrong guid '{session_key}' specified, unable to decode.")
+            raise galaxy.exceptions.MalformedId(f"Wrong guid '{session_key!r}' specified, unable to decode.")
 
     def get_new_guid(self):
         # Generate a unique, high entropy 128 bit random number
