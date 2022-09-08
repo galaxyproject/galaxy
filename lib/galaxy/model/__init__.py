@@ -17,10 +17,7 @@ import random
 import string
 from collections import defaultdict
 from collections.abc import Callable
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import timedelta
 from enum import Enum
 from string import Template
 from typing import (
@@ -642,7 +639,7 @@ class User(Base, Dictifiable, RepresentById):
             self.password = galaxy.security.passwords.hash_password(cleartext)
         else:
             self.password = new_secure_hash(text_type=cleartext)
-        self.last_password_change = datetime.now()
+        self.last_password_change = now()
 
     def set_random_password(self, length=16):
         """
@@ -6611,7 +6608,7 @@ class GalaxySession(Base, RepresentById):
     def __init__(self, is_valid=False, **kwd):
         super().__init__(**kwd)
         self.is_valid = is_valid
-        self.last_action = self.last_action or datetime.now()
+        self.last_action = self.last_action or now()
 
     def add_history(self, history, association=None):
         if association is None:
@@ -8810,8 +8807,8 @@ class CloudAuthz(Base, _HasTable):
         self.provider = provider
         self.config = config
         self.authn_id = authn_id
-        self.last_update = datetime.now()
-        self.last_activity = datetime.now()
+        self.last_update = now()
+        self.last_activity = now()
         self.description = description
 
     def equals(self, user_id, provider, authn_id, config):
