@@ -69,6 +69,6 @@ class UsersService(ServiceBase):
     def _get_user(self, trans: ProvidesUserContext, user_id):
         user = trans.user
         if trans.anonymous or (user and user.id != user_id and not trans.user_is_admin):
-            glx_exceptions.InsufficientPermissionsException("Access denied.")
+            raise glx_exceptions.InsufficientPermissionsException("Access denied.")
         user = self.user_manager.by_id(user_id)
         return user
