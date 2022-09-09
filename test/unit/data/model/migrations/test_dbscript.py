@@ -141,8 +141,17 @@ def dburl_from_config(config):
 
 
 def run_command(cmd):
+    if in_packages():
+        cmd = f"../.{cmd}"  # if this is run from `packages`, db.sh is in parent directory
     completed_process = subprocess.run(cmd.split(), capture_output=True, text=True)
     return completed_process
+
+
+def in_packages():
+    """Checks if test is run from the packages directory."""
+    path = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir, os.pardir)
+    path = os.path.normpath(path)
+    return os.path.split(path)[1] == "packages"
 
 
 def get_db_heads(config):
