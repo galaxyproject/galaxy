@@ -3,6 +3,8 @@
 'run_tests.sh -list'                    for listing all the tool ids
 'run_tests.sh -api (test_path)'         for running all the test scripts in the ./lib/galaxy_test/api directory, test_path
                                     can be pytest selector
+'run_tests.sh -cwl (test_path)'         for running all the test scripts in the ./lib/galaxy_test/api/cwl directory, test_path
+                                    can be pytest selector
 'run_tests.sh -integration (test_path)' for running all integration test scripts in the ./test/integration directory, test_path
                                     can be pytest selector
 'run_tests.sh -toolshed (test_path)'    for running all the test scripts in the ./lib/tool_shed/test directory
@@ -51,7 +53,7 @@ as test_path.  A few examples are shown below.
 Run all API tests:
     ./run_tests.sh -api
 
-The same test as above can be run using nosetests directly as follows:
+The same test as above can be run using pytest directly as follows:
     pytest lib/galaxy_test/api
 
 However when using pytest directly output options defined in this
@@ -141,6 +143,10 @@ Extra options:
  --verbose_errors      Force some tests produce more verbose error reporting.
  --no_cleanup          Do not delete temp files for Python functional tests
                        (-toolshed, -framework, etc...)
+ --coverage            Generate a test coverage report. This option currently
+                       should work with every test that uses pytest, but the
+                       results may not be reliable with selenium or other
+                       frameworks that primarily test the client.
  --debug               On python test error or failure invoke a pdb shell for
                        interactive debugging of the test
  --report_file         Path of HTML report to produce (for Python Galaxy
@@ -150,10 +156,6 @@ Extra options:
                        functional tests).
  --skip-venv           Do not create .venv (passes this flag to
                        common_startup.sh)
- --dockerize           Run tests in a pre-configured Docker container (must be
-                       first argument if present).
- --db <type>           For use with --dockerize, run tests using partially
-                       migrated 'postgres', 'mysql', or 'sqlite' databases.
  --external_url        External URL to use for Galaxy testing (only certain
                        tests).
  --external_master_key Master API key used to configure external tests.
@@ -238,6 +240,7 @@ TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
                                 tool shed test server files to be placed.
 TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
                                 testing.
+GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages
 
 Unit Test Environment Variables
 
