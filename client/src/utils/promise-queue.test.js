@@ -23,9 +23,11 @@ describe("test last-queue", () => {
     it("should only resolve the last promise for each key", async () => {
         const results = [];
         for (let i = 0; i < x; i++) {
-            lastQueue.enqueue(testPromise, i, i).then((response) => {
-                results.push(response);
-            });
+            for (let j = 0; j < x; j++) {
+                lastQueue.enqueue(testPromise, i, i).then((response) => {
+                    results.push(response);
+                });
+            }
         }
         await lastQueue.enqueue(testPromise, x, x).then((response) => {
             results.push(response);
