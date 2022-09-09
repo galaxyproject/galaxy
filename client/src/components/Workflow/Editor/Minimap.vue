@@ -1,33 +1,46 @@
 <template>
-    <div class="workflow-overview" aria-hidden="true">
+    <div ref="overview" class="workflow-overview" :style="style" aria-hidden="true">
         <div class="workflow-overview-body">
-            <div id="overview-container">
-                <svg width="100%" height="100%" :viewBox="viewBox">
-                    <MinimapNode
-                        class="mini-node"
-                        :node="node"
-                        :step="steps[node.id]"
-                        v-for="node of Object.values(nodes)"
-                        :key="node.id" />
-                    <rect
-                        class="mini-node"
-                        :x="visible.x"
-                        :y="visible.y"
-                        :width="visible.width"
-                        :height="visible.height"
-                        fill-opacity="0.5" />
-                </svg>
-                <div id="overview-viewport" />
-            </div>
+            <svg width="100%" height="100%" :viewBox="viewBox">
+                <MinimapNode
+                    class="mini-node"
+                    :node="node"
+                    :step="steps[node.id]"
+                    v-for="node of Object.values(nodes)"
+                    :key="node.id" />
+                <rect
+                    class="mini-node"
+                    :x="visible.x"
+                    :y="visible.y"
+                    :width="visible.width"
+                    :height="visible.height"
+                    fill-opacity="0.5" />
+            </svg>
         </div>
     </div>
 </template>
 <script>
 import MinimapNode from "./MinimapNode.vue";
+import Draggable from "./Draggable.vue";
+import { reactive, ref } from "vue";
+import { useDraggable } from "@vueuse/core";
 
 export default {
+    setup() {
+        const overview = ref(null);
+        const overviewPosition = reactive(useDraggable(overview, { preventDefault: true }));
+        return { overview, overviewPosition };
+    },
     components: {
+        Draggable,
         MinimapNode,
+    },
+    data() {
+        return {
+            size: 150,
+            maxSize: 300,
+            minSize: 50,
+        };
     },
     props: {
         nodes: {
@@ -61,6 +74,21 @@ export default {
         },
     },
     computed: {
+        style() {
+            if (this.overviewPosition.x) {
+                let newSize = Math.max(
+                    this.rootOffset.right - this.overviewPosition.x,
+                    this.rootOffset.bottom - this.overviewPosition.y
+                );
+                if (newSize > this.maxSize) {
+                    newSize = this.maxSize;
+                } else if (newSize < this.minSize) {
+                    newSize = this.minSize;
+                }
+                this.size = newSize;
+            }
+            return { width: `${this.size}px`, height: `${this.size}px` };
+        },
         visible() {
             // translate current rootOffset rectangle into scaled and panned space
             const x = this.pan.x / -this.scale;

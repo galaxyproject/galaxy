@@ -201,7 +201,8 @@
                     height: 100%;
                 }
                                 .mini-node {
-                                    color: $brand-primary
+                                    // this is $primary-brand / #25537b
+                                        filter: invert(26%) sepia(75%) saturate(489%) hue-rotate(166deg) brightness(90%) contrast(89%);
                                 }
             }
             #input-choices-menu {
