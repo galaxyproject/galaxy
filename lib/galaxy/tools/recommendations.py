@@ -127,56 +127,6 @@ class ToolRecommendations:
         self.compatible_tools = json.loads(model_file["compatible_tools"][()].decode("utf-8"))
         tool_weights = json.loads(model_file["class_weights"][()].decode("utf-8"))
         self.standard_connections = json.loads(model_file["standard_connections"][()].decode("utf-8"))
-        print("====================")
-        print(self.model_data_dictionary)
-        print("====================")
-        '''
-        if not self.graph:
-            
-            # import moves from the top of file: in case the tool recommendation feature is disabled,
-            # keras is not downloaded because of conditional requirement and Galaxy does not build
-            try:
-                import tensorflow as tf
-
-                tf.compat.v1.disable_v2_behavior()
-            except Exception:
-                trans.response.status = 400
-                return False
-            # set graph and session only once
-            if self.graph is None:
-                self.graph = tf.Graph()
-                self.session = tf.compat.v1.Session(graph=self.graph)
-            model_weights = list()
-            counter_layer_weights = 0
-            self.tool_recommendation_model_path = self.__download_model(remote_model_url)
-            # read the hdf5 attributes
-            trained_model = h5py.File(self.tool_recommendation_model_path, "r")
-            model_config = json.loads(trained_model["model_config"][()])
-            # set tensorflow's graph and session to maintain
-            # consistency between model load and predict methods
-            with self.graph.as_default():
-                with self.session.as_default():
-                    try:
-                        # iterate through all the attributes of the model to find weights of neural network layers
-                        for item in trained_model.keys():
-                            if "weight_" in item:
-                                weight = trained_model[f"weight_{str(counter_layer_weights)}"][()]
-                                model_weights.append(weight)
-                                counter_layer_weights += 1
-                        self.loaded_model = tf.keras.models.model_from_json(model_config)
-                        self.loaded_model.set_weights(model_weights)
-                    except Exception as e:
-                        log.exception(e)
-                        trans.response.status = 400
-                        return False
-            # set the dictionary of tools
-            self.model_data_dictionary = json.loads(trained_model["data_dictionary"][()])
-            self.reverse_dictionary = {v: k for k, v in self.model_data_dictionary.items()}
-            # set the list of compatible tools
-            self.compatible_tools = json.loads(trained_model["compatible_tools"][()])
-            tool_weights = json.loads(trained_model["class_weights"][()])
-            self.standard_connections = json.loads(trained_model["standard_connections"][()])
-            '''
         # sort the tools' usage dictionary
         tool_pos_sorted = [int(key) for key in tool_weights.keys()]
         for k in tool_pos_sorted:
