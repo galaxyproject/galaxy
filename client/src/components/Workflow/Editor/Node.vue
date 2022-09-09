@@ -1,6 +1,6 @@
 <template>
     <draggable-wrapper
-        :position="step.position || defaultPosition"
+        ref="el"
         @updatePosition="onUpdatePosition"
         @mouseup="makeActive"
         @move="onMove"
@@ -65,7 +65,6 @@
                 :key="input.name"
                 :input="input"
                 :get-node="getNode"
-                :get-manager="getManager"
                 :datatypes-mapper="datatypesMapper"
                 :root-offset="rootOffset"
                 :offset-x="offset.x"
@@ -81,7 +80,6 @@
                 :output="output"
                 :post-job-actions="postJobActions"
                 :get-node="getNode"
-                :get-manager="getManager"
                 :root-offset="rootOffset"
                 :offset-x="offset.x"
                 :offset-y="offset.y"
@@ -106,12 +104,19 @@ import NodeInput from "./NodeInput";
 import NodeOutput from "./NodeOutput";
 import DraggableWrapper from "./Draggable";
 import { ActiveOutputs } from "./modules/outputs";
+import { reactive, ref } from "vue";
+import { useElementBounding } from "@vueuse/core";
 
 Vue.use(BootstrapVue);
 
 const OFFSET_RANGE = 100;
 
 export default {
+    setup() {
+        const el = ref(null);
+        const position = reactive(useElementBounding(el));
+        return { el, position };
+    },
     components: {
         DraggableWrapper,
         LoadingSpan,

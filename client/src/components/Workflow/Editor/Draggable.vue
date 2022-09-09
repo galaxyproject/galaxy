@@ -19,10 +19,6 @@ export default {
         Draggable,
     },
     props: {
-        position: {
-            type: Object,
-            required: false,
-        },
         rootOffset: {
             type: Object,
             required: false,

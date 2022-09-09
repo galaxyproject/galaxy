@@ -49,10 +49,6 @@ export default {
             type: Function,
             required: true,
         },
-        getManager: {
-            type: Function,
-            required: true,
-        },
         postJobActions: {
             type: Object,
             required: true,
@@ -170,6 +166,10 @@ export default {
         },
     },
     beforeDestroy() {
+        this.$store.commit("workflowState/deleteOutputTerminalPosition", {
+            stepId: this.getNode().id,
+            outputName: this.output.name,
+        });
         this.$emit("onRemove", this.output);
     },
     methods: {

@@ -69,6 +69,7 @@
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
                     :get-manager="getManager"
+                    :nodes="nodes"
                     @onUpdate="onUpdate"
                     @onClone="onClone"
                     @onCreate="onInsertTool"

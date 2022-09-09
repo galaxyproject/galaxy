@@ -27,10 +27,6 @@ export default {
             type: Function,
             required: true,
         },
-        getManager: {
-            type: Function,
-            required: true,
-        },
         datatypesMapper: {
             type: Object,
             required: true,
@@ -125,6 +121,12 @@ export default {
         onDrop(e) {
             console.log("onDrop", e);
         },
+    },
+    beforeDestroy() {
+        this.$store.commit("workflowState/deleteInputTerminalPosition", {
+            stepId: this.nodeId,
+            inputName: this.input.name,
+        });
     },
 };
 </script>

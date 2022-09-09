@@ -10,7 +10,6 @@ export const state = {
 import Vue from "vue";
 const getters = {
     getInputTerminalPosition: (state) => (stepId, inputName) => {
-        console.log("getting input for", stepId, inputName);
         return state.inputTerminals[stepId]?.[inputName];
     },
     getOutputTerminalPosition: (state) => (stepId, outputName) => {
@@ -47,6 +46,14 @@ const mutations = {
             Vue.set(state.outputTerminals[stepId], outputName, position);
         }
     },
+    deleteInputTerminalPosition: (state, { stepId, inputName }) => {
+        console.log("deleting output");
+        delete state.inputTerminals[stepId][inputName];
+    },
+    deleteOutputTerminalPosition: (state, { stepId, outputName }) => {
+        console.log("deleting output");
+        delete state.outputTerminals[stepId][outputName];
+    },
     setConnection: (state, { source, target, connection }) => {
         if (!state.connections[source]) {
             state.connections[source] = { target: connection };
@@ -61,7 +68,7 @@ const mutations = {
         state.scale = scale;
     },
     setNode: (state, node) => {
-        state.nodes[node.id] = node;
+        Vue.set(state.nodes, node.id, node);
     },
     deleteNode: (state, nodeId) => {
         delete state.nodes[nodeId];

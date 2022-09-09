@@ -25,7 +25,7 @@
                             </g>
                         </svg>
                     </SvgPanZoom>
-                    <div class="nodeArea" ref="nodes" :style="style">
+                    <div class="nodeArea" :style="style">
                         <!-- this div is only necessary so that we synchronize zoom and pan to the svg coordinates -->
                         <WorkflowNode
                             v-for="(step, key) in steps"
@@ -49,14 +49,7 @@
                 </Draggable>
             </div>
         </div>
-        <div class="workflow-overview" aria-hidden="true">
-            <div class="workflow-overview-body">
-                <div id="overview-container">
-                    <canvas id="overview-canvas" width="0" height="0" />
-                    <div id="overview-viewport" />
-                </div>
-            </div>
-        </div>
+        <Minimap :nodes="nodes" :steps="steps" :root-offset="position" :scale="zoomLevel" :pan="currentPan" />
     </div>
 </template>
 <script>
@@ -65,6 +58,7 @@ import WorkflowNode from "./Node";
 import RawConnector from "./Connector";
 import TerminalConnector from "./TerminalConnector";
 import Draggable from "./Draggable.vue";
+import Minimap from "./Minimap.vue";
 import SvgPanZoom from "vue-svg-pan-zoom";
 import { reactive, ref } from "vue";
 import { useElementBounding } from "@vueuse/core";
@@ -81,6 +75,7 @@ export default {
         SvgPanZoom,
         TerminalConnector,
         WorkflowNode,
+        Minimap,
         ZoomControl,
     },
     data() {
@@ -103,6 +98,10 @@ export default {
         datatypesMapper: {
             type: Object,
             default: null,
+        },
+        nodes: {
+            type: Object,
+            required: true,
         },
     },
     methods: {
@@ -155,6 +154,11 @@ export default {
                 return `transform: matrix(${this.transform.a}, ${this.transform.b}, ${this.transform.c}, ${this.transform.d}, ${this.transform.e}, ${this.transform.f})`;
             }
         },
+        currentPan() {
+            if (this.transform) {
+                return { x: this.transform.e, y: this.transform.f };
+            }
+        },
         zoomLevel() {
             return this.$store.getters["workflowState/getScale"]();
         },
@@ -183,6 +187,9 @@ export default {
             });
             return connections;
         },
+    },
+    beforeDestroy() {
+        this.svgpanzoom.destroy();
     },
 };
 </script>
