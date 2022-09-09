@@ -46,11 +46,11 @@
 
 ALEMBIC_CONFIG='lib/galaxy/model/migrations/alembic.ini'
 
-cd `dirname $0`
+cd "$(dirname "$0")" || exit
 
 . ./scripts/common_startup_functions.sh
 
 setup_python
 
 find lib/galaxy/model/migrations/alembic -name '*.pyc' -delete
-python ./scripts/migrate_db.py --config "$ALEMBIC_CONFIG" "$@"
+python ./scripts/run_alembic.py --config "$ALEMBIC_CONFIG" "$@"
