@@ -526,7 +526,7 @@ Restart=on-abort
 WorkingDirectory=/srv/galaxy/server
 TimeoutStartSec=10
 ExecStart=/srv/galaxy/venv/bin/galaxy --state-dir /srv/galaxy/database/gravity
-Environment=VIRTUAL_ENV=/srv/galaxy/venv PATH=/srv/galaxy/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+Environment=VIRTUAL_ENV=/srv/galaxy/venv PATH=/srv/galaxy/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 [Install]
 WantedBy=multi-user.target
 ```
