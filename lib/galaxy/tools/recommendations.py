@@ -369,13 +369,10 @@ class ToolRecommendations:
             # predict next tools for a test path
             try:
                 # use the same graph and session to predict
-                #with self.graph.as_default():
-                #with self.session.as_default():
                 print("tool_sequence: ", tool_sequence)
                 print("sample: ", sample)
                 sample = tf.convert_to_tensor(sample, dtype=tf.int64)
                 prediction, _ = self.loaded_model(sample, training=False)
-                #prediction = self.loaded_model.predict(sample)
                 print("Prediction: ", prediction)
             except Exception as e:
                 log.exception(e)
@@ -383,23 +380,13 @@ class ToolRecommendations:
             # get dimensions
             nw_dimension = prediction.shape[1]
             prediction = np.reshape(prediction, (nw_dimension,))
-            half_len = int(nw_dimension / 2)
             # get recommended tools from published workflows
             pub_t, pub_v = self.__separate_predictions(
                 self.standard_connections, prediction, last_tool_name, weight_values, topk
             )
-            # get recommended tools from normal workflows
-            '''c_t, c_v = self.__separate_predictions(
-                self.compatible_tools, prediction, last_tool_name, weight_values, topk
-            )'''
-            # combine predictions coming from different workflows
-            # promote recommended tools coming from published workflows
-            # to the top and then show other recommendations
-            #pub_t.extend(c_t)
-            #pub_v.extend(c_v)
             # remove duplicates if any
             pub_t = list(dict.fromkeys(pub_t))
-            #pub_v = list(dict.fromkeys(pub_v))
+            pub_v = list(dict.fromkeys(pub_v))
             prediction_data = self.__filter_tool_predictions(trans, prediction_data, pub_t, pub_v, last_tool_name)
             print("prediction_data: ", prediction_data)
         return prediction_data
