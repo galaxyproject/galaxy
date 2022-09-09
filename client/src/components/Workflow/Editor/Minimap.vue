@@ -73,6 +73,9 @@ export default {
             type: Object,
         },
     },
+    created() {
+        this.size = parseInt(localStorage.getItem("overview-size")) || this.size;
+    },
     computed: {
         style() {
             if (this.overviewPosition.x) {
@@ -84,6 +87,9 @@ export default {
                     newSize = this.maxSize;
                 } else if (newSize < this.minSize) {
                     newSize = this.minSize;
+                }
+                if (!this.overviewPosition.isDragging) {
+                    localStorage.setItem("overview-size", newSize);
                 }
                 this.size = newSize;
             }
