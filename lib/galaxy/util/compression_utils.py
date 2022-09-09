@@ -20,7 +20,10 @@ from typing import (
 
 from typing_extensions import Literal
 
-from galaxy.util.path import safe_relpath
+from galaxy.util.path import (
+    safe_relpath,
+    StrPath,
+)
 from .checkers import (
     is_bz2,
     is_gzip,
@@ -154,13 +157,14 @@ class CompressedFile:
     archive: Union[tarfile.TarFile, zipfile.ZipFile]
 
     @staticmethod
-    def can_decompress(file_path: str) -> bool:
+    def can_decompress(file_path: StrPath) -> bool:
         return tarfile.is_tarfile(file_path) or zipfile.is_zipfile(file_path)
 
-    def __init__(self, file_path: str, mode: str = "r") -> None:
+    def __init__(self, file_path: StrPath, mode: str = "r") -> None:
+        file_path_str = str(file_path)
         if tarfile.is_tarfile(file_path):
             self.file_type = "tar"
-        elif zipfile.is_zipfile(file_path) and not file_path.endswith(".jar"):
+        elif zipfile.is_zipfile(file_path) and not file_path_str.endswith(".jar"):
             self.file_type = "zip"
         self.file_name = os.path.splitext(os.path.basename(file_path))[0]
         if self.file_name.endswith(".tar"):
@@ -199,7 +203,7 @@ class CompressedFile:
                 common_prefix = ""
         return common_prefix
 
-    def extract(self, path: str) -> str:
+    def extract(self, path: StrPath) -> str:
         """Determine the path to which the archive should be extracted."""
         contents = self.getmembers()
         extraction_path = path
@@ -308,14 +312,14 @@ class CompressedFile:
             return True
         return False
 
-    def open_tar(self, filepath: str, mode: str) -> tarfile.TarFile:
+    def open_tar(self, filepath: StrPath, mode: str) -> tarfile.TarFile:
         return tarfile.open(filepath, mode, errorlevel=0)
 
-    def open_zip(self, filepath: str, mode: str) -> zipfile.ZipFile:
+    def open_zip(self, filepath: StrPath, mode: str) -> zipfile.ZipFile:
         mode = cast(Literal["a", "r", "w", "x"], mode)
         return zipfile.ZipFile(filepath, mode)
 
-    def zipfile_ok(self, path_to_archive: str) -> bool:
+    def zipfile_ok(self, path_to_archive: StrPath) -> bool:
         """
         This function is a bit pedantic and not functionally necessary.  It checks whether there is
         no file pointing outside of the extraction, because ZipFile.extractall() has some potential
