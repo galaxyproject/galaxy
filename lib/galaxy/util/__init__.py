@@ -32,6 +32,11 @@ from email.mime.text import MIMEText
 from hashlib import md5
 from os.path import relpath
 from pathlib import Path
+from typing import (
+    Any,
+    Optional,
+    overload,
+)
 from urllib.parse import (
     urlencode,
     urlparse,
@@ -46,6 +51,7 @@ from boltons.iterutils import (
 )
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from typing_extensions import Literal
 
 try:
     import grp
@@ -1089,7 +1095,35 @@ def roundify(amount, sfs=2):
         return amount[0:sfs] + "0" * (len(amount) - sfs)
 
 
-def unicodify(value, encoding=DEFAULT_ENCODING, error="replace", strip_null=False, log_exception=True):
+@overload
+def unicodify(  # type: ignore[misc]
+    value: Literal[None],
+    encoding: str = DEFAULT_ENCODING,
+    error: str = "replace",
+    strip_null: bool = False,
+    log_exception: bool = True,
+) -> None:
+    ...
+
+
+@overload
+def unicodify(
+    value: Any,
+    encoding: str = DEFAULT_ENCODING,
+    error: str = "replace",
+    strip_null: bool = False,
+    log_exception: bool = True,
+) -> str:
+    ...
+
+
+def unicodify(
+    value: Any,
+    encoding: str = DEFAULT_ENCODING,
+    error: str = "replace",
+    strip_null: bool = False,
+    log_exception: bool = True,
+) -> Optional[str]:
     """
     Returns a Unicode string or None.
 
