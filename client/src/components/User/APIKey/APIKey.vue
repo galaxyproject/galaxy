@@ -27,8 +27,8 @@
         </b-button>
 
         <b-container v-else-if="items.length" class="mt-2">
-            <b-row cols="1">
-                <b-col v-for="(item, index) in items" :key="index" class="mb-2">
+            <b-row class="justify-content-between">
+                <b-col v-for="(item, index) in items" :key="index" cols="12" md="auto" class="mb-2">
                     <APIKeyItem :item="item" @listAPIKeys="listAPIKeys" />
                 </b-col>
             </b-row>

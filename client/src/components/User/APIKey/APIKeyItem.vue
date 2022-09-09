@@ -1,37 +1,46 @@
 <template>
-    <b-card class="text-center">
-        <b-input-group
-            class="mb-2"
-            @blur="hover = false"
-            @focus="hover = true"
-            @mouseover="hover = true"
-            @mouseleave="hover = false">
-            <b-input-group-prepend>
-                <b-input-group-text>
-                    <icon icon="key" />
-                </b-input-group-text>
-            </b-input-group-prepend>
+    <b-card title="Galaxy API key">
+        <div class="d-flex justify-content-between">
+            <div>
+                <b-input-group
+                    @blur="hover = false"
+                    @focus="hover = true"
+                    @mouseover="hover = true"
+                    @mouseleave="hover = false">
+                    <b-input-group-prepend>
+                        <b-input-group-text>
+                            <icon icon="key" />
+                        </b-input-group-text>
+                    </b-input-group-prepend>
 
-            <b-input :type="hover ? 'text' : 'password'" :value="item.key" disabled data-test-id="api-key-input" />
+                    <b-input
+                        :type="hover ? 'text' : 'password'"
+                        :value="item.key"
+                        disabled
+                        data-test-id="api-key-input" />
 
-            <b-input-group-append>
-                <b-input-group-text>
-                    <copy-to-clipboard message="Key was copied to clipboard" :text="item.key" title="Copy key" />
-                </b-input-group-text>
-            </b-input-group-append>
-        </b-input-group>
+                    <b-input-group-append>
+                        <b-input-group-text>
+                            <copy-to-clipboard
+                                message="Key was copied to clipboard"
+                                :text="item.key"
+                                title="Copy key" />
+                        </b-input-group-text>
+                    </b-input-group-append>
+                </b-input-group>
+                <span class="small text-black-50">
+                    created on
+                    <UtcDate class="text-black-50 small" :date="item.create_time" mode="pretty" />
+                </span>
+            </div>
 
-        <b-row class="flex-column align-items-center">
-            <span class="small text-black-50 mb-1">
-                created on
-                <UtcDate class="text-black-50 small mb-2" :date="item.create_time" mode="pretty" />
-            </span>
-
-            <b-button size="small" variant="outline-danger" @click="toggleDeleteModal">
-                <icon icon="trash" />
-                <span v-localize>Delete</span>
-            </b-button>
-        </b-row>
+            <div class="h-100 ml-2">
+                <b-button class="h-100" size="small" variant="outline-danger" @click="toggleDeleteModal">
+                    <icon icon="trash" />
+                    <span v-localize>Delete</span>
+                </b-button>
+            </div>
+        </div>
 
         <b-modal ref="modal" title="Delete API key" size="md" @ok="deleteKey">
             <p v-localize>Are you sure you want to delete this key?</p>
