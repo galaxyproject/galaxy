@@ -1,7 +1,7 @@
 <template>
     <div ref="overview" class="workflow-overview" :style="style" aria-hidden="true">
         <div class="workflow-overview-body">
-            <svg width="100%" height="100%" :viewBox="viewBox">
+            <svg width="100%" height="100%" :viewBox="viewBox" @click="onClick">
                 <MinimapNode
                     class="mini-node"
                     :node="node"
@@ -128,6 +128,11 @@ export default {
         },
         viewBox() {
             return `${this.bounds.left} ${this.bounds.top} ${this.bounds.right} ${this.bounds.bottom}`;
+        },
+    },
+    methods: {
+        onClick(e) {
+            console.log("got click", e);
         },
     },
 };
