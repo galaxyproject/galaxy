@@ -77,11 +77,6 @@ export default {
             windowToggle: false,
         };
     },
-    watch: {
-        $route() {
-            this.updateTab();
-        },
-    },
     computed: {
         brandTitle() {
             let brandTitle = this.displayGalaxyBrand ? "Galaxy " : "";
@@ -92,6 +87,11 @@ export default {
         },
         allTabs() {
             return [].concat(this.tabs, this.extensionTabs);
+        },
+    },
+    watch: {
+        $route() {
+            this.updateTab();
         },
     },
     created() {
