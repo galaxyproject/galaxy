@@ -102,6 +102,15 @@ $ui-margin-horizontal-large: $margin-v * 2;
     cursor: pointer;
 }
 
+.ui-btn-back-to-top {
+    bottom: 2em;
+    position: fixed;
+    opacity: 0.5;
+}
+.ui-btn-back-to-top:hover {
+    opacity: 1;
+}
+
 // thumbnails
 .ui-thumbnails {
     .ui-thumbnails-item {

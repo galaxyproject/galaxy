@@ -37,6 +37,7 @@ import NewUserConfirmation from "components/login/NewUserConfirmation";
 import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
 import Sharing from "components/Sharing/Sharing";
 import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
+import ToolAdvancedSearch from "components/Panels/Common/ToolAdvancedSearch";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
 import ToolsView from "components/ToolsView/ToolsView";
 import TourList from "components/Tour/TourList";
@@ -275,6 +276,15 @@ export function getRouter(Galaxy) {
                         path: "tours/:tourId",
                         component: TourRunner,
                         props: true,
+                    },
+                    {
+                        path: "tools/advanced_search",
+                        component: ToolAdvancedSearch,
+                        props: (route) => {
+                            return {
+                                ...route.query,
+                            };
+                        },
                     },
                     {
                         path: "tools/view",
