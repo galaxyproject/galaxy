@@ -1,0 +1,115 @@
+galaxy:
+    # galaxy root URL
+    root: /rest/galaxy
+
+
+    # this should be a random string of 5-56 characters that is used to generate encoded
+    # ids between the galaxy instance and the client.  Because AMP stores various IDs as
+    # part of its operation, changing this value after the initial setup will make all of
+    # the data inaccessable.
+    id_secret: CHANGE ME
+
+    # generic uwsgi settings -- these are copied as-is into the UWSGI
+    # section of the configuration file.  Generally there's no need to mess
+    # with these.  Note:  that section of the yaml file isn't really yaml, so
+    # arrays will be written as multiple key/value pairs.
+    uwsgi:
+        buffer-size: 16834
+        processes: 1
+        thunder-lock: false
+        enable-threads: true
+        threads: 4
+        offload-threads: 2
+        die-on-term: true
+        hook-master-start: 
+          - unix_signal:2 gracefully_kill_them_all
+          - unix_signal:15 gracefully_kill_them_all
+        master: false
+        pythonpath: lib
+        virtualenv: .venv
+        py-call-osafterfork: false
+        umask: '002'
+        static-map:
+          - /static=static
+          - /favicon.ico=static/favicon.ico
+        static-safe: client/src/assets
+
+    # Generic galaxy settings -- copied as-is to the galaxy section
+    # of the configuration.  You shouldn't need to mess with this.
+    galaxy:
+        watch_tools: polling
+        allow_path_paste: true
+        require_login: true
+        allow_user_creation: false
+        tool_config_file: tool_conf.xml
+        x_frame_options:
+        logging:
+            version: 1
+            disable_existing_loggers: False            
+            filters: 
+                stack: 
+                    (): galaxy.web_stack.application_stack_log_filter
+            formatters: 
+                stack: 
+                    (): galaxy.web_stack.application_stack_log_formatter  
+            handlers: 
+                console: 
+                    class: logging.StreamHandler
+                    level: DEBUG
+                    stream: ext://sys.stderr
+                    filters: [stack]
+                    formatter: stack      
+                rootlog:
+                    class: logging.handlers.TimedRotatingFileHandler
+                    when: midnight
+                    level: INFO
+                    filename: logs/root.log
+                    filters: [stack]
+                    formatter: stack
+                galaxylog:
+                    class: logging.handlers.TimedRotatingFileHandler
+                    when: midnight
+                    level: DEBUG
+                    filename: logs/galaxy.log
+                    filters: [stack]
+                    formatter: stack
+                perflog:
+                    class: logging.FileHandler
+                    level: DEBUG
+                    filename: logs/performance.log
+
+            root: 
+                handlers: [rootlog]
+                level: INFO
+            
+            loggers: 
+                paste.httpserver.ThreadPool: 
+                    level: WARN
+                    qualname: paste.httpserver.ThreadPool                
+                sqlalchemy:
+                    level: WARN
+                    qualname: sqlalchemy
+                sqlalchemy_json.track:
+                    level: WARN  
+                    qualname: sqlalchemy_json.track
+                urllib3.connectionpool: 
+                    level: WARN
+                    qualname: urllib3.connectionpool                
+                routes.middleware: 
+                    level: WARN
+                    qualname: routes.middleware
+                amqp:
+                    level: INFO
+                    qualname: amqp
+                botocore: 
+                    level: INFO
+                    qualname: botocore
+                galaxy:
+                    handlers: [galaxylog]
+                    level: DEBUG
+                    propagate: false
+                    qualname: galaxy
+                performance:  
+                    handlers: [perflog]
+                    level: DEBUG
+                    propagate: false

@@ -1,0 +1,58 @@
+galaxy:    
+    # what interface galaxy should bind to.  This should be fairly 
+    # restricted.  If the parameter is missing then it will bind to all interfaces.
+    host: localhost
+
+    # Authentication bits
+    admin_username: myuser@example.edu
+    admin_password: my admin password
+
+    # this section is for populating the menu in the galaxy
+    # workflow editor.
+    toolbox:
+        Get Data:
+            - data_source/upload.xml
+            - amp_mgms/supplement.xml
+        Send Data:
+            - cloud/send.xml
+        Audio Extraction:
+            - amp_mgms/extract_audio.xml
+            - amp_mgms/remove_trailing_silence.xml
+        Audio Segmentation:
+            - amp_mgms/ina_speech_segmenter.xml
+            - amp_mgms/keep_speech.xml
+            - amp_mgms/remove_silence_speech.xml
+            - amp_mgms/adjust_transcript_timestamps.xml
+            - amp_mgms/adjust_diarization_timestamps.xml
+        Applause Detection:
+            - amp_mgms/applause_detection.xml
+            - amp_mgms/applause_detection_to_avalon_xml.xml
+        Speech to Text:
+            - amp_mgms/aws_transcribe.xml
+            - amp_mgms/gentle_forced_alignment.xml
+            - amp_mgms/kaldi.xml
+            - amp_mgms/transcript_to_webvtt.xml
+            - amp_mgms/vocabulary_tagging.xml
+        Named Entity Recognition:
+            - amp_mgms/spacy.xml
+            - amp_mgms/aws_comprehend.xml
+            - amp_mgms/ner_to_csv.xml
+        Video Indexing:
+            - amp_mgms/azure_video_indexer.xml
+            - amp_mgms/contact_sheet_frame.xml
+            - amp_mgms/contact_sheet_face.xml
+            - amp_mgms/contact_sheet_shot.xml
+            - amp_mgms/contact_sheet_vocr.xml
+        Shot Detection:
+            - amp_mgms/pyscenedetect.xml
+            - amp_mgms/azure_shot_detection.xml
+        Facial Recognition:
+            - amp_mgms/dlib_face_recognition.xml  
+        Video Optical Charater Recognition:
+            - amp_mgms/tesseract.xml
+            - amp_mgms/azure_video_ocr.xml
+            - amp_mgms/vocr_to_csv.xml
+        Human MGM Editor:
+            - amp_mgms/hmgm_transcript.xml
+            - amp_mgms/hmgm_ner.xml
+
