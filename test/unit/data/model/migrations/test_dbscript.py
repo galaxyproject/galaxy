@@ -257,6 +257,33 @@ class TestVersionCommand:
         assert "Revises: 1" in completed.stdout
 
 
+class TestDbVersionCommand:
+    def test_dbversion_cmd(self, config):
+        alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
+        alembic.command.revision(config, rev_id="2", head="1")
+
+        completed = run_command("./db.sh dbversion")
+        assert completed.returncode == 0
+        assert "(head)" not in completed.stdout  # there has been no upgrade
+
+        alembic.command.upgrade(config, "heads")
+
+        completed = run_command("./db.sh dbversion")
+        assert completed.returncode == 0
+        assert "2 (head)" in completed.stdout
+
+    def test_dbversion_cmd_verbose(self, config):
+        alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
+        alembic.command.revision(config, rev_id="2", head="1")
+
+        alembic.command.upgrade(config, "heads")
+
+        completed = run_command("./db.sh dbversion --verbose")
+        assert completed.returncode == 0
+        assert "Revision ID: 2" in completed.stdout
+        assert "Revises: 1" in completed.stdout
+
+
 class TestUpgradeCommand:
     def test_upgrade_cmd(self, config):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
@@ -396,19 +423,3 @@ class TestDowngradeCommand:
 
         heads = get_db_heads(config)
         assert "a" in heads
-
-
-class TestDbVersionCommand:
-    def test_dbversion_cmd(self, config):
-        alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
-        alembic.command.revision(config, rev_id="2", head="1")
-
-        completed = run_command("./db.sh dbversion")
-        assert completed.returncode == 0
-        assert "(head)" not in completed.stdout  # there has been no upgrade
-
-        alembic.command.upgrade(config, "heads")
-
-        completed = run_command("./db.sh dbversion")
-        assert completed.returncode == 0
-        assert "2 (head)" in completed.stdout
