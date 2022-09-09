@@ -12,7 +12,9 @@ from argparse import (
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
+from galaxy.model.migrations import verify_databases_via_script
 from galaxy.model.migrations.dbscript import DbScript
+from galaxy.model.migrations.scripts import get_configuration
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -44,6 +46,11 @@ def exec_history(args: Namespace) -> None:
 
 def exec_show(args: Namespace) -> None:
     _exec_command("show", args)
+
+
+def exec_init(args: Namespace) -> None:
+    gxy_config, tsi_config, is_auto_migrate = get_configuration(sys.argv, os.getcwd())
+    verify_databases_via_script(gxy_config, tsi_config, is_auto_migrate)
 
 
 def _exec_command(command, args):
@@ -136,6 +143,13 @@ def main() -> None:
     )
     revision_cmd_parser.add_argument("-m", "--message", help="Message string to use with 'revision'", required=True)
     revision_cmd_parser.add_argument("--rev-id", help="Specify a revision id instead of generating one")
+
+    add_parser(
+        "init",
+        exec_init,
+        "Initialize empty database(s) for both branches (create database objects for gxy and tsi branch)",
+        parents=[config_arg_parser],
+    )
 
     args = parser.parse_args()
     args.func(args)
