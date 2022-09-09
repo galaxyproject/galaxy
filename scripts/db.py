@@ -10,6 +10,8 @@ from argparse import (
     Namespace,
 )
 
+import alembic
+
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 from galaxy.model.migrations import verify_databases_via_script
@@ -55,7 +57,15 @@ def exec_init(args: Namespace) -> None:
 
 def _exec_command(command, args):
     dbscript = DbScript(args.config)
-    getattr(dbscript, command)(args)
+    try:
+        getattr(dbscript, command)(args)
+    except alembic.util.exc.CommandError as e:
+        if args.raiseerr:
+            raise
+        else:
+            log.error(e)
+            print(f"FAILED: {str(e)}")
+            sys.exit(1)
 
 
 def main() -> None:
@@ -65,9 +75,6 @@ def main() -> None:
         parser = subparsers.add_parser(command, aliases=aliases, help=help, parents=parents)
         parser.set_defaults(func=func)
         return parser
-
-    config_arg_parser = ArgumentParser(add_help=False)
-    config_arg_parser.add_argument("-c", "--galaxy-config", help="Alternate Galaxy configuration file", dest="config")
 
     verbose_arg_parser = ArgumentParser(add_help=False)
     verbose_arg_parser.add_argument("-v", "--verbose", action="store_true", help="Display more detailed output")
@@ -83,8 +90,9 @@ def main() -> None:
         description="Common database schema migration operations",
         epilog="Note: these operations are applied to the Galaxy model only (stored in the `gxy` branch)."
         " For migrating the `tsi` branch, use the `run_alembic.sh` script.",
-        parents=[config_arg_parser],
     )
+    parser.add_argument("-c", "--galaxy-config", help="Alternate Galaxy configuration file", dest="config")
+    parser.add_argument("--raiseerr", help="Raise a full stack trace on error", action="store_true")
 
     subparsers = parser.add_subparsers(required=True)
 

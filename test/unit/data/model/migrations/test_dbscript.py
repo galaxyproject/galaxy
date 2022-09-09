@@ -196,6 +196,13 @@ class TestShowCommand:
         alembic.command.revision(config, rev_id="42", head=GXY_BASE_ID)
         completed = run_command("./db.sh show idonotexist")
         assert completed.returncode == 1
+        assert "Traceback" not in completed.stderr
+        assert "Can't locate revision identified by 'idonotexist'" in completed.stderr
+
+    def test_show_cmd_invalid_revision_error_with_traceback(self):
+        completed = run_command("./db.sh --raiseerr show idonotexist")
+        assert completed.returncode == 1
+        assert "Traceback" in completed.stderr
         assert "Can't locate revision identified by 'idonotexist'" in completed.stderr
 
     def test_show_cmd_missing_revision_arg_error(self):
