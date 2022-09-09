@@ -1,4 +1,3 @@
-import argparse
 import os
 import re
 import sys
@@ -9,7 +8,6 @@ from typing import (
 )
 
 import alembic.config
-from alembic import command
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
