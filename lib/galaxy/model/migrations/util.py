@@ -32,5 +32,5 @@ def _handle_offline_mode(code, return_value):
         "This script is being executed in offline mode and cannot connect to the database. "
         f"Therefore, `{code}` returns `{return_value}` by default."
     )
-    log.debug(msg)
+    log.info(msg)
     return return_value
