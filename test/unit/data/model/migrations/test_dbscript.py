@@ -175,6 +175,7 @@ class TestRevisionCommand:
         assert len(revisions) == 5  # verify total revisions: 2 base + 3 new
 
         rev = script_dir.get_revision("3")
+        assert rev
         assert GXY_BRANCH_LABEL in rev.branch_labels  # verify branch label
         assert rev.down_revision == "2"  # verify parent revision
         assert rev.module.__name__ == "3_foo3_py"  # verify message
