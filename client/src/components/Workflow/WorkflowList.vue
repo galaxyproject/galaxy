@@ -96,9 +96,9 @@ returned. So <code>name:'RNAseq'</code> would show only workflows named exactly 
     <dt><code>tag</code></dt>
     <dd>This filters only against the workflow tag. You may also just click on a tag in your list of workflows to filter on that tag using this directly.</dd>
     <dt><code>is:published</code></dt>
-    <dd>This filters the workflows such that only published workflows are shown. You may also just click on the "published" icon of a worklfow in your list to filter on this directly.</dd>
+    <dd>This filters the workflows such that only published workflows are shown. You may also just click on the "published" icon of a workflow in your list to filter on this directly.</dd>
     <dt><code>is:shared</code></dt>
-    <dd>This filters the workflows such that only workflows shared from another user directly with you are are shown. You may also just click on the "shared with me" icon of a worklfow in your list to filter on this directly.</dd>
+    <dd>This filters the workflows such that only workflows shared from another user directly with you are are shown. You may also just click on the "shared with me" icon of a workflow in your list to filter on this directly.</dd>
 </dl>
 </div>
 `;
