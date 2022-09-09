@@ -67,8 +67,7 @@ def main() -> None:
         return parser
 
     config_arg_parser = ArgumentParser(add_help=False)
-    # TODO: after refactoring legacy scripts, this can be changed to "-c, --config"
-    config_arg_parser.add_argument("--galaxy-config", help="Alternate Galaxy configuration file", dest="config")
+    config_arg_parser.add_argument("-c", "--galaxy-config", help="Alternate Galaxy configuration file", dest="config")
 
     verbose_arg_parser = ArgumentParser(add_help=False)
     verbose_arg_parser.add_argument("-v", "--verbose", action="store_true", help="Display more detailed output")
@@ -84,6 +83,7 @@ def main() -> None:
         description="Common database schema migration operations",
         epilog="Note: these operations are applied to the Galaxy model only (stored in the `gxy` branch)."
         " For migrating the `tsi` branch, use the `run_alembic.sh` script.",
+        parents=[config_arg_parser],
     )
 
     subparsers = parser.add_subparsers(required=True)
@@ -93,7 +93,7 @@ def main() -> None:
         exec_upgrade,
         "Upgrade to a later version",
         aliases=["u"],
-        parents=[config_arg_parser, sql_arg_parser],
+        parents=[sql_arg_parser],
     )
     upgrade_cmd_parser.add_argument("revision", help="Revision identifier", nargs="?")
 
@@ -102,7 +102,7 @@ def main() -> None:
         exec_downgrade,
         "Revert to a previous version",
         aliases=["d"],
-        parents=[config_arg_parser, sql_arg_parser],
+        parents=[sql_arg_parser],
     )
     downgrade_cmd_parser.add_argument("revision", help="Revision identifier")
 
@@ -111,7 +111,7 @@ def main() -> None:
         exec_version,
         "Show the head revision in the migrations script directory",
         aliases=["v"],
-        parents=[config_arg_parser, verbose_arg_parser],
+        parents=[verbose_arg_parser],
     )
 
     add_parser(
@@ -119,14 +119,14 @@ def main() -> None:
         exec_dbversion,
         "Show the current revision for Galaxy's database",
         aliases=["dbv"],
-        parents=[config_arg_parser, verbose_arg_parser],
+        parents=[verbose_arg_parser],
     )
 
     history_cmd_parser = add_parser(
         "history",
         exec_history,
         "List revision scripts in chronological order",
-        parents=[config_arg_parser, verbose_arg_parser],
+        parents=[verbose_arg_parser],
     )
     history_cmd_parser.add_argument("-i", "--indicate-current", help="Indicate current revision", action="store_true")
 
@@ -134,13 +134,10 @@ def main() -> None:
         "show",
         exec_show,
         "Show the revision(s) denoted by the given symbol",
-        parents=[config_arg_parser],
     )
     show_cmd_parser.add_argument("revision", help="Revision identifier")
 
-    revision_cmd_parser = add_parser(
-        "revision", aliases=["r"], help="Create a new revision file", parents=[config_arg_parser], func=exec_revision
-    )
+    revision_cmd_parser = add_parser("revision", aliases=["r"], help="Create a new revision file", func=exec_revision)
     revision_cmd_parser.add_argument("-m", "--message", help="Message string to use with 'revision'", required=True)
     revision_cmd_parser.add_argument("--rev-id", help="Specify a revision id instead of generating one")
 
@@ -148,7 +145,6 @@ def main() -> None:
         "init",
         exec_init,
         "Initialize empty database(s) for both branches (create database objects for gxy and tsi branch)",
-        parents=[config_arg_parser],
     )
 
     args = parser.parse_args()
