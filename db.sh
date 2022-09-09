@@ -1,7 +1,12 @@
 #!/bin/sh
 
-# draft of script to replace manage_db.sh
-cd `dirname $0`
+#######
+# Use this script to manage Galaxy database schema migrations.
+# For help, run `sh db.sh -h`. 
+# For detailed help, see documentation at lib/galaxy/model/migrations/README.md.
+#######
+
+cd "$(dirname "$0")" || exit
 
 . ./scripts/common_startup_functions.sh
 
