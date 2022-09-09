@@ -92,7 +92,6 @@ def main() -> None:
         "upgrade",
         exec_upgrade,
         "Upgrade to a later version",
-        aliases=["u"],
         parents=[sql_arg_parser],
     )
     upgrade_cmd_parser.add_argument("revision", help="Revision identifier", nargs="?")
@@ -101,7 +100,6 @@ def main() -> None:
         "downgrade",
         exec_downgrade,
         "Revert to a previous version",
-        aliases=["d"],
         parents=[sql_arg_parser],
     )
     downgrade_cmd_parser.add_argument("revision", help="Revision identifier")
@@ -118,7 +116,7 @@ def main() -> None:
         "dbversion",
         exec_dbversion,
         "Show the current revision for Galaxy's database",
-        aliases=["dbv"],
+        aliases=["dv"],
         parents=[verbose_arg_parser],
     )
 
@@ -126,6 +124,7 @@ def main() -> None:
         "history",
         exec_history,
         "List revision scripts in chronological order",
+        aliases=["h"],
         parents=[verbose_arg_parser],
     )
     history_cmd_parser.add_argument("-i", "--indicate-current", help="Indicate current revision", action="store_true")
@@ -134,12 +133,15 @@ def main() -> None:
         "show",
         exec_show,
         "Show the revision(s) denoted by the given symbol",
+        aliases=["s"],
     )
     show_cmd_parser.add_argument("revision", help="Revision identifier")
 
-    revision_cmd_parser = add_parser("revision", aliases=["r"], help="Create a new revision file", func=exec_revision)
+    revision_cmd_parser = add_parser("revision", help="Create a new revision file", func=exec_revision)
     revision_cmd_parser.add_argument("-m", "--message", help="Message string to use with 'revision'", required=True)
-    revision_cmd_parser.add_argument("--rev-id", help="Specify a revision id instead of generating one")
+    revision_cmd_parser.add_argument(
+        "--rev-id", help="Specify a revision id instead of generating one (This option is for testing purposes only)"
+    )
 
     add_parser(
         "init",
