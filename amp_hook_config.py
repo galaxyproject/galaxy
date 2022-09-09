@@ -38,7 +38,7 @@ def main():
         f.write("uwsgi:\n")
         # the host/port for galaxy
         port = config['amp']['port'] + 2
-        config['amp']['galaxy_port'] = port  # we'll need this value later.
+        galaxy_port = port  # we'll need this value later.
         host = config['galaxy'].get('host', '')
         f.write(f"  http: {host}:{port}\n")
         
@@ -111,7 +111,7 @@ def main():
         # write this value to data/config/galaxy_user.yaml
         with open(amp_root / "data/package_config/galaxy_user.yaml", "w") as f:
             yaml.safe_dump({'galaxy': {'user_id': config['galaxy']['user_id']},
-                            'amp': {'galaxy_port': config['amp']['galaxy_port']}}, f)
+                            'amp': {'galaxy_port': galaxy_port}}, f)
 
     except Exception as e:
         logging.error(f"Galaxy database config failed: {e}")
