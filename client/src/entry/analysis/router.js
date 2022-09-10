@@ -30,6 +30,7 @@ import GridShared from "components/Grid/GridShared";
 import GridHistory from "components/Grid/GridHistory";
 import HistoryImport from "components/HistoryImport";
 import HistoryView from "components/HistoryView";
+import HistoryMultipleView from "components/History/Multiple/MultipleView";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
@@ -189,6 +190,11 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             id: route.query.id,
                         }),
+                    },
+                    {
+                        path: "histories/view_multiple",
+                        component: HistoryMultipleView,
+                        props: true,
                     },
                     {
                         path: "histories/show_structure",

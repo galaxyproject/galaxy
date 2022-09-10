@@ -160,10 +160,10 @@ export default {
                         return state;
                     }
                 }
-                return "ok";
-            } else {
+            } else if (this.item.state) {
                 return this.item.state;
             }
+            return "ok";
         },
         tags() {
             return this.item.tags;

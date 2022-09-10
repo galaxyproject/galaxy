@@ -303,7 +303,6 @@ history_panel:
     pagination_next: '.list-pagination button.next'
     pagination_previous: '.list-pagination button.prev'
 
-
   text:
     tooltip_name: 'Rename history...'
     new_name: 'Unnamed history'
@@ -338,10 +337,7 @@ edit_collection_attributes:
       selector: '//span[contains(text(), "${dbkey}")]'
     save_btn: '.save-collection-edit'
 
-
-
 tool_panel:
-
   selectors:
     tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
     outer_tool_link: '.toolTitle a[href$$="tool_runner?tool_id=${tool_id}"]'
@@ -352,24 +348,16 @@ tool_panel:
     views_menu_item: '[data-panel-id="${panel_id}"]'
     panel_labels: '.tool-panel-label'
 
-multi_history_view:
-
+multi_history_panel:
   selectors:
-    _: '.multi-panel-history'
-    item: '.multi-panel-history #${history_content_type}-${id}'
-
-    histories: '.middle .history-column'
-    current_label: '.current-label'
-    create_new_button: '.create-new'
-    drag_drop_help: '.history-drop-target-help'
+    _: '.multi-history-panel .content-item${suffix}'
+    item: '.multi-history-panel #${history_content_type}-${id}'
+    histories: '.multi-history-panel .history-layout'
+    current_label: '.details .name'
     switch_history: '.switch-to'
-    history_dropdown_btn: '[history-dropdown-btn="${history_id}"]'
-    copy: '.copy-history'
-    delete: '.copy-history'
-    current_history_check: '#history-column-${history_id} .current-label'
+    current_history_check: '#history-column-${history_id} .details .name'
     empty_message_check: '.empty-message'
     switch_button: '#history-column-${history_id} .switch-to'
-
   history_dropdown_menu:
     selectors:
       _: '[history-dropdown-menu="${history_id}"]'
@@ -382,9 +370,7 @@ multi_history_view:
         type: xpath
         selector: '//button[contains(text(), "Copy")]'
 
-
 history_copy_elements:
-
   selectors:
     # Following two don't really work as CSS would only work as jQuery/sizzle I think
     # since the page is dynamically generated.
@@ -396,9 +382,7 @@ history_copy_elements:
     done_link: '.donemessage a'
 
 collection_builders:
-
   selectors:
-
     clear_filters: "a.clear-filters-link"
     forward_datasets: ".forward-column .column-datasets"
     reverse_datasets: ".reverse-column .column-datasets"
@@ -406,7 +390,6 @@ collection_builders:
 histories:
   labels:
     import_button: 'Import history'
-
   sharing:
     selectors:
       unshare_user_button: '.share_with_view .multiselect__tag-icon'
@@ -497,7 +480,6 @@ tool_form:
     generate_tour: 'Generate Tour'
 
 workflows:
-
   selectors:
     new_button: '#workflow-create'
     import_button: '#workflow-import'
@@ -519,7 +501,6 @@ workflows:
     workflow_with_name:
       type: xpath
       selector: '//span[@class="workflow-dropdown-name" and text() = "${workflow_name}"]'
-
   create:
     selectors:
       name: '#workflow_name'
@@ -552,7 +533,6 @@ trs_import:
       selector: "//a[contains(@class, 'dropdown-item') and text() = '${server}']"
 
 workflow_run:
-
   selectors:
     warning: ".ui-form-composite .alert-warning"
     input_div: "[step-label='${label}']"
@@ -571,42 +551,33 @@ workflow_run:
       selector: '//div[@data-label="${label}"]//span[@class="select2-chosen"]'
 
 workflow_editor:
-
   node:
     selectors:
       _: "[node-label='${label}']"
-
       title: '${_} .node-title'
       destroy: '${_} .node-destroy'
       clone: '${_} .node-clone'
-
-
       output_data_row:
         type: xpath
         selector: '//div[contains(@class, "output-data-row") and contains(string(), "${output_name} (${extension})")]'
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
-
       input_mapping_icon: "${_} [input-name='${name}'].multiple"
-
   selectors:
     canvas_body: '#workflow-canvas'
     edit_annotation: '#workflow-annotation'
     edit_name: '#workflow-name'
-
     tool_menu: '.toolMenuContainer'
     tool_menu_section_link: '.tool-menu-section-${section_name} a span'
     tool_menu_item_link: 'a.tool-menu-item-${item_name}'
     workflow_link:
       type: xpath
       selector: '//a[contains(., "${workflow_title}")]'
-
     connect_icon: 'div.ui-form-element[id="form-element-${name}"] .ui-form-connected-icon'
     collapse_icon: 'div.ui-form-element[id="form-element-${name}"] .ui-form-collapsible-icon'
     node_title:
       type: xpath
       selector: '//span[@class="node-title" and text()="${title}"]'
-
     label_input:
       type: xpath
       selector: >
@@ -648,9 +619,7 @@ workflow_editor:
       selector: >
         //div[@data-label='Remove Tags' and not(ancestor::div[contains(@style,'display: none')])]//input
     tool_version_button: ".tool-versions"
-
     connector_for: "div[output-handle-id='${source_id}'][input-handle-id='${sink_id}']"
-
     connector_destroy_callout: '.delete-terminal'
     save_button: '.editor-button-save'
     state_modal_body: '.state-upgrade-modal'
@@ -672,12 +641,10 @@ invocations:
     pager_page_first: '.gx-invocations-grid-pager .gx-grid-pager-first button'
     pager_page_previous: '.gx-invocations-grid-pager .gx-grid-pager-prev button'
     pager_page_active: '.gx-invocations-grid-pager .gx-grid-pager-page.active button'
-
     state_details: '.workflow-invocation-state-component'
     toggle_invocation_details: '.toggle-invocation-details'
     progress_steps_note: '.workflow-invocation-state-component .steps-progress .progressNote'
     progress_jobs_note: '.workflow-invocation-state-component .jobs-progress .progressNote'
-
     invocation_tab:
       type: xpath
       selector: '//a[text()="${label}"]'
@@ -686,7 +653,6 @@ invocations:
       selector: '//a[text()="${label}"]'
     input_details_title: '[data-label="${label}"]'
     input_details_name: '[data-label="${label}"] .name'
-
     step_title: '[data-step="${order_index}"] .step-title'
     step_details: '[data-step="${order_index}"] .portlet-operations'
     step_output_collection: '[data-step="${order_index}"] .invocation-step-output-collection-details'
@@ -711,7 +677,6 @@ tour:
       end: '${_} .tour-end'
 
 admin:
-
   allowlist:
     selectors:
       toolshed:
@@ -811,7 +776,6 @@ libraries:
     add_items_permission: '.add_library_item_role_list'
     add_items_permission_input_field: '.add_library_item_role_list input'
     add_items_permission_field_text: '.add_library_item_role_list .multiselect__tag span'
-
     add_items_permission_option: '.add_library_item_role_list ul'
 
   folder:
@@ -819,9 +783,7 @@ libraries:
       add_items_button: '.add-library-items-datasets'
       add_items_menu: '.add-library-items-datasets .dropdown-menu'
       add_items_options: '.add-library-items-datasets .dropdown-menu div a'
-
       add_folder: '.add-library-items-folder'
-
       add_to_history: '.add-to-history'
       add_to_history_datasets: '.add-to-history-datasets'
       add_to_history_collection: '.add-to-history-collection'

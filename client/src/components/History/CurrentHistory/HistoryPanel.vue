@@ -27,9 +27,10 @@
                 :filter-text="filterText"
                 :total-items-in-query="totalItemsInQuery"
                 @query-selection-break="querySelectionBreak = true">
-                <section class="history-layout d-flex flex-column">
+                <section class="history-layout d-flex flex-column w-100">
                     <slot name="navigation" :history="history" />
                     <HistoryFilters
+                        v-if="showControls"
                         class="content-operations-filters mx-3"
                         :filter-text.sync="filterText"
                         :show-advanced.sync="showAdvanced" />
@@ -37,12 +38,14 @@
                         <HistoryDetails :history="history" @update:history="$emit('updateHistory', $event)" />
                         <HistoryMessages :history="history" />
                         <HistoryCounter
+                            v-if="showControls"
                             :history="history"
                             :is-watching="isWatching"
                             :last-checked="lastChecked"
                             :filter-text.sync="filterText"
                             @reloadContents="reloadContents" />
                         <HistoryOperations
+                            v-if="showControls"
                             :history="history"
                             :show-selection="showSelection"
                             :expanded-count="expandedCount"
@@ -78,7 +81,7 @@
                     </section>
                     <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
                         <div>
-                            <div v-if="itemsLoaded && itemsLoaded.length == 0 && loading">
+                            <div v-if="loading && itemsLoaded && itemsLoaded.length === 0">
                                 <b-alert class="m-2" variant="info" show>
                                     <LoadingSpan message="Loading History" />
                                 </b-alert>
@@ -86,7 +89,7 @@
                             <b-alert v-else-if="isProcessing" class="m-2" variant="info" show>
                                 <LoadingSpan message="Processing operation" />
                             </b-alert>
-                            <div v-else-if="totalItemsInQuery == 0">
+                            <div v-else-if="itemsLoaded.length === 0">
                                 <HistoryEmpty v-if="queryDefault" class="m-2" />
                                 <b-alert v-else class="m-2" variant="info" show>
                                     No data found for selected filter.
@@ -173,6 +176,8 @@ export default {
     props: {
         listOffset: { type: Number, default: 0 },
         history: { type: Object, required: true },
+        filter: { type: String, default: "" },
+        showControls: { type: Boolean, default: true },
     },
     data() {
         return {
@@ -228,6 +233,9 @@ export default {
                 this.resetHighlights();
             }
         },
+        filter(newVal) {
+            this.filterText = newVal;
+        },
     },
     methods: {
         getHighlight(item) {
@@ -279,7 +287,7 @@ export default {
             }
         },
         onOperationError(error) {
-            console.debug("OPERATION ERROR", error);
+            console.debug("HistoryPanel - Operation error.", error);
             this.operationError = error;
         },
         async toggleHighlights(item) {

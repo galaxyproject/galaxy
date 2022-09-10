@@ -3,7 +3,7 @@ const path = require("path");
 // For a detailed explanation regarding each configuration property, visit:
 // https://jestjs.io/docs/en/configuration.html
 
-const modulesToTransform = ["bootstrap-vue", "rxjs", "@hirez_io", "winbox"].join("|");
+const modulesToTransform = ["bootstrap-vue", "rxjs", "@hirez_io", "winbox", "pretty-bytes"].join("|");
 
 module.exports = {
     // All imported modules in your tests should be mocked automatically

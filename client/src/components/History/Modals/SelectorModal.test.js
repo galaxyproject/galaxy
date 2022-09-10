@@ -22,6 +22,10 @@ const PROPS_WITH_10_HISTORIES = {
     perPage: 3,
     static: true, // Force the modal visible for testing
 };
+const PROPS_WITH_10_HISTORY_MULTIPLE_SELECT = {
+    ...PROPS_WITH_10_HISTORIES,
+    multiple: true,
+};
 
 describe("History SelectorModal.vue", () => {
     let wrapper;
@@ -37,7 +41,7 @@ describe("History SelectorModal.vue", () => {
     it("should highlight the currently selected history", async () => {
         await mountWith(PROPS_WITH_10_HISTORIES);
 
-        const selectedRows = wrapper.findAll(".table-success");
+        const selectedRows = wrapper.findAll(".table-info");
         expect(selectedRows.length).toBe(1);
         expect(selectedRows.at(0).attributes("data-pk")).toBe(SELECTED_HISTORY_ID);
     });
@@ -61,5 +65,27 @@ describe("History SelectorModal.vue", () => {
 
         expect(wrapper.emitted()["selectHistory"]).toBeDefined();
         expect(wrapper.emitted()["selectHistory"][0][0].id).toBe(targetHistoryId);
+    });
+
+    it("select multiple histories", async () => {
+        await mountWith(PROPS_WITH_10_HISTORY_MULTIPLE_SELECT);
+
+        expect(wrapper.emitted()["selectHistories"]).toBeUndefined();
+
+        const targetHistoryId1 = "ID-1";
+        const targetRow1 = wrapper.find(`[data-pk="${targetHistoryId1}"]`);
+        await targetRow1.trigger("click");
+
+        const targetHistoryId2 = "ID-2";
+        const targetRow2 = wrapper.find(`[data-pk="${targetHistoryId2}"]`);
+        await targetRow2.trigger("click");
+
+        expect(wrapper.vm.selectedHistories.length).toBe(2);
+
+        const button = wrapper.find(".btn-primary");
+
+        await button.trigger("click");
+
+        expect(wrapper.emitted()["selectHistories"][0][0][0].id).toBe(targetHistoryId1);
     });
 });

@@ -50,7 +50,7 @@
                         data-description="switch to multi history view"
                         :disabled="currentUser.isAnonymous"
                         :title="userTitle('Open History Multiview')"
-                        @click="redirect('/history/view_multiple')">
+                        @click="$router.push('/histories/view_multiple')">
                         <Icon fixed-width class="mr-1" icon="columns" />
                         <span v-localize>Show Histories Side-by-Side</span>
                     </b-dropdown-item>

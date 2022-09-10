@@ -424,7 +424,7 @@ class NavigatesGalaxy(HasDriver):
     def history_panel_item_component(self, history_item=None, hid=None, multi_history_panel=False):
         if self.is_beta_history():
             assert hid
-            return self.content_item_by_attributes(hid=hid)
+            return self.content_item_by_attributes(hid=hid, multi_history_panel=multi_history_panel)
         if history_item is None:
             assert hid
             history_item = self.hid_to_history_item(hid)
@@ -511,7 +511,9 @@ class NavigatesGalaxy(HasDriver):
             hid, allowed_force_refreshes=allowed_force_refreshes, multi_history_panel=multi_history_panel
         )
         if self.is_beta_history():
-            history_item_selector_state = self.content_item_by_attributes(hid=hid, state=state)
+            history_item_selector_state = self.content_item_by_attributes(
+                hid=hid, state=state, multi_history_panel=multi_history_panel
+            )
         else:
             # history_item_selector_state = history_item_selector.with_class(f"state-{state}")
             history_item_selector_state = history_item_selector.with_data("state", state)
@@ -1537,10 +1539,13 @@ class NavigatesGalaxy(HasDriver):
         return self.components._.by_attribute(name=attribute_name, value=attribute_value, scope=scope)
 
     # join list of attrs into css attribute selectors and append to base beta_item selector
-    def content_item_by_attributes(self, **attrs):
-        suffix_list = [f'[data-{k}="{v}"]' for (k, v) in attrs.items()]
+    def content_item_by_attributes(self, multi_history_panel=False, **attrs):
+        suffix_list = [f'[data-{k}="{v}"]' for (k, v) in attrs.items() if v is not None]
         suffix = "".join(suffix_list)
-        return self.components.history_panel.content_item.selector(suffix=suffix)
+        selector = self.components.history_panel.content_item.selector
+        if multi_history_panel:
+            selector = self.components.multi_history_panel.selector(suffix=suffix)
+        return selector(suffix=suffix)
 
     def history_click_create_new(self):
         if not self.is_beta_history():
@@ -1674,13 +1679,13 @@ class NavigatesGalaxy(HasDriver):
 
         selector = self.history_panel_wait_for_hid_state(collection_hid, "ok", multi_history_panel=True)
         self.click(selector)
-        next_level_element_selector = selector
         for _ in range(len(collection_type.split(":")) - 1):
-            next_level_element_selector = next_level_element_selector.descendant(".dataset-collection-element")
-            self.wait_for_and_click(next_level_element_selector)
+            selector = self.history_panel_wait_for_hid_state(1, "ok", multi_history_panel=True)
+            self.click(selector)
 
-        dataset_selector = next_level_element_selector.descendant(".dataset")
+        dataset_selector = self.history_panel_wait_for_hid_state(1, "ok", multi_history_panel=True)
         self.wait_for_and_click(dataset_selector)
+        self.history_panel_wait_for_hid_state(1, "ok", multi_history_panel=True)
 
     def history_panel_item_view_dataset_details(self, hid):
         if not self.is_beta_history():
