@@ -62,7 +62,7 @@ if TYPE_CHECKING:
 else:
     StrPath = Union[str, PathLike]
     BytesPath = Union[bytes, PathLike]
-    GenericPath = Union[AnyStr, PathLike[AnyStr]]
+    GenericPath = Union[AnyStr, PathLike]
     StrOrBytesPath = Union[str, bytes, PathLike, PathLike]
 
 AllowListT = Optional[List[GenericPath]]
