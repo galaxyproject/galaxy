@@ -83,11 +83,17 @@ def verify_database_is_initialized(db_url: str) -> None:
 
 
 def get_configuration(argv: List[str], cwd: str) -> Tuple[DatabaseConfig, DatabaseConfig, bool]:
-    # TODO i think is_auto-migrate is not used!
     """
     Return a 3-item-tuple with configuration values used for managing databases.
     """
     config_file = _pop_config_file(argv)
+    return get_configuration_from_file(cwd, config_file)
+
+
+def get_configuration_from_file(
+    cwd: str, config_file: Optional[str] = None
+) -> Tuple[DatabaseConfig, DatabaseConfig, bool]:
+
     if config_file is None:
         cwds = [cwd, os.path.join(cwd, CONFIG_DIR_NAME)]
         config_file = find_config_file(DEFAULT_CONFIG_NAMES, dirs=cwds)
