@@ -25,6 +25,11 @@ class FailedRepositoryUpdateMessage(BaseModel):
     err_msg: str
 
 
+class GetOrderedInstallableRevisionsRequest(BaseModel):
+    name: str
+    owner: str
+
+
 class OrderedInstallableRevisions(BaseModel):
     __root__: List[str]
 
@@ -35,3 +40,14 @@ class RepositoryUpdate(BaseModel):
     @property
     def is_ok(self):
         return isinstance(self.__root__, ValidRepostiroyUpdateMessage)
+
+
+class ResetMetadataOnRepositoryRequest(BaseModel):
+    repository_id: str
+
+
+class ResetMetadataOnRepositoryResponse(BaseModel):
+    status: str  # TODO: enum...
+    repository_status: List[str]
+    start_time: str
+    stop_time: str
