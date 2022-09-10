@@ -48,22 +48,6 @@
 <%def name="late_javascripts()">
     <!--- base/base_panels.mako late_javascripts() -->
 
-    <script type="text/javascript">
-
-        var panelConfig = {
-            left_panel: ${h.to_js_bool(self.has_left_panel)},
-            right_panel: ${h.to_js_bool(self.has_right_panel)},
-            rightPanelSelector: '#right',
-            leftPanelSelector: '#left'
-        };
-
-        // "late javascripts"
-        config.addInitialization(function() {
-            console.log("base/base_panels.mako, panel init");
-        });
-
-    </script>
-
     %if t.webapp.name == 'galaxy' and app.config.ga_code:
         ${galaxy_client.config_google_analytics(app.config.ga_code)}
     %endif

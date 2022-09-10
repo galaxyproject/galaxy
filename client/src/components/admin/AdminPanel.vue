@@ -15,7 +15,7 @@
                         {{ section.title }}
                         <div class="toolSectionBody">
                             <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="toolTitle">
-                                <router-link v-if="!item.disabled" class="title-link" :id="item.id" :to="item.route">
+                                <router-link v-if="!item.disabled" :id="item.id" class="title-link" :to="item.route">
                                     <small class="name">{{ item.title }}</small>
                                 </router-link>
                             </div>

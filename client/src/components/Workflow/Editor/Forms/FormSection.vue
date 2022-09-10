@@ -90,9 +90,6 @@ export default {
             return Boolean(this.formData[this.deleteActionKey]);
         },
     },
-    created() {
-        this.setFormData();
-    },
     watch: {
         formData() {
             // The formData shape is kind of unfortunate, but it is what we have now.
@@ -120,6 +117,9 @@ export default {
             });
             this.$emit("onChange", postJobActions);
         },
+    },
+    created() {
+        this.setFormData();
     },
     methods: {
         setFormData() {
