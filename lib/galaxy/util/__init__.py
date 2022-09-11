@@ -31,15 +31,12 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
 from os.path import relpath
-<<<<<<< HEAD
 from pathlib import Path
 from typing import (
     Any,
     Optional,
     overload,
 )
-=======
->>>>>>> 18a6e028d7 (More tool data table typing and testing.)
 from urllib.parse import (
     urlencode,
     urlparse,
@@ -1021,7 +1018,7 @@ def asbool(obj):
     return bool(obj)
 
 
-def string_as_bool(string: typing.Any) -> bool:
+def string_as_bool(string: Any) -> bool:
     if str(string).lower() in ("true", "yes", "on", "1"):
         return True
     else:
@@ -1047,7 +1044,7 @@ def string_as_bool_or_none(string):
         return False
 
 
-def listify(item, do_strip=False) -> typing.List[typing.Any]:
+def listify(item, do_strip=False) -> typing.List[Any]:
     """
     Make a single item a single item list.
 
