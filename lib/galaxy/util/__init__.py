@@ -31,7 +31,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
 from os.path import relpath
-from pathlib import Path
 from typing import (
     Any,
     Optional,
