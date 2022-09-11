@@ -511,7 +511,7 @@ class DatasetsApiTestCase(ApiTestCase):
         hda_details = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=hda)
         self.assert_hash_value(hda_details, "940cbe15c94d7e339dc15550f6bdcf4d", "MD5")
 
-    def test_compute_sha1_on_componsite_dataset(self):
+    def test_compute_sha1_on_composite_dataset(self):
         output = self.dataset_populator.fetch_hda(self.history_id, COMPOSITE_DATA_FETCH_REQUEST_1, wait=True)
         hda_details = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=output)
         assert "hashes" in hda_details, str(hda_details.keys())
