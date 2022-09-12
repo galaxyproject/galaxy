@@ -156,10 +156,10 @@ def lint_inputs(tool_xml, lint_ctx):
                 path.append(str(parent.attrib.get("value")))
             else:
                 path.append(str(parent.attrib.get("name")))
-        path = ".".join(reversed(path))
-        if path in input_names:
-            lint_ctx.error(f"Tool defines multiple parameters with the same name: '{path}'", node=param)
-        input_names.add(path)
+        path_str = ".".join(reversed(path))
+        if path_str in input_names:
+            lint_ctx.error(f"Tool defines multiple parameters with the same name: '{path_str}'", node=param)
+        input_names.add(path_str)
 
         if "type" not in param_attrib:
             lint_ctx.error(f"Param input [{param_name}] input with no type specified.", node=param)
