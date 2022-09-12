@@ -65,7 +65,7 @@ class DbScript:
     def show(self, args: argparse.Namespace) -> None:
         command.show(self.alembic_config, args.revision)
 
-    def _get_alembic_cfg(self):
+    def _get_alembic_cfg(self) -> Config:
         config_file = os.getenv("ALEMBIC_CONFIG")
         if not config_file:
             config_file = os.path.join(os.path.dirname(__file__), "alembic.ini")
@@ -77,7 +77,7 @@ class DbScript:
         self.gxy_url = gxy_config.url
         self.tsi_url = tsi_config.url
 
-    def _parse_revision(self, rev):
+    def _parse_revision(self, rev: str) -> str:
         # Relative revision identifier requires a branch label
         if rev.startswith("+") or rev.startswith("-"):
             return f"gxy@{rev}"
