@@ -1,3 +1,4 @@
 User-agent: *
 Disallow: /display?
 Disallow: /display_as?
+Disallow: /training-material/
