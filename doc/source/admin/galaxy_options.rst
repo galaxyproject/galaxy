@@ -3840,6 +3840,15 @@
     Service ID for GA4GH services (exposed via the service-info
     endpoint for the Galaxy DRS API). If unset, one will be generated
     using the URL the target API requests are made against.
+    For more information on GA4GH service definitions - check out
+    https://github.com/ga4gh-discovery/ga4gh-service-registry and
+    https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+    This value should likely reflect your service's URL. For instance
+    for usegalaxy.org this value should be org.usegalaxy. Particular
+    Galaxy implementations will treat this value as a prefix and
+    append the service type to this ID. For instance for the DRS
+    service "id" (available via the DRS API) for the above
+    configuration value would be org.usegalaxy.drs.
 :Default: ``None``
 :Type: str
 
@@ -3851,7 +3860,10 @@
 :Description:
     Service name for host organization (exposed via the service-info
     endpoint for the Galaxy DRS API). If unset, one will be generated
-    using ga4gh_service_service_id.
+    using ga4gh_service_id.
+    For more information on GA4GH service definitions - check out
+    https://github.com/ga4gh-discovery/ga4gh-service-registry and
+    https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
 :Default: ``None``
 :Type: str
 
@@ -3865,6 +3877,24 @@
     service-info endpoint for the Galaxy DRS API). If unset, one will
     be generated using the URL the target API requests are made
     against.
+    For more information on GA4GH service definitions - check out
+    https://github.com/ga4gh-discovery/ga4gh-service-registry and
+    https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``ga4gh_service_environment``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Service environment (exposed via the service-info endpoint for the
+    Galaxy DRS API) for implemented GA4GH services.
+    Suggested values are prod, test, dev, staging.
+    For more information on GA4GH service definitions - check out
+    https://github.com/ga4gh-discovery/ga4gh-service-registry and
+    https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
 :Default: ``None``
 :Type: str
 

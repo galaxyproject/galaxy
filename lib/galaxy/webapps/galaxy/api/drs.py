@@ -63,6 +63,10 @@ class DrsApi:
             artifact="drs",
             version="1.2.0",
         )
+        environemnt = config.ga4gh_service_environment
+        extra_kwds = {}
+        if environemnt:
+            extra_kwds["environment"] = environemnt
         return Service(
             id=organization_id + ".drs",
             name=DRS_SERVICE_NAME,
@@ -70,6 +74,7 @@ class DrsApi:
             organization=organization,
             type=service_type,
             version=VERSION,
+            **extra_kwds,
         )
 
     @router.get("/ga4gh/drs/v1/objects/{object_id}")
