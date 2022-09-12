@@ -579,11 +579,11 @@ class InstallRepositoryManager:
         if reinstalling:
             # Since we're reinstalling the repository we need to find the latest changeset revision to
             # which it can be updated.
-            changeset_revision_dict = self.app.update_repository_manager.get_update_to_changeset_revision_and_ctx_rev(
+            update_to_changeset = self.app.update_repository_manager.get_update_to_changeset_revision_and_ctx_rev(
                 tool_shed_repository
             )
-            current_changeset_revision = changeset_revision_dict.get("changeset_revision", None)
-            current_ctx_rev = changeset_revision_dict.get("ctx_rev", None)
+            current_changeset_revision = update_to_changeset.changeset_revision
+            current_ctx_rev = update_to_changeset.ctx_rev
             if current_ctx_rev != ctx_rev:
                 repo_path = os.path.abspath(install_dir)
                 hg_util.pull_repository(repo_path, repository_clone_url, current_changeset_revision)
