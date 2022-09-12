@@ -266,11 +266,15 @@ const RULES = {
         save: (component, rule) => {
             rule.target_column = component.addColumnRegexTarget;
             rule.expression = component.addColumnRegexExpression;
-            if (component.addColumnRegexReplacement) {
+            if (component.addColumnRegexType == "replacement" && component.addColumnRegexReplacement) {
                 rule.replacement = component.addColumnRegexReplacement;
-            }
-            if (component.addColumnRegexGroupCount) {
+                rule.group_count = null;
+            } else if (component.addColumnRegexType == "groups" && component.addColumnRegexGroupCount) {
                 rule.group_count = parseInt(component.addColumnRegexGroupCount);
+                rule.replacement = null;
+            } else if (component.addColumnRegexType == "global") {
+                rule.replacement = null;
+                rule.group_count = null;
             }
         },
         apply: (rule, data, sources, columns) => {
