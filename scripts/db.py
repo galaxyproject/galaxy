@@ -55,7 +55,7 @@ def exec_init(args: Namespace) -> None:
     verify_databases_via_script(gxy_config, tsi_config, is_auto_migrate)
 
 
-def _exec_command(command, args):
+def _exec_command(command: str, args: Namespace) -> None:
     dbscript = DbScript(args.config)
     try:
         getattr(dbscript, command)(args)

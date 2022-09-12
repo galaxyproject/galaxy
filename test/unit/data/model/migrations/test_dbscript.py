@@ -25,6 +25,7 @@ import tempfile
 from typing import (
     List,
     NewType,
+    Tuple,
 )
 
 import alembic
@@ -97,7 +98,7 @@ def config(url_factory, alembic_env_dir, alembic_config_text, tmp_directory, mon
     return alembic_cfg
 
 
-def update_config_for_staging(config_text, script_location, version_locations, dburl) -> None:
+def update_config_for_staging(config_text: List[str], script_location: str, version_locations: str, dburl: str) -> None:
     """Set script_location, version_locations, sqlalchemy.url values."""
     alembic_section_index, url_set = -1, False
     url_line = f"sqlalchemy.url = {dburl}\n"
@@ -115,12 +116,12 @@ def update_config_for_staging(config_text, script_location, version_locations, d
         config_text.insert(alembic_section_index + 1, url_line)
 
 
-def write_config_file(config_file_path, config_text):
+def write_config_file(config_file_path: str, config_text: str) -> None:
     with open(config_file_path, "w") as f:
         f.write("".join(config_text))
 
 
-def create_alembic_branches(config, gxy_versions_dir, tsi_versions_dir):
+def create_alembic_branches(config: Config, gxy_versions_dir: str, tsi_versions_dir: str) -> None:
     """
     Create gxy and tsi branches (required for galaxy's alembic setup; included with 22.05 release)
     """
@@ -132,29 +133,27 @@ def create_alembic_branches(config, gxy_versions_dir, tsi_versions_dir):
     )
 
 
-def stdout(capture):
-    return capture.readouterr().out
+def dburl_from_config(config: Config) -> str:
+    url = config.get_main_option("sqlalchemy.url")
+    assert url
+    return url
 
 
-def dburl_from_config(config):
-    return config.get_main_option("sqlalchemy.url")
-
-
-def run_command(cmd):
+def run_command(cmd: str) -> subprocess.CompletedProcess:
     if in_packages():
         cmd = f"../.{cmd}"  # if this is run from `packages`, db.sh is in parent directory
     completed_process = subprocess.run(cmd.split(), capture_output=True, text=True)
     return completed_process
 
 
-def in_packages():
+def in_packages() -> bool:
     """Checks if test is run from the packages directory."""
     path = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir, os.pardir)
     path = os.path.normpath(path)
     return os.path.split(path)[1] == "packages"
 
 
-def get_db_heads(config):
+def get_db_heads(config: Config) -> Tuple[str, ...]:
     dburl = dburl_from_config(config)
     engine = create_engine(dburl)
     with engine.connect() as conn:
