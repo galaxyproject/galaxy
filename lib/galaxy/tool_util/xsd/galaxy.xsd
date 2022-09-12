@@ -1656,8 +1656,7 @@ data type. If these do not match, the test will fail.
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
 
-Applies only if ``compare`` is ``diff``, ``re_match`` or ``re_match_multiline``. This flag causes the lines of the history data set
-to be sorted before the comparison. In case of ``diff`` also the local file is sorted. This could be
+Applies only if ``compare`` is ``diff``, ``re_match`` or ``re_match_multiline``. This flag causes the lines of the history data set to be sorted before the comparison. In case of ``diff`` and ``re_match`` also the local file is sorted. This could be
 useful for non-deterministic output.
 
 ]]></xs:documentation>
