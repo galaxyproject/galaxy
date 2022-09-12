@@ -328,18 +328,10 @@ class ConfiguresGalaxyMixin:
                 raise
 
     def _configure_datatypes_registry(
-        self, installed_repository_manager=None, use_display_applications=True, use_converters=True
+        self, use_display_applications=True, use_converters=True
     ):
         # Create an empty datatypes registry.
         self.datatypes_registry = Registry(self.config)
-        if installed_repository_manager and self.config.load_tool_shed_datatypes:
-            # Load proprietary datatypes defined in datatypes_conf.xml files in all installed tool shed repositories.  We
-            # load proprietary datatypes before datatypes in the distribution because Galaxy's default sniffers include some
-            # generic sniffers (eg text,xml) which catch anything, so it's impossible for proprietary sniffers to be used.
-            # However, if there is a conflict (2 datatypes with the same extension) between a proprietary datatype and a datatype
-            # in the Galaxy distribution, the datatype in the Galaxy distribution will take precedence.  If there is a conflict
-            # between 2 proprietary datatypes, the datatype from the repository that was installed earliest will take precedence.
-            installed_repository_manager.load_proprietary_datatypes()
         # Load the data types in the Galaxy distribution, which are defined in self.config.datatypes_config.
         datatypes_configs = self.config.datatypes_config
         for datatypes_config in listify(datatypes_configs):
@@ -583,7 +575,6 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         )
         self.dynamic_tool_manager = self._register_singleton(DynamicToolManager)
         self._configure_datatypes_registry(
-            self.installed_repository_manager,
             use_converters=use_converters,
             use_display_applications=use_display_applications,
         )
@@ -659,8 +650,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.update_repository_manager = self._register_singleton(
             UpdateRepositoryManager, UpdateRepositoryManager(self)
         )
-        # Load proprietary datatype converters and display applications.
-        self.installed_repository_manager.load_proprietary_converters_and_display_applications()
         # Load datatype display applications defined in local datatypes_conf.xml
         self.datatypes_registry.load_display_applications(self)
         # Load datatype converters defined in local datatypes_conf.xml

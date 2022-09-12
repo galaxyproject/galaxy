@@ -68,8 +68,6 @@ class Registry:
         # Converters defined in local datatypes_conf.xml
         self.converters = []
         self.converter_tools = set()
-        # Converters defined in datatypes_conf.xml included in installed tool shed repositories.
-        self.proprietary_converters = []
         self.converter_deps = {}
         self.available_tracks = []
         self.set_external_metadata_tool = None
@@ -77,9 +75,6 @@ class Registry:
         self.upload_file_formats = []
         # Datatype elements defined in local datatypes_conf.xml that contain display applications.
         self.display_app_containers = []
-        # Datatype elements in datatypes_conf.xml included in installed
-        # tool shed repositories that contain display applications.
-        self.proprietary_display_app_containers = []
         # Map a display application id to a display application
         self.display_applications: Dict[str, DisplayApplication] = {}
         # The following 2 attributes are used in the to_xml_file()
@@ -91,8 +86,6 @@ class Registry:
         # The 'default' display_path defined in local datatypes_conf.xml
         self.display_applications_path = None
         self.inherit_display_application_by_class = []
-        # Keep a list of imported proprietary datatype class modules.
-        self.imported_modules = []
         self.datatype_elems = []
         self.datatype_info_dicts = []
         self.sniffer_elems = []
@@ -134,15 +127,7 @@ class Registry:
             return module
 
         if root_dir and config:
-            # If handling_proprietary_datatypes is determined as True below, we'll have an elem that looks something like this:
-            # <datatype display_in_upload="true"
-            #           extension="blastxml"
-            #           mimetype="application/xml"
-            #           proprietary_datatype_module="blast"
-            #           proprietary_path="[cloned repository path]"
-            #           type="galaxy.datatypes.blast:BlastXml" />
             compressed_sniffers = {}
-            handling_proprietary_datatypes = False
             if isinstance(config, (str, Path)):
                 # Parse datatypes_conf.xml
                 tree = galaxy.util.parse_xml(config)
@@ -182,15 +167,7 @@ class Registry:
                             os.path.join(os.path.dirname(__file__), "display_applications", "configs")
                         )
                         self.display_applications_path = self.display_path_attr
-            # Proprietary datatype's <registration> tag may have special attributes, proprietary_converter_path and proprietary_display_path.
-            proprietary_converter_path = registration.get("proprietary_converter_path", None)
-            proprietary_display_path = registration.get("proprietary_display_path", None)
-            if (
-                proprietary_converter_path is not None
-                or proprietary_display_path is not None
-                and not handling_proprietary_datatypes
-            ):
-                handling_proprietary_datatypes = True
+
             for elem in registration.findall("datatype"):
                 # Keep a status of the process steps to enable stopping the process of handling the datatype if necessary.
                 ok = True
@@ -217,18 +194,6 @@ class Registry:
                 if edam_data and not make_subclass:
                     self.log.warning("Cannot specify edam_data without setting subclass to True, skipping datatype.")
                     continue
-                # Proprietary datatypes included in installed tool shed repositories will include two special attributes
-                # (proprietary_path and proprietary_datatype_module) if they depend on proprietary datatypes classes.
-                # The value of proprietary_path is the path to the cloned location of the tool shed repository's contained
-                # datatypes_conf.xml file.
-                proprietary_path = elem.get("proprietary_path", None)
-                proprietary_datatype_module = elem.get("proprietary_datatype_module", None)
-                if (
-                    proprietary_path is not None
-                    or proprietary_datatype_module is not None
-                    and not handling_proprietary_datatypes
-                ):
-                    handling_proprietary_datatypes = True
                 if deactivate:
                     # We are deactivating or uninstalling an installed tool shed repository, so eliminate the datatype
                     # elem from the in-memory list of datatype elems.
@@ -276,24 +241,6 @@ class Registry:
                                 ok = False
                             if ok:
                                 datatype_class = None
-                                if proprietary_path and proprietary_datatype_module and datatype_class_name:
-                                    # TODO: previously comments suggested this needs to be locked because it modifies
-                                    # the sys.path, probably true but the previous lock wasn't doing that.
-                                    try:
-                                        imported_module = __import_module(proprietary_path, proprietary_datatype_module)
-                                        if imported_module not in self.imported_modules:
-                                            self.imported_modules.append(imported_module)
-                                        if hasattr(imported_module, datatype_class_name):
-                                            datatype_class = getattr(imported_module, datatype_class_name)
-                                    except Exception as e:
-                                        full_path = os.path.join(proprietary_path, proprietary_datatype_module)
-                                        self.log.debug(
-                                            "Exception importing proprietary code file %s: %s",
-                                            full_path,
-                                            e,
-                                        )
-                                # Either the above exception was thrown because the proprietary_datatype_module is not derived from a class
-                                # in the repository, or we are loading Galaxy's datatypes. In either case we'll look in the registry.
                                 if datatype_class is None:
                                     try:
                                         # The datatype class name must be contained in one of the datatype modules in the Galaxy distribution.
@@ -374,12 +321,7 @@ class Registry:
                                             self.converter_deps[extension] = {}
                                         self.converter_deps[extension][target_datatype] = depends_on.split(",")
                                     if converter_config and target_datatype:
-                                        if proprietary_converter_path:
-                                            self.proprietary_converters.append(
-                                                (converter_config, extension, target_datatype)
-                                            )
-                                        else:
-                                            self.converters.append((converter_config, extension, target_datatype))
+                                        self.converters.append((converter_config, extension, target_datatype))
                                 # Add composite files.
                                 for composite_file in elem.findall("composite_file"):
                                     name = composite_file.get("name", None)
@@ -393,12 +335,8 @@ class Registry:
                                         name, optional=optional, mimetype=mimetype
                                     )
                                 for _display_app in elem.findall("display"):
-                                    if proprietary_display_path:
-                                        if elem not in self.proprietary_display_app_containers:
-                                            self.proprietary_display_app_containers.append(elem)
-                                    else:
-                                        if elem not in self.display_app_containers:
-                                            self.display_app_containers.append(elem)
+                                    if elem not in self.display_app_containers:
+                                        self.display_app_containers.append(elem)
                                 datatype_info_dict = {
                                     "display_in_upload": display_in_upload,
                                     "extension": extension,
@@ -489,7 +427,6 @@ class Registry:
             self.load_datatype_sniffers(
                 root,
                 deactivate=deactivate,
-                handling_proprietary_datatypes=handling_proprietary_datatypes,
                 override=override,
                 compressed_sniffers=compressed_sniffers,
             )
@@ -571,7 +508,7 @@ class Registry:
         return self.display_sites.get(site_type, [])
 
     def load_datatype_sniffers(
-        self, root, deactivate=False, handling_proprietary_datatypes=False, override=False, compressed_sniffers=None
+        self, root, deactivate=False, override=False, compressed_sniffers=None
     ):
         """
         Process the sniffers element from a parsed a datatypes XML file located at root_dir/config (if processing the Galaxy
@@ -598,12 +535,6 @@ class Registry:
                         self.log.exception("Error determining datatype class or module for dtype %s", str(dtype))
                         ok = False
                     if ok:
-                        if handling_proprietary_datatypes:
-                            # See if one of the imported modules contains the datatype class name.
-                            for imported_module in self.imported_modules:
-                                if hasattr(imported_module, datatype_class_name):
-                                    module = imported_module
-                                    break
                         if module is None:
                             try:
                                 # The datatype class name must be contained in one of the datatype modules in the Galaxy distribution.
@@ -734,149 +665,64 @@ class Registry:
             data.init_meta(copy_from=data)
         return data
 
-    def load_datatype_converters(self, toolbox, installed_repository_dict=None, deactivate=False, use_cached=False):
+    def load_datatype_converters(self, toolbox, use_cached=False):
         """
-        If deactivate is False, add datatype converters from self.converters or self.proprietary_converters
-        to the calling app's toolbox.  If deactivate is True, eliminates relevant converters from the calling
-        app's toolbox.
+        Add datatype converters from self.converters to the calling app's toolbox. 
         """
-        if installed_repository_dict:
-            # Load converters defined by datatypes_conf.xml included in installed tool shed repository.
-            converters = self.proprietary_converters
-        else:
-            # Load converters defined by local datatypes_conf.xml.
-            converters = self.converters
+        # Load converters defined by local datatypes_conf.xml.
+        converters = self.converters
         for elem in converters:
             tool_config = elem[0]
             source_datatype = elem[1]
             target_datatype = elem[2]
-            if installed_repository_dict:
-                converter_path = installed_repository_dict["converter_path"]
-            else:
-                converter_path = self.converters_path
+            converter_path = self.converters_path
             try:
                 config_path = os.path.join(converter_path, tool_config)
                 converter = toolbox.load_tool(config_path, use_cached=use_cached)
                 self.converter_tools.add(converter)
-                if installed_repository_dict:
-                    # If the converter is included in an installed tool shed repository, set the tool
-                    # shed related tool attributes.
-                    converter.tool_shed = installed_repository_dict["tool_shed"]
-                    converter.repository_name = installed_repository_dict["repository_name"]
-                    converter.repository_owner = installed_repository_dict["repository_owner"]
-                    converter.installed_changeset_revision = installed_repository_dict["installed_changeset_revision"]
-                    converter.old_id = converter.id
-                    # The converter should be included in the list of tools defined in tool_dicts.
-                    tool_dicts = installed_repository_dict["tool_dicts"]
-                    for tool_dict in tool_dicts:
-                        if tool_dict["id"] == converter.id:
-                            converter.guid = tool_dict["guid"]
-                            converter.id = tool_dict["guid"]
-                            break
-                if deactivate:
-                    toolbox.remove_tool_by_id(converter.id, remove_from_panel=False)
-                    if source_datatype in self.datatype_converters:
-                        if target_datatype in self.datatype_converters[source_datatype]:
-                            del self.datatype_converters[source_datatype][target_datatype]
-                    self.log.debug("Deactivated converter: %s", converter.id)
-                else:
-                    toolbox.register_tool(converter)
-                    if source_datatype not in self.datatype_converters:
-                        self.datatype_converters[source_datatype] = {}
-                    self.datatype_converters[source_datatype][target_datatype] = converter
-                    if not hasattr(toolbox.app, "tool_cache") or converter.id in toolbox.app.tool_cache._new_tool_ids:
-                        self.log.debug("Loaded converter: %s", converter.id)
+                toolbox.register_tool(converter)
+                if source_datatype not in self.datatype_converters:
+                    self.datatype_converters[source_datatype] = {}
+                self.datatype_converters[source_datatype][target_datatype] = converter
+                if not hasattr(toolbox.app, "tool_cache") or converter.id in toolbox.app.tool_cache._new_tool_ids:
+                    self.log.debug("Loaded converter: %s", converter.id)
             except Exception:
-                if deactivate:
-                    self.log.exception(f"Error deactivating converter from ({converter_path})")
-                else:
-                    self.log.exception(f"Error loading converter ({converter_path})")
+                self.log.exception(f"Error loading converter ({converter_path})")
 
-    def load_display_applications(self, app, installed_repository_dict=None, deactivate=False):
+    def load_display_applications(self, app):
         """
-        If deactivate is False, add display applications from self.display_app_containers or
-        self.proprietary_display_app_containers to appropriate datatypes.  If deactivate is
-        True, eliminates relevant display applications from appropriate datatypes.
+        Add display applications from self.display_app_containers or to appropriate datatypes.
         """
-        if installed_repository_dict:
-            # Load display applications defined by datatypes_conf.xml included in installed tool shed repository.
-            datatype_elems = self.proprietary_display_app_containers
-        else:
-            # Load display applications defined by local datatypes_conf.xml.
-            datatype_elems = self.display_app_containers
+        # Load display applications defined by local datatypes_conf.xml.
+        datatype_elems = self.display_app_containers
         for elem in datatype_elems:
             extension = self.get_extension(elem)
             for display_app in elem.findall("display"):
                 display_file = display_app.get("file", None)
-                if installed_repository_dict:
-                    display_path = installed_repository_dict["display_path"]
-                    display_file_head, display_file_tail = os.path.split(display_file)
-                    config_path = os.path.join(display_path, display_file_tail)
-                else:
-                    config_path = os.path.join(self.display_applications_path, display_file)
+                config_path = os.path.join(self.display_applications_path, display_file)
                 try:
                     inherit = galaxy.util.string_as_bool(display_app.get("inherit", "False"))
                     display_app = DisplayApplication.from_file(config_path, app)
                     if display_app:
                         if display_app.id in self.display_applications:
-                            if deactivate:
-                                del self.display_applications[display_app.id]
-                            else:
-                                # If we already loaded this display application, we'll use the first one loaded.
-                                display_app = self.display_applications[display_app.id]
-                        elif installed_repository_dict:
-                            # If the display application is included in an installed tool shed repository,
-                            # set the tool shed related tool attributes.
-                            display_app.tool_shed = installed_repository_dict["tool_shed"]
-                            display_app.repository_name = installed_repository_dict["repository_name"]
-                            display_app.repository_owner = installed_repository_dict["repository_owner"]
-                            display_app.installed_changeset_revision = installed_repository_dict[
-                                "installed_changeset_revision"
-                            ]
-                            display_app.old_id = display_app.id
-                            # The display application should be included in the list of tools defined in tool_dicts.
-                            tool_dicts = installed_repository_dict["tool_dicts"]
-                            for tool_dict in tool_dicts:
-                                if tool_dict["id"] == display_app.id:
-                                    display_app.guid = tool_dict["guid"]
-                                    display_app.id = tool_dict["guid"]
-                                    break
-                        if deactivate:
-                            if display_app.id in self.display_applications:
-                                del self.display_applications[display_app.id]
-                            if extension in self.datatypes_by_extension:
-                                if display_app.id in self.datatypes_by_extension[extension].display_applications:
-                                    del self.datatypes_by_extension[extension].display_applications[display_app.id]
-                            if (
-                                inherit
-                                and (self.datatypes_by_extension[extension], display_app)
-                                in self.inherit_display_application_by_class
-                            ):
-                                self.inherit_display_application_by_class.remove(
-                                    (self.datatypes_by_extension[extension], display_app)
-                                )
-                            self.log.debug(
-                                f"Deactivated display application '{display_app.id}' for datatype '{extension}'."
+                            # If we already loaded this display application, we'll use the first one loaded.
+                            display_app = self.display_applications[display_app.id]
+
+                        self.display_applications[display_app.id] = display_app
+                        self.datatypes_by_extension[extension].add_display_application(display_app)
+                        if (
+                            inherit
+                            and (self.datatypes_by_extension[extension], display_app)
+                            not in self.inherit_display_application_by_class
+                        ):
+                            self.inherit_display_application_by_class.append(
+                                (self.datatypes_by_extension[extension], display_app)
                             )
-                        else:
-                            self.display_applications[display_app.id] = display_app
-                            self.datatypes_by_extension[extension].add_display_application(display_app)
-                            if (
-                                inherit
-                                and (self.datatypes_by_extension[extension], display_app)
-                                not in self.inherit_display_application_by_class
-                            ):
-                                self.inherit_display_application_by_class.append(
-                                    (self.datatypes_by_extension[extension], display_app)
-                                )
-                            self.log.debug(
-                                f"Loaded display application '{display_app.id}' for datatype '{extension}', inherit={inherit}."
-                            )
+                        self.log.debug(
+                            f"Loaded display application '{display_app.id}' for datatype '{extension}', inherit={inherit}."
+                        )
                 except Exception:
-                    if deactivate:
-                        self.log.exception(f"Error deactivating display application ({config_path})")
-                    else:
-                        self.log.exception(f"Error loading display application ({config_path})")
+                    self.log.exception(f"Error loading display application ({config_path})")
         # Handle display_application subclass inheritance.
         for extension, d_type1 in self.datatypes_by_extension.items():
             for d_type2, display_app in self.inherit_display_application_by_class:
