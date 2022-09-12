@@ -34,6 +34,7 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHDA,
     AnyHistoryContentItem,
+    AsyncTaskResultSummary,
     DatasetAssociationRoles,
     DatasetSourceType,
     UpdateDatasetPermissionsPayload,
@@ -51,6 +52,7 @@ from galaxy.webapps.galaxy.api.common import (
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.datasets import (
+    ComputeDatasetHashPayload,
     ConvertedDatasetsMap,
     DatasetInheritanceChain,
     DatasetsService,
@@ -338,3 +340,16 @@ class FastAPIDatasets:
         no other checks or restrictions are made.
         """
         return self.service.delete_batch(trans, payload)
+
+    @router.put(
+        "/api/datasets/{dataset_id}/hash",
+        summary="Compute dataset hash for dataset and update model",
+    )
+    def compute_hash(
+        self,
+        trans=DependsOnTrans,
+        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
+        hda_ldda: DatasetSourceType = DatasetSourceQueryParam,
+        payload: ComputeDatasetHashPayload = Body(...),
+    ) -> AsyncTaskResultSummary:
+        return self.service.compute_hash(trans, dataset_id, payload, hda_ldda=hda_ldda)

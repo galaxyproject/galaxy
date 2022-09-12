@@ -21,6 +21,18 @@ from galaxy_test.base.populators import (
 )
 from ._framework import ApiTestCase
 
+COMPOSITE_DATA_FETCH_REQUEST_1 = {
+    "src": "composite",
+    "ext": "velvet",
+    "composite": {
+        "items": [
+            {"src": "pasted", "paste_content": "sequences content"},
+            {"src": "pasted", "paste_content": "roadmaps content"},
+            {"src": "pasted", "paste_content": "log content"},
+        ]
+    },
+}
+
 
 class DatasetsApiTestCase(ApiTestCase):
     history_id: str
@@ -481,24 +493,95 @@ class DatasetsApiTestCase(ApiTestCase):
 
     @skip_without_datatype("velvet")
     def test_composite_datatype_download(self):
-        item = {
-            "src": "composite",
-            "ext": "velvet",
-            "composite": {
-                "items": [
-                    {"src": "pasted", "paste_content": "sequences content"},
-                    {"src": "pasted", "paste_content": "roadmaps content"},
-                    {"src": "pasted", "paste_content": "log content"},
-                ]
-            },
-        }
-        output = self.dataset_populator.fetch_hda(self.history_id, item, wait=True)
-        print(output)
+        output = self.dataset_populator.fetch_hda(self.history_id, COMPOSITE_DATA_FETCH_REQUEST_1, wait=True)
         response = self._get(f"histories/{self.history_id}/contents/{output['id']}/display?to_ext=zip")
         self._assert_status_code_is(response, 200)
         archive = zipfile.ZipFile(BytesIO(response.content))
         namelist = archive.namelist()
         assert len(namelist) == 4, f"Expected 3 elements in [{namelist}]"
+
+    def test_compute_md5_on_primary_dataset(self):
+        hda = self.dataset_populator.new_dataset(self.history_id, wait=True)
+        hda_details = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=hda)
+        assert "hashes" in hda_details, str(hda_details.keys())
+        hashes = hda_details["hashes"]
+        assert len(hashes) == 0
+
+        self.dataset_populator.compute_hash(hda["id"])
+        hda_details = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=hda)
+        self.assert_hash_value(hda_details, "940cbe15c94d7e339dc15550f6bdcf4d", "MD5")
+
+    def test_compute_sha1_on_composite_dataset(self):
+        output = self.dataset_populator.fetch_hda(self.history_id, COMPOSITE_DATA_FETCH_REQUEST_1, wait=True)
+        hda_details = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=output)
+        assert "hashes" in hda_details, str(hda_details.keys())
+        hashes = hda_details["hashes"]
+        assert len(hashes) == 0
+
+        self.dataset_populator.compute_hash(hda_details["id"], hash_function="SHA-256", extra_files_path="Roadmaps")
+        hda_details = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=output)
+        self.assert_hash_value(
+            hda_details,
+            "3cbd311889963528954fe03b28b68a09685ea7a75660bd2268d5b44cafbe0d22",
+            "SHA-256",
+            extra_files_path="Roadmaps",
+        )
+
+    def test_duplicated_hash_requests_on_primary(self):
+        hda = self.dataset_populator.new_dataset(self.history_id, wait=True)
+        hda_details = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=hda)
+        assert "hashes" in hda_details, str(hda_details.keys())
+        hashes = hda_details["hashes"]
+        assert len(hashes) == 0
+
+        self.dataset_populator.compute_hash(hda["id"])
+        self.dataset_populator.compute_hash(hda["id"])
+        hda_details = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=hda)
+        self.assert_hash_value(hda_details, "940cbe15c94d7e339dc15550f6bdcf4d", "MD5")
+
+    def test_duplicated_hash_requests_on_extra_files(self):
+        output = self.dataset_populator.fetch_hda(self.history_id, COMPOSITE_DATA_FETCH_REQUEST_1, wait=True)
+        hda_details = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=output)
+        assert "hashes" in hda_details, str(hda_details.keys())
+        hashes = hda_details["hashes"]
+        assert len(hashes) == 0
+
+        # 4 unique requests, but make them twice...
+        for _ in range(2):
+            self.dataset_populator.compute_hash(hda_details["id"], hash_function="SHA-256", extra_files_path="Roadmaps")
+            self.dataset_populator.compute_hash(hda_details["id"], hash_function="SHA-1", extra_files_path="Roadmaps")
+            self.dataset_populator.compute_hash(hda_details["id"], hash_function="MD5", extra_files_path="Roadmaps")
+            self.dataset_populator.compute_hash(
+                hda_details["id"], hash_function="SHA-256", extra_files_path="Sequences"
+            )
+
+        hda_details = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=output)
+        self.assert_hash_value(hda_details, "ce0c0ef1073317ff96c896c249b002dc", "MD5", extra_files_path="Roadmaps")
+        self.assert_hash_value(
+            hda_details, "fe2e06cdd03922a1ddf3fe6c7e0d299c8044fc8e", "SHA-1", extra_files_path="Roadmaps"
+        )
+        self.assert_hash_value(
+            hda_details,
+            "3cbd311889963528954fe03b28b68a09685ea7a75660bd2268d5b44cafbe0d22",
+            "SHA-256",
+            extra_files_path="Roadmaps",
+        )
+        self.assert_hash_value(
+            hda_details,
+            "4688dca47fe3214516c35acd284a79d97bd6df2bc1c55981b556d995495b91b6",
+            "SHA-256",
+            extra_files_path="Sequences",
+        )
+
+    def assert_hash_value(self, dataset_details, expected_hash_value, hash_function, extra_files_path=None):
+        assert "hashes" in dataset_details, str(dataset_details.keys())
+        hashes = dataset_details["hashes"]
+        matching_hashes = [
+            h for h in hashes if h["extra_files_path"] == extra_files_path and h["hash_function"] == hash_function
+        ]
+        assert len(matching_hashes) == 1
+        hash_value = matching_hashes[0]["hash_value"]
+        assert expected_hash_value == hash_value
 
     def test_storage_show(self):
         hda = self.dataset_populator.new_dataset(self.history_id, wait=True)
