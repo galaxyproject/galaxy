@@ -64,7 +64,6 @@ def fetch_drs_to_file(
         scheme = "http"
     get_url = f"{scheme}://{netspec}/ga4gh/drs/v1/objects/{object_id}"
     response = retry_and_get(get_url, retry_options or RetryOptions())
-    response = requests.get(get_url, timeout=DEFAULT_SOCKET_TIMEOUT)
     response.raise_for_status()
     response_object = response.json()
     if "access_methods" not in response_object:
@@ -83,7 +82,7 @@ def fetch_drs_to_file(
         access_url = access_method["access_url"]
     except KeyError:
         access_id = access_method["access_id"]
-        access_get_url = f"{scheme}://{netspec}/ga4gh/drs/v1/objects/{object_id}/access/{access_id}"
+        access_get_url = f"{get_url}/access/{access_id}"
         access_response = requests.get(access_get_url, timeout=DEFAULT_SOCKET_TIMEOUT)
         access_response.raise_for_status()
         access_response_object = access_response.json()
