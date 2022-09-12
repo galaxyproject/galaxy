@@ -4,7 +4,7 @@
             v-if="!loading && canDownload(config)"
             v-b-tooltip.hover.bottom
             :title="title"
-            variant="link"
+            :variant="variant"
             role="button"
             @click="onDownload(config)">
             <font-awesome-icon v-if="waiting" icon="spinner" spin />
@@ -50,6 +50,10 @@ export default {
             },
         },
         fallbackUrl: {
+            type: String,
+            default: null,
+        },
+        variant: {
             type: String,
             default: null,
         },

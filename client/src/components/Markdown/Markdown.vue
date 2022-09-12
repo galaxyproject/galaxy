@@ -6,6 +6,7 @@
                 <sts-download-button
                     v-if="effectiveExportLink"
                     class="float-right markdown-pdf-export"
+                    variant="link"
                     :fallback-url="exportLink"
                     :download-endpoint="downloadEndpoint"
                     title="Download PDF"></sts-download-button>
