@@ -418,6 +418,34 @@ INPUTS_TYPE_CHILD_COMBINATIONS = """
 </tool>
 """
 
+INPUTS_DUPLICATE_NAMES = """
+<tool>
+    <inputs>
+        <param name="dup" type="text"/>
+        <param name="dup" type="text"/>
+        <param name="dup_in_section" type="text"/>
+        <section name="sec">
+            <param name="dup_in_section" type="text"/>
+        </section>
+        <conditional name="cond">
+            <param name="dup_in_cond" type="select">
+                <option value="a">a</option>
+                <option value="b">b</option>
+            </param>
+            <when value="a">
+                <param name="dup_in_cond" type="text"/>
+            </when>
+            <when value="b">
+                <param name="dup_in_cond" type="text"/>
+            </when>
+        </conditional>
+        <param name="dup_in_output" type="text"/>
+    </inputs>
+    <outputs>
+        <data name="dup_in_output"/>
+    </outputs>
+</tool>
+"""
 
 # test tool xml for outputs linter
 OUTPUTS_MISSING = """
@@ -1209,6 +1237,19 @@ def test_inputs_type_child_combinations(lint_ctx):
         in lint_ctx.error_messages
     )
     assert len(lint_ctx.error_messages) == 3
+
+
+def test_inputs_duplicate_names(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_DUPLICATE_NAMES)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
+    assert "Tool defines multiple parameters with the same name: 'dup'" in lint_ctx.error_messages
+    assert (
+        "Tool defines an output with a name equal to the name of an input: 'dup_in_output'" in lint_ctx.error_messages
+    )
+    assert len(lint_ctx.error_messages) == 2
 
 
 def test_inputs_repeats(lint_ctx):
