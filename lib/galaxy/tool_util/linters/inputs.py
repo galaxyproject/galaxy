@@ -117,6 +117,7 @@ PARAM_TYPE_CHILD_COMBINATIONS = [
 def lint_inputs(tool_xml, lint_ctx):
     """Lint parameters in a tool's inputs block."""
     datasource = is_datasource(tool_xml)
+    input_names = set()
     inputs = tool_xml.findall("./inputs//param")
     # determine node to report for general problems with outputs
     tool_node = tool_xml.find("./inputs")
@@ -141,7 +142,24 @@ def lint_inputs(tool_xml, lint_ctx):
         elif not is_valid_cheetah_placeholder(param_name):
             lint_ctx.warn(f"Param input [{param_name}] is not a valid Cheetah placeholder.", node=param)
 
-        # TODO lint for params with duplicated name (in inputs & outputs)
+        # check for parameters with duplicate names
+        path = [param_name]
+        parent = param
+        while True:
+            parent = parent.getparent()
+            if parent.tag == "inputs":
+                break
+            # parameters of the same name in different when branches are allowed
+            # just add the value of the when branch to the path (this also allows
+            # that the conditional select has the same name as params in the whens)
+            if parent.tag == "when":
+                path.append(str(parent.attrib.get("value")))
+            else:
+                path.append(str(parent.attrib.get("name")))
+        path_str = ".".join(reversed(path))
+        if path_str in input_names:
+            lint_ctx.error(f"Tool defines multiple parameters with the same name: '{path_str}'", node=param)
+        input_names.add(path_str)
 
         if "type" not in param_attrib:
             lint_ctx.error(f"Param input [{param_name}] input with no type specified.", node=param)
@@ -439,6 +457,16 @@ def lint_inputs(tool_xml, lint_ctx):
             lint_ctx.info("No input parameters, OK for data sources", node=tool_node)
         else:
             lint_ctx.warn("Found no input parameters.", node=tool_node)
+
+    # check if there is an output with the same name as an input
+    outputs = tool_xml.find("./outputs")
+    if outputs:
+        for output in outputs:
+            if output.get("name") in input_names:
+                lint_ctx.error(
+                    f'Tool defines an output with a name equal to the name of an input: \'{output.get("name")}\'',
+                    node=output,
+                )
 
 
 def lint_repeats(tool_xml, lint_ctx):
