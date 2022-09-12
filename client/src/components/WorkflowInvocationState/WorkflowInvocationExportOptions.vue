@@ -1,31 +1,21 @@
-<template>
-    <b-card-group deck>
-        <b-card title="BioCompute Object Export" class="export-plugin-card">
-            <bio-compute-object-export-card :invocation-id="invocationId" />
-        </b-card>
-        <b-card title="To File" class="export-plugin-card">
-            <p>
-                <a class="model-export-link" :href="exportHref"><b>Export Invocation to File</b></a>
-            </p>
-        </b-card>
-        <!-- Add more export plugins here -->
-    </b-card-group>
-</template>
+<script setup>
+import InvocationExportPluginCard from "components/Workflow/Invocation/Export/InvocationExportPluginCard.vue";
+import { AVAILABLE_INVOCATION_EXPORT_PLUGINS } from "components/Workflow/Invocation/Export/Plugins";
 
-<script>
-import BioComputeObjectExportCard from "./Export/BioComputeObjectExportCard.vue";
-export default {
-    components: { BioComputeObjectExportCard },
-    props: {
-        invocationId: {
-            type: String,
-            required: true,
-        },
+const exportPlugins = AVAILABLE_INVOCATION_EXPORT_PLUGINS;
+
+defineProps({
+    invocationId: {
+        type: String,
+        required: true,
     },
-    computed: {
-        exportHref: function () {
-            return `${getAppRoot()}workflows/invocations/${this.invocationId}/export`;
-        },
-    },
-};
+});
 </script>
+
+<template>
+    <div>
+        <div v-for="(plugin, index) in exportPlugins" :key="index" class="mb-2">
+            <invocation-export-plugin-card :export-plugin="plugin" :invocation-id="invocationId" />
+        </div>
+    </div>
+</template>
