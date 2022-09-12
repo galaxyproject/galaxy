@@ -1,23 +1,8 @@
 """
 Testing approach:
-- Use a test database, store revision scripts in a different location; leave the rest unchanged.
+- Use test database(s), store revision scripts in a different location; leave the rest unchanged.
 - Use alembic api for setup and accessing the database.
 - Run command as subprocess, verify captured output + database state.
-
-1. Setup staging environment:
-    - Create staging location (/tmp)
-    - Create test database (sqlite in /tmp)
-    - Copy production alembic.ini to staging location, overwriting:
-        - sqlalchemy.url (url of test database)
-        - version_locations (staging location)
-        - script_location (lib/galaxy/model/migrations/alembic/)
-    - Create gxy and tsi branches
-
-2. For each test case:
-    - Optionally, use alembic api for any setup
-    - Run command as a subprocess, capture output
-    - Run assertions against captured output
-    - Optionally, use alembic api to access database; verify database state
 """
 import os
 import subprocess
@@ -77,13 +62,16 @@ def config(url_factory, alembic_env_dir, alembic_config_text, tmp_directory, mon
     """
     Construct Config object for staging; setup staging env.
     """
+    # Create staging location for revision sctipts
     gxy_versions_dir = os.path.join(tmp_directory, "versions_gxy")
     tsi_versions_dir = os.path.join(tmp_directory, "versions_tsi")
     version_locations = f"{gxy_versions_dir};{tsi_versions_dir}"
 
+    # Create test database(s)
     gxy_dburl = url_factory()
     tsi_dburl = gxy_dburl if request.param == "one database" else url_factory()
 
+    # Copy production alembic.ini to staging location
     config_file_path = os.path.join(tmp_directory, "alembic.ini")
     update_config_for_staging(alembic_config_text, alembic_env_dir, version_locations, gxy_dburl)
     write_config_file(config_file_path, alembic_config_text)
@@ -91,6 +79,7 @@ def config(url_factory, alembic_env_dir, alembic_config_text, tmp_directory, mon
     alembic_cfg = Config(config_file_path)
     create_alembic_branches(alembic_cfg, gxy_versions_dir, tsi_versions_dir)
 
+    # Point tests to test database(s)
     monkeypatch.setenv("ALEMBIC_CONFIG", config_file_path)
     monkeypatch.setenv("GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION", gxy_dburl)
     monkeypatch.setenv("GALAXY_INSTALL_CONFIG_OVERRIDE_INSTALL_DATABASE_CONNECTION", tsi_dburl)
