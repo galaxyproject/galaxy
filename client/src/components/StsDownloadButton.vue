@@ -3,7 +3,6 @@
         <b-button
             v-if="!loading && canDownload(config)"
             v-b-tooltip.hover.bottom
-            class="float-right markdown-pdf-export"
             :title="title"
             variant="link"
             role="button"

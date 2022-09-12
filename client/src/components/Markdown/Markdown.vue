@@ -110,7 +110,7 @@ import JobParameters from "./Elements/JobParameters";
 import ToolStd from "./Elements/ToolStd";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay";
 import Visualization from "./Elements/Visualization";
-import StsDownloadButton from "./StsDownloadButton";
+import StsDownloadButton from "components/StsDownloadButton";
 
 const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
 const FUNCTION_CALL = `\\s*[\\w\\|]+\\s*=` + FUNCTION_VALUE_REGEX;

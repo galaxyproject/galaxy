@@ -1,9 +1,9 @@
 <template>
-    <StsDownloadButton :downloadEndpoint="invocationDownloadUrl" title="Download Invocation"> </StsDownloadButton>
+    <StsDownloadButton :download-endpoint="invocationDownloadUrl" title="Download Invocation" />
 </template>
 
 <script>
-import StsDownloadButton from "components/Markdown/StsDownloadButton";
+import StsDownloadButton from "components/StsDownloadButton";
 
 export default {
     components: {
