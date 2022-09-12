@@ -6,14 +6,7 @@ import logging
 import os
 import shutil
 
-from sqlalchemy import (
-    and_,
-    false,
-    true,
-)
-
 from galaxy import util
-from galaxy.tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )

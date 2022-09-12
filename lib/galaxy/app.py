@@ -327,9 +327,7 @@ class ConfiguresGalaxyMixin:
             if exc.errno != errno.ENOENT or self.config.is_set("shed_tool_data_table_config"):
                 raise
 
-    def _configure_datatypes_registry(
-        self, use_display_applications=True, use_converters=True
-    ):
+    def _configure_datatypes_registry(self, use_display_applications=True, use_converters=True):
         # Create an empty datatypes registry.
         self.datatypes_registry = Registry(self.config)
         # Load the data types in the Galaxy distribution, which are defined in self.config.datatypes_config.
