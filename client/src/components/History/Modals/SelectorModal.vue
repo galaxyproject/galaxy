@@ -1,5 +1,5 @@
 <template>
-    <b-modal ref="modal" v-bind="$attrs" :title="title | l" v-on="$listeners" footer-class="justify-content-between">
+    <b-modal ref="modal" v-bind="$attrs" :title="title | l" footer-class="justify-content-between" v-on="$listeners">
         <b-form-group :description="'Filter histories' | l">
             <b-form-input v-model="filter" type="search" :placeholder="'Search Filter' | l" />
         </b-form-group>
