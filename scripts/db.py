@@ -87,6 +87,7 @@ def main() -> None:
     )
 
     parser = ArgumentParser(
+        prog="db.sh",
         description="Common database schema migration operations",
         epilog="Note: these operations are applied to the Galaxy model only (stored in the `gxy` branch)."
         " For migrating the `tsi` branch, use the `run_alembic.sh` script.",
