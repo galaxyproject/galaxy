@@ -8,10 +8,10 @@ import h5py
 import numpy as np
 import requests
 
-import tensorflow as tf
+'''import tensorflow as tf
 from tensorflow.keras.layers import MultiHeadAttention, LayerNormalization, Dropout, Layer
 from tensorflow.keras.layers import Embedding, Input, GlobalAveragePooling1D, Dense
-from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.models import Sequential, Model'''
 
 import yaml
 
@@ -23,7 +23,7 @@ from galaxy.workflow.modules import module_factory
 log = logging.getLogger(__name__)
 
 
-class TransformerBlock(Layer):
+'''class TransformerBlock(Layer):
     def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1):
         super(TransformerBlock, self).__init__()
         self.att = MultiHeadAttention(num_heads=num_heads,
@@ -60,7 +60,7 @@ class TokenAndPositionEmbedding(Layer):
         positions = tf.range(start=0, limit=maxlen, delta=1)
         positions = self.pos_emb(positions)
         x = self.token_emb(x)
-        return x + positions
+        return x + positions'''
 
 
 class ToolRecommendations:
@@ -84,7 +84,63 @@ class ToolRecommendations:
         self.num_heads = 4
         self.dropout = 0.1
 
+    '''def create_transformer_model(self, vocab_size):
+        inputs = Input(shape=(self.max_seq_len,))
+        embedding_layer = TokenAndPositionEmbedding(self.max_seq_len, vocab_size, self.embed_dim)
+        x = embedding_layer(inputs)
+        transformer_block = TransformerBlock(self.embed_dim, self.num_heads, self.ff_dim)
+        x, weights = transformer_block(x)
+        x = GlobalAveragePooling1D()(x)
+        x = Dropout(self.dropout)(x)
+        x = Dense(self.ff_dim, activation="relu")(x)
+        x = Dropout(self.dropout)(x)
+        outputs = Dense(vocab_size, activation="sigmoid")(x)
+        return Model(inputs=inputs, outputs=[outputs, weights])'''
+
     def create_transformer_model(self, vocab_size):
+        from tensorflow.keras.layers import MultiHeadAttention, LayerNormalization, Dropout, Layer
+        from tensorflow.keras.layers import Embedding, Input, GlobalAveragePooling1D, Dense
+        from tensorflow.keras.models import Sequential, Model
+
+        class TransformerBlock(Layer):
+            def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1):
+                super(TransformerBlock, self).__init__()
+                self.att = MultiHeadAttention(num_heads=num_heads,
+                    key_dim=embed_dim,
+                    dropout=rate,
+                )
+                self.ffn = Sequential(
+                    [Dense(ff_dim, activation="relu"),
+                    Dense(embed_dim),]
+                )
+                self.layernorm1 = LayerNormalization(epsilon=1e-6)
+                self.layernorm2 = LayerNormalization(epsilon=1e-6)
+                self.dropout1 = Dropout(rate)
+                self.dropout2 = Dropout(rate)
+
+            def call(self, inputs, training):
+                attn_output, attention_scores = self.att(inputs, inputs, inputs, return_attention_scores=True, training=training)
+                attn_output = self.dropout1(attn_output, training=training)
+                out1 = self.layernorm1(inputs + attn_output)
+                ffn_output = self.ffn(out1)
+                ffn_output = self.dropout2(ffn_output, training=training)
+                return self.layernorm2(out1 + ffn_output), attention_scores
+
+
+        class TokenAndPositionEmbedding(Layer):
+            def __init__(self, maxlen, vocab_size, embed_dim):
+                super(TokenAndPositionEmbedding, self).__init__()
+                self.token_emb = Embedding(input_dim=vocab_size, output_dim=embed_dim, mask_zero=True)
+                self.pos_emb = Embedding(input_dim=maxlen, output_dim=embed_dim, mask_zero=True)
+
+            def call(self, x):
+                import tensorflow as tf
+                maxlen = tf.shape(x)[-1]
+                positions = tf.range(start=0, limit=maxlen, delta=1)
+                positions = self.pos_emb(positions)
+                x = self.token_emb(x)
+                return x + positions
+
         inputs = Input(shape=(self.max_seq_len,))
         embedding_layer = TokenAndPositionEmbedding(self.max_seq_len, vocab_size, self.embed_dim)
         x = embedding_layer(inputs)
@@ -104,8 +160,11 @@ class ToolRecommendations:
         recommended_tools = dict()
         self.__collect_admin_preferences(trans.app.config.admin_tool_recommendations_path)
         is_set = self.__set_model(trans, remote_model_url)
+        log.info(f"Is model set: {is_set}")
         if is_set is True:
             # get the recommended tools for a tool sequence
+            log.info(f"Is model set: {is_set}")
+            log.info(f"tool_sequence: {tool_sequence}")
             recommended_tools = self.__compute_tool_prediction(trans, tool_sequence)
         else:
             tool_sequence = ""
@@ -199,21 +258,33 @@ class ToolRecommendations:
         Add admin preferences to recommendations.
         """
         last_compatible_tools = list()
-        if last_tool_name in self.compatible_tools:
-            last_compatible_tools = self.compatible_tools[last_tool_name].split(",")
+        log.info(f"reverse_dictionary: {self.reverse_dictionary}")
+        print()
+        log.info(f"model_data_dictionary: {self.model_data_dictionary}")
+        if last_tool_name in self.reverse_dictionary:
+            last_tool_name_id = self.reverse_dictionary[last_tool_name]
+        if last_tool_name_id in self.compatible_tools:
+            last_compatible_tools_ids = self.compatible_tools[last_tool_name_id]
+        last_compatible_tools = []
         prediction_data["is_deprecated"] = False
         # get the list of datatype extensions of the last tool of the tool sequence
         _, last_output_extensions = self.__get_tool_extensions(trans, self.all_tools[last_tool_name][0])
         prediction_data["o_extensions"] = list(set(last_output_extensions))
         t_ids_scores = zip(tool_ids, tool_scores)
+        log.info(f"All compatible tools: {self.compatible_tools}")
+        log.info(f"Last compatible tool for: {last_tool_name} are {last_compatible_tools}")
+        log.info(f"Deprecated tools: {self.deprecated_tools}")
+        log.info(f"In filter tool pred: {t_ids_scores}")
+
         # form the payload of the predicted tools to be shown
         for child, score in t_ids_scores:
             c_dict = dict()
             for t_id in self.all_tools:
+                log.info(f"In filter tool pred: {child}, {score} and {t_id}")
                 # select the name and tool id if it is installed in Galaxy
                 if (
                     t_id == child
-                    and score > 0.0
+                    and score >= 0.0
                     and child in last_compatible_tools
                     and child not in self.deprecated_tools
                 ):
@@ -301,7 +372,10 @@ class ToolRecommendations:
         prediction_data["name"] = ",".join(tool_sequence)
         prediction_data["children"] = list()
         last_tool_name = tool_sequence[-1]
+        log.info(f"prediction_data: {prediction_data}")
+        log.info(f"last_tool_name: {last_tool_name}")
         # do prediction only if the last is present in the collections of tools
+        log.info(f"self.model_data_dictionary: {self.model_data_dictionary}")
         if last_tool_name in self.model_data_dictionary:
             sample = np.zeros(self.max_seq_len)
             # get tool names without slashes and create a sequence vector
@@ -318,12 +392,16 @@ class ToolRecommendations:
             weight_values = list(self.tool_weights_sorted.values())
             # predict next tools for a test path
             try:
+                import tensorflow as tf
                 # use the same graph and session to predict
-                print("tool_sequence: ", tool_sequence)
-                print("sample: ", sample)
+                #print("tool_sequence: ", tool_sequence)
+                #print("sample: ", sample)
+                log.info(f"tool_sequence: {tool_sequence}")
+                log.info(f"sample: {sample}")
                 sample = tf.convert_to_tensor(sample, dtype=tf.int64)
                 prediction, _ = self.loaded_model(sample, training=False)
-                print("Prediction: ", prediction)
+                #print("Prediction: ", prediction)
+                log.info(f"Prediction: {prediction}")
             except Exception as e:
                 log.exception(e)
                 return prediction_data
@@ -337,6 +415,8 @@ class ToolRecommendations:
             # remove duplicates if any
             pub_t = list(dict.fromkeys(pub_t))
             pub_v = list(dict.fromkeys(pub_v))
+            log.info(f"Prediction pub_t: {pub_t}")
+            log.info(f"Prediction pub_v: {pub_v}")
             prediction_data = self.__filter_tool_predictions(trans, prediction_data, pub_t, pub_v, last_tool_name)
-            print("prediction_data: ", prediction_data)
+            log.info(f"Prediction data: {prediction_data}")
         return prediction_data
