@@ -103,34 +103,6 @@ def get_protocol_from_tool_shed_url(tool_shed_url):
         return "http"
 
 
-def get_tool_dependencies(app, tool_shed_url, repository_name, repository_owner, changeset_revision):
-    tool_dependencies = []
-    tool_shed_accessible = True
-    params = dict(name=repository_name, owner=repository_owner, changeset_revision=changeset_revision)
-    pathspec = ["repository", "get_tool_dependencies"]
-    try:
-        text = util.url_get(
-            tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
-        )
-        tool_shed_accessible = True
-    except Exception as e:
-        tool_shed_accessible = False
-        log.warning(
-            "The URL\n%s\nraised the exception:\n%s\n",
-            util.build_url(tool_shed_url, pathspec=pathspec, params=params),
-            e,
-        )
-    if tool_shed_accessible:
-        if text:
-            tool_dependencies_dict = encoding_util.tool_shed_decode(text)
-            for requirements_dict in tool_dependencies_dict.values():
-                tool_dependency_name = requirements_dict["name"]
-                tool_dependency_version = requirements_dict["version"]
-                tool_dependency_type = requirements_dict["type"]
-                tool_dependencies.append((tool_dependency_name, tool_dependency_version, tool_dependency_type))
-    return tool_shed_accessible, tool_dependencies
-
-
 def get_tool_shed_repository_ids(as_string=False, **kwd):
     tsrid = kwd.get("tool_shed_repository_id", None)
     tsridslist = util.listify(kwd.get("tool_shed_repository_ids", None))
@@ -314,7 +286,6 @@ __all__ = (
     "generate_clone_url_from_repo_info_tup",
     "get_repository_dependencies",
     "get_protocol_from_tool_shed_url",
-    "get_tool_dependencies",
     "get_tool_shed_repository_ids",
     "get_tool_shed_url_from_tool_shed_registry",
     "get_tool_shed_repository_url",
