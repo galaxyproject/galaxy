@@ -1,6 +1,5 @@
 from galaxy.util.tool_shed.common_util import (
     accumulate_tool_dependencies,
-    check_for_missing_tools,
     check_tool_tag_set,
     generate_clone_url_for_installed_repository,
     generate_clone_url_for_repository_in_tool_shed,
@@ -24,7 +23,6 @@ from galaxy.util.tool_shed.common_util import (
 
 __all__ = (
     "accumulate_tool_dependencies",
-    "check_for_missing_tools",
     "check_tool_tag_set",
     "generate_clone_url_for_installed_repository",
     "generate_clone_url_for_repository_in_tool_shed",
