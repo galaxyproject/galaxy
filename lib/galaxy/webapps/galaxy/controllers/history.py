@@ -658,23 +658,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             "allow_user_dataset_purge": trans.app.config.allow_user_dataset_purge,
         }
 
-    @web.require_login("use more than one Galaxy history")
-    @web.expose
-    def view_multiple(self, trans, include_deleted_histories=False, order="update_time", limit=10):
-        """ """
-        current_history_id = trans.security.encode_id(trans.history.id)
-        # TODO: allow specifying user_id for admin?
-        include_deleted_histories = string_as_bool(include_deleted_histories)
-        limit = parse_int(limit, min_val=1, default=10, allow_none=True)
-
-        return trans.fill_template_mako(
-            "history/view_multiple.mako",
-            current_history_id=current_history_id,
-            include_deleted_histories=include_deleted_histories,
-            order=order,
-            limit=limit,
-        )
-
     @web.expose
     def display_by_username_and_slug(self, trans, username, slug):
         """

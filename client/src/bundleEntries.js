@@ -18,10 +18,8 @@ import Circster from "viz/circster";
 export { PhylovizView as phyloviz } from "viz/phyloviz";
 export { SweepsterVisualization, SweepsterVisualizationView } from "viz/sweepster";
 export { createTabularDatasetChunkedView } from "mvc/dataset/data";
-import { HistoryCollection } from "mvc/history/history-model";
 export { History } from "mvc/history/history-model";
 export { HistoryContents } from "mvc/history/history-contents";
-import MultiPanel from "mvc/history/multi-panel";
 export { historyEntry as history } from "mvc/history/history-view";
 export { default as HistoryViewAnnotated } from "mvc/history/history-view-annotated";
 export { default as HistoryCopyDialog } from "mvc/history/copy-dialog";
@@ -40,25 +38,6 @@ export function trackster(options) {
 
 export function circster(options) {
     new Circster.GalaxyApp(options);
-}
-
-export function multiHistory(options) {
-    const histories = new HistoryCollection([], {
-        includeDeleted: options.includingDeleted,
-        order: options.order,
-        limitOnFirstFetch: options.limit,
-        limitPerFetch: options.limit,
-        currentHistoryId: options.current_history_id,
-    });
-    const multipanel = new MultiPanel.MultiPanelColumns({
-        el: $("#center").get(0),
-        histories: histories,
-    });
-
-    histories.fetchFirst({ silent: true }).done(function () {
-        multipanel.createColumns();
-        multipanel.render(0);
-    });
 }
 
 // Previously wandering around as window.thing = thing in the onload script
