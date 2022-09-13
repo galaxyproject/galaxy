@@ -49,7 +49,14 @@
                 </Draggable>
             </div>
         </div>
-        <Minimap :nodes="nodes" :steps="steps" :root-offset="position" :scale="zoomLevel" :pan="currentPan" />
+        <Minimap
+            :nodes="nodes"
+            :steps="steps"
+            :root-offset="position"
+            :scale="zoomLevel"
+            :pan="currentPan"
+            @pan-by="onPan"
+            @moveTo="onMoveTo" />
     </div>
 </template>
 <script>
@@ -105,6 +112,13 @@ export default {
         },
     },
     methods: {
+        onWheel(e) {
+            console.log("wheel event", e);
+        },
+        onMoveTo(moveTo) {
+            console.log("moving to", moveTo);
+            this.svgpanzoom.pan(moveTo);
+        },
         onUpdatedCTM(CTM) {
             this.transform = CTM;
         },
@@ -157,6 +171,8 @@ export default {
         currentPan() {
             if (this.transform) {
                 return { x: this.transform.e, y: this.transform.f };
+            } else {
+                return { x: 0, y: 0 };
             }
         },
         zoomLevel() {

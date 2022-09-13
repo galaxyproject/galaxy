@@ -2,8 +2,8 @@
     <draggable-wrapper
         ref="el"
         @updatePosition="onUpdatePosition"
-        @mouseup="makeActive"
-        @move="onMove"
+        @mouseup.prevent="makeActive"
+        @move.prevent="onMove"
         :id="idString"
         :name="name"
         :node-label="label"
