@@ -102,6 +102,7 @@ setup(
     install_requires=requirements,
     extras_require={
         'cwl': [
+            'CacheControl<0.12.12',  # https://github.com/common-workflow-language/schema_salad/issues/95#issuecomment-1244271884
             'cwltool==3.1.20211107152837',
         ],
         'mulled': [
