@@ -30,6 +30,7 @@ from galaxy.security.vault import Vault
 from galaxy.tool_util.deps.views import DependencyResolversView
 from galaxy.tool_util.verify import test_data
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.tool_shed.tool_shed_registry import Registry as ToolShedRegistry
 from galaxy.web_stack import ApplicationStack
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy

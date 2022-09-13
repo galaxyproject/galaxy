@@ -7,7 +7,7 @@ from typing import (
 
 from galaxy.util import parse_xml_string
 from galaxy.util.path import StrPath
-from galaxy.util.tool_shed.common_util import remove_protocol_from_tool_shed_url
+from galaxy.util.tool_shed import common_util
 from galaxy.util.tool_shed.xml_util import parse_xml
 
 log = logging.getLogger(__name__)
@@ -68,9 +68,9 @@ class Registry:
         Following more what galaxy.demo_sequencer.controllers.common does might be more appropriate at
         some stage...
         """
-        url_sans_protocol = remove_protocol_from_tool_shed_url(url)
+        url_sans_protocol = common_util.remove_protocol_from_tool_shed_url(url)
         for shed_name, shed_url in self.tool_sheds.items():
-            shed_url_sans_protocol = remove_protocol_from_tool_shed_url(shed_url)
+            shed_url_sans_protocol = common_util.remove_protocol_from_tool_shed_url(shed_url)
             if url_sans_protocol.startswith(shed_url_sans_protocol):
                 return self.tool_sheds_auth[shed_name]
         log.debug(f"Invalid url '{str(url)}' received by tool shed registry's url_auth method.")

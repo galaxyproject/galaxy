@@ -91,7 +91,6 @@ from galaxy.security.vault import (
     Vault,
     VaultFactory,
 )
-from galaxy.tool_shed import tool_shed_registry
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.update_repository_manager import UpdateRepositoryManager
 from galaxy.tool_util.deps import containers
@@ -120,6 +119,7 @@ from galaxy.util import (
 )
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.util.task import IntervalTask
+from galaxy.util.tool_shed import tool_shed_registry
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
