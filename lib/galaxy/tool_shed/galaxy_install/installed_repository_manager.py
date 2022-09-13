@@ -594,40 +594,6 @@ class InstalledRepositoryManager:
                 return relative_path
         return None
 
-    def get_runtime_dependent_tool_dependency_tuples(self, tool_dependency, status=None):
-        """
-        Return the list of tool dependency objects that require the received tool dependency at run time.  The returned
-        list will be filtered by the received status if it is not None.  This method is called only from Galaxy.
-        """
-        runtime_dependent_tool_dependency_tups = []
-        required_env_shell_file_path = tool_dependency.get_env_shell_file_path(self.app)
-        if required_env_shell_file_path:
-            required_env_shell_file_path = os.path.abspath(required_env_shell_file_path)
-        if required_env_shell_file_path is not None:
-            for td in self.app.install_model.context.query(self.app.install_model.ToolDependency):
-                if status is None or td.status == status:
-                    env_shell_file_path = td.get_env_shell_file_path(self.app)
-                    if env_shell_file_path is not None:
-                        try:
-                            contents = open(env_shell_file_path).read()
-                        except Exception as e:
-                            contents = None
-                            log.debug(
-                                "Error reading file %s, so cannot determine if package %s requires package %s at run time: %s"
-                                % (str(env_shell_file_path), str(td.name), str(tool_dependency.name), str(e))
-                            )
-                        if contents is not None and contents.find(required_env_shell_file_path) >= 0:
-                            td_tuple = self.get_tool_dependency_tuple_for_installed_repository_manager(td)
-                            runtime_dependent_tool_dependency_tups.append(td_tuple)
-        return runtime_dependent_tool_dependency_tups
-
-    def get_tool_dependency_tuple_for_installed_repository_manager(self, tool_dependency):
-        if tool_dependency.type is None:
-            type = None
-        else:
-            type = str(tool_dependency.type)
-        return (tool_dependency.tool_shed_repository_id, str(tool_dependency.name), str(tool_dependency.version), type)
-
     def handle_existing_tool_dependencies_that_changed_in_update(
         self, repository, original_dependency_dict, new_dependency_dict
     ):
