@@ -24,11 +24,11 @@ function TagModel(props = {}) {
     Object.defineProperty(this, "style", {
         enumerable: true,
         get: function () {
-            const { primary, contrasting, darker } = keyedColorScheme(this.text);
+            const { primary, darker } = keyedColorScheme(this.text);
 
             const styles = {
                 "background-color": primary,
-                color: contrasting,
+                color: "black",
                 "border-color": darker,
             };
             if (this.text.startsWith("name:")) {
