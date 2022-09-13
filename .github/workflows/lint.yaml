@@ -5,11 +5,13 @@ on:
       - '**.py'
       - '.github/workflows/lint.yaml'
       - lib/galaxy/dependencies/**
+      - mypy.ini
   pull_request:
     paths:
       - '**.py'
       - '.github/workflows/lint.yaml'
       - lib/galaxy/dependencies/**
+      - mypy.ini
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
