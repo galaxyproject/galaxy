@@ -1,14 +1,10 @@
 #!/bin/sh
 
 #######
-# Use this script to manage Galaxy and Tool Shed Install migrations.
-# (Use the manage_db.sh script to manage Tool Shed migrations.)
-#
-# This script provides access to Alembic's command line options and is
-# intended for advanced use scenarios. For regular database management tasks,
-# we encourage you to use the manage_db.sh script.
-#
-# NOTE: If your database is empty, use create_db.sh instead.
+# Use this script if you need to run migration operations on the Tool Shed
+# Install data model (the *tsi* migration branch), or if you need access to the
+# full scope of command line options provided by Alembic. For regular migration
+# tasks, uses the db.sh script.
 #
 # We use branch labels to distinguish between the galaxy and the tool_shed_install models,
 # so in most cases you'll need to identify the branch to which your command should be applied.
@@ -28,7 +24,7 @@
 # ./run_alembic.sh upgrade heads  # upgrade gxy and tsi to head revisions
 #
 # To downgrade:
-# ./run_alembic.sh downgrade gxy@base  # downgrade gxy to base (empty db with empty alembic table)
+# ./run_alembic.sh downgrade gxy@base  # downgrade gxy to base (database with empty alembic table)
 # ./run_alembic.sh downgrade gxy@-1  # downgrade gxy to 1 revision below current
 # ./run_alembic.sh downgrade [revision identifier]  # downgrade gxy to a specific revision
 # ./run_alembic.sh downgrade [revision identifier]-1  # downgrade gxy to 1 revision below specific revision
@@ -41,7 +37,9 @@
 # GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION=my-db-url ./run_alembic.sh ...
 # GALAXY_INSTALL_CONFIG_OVERRIDE_DATABASE_CONNECTION=my-other-db-url ./run_alembic.sh ...
 #
-# For more options, see Alembic's documentation at https://alembic.sqlalchemy.org
+# Further information:
+# Galaxy migration documentation: lib/galaxy/model/migrations/README.md
+# Alembic documentation: https://alembic.sqlalchemy.org
 #######
 
 ALEMBIC_CONFIG='lib/galaxy/model/migrations/alembic.ini'
