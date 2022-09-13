@@ -1,4 +1,3 @@
-import errno
 import json
 import logging
 import os
@@ -7,10 +6,7 @@ from urllib.parse import urljoin
 from routes import url_for
 
 from galaxy import util
-from galaxy.util.tool_shed import (
-    encoding_util,
-    xml_util,
-)
+from galaxy.util.tool_shed import encoding_util
 
 log = logging.getLogger(__name__)
 
@@ -67,31 +63,6 @@ def generate_clone_url_from_repo_info_tup(app, repo_info_tup):
     tool_shed_url = get_tool_shed_url_from_tool_shed_registry(app, toolshed)
     # Don't include the changeset_revision in clone urls.
     return util.build_url(tool_shed_url, pathspec=["repos", owner, name])
-
-
-def get_non_shed_tool_panel_configs(app):
-    """Get the non-shed related tool panel configs - there can be more than one, and the default is tool_conf.xml."""
-    config_filenames = []
-    for config_filename in app.config.tool_configs:
-        # Any config file that includes a tool_path attribute in the root tag set like the following is shed-related.
-        # <toolbox tool_path="database/shed_tools">
-        try:
-            tree, error_message = xml_util.parse_xml(config_filename)
-        except OSError as exc:
-            if (
-                config_filename == app.config.shed_tool_conf
-                and not app.config.shed_tool_conf_set
-                and exc.errno == errno.ENOENT
-            ):
-                continue
-            raise
-        if tree is None:
-            continue
-        root = tree.getroot()
-        tool_path = root.get("tool_path", None)
-        if tool_path is None:
-            config_filenames.append(config_filename)
-    return config_filenames
 
 
 def get_repository_dependencies(app, tool_shed_url, repository_name, repository_owner, changeset_revision):
@@ -341,7 +312,6 @@ __all__ = (
     "generate_clone_url_for_installed_repository",
     "generate_clone_url_for_repository_in_tool_shed",
     "generate_clone_url_from_repo_info_tup",
-    "get_non_shed_tool_panel_configs",
     "get_repository_dependencies",
     "get_protocol_from_tool_shed_url",
     "get_tool_dependencies",
