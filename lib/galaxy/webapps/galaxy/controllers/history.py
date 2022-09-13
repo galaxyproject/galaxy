@@ -26,7 +26,6 @@ from galaxy.model.item_attrs import (
 from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     listify,
-    parse_int,
     sanitize_text,
     string_as_bool,
     unicodify,
