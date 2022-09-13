@@ -269,6 +269,14 @@ class MetadataGenerator:
         tmp_url = remove_protocol_and_user_from_clone_url(self.repository_clone_url)
         return f"{tmp_url}/{guid_type}/{obj_id}/{version}"
 
+    def initial_metadata_dict(self) -> Dict[str, Any]:
+        if self.app.name == "galaxy":
+            # Shed related tool panel configs are only relevant to Galaxy.
+            metadata_dict = {"shed_config_filename": self.shed_config_dict.get("config_filename")}
+        else:
+            metadata_dict = {}
+        return metadata_dict
+
     def generate_metadata_for_changeset_revision(self):
         """
         Generate metadata for a repository using its files on disk.  To generate metadata
@@ -292,11 +300,7 @@ class MetadataGenerator:
         else:
             original_repository_metadata = None
         readme_file_names = _get_readme_file_names(str(self.repository.name))
-        if self.app.name == "galaxy":
-            # Shed related tool panel configs are only relevant to Galaxy.
-            metadata_dict = {"shed_config_filename": self.shed_config_dict.get("config_filename")}
-        else:
-            metadata_dict = {}
+        metadata_dict = self.initial_metadata_dict()
         readme_files = []
         invalid_tool_configs = []
         if self.resetting_all_metadata_on_repository:
@@ -1055,7 +1059,6 @@ class MetadataGenerator:
             else:
                 self.set_changeset_revision(changeset_revision)
             self.shed_config_dict = repository.get_shed_config_dict(self.app)
-            self.metadata_dict = {"shed_config_filename": self.shed_config_dict.get("config_filename", None)}
         else:
             if relative_install_dir is None and self.repository is not None:
                 relative_install_dir = repository.repo_path(self.app)
@@ -1064,7 +1067,10 @@ class MetadataGenerator:
             else:
                 self.set_changeset_revision(changeset_revision)
             self.shed_config_dict = {}
-            self.metadata_dict = {}
+        self._reset_attributes_after_repository_update(relative_install_dir)
+
+    def _reset_attributes_after_repository_update(self, relative_install_dir: Optional[str]):
+        self.metadata_dict = self.initial_metadata_dict()
         self.set_relative_install_dir(relative_install_dir)
         self.set_repository_files_dir()
         self.resetting_all_metadata_on_repository = False
