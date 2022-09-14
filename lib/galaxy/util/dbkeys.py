@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 
 def read_dbnames(filename):
-    """ Read build names from file """
+    """Read build names from file"""
     db_names = []
     try:
         ucsc_builds = {}
@@ -24,7 +24,7 @@ def read_dbnames(filename):
         name_to_db_base = {}
         if filename is None:
             # Should only be happening with the galaxy.tools.parameters.basic:GenomeBuildParameter docstring unit test
-            filename = os.path.join(galaxy_directory(), 'tool-data', 'shared', 'ucsc', 'builds.txt.sample')
+            filename = os.path.join(galaxy_directory(), "tool-data", "shared", "ucsc", "builds.txt.sample")
         for line in open(filename):
             try:
                 if line[0:1] == "#":
@@ -38,12 +38,12 @@ def read_dbnames(filename):
                     int(fields[0])
                     man_builds.append((fields[1], fields[0]))
                 except Exception:  # UCSC build
-                    db_base = fields[0].rstrip('0123456789')
+                    db_base = fields[0].rstrip("0123456789")
                     if db_base not in ucsc_builds:
                         ucsc_builds[db_base] = []
                         name_to_db_base[fields[1]] = db_base
                     # we want to sort within a species numerically by revision number
-                    build_rev = re.compile(r'\d+$')
+                    build_rev = re.compile(r"\d+$")
                     try:
                         build_rev = int(build_rev.findall(fields[0])[0])
                     except Exception:
@@ -91,13 +91,14 @@ class GenomeBuilds:
                 # It does allow one-off, history specific dbkeys to be created by a user. But we are not filtering,
                 # so a len file will be listed twice (as the build name and again as dataset name),
                 # if custom dbkey creation/conversion occurred within the current history.
-                datasets = trans.sa_session.query(self._app.model.HistoryDatasetAssociation) \
-                                .filter_by(deleted=False, history_id=trans.history.id, extension="len")
+                datasets = trans.sa_session.query(self._app.model.HistoryDatasetAssociation).filter_by(
+                    deleted=False, history_id=trans.history.id, extension="len"
+                )
                 for dataset in datasets:
                     rval.append((dataset.dbkey, f"{dataset.name} ({dataset.dbkey}) [History]"))
             user = trans.user
-            if user and hasattr(user, 'preferences') and 'dbkeys' in user.preferences:
-                user_keys = loads(user.preferences['dbkeys'])
+            if user and hasattr(user, "preferences") and "dbkeys" in user.preferences:
+                user_keys = loads(user.preferences["dbkeys"])
                 for key, chrom_dict in user_keys.items():
                     rval.append((key, f"{chrom_dict['name']} ({key}) [Custom]"))
         # Load old builds.txt static keys
@@ -106,7 +107,7 @@ class GenomeBuilds:
         dbkey_table = self._app.tool_data_tables.get(self._data_table_name, None)
         if dbkey_table is not None:
             for field_dict in dbkey_table.get_named_fields_list():
-                rval.append((field_dict['value'], field_dict['name']))
+                rval.append((field_dict["value"], field_dict["name"]))
         return rval
 
     def get_chrom_info(self, dbkey, trans=None, custom_build_hack_get_len_from_fasta_conversion=True):
@@ -120,26 +121,36 @@ class GenomeBuilds:
                 chrom_info = db_dataset.file_name
             else:
                 # Do Custom Build handling
-                if trans.user and ('dbkeys' in trans.user.preferences) and (dbkey in loads(trans.user.preferences['dbkeys'])):
-                    custom_build_dict = loads(trans.user.preferences['dbkeys'])[dbkey]
+                if (
+                    trans.user
+                    and ("dbkeys" in trans.user.preferences)
+                    and (dbkey in loads(trans.user.preferences["dbkeys"]))
+                ):
+                    custom_build_dict = loads(trans.user.preferences["dbkeys"])[dbkey]
                     # HACK: the attempt to get chrom_info below will trigger the
                     # fasta-to-len converter if the dataset is not available or,
                     # which will in turn create a recursive loop when
                     # running the fasta-to-len tool. So, use a hack in the second
                     # condition below to avoid getting chrom_info when running the
                     # fasta-to-len converter.
-                    if 'fasta' in custom_build_dict and custom_build_hack_get_len_from_fasta_conversion:
+                    if "fasta" in custom_build_dict and custom_build_hack_get_len_from_fasta_conversion:
                         # Build is defined by fasta; get len file, which is obtained from converting fasta.
-                        build_fasta_dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(custom_build_dict['fasta'])
-                        chrom_info = build_fasta_dataset.get_converted_dataset(trans, 'len').file_name
-                    elif 'len' in custom_build_dict:
+                        build_fasta_dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(
+                            custom_build_dict["fasta"]
+                        )
+                        chrom_info = build_fasta_dataset.get_converted_dataset(trans, "len").file_name
+                    elif "len" in custom_build_dict:
                         # Build is defined by len file, so use it.
-                        chrom_info = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(custom_build_dict['len']).file_name
+                        chrom_info = (
+                            trans.sa_session.query(trans.app.model.HistoryDatasetAssociation)
+                            .get(custom_build_dict["len"])
+                            .file_name
+                        )
         # Check Data table
         if not chrom_info:
             dbkey_table = self._app.tool_data_tables.get(self._data_table_name, None)
             if dbkey_table is not None:
-                chrom_info = dbkey_table.get_entry('value', dbkey, 'len_path', default=None)
+                chrom_info = dbkey_table.get_entry("value", dbkey, "len_path", default=None)
         # use configured server len path
         if not chrom_info:
             # Default to built-in build.

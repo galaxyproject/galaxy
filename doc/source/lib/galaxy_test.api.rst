@@ -6,13 +6,21 @@ galaxy\_test.api package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   galaxy_test.api.cwl
+
 Submodules
 ----------
 
-galaxy\_test.api.test\_api\_batch module
-----------------------------------------
+galaxy\_test.api.sharable module
+--------------------------------
 
-.. automodule:: galaxy_test.api.test_api_batch
+.. automodule:: galaxy_test.api.sharable
    :members:
    :undoc-members:
    :show-inheritance:
@@ -57,6 +65,30 @@ galaxy\_test.api.test\_datatypes module
    :undoc-members:
    :show-inheritance:
 
+galaxy\_test.api.test\_display\_applications module
+---------------------------------------------------
+
+.. automodule:: galaxy_test.api.test_display_applications
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy\_test.api.test\_folder\_contents module
+----------------------------------------------
+
+.. automodule:: galaxy_test.api.test_folder_contents
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy\_test.api.test\_folders module
+-------------------------------------
+
+.. automodule:: galaxy_test.api.test_folders
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy\_test.api.test\_framework module
 ---------------------------------------
 
@@ -65,10 +97,26 @@ galaxy\_test.api.test\_framework module
    :undoc-members:
    :show-inheritance:
 
-galaxy\_test.api.test\_galaxy\_interactor module
-------------------------------------------------
+galaxy\_test.api.test\_group\_roles module
+------------------------------------------
 
-.. automodule:: galaxy_test.api.test_galaxy_interactor
+.. automodule:: galaxy_test.api.test_group_roles
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy\_test.api.test\_group\_users module
+------------------------------------------
+
+.. automodule:: galaxy_test.api.test_group_users
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy\_test.api.test\_groups module
+------------------------------------
+
+.. automodule:: galaxy_test.api.test_groups
    :members:
    :undoc-members:
    :show-inheritance:
@@ -221,6 +269,14 @@ galaxy\_test.api.test\_workflows module
 ---------------------------------------
 
 .. automodule:: galaxy_test.api.test_workflows
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy\_test.api.test\_workflows\_cwl module
+--------------------------------------------
+
+.. automodule:: galaxy_test.api.test_workflows_cwl
    :members:
    :undoc-members:
    :show-inheritance:

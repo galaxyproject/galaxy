@@ -74,7 +74,7 @@ class AnnotatableSerializerMixin:
     serializers: Dict[str, Serializer]
 
     def add_serializers(self):
-        self.serializers['annotation'] = self.serialize_annotation
+        self.serializers["annotation"] = self.serialize_annotation
 
     def serialize_annotation(self, item, key, user=None, **context):
         """
@@ -88,7 +88,7 @@ class AnnotatableDeserializerMixin:
     deserializers: Dict[str, Deserializer]
 
     def add_deserializers(self):
-        self.deserializers['annotation'] = self.deserialize_annotation
+        self.deserializers["annotation"] = self.deserialize_annotation
 
     def deserialize_annotation(self, item, key, val, user=None, **context):
         """
@@ -121,10 +121,10 @@ class AnnotatableFilterMixin:
     def _add_parsers(self):
         self.fn_filter_parsers.update(
             {
-                'annotation': {
-                    'op': {
-                        'has': self.filter_annotation_contains,
-                        'contains': self.filter_annotation_contains,
+                "annotation": {
+                    "op": {
+                        "has": self.filter_annotation_contains,
+                        "contains": self.filter_annotation_contains,
                     },
                 },
             }

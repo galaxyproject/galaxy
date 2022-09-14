@@ -26,8 +26,7 @@ describe("Node", () => {
         expect(icon.at(2).classes()).toEqual(expect.arrayContaining(["fa-wrench"]));
         const toolLinks = wrapper.findAll("i");
         expect(toolLinks.length).toBe(3);
-        wrapper.setProps({ type: "subworkflow" });
-        await flushPromises();
+        await wrapper.setProps({ type: "subworkflow" });
         expect(icon.at(2).classes()).toEqual(expect.arrayContaining(["fa-sitemap"]));
         const subworkflowLinks = wrapper.findAll("i");
         expect(subworkflowLinks.length).toBe(2);

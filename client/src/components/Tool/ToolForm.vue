@@ -1,12 +1,14 @@
 <template>
     <ConfigProvider v-slot="{ config }">
         <CurrentUser v-slot="{ user }">
-            <UserHistories v-if="user" :user="user" v-slot="{ currentHistoryId }">
+            <UserHistories v-if="user" v-slot="{ currentHistoryId }" :user="user">
                 <div v-if="currentHistoryId">
-                    <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
+                    <b-alert :show="messageShow" :variant="messageVariant">
+                        {{ messageText }}
+                    </b-alert>
                     <LoadingSpan v-if="showLoading" message="Loading Tool" />
                     <div v-if="showEntryPoints">
-                        <ToolEntryPoints v-for="job in entryPoints" :job-id="job.id" :key="job.id" />
+                        <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
                     </div>
                     <ToolSuccess
                         v-if="showSuccess"
@@ -15,7 +17,10 @@
                         :tool-name="toolName" />
                     <Webhook v-if="showSuccess" type="tool" :tool-id="jobDef.tool_id" />
                     <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
-                        <b-alert show variant="danger">
+                        <b-alert v-if="errorMessage" show variant="danger">
+                            {{ errorMessage }}
+                        </b-alert>
+                        <b-alert show variant="warning">
                             The server could not complete this request. Please verify your parameter settings, retry
                             submission and contact the Galaxy Team if this error persists. A transcript of the submitted
                             data is shown below.
@@ -36,13 +41,13 @@
                         :message-text="messageText"
                         :message-variant="messageVariant"
                         :disabled="disabled || showExecuting"
-                        @onChangeVersion="onChangeVersion"
-                        @onUpdateFavorites="onUpdateFavorites"
                         itemscope="itemscope"
-                        itemtype="https://schema.org/CreativeWork">
+                        itemtype="https://schema.org/CreativeWork"
+                        @onChangeVersion="onChangeVersion"
+                        @onUpdateFavorites="onUpdateFavorites">
                         <template v-slot:body>
                             <FormDisplay
-                                :id="formConfig.id"
+                                :id="toolId"
                                 :inputs="formConfig.inputs"
                                 :validation-scroll-to="validationScrollTo"
                                 @onChange="onChange"
@@ -50,32 +55,32 @@
                             <FormElement
                                 v-if="emailAllowed(config, user)"
                                 id="send_email_notification"
+                                v-model="useEmail"
                                 title="Email notification"
                                 help="Send an email notification when the job completes."
-                                type="boolean"
-                                v-model="useEmail" />
+                                type="boolean" />
                             <FormElement
                                 v-if="remapAllowed"
                                 id="rerun_remap_job_id"
+                                v-model="useJobRemapping"
                                 :title="remapTitle"
                                 :help="remapHelp"
-                                type="boolean"
-                                v-model="useJobRemapping" />
+                                type="boolean" />
                             <FormElement
                                 v-if="reuseAllowed(user)"
                                 id="use_cached_job"
+                                v-model="useCachedJobs"
                                 title="Attempt to re-use jobs with identical parameters?"
                                 help="This may skip executing jobs that you have already run."
-                                type="boolean"
-                                v-model="useCachedJobs" />
+                                type="boolean" />
                         </template>
                         <template v-slot:buttons>
                             <ButtonSpinner
                                 id="execute"
                                 title="Execute"
-                                @onClick="onExecute(config, currentHistoryId)"
                                 :wait="showExecuting"
-                                :tooltip="tooltip" />
+                                :tooltip="tooltip"
+                                @onClick="onExecute(config, currentHistoryId)" />
                         </template>
                     </ToolCard>
                 </div>
@@ -88,6 +93,7 @@
 import { getGalaxyInstance } from "app";
 import { getToolFormData, updateToolFormData, submitJob } from "./services";
 import { allowCachedJobs } from "./utilities";
+import { refreshContentsWrapper } from "utils/data";
 import ToolCard from "./ToolCard";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import CurrentUser from "components/providers/CurrentUser";
@@ -97,7 +103,7 @@ import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import ToolSuccess from "./ToolSuccess";
-import UserHistories from "components/History/providers/UserHistories";
+import UserHistories from "components/providers/UserHistories";
 import Webhook from "components/Common/Webhook";
 
 export default {
@@ -142,12 +148,12 @@ export default {
             showSuccess: false,
             showError: false,
             showExecuting: false,
-            error: null,
             formConfig: {},
             formData: {},
             remapAllowed: false,
             errorTitle: null,
             errorContent: null,
+            errorMessage: "",
             messageShow: false,
             messageVariant: "",
             messageText: "",
@@ -159,29 +165,18 @@ export default {
             jobResponse: {},
             validationInternal: null,
             validationScrollTo: null,
-            validationErrors: null,
             currentVersion: this.version,
         };
-    },
-    created() {
-        this.requestTool().then(() => {
-            const Galaxy = getGalaxyInstance();
-            if (Galaxy && Galaxy.currHistoryPanel) {
-                console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
-                Galaxy.currHistoryPanel.collection.on("change", this.onHistoryChange, this);
-            }
-        });
-    },
-    beforeDestroy() {
-        const Galaxy = getGalaxyInstance();
-        if (Galaxy && Galaxy.currHistoryPanel) {
-            Galaxy.currHistoryPanel.collection.off("change", this.onHistoryChange, this);
-            console.debug(`ToolForm::beforeDestroy - Stopped listening to history changes. [${this.id}]`);
-        }
     },
     computed: {
         toolName() {
             return this.formConfig.name;
+        },
+        toolId() {
+            // ensure version is included in tool id, otherwise form inputs are
+            // not re-rendered when versions change.
+            const { id, version } = this.formConfig;
+            return id.endsWith(version) ? id : `${id}/${version}`;
         },
         tooltip() {
             return `Execute: ${this.formConfig.name} (${this.formConfig.version})`;
@@ -203,6 +198,22 @@ export default {
                 return "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
             }
         },
+    },
+    created() {
+        this.requestTool().then(() => {
+            const Galaxy = getGalaxyInstance();
+            if (Galaxy && Galaxy.currHistoryPanel) {
+                console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
+                Galaxy.currHistoryPanel.collection.on("change", this.onHistoryChange, this);
+            }
+        });
+    },
+    beforeDestroy() {
+        const Galaxy = getGalaxyInstance();
+        if (Galaxy && Galaxy.currHistoryPanel) {
+            Galaxy.currHistoryPanel.collection.off("change", this.onHistoryChange, this);
+            console.debug(`ToolForm::beforeDestroy - Stopped listening to history changes. [${this.id}]`);
+        }
     },
     methods: {
         emailAllowed(config, user) {
@@ -272,7 +283,6 @@ export default {
                 return;
             }
             this.showExecuting = true;
-            const Galaxy = getGalaxyInstance();
             const jobDef = {
                 history_id: historyId,
                 tool_id: this.formConfig.id,
@@ -294,9 +304,7 @@ export default {
             submitJob(jobDef).then(
                 (jobResponse) => {
                     this.showExecuting = false;
-                    if (Galaxy.currHistoryPanel) {
-                        Galaxy.currHistoryPanel.refreshContents();
-                    }
+                    refreshContentsWrapper();
                     if (jobResponse.produces_entry_points) {
                         this.showEntryPoints = true;
                         this.entryPoints = jobResponse.jobs;
@@ -319,6 +327,7 @@ export default {
                     document.querySelector(".center-panel").scrollTop = 0;
                 },
                 (e) => {
+                    this.errorMessage = e?.response?.data?.err_msg;
                     this.showExecuting = false;
                     let genericError = true;
                     const errorData = e && e.response && e.response.data && e.response.data.err_data;
@@ -332,7 +341,7 @@ export default {
                     if (genericError) {
                         this.showError = true;
                         this.errorTitle = "Job submission failed.";
-                        this.errorContent = this.jobDef;
+                        this.errorContent = jobDef;
                     }
                 }
             );

@@ -28,11 +28,6 @@ export default {
             showDismissable: false,
         };
     },
-    watch: {
-        message(newMessage) {
-            this.resetTimer();
-        },
-    },
     computed: {
         showAlert() {
             if (this.message) {
@@ -42,6 +37,11 @@ export default {
                 return true;
             }
             return false;
+        },
+    },
+    watch: {
+        message(newMessage) {
+            this.resetTimer();
         },
     },
     methods: {

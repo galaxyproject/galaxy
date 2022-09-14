@@ -14,12 +14,12 @@ from typing import (
 from pyparsing import (
     alphanums,
     CaselessKeyword,
-    Forward,
     infixNotation,
     Keyword,
     opAssoc,
     ParseException,
     ParserElement,
+    QuotedString,
     Word,
 )
 
@@ -36,6 +36,7 @@ FALSE = Keyword("False")
 NOT_OP = CaselessKeyword("not")
 AND_OP = CaselessKeyword("and")
 OR_OP = CaselessKeyword("or")
+QUOTED_STRING = QuotedString("'")
 
 
 class TokenEvaluator:
@@ -50,6 +51,7 @@ class BoolOperand:
     """Represents a boolean operand that has a label and a value.
 
     The value is determined by a custom TokenEvaluator."""
+
     evaluator: TokenEvaluator
 
     def __init__(self, token):
@@ -67,6 +69,7 @@ class BoolOperand:
 
 class BoolBinaryOperation:
     """Base representation of a boolean binary operation."""
+
     reprsymbol: str
     evalop: Callable[[Iterable[object]], bool]
 
@@ -78,19 +81,21 @@ class BoolBinaryOperation:
         return f"({sep.join(map(str, self.args))})"
 
     def __bool__(self):
-        return self.evalop(bool(a) for a in self.args)
+        return self.evalop(bool(a) for a in self.args)  # type: ignore[misc,call-arg]
 
     __nonzero__ = __bool__
 
 
 class BoolAnd(BoolBinaryOperation):
     """Represents the `AND` boolean operation."""
+
     reprsymbol = "&"
     evalop = all
 
 
 class BoolOr(BoolBinaryOperation):
     """Represents the `OR` boolean operation."""
+
     reprsymbol = "|"
     evalop = any
 
@@ -124,15 +129,16 @@ class BooleanExpressionEvaluator:
 
         :param evaluator: The custom TokenEvaluator used to transform any token into a boolean.
         :type evaluator:  TokenEvaluator
+
         :param token_format: A string of all allowed characters used to form a valid token, defaults to None.
-                             The default value (None) will use DEFAULT_TOKEN_FORMAT which means the allowed characters are [A-Za-z0-9_-@.].
+                             The default value (None) will use DEFAULT_TOKEN_FORMAT which means the allowed characters are ``[A-Za-z0-9_-@.]``.
         :type token_format:  Optional[str]
         """
         action = BoolOperand
         action.evaluator = evaluator
-        boolOperand = TRUE | FALSE | Word(token_format or DEFAULT_TOKEN_FORMAT)
+        boolOperand = TRUE | FALSE | QUOTED_STRING | Word(token_format or DEFAULT_TOKEN_FORMAT)
         boolOperand.setParseAction(action)
-        self.boolExpr: Forward = infixNotation(
+        self.boolExpr: ParserElement = infixNotation(
             boolOperand,
             [
                 (NOT_OP, 1, opAssoc.RIGHT, BoolNot),
@@ -147,7 +153,7 @@ class BooleanExpressionEvaluator:
             res = self.boolExpr.parseString(expr, parseAll=True)[0]
             return bool(res)
         except ParseException as e:
-            log.error(f'BooleanExpressionEvaluator unable to evaluate expression => {expr}', exc_info=e)
+            log.error(f"BooleanExpressionEvaluator unable to evaluate expression => {expr}", exc_info=e)
             raise e
 
     @classmethod

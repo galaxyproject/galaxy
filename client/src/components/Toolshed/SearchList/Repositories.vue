@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-table striped id="shed-search-results" :items="repositories" :fields="fields">
+        <b-table id="shed-search-results" striped :items="repositories" :fields="fields">
             <template v-slot:cell(name)="row">
                 <b-link href="javascript:void(0)" role="button" class="font-weight-bold" @click="row.toggleDetails">
                     {{ row.item.name }}
@@ -11,7 +11,7 @@
                 <RepositoryDetails :repo="row.item" :toolshed-url="toolshedUrl" />
             </template>
         </b-table>
-        <div class="unavailable-message" v-if="noResultsFound">No matching repositories found.</div>
+        <div v-if="noResultsFound" class="unavailable-message">No matching repositories found.</div>
         <loading-span v-if="pageLoading" message="Loading repositories" />
     </div>
 </template>
@@ -61,6 +61,14 @@ export default {
             error: null,
         };
     },
+    computed: {
+        pageLoading() {
+            return this.pageState === LOADING;
+        },
+        noResultsFound() {
+            return this.repositories.length === 0 && !this.pageLoading;
+        },
+    },
     watch: {
         toolshedUrl() {
             this.load();
@@ -72,14 +80,6 @@ export default {
             if (this.scrolled && this.pageState === READY) {
                 this.load(this.page + 1);
             }
-        },
-    },
-    computed: {
-        pageLoading() {
-            return this.pageState === LOADING;
-        },
-        noResultsFound() {
-            return this.repositories.length === 0 && !this.pageLoading;
         },
     },
     created() {

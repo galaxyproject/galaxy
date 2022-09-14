@@ -17,12 +17,6 @@ export function reloadDisplayApplications(ids) {
     return axios.post(url, { ids: ids });
 }
 
-export function getActiveInvocations() {
-    const params = { include_terminal: "false" };
-    const url = `${getAppRoot()}api/invocations`;
-    return axios.get(url, { params: params });
-}
-
 export function getInstalledRepositories() {
     const url = `${getAppRoot()}api/tool_shed_repositories?uninstalled=False`;
     return axios.get(url);

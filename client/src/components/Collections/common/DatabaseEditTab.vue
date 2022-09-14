@@ -5,8 +5,8 @@
             <div class="text-right">
                 <button
                     class="save-collection-edit btn btn-primary"
-                    @click="clickedSave"
-                    :disabled="selectedGenome.id == databaseKeyFromElements">
+                    :disabled="selectedGenome.id == databaseKeyFromElements"
+                    @click="clickedSave">
                     {{ l("Save") }}
                 </button>
             </div>
@@ -28,15 +28,7 @@
 import Multiselect from "vue-multiselect";
 
 export default {
-    created() {
-        this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
-    },
     components: { Multiselect },
-    data: function () {
-        return {
-            selectedGenome: {},
-        };
-    },
     props: {
         genomes: {
             type: Array,
@@ -46,6 +38,14 @@ export default {
             type: String,
             required: true,
         },
+    },
+    data: function () {
+        return {
+            selectedGenome: {},
+        };
+    },
+    created() {
+        this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
     },
     methods: {
         clickedSave: function () {

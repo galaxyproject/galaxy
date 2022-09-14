@@ -213,6 +213,12 @@
                     font-weight: bold;
                 }
             }
+            .dbkey {
+                .value {
+                    white-space: normal;
+                    overflow-wrap: break-word;
+                }
+            }
             .datatype .value:after {
                 content: ",";
                 @extend %help-text;

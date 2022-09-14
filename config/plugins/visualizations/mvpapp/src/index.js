@@ -329,7 +329,7 @@ function AjaxDataProvider(confObj) {
                     var obj = {};
                     cv.forEach(function (d, idx) {
                         var escapedField = '"' + cNames[idx] + '"';
-                        if (isNumber(d)) {
+                        if (isNumber(d) && cNames[idx] != 'PEPTIDE_ID') {
                             obj[escapedField] = Number.parseFloat(d);
                         } else {
                             obj[escapedField] = d;
@@ -663,7 +663,7 @@ var IGVTrackManager = (function (itm) {
     itm.galaxyTrackFiles = null;
 
     itm.queryGalaxyHistory = function () {
-        let url = itm.galaxyConfiguration.href + "/api/histories/" + itm.galaxyConfiguration.historyID + "/contents/";
+        let url = itm.galaxyConfiguration.href + "/api/histories/" + itm.galaxyConfiguration.historyID + "/contents";
 
         $.get(url, function (data) {
             let files = [];
@@ -3553,7 +3553,7 @@ var featureViewer = {
                 featureViewer.galaxyConfiguration.href +
                 "/api/histories/" +
                 featureViewer.galaxyConfiguration.historyID +
-                "/contents/";
+                "/contents";
 
             $.get(url, function (data) {
                 //Need to check if delete = True

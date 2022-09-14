@@ -5,25 +5,25 @@ from galaxy.util.bunch import Bunch
 
 def test_stock_filtering_requires_login_tools():
     anonymous_user_trans = mock_trans(has_user=False)
-    filters = filter_factory({}).build_filters(mock_trans())['tool']
+    filters = filter_factory({}).build_filters(mock_trans())["tool"]
     assert not is_filtered(filters, anonymous_user_trans, mock_tool(require_login=False))
     assert is_filtered(filters, anonymous_user_trans, mock_tool(require_login=True))
 
     logged_in_trans = mock_trans(has_user=True)
-    filters = filter_factory({}).build_filters(logged_in_trans)['tool']
+    filters = filter_factory({}).build_filters(logged_in_trans)["tool"]
     assert not is_filtered(filters, logged_in_trans, mock_tool(require_login=True))
 
 
 def test_stock_filtering_hidden_tools():
     trans = mock_trans()
-    filters = filter_factory({}).build_filters(trans)['tool']
+    filters = filter_factory({}).build_filters(trans)["tool"]
     assert not is_filtered(filters, trans, mock_tool(hidden=False))
     assert is_filtered(filters, trans, mock_tool(hidden=True))
 
 
 def test_trackster_filtering():
     trans = mock_trans()
-    filters = filter_factory({}).build_filters(trans, trackster=True)['tool']
+    filters = filter_factory({}).build_filters(trans, trackster=True)["tool"]
     assert is_filtered(filters, trans, mock_tool(trackster_conf=False))
     assert not is_filtered(filters, trans, mock_tool(trackster_conf=True))
 
@@ -50,7 +50,7 @@ def filter_factory(config_dict=None):
             tool_section_filters=["filtermod:filter_section"],
             tool_label_filters=["filtermod:filter_label_1", "filtermod:filter_label_2"],
         )
-    parent_module_name = '.'.join(__name__.split('.')[:-1])
+    parent_module_name = ".".join(__name__.split(".")[:-1])
     config_dict["toolbox_filter_base_modules"] = f"galaxy.tool_util.toolbox.filters,{parent_module_name}.filter_modules"
     config = Bunch(**config_dict)
     app = Bunch(config=config)

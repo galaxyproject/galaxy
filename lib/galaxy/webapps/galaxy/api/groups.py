@@ -14,7 +14,10 @@ from galaxy.web import (
     expose_api,
     require_admin,
 )
-from . import BaseGalaxyAPIController, depends
+from galaxy.webapps.galaxy.api import (
+    BaseGalaxyAPIController,
+    depends,
+)
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +50,7 @@ class GroupAPIController(BaseGalaxyAPIController):
         GET /api/groups/{encoded_group_id}
         Displays information about a group.
         """
-        return self.manager.show(trans, id)
+        return self.manager.show(trans, EncodedDatabaseIdField.decode(id))
 
     @expose_api
     @require_admin
@@ -56,4 +59,4 @@ class GroupAPIController(BaseGalaxyAPIController):
         PUT /api/groups/{encoded_group_id}
         Modifies a group.
         """
-        self.manager.update(trans, id, payload)
+        self.manager.update(trans, EncodedDatabaseIdField.decode(id), payload)

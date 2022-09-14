@@ -1,10 +1,8 @@
-from galaxy_test.base.workflow_fixtures import (
-    WORKFLOW_WITH_OUTPUT_COLLECTION,
-)
+from galaxy_test.base.workflow_fixtures import WORKFLOW_WITH_OUTPUT_COLLECTION
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
 
 
@@ -16,7 +14,9 @@ class WorkflowInvocationDetailsTestCase(SeleniumTestCase):
     def test_job_details(self):
         gx_selenium_context = self
         history_id = gx_selenium_context.dataset_populator.new_history()
-        gx_selenium_context.workflow_populator.run_workflow(WORKFLOW_WITH_OUTPUT_COLLECTION, history_id=history_id, assert_ok=True, wait=True)
+        gx_selenium_context.workflow_populator.run_workflow(
+            WORKFLOW_WITH_OUTPUT_COLLECTION, history_id=history_id, assert_ok=True, wait=True
+        )
         gx_selenium_context.navigate_to_invocations()
         invocations = gx_selenium_context.components.invocations
         invocations.invocations_table.wait_for_visible()
@@ -28,8 +28,8 @@ class WorkflowInvocationDetailsTestCase(SeleniumTestCase):
             assert len(invocation_rows) > 0
             return invocation_rows[0]
 
-        first_row = assert_has_row()
-        print(first_row)
+        assert_has_row()
+
         invocations.state_details.assert_absent()
         invocations.toggle_invocation_details.wait_for_visible()
         details = invocations.toggle_invocation_details.all()[0]
@@ -43,11 +43,12 @@ class WorkflowInvocationDetailsTestCase(SeleniumTestCase):
         assert_progress_steps_note_contains("3 of 3 steps successfully scheduled.")
         assert "2 of 2 jobs complete." in invocations.progress_jobs_note.wait_for_visible().text
 
-        invocations.input_details.wait_for_and_click()
+        invocations.invocation_tab(label="Details").wait_for_and_click()
+        invocations.invocation_details_tab(label="Inputs").wait_for_and_click()
         invocations.input_details_title(label="text_input").wait_for_visible()
         assert "Test_Dataset" in invocations.input_details_name(label="text_input").wait_for_visible().text
 
-        invocations.steps_details.wait_for_and_click()
+        invocations.invocation_details_tab(label="Steps").wait_for_and_click()
         assert "Step 1: text_input" in invocations.step_title(order_index="0").wait_for_visible().text
         assert "Step 2: split_up" in invocations.step_title(order_index="1").wait_for_visible().text
         assert "Step 3: paired" in invocations.step_title(order_index="2").wait_for_visible().text
@@ -65,10 +66,13 @@ class WorkflowInvocationDetailsTestCase(SeleniumTestCase):
         self.screenshot("invocations_job_table")
 
         invocations.step_job_information(order_index="1").wait_for_visible()
-        assert "collection_creates_pair" in invocations.step_job_information_tool_id(order_index="1").wait_for_visible().text
+        assert (
+            "collection_creates_pair"
+            in invocations.step_job_information_tool_id(order_index="1").wait_for_visible().text
+        )
 
         invocations.step_output_collection(order_index="1").wait_for_and_click()
         invocations.step_output_collection_toggle(order_index="1").wait_for_and_click()
         invocations.step_output_collection_element_identifier(element_identifier="forward").wait_for_and_click()
         datatype = invocations.step_output_collection_element_datatype(order_index="1").wait_for_text()
-        assert datatype == 'txt'
+        assert datatype == "txt"

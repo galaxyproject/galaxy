@@ -128,15 +128,18 @@
     <tool file="phenotype_association/ldtools.xml" />
     <tool file="phenotype_association/master2pg.xml" />
   </section>
-  <!--section id="interactivetools" name="Interactive tools">
+  <!--
+  <section id="interactivetools" name="Interactive tools">
     <tool file="interactive/codingSnps.xml" />
     <tool file="interactive/interactivetool_askomics.xml" />
     <tool file="interactive/interactivetool_bam_iobio.xml" />
     <tool file="interactive/interactivetool_cellxgene.xml" />
     <tool file="interactive/interactivetool_ethercalc.xml" />
     <tool file="interactive/interactivetool_hicbrowser.xml" />
+    <tool file="interactive/interactivetool_jupyter_notebook_1.0.0.xml" />
     <tool file="interactive/interactivetool_jupyter_notebook.xml" />
     <tool file="interactive/interactivetool_neo4j.xml" />
     <tool file="interactive/interactivetool_phinch.xml" />
-  </section-->
+  </section>
+  -->
 </toolbox>

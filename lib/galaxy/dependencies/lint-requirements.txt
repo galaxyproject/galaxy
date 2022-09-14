@@ -1,7 +1,6 @@
 flake8
 flake8-bugbear
-flake8-import-order
-mypy==0.910
+mypy
 types-bleach
 types-boto
 types-contextvars

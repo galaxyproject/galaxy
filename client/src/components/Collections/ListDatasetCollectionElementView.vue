@@ -11,9 +11,7 @@
 import _l from "utils/localization";
 import ClickToEdit from "./common/ClickToEdit";
 export default {
-    created: function () {
-        this.elementName = this.element.name;
-    },
+    components: { ClickToEdit },
     props: {
         element: {
             required: true,
@@ -27,7 +25,14 @@ export default {
             elementName: "",
         };
     },
-    components: { ClickToEdit },
+    watch: {
+        elementName() {
+            this.$emit("onRename", this.elementName);
+        },
+    },
+    created: function () {
+        this.elementName = this.element.name;
+    },
     methods: {
         l(str) {
             // _l conflicts private methods of Vue internals, expose as l instead
@@ -39,11 +44,6 @@ export default {
         /** string rep */
         toString() {
             return "ListDatasetCollectionElementView()";
-        },
-    },
-    watch: {
-        elementName() {
-            this.$emit("onRename", this.elementName);
         },
     },
 };

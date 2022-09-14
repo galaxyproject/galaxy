@@ -1,8 +1,8 @@
 <template>
     <div
+        v-b-tooltip.topright.hover
         class="tool-panel-label"
         :title="description"
-        v-b-tooltip.topright.hover
         @mouseover="hover = true"
         @mouseleave="hover = false">
         {{ definition.text }}

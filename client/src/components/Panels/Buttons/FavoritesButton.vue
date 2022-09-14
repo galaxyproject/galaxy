@@ -1,27 +1,20 @@
 <template>
-    <a
-        class="panel-header-button"
-        @click="onFavorites"
+    <b-button
         v-b-tooltip.hover
+        class="panel-header-button-toolbox"
+        size="sm"
+        variant="link"
+        aria-label="Show favorite tools"
+        :disabled="currentUser.isAnonymous"
         :title="tooltipText"
-        href="javascript:void(0)"
-        role="button"
-        aria-label="Show favorite tools">
-        <font-awesome-icon v-if="toggle" :icon="['fas', 'star']" />
-        <font-awesome-icon v-else :icon="['far', 'star']" />
-    </a>
+        @click="onFavorites">
+        <icon v-if="toggle" :icon="['fas', 'star']" />
+        <icon v-else :icon="['far', 'star']" />
+    </b-button>
 </template>
 
 <script>
-import _l from "utils/localization";
-import { VBTooltip } from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faStar } from "@fortawesome/free-regular-svg-icons";
-import { faStar as faStarSolid } from "@fortawesome/free-solid-svg-icons";
-
-library.add(faStar);
-library.add(faStarSolid);
+import { mapGetters } from "vuex";
 
 export default {
     name: "FavoritesButton",
@@ -30,30 +23,30 @@ export default {
             type: String,
         },
     },
-    components: { FontAwesomeIcon },
     data() {
         return {
             searchKey: "#favorites",
-            tooltipToggle: _l("Show favorites"),
-            tooltipUntoggle: "Clear",
             toggle: false,
         };
     },
-    directives: {
-        "v-b-tooltip": VBTooltip,
+    computed: {
+        ...mapGetters("user", ["currentUser"]),
+
+        tooltipText() {
+            if (this.currentUser.isAnonymous) {
+                return this.l("Log in to Favorite Tools");
+            } else {
+                if (this.toggle) {
+                    return this.l("Clear");
+                } else {
+                    return this.l("Show favorites");
+                }
+            }
+        },
     },
     watch: {
         query() {
             this.toggle = this.query == this.searchKey;
-        },
-    },
-    computed: {
-        tooltipText() {
-            if (this.toggle) {
-                return this.tooltipUntoggle;
-            } else {
-                return this.tooltipToggle;
-            }
         },
     },
     methods: {

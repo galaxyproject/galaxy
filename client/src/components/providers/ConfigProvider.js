@@ -6,6 +6,10 @@
  */
 
 import { mapGetters, mapActions } from "vuex";
+import Vue from "vue"; // this module's Vue is different from store/index.js' Vue
+import Vuex from "vuex";
+
+Vue.use(Vuex);
 
 export default {
     computed: {
@@ -18,6 +22,6 @@ export default {
         this.loadConfigs();
     },
     render() {
-        return this.$scopedSlots.default({ config: this.config });
+        return this.$scopedSlots.default({ config: this.config, loading: this.config === undefined });
     },
 };

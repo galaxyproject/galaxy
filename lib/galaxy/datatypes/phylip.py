@@ -8,7 +8,10 @@ Created on January. 05, 2018
 Phylip datatype sniffer
 """
 from galaxy import util
-from galaxy.datatypes.data import get_file_peek, Text
+from galaxy.datatypes.data import (
+    get_file_peek,
+    Text,
+)
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -20,12 +23,14 @@ from .metadata import MetadataElement
 @build_sniff_from_prefix
 class Phylip(Text):
     """Phylip format stores a multiple sequence alignment"""
+
     edam_data = "data_0863"
     edam_format = "format_1997"
     file_ext = "phylip"
 
-    MetadataElement(name="sequences", default=0, desc="Number of sequences", readonly=True,
-                    visible=False, optional=True, no_value=0)
+    MetadataElement(
+        name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0
+    )
 
     def set_meta(self, dataset, **kwd):
         """
@@ -37,16 +42,16 @@ class Phylip(Text):
         except Exception:
             raise Exception("Header does not correspond to PHYLIP header.")
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:
                 dataset.blurb = f"{util.commaify(str(dataset.metadata.sequences))} sequences"
             else:
                 dataset.blurb = nice_size(dataset.get_size())
         else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
 
     def sniff_strict_interleaved(self, nb_seq, seq_length, alignment_prefix):
         found_seq_length = None
@@ -70,7 +75,7 @@ class Phylip(Text):
                 # All sequence parts should have the same length
                 return False
             # Fail if sequence is not ascii
-            seq.encode('ascii')
+            seq.encode("ascii")
             if any(str.isdigit(c) for c in seq):
                 # Could tighten up further by requiring IUPAC strings chars
                 return False
@@ -100,10 +105,15 @@ class Phylip(Text):
                 # All sequence parts should have the same length
                 return False
             # Fail if sequence is not ascii
-            seq.encode('ascii')
+            seq.encode("ascii")
             if any(str.isdigit(c) for c in seq):
                 # Could tighten up further by requiring IUPAC strings chars
                 return False
+        line = alignment_prefix.readline()
+        if line.strip():
+            # There should be a newline separating alignments.
+            # If we got more content this is probably not a phylip file
+            return False
         # There may be more lines with the remaining parts of the sequences
         return True
 
@@ -119,6 +129,9 @@ class Phylip(Text):
         >>> fname = get_test_fname('test_relaxed_interleaved.phylip')
         >>> Phylip().sniff(fname)
         True
+        >>> fname = get_test_fname("not_a_phylip_file.tabular")
+        >>> Phylip().sniff(fname)
+        False
         """
         f = file_prefix.string_io()
         # Get number of sequences and sequence length from first line

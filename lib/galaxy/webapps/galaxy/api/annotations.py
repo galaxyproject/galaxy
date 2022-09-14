@@ -6,16 +6,17 @@ from abc import abstractmethod
 
 from galaxy import (
     exceptions,
-    managers
+    managers,
 )
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import (
-    UsesStoredWorkflowMixin
+from galaxy.webapps.base.controller import UsesStoredWorkflowMixin
+from . import (
+    BaseGalaxyAPIController,
+    depends,
 )
-from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 

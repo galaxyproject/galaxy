@@ -8,23 +8,61 @@ Usage:
 from __future__ import print_function
 
 import sys
-from ast import Module, parse, walk
+from ast import (
+    Module,
+    parse,
+    walk,
+)
 
 from bx.intervals.io import GenomicInterval
 
 from galaxy.datatypes.util.gff_util import GFFReaderWrapper
 
 AST_NODE_TYPE_WHITELIST = [
-    'Expr', 'Load', 'Str', 'Num', 'BoolOp', 'Compare', 'And', 'Eq', 'NotEq',
-    'Or', 'GtE', 'LtE', 'Lt', 'Gt', 'BinOp', 'Add', 'Div', 'Sub', 'Mult', 'Mod',
-    'Pow', 'LShift', 'GShift', 'BitAnd', 'BitOr', 'BitXor', 'UnaryOp', 'Invert',
-    'Not', 'NotIn', 'In', 'Is', 'IsNot', 'List', 'Index', 'Subscript',
-    'Name',
+    "Expr",
+    "Load",
+    "Str",
+    "Num",
+    "BoolOp",
+    "Compare",
+    "And",
+    "Eq",
+    "NotEq",
+    "Or",
+    "GtE",
+    "LtE",
+    "Lt",
+    "Gt",
+    "BinOp",
+    "Add",
+    "Div",
+    "Sub",
+    "Mult",
+    "Mod",
+    "Pow",
+    "LShift",
+    "GShift",
+    "BitAnd",
+    "BitOr",
+    "BitXor",
+    "UnaryOp",
+    "Invert",
+    "Not",
+    "NotIn",
+    "In",
+    "Is",
+    "IsNot",
+    "List",
+    "Index",
+    "Subscript",
+    "Name",
 ]
 
 
-BUILTIN_AND_MATH_FUNCTIONS = 'abs|all|any|bin|chr|cmp|complex|divmod|float|hex|int|len|long|max|min|oct|ord|pow|range|reversed|round|sorted|str|sum|type|unichr|unicode|log|exp|sqrt|ceil|floor'.split('|')
-STRING_AND_LIST_METHODS = [name for name in dir('') + dir([]) if not name.startswith('_')]
+BUILTIN_AND_MATH_FUNCTIONS = "abs|all|any|bin|chr|cmp|complex|divmod|float|hex|int|len|long|max|min|oct|ord|pow|range|reversed|round|sorted|str|sum|type|unichr|unicode|log|exp|sqrt|ceil|floor".split(
+    "|"
+)
+STRING_AND_LIST_METHODS = [name for name in dir("") + dir([]) if not name.startswith("_")]
 VALID_FUNCTIONS = BUILTIN_AND_MATH_FUNCTIONS + STRING_AND_LIST_METHODS
 # Name blacklist isn't strictly needed - but provides extra peace of mind.
 NAME_BLACKLIST = ["exec", "eval", "globals", "locals", "__import__", "__builtins__"]
@@ -80,7 +118,7 @@ def check_expression(text):
     if not len(statements) == 1:
         return False
     expression = statements[0]
-    if expression.__class__.__name__ != 'Expr':
+    if expression.__class__.__name__ != "Expr":
         return False
 
     for ast_node in walk(expression):
@@ -99,23 +137,16 @@ def check_expression(text):
 
 # Valid operators, ordered so that complex operators (e.g. '>=') are
 # recognized before simple operators (e.g. '>')
-ops = [
-    '>=',
-    '<=',
-    '<',
-    '>',
-    '==',
-    '!='
-]
+ops = [">=", "<=", "<", ">", "==", "!="]
 
 # Escape sequences for valid operators.
 mapped_ops = {
-    '__ge__': ops[0],
-    '__le__': ops[1],
-    '__lt__': ops[2],
-    '__gt__': ops[3],
-    '__eq__': ops[4],
-    '__ne__': ops[5],
+    "__ge__": ops[0],
+    "__le__": ops[1],
+    "__lt__": ops[2],
+    "__gt__": ops[3],
+    "__eq__": ops[4],
+    "__ne__": ops[5],
 }
 
 
@@ -147,7 +178,7 @@ def __main__():
     kept_features = 0
     skipped_lines = 0
     first_skipped_line = 0
-    out = open(output_name, 'w')
+    out = open(output_name, "w")
     for i, feature in enumerate(GFFReaderWrapper(open(input_name))):  # noqa: B007
         if not isinstance(feature, GenomicInterval):
             continue
@@ -155,7 +186,7 @@ def __main__():
         for interval in feature.intervals:
             if interval.feature == feature_name:
                 count += 1
-        eval_text = '%s %s' % (count, condition)
+        eval_text = "%s %s" % (count, condition)
         if not check_expression(eval_text):
             print("Invalid condition: %s, cannot filter." % condition, file=sys.stderr)
             sys.exit(1)
@@ -163,7 +194,7 @@ def __main__():
         if eval(eval_text):
             # Keep feature.
             for interval in feature.intervals:
-                out.write("\t".join(interval.fields) + '\n')
+                out.write("\t".join(interval.fields) + "\n")
             kept_features += 1
 
     # Needed because i is 0-based but want to display stats using 1-based.
@@ -171,10 +202,17 @@ def __main__():
 
     # Clean up.
     out.close()
-    info_msg = "%i of %i features kept (%.2f%%) using condition %s.  " % \
-        (kept_features, i, float(kept_features) / i * 100.0, feature_name + condition)
+    info_msg = "%i of %i features kept (%.2f%%) using condition %s.  " % (
+        kept_features,
+        i,
+        float(kept_features) / i * 100.0,
+        feature_name + condition,
+    )
     if skipped_lines > 0:
-        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (skipped_lines, first_skipped_line)
+        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (
+            skipped_lines,
+            first_skipped_line,
+        )
     print(info_msg)
 
 

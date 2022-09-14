@@ -1,0 +1,18 @@
+.multiselect {
+    font-weight: normal;
+}
+.multiselect .multiselect__option--highlight {
+    background: #dee2e6;
+    color: #2c3143;
+}
+.multiselect__tag {
+    background: #dee2e6;
+    color: #2c3143;
+}
+.multiselect__tag-icon:after {
+    color: white;
+}
+.multiselect__tag-icon:focus,
+.multiselect__tag-icon:hover {
+    background: #132c40;
+}

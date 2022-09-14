@@ -1,6 +1,5 @@
 from galaxy.security import idencoding
 
-
 test_helper_1 = idencoding.IdEncodingHelper(id_secret="secu1")
 test_helper_2 = idencoding.IdEncodingHelper(id_secret="secu2")
 
@@ -61,6 +60,17 @@ def test_maximum_length_handling_nonascii():
     e12 = helper.encode_id(1, kind="moo2")
 
     assert e11 != e12
+
+
+def test_unicode_null_decoding():
+    encoded_id = test_helper_1.encode_id(1)
+    threw_exception = False
+    try:
+        test_helper_1.decode_guid(f"{encoded_id[:-1]}\0")
+    except Exception:
+        threw_exception = True
+
+    assert threw_exception
 
 
 def test_encode_decode():

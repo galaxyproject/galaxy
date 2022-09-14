@@ -8,7 +8,6 @@ from .util import BaseParameterTestCase
 
 
 class DataColumnParameterTestCase(BaseParameterTestCase):
-
     def test_not_optional_by_default(self):
         assert not self.__param_optional()
 
@@ -43,19 +42,19 @@ class DataColumnParameterTestCase(BaseParameterTestCase):
         assert value == ["1", "2", "3"]
 
     def test_get_initial_value_default(self):
-        self.assertEqual('1', self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()}))
+        self.assertEqual("1", self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()}))
 
     def test_get_initial_value_override_legacy(self):
         self.other_attributes = "default_value='2'"
-        self.assertEqual('2', self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()}))
+        self.assertEqual("2", self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()}))
 
     def test_get_initial_value_override_newstyle(self):
         self.other_attributes = "value='2'"
-        self.assertEqual('2', self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()}))
+        self.assertEqual("2", self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()}))
 
     def test_get_initial_value_override_newstyle_strips_c(self):
         self.other_attributes = "value='c2'"
-        self.assertEqual('2', self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()}))
+        self.assertEqual("2", self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()}))
 
     def setUp(self):
         super().setUp()
@@ -80,8 +79,12 @@ class DataColumnParameterTestCase(BaseParameterTestCase):
     def build_ready_hda(self):
         hist = model.History()
         self.app.model.context.add(hist)
-        ready_hda = hist.add_dataset(model.HistoryDatasetAssociation(extension='interval', create_dataset=True, sa_session=self.app.model.context))
-        ready_hda.set_dataset_state('ok')
+        ready_hda = hist.add_dataset(
+            model.HistoryDatasetAssociation(
+                extension="interval", create_dataset=True, sa_session=self.app.model.context
+            )
+        )
+        ready_hda.set_dataset_state("ok")
         return ready_hda
 
     @property
@@ -96,7 +99,7 @@ class DataColumnParameterTestCase(BaseParameterTestCase):
             data_ref_text = ""
             if self.set_data_ref:
                 data_ref_text = 'data_ref="input_tsv"'
-            template_xml = '''<param name="my_name" type="%s" %s %s %s %s></param>'''
+            template_xml = """<param name="my_name" type="%s" %s %s %s %s></param>"""
             param_str = template_xml % (self.type, data_ref_text, multi_text, optional_text, self.other_attributes)
             self._param = self._parameter_for(xml=param_str)
             self._param.ref_input = bunch.Bunch(formats=[datatypes_registry.get_datatype_by_extension("tabular")])

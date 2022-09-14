@@ -19,7 +19,7 @@ out_file1 = sys.argv[2]
 have_none = True
 while have_none:
     try:
-        uids.remove('None')
+        uids.remove("None")
     except ValueError:
         have_none = False
 
@@ -31,7 +31,7 @@ try:
     for line in open(filename):
         if not line or line[0:1] == "#":
             continue
-        fields = line.split('\t')
+        fields = line.split("\t")
         try:
             info_type = fields.pop(0)
 

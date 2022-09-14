@@ -5,7 +5,10 @@ The functions in this module should be considered part of the API used by
 visualizations in their mako files through the `$h` object, see
 GalaxyWebTransaction in galaxy/webapps/base/webapp.py
 """
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+)
 
 from babel import default_locale
 from babel.dates import format_timedelta
@@ -19,7 +22,7 @@ from galaxy.util import (
 from galaxy.util.json import safe_dumps as dumps  # noqa: F401
 from .tags import (
     javascript_link,
-    stylesheet_link
+    stylesheet_link,
 )
 from ..base import server_starttime
 
@@ -34,8 +37,8 @@ def time_ago(x):
     else:
         # Workaround https://github.com/python-babel/babel/issues/137
         kwargs = dict()
-        if not default_locale('LC_TIME'):
-            kwargs['locale'] = 'en_US_POSIX'
+        if not default_locale("LC_TIME"):
+            kwargs["locale"] = "en_US_POSIX"
         return format_timedelta(x - datetime.utcnow(), threshold=1, add_direction=True, **kwargs)
 
 
@@ -49,14 +52,14 @@ def iff(a, b, c):
         return c
 
 
-def truncate(content, length=100, suffix='...'):
+def truncate(content, length=100, suffix="..."):
     """
     Smart string truncation
     """
     if len(content) <= length:
         return content
     else:
-        return content[:length].rsplit(' ', 1)[0] + suffix
+        return content[:length].rsplit(" ", 1)[0] + suffix
 
 
 # Quick helpers for static content
@@ -96,7 +99,7 @@ def dist_js(*args):
     Take a prefix and list of javascript names and return appropriate
     string of script tags.
     """
-    return js_helper('static/dist/', *args)
+    return js_helper("static/dist/", *args)
 
 
 # Hashes
@@ -115,14 +118,14 @@ def to_unicode(a_string):
     Convert a string to unicode in utf-8 format; if string is already unicode,
     does nothing because string's encoding cannot be determined by introspection.
     """
-    return unicodify(a_string, 'utf-8')
+    return unicodify(a_string, "utf-8")
 
 
 def is_true(val):
     """
     Returns true if input is a boolean and true or is a string and looks like a true value.
     """
-    return val is True or val in ['True', 'true', 'T', 't']
+    return val is True or val in ["True", "true", "T", "t"]
 
 
 def to_js_bool(val):

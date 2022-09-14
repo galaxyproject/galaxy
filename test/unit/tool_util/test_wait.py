@@ -1,8 +1,10 @@
-from galaxy.tool_util.verify.wait import TimeoutAssertionError, wait_on
+from galaxy.tool_util.verify.wait import (
+    TimeoutAssertionError,
+    wait_on,
+)
 
 
 class Sleeper:
-
     def __init__(self):
         self.sleeps = []
 
@@ -11,7 +13,6 @@ class Sleeper:
 
 
 class WaitCondition:
-
     def __init__(self, after_call_count=0, return_value=True):
         self.after_call_count = after_call_count
         self.call_count = 0

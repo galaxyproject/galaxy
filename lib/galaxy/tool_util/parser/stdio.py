@@ -1,9 +1,13 @@
+import math
+
+
 class StdioErrorLevel:
     """
     These determine stdio-based error levels from matching on regular expressions
     and exit codes. They are meant to be used comparatively, such as showing
     that warning < fatal. This is really meant to just be an enum.
     """
+
     NO_ERROR = 0
     LOG = 1
     QC = 1.1
@@ -12,12 +16,12 @@ class StdioErrorLevel:
     FATAL_OOM = 4
     MAX = 4
     descs = {
-        NO_ERROR: 'No error',
-        LOG: 'Log',
-        QC: 'QC',
-        WARNING: 'Warning',
-        FATAL: 'Fatal error',
-        FATAL_OOM: 'Out of memory error',
+        NO_ERROR: "No error",
+        LOG: "Log",
+        QC: "QC",
+        WARNING: "Warning",
+        FATAL: "Fatal error",
+        FATAL_OOM: "Out of memory error",
     }
 
     @staticmethod
@@ -36,8 +40,8 @@ class ToolStdioExitCode:
 
     def __init__(self, as_dict=None):
         as_dict = as_dict or {}
-        self.range_start = as_dict.get("range_start", float("-inf"))
-        self.range_end = as_dict.get("range_end", float("inf"))
+        self.range_start = as_dict.get("range_start", -math.inf)
+        self.range_end = as_dict.get("range_end", math.inf)
         self.error_level = as_dict.get("error_level", StdioErrorLevel.FATAL)
         self.desc = as_dict.get("desc", "")
 
@@ -89,13 +93,13 @@ def error_on_exit_code(out_of_memory_exit_code=None):
         exit_codes.append(exit_code_oom)
 
     exit_code_lower = ToolStdioExitCode()
-    exit_code_lower.range_start = float("-inf")
+    exit_code_lower.range_start = -math.inf
     exit_code_lower.range_end = -1
     _set_fatal(exit_code_lower)
     exit_codes.append(exit_code_lower)
     exit_code_high = ToolStdioExitCode()
     exit_code_high.range_start = 1
-    exit_code_high.range_end = float("inf")
+    exit_code_high.range_end = math.inf
     _set_fatal(exit_code_high)
     exit_codes.append(exit_code_high)
     return exit_codes, []
@@ -110,7 +114,7 @@ def aggressive_error_checks():
         _oom_regex("java.lang.OutOfMemoryError"),
         _oom_regex("Out of memory"),
         _error_regex("exception:"),
-        _error_regex("error:")
+        _error_regex("error:"),
     ]
     return exit_codes, regexes
 

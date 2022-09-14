@@ -1,12 +1,14 @@
-from typing import Dict, Optional
+from typing import (
+    Dict,
+    Optional,
+)
 
 from galaxy.util.tool_version import remove_version_from_guid
 from .interface import ToolLineage
 
 
 class LineageMap:
-    """ Map each unique tool id to a lineage object.
-    """
+    """Map each unique tool id to a lineage object."""
 
     def __init__(self, app):
         self.lineage_map: Dict[str, ToolLineage] = {}
@@ -54,4 +56,4 @@ class LineageMap:
         return self.lineage_map.get(versionless_tool_id, None)
 
 
-__all__ = ("LineageMap", )
+__all__ = ("LineageMap",)

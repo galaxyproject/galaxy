@@ -12,14 +12,13 @@ define({
     Visualization: "Visualisation",
     "New Track Browser": "Nouveau Navigateur de Tracks/Pistes",
     "Saved Visualizations": "Visualisations sauvegardées",
-    "Interactive Environments": "Environnements interactifs",
     Admin: "Admin",
     Help: "Aide",
     Support: "Assistance",
     Search: "Recherche",
     "Mailing Lists": "Liste de diffusion",
     Videos: "Vidéos",
-    Wiki: "Documentations",
+    "Community Hub": "Documentations",
     "How to Cite Galaxy": "Comment citer Galaxy",
     "Interactive Tours": "Guides interactifs",
     User: "Utilisateur",
@@ -218,7 +217,6 @@ define({
     "Download local tool": "Télécharger un outil en local",
     "Tool lineage": "Affiliation des outils",
     "Reload a tool's configuration": "Recharger une configuration d'outils",
-    "Review tool migration stages": "Vérifier les étapes de migration d'outils",
     "View Tool Error Logs": "Voir les logs d'erreur d'outils",
     "Manage Allowlist": "Gérer la liste autorisée d'outils graphiques",
     "Manage Tool Dependencies": "Gérer les dépendances d'outils",
@@ -232,9 +230,9 @@ define({
     "Local data": "Données locales",
     "Form Definitions": "Définitions de formulaires",
 
-    // ---------------------------------------------------------------------------- Scratchbook
-    "Enable/Disable Scratchbook": "Activer/Désactiver la visu Scratchbook",
-    "Show/Hide Scratchbook": "Montrer/cacher la visu Scratchbook",
+    // ---------------------------------------------------------------------------- Window Manager
+    "Enable/Disable Window Manager": "Activer/Désactiver la visu Window Manager",
+    "Show/Hide Window Manager": "Montrer/cacher la visu Window Manager",
 
     // ---------------------------------------------------------------------------- misc. MVC
     Tags: "Mots-clés",
@@ -370,7 +368,6 @@ define({
     "Refresh history": false,
     // ---------------------------------------------------------------------------- admin-panel
     "View error logs": false,
-    "View migration stages": false,
     "View lineage": false,
     "Manage dependencies": false,
     "Manage allowlist": false,
@@ -440,7 +437,7 @@ define({
     "Create new Build": false,
     "Delete custom build.": false,
     "Provide the data source.": false,
-    // ---------------------------------------------------------------------------- scratchbook
+    // ---------------------------------------------------------------------------- Window Manager
     "Next in History": false,
     "Previous in History": false,
     // ---------------------------------------------------------------------------- generic-nav-view

@@ -17,9 +17,7 @@ def test_watcher():
         toolbox = Toolbox()
         with open(tool_path, "w") as f:
             f.write("a")
-        tool_watcher = watcher.get_tool_watcher(toolbox, bunch.Bunch(
-            watch_tools=True
-        ))
+        tool_watcher = watcher.get_tool_watcher(toolbox, bunch.Bunch(watch_tools=True))
         tool_watcher.start()
         tool_watcher.watch_file(tool_path, "cool_tool")
         time.sleep(2)
@@ -56,12 +54,11 @@ def wait_for_reload(check):
         reloaded = check()
         if reloaded:
             break
-        time.sleep(.2)
+        time.sleep(0.2)
     assert reloaded
 
 
 class Toolbox:
-
     def __init__(self):
         self.reloaded = {}
 
@@ -73,7 +70,6 @@ class Toolbox:
 
 
 class CallbackRecorder:
-
     def __init__(self):
         self.called = False
 

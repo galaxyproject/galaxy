@@ -1,15 +1,15 @@
 from typing import (
     Dict,
     List,
+    Optional,
 )
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
+from pydantic import Field
+
+from galaxy.schema.schema import Model
 
 
-class ToolDataEntry(BaseModel):
+class ToolDataEntry(Model):
     name: str = Field(
         ...,  # Mark this field as required
         title="Name",
@@ -24,10 +24,16 @@ class ToolDataEntry(BaseModel):
     )
 
 
-class ToolDataEntryList(BaseModel):
+class ToolDataEntryList(Model):
     __root__: List[ToolDataEntry] = Field(
         title="A list with details on individual data tables.",
     )
+
+    def find_entry(self, name: str) -> Optional[ToolDataEntry]:
+        for entry in self.__root__:
+            if entry.name == name:
+                return entry
+        return None
 
 
 class ToolDataDetails(ToolDataEntry):
@@ -35,24 +41,19 @@ class ToolDataDetails(ToolDataEntry):
         ...,  # Mark this field as required
         title="Columns",
         description="A list of column names",
-        example=[
-            "value",
-            "dbkey",
-            "name",
-            "path"
-        ],
+        example=["value", "dbkey", "name", "path"],
     )
     # We must use an alias since the name 'fields'
-    # shadows a BaseModel attribute
+    # shadows a Model attribute
     fields_value: List[List[str]] = Field(
-        alias='fields',
+        alias="fields",
         default=[],
         title="Fields",
         description="",  # TODO add documentation
     )
 
 
-class ToolDataField(BaseModel):
+class ToolDataField(Model):
     name: str = Field(
         ...,  # Mark this field as required
         title="Name",
@@ -65,10 +66,10 @@ class ToolDataField(BaseModel):
         example="TabularToolDataField",
     )
     # We must use an alias since the name 'fields'
-    # shadows a BaseModel attribute
+    # shadows a Model attribute
     fields_value: Dict[str, str] = Field(
         ...,  # Mark this field as required
-        alias='fields',
+        alias="fields",
         title="Fields",
         description="",  # TODO add documentation
     )
@@ -91,11 +92,13 @@ class ToolDataField(BaseModel):
     )
 
 
-class ToolDataItem(BaseModel):
+class ToolDataItem(Model):
     values: str = Field(
         ...,  # Mark this field as required
         title="Values",
-        description=("A `\\t` (TAB) separated list of column __contents__."
-        " You must specify a value for each of the columns of the data table."),
+        description=(
+            "A `\\t` (TAB) separated list of column __contents__."
+            " You must specify a value for each of the columns of the data table."
+        ),
         example="value\tdbkey\tname\tpath",
     )

@@ -1,5 +1,14 @@
 @import "~@fortawesome/fontawesome-free/scss/_variables";
 
+// util class to make pointer cursor
+.cursor-pointer {
+    cursor: pointer;
+    -webkit-user-select: none; /* Chrome all / Safari all */
+    -moz-user-select: none; /* Firefox all */
+    -ms-user-select: none; /* IE 10+ */
+    user-select: none; /* Likely future */
+}
+
 // prevents highlighting i.e. text selection on double click
 .no-highlight {
     -webkit-user-select: none; /* webkit (safari, chrome) browsers */
@@ -91,6 +100,15 @@ $ui-margin-horizontal-large: $margin-v * 2;
         width: 1em;
     }
     cursor: pointer;
+}
+
+.ui-btn-back-to-top {
+    bottom: 2em;
+    position: fixed;
+    opacity: 0.5;
+}
+.ui-btn-back-to-top:hover {
+    opacity: 1;
 }
 
 // thumbnails
@@ -428,11 +446,27 @@ $ui-margin-horizontal-large: $margin-v * 2;
     border: 2px solid $state-success-bg;
     background: lighten($state-success-bg, 10%);
 }
-// util class to make pointer cursor
-.cursor-pointer {
-    cursor: pointer;
-    -webkit-user-select: none; /* Chrome all / Safari all */
-    -moz-user-select: none; /* Firefox all */
-    -ms-user-select: none; /* IE 10+ */
-    user-select: none; /* Likely future */
+
+/* Used for tree in tool recommendations */
+.ui-tool-recommendation {
+    .node {
+        cursor: pointer;
+        circle {
+            fill: $brand-primary;
+            stroke: $brand-primary;
+        }
+        text {
+            font-size: 0.4rem;
+        }
+    }
+
+    .tree-size {
+        width: 100%;
+    }
+
+    .link {
+        fill: none;
+        stroke: $brand-primary;
+        stroke-width: 1;
+    }
 }

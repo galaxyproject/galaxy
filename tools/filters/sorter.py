@@ -31,35 +31,35 @@ def main():
         header_lines = args.header_lines
         key_args = []
         for k in args.key:
-            key_args.extend(['-k', k])
+            key_args.extend(["-k", k])
 
         # sed header
         if header_lines > 0:
-            sed_header = ['sed', '-n', f"1,{header_lines:d}p"]
+            sed_header = ["sed", "-n", f"1,{header_lines:d}p"]
             subprocess.check_call(sed_header, stdin=input_fh, stdout=output_fh)
             input_fh.seek(0)
 
         # grep comments
-        grep_comments = ['grep', '^#']
+        grep_comments = ["grep", "^#"]
         exit_code = subprocess.call(grep_comments, stdout=output_fh)
         if exit_code not in [0, 1]:
-            stop_err('Searching for comment lines failed')
+            stop_err("Searching for comment lines failed")
 
         # grep and sort columns
         if header_lines > 0:
-            sed_cmd = ['sed', f'1,{header_lines:d}d']
+            sed_cmd = ["sed", f"1,{header_lines:d}d"]
             sed_header_restore = subprocess.Popen(sed_cmd, stdin=input_fh, stdout=subprocess.PIPE)
             pipe_stdin = sed_header_restore.stdout
         else:
             pipe_stdin = input_fh
-        grep = subprocess.Popen(['grep', '^[^#]'], stdin=pipe_stdin, stdout=subprocess.PIPE)
-        sort = subprocess.Popen(['sort', '-f', '-t', '\t'] + key_args, stdin=grep.stdout, stdout=output_fh)
+        grep = subprocess.Popen(["grep", "^[^#]"], stdin=pipe_stdin, stdout=subprocess.PIPE)
+        sort = subprocess.Popen(["sort", "-f", "-t", "\t"] + key_args, stdin=grep.stdout, stdout=output_fh)
         # wait for commands to complete
         sort.communicate()
         assert sort.returncode == 0, f"sort pipeline exited with non-zero exit code: {sort.returncode:d}"
 
     except Exception as ex:
-        stop_err('Error running sorter.py\n' + str(ex))
+        stop_err("Error running sorter.py\n" + str(ex))
 
     # exit
     sys.exit(0)

@@ -8,7 +8,10 @@ from galaxy.web import (
     expose_api,
     require_admin,
 )
-from . import BaseGalaxyAPIController, depends
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+)
 
 log = logging.getLogger(__name__)
 
@@ -40,5 +43,5 @@ class DisplayApplicationsController(BaseGalaxyAPIController):
         :type   ids:  list
         """
         payload = payload or {}
-        ids = payload.get('ids', [])
+        ids = payload.get("ids", [])
         return self.manager.reload(ids)

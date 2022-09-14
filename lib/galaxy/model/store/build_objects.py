@@ -89,6 +89,7 @@ def main(argv=None):
     galaxy.model.Dataset.object_store = object_store
     galaxy.model.set_datatypes_registry(example_datatype_registry_for_sample())
     from galaxy.model import mapping
+
     mapping.init("/tmp", "sqlite:///:memory:", create_tables=True, object_store=object_store)
 
     with open(args.objects) as f:
@@ -120,10 +121,10 @@ def main(argv=None):
 
 def _arg_parser():
     parser = argparse.ArgumentParser(description=DESCRIPTION, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('objects', metavar='OBJECT_CONFIG', help='config file describing files to build objects for')
-    parser.add_argument('--object-store-config', help="object store configuration file")
-    parser.add_argument('-e', '--export', default="export", help='export path')
-    parser.add_argument('--export-type', default=None, help='export type (if needed)')
+    parser.add_argument("objects", metavar="OBJECT_CONFIG", help="config file describing files to build objects for")
+    parser.add_argument("--object-store-config", help="object store configuration file")
+    parser.add_argument("-e", "--export", default="export", help="export path")
+    parser.add_argument("--export-type", default=None, help="export type (if needed)")
     return parser
 
 

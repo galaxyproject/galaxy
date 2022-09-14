@@ -31,13 +31,14 @@ class XMLDataProvider(HierarchalDataProvider):
     """
     Data provider that converts selected XML elements to dictionaries.
     """
+
     # using lxml.etree's iterparse method to keep mem down
     # TODO:   this, however (AFAIK), prevents the use of xpath
     settings = {
-        'selector': 'str',  # urlencoded
-        'max_depth': 'int',
+        "selector": "str",  # urlencoded
+        "max_depth": "int",
     }
-    ITERPARSE_ALL_EVENTS = ('start', 'end', 'start-ns', 'end-ns')
+    ITERPARSE_ALL_EVENTS = ("start", "end", "start-ns", "end-ns")
     # TODO: move appropo into super
 
     def __init__(self, source, selector=None, max_depth=None, **kwargs):
@@ -64,9 +65,8 @@ class XMLDataProvider(HierarchalDataProvider):
         # TODO: add more flexibility here w/o re-implementing xpath
         # TODO: fails with '#' - browser thinks it's an anchor - use urlencode
         # TODO: need removal/replacement of etree namespacing here - then move to string match
-        Element = getattr(etree, '_Element', etree.Element)
-        return bool((selector is None)
-                    or (isinstance(element, Element) and selector in element.tag))
+        Element = getattr(etree, "_Element", etree.Element)
+        return bool((selector is None) or (isinstance(element, Element) and selector in element.tag))
 
     def element_as_dict(self, element):
         """
@@ -76,10 +76,10 @@ class XMLDataProvider(HierarchalDataProvider):
         """
         # TODO: Key collision is unlikely here, but still should be better handled
         return {
-            'tag': element.tag,
-            'text': element.text.strip() if element.text else None,
+            "tag": element.tag,
+            "text": element.text.strip() if element.text else None,
             # needs shallow copy to protect v. element.clear()
-            'attrib': dict(element.attrib)
+            "attrib": dict(element.attrib),
         }
 
     def get_children(self, element, max_depth=None):
@@ -96,7 +96,7 @@ class XMLDataProvider(HierarchalDataProvider):
                 next_depth = max_depth - 1 if isinstance(max_depth, int) else None
                 grand_children = list(self.get_children(child, next_depth))
                 if grand_children:
-                    child_data['children'] = grand_children
+                    child_data["children"] = grand_children
 
                 yield child_data
 
@@ -106,18 +106,17 @@ class XMLDataProvider(HierarchalDataProvider):
 
         selected_element = None
         for event, element in context:
-            if event == 'start-ns':
+            if event == "start-ns":
                 ns, uri = element
                 self.namespaces[ns] = uri
 
-            elif event == 'start':
-                if((selected_element is None)
-                        and (self.matches_selector(element, self.selector))):
+            elif event == "start":
+                if (selected_element is None) and (self.matches_selector(element, self.selector)):
                     # start tag of selected element - wait for 'end' to emit/yield
                     selected_element = element
 
-            elif event == 'end':
-                if((selected_element is not None) and (element == selected_element)):
+            elif event == "end":
+                if (selected_element is not None) and (element == selected_element):
                     self.num_valid_data_read += 1
 
                     # offset
@@ -126,7 +125,7 @@ class XMLDataProvider(HierarchalDataProvider):
                         selected_element_dict = self.element_as_dict(selected_element)
                         children = list(self.get_children(selected_element, self.max_depth))
                         if children:
-                            selected_element_dict['children'] = children
+                            selected_element_dict["children"] = children
                         yield selected_element_dict
 
                         # limit

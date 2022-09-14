@@ -1,6 +1,4 @@
-from ..locations import (
-    ToolLocationResolver,
-)
+from ..locations import ToolLocationResolver
 
 
 class HttpToolResolver(ToolLocationResolver):
@@ -9,4 +7,4 @@ class HttpToolResolver(ToolLocationResolver):
 
     def get_tool_source_path(self, uri_like):
         assert uri_like.startswith("file://")
-        return uri_like[len("file://"):]
+        return uri_like[len("file://") :]

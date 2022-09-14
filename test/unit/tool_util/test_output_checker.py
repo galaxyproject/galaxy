@@ -1,8 +1,10 @@
 from unittest import TestCase
 from unittest.mock import Mock
 
-
-from galaxy.tool_util.output_checker import check_output, DETECTED_JOB_STATE
+from galaxy.tool_util.output_checker import (
+    check_output,
+    DETECTED_JOB_STATE,
+)
 from galaxy.tool_util.parser.stdio import (
     StdioErrorLevel,
     ToolStdioRegex,
@@ -10,21 +12,20 @@ from galaxy.tool_util.parser.stdio import (
 
 
 class OutputCheckerTestCase(TestCase):
-
     def setUp(self):
         self.tool = Mock(
             stdio_regexes=[],
             stdio_exit_codes=[],
         )
-        self.stdout = ''
-        self.stderr = ''
+        self.stdout = ""
+        self.stderr = ""
         self.tool_exit_code = None
 
     def test_default_no_stderr_success(self):
         self.__assertSuccessful()
 
     def test_default_stderr_failure(self):
-        self.stderr = 'foo'
+        self.stderr = "foo"
         self.__assertNotSuccessful()
 
     def test_exit_code_error(self):
@@ -40,14 +41,18 @@ class OutputCheckerTestCase(TestCase):
         self.__assertSuccessful()
 
     def test_problematic_strings_matching(self):
-        problematic_str = '\x80abc'
-        self.__add_regex(Mock(match=r'.abc', stdout_match=False, stderr_match=True, error_level=StdioErrorLevel.FATAL, desc=None))
+        problematic_str = "\x80abc"
+        self.__add_regex(
+            Mock(match=r".abc", stdout_match=False, stderr_match=True, error_level=StdioErrorLevel.FATAL, desc=None)
+        )
         self.stderr = problematic_str
         self.__assertNotSuccessful()
 
     def test_problematic_strings_not_matching(self):
-        problematic_str = '\x80abc'
-        self.__add_regex(Mock(match=r'.abcd', stdout_match=False, stderr_match=True, error_level=StdioErrorLevel.FATAL, desc=None))
+        problematic_str = "\x80abc"
+        self.__add_regex(
+            Mock(match=r".abcd", stdout_match=False, stderr_match=True, error_level=StdioErrorLevel.FATAL, desc=None)
+        )
         self.stderr = problematic_str
         self.__assertSuccessful()
 
@@ -93,4 +98,6 @@ class OutputCheckerTestCase(TestCase):
         assert self.__check_output()[0] != DETECTED_JOB_STATE.OK
 
     def __check_output(self):
-        return check_output(self.tool.stdio_regexes, self.tool.stdio_exit_codes, self.stdout, self.stderr, self.tool_exit_code, "job_id")
+        return check_output(
+            self.tool.stdio_regexes, self.tool.stdio_exit_codes, self.stdout, self.stderr, self.tool_exit_code, "job_id"
+        )

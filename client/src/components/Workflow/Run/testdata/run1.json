@@ -748,6 +748,32 @@
       "action": "/tool_runner/index",
       "model_class": "Tool",
       "display": true
+    },
+    {
+      "inputs":[
+        {
+          "area":false,
+          "argument":null,
+          "datalist":[],
+          "help":null,
+          "hidden":false,
+          "is_dynamic":false,
+          "label":"",
+          "model_class":"TextToolParameter",
+          "name":"input",
+          "optional":false,
+          "refresh_on_change":false,
+          "type":"text",
+          "value":null
+        }
+      ],
+      "output_connections":[],
+      "replacement_parameters":[],
+      "step_index":4,
+      "step_label":"",
+      "step_name":"Input parameter",
+      "step_type":"parameter_input",
+      "step_version":null
     }
   ],
   "has_upgrade_messages": false,

@@ -37,7 +37,7 @@ with the following command-line.
 
 ::
 
-    gunicorn 'galaxy.webapps.galaxy.fast_factory:factory()' --env GALAXY_CONFIG_FILE=config/galaxy.ini --pythonpath lib -w 4 -k uvicorn.workers.UvicornWorker
+    gunicorn 'galaxy.webapps.galaxy.fast_factory:factory()' --env GALAXY_CONFIG_FILE=config/galaxy.ini --pythonpath lib -w 4 -k uvicorn.workers.UvicornWorker --config lib/galaxy/web_stack/gunicorn_config.py
 
 """
 
@@ -52,13 +52,15 @@ from .fast_app import initialize_fast_app
 
 def factory():
     props = WebappSetupProps(
-        app_name='galaxy',
+        app_name="galaxy",
         default_section_name=DEFAULT_CONFIG_SECTION,
-        env_config_file='GALAXY_CONFIG_FILE',
-        env_config_section='GALAXY_CONFIG_SECTION',
-        check_galaxy_root=True
+        env_config_file="GALAXY_CONFIG_FILE",
+        env_config_section="GALAXY_CONFIG_SECTION",
+        check_galaxy_root=True,
     )
     config_provider = WebappConfigResolver(props)
     config = config_provider.resolve_config()
-    gx_wsgi_webapp, gx_app = app_pair(global_conf=config.global_conf, load_app_kwds=config.load_app_kwds, wsgi_preflight=config.wsgi_preflight)
+    gx_wsgi_webapp, gx_app = app_pair(
+        global_conf=config.global_conf, load_app_kwds=config.load_app_kwds, wsgi_preflight=config.wsgi_preflight
+    )
     return initialize_fast_app(gx_wsgi_webapp, gx_app)

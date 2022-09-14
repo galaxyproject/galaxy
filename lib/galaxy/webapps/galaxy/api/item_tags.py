@@ -5,28 +5,24 @@ import logging
 
 from galaxy import exceptions
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import (
-    UsesTagsMixin
-)
+from galaxy.webapps.base.controller import UsesTagsMixin
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
 class BaseItemTagsController(BaseGalaxyAPIController, UsesTagsMixin):
-    """
-    """
+    """ """
+
     @expose_api
     def index(self, trans, **kwd):
-        """
-        """
+        """ """
         tags = self._get_user_tags(trans, self.tagged_item_class, kwd[self.tagged_item_id])
-        return [self._api_value(tag, trans, view='collection') for tag in tags]
+        return [self._api_value(tag, trans, view="collection") for tag in tags]
 
     @expose_api
     def show(self, trans, tag_name, **kwd):
-        """
-        """
+        """ """
         tag = self._get_item_tag_assoc(trans, self.tagged_item_class, kwd[self.tagged_item_id], tag_name)
         if not tag:
             raise exceptions.ObjectNotFound("Failed to retrieve specified tag.")
@@ -34,8 +30,7 @@ class BaseItemTagsController(BaseGalaxyAPIController, UsesTagsMixin):
 
     @expose_api
     def create(self, trans, tag_name, payload=None, **kwd):
-        """
-        """
+        """ """
         payload = payload or {}
         value = payload.get("value", None)
         tag = self._apply_item_tag(trans, self.tagged_item_class, kwd[self.tagged_item_id], tag_name, value)
@@ -46,16 +41,15 @@ class BaseItemTagsController(BaseGalaxyAPIController, UsesTagsMixin):
 
     @expose_api
     def delete(self, trans, tag_name, **kwd):
-        """
-        """
+        """ """
         deleted = self._remove_items_tag(trans, self.tagged_item_class, kwd[self.tagged_item_id], tag_name)
         if not deleted:
             raise exceptions.RequestParameterInvalidException("Failed to delete specified tag.")
         # TODO: ugh - 204 would be better
-        return 'OK'
+        return "OK"
 
-    def _api_value(self, tag, trans, view='element'):
-        return tag.to_dict(view=view, value_mapper={'id': trans.security.encode_id})
+    def _api_value(self, tag, trans, view="element"):
+        return tag.to_dict(view=view, value_mapper={"id": trans.security.encode_id})
 
 
 class HistoryContentTagsController(BaseItemTagsController):
@@ -74,5 +68,6 @@ class WorkflowTagsController(BaseItemTagsController):
     controller_name = "workflow_tags"
     tagged_item_class = "StoredWorkflow"
     tagged_item_id = "workflow_id"
+
 
 # TODO: Visualization and Pages once APIs for those are available

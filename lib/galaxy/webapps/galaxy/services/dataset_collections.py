@@ -1,7 +1,17 @@
 from logging import getLogger
-from typing import List, Optional, Set
+from typing import (
+    List,
+    Optional,
+    Set,
+    TYPE_CHECKING,
+    Union,
+)
 
-from pydantic import BaseModel, Extra, Field
+from pydantic import (
+    Extra,
+    Field,
+    ValidationError,
+)
 
 from galaxy import exceptions
 from galaxy.datatypes.registry import Registry
@@ -14,7 +24,10 @@ from galaxy.managers.collections_util import (
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdcas import HDCAManager
 from galaxy.managers.histories import HistoryManager
-from galaxy.schema.fields import EncodedDatabaseIdField, ModelClassField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    ModelClassField,
+)
 from galaxy.schema.schema import (
     AnyHDCA,
     CreateNewCollectionPayload,
@@ -22,75 +35,61 @@ from galaxy.schema.schema import (
     DCESummary,
     DCEType,
     HDCADetailed,
+    Model,
     TagCollection,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.base.controller import UsesLibraryMixinItems
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
+if TYPE_CHECKING:
+    from galaxy.model import (
+        HistoryDatasetCollectionAssociation,
+        LibraryDatasetCollectionAssociation,
+    )
 
 log = getLogger(__name__)
 
 
-class UpdateCollectionAttributePayload(BaseModel):
+class UpdateCollectionAttributePayload(Model):
     """Contains attributes that can be updated for all elements in a dataset collection."""
-    dbkey: str = Field(
-        ...,
-        description="TODO"
-    )
+
+    dbkey: str = Field(..., description="TODO")
 
     class Config:
         extra = Extra.forbid  # will cause validation to fail if extra attributes are included,
 
 
-class DatasetCollectionAttributesResult(BaseModel):
-    dbkey: str = Field(
-        ...,
-        description="TODO"
-    )
+class DatasetCollectionAttributesResult(Model):
+    dbkey: str = Field(..., description="TODO")
     # Are the following fields really used/needed?
-    extension: str = Field(
-        ...,
-        description="The dataset file extension.",
-        example="txt"
-    )
+    extension: str = Field(..., description="The dataset file extension.", example="txt")
     model_class: str = ModelClassField("HistoryDatasetCollectionAssociation")
     dbkeys: Optional[Set[str]]
     extensions: Optional[Set[str]]
     tags: TagCollection
 
 
-class SuitableConverter(BaseModel):
-    tool_id: str = Field(
-        ...,
-        description="The ID of the tool that can perform the type conversion."
-    )
-    name: str = Field(
-        ...,
-        description="The name of the converter."
-    )
-    target_type: str = Field(
-        ...,
-        description="The type to convert to."
-    )
-    original_type: str = Field(
-        ...,
-        description="The type to convert from."
-    )
+class SuitableConverter(Model):
+    tool_id: str = Field(..., description="The ID of the tool that can perform the type conversion.")
+    name: str = Field(..., description="The name of the converter.")
+    target_type: str = Field(..., description="The type to convert to.")
+    original_type: str = Field(..., description="The type to convert from.")
 
 
-class SuitableConverters(BaseModel):
+class SuitableConverters(Model):
     """Collection of converters that can be used on a particular dataset collection."""
+
     __root__: List[SuitableConverter]
 
 
-class DatasetCollectionContentElements(BaseModel):
+class DatasetCollectionContentElements(Model):
     """Represents a collection of elements contained in the dataset collection."""
+
     __root__: List[DCESummary]
 
 
 class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
-
     def __init__(
         self,
         security: IdEncodingHelper,
@@ -120,14 +119,13 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         """
         # TODO: Error handling...
         create_params = api_payload_to_create_params(payload.dict(exclude_unset=True))
-        if payload.instance_type == DatasetCollectionInstanceType.history:
+        if payload.instance_type == "history":
             if payload.history_id is None:
                 raise exceptions.RequestParameterInvalidException("Parameter history_id is required.")
-            history_id = self.decode_id(payload.history_id)
-            history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
+            history = self.history_manager.get_owned(payload.history_id, trans.user, current_history=trans.history)
             create_params["parent"] = history
             create_params["history"] = history
-        elif payload.instance_type == DatasetCollectionInstanceType.library:
+        elif payload.instance_type == "library" and payload.folder_id:
             library_folder = self.get_library_folder(trans, payload.folder_id, check_accessible=True)
             self.check_user_can_add_to_library_item(trans, library_folder, check_accessible=False)
             create_params["parent"] = library_folder
@@ -136,11 +134,16 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
 
         dataset_collection_instance = self.collection_manager.create(trans=trans, **create_params)
         rval = dictify_dataset_collection_instance(
-            dataset_collection_instance, security=trans.security, parent=create_params["parent"]
+            dataset_collection_instance,
+            security=trans.security,
+            url_builder=trans.url_builder,
+            parent=create_params["parent"],
         )
         return rval
 
-    def copy(self, trans: ProvidesHistoryContext, id: EncodedDatabaseIdField, payload: UpdateCollectionAttributePayload):
+    def copy(
+        self, trans: ProvidesHistoryContext, id: DecodedDatabaseIdField, payload: UpdateCollectionAttributePayload
+    ):
         """
         Iterate over all datasets of a collection and copy datasets with new attributes to a new collection.
         e.g attributes = {'dbkey': 'dm3'}
@@ -152,17 +155,14 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
     def attributes(
         self,
         trans: ProvidesHistoryContext,
-        id: EncodedDatabaseIdField,
-        instance_type: DatasetCollectionInstanceType = DatasetCollectionInstanceType.history,
+        id: DecodedDatabaseIdField,
+        instance_type: DatasetCollectionInstanceType = "history",
     ) -> DatasetCollectionAttributesResult:
         """
         Returns dbkey/extension for collection elements
         """
         dataset_collection_instance = self.collection_manager.get_dataset_collection_instance(
-            trans,
-            id=id,
-            instance_type=instance_type,
-            check_ownership=True
+            trans, instance_type, id, check_ownership=True
         )
         rval = dataset_collection_instance.to_dict(view="dbkeysandextensions")
         return rval
@@ -170,8 +170,8 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
     def suitable_converters(
         self,
         trans: ProvidesHistoryContext,
-        id: EncodedDatabaseIdField,
-        instance_type: DatasetCollectionInstanceType = DatasetCollectionInstanceType.history,
+        id: DecodedDatabaseIdField,
+        instance_type: DatasetCollectionInstanceType = "history",
     ) -> SuitableConverters:
         """
         Returns suitable converters for all datatypes in collection
@@ -182,20 +182,18 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
     def show(
         self,
         trans: ProvidesHistoryContext,
-        id: EncodedDatabaseIdField,
-        instance_type: DatasetCollectionInstanceType = DatasetCollectionInstanceType.history,
+        id: DecodedDatabaseIdField,
+        instance_type: DatasetCollectionInstanceType = "history",
     ) -> AnyHDCA:
         """
         Returns information about a particular dataset collection.
         """
-        dataset_collection_instance = self.collection_manager.get_dataset_collection_instance(
-            trans,
-            id=id,
-            instance_type=instance_type,
-        )
-        if instance_type == DatasetCollectionInstanceType.history:
+        dataset_collection_instance: Union["HistoryDatasetCollectionAssociation", "LibraryDatasetCollectionAssociation"]
+        if instance_type == "history":
+            dataset_collection_instance = self.collection_manager.get_dataset_collection_instance(trans, "history", id)
             parent = dataset_collection_instance.history
-        elif instance_type == DatasetCollectionInstanceType.library:
+        elif instance_type == "library":
+            dataset_collection_instance = self.collection_manager.get_dataset_collection_instance(trans, "library", id)
             parent = dataset_collection_instance.folder
         else:
             raise exceptions.RequestParameterInvalidException()
@@ -203,17 +201,18 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         rval = dictify_dataset_collection_instance(
             dataset_collection_instance,
             security=trans.security,
+            url_builder=trans.url_builder,
             parent=parent,
-            view='element'
+            view="element",
         )
         return rval
 
     def contents(
         self,
         trans: ProvidesHistoryContext,
-        hdca_id: EncodedDatabaseIdField,
-        parent_id: EncodedDatabaseIdField,
-        instance_type: DatasetCollectionInstanceType = DatasetCollectionInstanceType.history,
+        hdca_id: DecodedDatabaseIdField,
+        parent_id: DecodedDatabaseIdField,
+        instance_type: DatasetCollectionInstanceType = "history",
         limit: Optional[int] = None,
         offset: Optional[int] = None,
     ) -> DatasetCollectionContentElements:
@@ -233,28 +232,41 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         """
         # validate HDCA for current user, will throw error if not permitted
         # TODO: refactor get_dataset_collection_instance
-        hdca = self.collection_manager.get_dataset_collection_instance(
-            trans, id=hdca_id, check_ownership=True, instance_type=instance_type
+        if instance_type != "history":
+            raise exceptions.RequestParameterInvalidException(
+                "Parameter instance_type not being 'history' is not yet implemented."
+            )
+        hdca: "HistoryDatasetCollectionAssociation" = self.collection_manager.get_dataset_collection_instance(
+            trans, "history", hdca_id, check_ownership=True
         )
 
         # check to make sure the dsc is part of the validated hdca
-        decoded_parent_id = self.decode_id(parent_id)
-        if parent_id != hdca_id and not hdca.contains_collection(decoded_parent_id):
-            raise exceptions.ObjectNotFound('Requested dataset collection is not contained within indicated history content')
+        if not hdca.contains_collection(parent_id):
+            raise exceptions.ObjectNotFound(
+                "Requested dataset collection is not contained within indicated history content"
+            )
 
         # retrieve contents
-        contents = self.collection_manager.get_collection_contents(trans, decoded_parent_id, limit=limit, offset=offset)
+        contents = self.collection_manager.get_collection_contents(trans, parent_id, limit=limit, offset=offset)
 
         # dictify and tack on a collection_url for drilling down into nested collections
         def serialize_element(dsc_element) -> DCESummary:
             result = dictify_element_reference(dsc_element, recursive=False, security=trans.security)
             if result["element_type"] == DCEType.dataset_collection:
                 assert trans.url_builder
-                result["object"]["contents_url"] = trans.url_builder('contents_dataset_collection',
+                result["object"]["contents_url"] = trans.url_builder(
+                    "contents_dataset_collection",
                     hdca_id=self.encode_id(hdca.id),
-                    parent_id=self.encode_id(result["object"]["id"]))
+                    parent_id=self.encode_id(result["object"]["id"]),
+                )
             trans.security.encode_all_ids(result, recursive=True)
             return result
 
         rval = [serialize_element(el) for el in contents]
-        return DatasetCollectionContentElements.parse_obj(rval)
+        try:
+            return DatasetCollectionContentElements.construct(__root__=rval)
+        except ValidationError:
+            log.exception(
+                f"Serializing DatasetCollectionContentsElements failed. Collection is populated: {hdca.collection.populated}"
+            )
+            raise

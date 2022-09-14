@@ -124,38 +124,34 @@ def _workflow_struct(args, input_uuid):
 def _workflow_struct_simple(args, input_uuid):
     workflow_struct = [
         {"tool_id": "create_input_collection", "state": {"collection_size": args.collection_size}},
-        {"tool_id": "cat", "state": {"input1": _link(0, "output")}}
+        {"tool_id": "cat", "state": {"input1": _link(0, "output")}},
     ]
 
     workflow_depth = args.workflow_depth
     for i in range(workflow_depth):
         link = str(i + 1) + "#out_file1"
-        workflow_struct.append(
-            {"tool_id": "cat", "state": {"input1": _link(link)}}
-        )
+        workflow_struct.append({"tool_id": "cat", "state": {"input1": _link(link)}})
     return workflow_struct
 
 
 def _workflow_struct_two_outputs(args, input_uuid):
     workflow_struct = [
         {"type": "input_collection", "uuid": input_uuid},
-        {"tool_id": "cat", "state": {"input1": _link(0), "input2": _link(0)}}
+        {"tool_id": "cat", "state": {"input1": _link(0), "input2": _link(0)}},
     ]
 
     workflow_depth = args.workflow_depth
     for i in range(workflow_depth):
         link1 = str(i + 1) + "#out_file1"
         link2 = str(i + 1) + "#out_file2"
-        workflow_struct.append(
-            {"tool_id": "cat", "state": {"input1": _link(link1), "input2": _link(link2)}}
-        )
+        workflow_struct.append({"tool_id": "cat", "state": {"input1": _link(link1), "input2": _link(link2)}})
     return workflow_struct
 
 
 def _workflow_struct_wave(args, input_uuid):
     workflow_struct = [
         {"tool_id": "create_input_collection", "state": {"collection_size": args.collection_size}},
-        {"tool_id": "cat_list", "state": {"input1": _link(0, "output")}}
+        {"tool_id": "cat_list", "state": {"input1": _link(0, "output")}},
     ]
 
     workflow_depth = args.workflow_depth

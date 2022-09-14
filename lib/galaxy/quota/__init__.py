@@ -6,7 +6,7 @@ import galaxy.util
 log = logging.getLogger(__name__)
 
 
-class QuotaAgent():  # metaclass=abc.ABCMeta
+class QuotaAgent:  # metaclass=abc.ABCMeta
     """Abstraction around querying Galaxy for quota available and used.
 
     Certain parts of the app that deal directly with modifying the quota assume more than
@@ -30,7 +30,7 @@ class QuotaAgent():  # metaclass=abc.ABCMeta
         if quota_bytes is not None:
             quota_str = galaxy.util.nice_size(quota_bytes)
         else:
-            quota_str = 'unlimited'
+            quota_str = "unlimited"
         return quota_str
 
     # TODO: make abstractmethod after they work better with mypy
@@ -114,16 +114,16 @@ class DatabaseQuotaAgent(QuotaAgent):
         for quota in quotas:
             if quota.deleted:
                 continue
-            if quota.operation == '=' and quota.bytes == -1:
+            if quota.operation == "=" and quota.bytes == -1:
                 rval = None
                 break
-            elif quota.operation == '=':
+            elif quota.operation == "=":
                 use_default = False
                 if quota.bytes > max:
                     max = quota.bytes
-            elif quota.operation == '+':
+            elif quota.operation == "+":
                 adjustment += quota.bytes
-            elif quota.operation == '-':
+            elif quota.operation == "-":
                 adjustment -= quota.bytes
         if use_default:
             max = self.default_registered_quota
@@ -144,7 +144,11 @@ class DatabaseQuotaAgent(QuotaAgent):
         return self._default_quota(self.model.DefaultQuotaAssociation.types.REGISTERED)
 
     def _default_quota(self, default_type):
-        dqa = self.sa_session.query(self.model.DefaultQuotaAssociation).filter(self.model.DefaultQuotaAssociation.type == default_type).first()
+        dqa = (
+            self.sa_session.query(self.model.DefaultQuotaAssociation)
+            .filter(self.model.DefaultQuotaAssociation.type == default_type)
+            .first()
+        )
         if not dqa:
             return None
         if dqa.quota.bytes < 0:
@@ -161,7 +165,11 @@ class DatabaseQuotaAgent(QuotaAgent):
         for gqa in quota.groups:
             self.sa_session.delete(gqa)
         # Find the old default, assign the new quota if it exists
-        dqa = self.sa_session.query(self.model.DefaultQuotaAssociation).filter(self.model.DefaultQuotaAssociation.type == default_type).first()
+        dqa = (
+            self.sa_session.query(self.model.DefaultQuotaAssociation)
+            .filter(self.model.DefaultQuotaAssociation.type == default_type)
+            .first()
+        )
         if dqa:
             dqa.quota = quota
         # Or create if necessary
@@ -236,4 +244,4 @@ def get_quota_agent(config, model) -> QuotaAgent:
     return quota_agent
 
 
-__all__ = ('get_quota_agent', 'NoQuotaAgent')
+__all__ = ("get_quota_agent", "NoQuotaAgent")

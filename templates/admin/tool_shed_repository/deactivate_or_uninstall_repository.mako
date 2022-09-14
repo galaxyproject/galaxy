@@ -74,11 +74,6 @@ else:
                             * The repository's installed tool dependencies will remain on disk.
                         </div>
                     %endif
-                    %if repository.includes_datatypes:
-                        <div class="toolParamHelp" style="clear: both;">
-                            * The repository's datatypes, datatype converters and display applications will be eliminated from the datatypes registry.
-                        </div>
-                    %endif
                     <div class="toolParamHelp" style="clear: both;">
                         * The repository record's deleted column in the tool_shed_repository database table will be set to True.
                     </div>
@@ -106,11 +101,6 @@ else:
                         </div>
                         <div class="toolParamHelp" style="clear: both;">
                             * Each associated tool dependency record's status column in the tool_dependency database table will be set to 'Uninstalled'.
-                        </div>
-                    %endif
-                    %if repository.includes_datatypes:
-                        <div class="toolParamHelp" style="clear: both;">
-                            * The repository's datatypes, datatype converters and display applications will be eliminated from the datatypes registry.
                         </div>
                     %endif
                     <div class="toolParamHelp" style="clear: both;">

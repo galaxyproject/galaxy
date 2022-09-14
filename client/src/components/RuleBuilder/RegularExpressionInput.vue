@@ -1,6 +1,6 @@
 <template>
     <div>
-        <label for="regular_expression" v-b-tooltip.hover :title="title">{{ label }}</label>
+        <label v-b-tooltip.hover for="regular_expression" :title="title">{{ label }}</label>
         <span v-b-popover.html="popoverContent" :title="popoverTitle" class="fa fa-question"></span>
         <input
             v-b-tooltip.hover.left

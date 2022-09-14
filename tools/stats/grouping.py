@@ -52,7 +52,7 @@ def mode(data):
     for x in counts:
         if counts[x] == maxcount:
             modelist.append(str(x))
-    return ','.join(modelist)
+    return ",".join(modelist)
 
 
 def main():
@@ -68,8 +68,8 @@ def main():
         asciitodelete = sys.argv[5]
         if asciitodelete:
             newinputfile = "input_cleaned.tsv"
-            with open(inputfile) as oldfile, open(newinputfile, 'w') as newfile:
-                asciitodelete = {chr(int(_)) for _ in asciitodelete.split(',')}
+            with open(inputfile) as oldfile, open(newinputfile, "w") as newfile:
+                asciitodelete = {chr(int(_)) for _ in asciitodelete.split(",")}
                 for line in oldfile:
                     if line[0] not in asciitodelete:
                         newfile.write(line)
@@ -77,11 +77,11 @@ def main():
 
     # get operations and options in separate arrays
     for var in sys.argv[6:]:
-        op, col, do_round, default = var.split(',')
+        op, col, do_round, default = var.split(",")
         ops.append(op)
         cols.append(col)
         round_val.append(do_round)
-        default_val.append(float(default) if default != '' else None)
+        default_val.append(float(default) if default != "" else None)
 
     # At this point, ops, cols and rounds will look something like this:
     # ops:  ['mean', 'min', 'c']
@@ -95,7 +95,7 @@ def main():
         stop_err("Group column not specified.")
 
     # sort file into a temporary file
-    tmpfile = tempfile.NamedTemporaryFile(mode='r')
+    tmpfile = tempfile.NamedTemporaryFile(mode="r")
     try:
         """
         The -k option for the Posix sort command is as follows:
@@ -108,9 +108,9 @@ def main():
         group_col_str = str(group_col + 1)
         command_line = ["sort", "-t", "\t", "-k%s,%s" % (group_col_str, group_col_str), "-o", tmpfile.name, inputfile]
         if ignorecase == 1:
-            command_line.append('-f')
+            command_line.append("-f")
     except Exception as exc:
-        stop_err('Initialization error -> %s' % str(exc))
+        stop_err("Initialization error -> %s" % str(exc))
 
     try:
         subprocess.check_output(command_line, stderr=subprocess.STDOUT)
@@ -140,7 +140,10 @@ def main():
                         val = fields[col].strip()
                         op_vals[i].append(val)
                     except IndexError:
-                        sys.stderr.write('Could not access the value for column %s on line: "%s". Make sure file is tab-delimited.\n' % (col + 1, line))
+                        sys.stderr.write(
+                            'Could not access the value for column %s on line: "%s". Make sure file is tab-delimited.\n'
+                            % (col + 1, line)
+                        )
                         sys.exit(1)
 
             # Generate string for each op for this group
@@ -153,10 +156,10 @@ def main():
                     rval = len(data)
                 elif op == "random":
                     rval = random.choice(data)
-                elif op in ['cat', 'cat_uniq']:
-                    if op == 'cat_uniq':
+                elif op in ["cat", "cat_uniq"]:
+                    if op == "cat_uniq":
                         data = numpy.unique(data)
-                    rval = ','.join(data)
+                    rval = ",".join(data)
                 elif op == "unique":
                     rval = len(numpy.unique(data))
                 else:
@@ -167,10 +170,10 @@ def main():
                         sys.stderr.write("Operation %s expected number values but got %s instead.\n" % (op, data))
                         sys.exit(1)
                     rval = getattr(numpy, op)(data)
-                    if round_val[i] == 'yes':
+                    if round_val[i] == "yes":
                         rval = int(round(rval))
                     else:
-                        rval = '%g' % rval
+                        rval = "%g" % rval
                 out_str += "\t%s" % rval
 
             fout.write(out_str + "\n")
@@ -180,16 +183,16 @@ def main():
     # Generate a useful info message.
     msg = "--Group by c%d: " % (group_col + 1)
     for i, op in enumerate(ops):
-        if op == 'cat':
-            op = 'concat'
-        elif op == 'cat_uniq':
-            op = 'concat_distinct'
-        elif op == 'length':
-            op = 'count'
-        elif op == 'unique':
-            op = 'count_distinct'
-        elif op == 'random':
-            op = 'randomly_pick'
+        if op == "cat":
+            op = "concat"
+        elif op == "cat_uniq":
+            op = "concat_distinct"
+        elif op == "length":
+            op = "count"
+        elif op == "unique":
+            op = "count_distinct"
+        elif op == "random":
+            op = "randomly_pick"
 
         msg += op + "[c" + cols[i] + "] "
 

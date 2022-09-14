@@ -13,7 +13,10 @@ galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pa
 sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
 
 from galaxy.util import classproperty
-from galaxy_test.base.api_util import get_admin_api_key, get_user_api_key
+from galaxy_test.base.api_util import (
+    get_admin_api_key,
+    get_user_api_key,
+)
 from galaxy_test.driver import driver_util
 
 log = driver_util.build_logger()
@@ -65,6 +68,7 @@ class SeleniumGalaxyTestDriver(driver_util.GalaxyTestDriver):
     @classproperty
     def default_web_host(cls):
         from galaxy_test.selenium.framework import default_web_host_for_selenium_tests
+
         return default_web_host_for_selenium_tests()
 
 
@@ -82,6 +86,7 @@ class DataManagersGalaxyTestDriver(driver_util.GalaxyTestDriver):
     def build_tests(self):
         """Build data manager test methods."""
         import functional.test_data_managers
+
         functional.test_data_managers.data_managers = self.app.data_managers
         functional.test_data_managers.build_tests(
             tmp_dir=self.galaxy_test_tmp_dir,
@@ -94,11 +99,11 @@ class DataManagersGalaxyTestDriver(driver_util.GalaxyTestDriver):
 
 
 TEST_DRIVERS = {
-    '-migrated': MigratedToolsGalaxyTestDriver,
-    '-installed': InstalledToolsGalaxyTestDriver,
-    '-framework': FrameworkToolsGalaxyTestDriver,
-    '-data_managers': DataManagersGalaxyTestDriver,
-    '-selenium': SeleniumGalaxyTestDriver,
+    "-migrated": MigratedToolsGalaxyTestDriver,
+    "-installed": InstalledToolsGalaxyTestDriver,
+    "-framework": FrameworkToolsGalaxyTestDriver,
+    "-data_managers": DataManagersGalaxyTestDriver,
+    "-selenium": SeleniumGalaxyTestDriver,
 }
 
 

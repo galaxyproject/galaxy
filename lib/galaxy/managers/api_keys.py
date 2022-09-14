@@ -2,7 +2,6 @@ from galaxy.structured_app import BasicSharedApp
 
 
 class ApiKeyManager:
-
     def __init__(self, app: BasicSharedApp):
         self.app = app
 

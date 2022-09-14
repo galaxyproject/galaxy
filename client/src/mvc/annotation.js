@@ -54,7 +54,7 @@ var AnnotationEditor = Backbone.View.extend(baseMVC.LoggableMixin)
                 _l("Annotation"),
                 "</label>",
                 // set up initial tags by adding as CSV to input vals (necc. to init select2)
-                '<div class="annotation" data-description="history annotation">',
+                '<div class="annotation" data-description="annotation value">',
                 _.escape(annotation),
                 "</div>",
             ].join("");

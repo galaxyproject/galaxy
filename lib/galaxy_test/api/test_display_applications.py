@@ -5,7 +5,6 @@ from ._framework import ApiTestCase
 
 
 class DisplayApplicationsApiTestCase(ApiTestCase):
-
     def test_index(self):
         response = self._get("display_applications")
         self._assert_status_code_is(response, 200)
@@ -25,7 +24,7 @@ class DisplayApplicationsApiTestCase(ApiTestCase):
         display_apps = response.json()
         all_ids = [display_app["id"] for display_app in display_apps]
         input_ids = self._get_half_random_items(all_ids)
-        payload = {'ids': input_ids}
+        payload = {"ids": input_ids}
         response = self._post("display_applications/reload", payload, admin=True)
         self._assert_status_code_is(response, 200)
         reloaded = response.json()["reloaded"]
@@ -34,7 +33,7 @@ class DisplayApplicationsApiTestCase(ApiTestCase):
 
     def test_reload_unknow_returns_as_failed(self):
         unknown_id = "unknown"
-        payload = {'ids': [unknown_id]}
+        payload = {"ids": [unknown_id]}
         response = self._post("display_applications/reload", payload, admin=True)
         self._assert_status_code_is(response, 200)
         reloaded = response.json()["reloaded"]

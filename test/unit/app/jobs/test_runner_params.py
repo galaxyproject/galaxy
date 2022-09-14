@@ -3,7 +3,9 @@ from galaxy.jobs import runners
 
 def test_default_specs():
     # recheck_missing_job_retries is integer >= 0
-    params = runners.RunnerParams(specs=runners.BaseJobRunner.DEFAULT_SPECS, params=dict(recheck_missing_job_retries="1"))
+    params = runners.RunnerParams(
+        specs=runners.BaseJobRunner.DEFAULT_SPECS, params=dict(recheck_missing_job_retries="1")
+    )
     assert params.recheck_missing_job_retries == 1
     assert params["recheck_missing_job_retries"] == 1
 

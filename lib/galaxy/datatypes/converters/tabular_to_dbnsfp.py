@@ -15,9 +15,9 @@ def main():
     # Read options, args.
     usage = "Usage: %prog [options] tabular_input_file bgzip_output_file"
     parser = optparse.OptionParser(usage=usage)
-    parser.add_option('-c', '--chr-col', type='int', default=0, dest='chrom_col')
-    parser.add_option('-s', '--start-col', type='int', default=1, dest='start_col')
-    parser.add_option('-e', '--end-col', type='int', default=1, dest='end_col')
+    parser.add_option("-c", "--chr-col", type="int", default=0, dest="chrom_col")
+    parser.add_option("-s", "--start-col", type="int", default=1, dest="start_col")
+    parser.add_option("-e", "--end-col", type="int", default=1, dest="end_col")
     (options, args) = parser.parse_args()
     if len(args) != 2:
         parser.print_usage()

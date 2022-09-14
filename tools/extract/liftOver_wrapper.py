@@ -26,7 +26,7 @@ def safe_bed_file(infile):
     https://lists.soe.ucsc.edu/pipermail/genome/2007-May/013561.html
     """
     fix_pat = re.compile("^(track|browser)")
-    with tempfile.NamedTemporaryFile(mode='w', delete=False) as out_handle, open(infile, 'r') as in_handle:
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as out_handle, open(infile, "r") as in_handle:
         for line in in_handle:
             if fix_pat.match(line):
                 line = "#" + line
@@ -35,7 +35,9 @@ def safe_bed_file(infile):
 
 
 if len(sys.argv) < 9:
-    stop_err("USAGE: prog input out_file1 out_file2 input_dbkey output_dbkey infile_type minMatch multiple <minChainT> <minChainQ> <minSizeQ>")
+    stop_err(
+        "USAGE: prog input out_file1 out_file2 input_dbkey output_dbkey infile_type minMatch multiple <minChainT> <minChainQ> <minSizeQ>"
+    )
 
 infile = sys.argv[1]
 outfile1 = sys.argv[2]
@@ -64,10 +66,25 @@ if in_dbkey == "?":
     stop_err("Input dataset genome build unspecified, click the pencil icon in the history item to specify it.")
 
 if not os.path.isfile(mapfilepath):
-    stop_err("%s mapping is not currently available." % (mapfilepath.split('/')[-1].split('.')[0]))
+    stop_err("%s mapping is not currently available." % (mapfilepath.split("/")[-1].split(".")[0]))
 
 safe_infile = safe_bed_file(infile)
-cmd_line = "liftOver " + gff_option + "-minMatch=" + str(minMatch) + multiple_option + " " + safe_infile + " " + mapfilepath + " " + outfile1 + " " + outfile2 + "  > /dev/null"
+cmd_line = (
+    "liftOver "
+    + gff_option
+    + "-minMatch="
+    + str(minMatch)
+    + multiple_option
+    + " "
+    + safe_infile
+    + " "
+    + mapfilepath
+    + " "
+    + outfile1
+    + " "
+    + outfile2
+    + "  > /dev/null"
+)
 
 try:
     # have to nest try-except in try-finally to handle 2.4
@@ -77,6 +94,6 @@ try:
         if proc.returncode != 0:
             raise Exception(stderr)
     except Exception as e:
-        raise Exception('Exception caught attempting conversion: ' + str(e))
+        raise Exception("Exception caught attempting conversion: " + str(e))
 finally:
     os.remove(safe_infile)

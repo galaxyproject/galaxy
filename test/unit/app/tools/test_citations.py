@@ -37,6 +37,5 @@ def test_citation_collection():
 
 
 class QuickBibtexCitation(BibtexCitation):
-
     def __init__(self, raw_bibtex):
         self.raw_bibtex = raw_bibtex

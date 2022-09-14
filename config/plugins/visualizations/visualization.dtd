@@ -20,21 +20,6 @@
     embeddable  CDATA #IMPLIED
 >
 
-<!ELEMENT interactive_environment (
-  description*,
-  data_sources*,
-  params*,
-  template_root*,
-  entry_point,
-  render_target*
-)>
-<!ATTLIST interactive_environment
-    name        CDATA #REQUIRED
-    disabled    CDATA #IMPLIED
-    embeddable  CDATA #IMPLIED
->
-
-
 <!ELEMENT description (#PCDATA)>
 <!-- a text description of what the visualization does -->
 

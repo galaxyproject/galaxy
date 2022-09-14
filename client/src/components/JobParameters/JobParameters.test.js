@@ -5,27 +5,16 @@ import { mount, createLocalVue } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import JobParameters from "./JobParameters";
 import paramResponse from "./parameters-response.json";
-import raw from "components/History/test/json/Dataset.json";
+import raw from "components/providers/test/json/Dataset.json";
 import { userStore } from "store/userStore";
 import { configStore } from "store/configStore";
-
-jest.mock("components/History/caching");
-const observe = jest.fn();
-const unobserve = jest.fn();
-
-// you can also pass the mock implementation
-// to jest.fn as an argument
-window.IntersectionObserver = jest.fn(() => ({
-    observe,
-    unobserve,
-}));
 
 const JOB_ID = "foo";
 const DatasetProvider = {
     render() {
         return this.$scopedSlots.default({
             loading: false,
-            item: raw,
+            result: raw,
         });
     },
 };
@@ -33,7 +22,7 @@ const localVue = createLocalVue();
 
 localVue.use(Vuex);
 
-describe("JobMetrics/JobMetrics.vue", () => {
+describe("JobParameters/JobParameters.vue", () => {
     let actions;
     let state;
     let store;
@@ -98,7 +87,7 @@ describe("JobMetrics/JobMetrics.vue", () => {
         expect(elements.length).toBe(3);
 
         checkTableParameter(elements.at(0), "Add this value", "22");
-        checkTableParameter(elements.at(1), linkParam.text, `${raw.hid} ${raw.name}`);
+        checkTableParameter(elements.at(1), linkParam.text, `${raw.hid} : ${raw.name}`);
         checkTableParameter(elements.at(2), "Iterate?", "NO");
     });
 

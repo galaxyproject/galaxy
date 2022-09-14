@@ -4,7 +4,7 @@ from galaxy import model
 from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.tools.parameters import (
     basic,
-    dataset_matcher
+    dataset_matcher,
 )
 from galaxy.util import (
     bunch,
@@ -13,8 +13,7 @@ from galaxy.util import (
 from .test_data_parameters import MockHistoryDatasetAssociation
 
 
-class MockTool():
-
+class MockTool:
     def __init__(self, app):
         self.app = app
         self.tool_type = "default"
@@ -22,7 +21,6 @@ class MockTool():
 
 
 class DatasetMatcherTestCase(TestCase, UsesApp):
-
     def test_hda_mismatches(self):
         # Datasets not visible are not "valid" for param.
         self.mock_hda.visible = False
@@ -30,14 +28,14 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
 
         # Datasets that don't match datatype are not valid.
         self.mock_hda.visible = True
-        self.mock_hda.extension = 'data'
+        self.mock_hda.extension = "data"
         self.mock_hda.conversion_destination = (False, None, None)
         assert not self.test_context.hda_match(self.mock_hda)
 
     def test_valid_hda_direct_match(self):
         # Datasets that visible and matching are valid
         self.mock_hda.visible = True
-        self.mock_hda.extension = 'txt'
+        self.mock_hda.extension = "txt"
         hda_match = self.test_context.hda_match(self.mock_hda, check_implicit_conversions=False)
         assert hda_match
 
@@ -49,7 +47,7 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
     def test_valid_hda_implicit_convered(self):
         # Find conversion returns an HDA to an already implicitly converted
         # dataset.
-        self.mock_hda.extension = 'data'
+        self.mock_hda.extension = "data"
         converted_hda = model.HistoryDatasetAssociation()
         self.mock_hda.conversion_destination = (False, "tabular", converted_hda)
         hda_match = self.test_context.hda_match(self.mock_hda)
@@ -62,7 +60,7 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
     def test_hda_match_implicit_can_convert(self):
         # Find conversion returns a target extension to convert to, but not
         # a previously implicitly converted dataset.
-        self.mock_hda.extension = 'data'
+        self.mock_hda.extension = "data"
         self.mock_hda.conversion_destination = (False, "tabular", None)
         hda_match = self.test_context.hda_match(self.mock_hda)
 
@@ -72,7 +70,7 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
         assert hda_match.target_ext == "tabular"
 
     def test_hda_match_properly_skips_conversion(self):
-        self.mock_hda.extension = 'data'
+        self.mock_hda.extension = "data"
         self.mock_hda.conversion_destination = (False, "tabular", bunch.Bunch())
         hda_match = self.test_context.hda_match(self.mock_hda, check_implicit_conversions=False)
         assert not hda_match
@@ -163,14 +161,14 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
         if self._test_context is None:
             option_xml = ""
             if self.filtered_param:
-                option_xml = '''<options><filter type="data_meta" ref="data1" key="dbkey" /></options>'''
+                option_xml = """<options><filter type="data_meta" ref="data1" key="dbkey" /></options>"""
             if self.metadata_filtered_param:
-                option_xml = '''
+                option_xml = """
                     <options options_filter_attribute="metadata.foo">
                       <filter type="add_value" value="bar" />
                       <filter type="add_value" value="baz" />
-                    </options>'''
-            param_xml = XML('''<param name="data2" type="data" format="txt">%s</param>''' % option_xml)
+                    </options>"""
+            param_xml = XML("""<param name="data2" type="data" format="txt">%s</param>""" % option_xml)
             self.param = basic.DataToolParameter(
                 self.tool,
                 param_xml,
@@ -181,8 +179,7 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
                 workflow_building_mode=True,
             )
             self._test_context = dataset_matcher.get_dataset_matcher_factory(trans).dataset_matcher(
-                param=self.param,
-                other_values=self.other_values
+                param=self.param, other_values=self.other_values
             )
 
         return self._test_context

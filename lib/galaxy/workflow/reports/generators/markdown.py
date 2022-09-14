@@ -43,4 +43,4 @@ class MarkdownWorkflowMarkdownReportGeneratorPlugin(WorkflowMarkdownGeneratorPlu
         return markdown
 
 
-__all__ = ('MarkdownWorkflowMarkdownReportGeneratorPlugin', )
+__all__ = ("MarkdownWorkflowMarkdownReportGeneratorPlugin",)

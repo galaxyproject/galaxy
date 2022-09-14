@@ -20,7 +20,6 @@ class AUTH_TUPLE(NamedTuple):
 
 
 class Registry:
-
     def __init__(self, config=None):
         self.tool_sheds = {}
         self.tool_sheds_auth = {}
@@ -34,17 +33,17 @@ class Registry:
         else:
             root = parse_xml_string(DEFAULT_TOOL_SHEDS_CONF_XML)
             config = "internal default config"
-        log.debug(f'Loading references to tool sheds from {config}')
-        for elem in root.findall('tool_shed'):
+        log.debug(f"Loading references to tool sheds from {config}")
+        for elem in root.findall("tool_shed"):
             try:
-                name = elem.get('name', None)
-                url = elem.get('url', None)
-                username = elem.get('user', None)
-                password = elem.get('pass', None)
+                name = elem.get("name", None)
+                url = elem.get("url", None)
+                username = elem.get("user", None)
+                password = elem.get("pass", None)
                 if name and url:
                     self.tool_sheds[name] = url
                     self.tool_sheds_auth[name] = None
-                    log.debug(f'Loaded reference to tool shed: {name}')
+                    log.debug(f"Loaded reference to tool shed: {name}")
                 if name and url and username and password:
                     self.tool_sheds_auth[name] = AUTH_TUPLE(username, password)
             except Exception as e:

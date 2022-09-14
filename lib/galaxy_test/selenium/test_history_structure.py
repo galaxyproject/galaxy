@@ -1,7 +1,7 @@
 from .framework import (
     managed_history,
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
 
 

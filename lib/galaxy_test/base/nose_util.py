@@ -17,9 +17,7 @@ def run(test_config, plugins=None):
         loader = plug_loader
     tests = loader.loadTestsFromNames(test_config.testNames)
     test_runner = nose.core.TextTestRunner(
-        stream=test_config.stream,
-        verbosity=test_config.verbosity,
-        config=test_config
+        stream=test_config.stream, verbosity=test_config.verbosity, config=test_config
     )
     plug_runner = test_config.plugins.prepareTestRunner(test_runner)
     if plug_runner is not None:

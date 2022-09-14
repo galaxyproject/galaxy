@@ -374,6 +374,16 @@ export async function waitForElementToBePresent(selector) {
     return document.querySelector(selector);
 }
 
+/**
+ * Delays the next operation the specified amount of time.
+ * @param {Number} delayInMilliseconds The amount of time to wait in milliseconds
+ */
+export async function delay(delayInMilliseconds) {
+    if (delayInMilliseconds > 0) {
+        await new Promise((r) => setTimeout(r, delayInMilliseconds));
+    }
+}
+
 export default {
     cssLoadFile: cssLoadFile,
     cssGetAttribute: cssGetAttribute,
@@ -395,4 +405,5 @@ export default {
     getQueryString: getQueryString,
     setWindowTitle: setWindowTitle,
     waitForElementToBePresent: waitForElementToBePresent,
+    delay: delay,
 };

@@ -26,34 +26,34 @@ def __main__():
                 for line in info:
                     fields = line.replace("\n", "").split("=")
                     tmp_dict[fields[0]] = "=".join(fields[1:])
-                if 'genome project id' in tmp_dict.keys():
-                    name = tmp_dict['genome project id']
-                    if 'build' in tmp_dict.keys():
-                        name = tmp_dict['build']
+                if "genome project id" in tmp_dict.keys():
+                    name = tmp_dict["genome project id"]
+                    if "build" in tmp_dict.keys():
+                        name = tmp_dict["build"]
                     if name not in organisms.keys():
-                        organisms[name] = {'chrs': {}, 'base_dir': this_base_dir}
+                        organisms[name] = {"chrs": {}, "base_dir": this_base_dir}
                     for key in tmp_dict.keys():
                         organisms[name][key] = tmp_dict[key]
                 else:
-                    if tmp_dict['organism'] not in organisms.keys():
-                        organisms[tmp_dict['organism']] = {'chrs': {}, 'base_dir': this_base_dir}
-                    organisms[tmp_dict['organism']]['chrs'][tmp_dict['chromosome']] = tmp_dict
+                    if tmp_dict["organism"] not in organisms.keys():
+                        organisms[tmp_dict["organism"]] = {"chrs": {}, "base_dir": this_base_dir}
+                    organisms[tmp_dict["organism"]]["chrs"][tmp_dict["chromosome"]] = tmp_dict
     for org in organisms:
         org = organisms[org]
         # if no gpi, then must be a ncbi chr which corresponds to a UCSC org, w/o matching UCSC designation
         try:
-            build = org['genome project id']
+            build = org["genome project id"]
         except KeyError:
             continue
 
-        if 'build' in org:
-            build = org['build']
+        if "build" in org:
+            build = org["build"]
 
         chrs = []
-        for chrom in org['chrs']:
-            chrom = org['chrs'][chrom]
-            chrs.append("{}={}".format(chrom['chromosome'], chrom['length']))
-        print("{}\t{}\t{}".format(build, org['name'], ",".join(chrs)))
+        for chrom in org["chrs"]:
+            chrom = org["chrs"][chrom]
+            chrs.append("{}={}".format(chrom["chromosome"], chrom["length"]))
+        print("{}\t{}\t{}".format(build, org["name"], ",".join(chrs)))
 
 
 if __name__ == "__main__":

@@ -8,10 +8,9 @@ from abc import (
     abstractproperty,
 )
 
-
 from galaxy.util.filelock import (
     FileLock,
-    FileLockException
+    FileLockException,
 )
 
 log = logging.getLogger(__name__)

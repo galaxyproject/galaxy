@@ -4,7 +4,6 @@ import mako.exceptions
 
 from galaxy.util import unicodify
 
-
 log = logging.getLogger(__name__)
 
 
@@ -24,8 +23,11 @@ def build_template_error_formatters():
     def mako_html_data(exc_value):
         if isinstance(exc_value, (mako.exceptions.CompileException, mako.exceptions.SyntaxException)):
             return mako.exceptions.html_error_template().render(full=False, css=False)
-        if isinstance(exc_value, AttributeError) and exc_value.args[0].startswith("'Undefined' object has no attribute"):
+        if isinstance(exc_value, AttributeError) and exc_value.args[0].startswith(
+            "'Undefined' object has no attribute"
+        ):
             return mako.exceptions.html_error_template().render(full=False, css=False)
+
     formatters.append(mako_html_data)
     return formatters
 
@@ -42,7 +44,8 @@ def wrap_if_allowed_or_fail(app, stack, wrap, name=None, args=None, kwargs=None)
     if not stack.allowed_middleware(wrap):
         raise MiddlewareWrapUnsupported(
             "'%s' is enabled in your configuration but the %s application stack does not support it, this "
-            "middleware has been disabled" % (name, stack.name))
+            "middleware has been disabled" % (name, stack.name)
+        )
     args = args or []
     kwargs = kwargs or {}
     log.debug("Enabling '%s' middleware", name)

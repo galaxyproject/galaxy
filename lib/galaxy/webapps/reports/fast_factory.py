@@ -36,7 +36,7 @@ with the following command-line.
 
 from galaxy.main_config import (
     WebappConfigResolver,
-    WebappSetupProps
+    WebappSetupProps,
 )
 from galaxy.webapps.reports.buildapp import app_factory
 from .fast_app import initialize_fast_app
@@ -44,11 +44,13 @@ from .fast_app import initialize_fast_app
 
 def factory():
     props = WebappSetupProps(
-        app_name='reports',
-        default_section_name='reports',
-        env_config_file='GALAXY_REPORTS_CONFIG',
+        app_name="reports",
+        default_section_name="reports",
+        env_config_file="GALAXY_REPORTS_CONFIG",
     )
     config_provider = WebappConfigResolver(props)
     config = config_provider.resolve_config()
-    gx_webapp = app_factory(global_conf=config.global_conf, load_app_kwds=config.load_app_kwds, wsgi_preflight=config.wsgi_preflight)
+    gx_webapp = app_factory(
+        global_conf=config.global_conf, load_app_kwds=config.load_app_kwds, wsgi_preflight=config.wsgi_preflight
+    )
     return initialize_fast_app(gx_webapp)

@@ -1,8 +1,6 @@
-from selenium.webdriver.common.keys import Keys
-
 from .framework import (
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
 
 
@@ -48,8 +46,8 @@ class CollectionEditTestCase(SeleniumTestCase):
 
     def change_dbkey_value_and_click_submit(self, dbkeyValue, dbkeyNew):
         self.components.edit_collection_attributes.database_value(dbkey=dbkeyValue).wait_for_and_click()
-        self.driver.find_element_by_css_selector("input.multiselect__input").send_keys(dbkeyNew)
-        self.driver.find_element_by_css_selector("input.multiselect__input").send_keys(Keys.ENTER)
+        self.find_element_by_selector("input.multiselect__input").send_keys(dbkeyNew)
+        self.find_element_by_selector("input.multiselect__input").send_keys(self.keys.ENTER)
         self.components.edit_collection_attributes.save_btn.wait_for_and_click()
 
     def _wait_for_and_select(self, hids):
@@ -58,12 +56,11 @@ class CollectionEditTestCase(SeleniumTestCase):
         depending on how fast the upload goes compared to the history polling updates, it might just
         skip to the end for a really fast upload
         """
-
         for hid in hids:
-            timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
-            row_selector = self.content_item_by_attributes(hid=hid, state="ok")
-            row = self.wait_for_present(row_selector, timeout=timeout)
-            row.send_keys(" ")
+            self.history_panel_wait_for_hid_ok(hid)
+        self.history_panel_multi_operations_show()
+        for hid in hids:
+            self.history_panel_muli_operation_select_hid(hid)
 
     def _collection_dropdown(self, option_description):
         return self.use_bootstrap_dropdown(option=option_description, menu="selected content menu")

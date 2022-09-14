@@ -22,7 +22,7 @@ def __main__():
     species = maf_utilities.parse_species_option(sys.argv.pop(1))
 
     try:
-        maf_writer = bx.align.maf.Writer(open(output_file, 'w'))
+        maf_writer = bx.align.maf.Writer(open(output_file, "w"))
     except Exception:
         print(sys.stderr, "Unable to open output file")
         sys.exit()

@@ -6,15 +6,16 @@ from unittest import TestCase
 
 import psutil
 
-from galaxy import job_metrics
-from galaxy import model
+from galaxy import (
+    job_metrics,
+    model,
+)
 from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.jobs.runners import local
 from galaxy.util import bunch
 
 
 class TestLocalJobRunner(TestCase, UsesTools):
-
     def setUp(self):
         self.setup_app()
         self._init_tool()
@@ -37,7 +38,7 @@ class TestLocalJobRunner(TestCase, UsesTools):
         assert self.job_wrapper.exit_code == 0
 
     def test_default_slots(self):
-        self.job_wrapper.command_line = '''echo $GALAXY_SLOTS'''
+        self.job_wrapper.command_line = """echo $GALAXY_SLOTS"""
         runner = local.LocalJobRunner(self.app, 1)
         runner.queue_job(self.job_wrapper)
         assert self.job_wrapper.stdout.strip() == "1"
@@ -46,7 +47,7 @@ class TestLocalJobRunner(TestCase, UsesTools):
         # Set local_slots in job destination to specify slots for
         # local job runner.
         self.job_wrapper.job_destination.params["local_slots"] = 3
-        self.job_wrapper.command_line = '''echo $GALAXY_SLOTS'''
+        self.job_wrapper.command_line = """echo $GALAXY_SLOTS"""
         runner = local.LocalJobRunner(self.app, 1)
         runner.queue_job(self.job_wrapper)
         assert self.job_wrapper.stdout.strip() == "3"
@@ -96,6 +97,7 @@ class TestLocalJobRunner(TestCase, UsesTools):
 
     def test_stopping_job_at_shutdown(self):
         self.job_wrapper.command_line = '''python -c "import time; time.sleep(15)"'''
+        self.app.model.session = bunch.Bunch(add=lambda x: None, flush=lambda: None)
         runner = local.LocalJobRunner(self.app, 1)
         runner.start()
         self.app.config.monitor_thread_join_timeout = 15
@@ -114,7 +116,6 @@ class TestLocalJobRunner(TestCase, UsesTools):
 
 
 class MockJobWrapper:
-
     def __init__(self, app, test_directory, tool):
         working_directory = os.path.join(test_directory, "workdir")
         tool_working_directory = os.path.join(working_directory, "working")
@@ -136,7 +137,7 @@ class MockJobWrapper:
         self.job = model.Job()
         self.job_id = 1
         self.job.id = 1
-        self.output_paths = ['/tmp/output1.dat']
+        self.output_paths = ["/tmp/output1.dat"]
         self.mock_metadata_path = os.path.abspath(os.path.join(test_directory, "METADATA_SET"))
         self.metadata_command = "touch %s" % self.mock_metadata_path
         self.galaxy_virtual_env = None
@@ -145,14 +146,14 @@ class MockJobWrapper:
         self.tmp_dir_creation_statement = ""
         self.use_metadata_binary = False
         self.guest_ports = []
+        self.metadata_strategy = "directory"
+        self.remote_command_line = False
 
         # Cruft for setting metadata externally, axe at some point.
         self.external_output_metadata: Optional[bunch.Bunch] = bunch.Bunch(
             set_job_runner_external_pid=lambda pid, session: None
         )
-        self.app.datatypes_registry.set_external_metadata_tool = bunch.Bunch(
-            build_dependency_shell_commands=lambda: []
-        )
+        self.app.datatypes_registry.set_external_metadata_tool = bunch.Bunch(build_dependency_shell_commands=lambda: [])
 
     def check_tool_output(*args, **kwds):
         return "ok"
@@ -164,7 +165,7 @@ class MockJobWrapper:
             external_id = self.job.job_runner_external_id
             if external_id:
                 break
-            time.sleep(.1)
+            time.sleep(0.1)
         return external_id
 
     def prepare(self):
@@ -204,7 +205,9 @@ class MockJobWrapper:
     def has_limits(self):
         return False
 
-    def fail(self, message, exception):
+    def fail(
+        self, message, exception=False, tool_stdout="", tool_stderr="", exit_code=None, job_stdout=None, job_stderr=None
+    ):
         self.fail_message = message
         self.fail_exception = exception
 
@@ -221,3 +224,7 @@ class MockJobWrapper:
 
     def reclaim_ownership(self):
         pass
+
+    @property
+    def is_cwl_job(self):
+        return False

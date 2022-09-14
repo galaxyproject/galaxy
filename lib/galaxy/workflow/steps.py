@@ -6,12 +6,12 @@ import math
 from galaxy.util.topsort import (
     CycleError,
     topsort,
-    topsort_levels
+    topsort_levels,
 )
 
 
 def attach_ordered_steps(workflow, steps):
-    """ Attempt to topologically order steps and attach to workflow. If this
+    """Attempt to topologically order steps and attach to workflow. If this
     fails - the workflow contains cycles so it mark it as such.
     """
     ordered_steps = order_workflow_steps(steps)
@@ -28,12 +28,24 @@ def order_workflow_steps(steps):
     """
     Perform topological sort of the steps, return ordered or None
     """
-    position_data_available = True
+    position_data_available = bool(steps)
     for step in steps:
-        if not step.position or 'left' not in step.position or 'top' not in step.position:
+        if not step.position or "left" not in step.position or "top" not in step.position:
             position_data_available = False
     if position_data_available:
-        steps.sort(key=lambda _: math.sqrt(_.position['left'] ** 2 + _.position['top'] ** 2))
+        # find minimum left and top values to normalize position
+        min_left = min(step.position["left"] for step in steps)
+        min_top = min(step.position["top"] for step in steps)
+        # normalize by min_left and min_top
+        for step in steps:
+            step.position = {
+                "left": step.position["left"] - min_left,
+                "top": step.position["top"] - min_top
+                # other position attributes can be discarded if present
+            }
+        steps.sort(key=lambda _: _.position["left"] + _.position["top"])
+        # order by Euclidean distance to the origin (i.e. pre-normalized (min_left, min_top))
+        steps.sort(key=lambda _: math.sqrt(_.position["left"] ** 2 + _.position["top"] ** 2))
     try:
         edges = sorted(edgelist_for_workflow_steps(steps))
         node_order = topsort(edges)

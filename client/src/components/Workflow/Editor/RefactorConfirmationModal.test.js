@@ -24,10 +24,9 @@ describe("RefactorConfirmationModal.vue", () => {
     });
 
     it("should not attempt a dry run refactor is there are no actions", async () => {
-        wrapper.setProps({
+        await wrapper.setProps({
             refactorActions: [],
         });
-        await flushPromises();
         expect(refactor.mock.calls.length).toBe(0);
     });
 
@@ -37,7 +36,7 @@ describe("RefactorConfirmationModal.vue", () => {
                 error("foo");
             })
         );
-        wrapper.setProps({
+        await wrapper.setProps({
             refactorActions: [{ action_type: TEST_ACTION_TYPE }],
         });
         await flushPromises();
@@ -57,7 +56,7 @@ describe("RefactorConfirmationModal.vue", () => {
                 });
             })
         );
-        wrapper.setProps({
+        await wrapper.setProps({
             refactorActions: [{ action_type: TEST_ACTION_TYPE }],
         });
         await flushPromises();
@@ -91,10 +90,9 @@ describe("RefactorConfirmationModal.vue", () => {
                 });
             })
         );
-        wrapper.setProps({
+        await wrapper.setProps({
             refactorActions: [{ action_type: TEST_ACTION_TYPE }],
         });
-        await flushPromises();
         expect(wrapper.emitted().onWorkflowError).toBeFalsy();
 
         // called with dry run...

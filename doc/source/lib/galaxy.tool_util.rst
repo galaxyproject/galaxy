@@ -12,16 +12,28 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   galaxy.tool_util.biotools
    galaxy.tool_util.client
    galaxy.tool_util.cwl
    galaxy.tool_util.deps
    galaxy.tool_util.linters
    galaxy.tool_util.locations
+   galaxy.tool_util.ontologies
    galaxy.tool_util.parser
+   galaxy.tool_util.toolbox
+   galaxy.tool_util.unittest_utils
    galaxy.tool_util.verify
 
 Submodules
 ----------
+
+galaxy.tool\_util.edam\_util module
+-----------------------------------
+
+.. automodule:: galaxy.tool_util.edam_util
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 galaxy.tool\_util.fetcher module
 --------------------------------

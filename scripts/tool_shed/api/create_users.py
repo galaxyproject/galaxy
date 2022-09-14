@@ -21,26 +21,27 @@ are available in the test public Tool Shed and create each of them in a local de
 
 import argparse
 
-from common import get, submit
+from common import (
+    get,
+    submit,
+)
 
 
 def main(options):
     api_key = options.api
-    from_tool_shed = options.from_tool_shed.rstrip('/')
-    to_tool_shed = options.to_tool_shed.rstrip('/')
+    from_tool_shed = options.from_tool_shed.rstrip("/")
+    to_tool_shed = options.to_tool_shed.rstrip("/")
     # Get the users from the specified Tool Shed.
-    url = '%s/api/users' % from_tool_shed
+    url = "%s/api/users" % from_tool_shed
     user_dicts = get(url)
     create_response_dicts = []
     for user_dict in user_dicts:
-        username = user_dict.get('username', None)
+        username = user_dict.get("username", None)
         if username is not None:
-            email = '%s@test.org' % username
-            password = 'testuser'
-            data = dict(email=email,
-                        password=password,
-                        username=username)
-            url = '%s/api/users' % to_tool_shed
+            email = "%s@test.org" % username
+            password = "testuser"
+            data = dict(email=email, password=password, username=username)
+            url = "%s/api/users" % to_tool_shed
             try:
                 response = submit(url, data, api_key)
             except Exception as e:
@@ -50,10 +51,22 @@ def main(options):
             create_response_dicts.append(create_response_dict)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Retrieve a list of users from a Tool Shed and create them in another Tool Shed.')
-    parser.add_argument("-a", "--api", dest="api", required=True, help="API Key for Tool Shed in which users will be created")
-    parser.add_argument("-f", "--from_tool_shed", dest="from_tool_shed", required=True, help="URL of Tool Shed from which to retrieve the users")
-    parser.add_argument("-t", "--to_tool_shed", dest="to_tool_shed", required=True, help="URL of Tool Shed in which to create the users")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Retrieve a list of users from a Tool Shed and create them in another Tool Shed."
+    )
+    parser.add_argument(
+        "-a", "--api", dest="api", required=True, help="API Key for Tool Shed in which users will be created"
+    )
+    parser.add_argument(
+        "-f",
+        "--from_tool_shed",
+        dest="from_tool_shed",
+        required=True,
+        help="URL of Tool Shed from which to retrieve the users",
+    )
+    parser.add_argument(
+        "-t", "--to_tool_shed", dest="to_tool_shed", required=True, help="URL of Tool Shed in which to create the users"
+    )
     options = parser.parse_args()
     main(options)

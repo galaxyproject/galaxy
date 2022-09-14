@@ -1,7 +1,8 @@
+from a2wsgi import WSGIMiddleware
 from fastapi import FastAPI
-from fastapi.middleware.wsgi import WSGIMiddleware
 
 from galaxy.webapps.base.api import (
+    add_empty_response_middleware,
     add_exception_handler,
     add_request_id_middleware,
     include_all_package_routers,
@@ -19,7 +20,8 @@ def initialize_fast_app(gx_webapp):
     )
     add_exception_handler(app)
     add_request_id_middleware(app)
-    include_all_package_routers(app, 'galaxy.webapps.reports.api')
+    include_all_package_routers(app, "galaxy.webapps.reports.api")
     wsgi_handler = WSGIMiddleware(gx_webapp)
-    app.mount('/', wsgi_handler)
+    app.mount("/", wsgi_handler)
+    add_empty_response_middleware(app)
     return app

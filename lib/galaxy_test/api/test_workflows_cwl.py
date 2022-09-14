@@ -9,6 +9,4 @@ class BaseCwlWorkflowTestCase(BaseWorkflowsApiTestCase):
 
     def setUp(self):
         super().setUp()
-        self.cwl_populator = CwlPopulator(
-            self.dataset_populator, self.workflow_populator
-        )
+        self.cwl_populator = CwlPopulator(self.dataset_populator, self.workflow_populator)

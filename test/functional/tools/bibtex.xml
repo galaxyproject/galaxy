@@ -31,7 +31,7 @@ echo '$input1' > '$out_file1'
     ]]></help>
     <citations>
         <citation type="doi">10.1101/gr.4086505</citation>
-        <citation type="doi">10.6084/m9.figshare.979190</citation>
+        <!--<citation type="doi">10.6084/m9.figshare.979190</citation>-->
         <citation type="bibtex">
 @misc{Garrison2015,
   author = {Garrison, Erik},

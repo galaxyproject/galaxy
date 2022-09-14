@@ -4,9 +4,9 @@
             <component
                 :is="viewElement"
                 v-bind="currentNode"
+                :image-loc="config.welcome_directory"
                 @select="down"
-                @back="up"
-                :image-loc="config.welcome_directory">
+                @back="up">
             </component>
         </ConfigProvider>
     </div>
@@ -18,6 +18,7 @@ import Topics from "components/NewUserWelcome/components/Topics";
 import Subtopics from "components/NewUserWelcome/components/Subtopics";
 import Slides from "components/NewUserWelcome/components/Slides";
 import ConfigProvider from "components/providers/ConfigProvider";
+import { getResource } from "./getResource";
 
 export default {
     components: {
@@ -35,22 +36,26 @@ export default {
         Slides,
         ConfigProvider,
     },
+    props: {
+        newUser: {
+            type: Object,
+            required: true,
+        },
+    },
     data() {
         return {
             position: [],
         };
-    },
-    props: {
-        newUserDict: { type: Object, required: true },
     },
     computed: {
         depth() {
             return this.position.length;
         },
         currentNode() {
+            const userDict = this.newUser || getResource();
             return this.position.reduce((node, i) => {
                 return node.topics[i];
-            }, this.newUserDict);
+            }, userDict);
         },
         viewElement() {
             let element;
@@ -85,7 +90,7 @@ export default {
 </script>
 
 <style scoped type="scss">
-.new-user-welcome::v-deep {
+.new-user-welcome:deep() {
     .carousel-fig {
         padding-bottom: 10;
     }

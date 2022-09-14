@@ -1,6 +1,4 @@
-from galaxy_test.driver.integration_setup import (
-    PosixFileSourceSetup,
-)
+from galaxy_test.driver.integration_setup import PosixFileSourceSetup
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
@@ -16,8 +14,8 @@ class PosixFileSourceSeleniumIntegrationTestCase(PosixFileSourceSetup, SeleniumI
         self.admin_login()
         self.components.upload.start.wait_for_and_click()
         self.components.upload.ftp_add.wait_for_and_click()
-        self.components.upload.file_source_selector(path='gxfiles://posix_test').wait_for_and_click()
-        self.components.upload.file_source_selector(path='gxfiles://posix_test/a').wait_for_and_click()
+        self.components.upload.file_source_selector(path="gxfiles://posix_test").wait_for_and_click()
+        self.components.upload.file_source_selector(path="gxfiles://posix_test/a").wait_for_and_click()
         self.components.upload.file_dialog_ok.wait_for_and_click()
         self.upload_start()
         self.sleep_for(self.wait_types.UX_RENDER)

@@ -9,11 +9,11 @@ class FlushPerNDatasetsTestCase(integration_util.IntegrationInstance):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["flush_per_n_datasets"] = 1
 
 
 instance = integration_util.integration_module_instance(FlushPerNDatasetsTestCase)
-test_tools = integration_util.integration_tool_runner([
-    'collection_creates_dynamic_nested',
-    'collection_creates_dynamic_list_of_pairs'
-])
+test_tools = integration_util.integration_tool_runner(
+    ["collection_creates_dynamic_nested", "collection_creates_dynamic_list_of_pairs"]
+)

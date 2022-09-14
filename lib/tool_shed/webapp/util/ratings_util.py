@@ -8,8 +8,8 @@ log = logging.getLogger(__name__)
 class ItemRatings(UsesItemRatings):
     """Overrides rate_item method since we also allow for comments"""
 
-    def rate_item(self, trans, user, item, rating, comment=''):
-        """ Rate an item. Return type is <item_class>RatingAssociation. """
+    def rate_item(self, trans, user, item, rating, comment=""):
+        """Rate an item. Return type is <item_class>RatingAssociation."""
         item_rating = self.get_user_item_rating(trans.sa_session, user, item, webapp_model=trans.model)
         if not item_rating:
             # User has not yet rated item; create rating.

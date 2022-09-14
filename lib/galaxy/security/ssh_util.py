@@ -15,7 +15,7 @@ def generate_ssh_keys() -> SSHKeys:
     """Returns a named tuple with private and public key and their paths."""
     key = RSA.generate(2048)
     private_key = key.export_key()
-    public_key = key.publickey().export_key(format='OpenSSH')
+    public_key = key.publickey().export_key(format="OpenSSH")
     with tempfile.NamedTemporaryFile(delete=False) as f:
         f.write(private_key)
         private_key_file = f.name

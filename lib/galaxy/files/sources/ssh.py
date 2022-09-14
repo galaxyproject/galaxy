@@ -13,7 +13,7 @@ class SshFilesSource(PyFilesystem2FilesSource):
 
     def _open_fs(self, user_context):
         props = self._serialization_props(user_context)
-        path = props.pop('path')
+        path = props.pop("path")
         handle = SSHFS(**props)
         if path:
             handle = handle.opendir(path)

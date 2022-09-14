@@ -22,7 +22,7 @@ def __main__():
 
     organisms = {}
 
-    loc_out = open(loc_out, 'wb')
+    loc_out = open(loc_out, "wb")
 
     for result in os.walk(base_dir):
         this_base_dir, sub_dirs, files = result
@@ -35,29 +35,29 @@ def __main__():
                 for line in info:
                     fields = line.replace("\n", "").split("=")
                     tmp_dict[fields[0]] = "=".join(fields[1:])
-                if 'genome project id' in tmp_dict.keys():
-                    name = tmp_dict['genome project id']
-                    if 'build' in tmp_dict.keys():
-                        name = tmp_dict['build']
+                if "genome project id" in tmp_dict.keys():
+                    name = tmp_dict["genome project id"]
+                    if "build" in tmp_dict.keys():
+                        name = tmp_dict["build"]
                     if name not in organisms.keys():
-                        organisms[name] = {'chrs': {}, 'base_dir': this_base_dir}
+                        organisms[name] = {"chrs": {}, "base_dir": this_base_dir}
                     for key in tmp_dict.keys():
                         organisms[name][key] = tmp_dict[key]
                 else:
-                    if tmp_dict['organism'] not in organisms.keys():
-                        organisms[tmp_dict['organism']] = {'chrs': {}, 'base_dir': this_base_dir}
-                    organisms[tmp_dict['organism']]['chrs'][tmp_dict['chromosome']] = tmp_dict
+                    if tmp_dict["organism"] not in organisms.keys():
+                        organisms[tmp_dict["organism"]] = {"chrs": {}, "base_dir": this_base_dir}
+                    organisms[tmp_dict["organism"]]["chrs"][tmp_dict["chromosome"]] = tmp_dict
 
     for org in organisms:
         org = organisms[org]
         try:
-            build = org['genome project id']
+            build = org["genome project id"]
         except KeyError:
             continue
-        if 'build' in org:
-            build = org['build']
+        if "build" in org:
+            build = org["build"]
 
-        seq_path = os.path.join(org['base_dir'], "seq")
+        seq_path = os.path.join(org["base_dir"], "seq")
 
         # create seq dir, if exists go to next org
         # TODO: add better checking, i.e. for updating
@@ -71,11 +71,11 @@ def __main__():
 
         # Print org info
 
-        for chr in org['chrs']:
-            chr = org['chrs'][chr]
+        for chr in org["chrs"]:
+            chr = org["chrs"][chr]
 
-            fasta_file = os.path.join(org['base_dir'], "%s.fna" % chr['chromosome'])
-            nib_out_file = os.path.join(seq_path, "%s.nib " % chr['chromosome'])
+            fasta_file = os.path.join(org["base_dir"], "%s.fna" % chr["chromosome"])
+            nib_out_file = os.path.join(seq_path, "%s.nib " % chr["chromosome"])
             # create nibs using faToNib binary
             # TODO: when bx supports writing nib, use it here instead
             command = f"faToNib {fasta_file} {nib_out_file}"

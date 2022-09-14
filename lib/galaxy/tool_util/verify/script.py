@@ -8,7 +8,10 @@ import os
 import sys
 import tempfile
 from collections import namedtuple
-from concurrent.futures import thread, ThreadPoolExecutor
+from concurrent.futures import (
+    thread,
+    ThreadPoolExecutor,
+)
 
 import yaml
 
@@ -31,7 +34,6 @@ TestException = namedtuple("TestException", ["tool_id", "exception", "was_record
 
 
 class Results:
-
     def __init__(self, default_suitename, test_json, append=False, galaxy_url=None):
         self.test_json = test_json or "-"
         self.galaxy_url = galaxy_url
@@ -58,7 +60,7 @@ class Results:
     def already_successful(self, test_reference):
         test_data = self._previous_test_data(test_reference)
         if test_data:
-            if 'status' in test_data and test_data['status'] == 'success':
+            if "status" in test_data and test_data["status"] == "success":
                 return True
 
         return False
@@ -66,7 +68,7 @@ class Results:
     def already_executed(self, test_reference):
         test_data = self._previous_test_data(test_reference)
         if test_data:
-            if 'status' in test_data and test_data['status'] != 'skipped':
+            if "status" in test_data and test_data["status"] != "skipped":
                 return True
 
         return False
@@ -74,10 +76,10 @@ class Results:
     def _previous_test_data(self, test_reference):
         test_id = _test_id_for_reference(test_reference)
         for test_result in self.test_results:
-            if test_result.get('id') != test_id:
+            if test_result.get("id") != test_id:
                 continue
 
-            has_data = test_result.get('has_data', False)
+            has_data = test_result.get("has_data", False)
             if has_data:
                 test_data = test_result.get("data", {})
                 return test_data
@@ -85,16 +87,16 @@ class Results:
         return None
 
     def write(self):
-        tests = sorted(self.test_results, key=lambda el: el['id'])
+        tests = sorted(self.test_results, key=lambda el: el["id"])
         n_passed, n_failures, n_skips = 0, 0, 0
         n_errors = len([e for e in self.test_exceptions if not e.was_recorded])
         for test in tests:
-            has_data = test.get('has_data', False)
+            has_data = test.get("has_data", False)
             if has_data:
                 test_data = test.get("data", {})
-                if 'status' not in test_data:
+                if "status" not in test_data:
                     raise Exception(f"Test result data {test_data} doesn't contain a status key.")
-                status = test_data['status']
+                status = test_data["status"]
                 if status == "success":
                     n_passed += 1
                 elif status == "error":
@@ -104,18 +106,18 @@ class Results:
                 elif status == "failure":
                     n_failures += 1
         report_obj = {
-            'version': '0.1',
-            'suitename': self.suitename,
-            'results': {
-                'total': n_passed + n_failures + n_skips + n_errors,
-                'errors': n_errors,
-                'failures': n_failures,
-                'skips': n_skips,
+            "version": "0.1",
+            "suitename": self.suitename,
+            "results": {
+                "total": n_passed + n_failures + n_skips + n_errors,
+                "errors": n_errors,
+                "failures": n_failures,
+                "skips": n_skips,
             },
-            'tests': tests,
+            "tests": tests,
         }
         if self.galaxy_url:
-            report_obj['galaxy_url'] = self.galaxy_url
+            report_obj["galaxy_url"] = self.galaxy_url
         if self.test_json == "-":
             print(json.dumps(report_obj))
         else:
@@ -124,43 +126,31 @@ class Results:
 
     def info_message(self):
         messages = []
-        passed_tests = self._tests_with_status('success')
-        messages.append("Passed tool tests ({}): {}".format(
-            len(passed_tests),
-            [t["id"] for t in passed_tests]
-        ))
-        failed_tests = self._tests_with_status('failure')
-        messages.append("Failed tool tests ({}): {}".format(
-            len(failed_tests),
-            [t["id"] for t in failed_tests]
-        ))
-        skiped_tests = self._tests_with_status('skip')
-        messages.append("Skipped tool tests ({}): {}".format(
-            len(skiped_tests),
-            [t["id"] for t in skiped_tests]
-        ))
-        errored_tests = self._tests_with_status('error')
-        messages.append("Errored tool tests ({}): {}".format(
-            len(errored_tests),
-            [t["id"] for t in errored_tests]
-        ))
+        passed_tests = self._tests_with_status("success")
+        messages.append("Passed tool tests ({}): {}".format(len(passed_tests), [t["id"] for t in passed_tests]))
+        failed_tests = self._tests_with_status("failure")
+        messages.append("Failed tool tests ({}): {}".format(len(failed_tests), [t["id"] for t in failed_tests]))
+        skiped_tests = self._tests_with_status("skip")
+        messages.append("Skipped tool tests ({}): {}".format(len(skiped_tests), [t["id"] for t in skiped_tests]))
+        errored_tests = self._tests_with_status("error")
+        messages.append("Errored tool tests ({}): {}".format(len(errored_tests), [t["id"] for t in errored_tests]))
         return "\n".join(messages)
 
     @property
     def success_count(self):
-        self._tests_with_status('success')
+        self._tests_with_status("success")
 
     @property
     def skip_count(self):
-        self._tests_with_status('skip')
+        self._tests_with_status("skip")
 
     @property
     def error_count(self):
-        return self._tests_with_status('error') + len(self.test_exceptions)
+        return self._tests_with_status("error") + len(self.test_exceptions)
 
     @property
     def failure_count(self):
-        return self._tests_with_status('failure')
+        return self._tests_with_status("failure")
 
     def _tests_with_status(self, status):
         return [t for t in self.test_results if t.get("data", {}).get("status") == status]
@@ -196,7 +186,7 @@ def test_tools(
         if not no_history_reuse:
             history = galaxy_interactor.get_history(history_name=history_name)
             if history:
-                test_history = history['id']
+                test_history = history["id"]
                 if log:
                     log.info(f"Using existing history with id '{test_history}', last updated: {history['update_time']}")
         if not test_history:
@@ -204,10 +194,12 @@ def test_tools(
             test_history = galaxy_interactor.new_history(history_name=history_name, publish_history=publish_history)
             if log:
                 log.info(f"History created with id '{test_history}'")
-    verify_kwds.update({
-        "no_history_cleanup": no_history_cleanup,
-        "test_history": test_history,
-    })
+    verify_kwds.update(
+        {
+            "no_history_cleanup": no_history_cleanup,
+            "test_history": test_history,
+        }
+    )
     with ThreadPoolExecutor(max_workers=parallel_tests) as executor:
         try:
             for test_reference in test_references:
@@ -231,7 +223,7 @@ def test_tools(
             results.write()
             if log:
                 if results.test_json == "-":
-                    destination = 'standard output'
+                    destination = "standard output"
                 else:
                     destination = os.path.abspath(results.test_json)
                 log.info(f"Report written to '{destination}'")
@@ -247,7 +239,7 @@ def _test_id_for_reference(test_reference):
     test_index = test_reference.test_index
 
     if tool_version and tool_id.endswith(f"/{tool_version}"):
-        tool_id = tool_id[:-len(f"/{tool_version}")]
+        tool_id = tool_id[: -len(f"/{tool_version}")]
 
     label_base = tool_id
     if tool_version:
@@ -273,7 +265,7 @@ def _test_tool(
     # If given a tool_id with a version suffix, strip it off so we can treat tool_version
     # correctly at least in client_test_config.
     if tool_version and tool_id.endswith(f"/{tool_version}"):
-        tool_id = tool_id[:-len(f"/{tool_version}")]
+        tool_id = tool_id[: -len(f"/{tool_version}")]
 
     test_id = _test_id_for_reference(test_reference)
 
@@ -293,8 +285,13 @@ def _test_tool(
                     if log:
                         log.info("Executing test '%s'", test_id)
                     verify_tool(
-                        tool_id, galaxy_interactor, test_index=test_index, tool_version=tool_version,
-                        register_job_data=register, publish_history=publish_history, **verify_kwds
+                        tool_id,
+                        galaxy_interactor,
+                        test_index=test_index,
+                        tool_version=tool_version,
+                        register_job_data=register,
+                        publish_history=publish_history,
+                        **verify_kwds,
                     )
                     if log:
                         log.info("Test '%s' passed", test_id)
@@ -307,11 +304,13 @@ def _test_tool(
                     run_retries -= 1
         finally:
             if job_data is not None:
-                results.register_result({
-                    "id": test_id,
-                    "has_data": True,
-                    "data": job_data,
-                })
+                results.register_result(
+                    {
+                        "id": test_id,
+                        "has_data": True,
+                        "data": job_data,
+                    }
+                )
             if job_exception is not None:
                 was_recorded = job_data is not None
                 test_exception = TestException(tool_id, job_exception, was_recorded)
@@ -375,7 +374,11 @@ def main(argv=None):
         argv = sys.argv[1:]
 
     args = arg_parser().parse_args(argv)
-    run_tests(args)
+    try:
+        run_tests(args)
+    except Exception as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        sys.exit(1)
 
 
 def run_tests(args, test_filters=None, log=None):
@@ -464,7 +467,7 @@ def run_tests(args, test_filters=None, log=None):
 
 
 def setup_global_logger(name, log_file=None, verbose=False):
-    formatter = logging.Formatter('%(asctime)s %(levelname)-5s - %(message)s')
+    formatter = logging.Formatter("%(asctime)s %(levelname)-5s - %(message)s")
     console = logging.StreamHandler()
     console.setFormatter(formatter)
 
@@ -486,38 +489,111 @@ def setup_global_logger(name, log_file=None, verbose=False):
 
 def arg_parser():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument('-u', '--galaxy-url', default="http://localhost:8080", help='Galaxy URL')
-    parser.add_argument('-k', '--key', default=None, help='Galaxy User API Key')
-    parser.add_argument('-a', '--admin-key', default=None, help='Galaxy Admin API Key')
-    parser.add_argument('--force_path_paste', default=False, action="store_true", help='This requires Galaxy-side config option "allow_path_paste" enabled. Allows for fetching test data locally. Only for admins.')
-    parser.add_argument('-t', '--tool-id', default=ALL_TOOLS, help='Tool ID')
-    parser.add_argument('--tool-version', default=None, help='Tool Version (if tool id supplied). Defaults to just latest version, use * to test all versions')
-    parser.add_argument('-i', '--test-index', default=ALL_TESTS, type=int, help='Tool Test Index (starting at 0) - by default all tests will run.')
-    parser.add_argument('-o', '--output', default=None, help='directory to dump outputs to')
-    parser.add_argument('--append', default=False, action="store_true", help="Extend a test record json (created with --output-json) with additional tests.")
+    parser.add_argument("-u", "--galaxy-url", default="http://localhost:8080", help="Galaxy URL")
+    parser.add_argument("-k", "--key", default=None, help="Galaxy User API Key")
+    parser.add_argument("-a", "--admin-key", default=None, help="Galaxy Admin API Key")
+    parser.add_argument(
+        "--force_path_paste",
+        default=False,
+        action="store_true",
+        help='This requires Galaxy-side config option "allow_path_paste" enabled. Allows for fetching test data locally. Only for admins.',
+    )
+    parser.add_argument("-t", "--tool-id", default=ALL_TOOLS, help="Tool ID")
+    parser.add_argument(
+        "--tool-version",
+        default=None,
+        help="Tool Version (if tool id supplied). Defaults to just latest version, use * to test all versions",
+    )
+    parser.add_argument(
+        "-i",
+        "--test-index",
+        default=ALL_TESTS,
+        type=int,
+        help="Tool Test Index (starting at 0) - by default all tests will run.",
+    )
+    parser.add_argument("-o", "--output", default=None, help="directory to dump outputs to")
+    parser.add_argument(
+        "--append",
+        default=False,
+        action="store_true",
+        help="Extend a test record json (created with --output-json) with additional tests.",
+    )
     skip_group = parser.add_mutually_exclusive_group()
-    skip_group.add_argument('--skip-previously-executed', dest="skip", default="no", action="store_const", const="executed", help="When used with --append, skip any test previously executed.")
-    skip_group.add_argument('--skip-previously-successful', dest="skip", default="no", action="store_const", const="successful", help="When used with --append, skip any test previously executed successfully.")
-    parser.add_argument('-j', '--output-json', default=None, help='output metadata json')
-    parser.add_argument('--verbose', default=False, action="store_true", help="Verbose logging.")
-    parser.add_argument('-c', '--client-test-config', default=None, help="Test config YAML to help with client testing")
-    parser.add_argument('--suite-name', default=DEFAULT_SUITE_NAME, help="Suite name for tool test output")
-    parser.add_argument('--with-reference-data', dest="with_reference_data", default=False, action="store_true")
-    parser.add_argument('--skip-with-reference-data', dest="with_reference_data", action="store_false", help="Skip tests the Galaxy server believes use data tables or loc files.")
+    skip_group.add_argument(
+        "--skip-previously-executed",
+        dest="skip",
+        default="no",
+        action="store_const",
+        const="executed",
+        help="When used with --append, skip any test previously executed.",
+    )
+    skip_group.add_argument(
+        "--skip-previously-successful",
+        dest="skip",
+        default="no",
+        action="store_const",
+        const="successful",
+        help="When used with --append, skip any test previously executed successfully.",
+    )
+    parser.add_argument("-j", "--output-json", default=None, help="output metadata json")
+    parser.add_argument("--verbose", default=False, action="store_true", help="Verbose logging.")
+    parser.add_argument("-c", "--client-test-config", default=None, help="Test config YAML to help with client testing")
+    parser.add_argument("--suite-name", default=DEFAULT_SUITE_NAME, help="Suite name for tool test output")
+    parser.add_argument("--with-reference-data", dest="with_reference_data", default=False, action="store_true")
+    parser.add_argument(
+        "--skip-with-reference-data",
+        dest="with_reference_data",
+        action="store_false",
+        help="Skip tests the Galaxy server believes use data tables or loc files.",
+    )
     history_per_group = parser.add_mutually_exclusive_group()
-    history_per_group.add_argument('--history-per-suite', dest="history_per_test_case", default=False, action="store_false", help="Create new history per test suite (all tests in same history).")
-    history_per_group.add_argument('--history-per-test-case', dest="history_per_test_case", action="store_true", help="Create new history per test case.")
-    history_per_group.add_argument('--history-name', default=None, help="Override default history name")
-    parser.add_argument('--no-history-reuse', default=False, action="store_true", help="Do not reuse histories if a matching one already exists.")
-    parser.add_argument('--no-history-cleanup', default=False, action="store_true", help="Perserve histories created for testing.")
-    parser.add_argument('--publish-history', default=False, action="store_true", help="Publish test history. Useful for CI testing.")
-    parser.add_argument('--parallel-tests', default=1, type=int, help="Parallel tests.")
-    parser.add_argument('--retries', default=0, type=int, help="Retry failed tests.")
-    parser.add_argument('--page-size', default=0, type=int, help="If positive, use pagination and just run one 'page' to tool tests.")
-    parser.add_argument('--page-number', default=0, type=int, help="If page size is used, run this 'page' of tests - starts with 0.")
-    parser.add_argument('--download-attempts', default=1, type=int, help="Galaxy may return a transient 500 status code for download if test results are written but not yet accessible.")
-    parser.add_argument('--download-sleep', default=1, type=int, help="If download attempts is greater than 1, the amount to sleep between download attempts.")
-    parser.add_argument('--test-data', action='append', help='Add local test data path to search for missing test data')
+    history_per_group.add_argument(
+        "--history-per-suite",
+        dest="history_per_test_case",
+        default=False,
+        action="store_false",
+        help="Create new history per test suite (all tests in same history).",
+    )
+    history_per_group.add_argument(
+        "--history-per-test-case",
+        dest="history_per_test_case",
+        action="store_true",
+        help="Create new history per test case.",
+    )
+    history_per_group.add_argument("--history-name", default=None, help="Override default history name")
+    parser.add_argument(
+        "--no-history-reuse",
+        default=False,
+        action="store_true",
+        help="Do not reuse histories if a matching one already exists.",
+    )
+    parser.add_argument(
+        "--no-history-cleanup", default=False, action="store_true", help="Perserve histories created for testing."
+    )
+    parser.add_argument(
+        "--publish-history", default=False, action="store_true", help="Publish test history. Useful for CI testing."
+    )
+    parser.add_argument("--parallel-tests", default=1, type=int, help="Parallel tests.")
+    parser.add_argument("--retries", default=0, type=int, help="Retry failed tests.")
+    parser.add_argument(
+        "--page-size", default=0, type=int, help="If positive, use pagination and just run one 'page' to tool tests."
+    )
+    parser.add_argument(
+        "--page-number", default=0, type=int, help="If page size is used, run this 'page' of tests - starts with 0."
+    )
+    parser.add_argument(
+        "--download-attempts",
+        default=1,
+        type=int,
+        help="Galaxy may return a transient 500 status code for download if test results are written but not yet accessible.",
+    )
+    parser.add_argument(
+        "--download-sleep",
+        default=1,
+        type=int,
+        help="If download attempts is greater than 1, the amount to sleep between download attempts.",
+    )
+    parser.add_argument("--test-data", action="append", help="Add local test data path to search for missing test data")
     return parser
 
 

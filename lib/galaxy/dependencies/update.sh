@@ -32,7 +32,8 @@ if [ -n "$add" ] && [ $# -eq 0 ]; then
 fi
 
 # Install the latest version of poetry into the user account
-curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python3 -
+curl -sSL https://install.python-poetry.org | python3 -
+poetry self add poetry-plugin-export
 
 # Run poetry (this may update pyproject.toml and poetry.lock).
 if [ -z "$add" ]; then
@@ -43,4 +44,4 @@ fi
 
 # Update pinned requirements.
 poetry export -f requirements.txt --without-hashes --output "$this_directory/pinned-requirements.txt"
-poetry export --dev -f requirements.txt --without-hashes --output "$this_directory/dev-requirements.txt"
+poetry export --only dev -f requirements.txt --without-hashes --output "$this_directory/dev-requirements.txt"

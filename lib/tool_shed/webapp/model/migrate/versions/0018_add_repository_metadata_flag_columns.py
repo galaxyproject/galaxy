@@ -6,7 +6,12 @@ tool_test_results, missing_test_components.
 import logging
 import sys
 
-from sqlalchemy import Boolean, Column, MetaData, Table
+from sqlalchemy import (
+    Boolean,
+    Column,
+    MetaData,
+    Table,
+)
 from sqlalchemy.exc import NoSuchTableError
 
 # Need our custom types, but don't import anything else from model
@@ -28,9 +33,9 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     # Initialize.
-    if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+    if migrate_engine.name == "mysql" or migrate_engine.name == "sqlite":
         default_false = "0"
-    elif migrate_engine.name in ['postgresql', 'postgres']:
+    elif migrate_engine.name in ["postgresql", "postgres"]:
         default_false = "false"
 
     try:

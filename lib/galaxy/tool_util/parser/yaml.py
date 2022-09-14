@@ -1,11 +1,15 @@
 import json
+from typing import (
+    Dict,
+    List,
+)
 
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
-    DEFAULT_DELTA_FRAC
+    DEFAULT_DELTA_FRAC,
 )
 from .interface import (
     InputSource,
@@ -25,22 +29,25 @@ from .util import is_dict
 
 class YamlToolSource(ToolSource):
 
-    language = 'yaml'
+    language = "yaml"
 
-    def __init__(self, root_dict, source_path=None):
+    def __init__(self, root_dict: Dict, source_path=None):
         self.root_dict = root_dict
         self._source_path = source_path
-        self._macro_paths = []
+        self._macro_paths: List[str] = []
 
     @property
     def source_path(self):
         return self._source_path
 
+    def parse_tool_type(self):
+        return self.root_dict.get("tool_type")
+
     def parse_id(self):
         return self.root_dict.get("id")
 
     def parse_version(self):
-        return self.root_dict.get("version")
+        return str(self.root_dict.get("version"))
 
     def parse_name(self):
         return self.root_dict.get("name")
@@ -58,17 +65,14 @@ class YamlToolSource(ToolSource):
         xrefs = self.root_dict.get("xrefs", [])
         return [dict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
 
-    def parse_is_multi_byte(self):
-        return self.root_dict.get("is_multi_byte", self.default_is_multi_byte)
-
     def parse_sanitize(self):
         return self.root_dict.get("sanitize", True)
 
     def parse_display_interface(self, default):
-        return self.root_dict.get('display_interface', default)
+        return self.root_dict.get("display_interface", default)
 
     def parse_require_login(self, default):
-        return self.root_dict.get('require_login', default)
+        return self.root_dict.get("require_login", default)
 
     def parse_command(self):
         return self.root_dict.get("command")
@@ -89,7 +93,12 @@ class YamlToolSource(ToolSource):
         return self.root_dict.get("runtime_version", {}).get("interpreter", None)
 
     def parse_requirements_and_containers(self):
-        return requirements.parse_requirements_from_dict(self.root_dict)
+        mixed_requirements = self.root_dict.get("requirements", [])
+        return requirements.parse_requirements_from_lists(
+            software_requirements=[r for r in mixed_requirements if r.get("type") != "resource"],
+            containers=self.root_dict.get("containers", []),
+            resource_requirements=[r for r in mixed_requirements if r.get("type") == "resource"],
+        )
 
     def parse_input_pages(self):
         # All YAML tools have only one page (feature is deprecated)
@@ -170,9 +179,7 @@ class YamlToolSource(ToolSource):
 
     def parse_tests_to_dict(self):
         tests = []
-        rval = dict(
-            tests=tests
-        )
+        rval = dict(tests=tests)
 
         for i, test_dict in enumerate(self.root_dict.get("tests", [])):
             tests.append(_parse_test(i, test_dict))
@@ -189,9 +196,9 @@ class YamlToolSource(ToolSource):
         return self.root_dict.get("entry_points", [])
 
     def parse_python_template_version(self):
-        python_template_version = self.root_dict.get("python_template_version", None)
+        python_template_version = self.root_dict.get("python_template_version")
         if python_template_version is not None:
-            python_template_version = packaging.version.parse(python_template_version)
+            python_template_version = packaging.version.Version(python_template_version)
         return python_template_version
 
     def to_string(self):
@@ -218,11 +225,7 @@ def _parse_test(i, test_dict):
             else:
                 file = value
                 attributes = {}
-            new_outputs.append({
-                "name": key,
-                "value": file,
-                "attributes": attributes
-            })
+            new_outputs.append({"name": key, "value": file, "attributes": attributes})
     else:
         for output in outputs:
             name = output["name"]
@@ -233,11 +236,11 @@ def _parse_test(i, test_dict):
     for output in new_outputs:
         attributes = output["attributes"]
         defaults = {
-            'compare': 'diff',
-            'lines_diff': 0,
-            'delta': DEFAULT_DELTA,
-            'delta_frac': DEFAULT_DELTA_FRAC,
-            'sort': False,
+            "compare": "diff",
+            "lines_diff": 0,
+            "delta": DEFAULT_DELTA,
+            "delta_frac": DEFAULT_DELTA_FRAC,
+            "sort": False,
         }
         # TODO
         attributes["extra_files"] = []
@@ -257,6 +260,7 @@ def _parse_test(i, test_dict):
     test_dict["stderr"] = __to_test_assert_list(test_dict.get("stderr", []))
     test_dict["expect_exit_code"] = test_dict.get("expect_exit_code", None)
     test_dict["expect_failure"] = test_dict.get("expect_failure", False)
+    test_dict["expect_test_failure"] = test_dict.get("expect_test_failure", False)
     return test_dict
 
 
@@ -289,7 +293,6 @@ def __to_test_assert_list(assertions):
 
 
 class YamlPageSource(PageSource):
-
     def __init__(self, inputs_list):
         self.inputs_list = inputs_list
 
@@ -298,7 +301,6 @@ class YamlPageSource(PageSource):
 
 
 class YamlInputSource(InputSource):
-
     def __init__(self, input_dict):
         self.input_dict = input_dict
 

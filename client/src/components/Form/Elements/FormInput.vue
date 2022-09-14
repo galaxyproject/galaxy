@@ -1,6 +1,6 @@
 <template>
-    <textarea v-if="area" :id="id" class="ui-textarea" v-model="currentValue" />
-    <input v-else :id="id" class="ui-input" v-model="currentValue" />
+    <textarea v-if="area" :id="id" v-model="currentValue" class="ui-textarea" />
+    <input v-else :id="id" v-model="currentValue" class="ui-input" />
 </template>
 <script>
 export default {

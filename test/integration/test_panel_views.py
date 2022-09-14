@@ -13,6 +13,7 @@ class PanelViewsFromDirectoryIntegrationTestCase(integration_util.IntegrationTes
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["panel_views_dir"] = PANEL_VIEWS_DIR_1
 
     def test_section_copy(self):
@@ -117,6 +118,7 @@ class PanelViewsFromConfigIntegrationTestCase(integration_util.IntegrationTestCa
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["panel_views"] = [
             {
                 "id": "my-custom",
@@ -126,19 +128,23 @@ class PanelViewsFromConfigIntegrationTestCase(integration_util.IntegrationTestCa
                     {
                         "type": "label",
                         "text": "The Start",
-                    }, {
+                    },
+                    {
                         "type": "tool",
                         "id": "empty_list",
-                    }, {
+                    },
+                    {
                         "type": "label",
                         "text": "The Middle",
-                    }, {
+                    },
+                    {
                         "type": "tool",
                         "id": "count_list",
-                    }, {
+                    },
+                    {
                         "type": "label",
                         "text": "The End",
-                    }
+                    },
                 ],
             }
         ]
@@ -171,7 +177,13 @@ def verify_custom_embed(index):
     section_elems = section["elems"]
     assert len(section_elems) == 5, model_classes(section_elems)
     assert model_classes(section_elems) == ["Tool", "Tool", "Tool", "Tool", "Tool"]
-    assert element_ids(section_elems) == ["multi_data_optional", "paths_as_file", "param_text_option", "column_param", "Filter1"]
+    assert element_ids(section_elems) == [
+        "multi_data_optional",
+        "paths_as_file",
+        "param_text_option",
+        "column_param",
+        "Filter1",
+    ]
 
 
 def verify_custom_regex_filtered(index):

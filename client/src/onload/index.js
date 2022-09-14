@@ -1,7 +1,6 @@
 // Bootstrap overwrites .tooltip() method, load it after jquery-ui
 // (which is loaded everywhere via libs/jquery.custom.js)
 import "bootstrap";
-import "@galaxyproject/bootstrap-tour";
 
 // Galaxy core styles
 import "scss/base.scss";
@@ -20,5 +19,6 @@ export { getRootFromIndexLink } from "./getRootFromIndexLink";
 import config from "config";
 
 if (!config.testBuild === true) {
-    console.log("Configs:", config.name, config);
+    console.log(`Galaxy Client '${config.name}' build, dated ${config.buildTimestamp}`);
+    console.debug("Full configuration:", config);
 }

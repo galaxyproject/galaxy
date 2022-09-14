@@ -7,7 +7,6 @@ UNDEFINED_JOB = object()
 
 
 class TestWorkflowExtractSummary(unittest.TestCase):
-
     def setUp(self):
         self.history = MockHistory()
         self.trans = MockTrans(self.history)
@@ -30,8 +29,8 @@ class TestWorkflowExtractSummary(unittest.TestCase):
         job_dict, warnings = extract.summarize(trans=self.trans)
         assert len(job_dict) == 2
         assert not warnings
-        self.assertEqual(job_dict[hda1.job], [('out1', hda1), ('out2', hda2)])
-        self.assertEqual(job_dict[hda3.job], [('out3', hda3)])
+        self.assertEqual(job_dict[hda1.job], [("out1", hda1), ("out2", hda2)])
+        self.assertEqual(job_dict[hda3.job], [("out3", hda3)])
 
     def test_finds_original_job_if_copied(self):
         hda = MockHda()
@@ -43,11 +42,10 @@ class TestWorkflowExtractSummary(unittest.TestCase):
         job_dict, warnings = extract.summarize(trans=self.trans)
         assert not warnings
         assert len(job_dict) == 1
-        self.assertEqual(job_dict[hda.job], [('out1', derived_hda_2)])
+        self.assertEqual(job_dict[hda.job], [("out1", derived_hda_2)])
 
     def test_fake_job_hda(self):
-        """ Fakes job if creating_job_associations is empty.
-        """
+        """Fakes job if creating_job_associations is empty."""
         hda = MockHda(job=UNDEFINED_JOB)
         self.history.active_datasets.append(hda)
         job_dict, warnings = extract.summarize(trans=self.trans)
@@ -101,7 +99,7 @@ class TestWorkflowExtractSummary(unittest.TestCase):
         assert job is creating_job
 
     def test_warns_and_skips_datasets_if_not_finished(self):
-        hda = MockHda(state='queued')
+        hda = MockHda(state="queued")
         self.history.active_datasets.append(hda)
         job_dict, warnings = extract.summarize(trans=self.trans)
         assert warnings
@@ -117,7 +115,6 @@ class MockJobToOutputDatasetAssociation:
 
 
 class MockHistory:
-
     def __init__(self):
         self.active_datasets = []
 
@@ -127,7 +124,6 @@ class MockHistory:
 
 
 class MockTrans:
-
     def __init__(self, history):
         self.history = history
 
@@ -136,8 +132,7 @@ class MockTrans:
 
 
 class MockHda:
-
-    def __init__(self, state='ok', output_name='out1', job=None):
+    def __init__(self, state="ok", output_name="out1", job=None):
         self.hid = 1
         self.id = 123
         self.state = state
@@ -156,7 +151,6 @@ class MockHda:
 
 
 class MockHdca:
-
     def __init__(self, implicit_output_name=None, job=None, hid=1):
         self.id = 124
         self.copied_from_history_dataset_collection_association = None

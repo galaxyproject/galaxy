@@ -1,15 +1,24 @@
 from enum import Enum
-from typing import Any, cast, List, Optional, Union
+from typing import (
+    Any,
+    cast,
+    List,
+    Optional,
+    Union,
+)
 
-from pydantic import BaseModel, Field
+from pydantic import (
+    BaseModel,
+    Field,
+)
 from typing_extensions import Literal
 
 
 class StaticToolBoxViewTypeEnum(str, Enum):
-    generic = 'generic'
-    activity = 'activity'
-    publication = 'publication'
-    training = 'training'
+    generic = "generic"
+    activity = "activity"
+    publication = "publication"
+    training = "training"
 
 
 class ExcludeTool(BaseModel):
@@ -33,7 +42,7 @@ OptionalExclusionList = Optional[List[Exclusions]]
 
 
 class Tool(BaseModel):
-    content_type: Literal['tool'] = Field("tool", alias="type")
+    content_type: Literal["tool"] = Field("tool", alias="type")
     id: str
 
     class Config:
@@ -41,7 +50,7 @@ class Tool(BaseModel):
 
 
 class Label(BaseModel):
-    content_type: Literal['label'] = Field(alias="type")
+    content_type: Literal["label"] = Field(alias="type")
     id: Optional[str]
     text: str
 
@@ -55,7 +64,7 @@ class LabelShortcut(BaseModel):
 
 
 class Workflow(BaseModel):
-    content_type: Literal['workflow'] = Field(alias="type")
+    content_type: Literal["workflow"] = Field(alias="type")
     id: str
 
     class Config:
@@ -81,7 +90,7 @@ class HasItems:
     items: Optional[List[Any]]
 
     @property
-    def items_expanded(self) -> Optional[List['ExpandedRootContent']]:
+    def items_expanded(self) -> Optional[List["ExpandedRootContent"]]:
         if self.items is None:
             return None
 
@@ -110,7 +119,7 @@ class HasItems:
 
 
 class Section(BaseModel, HasItems):
-    content_type: Literal['section'] = Field(alias="type")
+    content_type: Literal["section"] = Field(alias="type")
     id: Optional[str]
     name: Optional[str]
     items: Optional[List[SectionContent]]

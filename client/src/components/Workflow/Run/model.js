@@ -1,7 +1,6 @@
 import _ from "underscore";
-
+import { isEmpty } from "utils/utils";
 import { visitInputs } from "components/Form/utilities";
-import Utils from "utils/utils";
 
 export class WorkflowRunModel {
     constructor(runData) {
@@ -25,6 +24,7 @@ export class WorkflowRunModel {
         let hasReplacementParametersInToolForm = false;
 
         _.each(runData.steps, (step, i) => {
+            const isParameterStep = step.step_type == "parameter_input";
             var title = `${parseInt(i + 1)}: ${step.step_label || step.step_name}`;
             if (step.annotation) {
                 title += ` - ${step.annotation}`;
@@ -32,11 +32,11 @@ export class WorkflowRunModel {
             if (step.step_version) {
                 title += ` (Galaxy Version ${step.step_version})`;
             }
-            step = Utils.merge(
+            step = Object.assign(
                 {
                     index: i,
                     fixed_title: _.escape(title),
-                    expanded: i == 0 || isDataStep(step),
+                    expanded: i == 0 || isDataStep(step) || isParameterStep,
                     errors: step.messages,
                 },
                 step
@@ -44,7 +44,7 @@ export class WorkflowRunModel {
             this.steps[i] = step;
             this.links[i] = [];
             this.parms[i] = {};
-            if (step.step_type == "parameter_input" && step.step_label) {
+            if (isParameterStep && step.step_label) {
                 this.parameterInputLabels.push(step.step_label);
             }
         });
@@ -135,7 +135,7 @@ export class WorkflowRunModel {
 
         // select fields are shown for dynamic fields if all putative data inputs are available,
         // or if an explicit reference is specified as data_ref and available
-        _.each(this.steps, (step, i) => {
+        _.each(this.steps, (step) => {
             if (step.step_type == "tool") {
                 var data_resolved = true;
                 visitInputs(step.inputs, (input, name, context) => {
@@ -164,7 +164,7 @@ export class WorkflowRunModel {
                     }
                     input.flavor = "workflow";
                     if (!is_runtime_value && !is_data_input && input.type !== "hidden" && !input.wp_linked) {
-                        if (input.optional || (!Utils.isEmpty(input.value) && input.value !== "")) {
+                        if (input.optional || (!isEmpty(input.value) && input.value !== "")) {
                             input.collapsible_value = input.value;
                             input.collapsible_preview = true;
                         }
@@ -191,4 +191,52 @@ export function isDataStep(steps) {
         }
     }
     return true;
+}
+
+/** Produces a dictionary of parameter replacements to be consumed by the form components */
+export function getReplacements(inputs, stepData, wpData) {
+    const params = {};
+    visitInputs(inputs, (input, name) => {
+        params[name] = input;
+    });
+    const replaceParams = {};
+    _.each(params, (input, name) => {
+        if (input.wp_linked || input.step_linked) {
+            let newValue = null;
+            if (input.step_linked) {
+                _.each(input.step_linked, (sourceStep) => {
+                    if (isDataStep(sourceStep)) {
+                        const sourceData = stepData[sourceStep.index];
+                        const value = sourceData && sourceData.input;
+                        if (value) {
+                            newValue = { values: [] };
+                            _.each(value.values, (v) => {
+                                newValue.values.push(v);
+                            });
+                        }
+                    }
+                });
+                if (!input.multiple && newValue && newValue.values.length > 0) {
+                    newValue = {
+                        values: [newValue.values[0]],
+                    };
+                }
+            }
+            if (input.wp_linked) {
+                newValue = input.value;
+                const re = /\$\{(.+?)\}/g;
+                let match;
+                while ((match = re.exec(input.value))) {
+                    const wpValue = wpData[match[1]];
+                    if (wpValue) {
+                        newValue = newValue.split(match[0]).join(wpValue);
+                    }
+                }
+            }
+            if (newValue !== undefined) {
+                replaceParams[name] = newValue;
+            }
+        }
+    });
+    return replaceParams;
 }

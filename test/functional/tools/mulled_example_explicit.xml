@@ -16,6 +16,9 @@ bwa > $output_1 2>&1
     </outputs>
     <tests>
     </tests>
+    <xrefs>
+        <xref type="bioconductor">dada2</xref>
+    </xrefs>
     <help><![CDATA[
 TODO: Fill in help.
     ]]></help>

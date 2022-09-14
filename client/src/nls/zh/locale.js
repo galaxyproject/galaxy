@@ -14,7 +14,6 @@ define({
     "New Track Browser": "创建 Track Browser",
     "Saved Visualizations": "已保存的可视化",
     "Create Visualization": "创建可视化",
-    "Interactive Environments": "交互式环境",
     Admin: "管理员",
     Help: "帮助",
     Support: "支持",
@@ -227,7 +226,6 @@ define({
     "Download local tool": false,
     "Tool lineage": false,
     "Reload a tool's configuration": false,
-    "Review tool migration stages": false,
     "View Tool Error Logs": false,
     "Manage Display Whitelist": false,
     "Manage Tool Dependencies": false,
@@ -241,9 +239,9 @@ define({
     "Local data": false,
     "Form Definitions": false,
 
-    // ---------------------------------------------------------------------------- Scratchbook
-    "Enable/Disable Scratchbook": "启用/禁用 Scratchbook",
-    "Show/Hide Scratchbook": "显示/隐藏 Scratchbook",
+    // ---------------------------------------------------------------------------- Window Manager
+    "Enable/Disable Window Manager": "启用/禁用 Window Manager",
+    "Show/Hide Window Manager": "显示/隐藏 Window Manager",
 
     // ---------------------------------------------------------------------------- misc. MVC
     Tags: "标签",
@@ -275,7 +273,7 @@ define({
     "Change datatype": "更改数据类型",
     "Convert datatype": "转换数据类型",
     "Convert to new format": "转换成新格式",
-    Save: "b保存",
+    Save: "保存",
     Permissions: "权限",
     Datatypes: "数据类型",
     Convert: "转换",
@@ -384,7 +382,6 @@ define({
     "Refresh history": "刷新历史记录",
     // ---------------------------------------------------------------------------- admin-panel
     "View error logs": false,
-    "View migration stages": false,
     "View lineage": false,
     "Manage dependencies": false,
     "Manage whitelist": false,
@@ -454,7 +451,7 @@ define({
     "Create new Build": "创建新的构建集",
     "Delete custom build.": "删除自定义的构建集。",
     "Provide the data source.": "提供数据源。",
-    // ---------------------------------------------------------------------------- scratchbook
+    // ---------------------------------------------------------------------------- Window Manager
     "Next in History": "下一个历史记录",
     "Previous in History": "上一个历史记录",
     // ---------------------------------------------------------------------------- generic-nav-view

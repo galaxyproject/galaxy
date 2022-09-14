@@ -17,7 +17,7 @@
             <p>
                 Users with existing Galaxy user accounts (e.g., via Galaxy username and password) can associate their
                 account with their 3rd party identities. For instance, if a user associates their Galaxy account with
-                their Google account, then they can login to Galaxy either using their Galaxy username and password, or
+                their Google account, then they can log in to Galaxy either using their Galaxy username and password, or
                 their Google account. Whichever method they use they will be assuming same Galaxy user account, hence
                 having access to the same histories, workflows, datasets, libraries, etc.
             </p>
@@ -28,31 +28,31 @@
             </p>
         </header>
 
-        <div class="external-subheading" v-if="items.length">
+        <div v-if="items.length" class="external-subheading">
             <h3>Connected External Identities</h3>
             <b-button
-                @click="onDisconnect(item)"
-                aria-label="Disconnect External Identity"
-                title="Disconnect External Identity"
                 v-for="item in items"
                 :key="item.email"
-                class="d-block mt-3">
+                aria-label="Disconnect External Identity"
+                title="Disconnect External Identity"
+                class="d-block mt-3"
+                @click="onDisconnect(item)">
                 Disconnect {{ item.provider.charAt(0).toUpperCase() + item.provider.slice(1) }} - {{ item.email }}
             </b-button>
 
             <b-modal
-                centered
                 id="disconnectIDModal"
                 ref="deleteModal"
+                centered
                 title="Disconnect Identity?"
                 size="sm"
                 @ok="disconnectID"
                 @cancel="doomedItem = null"></b-modal>
 
             <b-modal
-                centered
                 id="disconnectAndResetModal"
                 ref="deleteAndResetModal"
+                centered
                 title="Deleting last external identity"
                 @ok="disconnectAndReset"
                 @cancel="doomedItem = null">
@@ -74,7 +74,7 @@
             >
         </div>
 
-        <div class="external-subheading" v-if="enable_oidc">
+        <div v-if="enable_oidc" class="external-subheading">
             <h3>Connect Other External Identities</h3>
             <external-login :login_page="false" />
         </div>
@@ -86,7 +86,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import svc from "./service";
-import { userLogout } from "layout/menu";
+import { userLogout } from "utils/logout";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
@@ -124,6 +124,9 @@ export default {
         showDeleted(deleted) {
             this.loadIdentities({ deleted });
         },
+    },
+    created() {
+        this.loadIdentities();
     },
     methods: {
         loadIdentities() {
@@ -188,9 +191,6 @@ export default {
                 console.warn(err);
             };
         },
-    },
-    created() {
-        this.loadIdentities();
     },
 };
 </script>

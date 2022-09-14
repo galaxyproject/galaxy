@@ -15,14 +15,11 @@ describe("ZoomControl", () => {
         });
         const buttons = wrapper.findAll("button");
         expect(buttons.length).toBe(3);
-        buttons.at(0).trigger("click");
-        await localVue.nextTick();
+        await buttons.at(0).trigger("click");
         expect(wrapper.emitted().onZoom[0][0]).toBe(9);
-        buttons.at(1).trigger("click");
-        await localVue.nextTick();
-        expect(wrapper.emitted().onZoom[1][0]).toBe(10);
-        buttons.at(2).trigger("click");
-        await localVue.nextTick();
+        await buttons.at(1).trigger("click");
+        expect(wrapper.emitted().onZoom[1][0]).toBe(7);
+        await buttons.at(2).trigger("click");
         expect(wrapper.emitted().onZoom[2][0]).toBe(11);
     });
 });

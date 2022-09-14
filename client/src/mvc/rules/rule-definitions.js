@@ -266,11 +266,15 @@ const RULES = {
         save: (component, rule) => {
             rule.target_column = component.addColumnRegexTarget;
             rule.expression = component.addColumnRegexExpression;
-            if (component.addColumnRegexReplacement) {
+            if (component.addColumnRegexType == "replacement" && component.addColumnRegexReplacement) {
                 rule.replacement = component.addColumnRegexReplacement;
-            }
-            if (component.addColumnRegexGroupCount) {
+                rule.group_count = null;
+            } else if (component.addColumnRegexType == "groups" && component.addColumnRegexGroupCount) {
                 rule.group_count = parseInt(component.addColumnRegexGroupCount);
+                rule.replacement = null;
+            } else if (component.addColumnRegexType == "global") {
+                rule.replacement = null;
+                rule.group_count = null;
             }
         },
         apply: (rule, data, sources, columns) => {
@@ -820,7 +824,14 @@ const MAPPING_TARGETS = {
     url: {
         label: _l("URL"),
         modes: ["raw"],
-        help: _l("This should be a URL the file can be downloaded from."),
+        help: _l("This should be a URL (or Galaxy-aware URI) the file can be downloaded from."),
+    },
+    url_deferred: {
+        label: _l("Deferred URL"),
+        modes: ["raw"],
+        help: _l(
+            "This should be a URL (or Galaxy-aware URI) th efile can be downloaded from - the file will not be downloaded until it used by a tool."
+        ),
     },
     info: {
         label: _l("Info"),
@@ -904,3 +915,5 @@ export default {
     RULES: RULES,
     MAPPING_TARGETS: MAPPING_TARGETS,
 };
+
+export { RULES, MAPPING_TARGETS };

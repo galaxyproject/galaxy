@@ -31,16 +31,14 @@ describe("Collection.vue", () => {
         const { wrapper, localVue } = mountWithApp(Collection);
         expect(wrapper.vm.showHelper).toBe(true);
         await localVue.nextTick();
-        wrapper.find("#btn-new").trigger("click");
-        await localVue.nextTick();
+        await wrapper.find("#btn-new").trigger("click");
         expect(wrapper.vm.showHelper).toBe(false);
         expect(wrapper.vm.counterAnnounce).toBe(1);
 
         expect(wrapper.find("#btn-reset").classes()).toEqual(expect.not.arrayContaining(["disabled"]));
         expect(wrapper.find("#btn-start").classes()).toEqual(expect.not.arrayContaining(["disabled"]));
 
-        wrapper.find("#btn-reset").trigger("click");
-        await localVue.nextTick();
+        await wrapper.find("#btn-reset").trigger("click");
         expect(wrapper.vm.showHelper).toBe(true);
     });
 
@@ -48,13 +46,10 @@ describe("Collection.vue", () => {
         const { wrapper, localVue } = mountWithApp(Collection, {}, { lazyLoadMax: 2 });
         expect(wrapper.findAll(".ui-limitloader").length).toBe(1);
         await localVue.nextTick();
-        wrapper.find("#btn-new").trigger("click");
-        await localVue.nextTick();
-        wrapper.find("#btn-new").trigger("click");
-        await localVue.nextTick();
+        await wrapper.find("#btn-new").trigger("click");
+        await wrapper.find("#btn-new").trigger("click");
         expect(wrapper.findAll("table tbody tr").length).toBe(2);
-        wrapper.find("#btn-new").trigger("click");
-        await localVue.nextTick();
+        await wrapper.find("#btn-new").trigger("click");
         expect(wrapper.findAll("table tbody tr").length).toBe(2);
         expect(wrapper.find(".ui-limitloader").text()).toEqual(expect.stringContaining("only the first 2 entries"));
     });

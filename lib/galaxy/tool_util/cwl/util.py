@@ -10,7 +10,12 @@ import tarfile
 import tempfile
 import urllib.parse
 from collections import namedtuple
-from typing import Any, List, Optional
+from typing import (
+    Any,
+    BinaryIO,
+    List,
+    Optional,
+)
 
 import yaml
 from typing_extensions import TypedDict
@@ -53,10 +58,11 @@ def output_properties(
     path: Optional[str] = None,
     content: Optional[bytes] = None,
     basename=None,
-    pseduo_location=False,
+    pseudo_location=False,
 ) -> OutputPropertiesType:
     checksum = hashlib.sha1()
     properties: OutputPropertiesType = {"class": "File", "checksum": "", "size": 0}
+    f: BinaryIO
     if path is not None:
         properties["path"] = path
         f = open(path, "rb")
@@ -77,18 +83,17 @@ def output_properties(
     properties["checksum"] = f"sha1${checksum.hexdigest()}"
     properties["size"] = filesize
     set_basename_and_derived_properties(properties, basename)
-    _handle_pseudo_location(properties, pseduo_location)
+    _handle_pseudo_location(properties, pseudo_location)
     return properties
 
 
-def _handle_pseudo_location(properties, pseduo_location):
-    if pseduo_location:
+def _handle_pseudo_location(properties, pseudo_location):
+    if pseudo_location:
         properties["location"] = properties["basename"]
 
 
 def abs_path_or_uri(path_or_uri, relative_to):
-    """Return an absolute path if this isn't a URI, otherwise keep the URI the same.
-    """
+    """Return an absolute path if this isn't a URI, otherwise keep the URI the same."""
     is_uri = "://" in path_or_uri
     if not is_uri:
         if not os.path.isabs(path_or_uri):
@@ -100,7 +105,7 @@ def abs_path_or_uri(path_or_uri, relative_to):
 def abs_path(path_or_uri, relative_to):
     path_or_uri = abs_path_or_uri(path_or_uri, relative_to)
     if path_or_uri.startswith("file://"):
-        path_or_uri = path_or_uri[len("file://"):]
+        path_or_uri = path_or_uri[len("file://") :]
 
     return path_or_uri
 
@@ -112,9 +117,7 @@ def path_or_uri_to_uri(path_or_uri):
         return path_or_uri
 
 
-def galactic_job_json(
-    job, test_data_directory, upload_func, collection_create_func, tool_or_workflow="workflow"
-):
+def galactic_job_json(job, test_data_directory, upload_func, collection_create_func, tool_or_workflow="workflow"):
     """Adapt a CWL job object to the Galaxy API.
 
     CWL derived tools in Galaxy can consume a job description sort of like
@@ -200,8 +203,8 @@ def galactic_job_json(
             return replacement_record(value)
 
     def replacement_file(value):
-        if value.get('galaxy_id'):
-            return {"src": "hda", "id": str(value['galaxy_id'])}
+        if value.get("galaxy_id"):
+            return {"src": "hda", "id": str(value["galaxy_id"])}
         file_path = value.get("location", None) or value.get("path", None)
         # format to match output definitions in tool, where did filetype come from?
         filetype = value.get("filetype", None) or value.get("format", None)
@@ -234,11 +237,9 @@ def galactic_job_json(
         secondary_files_tar_path = None
         if secondary_files:
             tmp = tempfile.NamedTemporaryFile(delete=False)
-            tf = tarfile.open(fileobj=tmp, mode='w:')
+            tf = tarfile.open(fileobj=tmp, mode="w:")
             order: List[str] = []
-            index_contents = {
-                "order": order
-            }
+            index_contents = {"order": order}
             for secondary_file in secondary_files:
                 secondary_file_path = secondary_file.get("location", None) or secondary_file.get("path", None)
                 assert secondary_file_path, f"Invalid secondaryFile entry found [{secondary_file}]"
@@ -264,8 +265,8 @@ def galactic_job_json(
             file_path = os.path.join(test_data_directory, file_path)
 
         tmp = tempfile.NamedTemporaryFile(delete=False)
-        tf = tarfile.open(fileobj=tmp, mode='w:')
-        tf.add(file_path, '.')
+        tf = tarfile.open(fileobj=tmp, mode="w:")
+        tf.add(file_path, ".")
         tf.close()
 
         return upload_tar(tmp.name)
@@ -299,20 +300,20 @@ def galactic_job_json(
                 collection_element_identifiers.append(collection_element)
             else:
                 # nested collection
-                sub_collection_type = rank_collection_type[rank_collection_type.find(":") + 1:]
+                sub_collection_type = rank_collection_type[rank_collection_type.find(":") + 1 :]
                 collection_element = {
                     "name": element["identifier"],
                     "src": "new_collection",
                     "collection_type": sub_collection_type,
-                    "element_identifiers": to_elements(element, sub_collection_type)
+                    "element_identifiers": to_elements(element, sub_collection_type),
                 }
                 collection_element_identifiers.append(collection_element)
 
         return collection_element_identifiers
 
     def replacement_collection(value):
-        if value.get('galaxy_id'):
-            return {"src": "hdca", "id": str(value['galaxy_id'])}
+        if value.get("galaxy_id"):
+            return {"src": "hdca", "id": str(value["galaxy_id"])}
         assert "collection_type" in value
         collection_type = value["collection_type"]
         elements = to_elements(value, collection_type)
@@ -362,7 +363,6 @@ def _ensure_file_exists(file_path):
 
 
 class FileLiteralTarget:
-
     def __init__(self, contents, path=None, **kwargs):
         self.contents = contents
         self.properties = kwargs
@@ -373,7 +373,6 @@ class FileLiteralTarget:
 
 
 class FileUploadTarget:
-
     def __init__(self, path, secondary_files=None, **kwargs):
         self.path = path
         self.secondary_files = secondary_files
@@ -385,7 +384,6 @@ class FileUploadTarget:
 
 
 class ObjectUploadTarget:
-
     def __init__(self, the_object):
         self.object = the_object
         self.properties = {}
@@ -395,7 +393,6 @@ class ObjectUploadTarget:
 
 
 class DirectoryUploadTarget:
-
     def __init__(self, tar_path):
         self.tar_path = tar_path
 
@@ -406,42 +403,44 @@ class DirectoryUploadTarget:
 GalaxyOutput = namedtuple("GalaxyOutput", ["history_id", "history_content_type", "history_content_id", "metadata"])
 
 
-def tool_response_to_output(tool_response, history_id, output_id):
+def tool_response_to_output(tool_response, history_id, output_name):
     for output in tool_response["outputs"]:
-        if output["output_name"] == output_id:
+        if output["output_name"] == output_name:
             return GalaxyOutput(history_id, "dataset", output["id"], None)
 
     for output_collection in tool_response["output_collections"]:
-        if output_collection["output_name"] == output_id:
+        if output_collection["output_name"] == output_name:
             return GalaxyOutput(history_id, "dataset_collection", output_collection["id"], None)
 
-    raise Exception(f"Failed to find output with label [{output_id}]")
+    raise Exception(f"Failed to find output with label [{output_name}]")
 
 
-def invocation_to_output(invocation, history_id, output_id):
-    if output_id in invocation["outputs"]:
-        dataset = invocation["outputs"][output_id]
-        galaxy_output = GalaxyOutput(history_id, "dataset", dataset["id"], None)
-    elif output_id in invocation["output_collections"]:
-        collection = invocation["output_collections"][output_id]
-        galaxy_output = GalaxyOutput(history_id, "dataset_collection", collection["id"], None)
-    elif output_id in invocation["output_values"]:
-        output_value = invocation["output_values"][output_id]
-        galaxy_output = GalaxyOutput(None, "raw_value", output_value, None)
-    else:
-        raise Exception(f"Failed to find output with label [{output_id}] in [{invocation}]")
-
-    return galaxy_output
+def invocation_to_output(invocation, history_id, output_name):
+    if output_name in invocation["outputs"]:
+        dataset = invocation["outputs"][output_name]
+        return GalaxyOutput(history_id, "dataset", dataset["id"], None)
+    elif output_name in invocation["output_collections"]:
+        collection = invocation["output_collections"][output_name]
+        return GalaxyOutput(history_id, "dataset_collection", collection["id"], None)
+    elif output_name in invocation["output_values"]:
+        output_value = invocation["output_values"][output_name]
+        return GalaxyOutput(None, "raw_value", output_value, None)
+    raise Exception(f"Failed to find output with label [{output_name}] in [{invocation}]")
 
 
 def output_to_cwl_json(
-    galaxy_output, get_metadata, get_dataset, get_extra_files, pseduo_location=False,
+    galaxy_output,
+    get_metadata,
+    get_dataset,
+    get_extra_files,
+    pseudo_location=False,
 ):
     """Convert objects in a Galaxy history into a CWL object.
 
     Useful in running conformance tests and implementing the cwl-runner
     interface via Galaxy.
     """
+
     def element_to_cwl_json(element):
         object = element["object"]
         content_type = object.get("history_content_type")
@@ -456,7 +455,9 @@ def output_to_cwl_json(
             object["id"],
             metadata,
         )
-        return output_to_cwl_json(element_output, get_metadata, get_dataset, get_extra_files, pseduo_location=pseduo_location)
+        return output_to_cwl_json(
+            element_output, get_metadata, get_dataset, get_extra_files, pseudo_location=pseudo_location
+        )
 
     output_metadata = galaxy_output.metadata
     if output_metadata is None:
@@ -482,7 +483,7 @@ def output_to_cwl_json(
 
             if file_or_directory == "File":
                 dataset_dict = get_dataset(output_metadata)
-                properties = output_properties(pseduo_location=pseduo_location, **dataset_dict)
+                properties = output_properties(pseudo_location=pseudo_location, **dataset_dict)
                 basename = properties["basename"]
                 extra_files = get_extra_files(output_metadata)
                 found_index = False
@@ -508,7 +509,7 @@ def output_to_cwl_json(
                             if extra_file_class == "File":
                                 ec = get_dataset(output_metadata, filename=path)
                                 ec["basename"] = extra_file_basename
-                                ec_properties = output_properties(pseduo_location=pseduo_location, **ec)
+                                ec_properties = output_properties(pseudo_location=pseudo_location, **ec)
                             elif extra_file_class == "Directory":
                                 ec_properties = {}
                                 ec_properties["class"] = "Directory"
@@ -522,9 +523,7 @@ def output_to_cwl_json(
                     for basename in index["order"]:
                         for extra_file in extra_files:
                             path = extra_file["path"]
-                            if path != os.path.join(
-                                SECONDARY_FILES_EXTRA_PREFIX, basename or ""
-                            ):
+                            if path != os.path.join(SECONDARY_FILES_EXTRA_PREFIX, basename or ""):
                                 continue
 
                             extra_file_class = extra_file["class"]
@@ -538,7 +537,7 @@ def output_to_cwl_json(
                             if extra_file_class == "File":
                                 ec = get_dataset(output_metadata, filename=path)
                                 ec["basename"] = ec_basename
-                                ec_properties = output_properties(pseduo_location=pseduo_location, **ec)
+                                ec_properties = output_properties(pseudo_location=pseudo_location, **ec)
                             elif extra_file_class == "Directory":
                                 ec_properties = {}
                                 ec_properties["class"] = "Directory"
@@ -566,7 +565,7 @@ def output_to_cwl_json(
                         path = extra_file["path"]
                         ec = get_dataset(output_metadata, filename=path)
                         ec["basename"] = os.path.basename(path)
-                        ec_properties = output_properties(pseduo_location=pseduo_location, **ec)
+                        ec_properties = output_properties(pseudo_location=pseudo_location, **ec)
                         listing.append(ec_properties)
 
             if secondary_files:
@@ -593,8 +592,8 @@ def output_to_cwl_json(
 def download_output(galaxy_output, get_metadata, get_dataset, get_extra_files, output_path):
     output_metadata = get_metadata(galaxy_output.history_content_type, galaxy_output.history_content_id)
     dataset_dict = get_dataset(output_metadata)
-    with open(output_path, 'wb') as fh:
-        fh.write(dataset_dict['content'])
+    with open(output_path, "wb") as fh:
+        fh.write(dataset_dict["content"])
 
 
 def guess_artifact_type(path):
@@ -603,15 +602,15 @@ def guess_artifact_type(path):
     with open(path) as f:
         document = yaml.safe_load(f)
 
-    if '$graph' in document:
+    if "$graph" in document:
         # Packed document without a process object at the root
-        objects = document['$graph']
+        objects = document["$graph"]
         if not object_id:
-            object_id = 'main'  # default object id
+            object_id = "main"  # default object id
 
         # Have to use str_removeprefix() instead of rstrip() because only the
         # first '#' should be removed from the object id
-        matching_objects = [o for o in objects if str_removeprefix(o['id'], '#') == object_id]
+        matching_objects = [o for o in objects if str_removeprefix(o["id"], "#") == object_id]
         if len(matching_objects) == 0:
             raise Exception(f"No process object with id [{object_id}]")
         if len(matching_objects) > 1:

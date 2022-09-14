@@ -1,7 +1,11 @@
 import functools
 import os
 import shutil
-from typing import Any, Dict, List
+from typing import (
+    Any,
+    Dict,
+    List,
+)
 
 from galaxy import exceptions
 from galaxy.util.path import (
@@ -17,7 +21,7 @@ DEFAULT_ALLOW_SUBDIR_CREATION = True
 
 
 class PosixFilesSource(BaseFilesSource):
-    plugin_type = 'posix'
+    plugin_type = "posix"
 
     # If this were a PyFilesystem2FilesSource all that would be needed would be,
     # but we couldn't enforce security our way I suspect.
@@ -36,7 +40,7 @@ class PosixFilesSource(BaseFilesSource):
     def _list(self, path="/", recursive=True, user_context=None):
         dir_path = self._to_native_path(path, user_context=user_context)
         if not self._safe_directory(dir_path):
-            raise exceptions.ObjectNotFound(f'The specified directory does not exist [{dir_path}].')
+            raise exceptions.ObjectNotFound(f"The specified directory does not exist [{dir_path}].")
         if recursive:
             res: List[Dict[str, Any]] = []
             effective_root = self._effective_root(user_context)
@@ -114,7 +118,9 @@ class PosixFilesSource(BaseFilesSource):
     def _safe_directory(self, directory):
         if self.enforce_symlink_security:
             if not safe_path(directory, allowlist=self._allowlist):
-                raise exceptions.ConfigDoesNotAllowException(f'directory ({directory}) is a symlink to a location not on the allowlist')
+                raise exceptions.ConfigDoesNotAllowException(
+                    f"directory ({directory}) is a symlink to a location not on the allowlist"
+                )
 
         if not os.path.exists(directory):
             return False
@@ -135,4 +141,4 @@ class PosixFilesSource(BaseFilesSource):
         return self._file_sources_config.symlink_allowlist
 
 
-__all__ = ('PosixFilesSource',)
+__all__ = ("PosixFilesSource",)

@@ -85,14 +85,7 @@ describe("Tags/Tags.vue", () => {
         const newTags = ["asdfadsadf", "gfhjfghjf"];
         testStore.dispatch("updateTags", { key: storeKey, tags: newTags });
 
-        // TODO: figure out how to make the computed observableTags
-        // prop update when the store does. This works in the real code,
-        // but does not update in this test environment. The following
-        // brute force mechanism of changing a different dependency works
-        // and effectively recalculates the computed value, but it should
-        // not be necessary
-        wrapper.setProps({ storeKey: "thisshouldbeunnecessary" });
-        wrapper.setProps({ storeKey });
+        await wrapper.setProps({ storeKey });
 
         const observed = wrapper.vm.observedTags;
         expect(observed.length).toBe(newTags.length);

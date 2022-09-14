@@ -4,17 +4,15 @@ from typing import (
     Optional,
 )
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
+from pydantic import Field
 
 from galaxy.schema.fields import (
-    EncodedDatabaseIdField,
+    DecodedDatabaseIdField,
     ModelClassField,
 )
 from galaxy.schema.schema import (
     GroupModel,
+    Model,
     UserModel,
 )
 
@@ -30,14 +28,16 @@ class QuotaOperation(str, Enum):
     SUBTRACT = "-"
 
 
-class DefaultQuotaTypes(str, Enum):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation.types at some point?
-    UNREGISTERED = 'unregistered'
-    REGISTERED = 'registered'
+class DefaultQuotaTypes(
+    str, Enum
+):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation.types at some point?
+    UNREGISTERED = "unregistered"
+    REGISTERED = "registered"
 
 
 class DefaultQuotaValues(str, Enum):
-    UNREGISTERED = 'unregistered'
-    REGISTERED = 'registered'
+    UNREGISTERED = "unregistered"
+    REGISTERED = "registered"
     NO = "no"
 
 
@@ -61,11 +61,11 @@ QuotaOperationField = Field(
         "- `=` : The quota is exactly the amount specified"
         "- `+` : The amount specified will be added to the amounts of the user's other associated quota definitions"
         "- `-` : The amount specified will be subtracted from the amounts of the user's other associated quota definitions"
-    )
+    ),
 )
 
 
-class DefaultQuota(BaseModel):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
+class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
     model_class: str = ModelClassField(DEFAULT_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
     type: DefaultQuotaTypes = Field(
         ...,
@@ -74,11 +74,11 @@ class DefaultQuota(BaseModel):  # TODO: should this replace lib.galaxy.model.Def
             "The type of the default quota. Either one of:\n"
             " - `registered`: the associated quota will affect registered users.\n"
             " - `unregistered`: the associated quota will affect unregistered users.\n"
-        )
+        ),
     )
 
 
-class UserQuota(BaseModel):
+class UserQuota(Model):
     model_class: str = ModelClassField(USER_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
     user: UserModel = Field(
         ...,
@@ -87,7 +87,7 @@ class UserQuota(BaseModel):
     )
 
 
-class GroupQuota(BaseModel):
+class GroupQuota(Model):
     model_class: str = ModelClassField(GROUP_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
     group: GroupModel = Field(
         ...,
@@ -96,10 +96,11 @@ class GroupQuota(BaseModel):
     )
 
 
-class QuotaBase(BaseModel):
+class QuotaBase(Model):
     """Base model containing common fields for Quotas."""
+
     model_class: str = ModelClassField(QUOTA_MODEL_CLASS_NAME)
-    id: EncodedDatabaseIdField = Field(
+    id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",
         description="The `encoded identifier` of the quota.",
@@ -109,6 +110,7 @@ class QuotaBase(BaseModel):
 
 class QuotaSummary(QuotaBase):
     """Contains basic information about a Quota"""
+
     url: str = Field(
         ...,
         title="URL",
@@ -117,10 +119,10 @@ class QuotaSummary(QuotaBase):
     )
 
 
-class QuotaSummaryList(BaseModel):
+class QuotaSummaryList(Model):
     __root__: List[QuotaSummary] = Field(
         default=[],
-        title='List with summary information of Quotas.',
+        title="List with summary information of Quotas.",
     )
 
 
@@ -162,7 +164,7 @@ class CreateQuotaResult(QuotaSummary):
     )
 
 
-class CreateQuotaParams(BaseModel):
+class CreateQuotaParams(Model):
     name: str = QuotaNameField
     description: str = QuotaDescriptionField
     amount: str = Field(
@@ -192,7 +194,7 @@ class CreateQuotaParams(BaseModel):
     )
 
 
-class UpdateQuotaParams(BaseModel):
+class UpdateQuotaParams(Model):
     name: Optional[str] = Field(
         default=None,
         title="Name",
@@ -214,7 +216,7 @@ class UpdateQuotaParams(BaseModel):
         description=(
             "One of (``+``, ``-``, ``=``). If you wish to change this value,"
             " you must also provide the ``amount``, otherwise it will not take effect."
-        )
+        ),
     )
     default: Optional[DefaultQuotaValues] = Field(
         default=None,
@@ -239,7 +241,7 @@ class UpdateQuotaParams(BaseModel):
     )
 
 
-class DeleteQuotaPayload(BaseModel):
+class DeleteQuotaPayload(Model):
     purge: bool = Field(
         False,
         title="Purge",

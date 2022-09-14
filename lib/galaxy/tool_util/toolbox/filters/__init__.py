@@ -22,7 +22,9 @@ class FilterFactory:
         self.default_filters = dict(tool=[_not_hidden, _handle_authorization], section=[], label=[])
         # Add dynamic filters to these default filters.
         config = toolbox.app.config
-        self.__base_modules = listify(getattr(config, "toolbox_filter_base_modules", "galaxy.tool_util.toolbox.filters"))
+        self.__base_modules = listify(
+            getattr(config, "toolbox_filter_base_modules", "galaxy.tool_util.toolbox.filters")
+        )
         self.__init_filters("tool", getattr(config, "tool_filters", ""), self.default_filters)
         self.__init_filters("section", getattr(config, "tool_section_filters", ""), self.default_filters)
         self.__init_filters("label", getattr(config, "tool_label_filters", ""), self.default_filters)
@@ -36,15 +38,15 @@ class FilterFactory:
             for name, value in trans.user.preferences.items():
                 if value and value.strip():
                     user_filters = listify(value, do_strip=True)
-                    category = ''
-                    if name == 'toolbox_tool_filters':
+                    category = ""
+                    if name == "toolbox_tool_filters":
                         category = "tool"
-                    elif name == 'toolbox_section_filters':
+                    elif name == "toolbox_section_filters":
                         category = "section"
-                    elif name == 'toolbox_label_filters':
+                    elif name == "toolbox_label_filters":
                         category = "label"
                     if category:
-                        validate = getattr(trans.app.config, f'user_tool_{category}_filters', [])
+                        validate = getattr(trans.app.config, f"user_tool_{category}_filters", [])
                         self.__init_filters(category, user_filters, filters, validate=validate)
         if kwds.get("trackster", False):
             filters["tool"].append(_has_trackster_conf)

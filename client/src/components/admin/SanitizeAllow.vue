@@ -5,7 +5,7 @@
             <b-tab title="Toolshed Tools">
                 <b-tabs>
                     <b-tab title="HTML Sanitized">
-                        <base-grid :is-loaded="isLoaded" :columns="toolshedColumns" id="sanitize-allow-grid">
+                        <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="toolshedColumns">
                             <template v-slot:rows>
                                 <template v-for="(row, blockedIdx) in toolshedBlocked">
                                     <tr :key="blockedIdx">
@@ -31,14 +31,22 @@
                         </base-grid>
                     </b-tab>
                     <b-tab title="HTML Rendered">
-                        <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
+                        <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="columns">
                             <template v-slot:rows>
                                 <template v-for="(row, allowedIdx) in toolshedAllowed">
                                     <tr :key="allowedIdx">
-                                        <td>{{ row.tool_name }}</td>
+                                        <td>
+                                            <span v-if="row.tool_name">
+                                                {{ row.tool_name }}
+                                            </span>
+                                            <span v-else>
+                                                <i>Not installed</i>
+                                            </span>
+                                        </td>
                                         <td>
                                             <template v-for="(part, part_idx) in row.tool_id">
-                                                <span :key="part_idx">{{ part }}</span>
+                                                <template v-if="part_idx > 0">/</template
+                                                ><span :key="part_idx">{{ part }}</span>
                                             </template>
                                         </td>
                                         <td>
@@ -54,7 +62,7 @@
             <b-tab title="Local Tools">
                 <b-tabs>
                     <b-tab title="HTML Sanitized">
-                        <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
+                        <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="columns">
                             <template v-slot:rows>
                                 <template v-for="(row, localBlockedIdx) in localBlocked">
                                     <tr :key="localBlockedIdx">
@@ -69,11 +77,18 @@
                         </base-grid>
                     </b-tab>
                     <b-tab title="HTML Rendered">
-                        <base-grid :is-loaded="isLoaded" :columns="columns" id="sanitize-allow-grid">
+                        <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="columns">
                             <template v-slot:rows>
                                 <template v-for="(row, localAllowedIdx) in localAllowed">
                                     <tr :key="localAllowedIdx">
-                                        <td>{{ row.tool_name }}</td>
+                                        <td>
+                                            <span v-if="row.tool_name">
+                                                {{ row.tool_name }}
+                                            </span>
+                                            <span v-else>
+                                                <i>Not installed</i>
+                                            </span>
+                                        </td>
                                         <td>{{ row.tool_id[0] }}</td>
                                         <td>
                                             <button @click="sanitizeHTML(row.ids.allowed)">Sanitize HTML</button>
@@ -96,6 +111,10 @@ import { getAppRoot } from "onload/loadConfig";
 import Message from "../Message.vue";
 
 export default {
+    components: {
+        message: Message,
+        "base-grid": BaseGrid,
+    },
     data() {
         return {
             isLoaded: false,
@@ -121,11 +140,6 @@ export default {
         };
     },
 
-    components: {
-        message: Message,
-        "base-grid": BaseGrid,
-    },
-
     created() {
         axios
             .get(`${getAppRoot()}api/sanitize_allow`)
@@ -146,7 +160,7 @@ export default {
     methods: {
         allowHTML(tool_id) {
             axios
-                .put(`${getAppRoot()}api/sanitize_allow?tool_id=${tool_id}`, {
+                .put(`${getAppRoot()}api/sanitize_allow?tool_id=${encodeURIComponent(tool_id)}`, {
                     params: {
                         tool_id: tool_id,
                     },

@@ -18,7 +18,7 @@ def __main__():
     # where to store files that become additional output
     database_tmp_dir = sys.argv[5]
 
-    species = sys.argv[3].split(',')
+    species = sys.argv[3].split(",")
     partial = sys.argv[4]
     output_id = sys.argv[6]
     out_files = {}
@@ -44,10 +44,12 @@ def __main__():
 
     for i, spec in enumerate(species):
         if i == 0:
-            out_files[spec] = open(output_filename, 'w')
+            out_files[spec] = open(output_filename, "w")
             primary_spec = spec
         else:
-            out_files[spec] = open(os.path.join(database_tmp_dir, 'primary_%s_%s_visible_bed_%s' % (output_id, spec, spec)), 'w+')
+            out_files[spec] = open(
+                os.path.join(database_tmp_dir, "primary_%s_%s_visible_bed_%s" % (output_id, spec, spec)), "w+"
+            )
     num_species = len(species)
 
     print("Restricted to species:", ",".join(species))
@@ -69,12 +71,42 @@ def __main__():
                 if not spec or not chrom:
                     spec = chrom = c.src
                 if spec not in out_files.keys():
-                    out_files[spec] = open(os.path.join(database_tmp_dir, 'primary_%s_%s_visible_bed_%s' % (output_id, spec, spec)), 'wb+')
+                    out_files[spec] = open(
+                        os.path.join(database_tmp_dir, "primary_%s_%s_visible_bed_%s" % (output_id, spec, spec)), "wb+"
+                    )
 
                 if c.strand == "-":
-                    out_files[spec].write(chrom + "\t" + str(c.src_size - c.end) + "\t" + str(c.src_size - c.start) + "\t" + spec + "_" + str(block_num) + "\t" + "0\t" + c.strand + "\n")
+                    out_files[spec].write(
+                        chrom
+                        + "\t"
+                        + str(c.src_size - c.end)
+                        + "\t"
+                        + str(c.src_size - c.start)
+                        + "\t"
+                        + spec
+                        + "_"
+                        + str(block_num)
+                        + "\t"
+                        + "0\t"
+                        + c.strand
+                        + "\n"
+                    )
                 else:
-                    out_files[spec].write(chrom + "\t" + str(c.start) + "\t" + str(c.end) + "\t" + spec + "_" + str(block_num) + "\t" + "0\t" + c.strand + "\n")
+                    out_files[spec].write(
+                        chrom
+                        + "\t"
+                        + str(c.start)
+                        + "\t"
+                        + str(c.end)
+                        + "\t"
+                        + spec
+                        + "_"
+                        + str(block_num)
+                        + "\t"
+                        + "0\t"
+                        + c.strand
+                        + "\n"
+                    )
 
     for file_out in out_files.keys():
         out_files[file_out].close()

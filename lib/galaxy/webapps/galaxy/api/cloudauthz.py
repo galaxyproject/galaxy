@@ -15,14 +15,12 @@ from galaxy.exceptions import (
     InternalServerError,
     MalformedId,
     RequestParameterInvalidException,
-    RequestParameterMissingException
+    RequestParameterMissingException,
 )
 from galaxy.managers import cloudauthzs
 from galaxy.structured_app import StructuredApp
 from galaxy.util import unicodify
-from galaxy.web import (
-    expose_api
-)
+from galaxy.web import expose_api
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
@@ -56,8 +54,11 @@ class CloudAuthzController(BaseGalaxyAPIController):
         """
         rtv = []
         for cloudauthz in trans.user.cloudauthz:
-            rtv.append(self.cloudauthz_serializer.serialize_to_view(
-                cloudauthz, user=trans.user, trans=trans, **self._parse_serialization_params(kwargs, 'summary')))
+            rtv.append(
+                self.cloudauthz_serializer.serialize_to_view(
+                    cloudauthz, user=trans.user, trans=trans, **self._parse_serialization_params(kwargs, "summary")
+                )
+            )
         return rtv
 
     @expose_api
@@ -93,33 +94,38 @@ class CloudAuthzController(BaseGalaxyAPIController):
         """
         msg_template = f"Rejected user `{str(trans.user.id)}`'s request to create cloudauthz config because of {{}}."
         if not isinstance(payload, dict):
-            raise ActionInputError('Invalid payload data type. The payload is expected to be a dictionary, but '
-                                   'received data of type `{}`.'.format(str(type(payload))))
+            raise ActionInputError(
+                "Invalid payload data type. The payload is expected to be a dictionary, but "
+                "received data of type `{}`.".format(str(type(payload)))
+            )
 
         missing_arguments = []
-        provider = payload.get('provider', None)
+        provider = payload.get("provider", None)
         if provider is None:
-            missing_arguments.append('provider')
+            missing_arguments.append("provider")
 
-        config = payload.get('config', None)
+        config = payload.get("config", None)
         if config is None:
-            missing_arguments.append('config')
+            missing_arguments.append("config")
 
-        authn_id = payload.get('authn_id', None)
+        authn_id = payload.get("authn_id", None)
         if authn_id is None and provider.lower() not in ["azure", "gcp"]:
-            missing_arguments.append('authn_id')
+            missing_arguments.append("authn_id")
 
         if len(missing_arguments) > 0:
             log.debug(msg_template.format(f"missing required config {missing_arguments}"))
-            raise RequestParameterMissingException('The following required arguments are missing in the payload: '
-                                                   '{}'.format(missing_arguments))
+            raise RequestParameterMissingException(
+                "The following required arguments are missing in the payload: " "{}".format(missing_arguments)
+            )
 
         description = payload.get("description", "")
 
         if not isinstance(config, dict):
             log.debug(msg_template.format(f"invalid config type `{type(config)}`, expect `dict`"))
-            raise RequestParameterInvalidException('Invalid type for the required `config` variable; expect `dict` '
-                                                   'but received `{}`.'.format(type(config)))
+            raise RequestParameterInvalidException(
+                "Invalid type for the required `config` variable; expect `dict` "
+                "but received `{}`.".format(type(config))
+            )
         if authn_id:
             try:
                 decoded_authn_id = self.decode_id(authn_id)
@@ -136,25 +142,27 @@ class CloudAuthzController(BaseGalaxyAPIController):
         # exact same key/value should exist.
         for ca in trans.user.cloudauthz:
             if ca.equals(trans.user.id, provider, authn_id, config):
-                log.debug("Rejected user `{}`'s request to create cloud authorization because a similar config "
-                          "already exists.".format(trans.user.id))
+                log.debug(
+                    "Rejected user `{}`'s request to create cloud authorization because a similar config "
+                    "already exists.".format(trans.user.id)
+                )
                 raise ActionInputError("A similar cloud authorization configuration is already defined.")
 
         try:
             new_cloudauthz = self.cloudauthz_manager.create(
-                user_id=trans.user.id,
-                provider=provider,
-                config=config,
-                authn_id=authn_id,
-                description=description
+                user_id=trans.user.id, provider=provider, config=config, authn_id=authn_id, description=description
             )
-            view = self.cloudauthz_serializer.serialize_to_view(new_cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, 'summary'))
-            log.debug(f'Created a new cloudauthz record for the user id `{str(trans.user.id)}` ')
+            view = self.cloudauthz_serializer.serialize_to_view(
+                new_cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, "summary")
+            )
+            log.debug(f"Created a new cloudauthz record for the user id `{str(trans.user.id)}` ")
             return view
         except Exception as e:
             log.exception(msg_template.format("exception while creating the new cloudauthz record"))
-            raise InternalServerError('An unexpected error has occurred while responding to the create request of the '
-                                      'cloudauthz API.' + unicodify(e))
+            raise InternalServerError(
+                "An unexpected error has occurred while responding to the create request of the "
+                "cloudauthz API." + unicodify(e)
+            )
 
     @expose_api
     def delete(self, trans, encoded_authz_id, **kwargs):
@@ -183,15 +191,22 @@ class CloudAuthzController(BaseGalaxyAPIController):
             cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
             trans.sa_session.delete(cloudauthz)
             trans.sa_session.flush()
-            log.debug(f'Deleted a cloudauthz record with id `{authz_id}` for the user id `{str(trans.user.id)}` ')
-            view = self.cloudauthz_serializer.serialize_to_view(cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, 'summary'))
-            trans.response.status = '200'
+            log.debug(f"Deleted a cloudauthz record with id `{authz_id}` for the user id `{str(trans.user.id)}` ")
+            view = self.cloudauthz_serializer.serialize_to_view(
+                cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, "summary")
+            )
+            trans.response.status = "200"
             return view
         except Exception as e:
-            log.exception(msg_template.format("exception while deleting the cloudauthz record with "
-                                              "ID: `{}`.".format(encoded_authz_id)))
-            raise InternalServerError('An unexpected error has occurred while responding to the DELETE request of the '
-                                      'cloudauthz API.' + unicodify(e))
+            log.exception(
+                msg_template.format(
+                    "exception while deleting the cloudauthz record with " "ID: `{}`.".format(encoded_authz_id)
+                )
+            )
+            raise InternalServerError(
+                "An unexpected error has occurred while responding to the DELETE request of the "
+                "cloudauthz API." + unicodify(e)
+            )
 
     @expose_api
     def update(self, trans, encoded_authz_id, payload, **kwargs):
@@ -244,14 +259,21 @@ class CloudAuthzController(BaseGalaxyAPIController):
             raise e
 
         try:
-            cloudauthz_to_update = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
+            cloudauthz_to_update = trans.app.authnz_manager.try_get_authz_config(
+                trans.sa_session, trans.user.id, authz_id
+            )
             self.cloudauthz_deserializer.deserialize(cloudauthz_to_update, payload, trans=trans)
-            self.cloudauthz_serializer.serialize_to_view(cloudauthz_to_update, view='summary')
-            return self.cloudauthz_serializer.serialize_to_view(cloudauthz_to_update, view='summary')
+            self.cloudauthz_serializer.serialize_to_view(cloudauthz_to_update, view="summary")
+            return self.cloudauthz_serializer.serialize_to_view(cloudauthz_to_update, view="summary")
         except MalformedId as e:
             raise e
         except Exception as e:
-            log.exception(msg_template.format("exception while updating the cloudauthz record with "
-                                              "ID: `{}`.".format(encoded_authz_id)))
-            raise InternalServerError('An unexpected error has occurred while responding to the PUT request of the '
-                                      'cloudauthz API.' + unicodify(e))
+            log.exception(
+                msg_template.format(
+                    "exception while updating the cloudauthz record with " "ID: `{}`.".format(encoded_authz_id)
+                )
+            )
+            raise InternalServerError(
+                "An unexpected error has occurred while responding to the PUT request of the "
+                "cloudauthz API." + unicodify(e)
+            )

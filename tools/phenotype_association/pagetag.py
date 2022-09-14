@@ -39,8 +39,15 @@ that exceed the rsquare threshold with the first SNP.
 """
 from __future__ import print_function
 
-from getopt import getopt, GetoptError
-from sys import argv, exit, stderr
+from getopt import (
+    getopt,
+    GetoptError,
+)
+from sys import (
+    argv,
+    exit,
+    stderr,
+)
 
 __author__ = "Aakrosh Ratan"
 __email__ = "ratan@bx.psu.edu"
@@ -54,15 +61,17 @@ HOMR = str(2)
 HETE = str(3)
 OTHER = str(4)
 
-indexcalculator = {(HOMC, HOMC): 0,
-                   (HOMC, HOMR): 1,
-                   (HOMC, HETE): 2,
-                   (HOMR, HOMC): 3,
-                   (HOMR, HOMR): 4,
-                   (HOMR, HETE): 5,
-                   (HETE, HOMC): 6,
-                   (HETE, HOMR): 7,
-                   (HETE, HETE): 8}
+indexcalculator = {
+    (HOMC, HOMC): 0,
+    (HOMC, HOMR): 1,
+    (HOMC, HETE): 2,
+    (HOMR, HOMC): 3,
+    (HOMR, HOMR): 4,
+    (HOMR, HETE): 5,
+    (HETE, HOMC): 6,
+    (HETE, HOMR): 7,
+    (HETE, HETE): 8,
+}
 
 
 def read_inputfile(filename, samples):
@@ -94,7 +103,7 @@ def annotate_locus(input, minorallelefrequency, snpsfile):
         genotypes = v.values()
         alleles = [y for x in genotypes for y in x]
         alleleset = list(set(alleles))
-        alleleset = list(set(alleles) - {'N', 'X'})
+        alleleset = list(set(alleles) - {"N", "X"})
 
         if len(alleleset) == 2:
             genotypevec = ""
@@ -134,7 +143,7 @@ def calculateLD(loci, rsqthreshold):
     rsquare = {}
 
     for index, loc1 in enumerate(snps):
-        for loc2 in snps[index + 1:]:
+        for loc2 in snps[index + 1 :]:
             matrix = [0] * 9
 
             vec1 = loci[loc1][0]
@@ -177,15 +186,14 @@ def calculateLD(loci, rsqthreshold):
                 dvalue = p11 - (p * q)
 
             if dvalue != 0.0:
-                rsq = (dvalue ** 2) / (p * q * (1 - p) * (1 - q))
+                rsq = (dvalue**2) / (p * q * (1 - p) * (1 - q))
                 if rsq >= rsqthreshold:
                     rsquare["%s %s" % (loc1, loc2)] = rsq
 
     return rsquare
 
 
-def main(inputfile, snpsfile, neigborhoodfile,
-         rsquare, minorallelefrequency, samples):
+def main(inputfile, snpsfile, neigborhoodfile, rsquare, minorallelefrequency, samples):
     # read the input file
     input = read_inputfile(inputfile, samples)
     print("Read %d locations" % len(input), file=stderr)
@@ -272,8 +280,7 @@ def usage():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt(argv[1:], "hds:r:f:",
-                            ["help", "debug", "rsquare=", "freq=", "sample="])
+        opts, args = getopt(argv[1:], "hds:r:f:", ["help", "debug", "rsquare=", "freq=", "sample="])
     except GetoptError as err:
         print(str(err))
         usage()

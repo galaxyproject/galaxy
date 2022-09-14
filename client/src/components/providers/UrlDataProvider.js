@@ -1,15 +1,4 @@
-import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
 import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
-import { rethrowSimple } from "utils/simple-error";
-
-async function urlData({ url }) {
-    try {
-        const { data } = await axios.get(`${getAppRoot()}${url}`);
-        return data;
-    } catch (e) {
-        rethrowSimple(e);
-    }
-}
+import { urlData } from "utils/url";
 
 export const UrlDataProvider = SingleQueryProvider(urlData);

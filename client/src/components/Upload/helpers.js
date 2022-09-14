@@ -25,6 +25,7 @@ export function uploadModelsToPayload(items, history_id, composite = false) {
                 ext: item.get("extension", "auto"),
                 space_to_tab: item.get("space_to_tab"),
                 to_posix_lines: item.get("to_posix_lines"),
+                deferred: item.get("deferred"),
             };
             switch (item.get("file_mode")) {
                 case "new":
@@ -60,17 +61,30 @@ export function uploadModelsToPayload(items, history_id, composite = false) {
                 default:
                     console.error("Unknown file_mode", item);
             }
-            return {
-                src: src,
-                url: url,
-                paste_content: pasteContent,
-                name: fileName,
-                ...elem,
-            };
+            if (src == "pasted") {
+                return {
+                    src: src,
+                    paste_content: pasteContent,
+                    name: fileName,
+                    ...elem,
+                };
+            } else if (src == "url") {
+                return {
+                    src: src,
+                    name: fileName,
+                    url: url,
+                    ...elem,
+                };
+            } else {
+                return {
+                    src: src,
+                    name: fileName,
+                    ...elem,
+                };
+            }
         })
         .filter((item) => item)
         .flat();
-
     const target = {
         destination: { type: "hdas" },
         elements: elements,
@@ -113,9 +127,9 @@ export const commonProps = {
         type: String,
         default: "",
     },
-    defaultGenome: {
+    defaultDbKey: {
         type: String,
-        default: UploadUtils.DEFAULT_GENOME,
+        default: UploadUtils.DEFAULT_DBKEY,
     },
     defaultExtension: {
         type: String,

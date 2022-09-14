@@ -17,15 +17,16 @@ log = logging.getLogger(__name__)
 @build_sniff_from_prefix
 class FCS(Binary):
     """Class describing an FCS binary file"""
+
     file_ext = "fcs"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = "Binary FCS file"
             dataset.blurb = data.nice_size(dataset.get_size())
         else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
 
     def display_peek(self, dataset):
         try:
@@ -45,8 +46,8 @@ class FCS(Binary):
         version = content[:6]
         if version not in ["FCS2.0", "FCS3.0", "FCS3.1"]:
             return False
-        if content[6:10] != '    ':
+        if content[6:10] != "    ":
             return False
         # we only need to check ioffs 2 to 5
-        int(content[10:42].replace(' ', ''))
+        int(content[10:42].replace(" ", ""))
         return True

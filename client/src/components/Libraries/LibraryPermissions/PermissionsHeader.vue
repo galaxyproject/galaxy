@@ -15,14 +15,14 @@ import { getGalaxyInstance } from "app";
 import LibraryPermissionsWarning from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning";
 
 export default {
+    components: {
+        LibraryPermissionsWarning,
+    },
     props: {
         name: {
             type: String,
             required: true,
         },
-    },
-    components: {
-        LibraryPermissionsWarning,
     },
     data() {
         return {
@@ -34,6 +34,6 @@ export default {
 
 <style scoped>
 .header {
-    font-size: 45px;
+    font-size: 25px;
 }
 </style>

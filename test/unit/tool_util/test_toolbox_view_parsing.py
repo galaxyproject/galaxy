@@ -1,6 +1,9 @@
 import pydantic
 
-from galaxy.tool_util.toolbox.views.definitions import StaticToolBoxView, StaticToolBoxViewTypeEnum
+from galaxy.tool_util.toolbox.views.definitions import (
+    StaticToolBoxView,
+    StaticToolBoxViewTypeEnum,
+)
 
 EXAMPLE_1 = {
     "id": "rna",
@@ -54,32 +57,8 @@ def test_root_parsing():
 
 
 def test_section_parsing():
-    view = StaticToolBoxView.from_dict({
-        "id": "rna",
-        "name": "RNA Seq",
-        "type": "activity",
-        "items": [
-            {
-                "type": "section",
-                "name": "My Cool Section",
-                "items": [
-                    {
-                        "type": "workflow",
-                        "id": "123456",
-                    }
-                ],
-            },
-        ],
-    })
-    section_item = view.items[0]
-    assert len(section_item.items) == 1
-    assert section_item.items[0].content_type == "workflow"
-
-
-def test_no_nested_sections():
-    exception_raised = False
-    try:
-        StaticToolBoxView.from_dict({
+    view = StaticToolBoxView.from_dict(
+        {
             "id": "rna",
             "name": "RNA Seq",
             "type": "activity",
@@ -89,13 +68,41 @@ def test_no_nested_sections():
                     "name": "My Cool Section",
                     "items": [
                         {
-                            "type": "section",
-                            "name": "My Cool Inner Section",
-                        },
+                            "type": "workflow",
+                            "id": "123456",
+                        }
                     ],
                 },
             ],
-        })
+        }
+    )
+    section_item = view.items[0]
+    assert len(section_item.items) == 1
+    assert section_item.items[0].content_type == "workflow"
+
+
+def test_no_nested_sections():
+    exception_raised = False
+    try:
+        StaticToolBoxView.from_dict(
+            {
+                "id": "rna",
+                "name": "RNA Seq",
+                "type": "activity",
+                "items": [
+                    {
+                        "type": "section",
+                        "name": "My Cool Section",
+                        "items": [
+                            {
+                                "type": "section",
+                                "name": "My Cool Inner Section",
+                            },
+                        ],
+                    },
+                ],
+            }
+        )
     except pydantic.ValidationError:
         exception_raised = True
     assert exception_raised

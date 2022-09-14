@@ -20,7 +20,6 @@ log = logging.getLogger(__name__)
 
 
 class ASync(BaseUIController):
-
     @web.expose
     def default(self, trans, tool_id=None, data_id=None, data_secret=None, **kwd):
         """Catches the tool id and redirects as needed"""
@@ -43,8 +42,8 @@ class ASync(BaseUIController):
         URL = params.URL
         data_id = params.data_id
 
-        log.debug(f'async dataid -> {data_id}')
-        trans.log_event(f'Async dataid -> {str(data_id)}')
+        log.debug(f"async dataid -> {data_id}")
+        trans.log_event(f"Async dataid -> {str(data_id)}")
 
         # initialize the tool
         toolbox = self.get_toolbox()
@@ -63,17 +62,19 @@ class ASync(BaseUIController):
             if not data:
                 return f"Data {data_id} does not exist or has already been deleted"
 
-            if STATUS == 'OK':
+            if STATUS == "OK":
                 key = hmac_new(trans.app.config.tool_secret, "%d:%d" % (data.id, data.history_id))
                 if key != data_secret:
                     return f"You do not have permission to alter data {data_id}."
                 # push the job into the queue
                 data.state = data.blurb = data.states.RUNNING
-                log.debug(f'executing tool {tool.id}')
-                trans.log_event(f'Async executing tool {tool.id}', tool_id=tool.id)
+                log.debug(f"executing tool {tool.id}")
+                trans.log_event(f"Async executing tool {tool.id}", tool_id=tool.id)
                 galaxy_url = f"{trans.request.base}/async/{tool_id}/{data.id}/{key}"
                 galaxy_url = params.get("GALAXY_URL", galaxy_url)
-                params = dict(URL=URL, GALAXY_URL=galaxy_url, name=data.name, info=data.info, dbkey=data.dbkey, data_type=data.ext)
+                params = dict(
+                    URL=URL, GALAXY_URL=galaxy_url, name=data.name, info=data.info, dbkey=data.dbkey, data_type=data.ext
+                )
 
                 # Assume there is exactly one output file possible
                 TOOL_OUTPUT_TYPE = None
@@ -92,8 +93,8 @@ class ASync(BaseUIController):
                 job, *_ = tool.execute(trans, incoming=params, history=original_history)
                 trans.app.job_manager.enqueue(job, tool=tool)
             else:
-                log.debug(f'async error -> {STATUS}')
-                trans.log_event(f'Async error -> {STATUS}')
+                log.debug(f"async error -> {STATUS}")
+                trans.log_event(f"Async error -> {STATUS}")
                 data.state = data.blurb = "error"
                 data.info = f"Error -> {STATUS}"
 
@@ -107,8 +108,8 @@ class ASync(BaseUIController):
             GALAXY_TYPE = None
             if params.data_type:
                 GALAXY_TYPE = params.data_type
-            elif params.galaxyFileFormat == 'wig':  # this is an undocumented legacy special case
-                GALAXY_TYPE = 'wig'
+            elif params.galaxyFileFormat == "wig":  # this is an undocumented legacy special case
+                GALAXY_TYPE = "wig"
             elif params.GALAXY_TYPE:
                 GALAXY_TYPE = params.GALAXY_TYPE
             else:
@@ -128,9 +129,9 @@ class ASync(BaseUIController):
             if GALAXY_TYPE is None:
                 raise Exception("Error: ToolOutput object not found")
 
-            GALAXY_NAME = params.name or params.GALAXY_NAME or f'{tool.name} query'
-            GALAXY_INFO = params.info or params.GALAXY_INFO or params.galaxyDescription or ''
-            GALAXY_BUILD = params.dbkey or params.GALAXY_BUILD or params.galaxyFreeze or '?'
+            GALAXY_NAME = params.name or params.GALAXY_NAME or f"{tool.name} query"
+            GALAXY_INFO = params.info or params.GALAXY_INFO or params.galaxyDescription or ""
+            GALAXY_BUILD = params.dbkey or params.GALAXY_BUILD or params.galaxyFreeze or "?"
 
             # data = datatypes.factory(ext=GALAXY_TYPE)()
             # data.ext   = GALAXY_TYPE
@@ -140,12 +141,18 @@ class ASync(BaseUIController):
             # data.state = jobs.JOB_OK
             # history.datasets.add_dataset( data )
 
-            data = trans.app.model.HistoryDatasetAssociation(create_dataset=True, sa_session=trans.sa_session, extension=GALAXY_TYPE)
-            trans.app.security_agent.set_all_dataset_permissions(data.dataset, trans.app.security_agent.history_get_default_permissions(trans.history))
+            data = trans.app.model.HistoryDatasetAssociation(
+                create_dataset=True, sa_session=trans.sa_session, extension=GALAXY_TYPE
+            )
+            trans.app.security_agent.set_all_dataset_permissions(
+                data.dataset, trans.app.security_agent.history_get_default_permissions(trans.history)
+            )
             data.name = GALAXY_NAME
             data.dbkey = GALAXY_BUILD
             data.info = GALAXY_INFO
-            trans.sa_session.add(data)  # Need to add data to session before setting state (setting state requires that the data object is in the session, but this may change)
+            trans.sa_session.add(
+                data
+            )  # Need to add data to session before setting state (setting state requires that the data object is in the session, but this may change)
             data.state = data.states.NEW
             trans.history.add_dataset(data, genome_build=GALAXY_BUILD)
             trans.sa_session.add(trans.history)
@@ -157,21 +164,21 @@ class ASync(BaseUIController):
             try:
                 key = hmac_new(trans.app.config.tool_secret, "%d:%d" % (data.id, data.history_id))
                 galaxy_url = f"{trans.request.base}/async/{tool_id}/{data.id}/{key}"
-                params.update({'GALAXY_URL': galaxy_url})
-                params.update({'data_id': data.id})
+                params.update({"GALAXY_URL": galaxy_url})
+                params.update({"data_id": data.id})
 
                 # Use provided URL or fallback to tool action
                 url = URL or tool.action
                 # Does url already have query params?
-                if '?' in url:
-                    url_join_char = '&'
+                if "?" in url:
+                    url_join_char = "&"
                 else:
-                    url_join_char = '?'
+                    url_join_char = "?"
                 url = f"{url}{url_join_char}{urlencode(params.flatten())}"
                 log.debug(f"connecting to -> {url}")
                 trans.log_event(f"Async connecting to -> {url}")
                 text = requests.get(url, timeout=DEFAULT_SOCKET_TIMEOUT).text.strip()
-                if not text.endswith('OK'):
+                if not text.endswith("OK"):
                     raise Exception(text)
                 data.state = data.blurb = data.states.RUNNING
             except Exception as e:
@@ -180,4 +187,4 @@ class ASync(BaseUIController):
 
             trans.sa_session.flush()
 
-        return trans.fill_template('root/tool_runner.mako', out_data={}, num_jobs=1, job_errors=[])
+        return trans.fill_template("root/tool_runner.mako", out_data={}, num_jobs=1, job_errors=[])

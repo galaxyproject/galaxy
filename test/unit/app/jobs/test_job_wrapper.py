@@ -1,20 +1,26 @@
 import abc
 import os
 from contextlib import contextmanager
-from typing import Dict, Type
+from typing import (
+    cast,
+    Dict,
+    Type,
+)
 from unittest import TestCase
 
 from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.jobs import (
     JobWrapper,
-    TaskWrapper
+    TaskWrapper,
 )
 from galaxy.model import (
     Base,
     Job,
     Task,
-    User
+    User,
 )
+from galaxy.objectstore import ObjectStore
+from galaxy.tools import ToolBox
 from galaxy.util.bunch import Bunch
 
 TEST_TOOL_ID = "cufftest"
@@ -24,7 +30,6 @@ TEST_COMMAND = ""
 
 
 class BaseWrapperTestCase(UsesApp):
-
     def setUp(self):
         self.setup_app()
         job = Job()
@@ -35,9 +40,9 @@ class BaseWrapperTestCase(UsesApp):
         self.model_objects: Dict[Type[Base], Dict[int, Base]] = {Job: {345: job}}
         self.app.model.session = MockContext(self.model_objects)
 
-        self.app.toolbox = MockToolbox(MockTool(self))
+        self.app.toolbox = cast(ToolBox, MockToolbox(MockTool(self)))
         self.working_directory = os.path.join(self.test_directory, "working")
-        self.app.object_store = MockObjectStore(self.working_directory)
+        self.app.object_store = cast(ObjectStore, MockObjectStore(self.working_directory))
 
         self.queue = MockJobQueue(self.app)
         self.job = job
@@ -72,13 +77,11 @@ class BaseWrapperTestCase(UsesApp):
 
 
 class JobWrapperTestCase(BaseWrapperTestCase, TestCase):
-
     def _wrapper(self):
         return JobWrapper(self.job, self.queue)  # type: ignore[arg-type]
 
 
 class TaskWrapperTestCase(BaseWrapperTestCase, TestCase):
-
     def setUp(self):
         super().setUp()
         self.task = Task(self.job, self.working_directory, "prepare_bwa_job.sh")
@@ -90,7 +93,6 @@ class TaskWrapperTestCase(BaseWrapperTestCase, TestCase):
 
 
 class MockEvaluator:
-
     def __init__(self, app, tool, job, local_working_directory):
         self.app = app
         self.tool = tool
@@ -105,18 +107,16 @@ class MockEvaluator:
         pass
 
     def build(self):
-        return TEST_COMMAND, [], []
+        return TEST_COMMAND, "", [], []
 
 
 class MockJobQueue:
-
     def __init__(self, app):
         self.app = app
         self.dispatcher = MockJobDispatcher(app)
 
 
 class MockJobDispatcher:
-
     def __init__(self, app):
         pass
 
@@ -125,7 +125,6 @@ class MockJobDispatcher:
 
 
 class MockContext:
-
     def __init__(self, model_objects):
         self.expunged_all = False
         self.flushed = False
@@ -146,7 +145,6 @@ class MockContext:
 
 
 class MockQuery:
-
     def __init__(self, class_objects):
         self.class_objects = class_objects
 
@@ -158,26 +156,24 @@ class MockQuery:
 
 
 class MockTool:
-
     def __init__(self, app):
         self.version_string_cmd = TEST_VERSION_COMMAND
         self.tool_dir = "/path/to/tools"
         self.dependencies = []
         self.requires_galaxy_python_environment = False
-        self.id = 'mock_id'
+        self.id = "mock_id"
         self.home_target = None
         self.tmp_target = None
-        self.tool_source = Bunch(to_string=lambda: '')
+        self.tool_source = Bunch(to_string=lambda: "")
 
     def get_job_destination(self, params):
-        return Bunch(runner='local', id='local', params={})
+        return Bunch(runner="local", id="local", params={})
 
     def build_dependency_shell_commands(self, job_directory):
         return TEST_DEPENDENCIES_COMMANDS
 
 
 class MockToolbox:
-
     def __init__(self, test_tool):
         self.test_tool = test_tool
 
@@ -191,7 +187,6 @@ class MockToolbox:
 
 
 class MockObjectStore:
-
     def __init__(self, working_directory):
         self.working_directory = working_directory
         os.makedirs(working_directory)

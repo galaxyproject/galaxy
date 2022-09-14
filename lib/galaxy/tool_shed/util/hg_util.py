@@ -7,7 +7,7 @@ from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
-INITIAL_CHANGELOG_HASH = '000000000000'
+INITIAL_CHANGELOG_HASH = "000000000000"
 
 
 def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
@@ -15,9 +15,9 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
     Clone the repository up to the specified changeset_revision.  No subsequent revisions will be
     present in the cloned repository.
     """
-    cmd = ['hg', 'clone']
+    cmd = ["hg", "clone"]
     if ctx_rev:
-        cmd.extend(['-r', str(ctx_rev)])
+        cmd.extend(["-r", str(ctx_rev)])
     cmd.extend([repository_clone_url, repository_file_dir])
     # Make sure the destination path actually exists before attempting to clone
     if not os.path.exists(repository_file_dir):
@@ -26,7 +26,7 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
         subprocess.check_output(cmd, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
         return True, None
     except Exception as e:
-        error_message = f'Error cloning repository: {unicodify(e)}'
+        error_message = f"Error cloning repository: {unicodify(e)}"
         if isinstance(e, subprocess.CalledProcessError):
             error_message += f"\nOutput was:\n{unicodify(e.output)}"
         log.error(error_message)
@@ -41,9 +41,9 @@ def copy_file_from_manifest(repo, changeset_revision, filename, dir):
     for changeset in reversed_upper_bounded_changelog(repo, changeset_revision):
         changeset_ctx = repo[changeset]
         fctx = get_file_context_from_ctx(changeset_ctx, filename)
-        if fctx and fctx not in ['DELETED']:
+        if fctx and fctx not in ["DELETED"]:
             file_path = os.path.join(dir, filename)
-            fh = open(file_path, 'wb')
+            fh = open(file_path, "wb")
             fh.write(fctx.data())
             fh.close()
             return file_path
@@ -61,7 +61,7 @@ def get_changectx_for_changeset(repo, changeset_revision, **kwd):
 
 def get_config_from_disk(config_file, relative_install_dir):
     for root, _dirs, files in os.walk(relative_install_dir):
-        if root.find('.hg') < 0:
+        if root.find(".hg") < 0:
             for name in files:
                 if name == config_file:
                     return os.path.abspath(os.path.join(root, name))
@@ -103,14 +103,16 @@ def get_file_context_from_ctx(ctx, filename):
                 # Set deleted for now, and continue looking in case the file was moved instead of deleted.
                 deleted = True
     if deleted:
-        return 'DELETED'
+        return "DELETED"
     return None
 
 
 def pull_repository(repo_path, repository_clone_url, ctx_rev):
     """Pull changes from a remote repository to a local one."""
     try:
-        subprocess.check_output(['hg', 'pull', '-r', ctx_rev, repository_clone_url], stderr=subprocess.STDOUT, cwd=repo_path)
+        subprocess.check_output(
+            ["hg", "pull", "-r", ctx_rev, repository_clone_url], stderr=subprocess.STDOUT, cwd=repo_path
+        )
     except Exception as e:
         error_message = f"Error pulling revision '{ctx_rev}': {unicodify(e)}"
         if isinstance(e, subprocess.CalledProcessError):
@@ -118,7 +120,9 @@ def pull_repository(repo_path, repository_clone_url, ctx_rev):
         raise Exception(error_message)
 
 
-def reversed_lower_upper_bounded_changelog(repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision):
+def reversed_lower_upper_bounded_changelog(
+    repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision
+):
     """
     Return a reversed list of changesets in the repository changelog after the excluded_lower_bounds_changeset_revision,
     but up to and including the included_upper_bounds_changeset_revision.  The value of excluded_lower_bounds_changeset_revision
@@ -149,7 +153,9 @@ def reversed_upper_bounded_changelog(repo, included_upper_bounds_changeset_revis
     Return a reversed list of changesets in the repository changelog up to and including the
     included_upper_bounds_changeset_revision.
     """
-    return reversed_lower_upper_bounded_changelog(repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision)
+    return reversed_lower_upper_bounded_changelog(
+        repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision
+    )
 
 
 def update_repository(repo_path, ctx_rev=None):
@@ -168,27 +174,27 @@ def update_repository(repo_path, ctx_rev=None):
     # I = ignored
     # It would be nice if we could use mercurial's purge extension to remove untracked files.  The problem is that
     # purging is not supported by the mercurial API.
-    cmd = ['hg', 'update']
+    cmd = ["hg", "update"]
     if ctx_rev:
-        cmd.extend(['-r', ctx_rev])
+        cmd.extend(["-r", ctx_rev])
     try:
         subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = f'Error updating repository: {unicodify(e)}'
+        error_message = f"Error updating repository: {unicodify(e)}"
         if isinstance(e, subprocess.CalledProcessError):
             error_message += f"\nOutput was:\n{unicodify(e.output)}"
         raise Exception(error_message)
 
 
 __all__ = (
-    'clone_repository',
-    'copy_file_from_manifest',
-    'get_changectx_for_changeset',
-    'get_config_from_disk',
-    'get_ctx_file_path_from_manifest',
-    'get_file_context_from_ctx',
-    'pull_repository',
-    'reversed_lower_upper_bounded_changelog',
-    'reversed_upper_bounded_changelog',
-    'update_repository',
+    "clone_repository",
+    "copy_file_from_manifest",
+    "get_changectx_for_changeset",
+    "get_config_from_disk",
+    "get_ctx_file_path_from_manifest",
+    "get_file_context_from_ctx",
+    "pull_repository",
+    "reversed_lower_upper_bounded_changelog",
+    "reversed_upper_bounded_changelog",
+    "update_repository",
 )

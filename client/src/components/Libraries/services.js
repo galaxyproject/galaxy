@@ -7,8 +7,8 @@ export class Services {
         this.root = options.root || getAppRoot();
     }
 
-    async getLibraries(include_deleted = false) {
-        const url = `${this.root}api/libraries?deleted=${include_deleted}`;
+    async getLibraries(includeDeleted = false) {
+        const url = `${this.root}api/libraries?deleted=${includeDeleted}`;
         try {
             const response = await axios.get(url);
             return response.data;
@@ -49,7 +49,7 @@ export class Services {
         }
     }
     async createNewLibrary(name, description, synopsis, onSucess, onError) {
-        const url = `${this.root}api/libraries/`;
+        const url = `${this.root}api/libraries`;
         try {
             const response = axios
                 .post(url, {

@@ -16,7 +16,8 @@ from galaxy_test.driver import integration_util
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 WORKFLOW_HANDLER_CONFIGURATION_JOB_CONF = os.path.join(SCRIPT_DIRECTORY, "workflow_handler_configuration_job_conf.xml")
 
-WORKFLOW_HANDLER_JOB_CONFIG_TEMPLATE = string.Template("""
+WORKFLOW_HANDLER_JOB_CONFIG_TEMPLATE = string.Template(
+    """
 <job_conf>
     <plugins>
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
@@ -40,9 +41,11 @@ WORKFLOW_HANDLER_JOB_CONFIG_TEMPLATE = string.Template("""
         </destination>
     </destinations>
 </job_conf>
-""")
+"""
+)
 
-POOL_JOB_CONFIG_TEMPLATE = string.Template("""<job_conf>
+POOL_JOB_CONFIG_TEMPLATE = string.Template(
+    """<job_conf>
     <plugins>
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
     </plugins>
@@ -53,9 +56,11 @@ POOL_JOB_CONFIG_TEMPLATE = string.Template("""<job_conf>
         </destination>
     </destinations>
 </job_conf>
-""")
+"""
+)
 
-WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE = string.Template("""
+WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE = string.Template(
+    """
 <workflow_schedulers default="core">
   <core id="core" />
   <handlers default="workflow_handlers" $assign_with>
@@ -63,7 +68,8 @@ WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE = string.Template("""
     <handler id="work2" tags="workflow_handlers" />
   </handlers>
 </workflow_schedulers>
-""")
+"""
+)
 JOB_HANDLER_PATTERN = re.compile(r"handler\d")
 WORKFLOW_SCHEDULER_HANDLER_PATTERN = re.compile(r"work\d")
 
@@ -80,8 +86,10 @@ steps:
 """
 
 
-def config_file(template, assign_with=''):
-    with tempfile.NamedTemporaryFile(mode='w', suffix=".xml", prefix="workflow_handler_config_", delete=False) as config:
+def config_file(template, assign_with=""):
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".xml", prefix="workflow_handler_config_", delete=False
+    ) as config:
         if assign_with:
             assign_with = f'assign_with="{assign_with}"'
         config.write(template.substitute(assign_with=assign_with))
@@ -107,13 +115,11 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         workflow_id = self.workflow_populator.upload_yaml_workflow(PAUSE_WORKFLOW)
         history_id = self.history_id
         hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
-        index_map = {
-            '0': dict(src="hda", id=hda1["id"])
-        }
+        index_map = {"0": dict(src="hda", id=hda1["id"])}
         request = {}
         request["history"] = "hist_id=%s" % history_id
         request["inputs"] = dumps(index_map)
-        request["inputs_by"] = 'step_index'
+        request["inputs_by"] = "step_index"
         url = "workflows/%s/invocations" % (workflow_id)
         for _ in range(n):
             self._post(url, data=request)
@@ -136,7 +142,7 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
 class HistoryRestrictionConfigurationTestCase(BaseWorkflowHandlerConfigurationTestCase):
 
     # Assign with db-preassign. Would also work with grabbing assignment, but we don't start grabber.
-    assign_with = 'db-preassign'
+    assign_with = "db-preassign"
 
     def test_history_to_handler_restriction(self):
         self._invoke_n_workflows(10)
@@ -153,7 +159,7 @@ class HistoryRestrictionConfigurationTestCase(BaseWorkflowHandlerConfigurationTe
 class HistoryParallelConfigurationTestCase(BaseWorkflowHandlerConfigurationTestCase):
 
     # Assign with db-preassign. Would also work with grabbing assignment, but we don't start grabber.
-    assign_with = 'db-preassign'
+    assign_with = "db-preassign"
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -177,12 +183,14 @@ class HistoryParallelConfigurationTestCase(BaseWorkflowHandlerConfigurationTestC
 class WorkflowSchedulerHandlerAssignment(BaseWorkflowHandlerConfigurationTestCase):
 
     # Assign with db-preassign. Would also work with grabbing assignment, but we don't start grabber.
-    assign_with = 'db-preassign'
+    assign_with = "db-preassign"
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        config["workflow_schedulers_config_file"] = config_file(WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with)
+        config["workflow_schedulers_config_file"] = config_file(
+            WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with
+        )
 
     def test_handler_assignment(self):
         self._invoke_n_workflows(1)
@@ -200,7 +208,6 @@ class WorkflowSchedulerHandlerAssignment(BaseWorkflowHandlerConfigurationTestCas
 #  - If a workflow scheduler conf is defined and assign_with is set to db-transaction-isolation, invocation handler is correctly set
 #  - If a workflow scheduler conf is defined and the process is not listed as a handler, it is not workflow scheduler.
 class DefaultWorkflowHandlerOnTestCase(BaseWorkflowHandlerConfigurationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         # Override so we don't setup a job conf like in the base class.
@@ -211,7 +218,6 @@ class DefaultWorkflowHandlerOnTestCase(BaseWorkflowHandlerConfigurationTestCase)
 
 
 class DefaultWorkflowHandlerIfJobHandlerOnTestCase(BaseWorkflowHandlerConfigurationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -223,7 +229,7 @@ class DefaultWorkflowHandlerIfJobHandlerOnTestCase(BaseWorkflowHandlerConfigurat
 
 class JobHandlerAsWorkflowHandlerWithDbSkipLocked(BaseWorkflowHandlerConfigurationTestCase):
 
-    assign_with = 'db-skip-locked'
+    assign_with = "db-skip-locked"
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -241,7 +247,6 @@ class JobHandlerAsWorkflowHandlerWithDbSkipLocked(BaseWorkflowHandlerConfigurati
 
 
 class JobHandlerAsWorkflowHandlerWithDbSkipLockedAttachToPool(JobHandlerAsWorkflowHandlerWithDbSkipLocked):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["job_config_file"] = config_file(POOL_JOB_CONFIG_TEMPLATE, assign_with=cls.assign_with)
@@ -250,7 +255,6 @@ class JobHandlerAsWorkflowHandlerWithDbSkipLockedAttachToPool(JobHandlerAsWorkfl
 
 
 class DefaultWorkflowHandlerIfJobHandlerOffTestCase(BaseWorkflowHandlerConfigurationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -267,7 +271,9 @@ class ExplicitWorkflowHandlersOnTestCase(BaseWorkflowHandlerConfigurationTestCas
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        config["workflow_schedulers_config_file"] = config_file(WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with)
+        config["workflow_schedulers_config_file"] = config_file(
+            WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with
+        )
         config["server_name"] = "work1"
 
     def test_app_is_workflow_scheduler(self):
@@ -277,7 +283,7 @@ class ExplicitWorkflowHandlersOnTestCase(BaseWorkflowHandlerConfigurationTestCas
 @integration_util.skip_unless_postgres()
 class WorkflowSchedulerHandlerAssignmentDbSkipLocked(ExplicitWorkflowHandlersOnTestCase):
 
-    assign_with = 'db-skip-locked'
+    assign_with = "db-skip-locked"
 
     def test_handler_assignment(self):
         self._invoke_n_workflows(1)
@@ -289,15 +295,16 @@ class WorkflowSchedulerHandlerAssignmentDbSkipLocked(ExplicitWorkflowHandlersOnT
 @integration_util.skip_unless_postgres()
 class WorkflowSchedulerHandlerAssignmentDbTransactionIsolation(WorkflowSchedulerHandlerAssignmentDbSkipLocked):
 
-    assign_with = 'db-transaction-isolation'
+    assign_with = "db-transaction-isolation"
 
 
 class ExplicitWorkflowHandlersOffTestCase(BaseWorkflowHandlerConfigurationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        config["workflow_schedulers_config_file"] = config_file(WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with)
+        config["workflow_schedulers_config_file"] = config_file(
+            WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with
+        )
         config["server_name"] = "handler0"  # Configured as a job handler but not a workflow handler.
 
     def test_app_is_not_workflow_scheduler(self):
@@ -305,11 +312,12 @@ class ExplicitWorkflowHandlersOffTestCase(BaseWorkflowHandlerConfigurationTestCa
 
 
 class ExplicitWorkflowHandlersOffPoolTestCase(BaseWorkflowHandlerConfigurationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        config["workflow_schedulers_config_file"] = config_file(WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with)
+        config["workflow_schedulers_config_file"] = config_file(
+            WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with
+        )
         config["server_name"] = "handler0"  # Configured as a job handler but not a workflow handler.
         config["attach_to_pools"] = ["job-handlers"]
 

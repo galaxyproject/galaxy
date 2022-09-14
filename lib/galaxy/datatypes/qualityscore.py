@@ -7,9 +7,7 @@ from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
 )
-from . import (
-    data,
-)
+from . import data
 
 log = logging.getLogger(__name__)
 
@@ -18,6 +16,7 @@ class QualityScore(data.Text):
     """
     until we know more about quality score formats
     """
+
     edam_data = "data_2048"
     edam_format = "format_3606"
     file_ext = "qual"
@@ -28,6 +27,7 @@ class QualityScoreSOLiD(QualityScore):
     """
     until we know more about quality score formats
     """
+
     edam_format = "format_3610"
     file_ext = "qualsolid"
 
@@ -46,10 +46,10 @@ class QualityScoreSOLiD(QualityScore):
         goodblock = 0
         for line in fh:
             line = line.strip()
-            if not line.startswith('#'):  # first non-empty non-comment line
-                if line.startswith('>'):
+            if not line.startswith("#"):  # first non-empty non-comment line
+                if line.startswith(">"):
                     line = fh.readline().strip()
-                    if line == '' or line.startswith('>'):
+                    if line == "" or line.startswith(">"):
                         return False
                     try:
                         [int(x) for x in line.split()]
@@ -77,6 +77,7 @@ class QualityScore454(QualityScore):
     """
     until we know more about quality score formats
     """
+
     edam_format = "format_3611"
     file_ext = "qual454"
 
@@ -93,10 +94,10 @@ class QualityScore454(QualityScore):
         fh = file_prefix.string_io()
         for line in fh:
             line = line.strip()
-            if line and not line.startswith('#'):  # first non-empty non-comment line
-                if line.startswith('>'):
+            if line and not line.startswith("#"):  # first non-empty non-comment line
+                if line.startswith(">"):
                     line = fh.readline().strip()
-                    if line == '' or line.startswith('>'):
+                    if line == "" or line.startswith(">"):
                         break
                     try:
                         [int(x) for x in line.split()]
@@ -112,6 +113,7 @@ class QualityScoreSolexa(QualityScore):
     """
     until we know more about quality score formats
     """
+
     edam_format = "format_3608"
     file_ext = "qualsolexa"
 
@@ -120,5 +122,6 @@ class QualityScoreIllumina(QualityScore):
     """
     until we know more about quality score formats
     """
+
     edam_format = "format_3609"
     file_ext = "qualillumina"

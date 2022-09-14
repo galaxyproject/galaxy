@@ -2,16 +2,16 @@
     <div class="panel-header-buttons">
         <b-button
             id="workflow-home-button"
+            v-b-tooltip.hover
             role="button"
             title="Edit Attributes"
             variant="link"
             aria-label="Edit Attributes"
             class="editor-button-attributes"
-            v-b-tooltip.hover
             @click="$emit('onAttributes')">
             <span class="fa fa-pencil-alt" />
         </b-button>
-        <b-button-group class="editor-button-save-group" v-b-tooltip title="Save Workflow">
+        <b-button-group v-b-tooltip class="editor-button-save-group" title="Save Workflow">
             <b-button
                 id="workflow-save-button"
                 role="button"
@@ -25,25 +25,25 @@
         </b-button-group>
         <b-button
             id="workflow-report-button"
+            v-b-tooltip.hover
             role="button"
             title="Edit Report"
             variant="link"
             aria-label="Edit Report"
             class="editor-button-report"
-            v-b-tooltip.hover
             @click="$emit('onReport')">
             <span class="fa fa-edit" />
         </b-button>
         <b-dropdown
+            id="workflow-options-button"
+            v-b-tooltip.hover
             no-caret
             right
-            id="workflow-options-button"
             role="button"
             title="Workflow Options"
             variant="link"
             aria-label="Workflow Options"
-            class="editor-button-options"
-            v-b-tooltip.hover>
+            class="editor-button-options">
             <template v-slot:button-content>
                 <span class="fa fa-cog" />
             </template>
@@ -65,12 +65,12 @@
         </b-dropdown>
         <b-button
             id="workflow-run-button"
+            v-b-tooltip.hover
             role="button"
             title="Run Workflow"
             variant="link"
             aria-label="Run Workflow"
             class="editor-button-run"
-            v-b-tooltip.hover
             @click="$emit('onRun')">
             <span class="fa fa-play" />
         </b-button>

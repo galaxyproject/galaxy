@@ -7,14 +7,11 @@ exported API values are encoded though.
 
 from galaxy import model
 from galaxy_test.base import api_asserts
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-)
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 
 class PageJsonEncodingIntegrationTestCase(integration_util.IntegrationTestCase):
-
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -24,7 +21,7 @@ class PageJsonEncodingIntegrationTestCase(integration_util.IntegrationTestCase):
         request = dict(
             slug="mypage",
             title="MY PAGE",
-            content='''<p>Page!<div class="embedded-item" id="History-%s"></div></p>''' % self.history_id,
+            content="""<p>Page!<div class="embedded-item" id="History-%s"></div></p>""" % self.history_id,
         )
         page_response = self._post("pages", request, json=True)
         api_asserts.assert_status_code_is_ok(page_response)
@@ -45,26 +42,39 @@ class PageJsonEncodingIntegrationTestCase(integration_util.IntegrationTestCase):
         request = dict(
             slug="mypage-markdown",
             title="MY PAGE",
-            content='''```galaxy
+            content="""```galaxy
 history_dataset_display(history_dataset_id=%s)
-```''' % dataset["id"],
+```"""
+            % dataset["id"],
             content_format="markdown",
         )
         page_response = self._post("pages", request, json=True)
         api_asserts.assert_status_code_is_ok(page_response)
         sa_session = self._app.model.context
         page_revision = sa_session.query(model.PageRevision).filter_by(content_format="markdown").all()[0]
-        assert '''```galaxy
+        assert (
+            """```galaxy
 history_dataset_display(history_dataset_id=1)
-```''' in page_revision.content, page_revision.content
-        assert '''::: history_dataset_display history_dataset_id=%s''' % dataset_id not in page_revision.content, page_revision.content
+```"""
+            in page_revision.content
+        ), page_revision.content
+        assert (
+            """::: history_dataset_display history_dataset_id=%s""" % dataset_id not in page_revision.content
+        ), page_revision.content
 
         show_page_response = self._get("pages/%s" % page_response.json()["id"])
         api_asserts.assert_status_code_is_ok(show_page_response)
         content = show_page_response.json()["content"]
-        assert '''```galaxy
+        assert (
+            """```galaxy
 history_dataset_display(history_dataset_id=1)
-```''' not in content, content
-        assert '''```galaxy
+```"""
+            not in content
+        ), content
+        assert (
+            """```galaxy
 history_dataset_display(history_dataset_id=%s)
-```''' % dataset_id in content, content
+```"""
+            % dataset_id
+            in content
+        ), content

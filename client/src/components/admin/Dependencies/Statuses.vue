@@ -4,7 +4,7 @@
         <span v-else-if="merged">
             <status-display :status="statuses[0]" :all-statuses="statuses" />
         </span>
-        <div v-else :key="index" v-for="(item_status, index) in statuses">
+        <div v-for="(item_status, index) in statuses" v-else :key="index">
             <status-display :status="item_status" />
         </div>
     </span>

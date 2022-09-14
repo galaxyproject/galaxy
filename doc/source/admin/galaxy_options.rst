@@ -336,31 +336,15 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~
-``check_migrate_tools``
-~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable / disable checking if any tools defined in the above
-    non-shed tool_config_files (i.e., tool_conf.xml) have been
-    migrated from the Galaxy code distribution to the Tool Shed. This
-    functionality is largely untested in modern Galaxy releases and
-    has serious issues such as #7273 and the possibility of slowing
-    down Galaxy startup, so the default and recommended value is
-    false.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 ``migrated_tools_config``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Tool config maintained by tool migration scripts.  If you use the
-    migration scripts to install tools that have been migrated to the
-    tool shed upon a new release, they will be added to this tool
-    config file.
+    This option is deprecated. In previous releases this file was
+    maintained by tool migration scripts that are no longer part of
+    the code base. The option remains as a placeholder for deployments
+    where these scripts were previously run and such a file exists.
     The value of this option will be resolved with respect to
     <managed_config_dir>.
 :Default: ``migrated_tools_conf.xml``
@@ -608,6 +592,22 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``load_tool_shed_datatypes``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This option controls whether legacy datatypes are loaded from
+    installed tool shed repositories. We're are in the process of
+    disabling Tool Shed datatypes. This option with a default of true
+    will be added in 22.01, we will disable the datatypes on the big
+    public servers during that release. This option will be switched
+    to False by default in 22.05 and this broken functionality will be
+    removed all together during some future release.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~
 ``watch_tools``
 ~~~~~~~~~~~~~~~
@@ -664,6 +664,60 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``short_term_storage_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Location of files available for a short time as downloads (short
+    term storage). This directory is exclusively used for serving
+    dynamically generated downloadable content. Galaxy may uses the
+    new_file_path parameter as a general temporary directory and that
+    directory should be monitored by a tool such as tmpwatch in
+    production environments. short_term_storage_dir on the other hand
+    is monitored by Galaxy's task framework and should not require
+    such external tooling.
+    The value of this option will be resolved with respect to
+    <cache_dir>.
+:Default: ``short_term_web_storage``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``short_term_storage_default_duration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default duration before short term web storage files will be
+    cleaned up by Galaxy tasks (in seconds). The default duration is 1
+    day.
+:Default: ``86400``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``short_term_storage_maximum_duration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The maximum duration short term storage files can hosted before
+    they will be marked for clean up.  The default setting of 0
+    indicates no limit here.
+:Default: ``0``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``short_term_storage_cleanup_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    How many seconds between instances of short term storage being
+    cleaned up in default Celery task configuration.
+:Default: ``3600``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``file_sources_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -674,6 +728,16 @@
     <config_dir>.
 :Default: ``file_sources_conf.yml``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~
+``file_sources``
+~~~~~~~~~~~~~~~~
+
+:Description:
+    FileSource plugins described embedded into Galaxy's config.
+:Default: ``None``
+:Type: seq
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -696,10 +760,11 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Container resolvers configuration (beta). Set up a file describing
+    Container resolvers configuration. Set up a file describing
     container resolvers to use when discovering containers for Galaxy.
     If this is set to None, the default container resolvers loaded is
-    determined by enable_mulled_containers.
+    determined by enable_mulled_containers. For available options see
+    config/container_resolvers_conf.xml.sample.
 :Default: ``None``
 :Type: str
 
@@ -712,10 +777,8 @@
     Rather than specifying a container_resolvers_config_file, the
     definition of the resolvers to enable can be embedded into
     Galaxy's config with this option. This has no effect if a
-    container_resolvers_config_file is used.
-    The syntax, available resolvers, and documentation of their
-    options is explained in detail in the documentation:
-    https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
+    container_resolvers_config_file is used. Takes the same options
+    that can be set in container_resolvers_config_file.
 :Default: ``None``
 :Type: seq
 
@@ -964,22 +1027,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``interactive_environment_plugins_directory``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Interactive environment plugins root directory: where to look for
-    interactive environment plugins.  By default none will be loaded.
-    Set to config/plugins/interactive_environments to load Galaxy's
-    stock plugins. These will require Docker to be configured and have
-    security considerations, so proceed with caution. The path is
-    relative to the Galaxy root dir.  To use an absolute path begin
-    the path with '/'.  This is a comma-separated list.
-:Default: ``None``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~
 ``tour_config_dir``
 ~~~~~~~~~~~~~~~~~~~
@@ -1021,19 +1068,6 @@
     The value of this option will be resolved with respect to
     <data_dir>.
 :Default: ``jobs_directory``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``cluster_files_directory``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If using a cluster, Galaxy will write job scripts and
-    stdout/stderr to this directory.
-    The value of this option will be resolved with respect to
-    <data_dir>.
-:Default: ``pbs``
 :Type: str
 
 
@@ -1291,6 +1325,17 @@
     <cache_dir>.
 :Default: ``mulled/locks``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``mulled_resolution_cache_expire``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Seconds until the beaker cache is considered old and a new value
+    is created.
+:Default: ``3600``
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1708,13 +1753,25 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_upstream_proxy``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to false to redirect users of Interactive tools directly
+    to the Interactive tools proxy. `interactivetools_upstream_proxy`
+    should only be set to false in development.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``interactivetools_proxy_host``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Proxy host - assumed to just be hosted on the same hostname and
-    port as Galaxy by default.
+    Hostname and port of Interactive tools proxy. It is assumed to be
+    hosted on the same hostname and port as Galaxy by default.
 :Default: ``None``
 :Type: str
 
@@ -1874,6 +1931,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~
+``use_legacy_history``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Server-wide default selection to use the legacy history during the
+    transition period, after which this option will disappear.  Users
+    will remain able to swap back and forth per their preference.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``user_preferences_extra_conf_path``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1902,19 +1971,29 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``galaxy_url_prefix``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL prefix for Galaxy application. If Galaxy should be served
+    under a prefix set this to the desired prefix value.
+:Default: ``/``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``galaxy_infrastructure_url``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     URL (with schema http/https) of the Galaxy instance as accessible
-    within your local network - if specified used as a default by
-    pulsar file staging and Jupyter Docker container for communicating
+    within your local network. This URL is used as a default by pulsar
+    file staging and Interactive Tool containers for communicating
     back with Galaxy via the API.
-    If you are attempting to set up GIEs on Mac OS X with Docker
-    Desktop for Mac and your Galaxy instance runs on port 8080 this
-    should be 'http://host.docker.internal:8080'.  For more details
-    see https://docs.docker.com/docker-for-mac/networking/
+    If you plan to run Interactive Tools make sure the docker
+    container can reach this URL. For more details see
+    `job_conf.xml.interactivetools`.
 :Default: ``http://localhost:8080``
 :Type: str
 
@@ -1983,7 +2062,7 @@
 
 :Description:
     The URL linked by the "Galaxy Help" link in the "Help" menu.
-:Default: ``None``
+:Default: ``https://help.galaxyproject.org/``
 :Type: str
 
 
@@ -1992,7 +2071,7 @@
 ~~~~~~~~~~~~
 
 :Description:
-    The URL linked by the "Wiki" link in the "Help" menu.
+    The URL linked by the "Community Hub" link in the "Help" menu.
 :Default: ``https://galaxyproject.org/``
 :Type: str
 
@@ -2038,33 +2117,13 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~
-``search_url``
-~~~~~~~~~~~~~~
-
-:Description:
-    The URL linked by the "Search" link in the "Help" menu.
-:Default: ``https://galaxyproject.org/search/``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~
-``mailing_lists_url``
-~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    The URL linked by the "Mailing Lists" link in the "Help" menu.
-:Default: ``https://galaxyproject.org/mailing-lists/``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~
 ``screencasts_url``
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
     The URL linked by the "Videos" link in the "Help" menu.
-:Default: ``https://vimeo.com/galaxyproject``
+:Default: ``https://www.youtube.com/c/galaxyproject``
 :Type: str
 
 
@@ -2076,18 +2135,6 @@
     The URL linked by the "Terms and Conditions" link in the "Help"
     menu, as well as on the user registration and login forms and in
     the activation emails.
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~
-``qa_url``
-~~~~~~~~~~
-
-:Description:
-    The URL linked by the "Galaxy Q&A" link in the "Help" menu The
-    Galaxy Q&A site is under development; when the site is done, this
-    URL will be set and uncommented.
 :Default: ``None``
 :Type: str
 
@@ -2332,6 +2379,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~
+``tus_upload_store``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The upload store is a temporary directory in which files uploaded
+    by the tus middleware or server will be placed. Defaults to
+    new_file_path if not set.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~
 ``chunk_upload_size``
 ~~~~~~~~~~~~~~~~~~~~~
@@ -2504,12 +2563,55 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~
+``log_destination``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Log destination, defaults to special value "stdout" that logs to
+    standard output. If set to anything else, then it will be
+    interpreted as a path that will be used as the log file, and
+    logging to stdout will be disabled.
+:Default: ``stdout``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``log_rotate_size``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Size of log file at which size it will be rotated as per the
+    documentation in
+    https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+    If log_rotate_count is not also set, no log rotation will be
+    performed. A value of 0 (the default) means no rotation. Size can
+    be a number of bytes or a human-friendly representation like "100
+    MB" or "1G".
+:Default: ``0``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``log_rotate_count``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Number of log file backups to keep, per the documentation in
+    https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+    Any additional rotated log files will automatically be pruned. If
+    log_rotate_size is not also set, no log rotation will be
+    performed. A value of 0 (the default) means no rotation.
+:Default: ``0``
+:Type: int
+
+
 ~~~~~~~~~~~~~
 ``log_level``
 ~~~~~~~~~~~~~
 
 :Description:
-    Verbosity of console log messages.  Acceptable values can be found
+    Verbosity of console log messages. Acceptable values can be found
     here: https://docs.python.org/library/logging.html#logging-levels
     A custom debug level of "TRACE" is available for even more
     verbosity.
@@ -2522,9 +2624,8 @@
 ~~~~~~~~~~~
 
 :Description:
-    Controls where and how the server logs messages. If unset, the
-    default is to log all messages to standard output at the level
-    defined by the `log_level` configuration option. Configuration is
+    Controls where and how the server logs messages. If set, overrides
+    all settings in the log_* configuration options. Configuration is
     described in the documentation at:
     https://docs.galaxyproject.org/en/master/admin/config_logging.html
 :Default: ``None``
@@ -2634,7 +2735,7 @@
     edited or manipulated through the Admin control panel -- see
     "Manage Allowlist"
     The value of this option will be resolved with respect to
-    <mutable_config_dir>.
+    <managed_config_dir>.
 :Default: ``sanitize_allowlist.txt``
 :Type: str
 
@@ -2692,11 +2793,6 @@
     use_printdebug.  It also causes the files used by PBS/SGE
     (submission script, output, and error) to remain on disk after the
     job is complete.
-    In addition, this will set uWSGI's `honour-stdin` option to
-    `true`; thus, preventing uWSGI from remapping stdin to `/dev/null`
-    and enabling debugging with tools like pdb. To keep uWSGI's
-    default setting, set `honor-stdin` to `false` in the `uwsgi`
-    section of this configuration file.
 :Default: ``false``
 :Type: bool
 
@@ -2743,9 +2839,7 @@
     are responsible for preparing/submitting and collecting/finishing
     jobs, and which can cause job errors if not shut down cleanly. If
     using supervisord, consider also increasing the value of
-    `stopwaitsecs`. If using job handler mules, consider also setting
-    the `mule-reload-mercy` uWSGI option. See the Galaxy Admin
-    Documentation for more.
+    `stopwaitsecs`. See the Galaxy Admin Documentation for more.
 :Default: ``30``
 :Type: int
 
@@ -2769,8 +2863,7 @@
 :Description:
     Control the period (in seconds) between dumps. Use -1 to disable.
     Regardless of this setting, if use_heartbeat is enabled, you can
-    send a Galaxy process (unless running with uWSGI) SIGUSR1 (`kill
-    -USR1`) to force a dump.
+    send a Galaxy process SIGUSR1 (`kill -USR1`) to force a dump.
 :Default: ``20``
 :Type: int
 
@@ -2985,11 +3078,20 @@
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
-:Default: ``9.0``
+    In tool search, a query match against a tool's name text will
+    receive this score multiplier.
+:Default: ``20.0``
+:Type: float
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_name_exact_multiplier``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If a search query matches a tool name exactly, the score will be
+    multiplied by this factor.
+:Default: ``10.0``
 :Type: float
 
 
@@ -2998,11 +3100,10 @@
 ~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
-:Default: ``9.0``
+    In tool search, a query match against a tool's ID text will
+    receive this score multiplier. The query must be an exact match
+    against ID in order to be counted as a match.
+:Default: ``20.0``
 :Type: float
 
 
@@ -3011,10 +3112,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
+    In tool search, a query match against a tool's section text will
+    receive this score multiplier.
 :Default: ``3.0``
 :Type: float
 
@@ -3024,11 +3123,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
-:Default: ``2.0``
+    In tool search, a query match against a tool's description text
+    will receive this score multiplier.
+:Default: ``8.0``
 :Type: float
 
 
@@ -3037,10 +3134,8 @@
 ~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
+    In tool search, a query match against a tool's label text will
+    receive this score multiplier.
 :Default: ``1.0``
 :Type: float
 
@@ -3050,11 +3145,10 @@
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
-:Default: ``5.0``
+    A stub is parsed from the GUID as "owner/repo/tool_id". In tool
+    search, a query match against a tool's stub text will receive this
+    score multiplier.
+:Default: ``2.0``
 :Type: float
 
 
@@ -3063,10 +3157,22 @@
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
+    In tool search, a query match against a tool's help text will
+    receive this score multiplier.
+:Default: ``1.0``
+:Type: float
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``tool_help_bm25f_k1``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The lower this parameter, the greater the diminishing reward for
+    term frequency in the help text. A higher K1 increases the level
+    of reward for additional occurences of a term. The default value
+    will provide a slight increase in score for the first, second and
+    third occurrence and little reward thereafter.
 :Default: ``0.5``
 :Type: float
 
@@ -3076,8 +3182,8 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Limits the number of results in toolbox search.  Can be used to
-    tweak how many results will appear.
+    Limits the number of results in toolbox search. Use to set the
+    maximum number of tool search results to display.
 :Default: ``20``
 :Type: int
 
@@ -3087,9 +3193,11 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable/ disable Ngram-search for tools. It makes tool search
-    results tolerant for spelling mistakes in the query by dividing
-    the query into multiple ngrams and search for each ngram
+    Disabling this will prevent partial matches on tool names.
+    Enable/disable Ngram-search for tools. It makes tool search
+    results tolerant for spelling mistakes in the query, and will also
+    match query substrings e.g. "genome" will match "genomics" or
+    "metagenome".
 :Default: ``true``
 :Type: bool
 
@@ -3099,7 +3207,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set minimum size of ngrams
+    Set minimum character length of ngrams
 :Default: ``3``
 :Type: int
 
@@ -3109,9 +3217,21 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set maximum size of ngrams
+    Set maximum character length of ngrams
 :Default: ``4``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``tool_ngram_factor``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Ngram matched scores will be multiplied by this factor. Should
+    always be below 1, because an ngram match is a partial match of a
+    search term.
+:Default: ``0.2``
+:Type: float
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3217,6 +3337,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``post_user_logout_href``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This is the default url to which users are redirected after they
+    log out.
+:Default: ``/root/login?is_logout_redirect=true``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``normalize_remote_user_email``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3274,6 +3405,17 @@
 :Description:
     Show the site's welcome page (see welcome_url) alongside the login
     page (even if require_login is true).
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``prefer_custos_login``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Controls the order of the login page to prefer Custos-based login
+    and registration.
 :Default: ``false``
 :Type: bool
 
@@ -3436,16 +3578,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_containers_interface``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable the new container interface for Interactive Environments
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_beta_workflow_modules``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3535,49 +3667,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``force_beta_workflow_scheduled_min_steps``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Following options only apply to workflows scheduled using the
-    legacy workflow run API (running workflows via a POST to
-    /api/workflows). Force usage of Galaxy's beta workflow scheduler
-    under certain circumstances - this workflow scheduling forces
-    Galaxy to schedule workflows in the background so initial
-    submission of the workflows is significantly sped up. This does
-    however force the user to refresh their history manually to see
-    newly scheduled steps (for "normal" workflows - steps are still
-    scheduled far in advance of them being queued and scheduling here
-    doesn't refer to actual cluster job scheduling). Workflows
-    containing more than the specified number of steps will always use
-    the Galaxy's beta workflow scheduling.
-:Default: ``250``
-:Type: int
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``force_beta_workflow_scheduled_for_collections``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Following options only apply to workflows scheduled using the
-    legacy workflow run API (running workflows via a POST to
-    /api/workflows). Force usage of Galaxy's beta workflow scheduler
-    under certain circumstances - this workflow scheduling forces
-    Galaxy to schedule workflows in the background so initial
-    submission of the workflows is significantly sped up. This does
-    however force the user to refresh their history manually to see
-    newly scheduled steps (for "normal" workflows - steps are still
-    scheduled far in advance of them being queued and scheduling here
-    doesn't refer to actual cluster job scheduling). Workflows
-    containing more than the specified number of steps will always use
-    the Galaxy's beta workflow scheduling. Switch to using Galaxy's
-    beta workflow scheduling for all workflows involving collections.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``parallelize_workflow_scheduling_within_histories``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3632,6 +3721,21 @@
     faster execution, but require more memory. Set to -1 to disable
     creating datasets in batches.
 :Default: ``1000``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``max_discovered_files``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to a positive integer value to limit the number of
+    datasets that can be discovered by a single job. This prevents
+    accidentally creating large numbers of datasets when running tools
+    that create a potentially unlimited number of output datasets,
+    such as tools that split a file into a collection of datasets for
+    each line in an input dataset.
+:Default: ``10000``
 :Type: int
 
 
@@ -3705,9 +3809,9 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``master_api_key``
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``bootstrap_admin_api_key``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     API key that allows performing some admin actions without actually
@@ -3716,28 +3820,6 @@
     admin user account via API. You should probably not set this on a
     production server.
 :Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~
-``enable_openid``
-~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable access to post-authentication options via OpenID.
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``openid_consumer_cache_path``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If OpenID is enabled, consumer cache directory to use.
-    The value of this option will be resolved with respect to
-    <cache_dir>.
-:Default: ``openid_consumer_cache``
 :Type: str
 
 
@@ -3793,8 +3875,13 @@
 :Description:
     When the simplified workflow run form is rendered, should the
     invocation outputs be sent to the 'current' history or a 'new'
-    history.
-:Default: ``current``
+    history. If the user should be presented and option between these
+    - set this to 'prefer_current' or 'prefer_new' to display a
+    runtime setting with the corresponding default. The default is to
+    provide the user this option and default it to the current history
+    (the traditional behavior of Galaxy for years) - this corresponds
+    to the setting 'prefer_current'.
+:Default: ``prefer_current``
 :Type: str
 
 
@@ -4155,18 +4242,35 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_monitor_sleep``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Each Galaxy workflow handler process runs one thread responsible
+    for checking the state of active workflow invocations.  This
+    thread operates in a loop and sleeps for the given number of
+    seconds at the end of each iteration. This can be decreased if
+    extremely high job throughput is necessary, but doing so can
+    increase CPU usage of handler processes. Float values are allowed.
+:Default: ``1.0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~~~~~~~
 ``metadata_strategy``
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Determines how metadata will be set. Valid values are `directory`
-    and `extended`. In extended mode jobs will decide if a tool run
-    failed, the object stores configuration is serialized and made
-    available to the job and is used for writing output datasets to
-    the object store as part of the job and dynamic output discovery
-    (e.g. discovered datasets <discover_datasets>, unpopulated
-    collections, etc) happens as part of the job.
+    Determines how metadata will be set. Valid values are `directory`,
+    `extended`, `directory_celery` and `extended_celery`. In extended
+    mode jobs will decide if a tool run failed, the object stores
+    configuration is serialized and made available to the job and is
+    used for writing output datasets to the object store as part of
+    the job and dynamic output discovery (e.g. discovered datasets
+    <discover_datasets>, unpopulated collections, etc) happens as part
+    of the job. In `directory_celery` and `extended_celery` metadata
+    will be set within a celery task.
 :Default: ``directory``
 :Type: str
 
@@ -4663,7 +4767,7 @@
     the process that handled that particular request will tell all
     others to also reload, lock jobs, etc. For connection examples,
     see
-    http://docs.celeryproject.org/projects/kombu/en/latest/userguide/connections.html
+    https://docs.celeryq.dev/projects/kombu/en/stable/userguide/connections.html
     Without specifying anything here, galaxy will first attempt to use
     your specified database_connection above.  If that's not specified
     either, Galaxy will automatically create and use a separate sqlite
@@ -4683,6 +4787,26 @@
     see https://docs.galaxyproject.org/en/master/admin/production.html
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~
+``celery_broker``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Celery broker (if unset falls back to amqp_internal_connection).
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~
+``celery_backend``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If set, it will be the results backend for Celery.
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~
@@ -4804,20 +4928,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-``containers_config_file``
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Path to container interface configuration file. The containers
-    interface is only used if `enable_beta_containers_interface`
-    config option is set.
-    The value of this option will be resolved with respect to
-    <config_dir>.
-:Default: ``containers_conf.yml``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``tool_destinations_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4840,6 +4950,28 @@
     location is relative to galaxy/static
 :Default: ``plugins/welcome_page/new_user/static/topics/``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``vault_config_file``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Vault config file.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``vault_conf.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``display_builtin_converters``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Display built-in converters in the tool panel.
+:Default: ``true``
+:Type: bool
 
 
 

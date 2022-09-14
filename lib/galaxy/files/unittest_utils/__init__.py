@@ -2,14 +2,28 @@ import os
 import tempfile
 from typing import Tuple
 
-from galaxy.files import ConfiguredFileSources, ConfiguredFileSourcesConfig
+from galaxy.files import (
+    ConfiguredFileSources,
+    ConfiguredFileSourcesConfig,
+)
 
 
 class TestConfiguredFileSources(ConfiguredFileSources):
-
     def __init__(self, file_sources_config: ConfiguredFileSourcesConfig, conf_dict: dict, test_root: str):
         super().__init__(file_sources_config, conf_dict=conf_dict)
         self.test_root = test_root
+
+
+class TestPosixConfiguredFileSources(TestConfiguredFileSources):
+    """A posix file source at test1 rooted on supplied root."""
+
+    def __init__(self, root: str):
+        plugin = {
+            "type": "posix",
+            "root": root,
+        }
+        file_sources_config = ConfiguredFileSourcesConfig({})
+        super().__init__(file_sources_config, {"test1": plugin}, root)
 
 
 def setup_root():

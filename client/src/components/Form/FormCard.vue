@@ -5,23 +5,23 @@
                 <slot name="operations" />
                 <b-button
                     v-if="collapsible"
+                    v-b-tooltip.hover.bottom
                     role="button"
                     title="Collapse/Expand"
                     variant="link"
                     size="sm"
                     class="float-right"
-                    v-b-tooltip.hover.bottom
                     @click="onCollapse">
                     <font-awesome-icon v-if="expanded" icon="eye-slash" class="fa-fw" />
                     <font-awesome-icon v-else icon="eye" class="fa-fw" />
                 </b-button>
             </div>
-            <b-link class="portlet-title" v-if="collapsible" @click="onCollapse" href="#">
+            <b-link v-if="collapsible" class="portlet-title" href="#" @click="onCollapse">
                 <span v-if="icon" :class="['portlet-title-icon fa mr-1', icon]" />
                 <b class="portlet-title-text" itemprop="name">{{ title }}</b>
                 <span class="portlet-title-description" itemprop="description">{{ description }}</span>
             </b-link>
-            <span class="portlet-title" v-else>
+            <span v-else class="portlet-title">
                 <span v-if="icon" :class="['portlet-title-icon fa mr-1', icon]" />
                 <b class="portlet-title-text" itemprop="name">{{ title }}</b>
                 <span class="portlet-title-description" itemprop="description">{{ description }}</span>

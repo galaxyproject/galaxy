@@ -3,9 +3,23 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="() => (modalShow = false)">
+        :hide-modal="() => (modalShow = false)"
+        :back-func="goBack"
+        :undo-show="undoShow">
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
+        </template>
+        <template v-slot:helper>
+            <b-alert v-if="showFTPHelper" id="helper" variant="info" show>
+                This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
+                <strong>{{ ftpUploadSite }}</strong> using your Galaxy credentials. For help visit the
+                <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.
+                <span v-if="oidcEnabled"
+                    ><br />If you are signed-in to Galaxy using a third-party identity and you
+                    <strong>do not have a Galaxy password</strong> please use the reset password option in the login
+                    form with your email to create a password for your account.</span
+                >
+            </b-alert>
         </template>
         <template v-slot:options>
             <data-dialog-table
@@ -23,18 +37,18 @@
                 @toggleSelectAll="toggleSelectAll" />
         </template>
         <template v-slot:buttons>
-            <b-btn id="back-btn" size="sm" class="float-left" v-if="undoShow" @click="load()">
+            <b-btn v-if="undoShow" id="back-btn" size="sm" class="float-left" @click="load()">
                 <font-awesome-icon :icon="['fas', 'caret-left']" />
                 Back
             </b-btn>
             <b-btn
                 v-if="multiple || !fileMode"
+                id="ok-btn"
                 size="sm"
                 class="float-right ml-1 file-dialog-modal-ok"
                 variant="primary"
-                id="ok-btn"
-                @click="fileMode ? finalize() : selectLeaf(currentDirectory)"
-                :disabled="(fileMode && !hasValue) || isBusy || (!fileMode && urlTracker.atRoot())">
+                :disabled="(fileMode && !hasValue) || isBusy || (!fileMode && urlTracker.atRoot())"
+                @click="fileMode ? finalize() : selectLeaf(currentDirectory)">
                 {{ fileMode ? "Ok" : "Select this folder" }}
             </b-btn>
         </template>
@@ -43,6 +57,7 @@
 
 <script>
 import Vue from "vue";
+import { getGalaxyInstance } from "../../app";
 import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixin";
 import { selectionStates } from "components/SelectionDialog/selectionStates";
 import { UrlTracker } from "components/DataDialog/utilities";
@@ -55,6 +70,9 @@ import { faCaretLeft } from "@fortawesome/free-solid-svg-icons";
 
 library.add(faCaretLeft);
 export default {
+    components: {
+        FontAwesomeIcon,
+    },
     mixins: [SelectionDialogMixin],
     props: {
         multiple: {
@@ -71,9 +89,6 @@ export default {
             default: false,
         },
     },
-    components: {
-        FontAwesomeIcon,
-    },
     data() {
         return {
             allSelected: false,
@@ -89,19 +104,22 @@ export default {
             showDetails: true,
             isBusy: false,
             currentDirectory: undefined,
+            showFTPHelper: false,
             selectAllIcon: selectionStates.unselected,
+            ftpUploadSite: getGalaxyInstance()?.config?.ftp_upload_site,
+            oidcEnabled: getGalaxyInstance()?.config?.enable_oidc,
         };
+    },
+    computed: {
+        fileMode() {
+            return this.mode == "file";
+        },
     },
     created: function () {
         this.services = new Services();
         this.urlTracker = new UrlTracker("");
         this.model = new Model({ multiple: this.multiple });
         this.load();
-    },
-    computed: {
-        fileMode() {
-            return this.mode == "file";
-        },
     },
     methods: {
         /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
@@ -230,7 +248,9 @@ export default {
         },
         /** check if all objects in this folders are selected **/
         checkIfAllSelected() {
-            const isAllSelected = this.items.every(({ id }) => this.model.exists(id) || this.isDirectorySelected(id));
+            const isAllSelected =
+                this.items.length &&
+                this.items.every(({ id }) => this.model.exists(id) || this.isDirectorySelected(id));
 
             if (isAllSelected && !this.isDirectorySelected(this.currentDirectory.id)) {
                 // if all selected, select current folder
@@ -252,16 +272,25 @@ export default {
                     item.isLeaf ? this.model.add(item) : this.selectDirectory(item);
                 }
             }
+
+            if (!isUnselectAll && this.items.length !== 0) {
+                this.selectedDirectories.push(this.currentDirectory);
+            } else if (this.isDirectorySelected(this.currentDirectory.id)) {
+                this.selectDirectory(this.currentDirectory);
+            }
+
             this.hasValue = this.model.count() > 0;
             this.formatRows();
         },
         /** Performs server request to retrieve data records **/
         load: function (record) {
             this.currentDirectory = this.urlTracker.getUrl(record);
+            this.showFTPHelper = record?.url === "gxftp://";
             this.filter = null;
             this.optionsShow = false;
             this.undoShow = !this.urlTracker.atRoot();
-            if (this.urlTracker.atRoot()) {
+            if (this.urlTracker.atRoot() || this.errorMessage) {
+                this.errorMessage = null;
                 this.services
                     .getFileSources()
                     .then((items) => {
@@ -300,6 +329,10 @@ export default {
                         this.errorMessage = errorMessage;
                     });
             }
+        },
+        goBack() {
+            // Loading without a record navigates back one level
+            this.load();
         },
         parseItemFileMode(item) {
             const result = {

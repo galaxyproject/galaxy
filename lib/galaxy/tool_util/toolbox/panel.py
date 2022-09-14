@@ -1,6 +1,10 @@
 from abc import abstractmethod
 from enum import Enum
-from typing import Dict, Optional, Tuple
+from typing import (
+    Dict,
+    Optional,
+    Tuple,
+)
 
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.odict import odict
@@ -15,17 +19,16 @@ class panel_item_types(str, Enum):
 
 
 class HasPanelItems:
-    """
-    """
+    """ """
 
     @abstractmethod
     def panel_items(self):
-        """ Return an ordered dictionary-like object describing tool panel
+        """Return an ordered dictionary-like object describing tool panel
         items (such as workflows, tools, labels, and sections).
         """
 
     def panel_items_iter(self):
-        """ Iterate through panel items each represented as a tuple of
+        """Iterate through panel items each represented as a tuple of
         (panel_key, panel_type, panel_content).
         """
         for panel_key, panel_value in self.panel_items().items():
@@ -47,18 +50,17 @@ class ToolSection(Dictifiable, HasPanelItems):
     group in the user interface.
     """
 
-    dict_collection_visible_keys = ['id', 'name', 'version', 'description', 'links']
+    dict_collection_visible_keys = ["id", "name", "version", "description", "links"]
 
     def __init__(self, item=None):
-        """ Build a ToolSection from an ElementTree element or a dictionary.
-        """
+        """Build a ToolSection from an ElementTree element or a dictionary."""
         if item is None:
             item = dict()
-        self.name = item.get('name') or ''
-        self.id = item.get('id') or ''
-        self.version = item.get('version') or ''
-        self.description = item.get('description') or None
-        self.links = item.get('links') or None
+        self.name = item.get("name") or ""
+        self.id = item.get("id") or ""
+        self.version = item.get("version") or ""
+        self.description = item.get("description") or None
+        self.links = item.get("links") or None
         self.elems = ToolPanelElements()
 
     def copy(self):
@@ -72,21 +74,17 @@ class ToolSection(Dictifiable, HasPanelItems):
         return copy
 
     def to_dict(self, trans, link_details=False, tool_help=False, toolbox=None):
-        """ Return a dict that includes section's attributes. """
+        """Return a dict that includes section's attributes."""
 
         section_dict = super().to_dict()
         section_elts = []
-        kwargs = dict(
-            trans=trans,
-            link_details=link_details,
-            tool_help=tool_help
-        )
+        kwargs = dict(trans=trans, link_details=link_details, tool_help=tool_help)
         for elt in self.elems.values():
             if hasattr(elt, "tool_type") and toolbox:
                 section_elts.append(toolbox.get_tool_to_dict(trans, elt, tool_help=tool_help))
             else:
                 section_elts.append(elt.to_dict(**kwargs))
-        section_dict['elems'] = section_elts
+        section_dict["elems"] = section_elts
 
         return section_dict
 
@@ -99,27 +97,29 @@ class ToolSectionLabel(Dictifiable):
     A label for a set of tools that can be displayed above groups of tools
     and sections in the user interface
     """
-    dict_collection_visible_keys = ['id', 'text', 'version', 'description', 'links']
+
+    dict_collection_visible_keys = ["id", "text", "version", "description", "links"]
 
     def __init__(self, item):
-        """ Build a ToolSectionLabel from an ElementTree element or a
+        """Build a ToolSectionLabel from an ElementTree element or a
         dictionary.
         """
         item = ensure_tool_conf_item(item)
         self.text = item.get("text")
         self.id = item.get("id")
-        self.version = item.get("version") or ''
-        self.description = item.get('description') or None
-        self.links = item.get('links', None)
+        self.version = item.get("version") or ""
+        self.description = item.get("description") or None
+        self.links = item.get("links", None)
 
     def to_dict(self, **kwds):
         return super().to_dict()
 
 
 class ToolPanelElements(odict, HasPanelItems):
-    """ Represents an ordered dictionary of tool entries - abstraction
+    """Represents an ordered dictionary of tool entries - abstraction
     used both by tool panel itself (normal and integrated) and its sections.
     """
+
     _section_by_tool: Dict[str, Tuple[str, str]] = {}
 
     def record_section_for_tool_id(self, tool_id: str, key: str, val: str):
@@ -136,14 +136,18 @@ class ToolPanelElements(odict, HasPanelItems):
             if key == tool_key:
                 self[key] = new_tool
                 break
-            elif key.startswith('section'):
+            elif key.startswith("section"):
                 if tool_key in val.elems:
                     self[key].elems[tool_key] = new_tool
                     break
 
-    def get_or_create_section(self, sec_id: str, sec_nm: str, description: Optional[str] = None, links: Optional[Dict[str, str]] = None) -> ToolSection:
+    def get_or_create_section(
+        self, sec_id: str, sec_nm: str, description: Optional[str] = None, links: Optional[Dict[str, str]] = None
+    ) -> ToolSection:
         if sec_id not in self:
-            section = ToolSection({'id': sec_id, 'name': sec_nm, 'description': description, 'version': '', 'links': links})
+            section = ToolSection(
+                {"id": sec_id, "name": sec_nm, "description": description, "version": "", "links": links}
+            )
             self[sec_id] = section
         else:
             section = self[sec_id]
@@ -155,7 +159,7 @@ class ToolPanelElements(odict, HasPanelItems):
             if key == tool_key:
                 del self[key]
                 break
-            elif key.startswith('section'):
+            elif key.startswith("section"):
                 if tool_key in val.elems:
                     del self[key].elems[tool_key]
                     break
@@ -173,18 +177,18 @@ class ToolPanelElements(odict, HasPanelItems):
         return None
 
     def has_tool_with_id(self, tool_id: str) -> bool:
-        key = f'tool_{tool_id}'
+        key = f"tool_{tool_id}"
         return key in self
 
     def replace_tool(self, previous_tool_id: str, new_tool_id: str, tool) -> None:
-        previous_key = f'tool_{previous_tool_id}'
-        new_key = f'tool_{new_tool_id}'
+        previous_key = f"tool_{previous_tool_id}"
+        new_key = f"tool_{new_tool_id}"
         index = self.keys().index(previous_key)
         del self[previous_key]
         self.insert(index, new_key, tool)
 
     def index_of_tool_id(self, tool_id: str) -> Optional[int]:
-        query_key = f'tool_{tool_id}'
+        query_key = f"tool_{tool_id}"
         for index, target_key in enumerate(self.keys()):
             if query_key == target_key:
                 return index
@@ -207,11 +211,11 @@ class ToolPanelElements(odict, HasPanelItems):
         self[key] = None
 
     def stub_workflow(self, key: str) -> None:
-        key = f'workflow_{key}'
+        key = f"workflow_{key}"
         self[key] = None
 
     def stub_label(self, key: str) -> None:
-        key = f'label_{key}'
+        key = f"label_{key}"
         self[key] = None
 
     def append_section(self, key: str, section: ToolSection) -> None:
@@ -246,7 +250,7 @@ class ToolPanelElements(odict, HasPanelItems):
         for key in to_remove:
             del self[key]
 
-    def copy(self) -> 'ToolPanelElements':
+    def copy(self) -> "ToolPanelElements":
         the_copy = ToolPanelElements()
         the_copy.update(self)
         return the_copy

@@ -1,11 +1,14 @@
-from galaxy_test.base.populators import LibraryPopulator
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    LibraryPopulator,
+)
 from ._framework import ApiTestCase
 
 
 class FoldersApiTestCase(ApiTestCase):
-
     def setUp(self):
         super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
         self.library = self.library_populator.new_library("FolderTestsLibrary")
 
@@ -33,7 +36,7 @@ class FoldersApiTestCase(ApiTestCase):
         data = {
             "add_ids[]": [role_id],
             "manage_ids[]": role_id,  # string-lists also supported
-            "modify_ids[]": [role_id]
+            "modify_ids[]": [role_id],
         }
         response = self._post(f"folders/{folder_id}/permissions?action={action}", data=data, admin=True, json=True)
         self._assert_status_code_is(response, 200)
@@ -78,6 +81,17 @@ class FoldersApiTestCase(ApiTestCase):
         self._assert_status_code_is(undelete_response, 200)
         undeleted_folder = undelete_response.json()
         assert undeleted_folder["deleted"] is False
+
+    def test_import_folder_to_history(self):
+        library, response = self.library_populator.fetch_single_url_to_folder()
+        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
+        with self.dataset_populator.test_history() as history_id:
+            create_data = {"source": "library_folder", "content": dataset["folder_id"]}
+            create_response = self._post(f"histories/{history_id}/contents", create_data, json=True)
+            create_response.raise_for_status()
+            datasets = create_response.json()
+            assert len(datasets) == 1
+            assert datasets[0]["name"] == "4.bed"
 
     def test_update_deleted_raise_403(self):
         folder = self._create_folder("Test Update Deleted Folder")
@@ -128,7 +142,7 @@ class FoldersApiTestCase(ApiTestCase):
             "update_time",
             "deleted",
             "library_path",
-            "parent_library_id"
+            "parent_library_id",
         )
 
     def _assert_valid_permissions(self, permissions):

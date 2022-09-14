@@ -1,39 +1,48 @@
 import json
 
 import requests
-from social_core.actions import do_auth, do_complete, do_disconnect
+from social_core.actions import (
+    do_auth,
+    do_complete,
+    do_disconnect,
+)
 from social_core.backends.utils import get_backend
 from social_core.strategy import BaseStrategy
-from social_core.utils import module_member, setting_name
+from social_core.utils import (
+    module_member,
+    setting_name,
+)
 from sqlalchemy.exc import IntegrityError
 
 from galaxy.exceptions import MalformedContents
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from ..authnz import IdentityProvider
-from ..model import PSAAssociation, PSACode, PSANonce, PSAPartial, UserAuthnzToken
-
+from ..model import (
+    PSAAssociation,
+    PSACode,
+    PSANonce,
+    PSAPartial,
+    UserAuthnzToken,
+)
 
 # key: a component name which PSA requests.
 # value: is the name of a class associated with that key.
-DEFAULTS = {
-    'STRATEGY': 'Strategy',
-    'STORAGE': 'Storage'
-}
+DEFAULTS = {"STRATEGY": "Strategy", "STORAGE": "Storage"}
 
 BACKENDS = {
-    'google': 'social_core.backends.google_openidconnect.GoogleOpenIdConnect',
-    'globus': 'social_core.backends.globus.GlobusOpenIdConnect',
-    'elixir': 'social_core.backends.elixir.ElixirOpenIdConnect',
-    'okta': 'social_core.backends.okta_openidconnect.OktaOpenIdConnect',
-    'azure': 'social_core.backends.azuread_tenant.AzureADTenantOAuth2'
+    "google": "social_core.backends.google_openidconnect.GoogleOpenIdConnect",
+    "globus": "social_core.backends.globus.GlobusOpenIdConnect",
+    "elixir": "social_core.backends.elixir.ElixirOpenIdConnect",
+    "okta": "social_core.backends.okta_openidconnect.OktaOpenIdConnect",
+    "azure": "social_core.backends.azuread_tenant.AzureADTenantOAuth2",
 }
 
 BACKENDS_NAME = {
-    'google': 'google-openidconnect',
-    'globus': 'globus',
-    'elixir': 'elixir',
-    'okta': 'okta-openidconnect',
-    'azure': 'azuread-tenant-oauth2'
+    "google": "google-openidconnect",
+    "globus": "globus",
+    "elixir": "elixir",
+    "okta": "okta-openidconnect",
+    "azure": "azuread-tenant-oauth2",
 }
 
 AUTH_PIPELINE = (
@@ -41,67 +50,52 @@ AUTH_PIPELINE = (
     # format to create the user instance later. On some cases the details are
     # already part of the auth response from the provider, but sometimes this
     # could hit a provider API.
-    'social_core.pipeline.social_auth.social_details',
-
+    "social_core.pipeline.social_auth.social_details",
     # Get the social uid from whichever service we're authing thru. The uid is
     # the unique identifier of the given user in the provider.
-    'social_core.pipeline.social_auth.social_uid',
-
+    "social_core.pipeline.social_auth.social_uid",
     # Verifies that the current auth process is valid within the current
     # project, this is where emails and domains allowlists are applied (if
     # defined).
-    'social_core.pipeline.social_auth.auth_allowed',
-
+    "social_core.pipeline.social_auth.auth_allowed",
     # Checks if the decoded response contains all the required fields such
     # as an ID token or a refresh token.
-    'galaxy.authnz.psa_authnz.contains_required_data',
-
-    'galaxy.authnz.psa_authnz.verify',
-
+    "galaxy.authnz.psa_authnz.contains_required_data",
+    "galaxy.authnz.psa_authnz.verify",
     # Checks if the current social-account is already associated in the site.
-    'social_core.pipeline.social_auth.social_user',
-
+    "social_core.pipeline.social_auth.social_user",
     # Make up a username for this person, appends a random string at the end if
     # there's any collision.
-    'social_core.pipeline.user.get_username',
-
+    "social_core.pipeline.user.get_username",
     # Send a validation email to the user to verify its email address.
     # 'social_core.pipeline.mail.mail_validation',
-
     # Associates the current social details with another user account with
     # a similar email address.
-    'social_core.pipeline.social_auth.associate_by_email',
-
+    "social_core.pipeline.social_auth.associate_by_email",
     # Create a user account if we haven't found one yet.
-    'social_core.pipeline.user.create_user',
-
+    "social_core.pipeline.user.create_user",
     # Create the record that associated the social account with this user.
-    'social_core.pipeline.social_auth.associate_user',
-
+    "social_core.pipeline.social_auth.associate_user",
     # Populate the extra_data field in the social record with the values
     # specified by settings (and the default ones like access_token, etc).
-    'social_core.pipeline.social_auth.load_extra_data',
-
+    "social_core.pipeline.social_auth.load_extra_data",
     # Update the user record with any changed info from the auth service.
-    'social_core.pipeline.user.user_details'
+    "social_core.pipeline.user.user_details",
 )
 
-DISCONNECT_PIPELINE = (
-    'galaxy.authnz.psa_authnz.allowed_to_disconnect',
-    'galaxy.authnz.psa_authnz.disconnect'
-)
+DISCONNECT_PIPELINE = ("galaxy.authnz.psa_authnz.allowed_to_disconnect", "galaxy.authnz.psa_authnz.disconnect")
 
 
 class PSAAuthnz(IdentityProvider):
     def __init__(self, provider, oidc_config, oidc_backend_config):
-        self.config = {'provider': provider.lower()}
+        self.config = {"provider": provider.lower()}
         for key, value in oidc_config.items():
             self.config[setting_name(key)] = value
 
-        self.config[setting_name('USER_MODEL')] = 'models.User'
-        self.config['SOCIAL_AUTH_PIPELINE'] = AUTH_PIPELINE
-        self.config['DISCONNECT_PIPELINE'] = DISCONNECT_PIPELINE
-        self.config[setting_name('AUTHENTICATION_BACKENDS')] = (BACKENDS[provider],)
+        self.config[setting_name("USER_MODEL")] = "models.User"
+        self.config["SOCIAL_AUTH_PIPELINE"] = AUTH_PIPELINE
+        self.config["DISCONNECT_PIPELINE"] = DISCONNECT_PIPELINE
+        self.config[setting_name("AUTHENTICATION_BACKENDS")] = (BACKENDS[provider],)
 
         self.config["VERIFY_SSL"] = oidc_config.get("VERIFY_SSL")
         self.config["REQUESTS_TIMEOUT"] = oidc_config.get("REQUESTS_TIMEOUT")
@@ -111,90 +105,95 @@ class PSAAuthnz(IdentityProvider):
         # logging in a user. If this setting is set to false, the `_login_user`
         # would not be called, and as a result Galaxy would not know who is
         # the just logged-in user.
-        self.config[setting_name('INACTIVE_USER_LOGIN')] = True
+        self.config[setting_name("INACTIVE_USER_LOGIN")] = True
 
         if provider in BACKENDS_NAME:
             self._setup_idp(oidc_backend_config)
 
         # Secondary AuthZ with Google identities is currently supported
         if provider != "google":
-            if 'SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER' in self.config:
+            if "SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER" in self.config:
                 del self.config["SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER"]
-            if 'SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT' in self.config:
+            if "SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT" in self.config:
                 del self.config["SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT"]
 
     def _setup_idp(self, oidc_backend_config):
-        self.config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {'access_type': 'offline'}
-        self.config['KEY'] = oidc_backend_config.get('client_id')
-        self.config['SECRET'] = oidc_backend_config.get('client_secret')
-        self.config['redirect_uri'] = oidc_backend_config.get('redirect_uri')
-        self.config['EXTRA_SCOPES'] = oidc_backend_config.get('extra_scopes')
-        if oidc_backend_config.get('prompt') is not None:
-            self.config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = oidc_backend_config.get('prompt')
-        if oidc_backend_config.get('api_url') is not None:
-            self.config[setting_name('API_URL')] = oidc_backend_config.get('api_url')
-        if oidc_backend_config.get('url') is not None:
-            self.config[setting_name('URL')] = oidc_backend_config.get('url')
+        self.config[setting_name("AUTH_EXTRA_ARGUMENTS")] = {"access_type": "offline"}
+        self.config["KEY"] = oidc_backend_config.get("client_id")
+        self.config["SECRET"] = oidc_backend_config.get("client_secret")
+        self.config["redirect_uri"] = oidc_backend_config.get("redirect_uri")
+        self.config["EXTRA_SCOPES"] = oidc_backend_config.get("extra_scopes")
+        if oidc_backend_config.get("prompt") is not None:
+            self.config[setting_name("AUTH_EXTRA_ARGUMENTS")]["prompt"] = oidc_backend_config.get("prompt")
+        if oidc_backend_config.get("api_url") is not None:
+            self.config[setting_name("API_URL")] = oidc_backend_config.get("api_url")
+        if oidc_backend_config.get("url") is not None:
+            self.config[setting_name("URL")] = oidc_backend_config.get("url")
 
     def _get_helper(self, name, do_import=False):
         this_config = self.config.get(setting_name(name), DEFAULTS.get(name, None))
         return do_import and module_member(this_config) or this_config
 
     def _load_backend(self, strategy, redirect_uri):
-        backends = self._get_helper('AUTHENTICATION_BACKENDS')
-        backend = get_backend(backends, BACKENDS_NAME[self.config['provider']])
+        backends = self._get_helper("AUTHENTICATION_BACKENDS")
+        backend = get_backend(backends, BACKENDS_NAME[self.config["provider"]])
         return backend(strategy, redirect_uri)
 
     def _login_user(self, backend, user, social_user):
-        self.config['user'] = user
+        self.config["user"] = user
 
     def authenticate(self, trans):
         on_the_fly_config(trans.sa_session)
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
-        backend = self._load_backend(strategy, self.config['redirect_uri'])
-        if backend.name is BACKENDS_NAME["google"] and \
-                "SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER" in self.config and \
-                "SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT" in self.config:
+        backend = self._load_backend(strategy, self.config["redirect_uri"])
+        if (
+            backend.name is BACKENDS_NAME["google"]
+            and "SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER" in self.config
+            and "SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT" in self.config
+        ):
             backend.DEFAULT_SCOPE.append("https://www.googleapis.com/auth/cloud-platform")
 
-        if self.config['EXTRA_SCOPES'] is not None:
-            backend.DEFAULT_SCOPE.extend(self.config['EXTRA_SCOPES'])
+        if self.config["EXTRA_SCOPES"] is not None:
+            backend.DEFAULT_SCOPE.extend(self.config["EXTRA_SCOPES"])
 
         return do_auth(backend)
 
     def callback(self, state_token, authz_code, trans, login_redirect_url):
         on_the_fly_config(trans.sa_session)
-        self.config[setting_name('LOGIN_REDIRECT_URL')] = login_redirect_url
+        self.config[setting_name("LOGIN_REDIRECT_URL")] = login_redirect_url
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         strategy.session_set(f"{BACKENDS_NAME[self.config['provider']]}_state", state_token)
-        backend = self._load_backend(strategy, self.config['redirect_uri'])
+        backend = self._load_backend(strategy, self.config["redirect_uri"])
         redirect_url = do_complete(
             backend,
             login=lambda backend, user, social_user: self._login_user(backend, user, social_user),
             user=trans.user,
-            state=state_token)
-        return redirect_url, self.config.get('user', None)
+            state=state_token,
+        )
+        return redirect_url, self.config.get("user", None)
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None, association_id=None):
         on_the_fly_config(trans.sa_session)
-        self.config[setting_name('DISCONNECT_REDIRECT_URL')] =\
+        self.config[setting_name("DISCONNECT_REDIRECT_URL")] = (
             disconnect_redirect_url if disconnect_redirect_url is not None else ()
+        )
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
-        backend = self._load_backend(strategy, self.config['redirect_uri'])
+        backend = self._load_backend(strategy, self.config["redirect_uri"])
         response = do_disconnect(backend, trans.user, association_id)
         if isinstance(response, str):
             return True, "", response
-        return response.get('success', False), response.get('message', ""), ""
+        return response.get("success", False), response.get("message", ""), ""
 
 
 class Strategy(BaseStrategy):
-
     def __init__(self, request, session, storage, config, tpl=None):
         self.request = request
         self.session = session if session else {}
         self.config = config
-        self.config['SOCIAL_AUTH_REDIRECT_IS_HTTPS'] = True if self.request and self.request.host.startswith('https:') else False
-        self.config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_EXTRA_DATA'] = ['id_token']
+        self.config["SOCIAL_AUTH_REDIRECT_IS_HTTPS"] = (
+            True if self.request and self.request.host.startswith("https:") else False
+        )
+        self.config["SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_EXTRA_DATA"] = ["id_token"]
         super().__init__(storage, tpl)
 
     def get_setting(self, name):
@@ -207,7 +206,7 @@ class Strategy(BaseStrategy):
         self.session[name] = value
 
     def session_pop(self, name):
-        raise NotImplementedError('Not implemented.')
+        raise NotImplementedError("Not implemented.")
 
     def request_data(self, merge=True):
         if not self.request:
@@ -215,7 +214,7 @@ class Strategy(BaseStrategy):
         if merge:
             data = self.request.GET.copy()
             data.update(self.request.POST)
-        elif self.request.method == 'POST':
+        elif self.request.method == "POST":
             data = self.request.POST
         else:
             data = self.request.GET
@@ -226,23 +225,25 @@ class Strategy(BaseStrategy):
             return self.request.host
 
     def build_absolute_uri(self, path=None):
-        path = path or ''
-        if path.startswith('http://') or path.startswith('https://'):
+        path = path or ""
+        if path.startswith("http://") or path.startswith("https://"):
             return path
         if self.request:
-            return \
-                self.request.host +\
-                '/authnz' + ('/' + self.config.get('provider')) if self.config.get('provider', None) is not None else ''
+            return (
+                self.request.host + "/authnz" + ("/" + self.config.get("provider"))
+                if self.config.get("provider", None) is not None
+                else ""
+            )
         return path
 
     def redirect(self, url):
         return url
 
     def html(self, content):
-        raise NotImplementedError('Not implemented.')
+        raise NotImplementedError("Not implemented.")
 
     def render_html(self, tpl=None, html=None, context=None):
-        raise NotImplementedError('Not implemented.')
+        raise NotImplementedError("Not implemented.")
 
     def start(self):
         self.clean_partial_pipeline()
@@ -316,11 +317,13 @@ def contains_required_data(response=None, is_new=False, **kwargs):
     :rtype:  void
     :return: Raises an exception if any of the required arguments is missing, and pass if all are given.
     """
-    hint_msg = "Visit the identity provider's permitted applications page " \
-               "(e.g., visit `https://myaccount.google.com/u/0/permissions` " \
-               "for Google), then revoke the access of this Galaxy instance, " \
-               "and then retry to login. If the problem persists, contact " \
-               "the Admin of this Galaxy instance."
+    hint_msg = (
+        "Visit the identity provider's permitted applications page "
+        "(e.g., visit `https://myaccount.google.com/u/0/permissions` "
+        "for Google), then revoke the access of this Galaxy instance, "
+        "and then retry to login. If the problem persists, contact "
+        "the Admin of this Galaxy instance."
+    )
     if response is None or not isinstance(response, dict):
         # This can happen only if PSA is not able to decode the `authnz code`
         # sent back from the identity provider. PSA internally handles such
@@ -356,10 +359,10 @@ def verify(strategy=None, response=None, details=None, **kwargs):
         result = requests.post(
             f"https://iam.googleapis.com/v1/projects/-/serviceAccounts/{endpoint}:getIamPolicy",
             headers={
-                'Authorization': f"Bearer {response.get('access_token')}",
-                'Accept': 'application/json',
+                "Authorization": f"Bearer {response.get('access_token')}",
+                "Accept": "application/json",
             },
-            timeout=DEFAULT_SOCKET_TIMEOUT
+            timeout=DEFAULT_SOCKET_TIMEOUT,
         )
         res = json.loads(result.content)
         if result.status_code == requests.codes.ok:
@@ -380,8 +383,9 @@ def verify(strategy=None, response=None, details=None, **kwargs):
         raise Exception(f"`{provider}` is an unsupported secondary authorization provider, contact admin.")
 
 
-def allowed_to_disconnect(name=None, user=None, user_storage=None, strategy=None,
-                          backend=None, request=None, details=None, **kwargs):
+def allowed_to_disconnect(
+    name=None, user=None, user_storage=None, strategy=None, backend=None, request=None, details=None, **kwargs
+):
     """
     Disconnect is the process of disassociating a Galaxy user and a third-party authnz.
     In other words, it is the process of removing any access and/or ID tokens of a user.
@@ -402,8 +406,9 @@ def allowed_to_disconnect(name=None, user=None, user_storage=None, strategy=None
     """
 
 
-def disconnect(name=None, user=None, user_storage=None, strategy=None,
-               backend=None, request=None, details=None, **kwargs):
+def disconnect(
+    name=None, user=None, user_storage=None, strategy=None, backend=None, request=None, details=None, **kwargs
+):
     """
     Disconnect is the process of disassociating a Galaxy user and a third-party authnz.
     In other words, it is the process of removing any access and/or ID tokens of a user.
@@ -422,10 +427,13 @@ def disconnect(name=None, user=None, user_storage=None, strategy=None,
     """
 
     sa_session = user_storage.sa_session
-    user_authnz = sa_session.query(user_storage).filter(user_storage.table.c.user_id == user.id,
-                                                        user_storage.table.c.provider == name).first()
+    user_authnz = (
+        sa_session.query(user_storage)
+        .filter(user_storage.table.c.user_id == user.id, user_storage.table.c.provider == name)
+        .first()
+    )
     if user_authnz is None:
-        return {'success': False, 'message': 'Not authenticated by any identity providers.'}
+        return {"success": False, "message": "Not authenticated by any identity providers."}
     # option A
     sa_session.delete(user_authnz)
     # option B

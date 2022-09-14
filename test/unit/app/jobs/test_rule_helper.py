@@ -36,10 +36,22 @@ def test_job_count():
     __assert_job_count_is(0, rule_helper, for_destination="local", for_user_email=USER_EMAIL_2)
 
     # Test per user, per state destination counts
-    __assert_job_count_is(3, rule_helper, for_destination="cluster1", for_user_email=USER_EMAIL_1, for_job_states=["queued"])
-    __assert_job_count_is(2, rule_helper, for_destination="cluster1", for_user_email=USER_EMAIL_1, for_job_states=["running"])
-    __assert_job_count_is(0, rule_helper, for_destination="cluster1", for_user_email=USER_EMAIL_1, for_job_states=["error"])
-    __assert_job_count_is(5, rule_helper, for_destination="cluster1", for_user_email=USER_EMAIL_1, for_job_states=["queued", "running", "error"])
+    __assert_job_count_is(
+        3, rule_helper, for_destination="cluster1", for_user_email=USER_EMAIL_1, for_job_states=["queued"]
+    )
+    __assert_job_count_is(
+        2, rule_helper, for_destination="cluster1", for_user_email=USER_EMAIL_1, for_job_states=["running"]
+    )
+    __assert_job_count_is(
+        0, rule_helper, for_destination="cluster1", for_user_email=USER_EMAIL_1, for_job_states=["error"]
+    )
+    __assert_job_count_is(
+        5,
+        rule_helper,
+        for_destination="cluster1",
+        for_user_email=USER_EMAIL_1,
+        for_job_states=["queued", "running", "error"],
+    )
 
 
 def __assert_job_count_is(expected_count, rule_helper, **kwds):
@@ -78,9 +90,9 @@ def test_choose_one_unhashed():
 
     # Random choices if hash not set.
     chosen_ones = set()
-    __do_a_bunch(lambda: chosen_ones.add(rule_helper.choose_one(['a', 'b'])))
+    __do_a_bunch(lambda: chosen_ones.add(rule_helper.choose_one(["a", "b"])))
 
-    assert chosen_ones == {'a', 'b'}
+    assert chosen_ones == {"a", "b"}
 
 
 def test_choose_one_hashed():
@@ -88,12 +100,12 @@ def test_choose_one_hashed():
 
     # Hashed, so all choosen ones should be the same...
     chosen_ones = set()
-    __do_a_bunch(lambda: chosen_ones.add(rule_helper.choose_one(['a', 'b'], hash_value=1234)))
+    __do_a_bunch(lambda: chosen_ones.add(rule_helper.choose_one(["a", "b"], hash_value=1234)))
     assert len(chosen_ones) == 1
 
     # ... also can verify hashing on strings
     chosen_ones = set()
-    __do_a_bunch(lambda: chosen_ones.add(rule_helper.choose_one(['a', 'b'], hash_value="i am a string")))
+    __do_a_bunch(lambda: chosen_ones.add(rule_helper.choose_one(["a", "b"], hash_value="i am a string")))
 
     assert len(chosen_ones) == 1
 
@@ -181,14 +193,9 @@ def __rule_helper():
 
 
 class MockApp:
-
     def __init__(self):
         self.config = bunch.Bunch()
-        self.model = mapping.init(
-            "/tmp",
-            "sqlite:///:memory:",
-            create_tables=True
-        )
+        self.model = mapping.init("/tmp", "sqlite:///:memory:", create_tables=True)
 
     def add(self, *args):
         for arg in args:

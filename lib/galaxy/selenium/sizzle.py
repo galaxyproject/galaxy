@@ -72,9 +72,7 @@ def find_element_by_sizzle(driver, sizzle_selector: str):
     if elements:
         return elements[0]
     else:
-        raise NoSuchElementException(
-            f"Unable to locate element by Sizzle: {sizzle_selector}"
-        )
+        raise NoSuchElementException(f"Unable to locate element by Sizzle: {sizzle_selector}")
 
 
 def find_elements_by_sizzle(driver, sizzle_selector: str):
@@ -90,7 +88,8 @@ def find_elements_by_sizzle(driver, sizzle_selector: str):
 
 
 def _inject_sizzle(driver, sizzle_url, timeout):
-    script = """
+    script = (
+        """
         if(typeof(window.$) != "undefined") {
             // Just reuse jQuery if it is available, avoids potential amd problems
             // that have cropped up with Galaxy for instance.
@@ -102,15 +101,16 @@ def _inject_sizzle(driver, sizzle_url, timeout):
             var _h = document.getElementsByTagName("head")[0];
             _h.appendChild(_s);
         }
-    """ % sizzle_url
+    """
+        % sizzle_url
+    )
     driver.execute_script(script)
     wait = WebDriverWait(driver, timeout)
-    wait.until(lambda d: _is_sizzle_loaded(d),
-               f"Can't inject Sizzle in {timeout} seconds")
+    wait.until(lambda d: _is_sizzle_loaded(d), f"Can't inject Sizzle in {timeout} seconds")
 
 
 def _is_sizzle_loaded(driver):
-    script = "return typeof(Sizzle) != \"undefined\";"
+    script = 'return typeof(Sizzle) != "undefined";'
     return driver.execute_script(script)
 
 

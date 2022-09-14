@@ -1,6 +1,6 @@
 <template>
     <div class="form-row dataRow input-data-row" @mouseover="mouseOver" @mouseleave="mouseLeave">
-        <div :id="id" :input-name="input.name" ref="terminal" :class="terminalClass">
+        <div :id="id" ref="terminal" :input-name="input.name" :class="terminalClass">
             <div class="icon" />
         </div>
         <div v-if="showRemove" class="delete-terminal" @click="onRemove" />
@@ -37,25 +37,6 @@ export default {
             isMultiple: false,
         };
     },
-    watch: {
-        input: function (newInput) {
-            const oldTerminal = this.terminal;
-            if (oldTerminal instanceof this.terminalClassForInput(newInput)) {
-                oldTerminal.update(newInput);
-                oldTerminal.destroyInvalidConnections();
-            } else {
-                // create new terminal, connect like old terminal, destroy old terminal
-                this.$emit("onRemove", this.input);
-                const newTerminal = this.createTerminal(newInput);
-                newTerminal.connectors = this.terminal.connectors.map((c) => {
-                    return new Connector(this.getManager(), c.outputHandle, newTerminal);
-                });
-                newTerminal.destroyInvalidConnections();
-                this.terminal = newTerminal;
-                oldTerminal.destroy();
-            }
-        },
-    },
     computed: {
         id() {
             const node = this.getNode();
@@ -72,8 +53,32 @@ export default {
             return cls;
         },
     },
+    watch: {
+        input: function (newInput) {
+            const oldTerminal = this.terminal;
+            if (oldTerminal instanceof this.terminalClassForInput(newInput)) {
+                oldTerminal.update(newInput);
+                oldTerminal.destroyInvalidConnections();
+            } else {
+                // create new terminal, connect like old terminal, destroy old terminal
+                // this might be a little buggy, the terminals and connectors should be vue components
+                this.$emit("onRemove", this.input);
+                const newTerminal = this.createTerminal(newInput);
+                newTerminal.connectors = this.terminal.connectors.map((c) => {
+                    return new Connector(this.getManager().canvasManager, c.outputHandle, newTerminal);
+                });
+                newTerminal.destroyInvalidConnections();
+                this.terminal = newTerminal;
+                oldTerminal.destroy();
+            }
+        },
+    },
     mounted() {
         this.terminal = this.createTerminal(this.input);
+    },
+    beforeDestroy() {
+        this.$emit("onRemove", this.input);
+        this.onRemove();
     },
     methods: {
         terminalClassForInput(input) {
@@ -117,10 +122,6 @@ export default {
         mouseLeave() {
             this.showRemove = false;
         },
-    },
-    beforeDestroy() {
-        this.$emit("onRemove", this.input);
-        this.onRemove();
     },
 };
 </script>

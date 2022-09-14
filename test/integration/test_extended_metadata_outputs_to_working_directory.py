@@ -3,7 +3,7 @@
 from galaxy_test.driver import integration_util
 from .test_extended_metadata import (
     ExtendedMetadataIntegrationInstance,
-    TEST_TOOL_IDS
+    TEST_TOOL_IDS,
 )
 
 

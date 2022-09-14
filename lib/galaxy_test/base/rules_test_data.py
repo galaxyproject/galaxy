@@ -100,7 +100,7 @@ EXAMPLE_1 = {
                 "contents": "1",
                 "class": "File",
             },
-        ]
+        ],
     },
     "check": check_example_1,
     "output_hid": 6,
@@ -117,7 +117,7 @@ EXAMPLE_2 = {
             {
                 "type": "add_column_metadata",
                 "value": "identifier0",
-            }
+            },
         ],
         "mapping": [
             {
@@ -139,7 +139,7 @@ EXAMPLE_2 = {
                 "contents": "1",
                 "class": "File",
             },
-        ]
+        ],
     },
     "check": check_example_2,
     "output_hid": 6,
@@ -161,7 +161,7 @@ EXAMPLE_3 = {
                 "type": "add_column_concatenate",
                 "target_column_0": 0,
                 "target_column_1": 1,
-            }
+            },
         ],
         "mapping": [
             {
@@ -176,19 +176,11 @@ EXAMPLE_3 = {
             {
                 "identifier": "test0",
                 "elements": [
-                    {
-                        "identifier": "forward",
-                        "class": "File",
-                        "contents": "TestData123"
-                    },
-                    {
-                        "identifier": "reverse",
-                        "class": "File",
-                        "contents": "TestData123"
-                    },
-                ]
+                    {"identifier": "forward", "class": "File", "contents": "TestData123"},
+                    {"identifier": "reverse", "class": "File", "contents": "TestData123"},
+                ],
             }
-        ]
+        ],
     },
     "check": check_example_3,
     "output_hid": 6,
@@ -202,11 +194,7 @@ EXAMPLE_4 = {
                 "type": "add_column_metadata",
                 "value": "identifier0",
             },
-            {
-                "type": "add_column_group_tag_value",
-                "value": "type",
-                "default_value": "unused"
-            }
+            {"type": "add_column_group_tag_value", "value": "type", "default_value": "unused"},
         ],
         "mapping": [
             {
@@ -218,25 +206,10 @@ EXAMPLE_4 = {
     "test_data": {
         "type": "list",
         "elements": [
-            {
-                "identifier": "i1",
-                "contents": "0",
-                "class": "File",
-                "tags": ["random", "group:type:single"]
-            },
-            {
-                "identifier": "i2",
-                "contents": "1",
-                "class": "File",
-                "tags": ["random", "group:type:paired"]
-            },
-            {
-                "identifier": "i3",
-                "contents": "2",
-                "class": "File",
-                "tags": ["random", "group:type:paired"]
-            },
-        ]
+            {"identifier": "i1", "contents": "0", "class": "File", "tags": ["random", "group:type:single"]},
+            {"identifier": "i2", "contents": "1", "class": "File", "tags": ["random", "group:type:paired"]},
+            {"identifier": "i3", "contents": "2", "class": "File", "tags": ["random", "group:type:paired"]},
+        ],
     },
     "check": check_example_4,
     "output_hid": 8,
@@ -250,11 +223,7 @@ EXAMPLE_5 = {
                 "type": "add_column_metadata",
                 "value": "identifier0",
             },
-            {
-                "type": "add_column_group_tag_value",
-                "value": "type",
-                "default_value": "unused"
-            }
+            {"type": "add_column_group_tag_value", "value": "type", "default_value": "unused"},
         ],
         "mapping": [
             {
@@ -274,25 +243,10 @@ EXAMPLE_5 = {
     "test_data": {
         "type": "list",
         "elements": [
-            {
-                "identifier": "i1",
-                "contents": "0",
-                "class": "File",
-                "tags": ["random", "group:type:single"]
-            },
-            {
-                "identifier": "i2",
-                "contents": "1",
-                "class": "File",
-                "tags": ["random", "group:type:paired"]
-            },
-            {
-                "identifier": "i3",
-                "contents": "2",
-                "class": "File",
-                "tags": ["random", "group:type:paired"]
-            },
-        ]
+            {"identifier": "i1", "contents": "0", "class": "File", "tags": ["random", "group:type:single"]},
+            {"identifier": "i2", "contents": "1", "class": "File", "tags": ["random", "group:type:paired"]},
+            {"identifier": "i3", "contents": "2", "class": "File", "tags": ["random", "group:type:paired"]},
+        ],
     },
     "check": check_example_5,
     "output_hid": 8,
@@ -309,7 +263,7 @@ EXAMPLE_6 = {
             {
                 "type": "add_column_metadata",
                 "value": "tags",
-            }
+            },
         ],
         "mapping": [
             {
@@ -325,25 +279,10 @@ EXAMPLE_6 = {
     "test_data": {
         "type": "list",
         "elements": [
-            {
-                "identifier": "i1",
-                "contents": "0",
-                "class": "File",
-                "tags": ["random", "group:type:single"]
-            },
-            {
-                "identifier": "i2",
-                "contents": "1",
-                "class": "File",
-                "tags": ["random", "group:type:paired"]
-            },
-            {
-                "identifier": "i3",
-                "contents": "2",
-                "class": "File",
-                "tags": ["random", "group:type:paired"]
-            },
-        ]
+            {"identifier": "i1", "contents": "0", "class": "File", "tags": ["random", "group:type:single"]},
+            {"identifier": "i2", "contents": "1", "class": "File", "tags": ["random", "group:type:paired"]},
+            {"identifier": "i3", "contents": "2", "class": "File", "tags": ["random", "group:type:paired"]},
+        ],
     },
     "check": check_example_6,
     "output_hid": 8,

@@ -34,7 +34,7 @@ List of behavior changes associated with profile versions:
 - Use a separate home directory for each job.
 - Introduce `provided_metadata_style` with default `"default"` before `"legacy"`.
 
-#### 18.09 
+#### 18.09
 
 - References to other inputs need to be fully qualified by using `|`.
 - Do not allow provided but illegal default values.
@@ -46,7 +46,7 @@ List of behavior changes associated with profile versions:
 
 #### 20.05
 
-- json config files: 
+- json config files:
    - unselected optional `select` and `data_column` parameters get `None` instead of `"None"`
    - multiple `select` and `data_column` parameters are lists (before comma separated string)
 
@@ -602,7 +602,7 @@ practice.
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
-This is a container tag set for the ``requirement`` and ``container`` tags
+This is a container tag set for the ``requirement``, ``resource`` and ``container`` tags
 described in greater detail below. ``requirement``s describe software packages
 and other individual computing requirements required to execute a tool, while
 ``container``s describe Docker or Singularity containers that should be able to
@@ -613,9 +613,9 @@ serve as complete descriptions of the runtime of a tool.
     <xs:sequence>
       <xs:element name="requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="container" type="Container" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="resource" type="Resource" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:complexType name="Requirement">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -669,12 +669,23 @@ resolver.
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="RequirementType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This value defines the type of the 3rd party module required by this tool.</xs:documentation>
+            <xs:documentation xml:lang="en">Valid values are ``package``, ``set_environment``, ``python-module`` (deprecated), ``binary`` (deprecated)</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="version" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">For requirements of type ``package`` this value defines a specific version of the tool dependency.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="Resource">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="ResourceType" use="required">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">This value describes the type of resource required by the tool at runtime. Not yet implemented in Galaxy.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -1095,8 +1106,16 @@ specified and instead a series of assertions is made about the output.
     </xs:attribute>
     <xs:attribute name="expect_num_outputs" type="xs:integer">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Assert the number of outputs this test
-should produce, this is useful to ensure ``filter`` directives are implemented correctly.</xs:documentation>
+        <xs:documentation xml:lang="en">Assert the number of statically defined items (datasets and collections) this test
+should produce. Each `data` or `collection` tag that is listed in the
+outputs section is a statically defined output and adds one to this count.  For
+instance a statically defined pair adds a count of 3; 1 for the collection and 1 for each
+of the two datasets.  Dynamically defined output datasets (using ``discover_datasets`` tag)
+are not counted here, but note that the ``collection`` or ``data`` tag that
+includes the ``discover_datasets`` still adds a count of one.  This is useful to
+ensure ``filter`` directives are implemented correctly.  See
+[here](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/expect_num_outputs.xml)
+for examples.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="expect_failure" type="PermissiveBoolean" default="false">
@@ -1104,6 +1123,12 @@ should produce, this is useful to ensure ``filter`` directives are implemented c
         <xs:documentation xml:lang="en">Setting this to ``true`` indicates
 the expectation is for the job fail. If set to ``true`` no job output checks may
 be present in ``test`` definition.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="expect_test_failure" type="PermissiveBoolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Setting this to ``true`` indicates
+that at least one of the assumptions of the test is not met. This is most useful for internal testing.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="maxseconds" type="xs:integer">
@@ -1663,13 +1688,18 @@ When this attribute is true and ``compare`` is set to ``diff``, try to decompres
         <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the maximum allowed relative size difference between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. A value of 0.1 means that the file that is generated in the test can differ by at most 10% of the file in ``test-data``. The default is not to check for  relative size difference. Can be combined with ``delta``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="count" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Number or datasets for this output. Should be used for outputs with ``discover_datasets``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:group name="TestOutputElement">
     <xs:choice>
       <xs:element name="element" type="TestOutput"/>
-      <!-- TODO: This would be more percise if this was only allowed at the top-level. -->
+      <!-- TODO: This would be more precise if this was only allowed at the top-level. -->
       <xs:element name="discovered_dataset" type="TestDiscoveredDataset"/>
-      <!-- TODO: To be more percise only one assert_contents is allowed - this should not be in here. -->
+      <!-- TODO: To be more precise only one assert_contents is allowed - this should not be in here. -->
       <xs:element name="assert_contents" type="TestAssertions">
         <xs:annotation>
           <xs:documentation xml:lang="en"><![CDATA[
@@ -1732,14 +1762,21 @@ The following demonstrates verifying XML content with XPath-like expressions.
     </xs:choice>
   </xs:group>
   <xs:complexType name="TestParamMetadata">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This directive specifies metadata that should be set for a test data parameter.
+
+See [planemo documentation](https://planemo.readthedocs.io/en/latest/writing_how_do_i.html#test-metadata)
+]]></xs:documentation>
+    </xs:annotation>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+        <xs:documentation xml:lang="en">Name of the metadata element of the data parameter</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+        <xs:documentation xml:lang="en">Value to set</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -1765,7 +1802,6 @@ provides a demonstration of using this tag.
   </output>
 </test>
 ```
-
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="name" type="xs:string" use="required">
@@ -1817,7 +1853,7 @@ provides a demonstration of using this tag.
 </test>
 ```
 
-Note that this tool uses ``assign_primary_output="true"`` for ``<discover_data_sets>``. Hence, the content of the first discovered dataset (which is the first in the alphabetically sorted list of discovered designations) is checked directly in the ``<output>`` tag of the test.
+Note that this tool uses ``assign_primary_output="true"`` for ``<discover_datasets>``. Hence, the content of the first discovered dataset (which is the first in the alphabetically sorted list of discovered designations) is checked directly in the ``<output>`` tag of the test.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:complexContent>
@@ -1974,10 +2010,9 @@ This value is the same as the value of the ``name`` attribute of the
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="type" type="xs:string">
+    <xs:attribute name="type" type="CollectionType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Expected collection type (e.g. ``list``, ``paired``,
-or ``list:paired``).</xs:documentation>
+        <xs:documentation xml:lang="en">Expected collection type (``list`` or ``paired``), nested collections are specified as colon separated list (the most common types are ``list``, ``paired``, ``list:paired``, or ``list:list``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="count" type="xs:integer">
@@ -2003,128 +2038,561 @@ module.
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:sequence>
-      <xs:group ref="TestAssertion" minOccurs="0" maxOccurs="unbounded"/>
-    </xs:sequence>
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:group ref="TestAssertionsGeneral" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsText" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsTabular" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsArchive" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsXml" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsH5" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:choice>
   </xs:complexType>
-  <xs:group name="TestAssertion">
+  <xs:group name="TestAssertionsGeneral">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[General asserions]]></xs:documentation>
+    </xs:annotation>
     <xs:choice>
-      <xs:element name="has_text" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the specified ``text`` appears in the output (e.g. ``<has_text text="chr7">``). If the ``text`` is expected to occur a particular number of times, this value can be specified using ``n``.]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="not_has_text" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the specified ``text`` does not appear in the output (e.g. ``<not_has_text text="chr8" />``).]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="has_text_matching" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts text matching the specified regular expression (``expression``) appears in the output (e.g. ``<has_text_matching expression="1274\d+53" />`` ).]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="has_line" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts a line matching the specified string (``line``) appears in the output (e.g. ``<has_line line="A full example line." />``). If the ``line`` is expected to occur a particular number of times, this value can be specified using ``n``.]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="has_n_lines" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts that an output contains ``n`` lines, e.g. ``<has_n_lines n="3" />``.]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="has_line_matching" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts a line matching the specified regular expression (``expression``) appears in the output (e.g. ``<has_line_matching expression=".*\s+127489808\s+127494553" />``).]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="has_n_columns" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts tabular output contains the specified number (``n``) of columns (e.g. ``<has_n_columns n="3" />``).]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="is_valid_xml" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the output is a valid XML file (e.g. ``<is_valid_xml />``).]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="has_element_with_path" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the XML output contains at least one element (or tag) with the specified XPath-like ``path`` (e.g. ``<has_element_with_path path="BlastOutput_param/Parameters/Parameters_matrix" />``).]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="has_n_elements_with_path" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the XML output contains the specified number (``n``) of elements (or tags) with the specified XPath-like ``path`` (e.g. ``<has_n_elements_with_path n="9" path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num" />``).]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="element_text_is" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the text of the XML element with the specified XPath-like ``path`` is the specified ``text`` (e.g. ``<element_text_is path="BlastOutput_program" text="blastp" />``).]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="element_text_matches">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the text of the XML element with the specified XPath-like ``path`` matches the regular expression defined by ``expression`` (e.g. ``<element_text_matches path="BlastOutput_version" expression="BLASTP\s+2\.2.*" />``).]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="attribute_is" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the XML ``attribute`` for the element (or tag) with the specified XPath-like ``path`` is the specified ``text`` (e.g. ``<attribute_is path="outerElement/innerElement1" attribute="foo" text="bar" />`` ).]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="attribute_matches" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the XML ``attribute`` for the element (or tag) with the specified XPath-like ``path`` matches the regular expression specified by ``expression`` (e.g. ``<attribute_matches path="outerElement/innerElement2" attribute="foo2" expression="bar\d+" />``).]]></xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="element_text" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[This tag allows the developer to recurisively specify additional assertions as child elements about just the text contained in the element specified by the XPath-like ``path`` (e.g. ``<element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def"><not_has_text text="EDK72998.1" /></element_text>``).]]></xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="has_h5_keys" type="AssertHasH5Keys">
-      </xs:element>
-      <xs:element name="has_h5_attribute" type="AssertHasH5Attribute">
-      </xs:element>
-      <xs:element name="has_archive_member" type="AssertHasArchiveMember">
-      </xs:element>
-      <xs:element name="has_size" type="AssertHasSize">
-      </xs:element>
+      <xs:element name="has_size" type="AssertHasSize"/>
+    </xs:choice>
+  </xs:group>
+  <xs:group name="TestAssertionsText">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Assertions for text data]]></xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element name="has_text" type="AssertHasText"/>
+      <xs:element name="not_has_text" type="AssertNotHasText"/>
+      <xs:element name="has_text_matching" type="AssertHasTextMatching"/>
+      <xs:element name="has_line" type="AssertHasLine"/>
+      <xs:element name="has_line_matching" type="AssertHasLineMatching"/>
+      <xs:element name="has_n_lines" type="AssertHasNLines"/>
+    </xs:choice>
+  </xs:group>
+  <xs:group name="TestAssertionsTabular">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Assertions for tabular data]]></xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element name="has_n_columns" type="AssertHasNColumns"/>
+    </xs:choice>
+  </xs:group>
+  <xs:group name="TestAssertionsArchive">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Assertions for archives (zip/tar)]]></xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element name="has_archive_member" type="AssertHasArchiveMember"/>
+    </xs:choice>
+  </xs:group>
+  <xs:group name="TestAssertionsXml">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Assertions for XML data]]></xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element name="is_valid_xml" type="AssertIsValidXML"/>
+      <xs:element name="xml_element" type="AssertXMLElement"/>
+      <xs:element name="has_element_with_path" type="AssertHasElementWithPath"/>
+      <xs:element name="has_n_elements_with_path" type="AssertHasNElementsWithPath"/>
+      <xs:element name="element_text_matches" type="AssertElementTextMatches"/>
+      <xs:element name="element_text_is" type="AssertElementTextIs"/>
+      <xs:element name="attribute_matches" type="AssertAttributeMatches"/>
+      <xs:element name="attribute_is" type="AssertAttributeIs"/>
+      <xs:element name="element_text" type="AssertElementText"/>
+    </xs:choice>
+  </xs:group>
+  <xs:group name="TestAssertionsH5">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Assertions for H5 data]]></xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element name="has_h5_keys" type="AssertHasH5Keys"/>
+      <xs:element name="has_h5_attribute" type="AssertHasH5Attribute"/>
     </xs:choice>
   </xs:group>
   <xs:complexType name="AssertHasSize">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Asserts the output has specific size (in bytes), e.g. ``<has_size value="10000" delta="100" />``.]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the output has a specific size (in bytes) of ``value`` plus minus
+``delta``, e.g. ``<has_size value="10000" delta="100" />``.
+Alternatively the range of the expected size can be specified by ``min`` and/or
+``max``.
+
+$attribute_list::5
+]]>
+      </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="value" type="xs:string">
+    <xs:attribute name="value" type="Bytes" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Desired size of the outpyt (in bytes)</xs:documentation>
+        <xs:documentation xml:lang="en">Desired size of the output (in bytes), can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="delta" type="xs:integer" use="optional">
+    <xs:attribute name="delta" type="Bytes" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Maximum allowed size difference (default is 0).</xs:documentation>
+        <xs:documentation xml:lang="en">Maximum allowed size difference (default is 0). The observed size has to be in the range ``value +- delta``. Can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="min" type="Bytes" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Minimum expected size, can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="max" type="Bytes" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum expected size, can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertHasText">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the specified ``text`` appears in the output (e.g. ``<has_text
+text="chr7">``). If the ``text`` is expected to occur a particular number of
+times, this value can be specified using ``n``. Optionally also with a certain
+``delta``. Alternatively the range of expected occurences can be specified by
+``min`` and/or ``max``.
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="text" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Text to check for</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertNotHasText">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the specified ``text`` does not appear in the output (e.g. ``<not_has_text text="chr8" />``).
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="text" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Text to check for</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
+  <xs:complexType name="AssertHasTextMatching">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts text matching the specified regular expression (``expression``) appears
+in the output (e.g. ``<has_text_matching expression="1274\d+53" />`` ). If the
+regular expression is expected to match a particular number of times, this value
+can be specified using ``n``.  Note only non-overlapping occurences are counted.
+Optionally also with a certain ``delta``. Alternatively the range of expected
+occurences can be specified by ``min`` and/or ``max``.
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="expression" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Regular expression to check for</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertHasLine">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts a line matching the specified string (``line``) appears in the output
+(e.g. ``<has_line line="A full example line." />``). If the ``line`` is expected
+to occur a particular number of times, this value can be specified using ``n``.
+Optionally also with a certain ``delta``. Alternatively the range of expected
+occurences can be specified by ``min`` and/or ``max``.
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="line" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The line to check for</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertHasNLines">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts that an output contains ``n`` lines, allowing for a difference of
+``delta`` (default is 0), e.g. ``<has_n_lines n="3" delta="1"/>``.
+Alternatively the range of expected occurences can be specified by ``min``
+and/or ``max``.
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertHasLineMatching">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts a line matching the specified regular expression (``expression``)
+appears in the output (e.g. ``<has_line_matching expression=".*\s+127489808\s+127494553" />``).
+If a particular number of matching lines is expected, this value can be
+specified using ``n``.  Optionally also with ``delta``. Alternatively the range
+of expected occurences can be specified by ``min`` and/or ``max``.
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="expression" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Regular expression to check for</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertHasNColumns">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts tabular output (actually only the first line) contains the specified
+number (``n``) of columns (e.g. ``<has_n_columns n="3"/>``) optionally also with
+``delta``. Alternatively the range of expected occurences can be specified by
+``min`` and/or ``max``.  Optionally a column separator (``sep``, default is
+``\t``) `and comment character(s) can be specified (``comment``, default is
+empty string), then the first non-comment line is used for determining the
+number of columns.
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertHasArchiveMember">
+    <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+This tag allows to check if ``path`` is contained in a compressed file. The path
+is a regular expression that is matched against the full paths of the objects in
+the compressed file (remember that "matching" means it is checked if a prefix of
+the full path of an archive member is described by the regular expression).
+Valid archive formats include ``.zip``, ``.tar``, and ``.tar.gz``. Note that
+depending on the archive creation method:
+
+- full paths of the members may be prefixed with ``./``
+- directories may be treated as empty files
+
+```xml
+<has_archive_member path="./path/to/my-file.txt"/>
+```
+
+With ``n`` and ``delta`` (or ``min`` and ``max``) assertions on the number of
+archive members matching ``path`` can be expressed. The following could be used,
+e.g., to assert an archive containing n&plusmn;1 elements out of which at least
+4 need to have a ``txt`` extension.
+
+```xml
+<has_archive_member path=".*" n="10" delta="1"/>
+<has_archive_member path=".*\.txt" min="4"/>
+```
+
+In addition the tag can contain additional assertions as child elements about
+the first member in the archive matching the regular expression ``path``. For
+instance
+
+```xml
+<has_archive_member path=".*/my-file.txt">
+  <not_has_text text="EDK72998.1"/>
+</has_archive_member>
+```
+
+If the ``all`` attribute is set to ``true`` then all archive members are subject
+to the assertions. Note that, archive members matching the ``path`` are sorted
+alphabetically.
+
+The ``negate`` attribute of the ``has_archive_member`` assertion only affects
+the asserts on the presence and number of matching archive members, but not any
+sub-assertions (which can offer the ``negate`` attribute on their own).  The
+check if the file is an archive at all, which is also done by the function, is
+not affected.
+
+$attribute_list::5
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="TestAssertionsGeneral" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsText" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsTabular" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsXml" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsH5" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="path" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The regular expression specifying the archive member.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="all" type="PermissiveBoolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+  </xs:complexType>
+  <xs:complexType name="AssertIsValidXML">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the output is a valid XML file (e.g. ``<is_valid_xml />``).
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+  </xs:complexType>
+  <xs:complexType name="AssertXMLElement">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Assert if the XML file contains element(s) or tag(s) with the specified
+[XPath-like ``path``](https://lxml.de/xpathxslt.html).  If ``n`` and ``delta``
+or ``min`` and ``max`` are given also the number of occurences is checked.
+
+```xml
+<assert_contents>
+  <xml_element path="./elem"/>
+  <xml_element path="./elem/more[2]"/>
+  <xml_element path=".//more" n="3" delta="1"/>
+</assert_contents>
+```
+
+With ``negate="true"`` the outcome of the assertions wrt the precence and number
+of ``path`` can be negated. If there are any sub assertions then check them against
+
+- the content of the attribute ``attribute``
+- the element's text if no attribute is given
+
+```xml
+<assert_contents>
+  <xml_element path="./elem/more[2]" attribute="name">
+    <has_text_matching expression="foo$"/>
+  </xml_element>
+</assert_contents>
+```
+
+Sub-assertions are not subject to the ``negate`` attribute of ``xml_element``.
+If ``all`` is ``true`` then the sub assertions are checked for all occurences.
+
+Note that all other XML assertions can be expressed by this assertion (Galaxy
+also implements the other assertions by calling this one).
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="AssertAttributePath"/>
+    <xs:attribute name="all" type="PermissiveBoolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="attribute" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The name of the attribute to apply sub-assertion on. If not given then the element text is used</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertHasElementWithPath">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the XML output contains at least one element (or tag) with the specified
+XPath-like ``path``, e.g.
+
+```xml
+<has_element_with_path path="BlastOutput_param/Parameters/Parameters_matrix" />
+```
+
+With ``negate`` the result of the assertion can be inverted.
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="AssertAttributePath"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertHasNElementsWithPath">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the XML output contains the specified number (``n``, optionally with ``delta``) of elements (or
+tags) with the specified XPath-like ``path``, e.g.
+
+```xml
+<has_n_elements_with_path n="9" path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num" />
+```
+
+Alternatively to ``n`` and ``delta`` also the ``min`` and ``max`` attributes
+can be used to specify the range of the expected number of occurences.
+With ``negate`` the result of the assertion can be inverted.
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="AssertAttributePath"/>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertElementTextMatches">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the text of the XML element with the specified XPath-like ``path``
+matches the regular expression defined by ``expression``, e.g.
+
+```xml
+<element_text_matches path="BlastOutput_version" expression="BLASTP\s+2\.2.*"/>
+```
+
+The assertion implicitly also asserts that an element matching ``path`` exists.
+With ``negate`` the result of the assertion (on the matching) can be inverted (the
+implicit assertion on the existence of the path is not affected).
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="AssertAttributePath"/>
+    <xs:attribute name="expression" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The regular expression to use.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertElementTextIs">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the text of the XML element with the specified XPath-like ``path`` is
+the specified ``text``, e.g.
+
+```xml
+<element_text_is path="BlastOutput_program" text="blastp" />
+```
+
+The assertion implicitly also asserts that an element matching ``path`` exists.
+With ``negate`` the result of the assertion (on the equality) can be inverted (the
+implicit assertion on the existence of the path is not affected).
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="AssertAttributePath"/>
+    <xs:attribute name="text" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Text to check for.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertAttributeMatches">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the XML ``attribute`` for the element (or tag) with the specified
+XPath-like ``path`` matches the regular expression specified by ``expression``, e.g.
+
+```xml
+<attribute_matches path="outerElement/innerElement2" attribute="foo2" expression="bar\d+" />
+```
+
+The assertion implicitly also asserts that an element matching ``path`` exists.
+With ``negate`` the result of the assertion (on the matching) can be inverted (the
+implicit assertion on the existence of the path is not affected).
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="AssertAttributePath"/>
+    <xs:attribute name="expression" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The regular expression to use.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertAttributeIs">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the XML ``attribute`` for the element (or tag) with the specified
+XPath-like ``path`` is the specified ``text``, e.g.
+
+```xml
+<attribute_is path="outerElement/innerElement1" attribute="foo" text="bar" />
+```
+
+The assertion implicitly also asserts that an element matching ``path`` exists.
+With ``negate`` the result of the assertion (on the equality) can be inverted (the
+implicit assertion on the existence of the path is not affected).
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="AssertAttributePath"/>
+    <xs:attribute name="text" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Text to check for.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertElementText">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This tag allows the developer to recurisively specify additional assertions as
+child elements about just the text contained in the element specified by the
+XPath-like ``path``, e.g.
+
+```xml
+<element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def">
+  <not_has_text text="EDK72998.1" />
+</element_text>
+```
+
+The assertion implicitly also asserts that an element matching ``path`` exists.
+With ``negate`` the result of the implicit assertions can be inverted.
+The sub-assertions, which have their own ``negate`` attribute, are not affected
+by ``negate``.
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="TestAssertionsText" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attributeGroup ref="AssertAttributePath"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
   <xs:complexType name="AssertHasH5Keys">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output has a set of attributes (``keys``), specified as a comma-separated list (e.g. ``<has_h5_keys keys="bins,chroms,indexes,pixels,chroms/lengths" />``).]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts HDF5 output has a set of attributes (``keys``), specified as a
+comma-separated list, e.g.
+
+```xml
+<has_h5_keys keys="bins,chroms,indexes,pixels,chroms/lengths" />
+```
+$attribute_list::5
+]]>
+      </xs:documentation>
     </xs:annotation>
     <xs:attribute name="keys" type="xs:string">
       <xs:annotation>
@@ -2134,7 +2602,16 @@ module.
   </xs:complexType>
   <xs:complexType name="AssertHasH5Attribute">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output contains the specified ``value`` for an attribute (``key``) (e.g. ``<has_attr key="nchroms" value="15" />``).]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts HDF5 output contains the specified ``value`` for an attribute (``key``), e.g.
+
+```xml
+<has_h5_attribute key="nchroms" value="15" />
+```
+
+$attribute_list::5
+]]>
+      </xs:documentation>
     </xs:annotation>
     <xs:attribute name="key" type="xs:string">
       <xs:annotation>
@@ -2147,19 +2624,46 @@ module.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  <xs:complexType name="AssertHasArchiveMember">
-    <xs:annotation>
-        <xs:documentation xml:lang="en"><![CDATA[This tag allows the developer to recursively specify additional assertions as child elements about just the member contained in the archive specified by the regular expression ``path`` (e.g. ``<has_archive_member path=".*/my-file.txt"><not_has_text text="EDK72998.1" /></has_archive_member>``). Valid archive formats include ``.zip``, ``.tar``, and ``.tar.gz``.]]></xs:documentation>
-    </xs:annotation>
-    <xs:sequence>
-      <xs:group ref="TestAssertion" minOccurs="0" maxOccurs="unbounded"/>
-    </xs:sequence>
-    <xs:attribute name="path" type="xs:string">
+
+  <xs:attributeGroup name="AssertAttributePath">
+    <xs:attribute name="path" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">The regular expression specifying the archive member.</xs:documentation>
+        <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-  </xs:complexType>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="AssertAttributeNegate">
+    <xs:attribute name="negate" type="PermissiveBoolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Negate the outcome of the assertion.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="AssertAttributeN">
+    <xs:attribute name="n" type="Bytes" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="delta" type="Bytes" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="min" type="Bytes" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="max" type="Bytes" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
   <xs:complexType name="Inputs">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Consists of all elements that define the
@@ -2458,7 +2962,7 @@ demonstrates both testing strategies.
         <xs:sequence>
           <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
-        <xs:attribute name="name" type="xs:string">
+        <xs:attribute name="name" type="xs:string" use="required">
           <xs:annotation>
             <xs:documentation xml:lang="en">Name for this element</xs:documentation>
           </xs:annotation>
@@ -2543,7 +3047,7 @@ Note that references to other parameters in the `<inputs>` section are only poss
     </section>
 ```
 
-In the above example `bar` and `qux` will refer to the first foo outside of the section and `baz` to the `foo` inside the section. This illustrates why non-unique parameter names are strongly discouraged. 
+In the above example `bar` and `qux` will refer to the first foo outside of the section and `baz` to the `foo` inside the section. This illustrates why non-unique parameter names are strongly discouraged.
 
 The following will not work:
 
@@ -2748,6 +3252,12 @@ $attribute_list:force_select,numerical,use_header_name:5
 
 #### ``drill_down``
 
+Allows to select values from a hierarchy. The default (``hierarchy="exact"``) is
+that only exactly the selected options are used. With ``hierarchy="recurse"``
+all leaf nodes in the subtree are used.
+
+See [drill_down.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/drill_down.xml)
+
 $attribute_list:hierarchy:5
 
 #### ``data_collection``
@@ -2924,13 +3434,15 @@ file (use the file extension). Used only when the ``type`` attribute value is
 ``data`` or ``data_collection``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="collection_type" type="xs:string">
+        <xs:attribute name="collection_type" type="CollectionTypeList">
           <xs:annotation>
             <xs:documentation xml:lang="en"><![CDATA[
-Restrict the kind of collection that can be consumed by this parameter (e.g.
-``paired``, ``list:paired``, ``list``). Multiple such collection types can be
-specified here as a comma-separated list. Used only when the ``type`` attribute
-value is ``data_collection``.
+Restrict the kind of collection that can be consumed by this parameter. Simple
+collections are either ``list`` or ``paired``), nested collections are specified
+as colon separated list of simple collection types (the most common types are
+``list``, ``paired``, ``list:paired``, or ``list:list``). Multiple such
+collection types can be specified here as a comma-separated list. Used only when
+the ``type`` attribute value is ``data_collection``.
               ]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -3065,7 +3577,7 @@ allow access to Python code to generate options for a select list. See
         </xs:annotation>
       </xs:element>
       <xs:element name="conversion" type="ParamConversion" />
-      <xs:element name="option" type="ParamOption" />
+      <xs:element name="option" type="ParamSelectOption" />
       <xs:element name="options" type="ParamOptions"/>
       <xs:element name="validator" type="Validator" />
       <xs:element name="sanitizer" type="Sanitizer"/>
@@ -3249,6 +3761,7 @@ Name | Description
 ``$__app__`` | The ``galaxy.app.UniverseApplication`` instance, gives access to all other configuration file variables (e.g. $__app__.config.output_size_limit). Should be used as a last resort, may go away in future releases.
 ``$__target_datatype__`` | Only available in converter tools when run internally by Galaxy. Contains the target datatype of the conversion
 
+
 Additional runtime properties are available as environment variables. Since these
 are not Cheetah variables (the values aren't available until runtime) these should likely
 be escaped with a backslash (``\``) when appearing in ``command`` or ``configfile`` elements.
@@ -3344,7 +3857,7 @@ of "type" specified for this expression block.
     </xs:restriction>
   </xs:simpleType>
 
-  <xs:complexType name="ParamOption">
+  <xs:complexType name="ParamSelectOption">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
@@ -3365,17 +3878,23 @@ value is ``select`` (i.e. ``<param type="select" ...>``).
 ```
 
 An option can also be annotated with ``selected="true"`` to specify a
-default option.
+default option (note that the first option is selected automatically
+if ``optional="false"``).
 
 ```xml
 <param name="col" type="select" label="From">
-    <option value="0" selected="true">Column 1 / Sequence name</option>
-    <option value="1">Column 2 / Source</option>
+    <option value="0">Column 1 / Sequence name</option>
+    <option value="1" selected="true">Column 2 / Source</option>
     <option value="2">Column 3 / Feature</option>
     <option value="6">Column 7 / Strand</option>
     <option value="7">Column 8 / Frame</option>
 </param>
 ```
+
+In general the values and the texts for the options need to be unique,
+but it is possible to specify an option two times if the 2nd has a different
+value for the ``selected`` attribute. This is handy if an option list is
+defined in a macro and different default value(s) are used.
 ]]>
 </xs:documentation>
     </xs:annotation>
@@ -3398,6 +3917,27 @@ if the corresponding option is selected by default (the default is ``false``).
         </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="ParamDrillDownOption">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+See [drill_down.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/drill_down.xml)
+      ]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="option" type="ParamDrillDownOption" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Name of the ``drill_down`` option.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Value of the ``drill_down`` option.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
 
   <xs:complexType name="ParamConversion">
@@ -3426,7 +3966,6 @@ dataset for the contained input of the type specified using the ``type`` tag.
     </xs:attribute>
   </xs:complexType>
 
-
   <xs:complexType name="ParamOptions">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -3449,7 +3988,7 @@ exclusively use ``filter``s to populate options.
 * ``from_dataset`` - The options for the select list are dynamically obtained
   from input dataset selected for the tool from the current history.
 * ``from_file`` - The options for the select list are dynamically obtained from
-  a file. This mechanis is discourage in favor of the more generic
+  a file. This mechanism is discouraged in favor of the more generic
   ``from_data_table``.
 * ``from_parameter`` - The options for the select list are dynamically obtained
   from a parameter.
@@ -3525,6 +4064,10 @@ Starting from Galaxy v21.01, ``meta_file_key`` can be used together with
 medadata file that the ``meta_file_key`` implies, instead of the dataset
 itself.
 
+Note that in any case only the first mega byte of the referred dataset (or file)
+is considered. Lines starting with ``#`` are ignored. By using the ``startswith``
+attribute also lines starting with other strings can be ignored.
+
 ```xml
 <param name="input" type="data" format="maf" label="MAF File"/>
 <param name="species" type="select" optional="False" label="Select species for the input dataset" multiple="True">
@@ -3599,7 +4142,7 @@ used to generate dynamic options.
     </xs:sequence>
     <xs:attribute name="from_dataset" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Determine options from the dataset given in the referred input parameter. If 'meta_file_key' is given, the options are determined from the data in the metadata file of the input.</xs:documentation>
+        <xs:documentation xml:lang="en">Determine options from (the first MB of) the dataset given in the referred input parameter. If 'meta_file_key' is given, the options are determined from (the first MB of) the data in the metadata file of the input.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_file" type="xs:string">
@@ -3629,12 +4172,17 @@ used to generate dynamic options.
     </xs:attribute>
     <xs:attribute name="startswith" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Ignore lines starting with the given character.</xs:documentation>
+        <xs:documentation xml:lang="en">Keep only lines starting with the given string.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="meta_file_key" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Works with from_dataset only. See [docs](#from-dataset)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="separator" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Split tabular data with this character (default is tab)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -3648,6 +4196,7 @@ used to generate dynamic options.
           <xs:documentation xml:lang="en">Documentation for file</xs:documentation>
         </xs:annotation>
       </xs:element>
+      <xs:element name="option" type="ParamDrillDownOption" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:group>
   <xs:complexType name="Column">
@@ -3723,7 +4272,10 @@ In case of ``data_collection`` parameters and
 separately for each of the contained data sets. Note that, for ``data``
 parameters a ``metadata`` validator is added automatically.
 
-- ``metadata``: Check for missing metadata.
+- ``metadata``: Check for missing metadata. The set of (optional) metadata
+to be checked can be set using either the ``check`` or ``skip`` attribute.
+Note that each data parameter has automatically a metadata validator that checks
+if all non-optional metadata are set, i.e. ``<validator type="metadata/>``.
 - ``unspecified_build``: Check of a build is defined.
 - ``dataset_ok_validator``: Check if the data set is in state OK.
 - ``dataset_metadata_in_range``: Check if a numeric metadata value is within
@@ -3741,7 +4293,7 @@ Check if a metadata value is contained in a specific column of a file in the ``t
 
 - ``regex``: Check if a regular expression **matches** the value, i.e. appears
 at the beginning of the value. To enforce a match of the complete value use
-``$`` at the end of the expression. The expression is given is the content 
+``$`` at the end of the expression. The expression is given is the content
 of the validator tag. Note that for ``selects`` each option is checked
 separately.
 - ``length``: Check if the length of the value is within a range.
@@ -4115,20 +4667,20 @@ a tool data table) or a dataset in the current history.
 
 Currently the following filters are defined:
 
-* ``static_value`` filter options for which the entry in a given ``column`` of the referenced file based on equality to the ``value`` attribute of the filter. 
+* ``static_value`` filter options for which the entry in a given ``column`` of the referenced file based on equality to the ``value`` attribute of the filter.
 * ``regexp`` similar to the ``static_value`` filter, but checks if the regular expression given by ``value`` matches the entry.
 * ``param_value`` filter options for which the entry in a given ``column`` of the referenced file based on properties of another input parameter specified by ``ref``. This property is by default the value of the parameter, but also the values of another attribute (``ref_attribute``) of the parameter can be used, e.g. the extension of a data input.
-* ``data_meta`` populate or filter options based on the metadata of another input parameter specified by ``ref``. If a ``column`` is given options are filtered for which the entry in this column ``column`` is equal to metadata of the input parameter specified by ``ref``. 
-If no ``column`` is given the metadata value of the referenced input is added to the options list (in this case the corresponding ``options`` tag must not have the ``from_data_table`` or ``from_dataset`` attributes). 
+* ``data_meta`` populate or filter options based on the metadata of another input parameter specified by ``ref``. If a ``column`` is given options are filtered for which the entry in this column ``column`` is equal to metadata of the input parameter specified by ``ref``.
+If no ``column`` is given the metadata value of the referenced input is added to the options list (in this case the corresponding ``options`` tag must not have the ``from_data_table`` or ``from_dataset`` attributes).
 In both cases the desired metadata is selected by ``key``.
 
 The ``static_value`` and ``regexp`` filters can be inverted by setting ``keep`` to true.
 
-* ``add_value``: add an option with a given ``name`` and ``value`` to the options. By default the new option is appended, with ``index`` the insertion position can be specified.
-* ``remove_value``: remove a value from the options. Either specified explicitly with ``value``, the value of another input specifified with ``ref``, or the metatdata ``key`` of another input ``meta_ref``.
+* ``add_value``: add an option with a given ``name`` and ``value`` to the options. By default, the new option is appended, with ``index`` the insertion position can be specified.
+* ``remove_value``: remove a value from the options. Either specified explicitly with ``value``, the value of another input specified with ``ref``, or the metadata ``key`` of another input ``meta_ref``.
 * ``unique_value``: remove options that have duplicate entries in the given ``column``.
-* ``sort_by``: sort options by the entries of a given ``column``.
-* ``multiple_splitter``: split the entries of the specified ``column``(s) in the referenced file using a ``separator``. Thereby the number of columns is increased. 
+* ``sort_by``: sort options by the entries of a given ``column``. If ``reverse_sort_order`` is set to ``true``, reverse sort order from ascending to descending.
+* ``multiple_splitter``: split the entries of the specified ``column``(s) in the referenced file using a ``separator``. Thereby the number of columns is increased.
 
 ### Examples
 
@@ -4231,11 +4783,11 @@ demonstrates splitting up strings into multiple values.
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
 Currently the filters in the ``filter_types`` dictionary in the module
-[/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/dynamic_options.py) are defined. 
+[/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/dynamic_options.py) are defined.
 
 Deprecated filter types:
 
-* ``attribute_value_splitter`` 
+* ``attribute_value_splitter``
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -4314,6 +4866,13 @@ added to the end of the list.</xs:documentation>
         <xs:documentation xml:lang="en">Only used when ``type`` is
 ``remove_value``. Dataset to look for the value of metadata ``key`` to remove
 from the list.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="reverse_sort_order" type="xs:boolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Used when ``type`` is ``sort_by``, if set to
+        ``true`` it will reverse the sort order from ascending to descending. Default
+        is ``false``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -4587,9 +5146,14 @@ Creating collections in tools is covered in-depth in
     </xs:sequence>
     <xs:attributeGroup ref="OutputCommon"/>
     <xs:attributeGroup ref="OutputCollectionAttributes"/>
-    <xs:attribute name="type" type="xs:string">
+    <xs:attribute name="type" type="CollectionType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Collection type for output (e.g. ``paired``, ``list``, or ``list:list``).</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Collection type for output. Simple collection types are either ``list`` or
+``paired``, nested collections are specified as colon separated list of simple
+collection types (the most common types are ``list``, ``paired``,
+``list:paired``, or ``list:list``).
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="type_source" type="xs:string">
@@ -4623,9 +5187,14 @@ This tag describes an output to the tool.
         <xs:documentation xml:lang="en">In expression tools, use this to specify a dictionary value to populate this output from. The semantics may change for other expression types in the future.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="collection_type" type="xs:string">
+    <xs:attribute name="collection_type" type="CollectionType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Collection type for output (e.g. ``paired``, ``list``, or ``list:list``).</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Collection type for output. Simple collection types are either ``list`` or
+``paired``, nested collections are specified as colon separated list of simple
+collection types (the most common types are ``list``, ``paired``,
+``list:paired``, or ``list:list``).
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="collection_type_source" type="xs:string">
@@ -4679,7 +5248,7 @@ Note that also parameters in sections are accessed via a dictionary.
     </outputs>
 ```
 
-Note that variables that correspond to optional select parameters are `None` if nothing is selected. 
+Note that variables that correspond to optional select parameters are `None` if nothing is selected.
 Therefore a filter for such a variable looks like the following example.
 
 ### Example
@@ -4844,7 +5413,6 @@ Galaxy, including:
   <xs:complexType name="Actions">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-
 The ``actions`` directive allows tools to dynamically take actions related to an
 ``output`` either unconditionally or conditionally based on inputs. These
 actions currently include setting metadata values and the output's data format.
@@ -4916,6 +5484,11 @@ based on inputs, as shown below:
     </actions>
 </data>
 ```
+
+Note that the value given in ``when`` tags needs to be the python string representation
+of the value of the referred parameter, e.g. ``True`` or ``False`` if the referred
+parameter is a boolean.
+
 
 ### Unconditional Actions and Column Names
 
@@ -5053,14 +5626,31 @@ if none of the nested options apply.</xs:documentation>
   </xs:complexType>
   <xs:complexType name="ActionsOption">
     <xs:annotation>
-      <xs:documentation xml:lang="en"></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+1. Load options from a data table, a parameter (or its metadata), or a file
+2. Filter the options using all filters defined by the contained ``filter`` tags.
+3. Chose a value in a given line (``offset``) and ``column``
+
+The options can be considered as a table where each line is an option. The values
+in the columns can be used for filtering.
+
+The different data sources can be loaded as follows:
+
+- ``from_data_table``: load the options from the data table with the given ``name``.
+- ``from_param``: Initialize a single option containing the value of the
+  referred parameter (``name``) or its metadata (``param_attribute``)
+- ``from_file``: Load the file the given ``name`` (in Galaxy's tool data path), columns
+  are defined by the given ``separator`` (default is tab).
+      ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="filter" type="ActionsConditionalFilter" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="type" type="ActionsOptionType">
+    <xs:attribute name="type" type="ActionsOptionType" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Source of the tabular data ``from_data_table``, ``from_param``, or ``from_file``.
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="name" type="xs:string">
@@ -5124,7 +5714,8 @@ of this directive.
     <xs:attribute name="value" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Value to match conditional input value
-against.</xs:documentation>
+against. This needs to be the python string representation of the parameter value,
+e.g. ``True`` or ``False`` if the referred parameter is a boolean.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="datatype_isinstance" type="xs:string" use="optional">
@@ -5139,72 +5730,154 @@ against.</xs:documentation>
     </xs:annotation>
     <xs:attribute name="type" type="ActionsConditionalFilterType" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en"><![CDATA[]]></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+``param_value``
+
+- get the value of a refered parameter (``ref``) or the value given by ``value``
+  - if ``param_attribute`` is given the corresponding attribute of the value of the reffered parameter is used ``ref``
+- cast this value with the function given by ``cast``
+- compare the each the value in the column given by ``column`` (also casted) with the determined value using the function given by ``compare``
+- if the result of the comparison is equal to the boolean given by ``keep`` the value is kept
+
+``insert_column``
+
+- insert a column with a value in the options
+  - if ``column`` is given then the column is inserted before this column, otherwise the column is appended
+  - the value can be given by ``ref`` or ``value``
+
+``column_strip``
+
+Strip (remove certain characters from the suffix / prefix) values in a column.
+The characters to strip can be given by ``strip`` (deafult is whitespace
+characters)
+
+``multiple_splitter``
+
+Split the values in a ``column`` by a given ``separator``. And replace the
+original column with the with columns containing the result of splitting.
+
+``column_replace``
+
+Replace values in a column. The old and new values can be given
+
+- as static values ``old_value`` or ``new_value``
+- dynamically by the contents in (another) column ``old_column`` or ``new_colum``
+
+``metadata_value``
+
+Filter values in ``column`` by the metadata element ``name`` of the referred
+parameter ``ref`` depending on the results of the comparison function given by
+with ``compare`` and the value of ``keep`` (i.e. if the result of the
+comparision is equal to ``keep`` then keep the option).
+
+``boolean``
+
+Cast the values in ``column`` using the cast function given by ``cast``
+(unaccessible / uncastable values are interpreted as False).  The result of this
+cast is then casted with the bool function. If the final result is equal to
+``keep`` the option.
+
+``string_function``
+
+Apply a string function to the values in ``column``. The string function is given by ``name``.
+
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="compare" type="CompareType">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <!-- TOOD xsd only allows startswith and re_search code also supports eq, neq, gt, gte, lt, lte, in, endswith -->
+        <xs:documentation xml:lang="en"><![CDATA[
+Function to use for the comparision. One of startswith, re_search.
+Applies to: ``param_value``, ``metadata_value``
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="ref" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Name of an input parameter (parameters in conditionals or sections are referred using the dot syntax, e.g. ``cond.paramname``).
+Applies to ``param_value``, ``insert_column``, ``metadata_value``
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Fixed value to use for the comparison.
+Applies to ``param_value``, ``insert_column``
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="column" type="xs:integer">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Column of the options (0 based).
+Applies to ``param_value``, ``insert_column``, ``column_strip``, ``multiple_splitter``, ``column_replace``, ``metadata_value``, ``boolean``, ``string_function``
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="keep" type="PermissiveBoolean">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Keep the value if the filter condition is met. default: true
+Applies to ``param_value``, ``metadata_value``, ``boolean``
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="cast" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <!-- float might be nice -->
+        <xs:documentation xml:lang="en"><![CDATA[
+one of string_as_bool, int, str function used for casting the value.
+Applies to ``param_value``, ``boolean``</xs:documentation>
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="param_attribute" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">
+Which atttribute of the parameter value referred by ``ref`` to use. Separate with ``.``.
+Applies to ``param_value``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="separator" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Applies to ``multiple_splitter``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="strip" type="PermissiveBoolean">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Applies to ``column_strip``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="old_column" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Applies to ``column_replace``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="old_value" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Applies to ``column_replace``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="new_column" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Applies to ``column_replace``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="new_value" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Applies to ``column_replace``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+For ``metadata_value`` this is the name of the metadata to use. For ``string``
+function the string function to use (currently ``lower`` or ``upper``).
+Applies to ``metadata_value``, ``string_function``
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -5407,7 +6080,7 @@ will contain the tool parameter inputs.
 ```xml
 <configfiles>
     <inputs name="inputs" />
-<configfiles>
+</configfiles>
 ```
 
 The following will instead write the inputs to the tool's working directory with
@@ -5416,7 +6089,7 @@ the specified name (i.e. ``inputs.json``).
 ```xml
 <configfiles>
     <inputs name="inputs" filename="inputs.json" />
-<configfiles>
+</configfiles>
 ```
 
 A contrived example of a tool that uses this is the test tool
@@ -5743,11 +6416,11 @@ The ``<exit_code>`` tag's supported attributes are as follows:
 
 * ``range``: This indicates the range of exit codes to check. The range can be one of the following:
   * ``n``: the exit code will only be compared to n;
-  * ``[m:n]``: the exit code must be greater than or equal to m and less than or equal to n;
-  * ``[m:]``: the exit code must be greater than or equal to m;
-  * ``[:n]``: the exit code must be less than or equal to n.
+  * ``m:n``: the exit code must be greater than or equal to m and less than or equal to n;
+  * ``m:``: the exit code must be greater than or equal to m;
+  * ``:n``: the exit code must be less than or equal to n.
 * ``level``: This indicates the error level of the exit code. If no level is specified, then the fatal error level will be assumed to have occurred. The level can have one of following values:
-  * ``log`` and ``warning``: If an exit code falls in the given range, then a description of the error will be added to the beginning of the source, prepended with either 'Log:' or 'Warning:'. A log-level/warning-level error will not cause the tool to fail.
+  * ``log``, ``qc``, and ``warning``: If an exit code falls in the given range, then a description of the error will be added to the beginning of the source, prepended with either 'QC:', 'Log:' or 'Warning:'. This will not cause the tool to fail.
   * ``fatal``: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. A fatal-level error will cause the tool to fail.
   * ``fatal_oom``: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. Depending on the job configuration, a fatal_oom-level error will cause the tool to be resubmitted or fail.
 * ``description``: This is an optional description of the error that corresponds to the exit code.
@@ -5774,19 +6447,19 @@ marked as having failed.
 
 ]]></xs:documentation>
     </xs:annotation>
-    <xs:attribute name="range" type="RangeType">
+    <xs:attribute name="range" type="RangeType" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Exit code range. Can be a single number or a range given by ``start:end``, where start and end are integers, if omitted negative or positive infinity is assumed</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="level" type="LevelType">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Error level: one of ``qc``, ``warning``, ``log``, ``fatal`` (default), ``fatal_oom``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="description" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Description. Error message presented to the user</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -5816,7 +6489,7 @@ A regular expression includes the following attributes:
   * ``both``: the regular expression will be applied to both stderr and stdout (which is the default case).
 * ``match``: This is the regular expression that will be used to match against stdout and/or stderr. If the ``<regex>`` tag does not contain the match attribute, then the ``<regex>`` tag will be ignored. The regular expression can be any valid Python regular expression. All regular expressions are performed case insensitively. For example, if match contains the regular expression "actg", then the regular expression will match against "actg", "ACTG", "AcTg", and so on. Also note that, if double quotes (") are to be used in the match attribute, then the value " can be used in place of double quotes. Likewise, if single quotes (') are to be used in the match attribute, then the value ' can be used if necessary.
 * ``level``: This works very similarly to the ``<exit_code>`` tag, except that, when a regular expression matches against its source, the description is added to the beginning of the source. For example, if stdout matches on a regular expression, then the regular expression's description is added to the beginning of stdout (instead of stderr). If no level is specified, then the fatal error level will be assumed to have occurred. The level can have one of following values:
-  * ``log`` and ``warning``: If the regular expression matches against its source input (i.e., stdout and/or stderr), then a description of the error will be added to the beginning of the source, prepended with either 'Log:' or 'Warning:'. A log-level/warning-level error will not cause the tool to fail.
+  * ``log``, ``qc``, and ``warning``: If the regular expression matches against its source input (i.e., stdout and/or stderr), then a description of the error will be added to the beginning of the source, prepended with either 'QC:', 'Log:', or 'Warning:'. This will not cause the tool to fail.
   * ``fatal``: If the regular expression matches against its source input, then a description of the error will be added to the beginning of the source. A fatal-level error will cause the tool to fail.
   * ``fatal_oom``: In contrast to fatal the job might be resubmitted if possible according to the job configuration.
 * ``description``: Just like its ``exit_code`` counterpart, this is an optional description of the regular expression that has matched.
@@ -5886,10 +6559,10 @@ prepended with the warning ``Warning: Branch A was taken in execution``.
     </xs:annotation>
     <xs:attribute name="source" type="SourceType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This tells whether the regular expression should be matched against stdout, stderr, or both. If this attribute is missing or is incorrect, then both stdout and stderr will be checked. The source can be one of the following values:</xs:documentation>
+        <xs:documentation xml:lang="en">This tells whether the regular expression should be matched against stdout, stderr, or both. If this attribute is missing or is incorrect, then both stdout and stderr will be checked.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="match" type="xs:string">
+    <xs:attribute name="match" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">This is the regular expression that will be used to match against stdout and/or stderr.</xs:documentation>
       </xs:annotation>
@@ -6085,6 +6758,43 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="set_environment"/>
     </xs:restriction>
   </xs:simpleType>
+  <xs:simpleType name="ResourceType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Type of resource specification.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="cores_min">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum reserved number of CPU cores, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="cores_max">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Maximum reserved number of CPU cores, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="ram_min">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum reserved RAM in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="ram_max">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Maximum reserved RAM in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="tmpdir_min">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum reserved filesystem-based storage for the designated temporary directory in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="tmpdir_max">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Maximum reserved filesystem based storage for the designated temporary directory, in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
   <xs:simpleType name="ContainerType">
     <xs:annotation>
       <xs:documentation xml:lang="en">Type of container for tool execution.</xs:documentation>
@@ -6251,7 +6961,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:documentation xml:lang="en">Documentation for RangeType</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:pattern value="\-?(\d)*:?\-?(\d)*"/>
+      <xs:pattern value="((-?\d+)?:(-?\d+)?)|(-?\d+)"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="SourceType">
@@ -6268,8 +6978,8 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     <xs:annotation>
       <xs:documentation xml:lang="en">Type of comparison to use when comparing
 test generated output files to expected output files. Currently valid value are
-``diff`` (the default), ``re_match``, ``sim_size``, ``re_match_multiline``,
-and ``contains``.</xs:documentation>
+``diff`` (the default), ``re_match``, ``re_match_multiline``,
+and ``contains``. In addtion there is ``sim_size`` which is discouraged in fafour of a ``has_size`` assertion.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="diff"/>
@@ -6292,6 +7002,14 @@ and ``contains``.</xs:documentation>
       <xs:enumeration value="False"/>
       <xs:enumeration value="yes"/>
       <xs:enumeration value="no"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="Bytes">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Number of bytes alowing for suffix (k|K|M|G|P|E)i? </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="(0|[1-9][0-9]*)([kKMGTPE]i?)?"></xs:pattern>
     </xs:restriction>
   </xs:simpleType>
   <xs:complexType name="EdamTopics">
@@ -6348,13 +7066,14 @@ A tool can have any number of EDAM operation references.
       <xs:documentation xml:lang="en"><![CDATA[
 Container tag set for the ``<xref>`` tags.
 A tool can refer multiple reference IDs.
-	
+
 ```xml
-   <!-- Example: this tool is seqtk -->
+   <!-- Example: this tool is dada2 -->
    <xrefs>
-	<xref type="bio.tools">seqtk</xref>
+       <xref type="bio.tools">dada2</xref>
+       <xref type="bioconductor">dada2</xref>
    </xrefs>
-   <!-- https://bio.tools/seqtk -->
+   <!-- https://bio.tools/dada2 -->
 ```
 
 ]]></xs:documentation>
@@ -6373,8 +7092,8 @@ information according to a catalog.</xs:documentation>
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="xrefType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools``
-is the only supported options.</xs:documentation>
+            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools`` and ``bioconductor`` are
+the only supported options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -6386,6 +7105,7 @@ is the only supported options.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="bio.tools"/>
+      <xs:enumeration value="bioconductor"/>
       <!--xs:enumeration value="whatelse"/-->
     </xs:restriction>
   </xs:simpleType>
@@ -6403,5 +7123,20 @@ is the only supported options.</xs:documentation>
       <xs:enumeration value="aggressive"/>
     </xs:restriction>
   </xs:simpleType>
-
+  <xs:simpleType name="CollectionType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="(list|paired)([:](list|paired))*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="CollectionTypeList">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="(list|paired)([:,](list|paired))*"/>
+    </xs:restriction>
+  </xs:simpleType>
 </xs:schema>

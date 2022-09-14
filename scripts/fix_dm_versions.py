@@ -26,15 +26,18 @@ need to be corrected manually.
 """
 
 parser = argparse.ArgumentParser(description=desc)
-parser.add_argument('shed_data_manager_conf', metavar='CONFIG_FILE', type=str,
-                    default="config/shed_data_manager_conf.xml",
-                    help='an integer for the accumulator')
-parser.add_argument('--all-entries', action='store_true',
-                    help='modify all entries (default only those with duplicated guid)')
-parser.add_argument('--add-version', action='store_true',
-                    help='also add version attribute if absent')
-parser.add_argument('--dry-run', action='store_true',
-                    help='do not write resulting config file')
+parser.add_argument(
+    "shed_data_manager_conf",
+    metavar="CONFIG_FILE",
+    type=str,
+    default="config/shed_data_manager_conf.xml",
+    help="an integer for the accumulator",
+)
+parser.add_argument(
+    "--all-entries", action="store_true", help="modify all entries (default only those with duplicated guid)"
+)
+parser.add_argument("--add-version", action="store_true", help="also add version attribute if absent")
+parser.add_argument("--dry-run", action="store_true", help="do not write resulting config file")
 args = parser.parse_args()
 
 with open(args.shed_data_manager_conf) as fh:
@@ -42,7 +45,7 @@ with open(args.shed_data_manager_conf) as fh:
 root = tree.getroot()
 
 guid_mapping = dict()
-for dm in root.iter('data_manager'):
+for dm in root.iter("data_manager"):
     guid = dm.attrib["guid"]
     if guid not in guid_mapping:
         guid_mapping[guid] = [dm]
@@ -51,7 +54,7 @@ for dm in root.iter('data_manager'):
 
 for guid in guid_mapping:
     if len(guid_mapping[guid]) > 1:
-        print(f'{guid} found {len(guid_mapping[guid])}x')
+        print(f"{guid} found {len(guid_mapping[guid])}x")
     elif not args.all_entries:
         continue
 
@@ -60,14 +63,14 @@ for guid in guid_mapping:
         tool_version = tool_version.text
 
         new_guid = f"{guid[:guid.rfind('/')]}/{tool_version}"
-        dm.attrib['guid'] = new_guid
+        dm.attrib["guid"] = new_guid
         print(f"changing guid: {guid} -> {new_guid}")
         if "version" in dm.attrib:
             print(f"changing version: {dm.attrib['version']} -> {tool_version}")
-            dm.attrib['version'] = tool_version
+            dm.attrib["version"] = tool_version
         elif args.add_version:
             print(f"adding version: {tool_version}")
-            dm.attrib['version'] = tool_version
+            dm.attrib["version"] = tool_version
 
 if not args.dry_run:
     nfn = args.shed_data_manager_conf + datetime.now().isoformat()

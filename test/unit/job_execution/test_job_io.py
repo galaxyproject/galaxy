@@ -11,23 +11,21 @@ from galaxy.job_execution.setup import JobIO
 from galaxy.model import Job
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 
-
-WORKING_DIRECTORY = '/tmp'
-VERSION_PATH = '/tmp/version'
-GALAXY_URL = 'http://galaxy'
+WORKING_DIRECTORY = "/tmp"
+VERSION_PATH = "/tmp/version"
+GALAXY_URL = "http://galaxy"
 USER_CONTEXT = {
-    'email': 'test@email.com',
-    'username': 'user',
-    'ftp_dir': 'tmp/ftp_dir',
-    'preferences': {'a': 'b'},
-    'role_names': ['role1'],
-    'group_names': ['group1'],
-    'is_admin': False,
+    "email": "test@email.com",
+    "username": "user",
+    "ftp_dir": "tmp/ftp_dir",
+    "preferences": {"a": "b"},
+    "role_names": ["role1"],
+    "group_names": ["group1"],
+    "is_admin": False,
 }
 
 
 class FileSourcesMockApp(GalaxyDataTestApp):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.file_sources = ConfiguredFileSources(ConfiguredFileSourcesConfig.from_app_config(self.config))  # type: ignore[assignment]
@@ -78,8 +76,8 @@ def job_io(app: FileSourcesMockApp, job: Job) -> JobIO:
 def test_job_io_serialization(job_io: JobIO):
     job_io_dict = job_io.to_dict()
     assert isinstance(job_io_dict, dict)
-    assert isinstance(job_io_dict['file_sources_dict'], dict)
-    assert isinstance(job_io_dict['user_context'], dict)
+    assert isinstance(job_io_dict["file_sources_dict"], dict)
+    assert isinstance(job_io_dict["user_context"], dict)
 
 
 def test_job_io_deserialization(job_io: JobIO):

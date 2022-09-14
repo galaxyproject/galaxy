@@ -17,25 +17,7 @@
                 <p>History successfully exported.</p>
             </b-alert>
         </div>
-        <div v-else>
-            <b-form-group
-                id="fieldset-directory"
-                label-for="directory"
-                description="Select a 'remote files' directory to export history archive to."
-                class="mt-3">
-                <files-input id="directory" v-model="directory" mode="directory" :require-writable="true" />
-            </b-form-group>
-            <b-form-group id="fieldset-name" label-for="name" description="Give the exported file a name." class="mt-3">
-                <b-form-input id="name" v-model="name" placeholder="Name" required></b-form-input>
-            </b-form-group>
-            <b-row align-h="end">
-                <b-col
-                    ><b-button class="export-button" variant="primary" @click="doExport" :disabled="!canExport"
-                        >Export</b-button
-                    ></b-col
-                >
-            </b-row>
-        </div>
+        <ExportForm v-else what="history archive" @export="doExport" />
     </div>
 </template>
 
@@ -45,15 +27,15 @@ import axios from "axios";
 import { waitOnJob } from "components/JobStates/wait";
 import { errorMessageAsString } from "utils/simple-error";
 import LoadingSpan from "components/LoadingSpan";
-import FilesInput from "components/FilesDialog/FilesInput.vue";
 import JobError from "components/JobInformation/JobError";
+import ExportForm from "components/Common/ExportForm";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        FilesInput,
+        ExportForm,
         LoadingSpan,
         JobError,
     },
@@ -63,26 +45,19 @@ export default {
             required: true,
         },
     },
-    computed: {
-        canExport() {
-            return !!this.name && !!this.directory;
-        },
-    },
     data() {
         return {
             errorMessage: null,
-            name: null,
-            directory: null,
             waitingOnJob: false,
             jobComplete: false,
             jobError: null,
         };
     },
     methods: {
-        doExport() {
+        doExport(directory, name) {
             const data = {
-                directory_uri: this.directory,
-                file_name: this.name,
+                directory_uri: directory,
+                file_name: name,
             };
             this.waitingOnJob = true;
             const url = `${getAppRoot()}api/histories/${this.historyId}/exports`;

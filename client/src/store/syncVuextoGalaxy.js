@@ -7,13 +7,11 @@
 import { defer } from "rxjs";
 import { shareReplay } from "rxjs/operators";
 import { getGalaxyInstance } from "app";
-import { waitForInit } from "utils/observable/waitForInit";
+import { waitForInit } from "utils/observable";
 
 // store subscriptions
 import { syncUserToGalaxy } from "store/userStore";
 import { syncConfigToGalaxy } from "store/configStore";
-import { syncCurrentHistoryToGalaxy } from "components/History/model/syncCurrentHistoryToGalaxy";
-import { isBetaHistoryOpen } from "components/History/adapters/betaToggle";
 
 export const syncVuextoGalaxy = (store) => {
     const globalGalaxy$ = defer(() => {
@@ -25,9 +23,4 @@ export const syncVuextoGalaxy = (store) => {
 
     // configuration
     syncConfigToGalaxy(globalGalaxy$, store);
-
-    // Update Vuex with legacy galaxy history changes only when beta panel is closed.
-    if (!isBetaHistoryOpen()) {
-        syncCurrentHistoryToGalaxy(globalGalaxy$, store);
-    }
 };

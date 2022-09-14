@@ -5,7 +5,10 @@ import logging
 import os
 import sys
 
-from galaxy.util.properties import find_config_file, load_app_properties
+from galaxy.util.properties import (
+    find_config_file,
+    load_app_properties,
+)
 
 DESCRIPTION = None
 ACTIONS = None
@@ -67,24 +70,27 @@ def populate_config_args(parser):
     # set setting GALAXY_CONFIG_OPTION_NAME where OPTION_NAME is option_name converted to upper case.
     # Options specified in that file can be overridden for this program set setting
     # GALAXY_CONFIG_OVERRIDE_OPTION_NAME to a new value.
-    parser.add_argument("-c", "--config-file", "--config",
-                        default=os.environ.get('GALAXY_CONFIG_FILE', None),
-                        help=ARG_HELP_CONFIG_FILE)
-    parser.add_argument("--config-section",
-                        default=os.environ.get('GALAXY_CONFIG_SECTION', None),
-                        help=argparse.SUPPRESS)  # See ARG_HELP_CONFIG_SECTION comment above for unsuppressed details.
+    parser.add_argument(
+        "-c", "--config-file", "--config", default=os.environ.get("GALAXY_CONFIG_FILE", None), help=ARG_HELP_CONFIG_FILE
+    )
+    parser.add_argument(
+        "--config-section", default=os.environ.get("GALAXY_CONFIG_SECTION", None), help=argparse.SUPPRESS
+    )  # See ARG_HELP_CONFIG_SECTION comment above for unsuppressed details.
 
 
 def _arg_parser():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument('action', metavar='ACTION', type=str,
-                        choices=list(ACTIONS.keys()),
-                        default=DEFAULT_ACTION,
-                        nargs='?' if DEFAULT_ACTION is not None else None,
-                        help='action to perform')
+    parser.add_argument(
+        "action",
+        metavar="ACTION",
+        type=str,
+        choices=list(ACTIONS.keys()),
+        default=DEFAULT_ACTION,
+        nargs="?" if DEFAULT_ACTION is not None else None,
+        help="action to perform",
+    )
     populate_config_args(parser)
-    parser.add_argument("--app",
-                        default=os.environ.get('GALAXY_APP', 'galaxy'))
+    parser.add_argument("--app", default=os.environ.get("GALAXY_APP", "galaxy"))
     for argument in ARGUMENTS:
         parser.add_argument(*argument[0], **argument[1])
     return parser

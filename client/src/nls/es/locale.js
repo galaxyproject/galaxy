@@ -26,8 +26,6 @@ define({
 
     "Saved Visualizations": "Visualizaciones Guardadas",
 
-    "Interactive Environments": "Entornos Interactivos",
-
     Admin: "Administración",
 
     Help: "Ayuda",
@@ -40,7 +38,7 @@ define({
 
     Videos: "Videos",
 
-    Wiki: "Wiki",
+    "Community Hub": "Centro Comunitario",
 
     "How to Cite Galaxy": "Cómo citar Galaxy",
 
@@ -496,7 +494,6 @@ define({
     "Download local tool": "Descargar herramienta local",
     "Tool lineage": "Linaje de herramientas",
     "Reload a tool's configuration": "Volver a cargar la configuración de una herramienta",
-    "Review tool migration stages": "Revisar las etapas de migración de la herramienta",
     "View Tool Error Logs": "Ver registros de error de la herramienta",
     "Manage Allowlist": "Administrar lista de permisos",
     "Manage Tool Dependencies": "Administrar dependencias de herramienta",
@@ -510,9 +507,9 @@ define({
     "Local data": "Datos locales",
     "Form Definitions": "Definiciones de formulario",
 
-    // ---------------------------------------------------------------------------- Scratchbook
-    "Enable/Disable Scratchbook": "Habilitar/Deshabilitar Scratchbook",
-    "Show/Hide Scratchbook": "Mostrar/Ocultar Scratchbook",
+    // ---------------------------------------------------------------------------- Window Manager
+    "Enable/Disable Window Manager": "Habilitar/Deshabilitar Window Manager",
+    "Show/Hide Window Manager": "Mostrar/Ocultar Window Manager",
 
     // ---------------------------------------------------------------------------- misc. MVC
 
@@ -730,7 +727,6 @@ define({
     "Refresh history": "Actualizar historial",
     // ---------------------------------------------------------------------------- admin-panel
     "View error logs": "Ver registros de error",
-    "View migration stages": "Ver etapas de migración",
     "View lineage": "Ver linaje",
     "Manage dependencies": "Administrar dependencias",
     "Manage allowlist": "Administrar lista de permitidos",
@@ -797,7 +793,7 @@ define({
     "Create new Build": "Crear nueva construcción",
     "Delete custom build.": "Eliminar construcción personalizada",
     "Provide the data source.": "Proporcionar la fuente de datos",
-    // ---------------------------------------------------------------------------- scratchbook
+    // ---------------------------------------------------------------------------- Window Manager
     "Next in History": "Siguiente en historial",
     "Previous in History": "Anterior en historial",
     // ---------------------------------------------------------------------------- generic-nav-view

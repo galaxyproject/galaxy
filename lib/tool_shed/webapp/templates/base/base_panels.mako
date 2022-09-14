@@ -21,6 +21,8 @@
     <!--- base/base_panels.mako stylesheets() -->
     ${h.css(
         'bootstrap-tour',
+    )}
+    ${h.dist_css(
         'base'
     )}
 </%def>
@@ -48,23 +50,6 @@
 ## Default late-load javascripts
 <%def name="late_javascripts()">
     <!--- base/base_panels.mako late_javascripts() -->
-
-    <script type="text/javascript">
-
-        var panelConfig = {
-            left_panel: ${h.to_js_bool(self.has_left_panel)},
-            right_panel: ${h.to_js_bool(self.has_right_panel)},
-            rightPanelSelector: '#right',
-            leftPanelSelector: '#left'
-        };
-
-        // "late javascripts"
-        config.addInitialization(function() {
-            console.log("base/base_panels.mako, panel init");
-            window.bundleEntries.panelManagement(panelConfig);
-        });
-
-    </script>
 
     %if t.webapp.name == 'galaxy' and app.config.ga_code:
         ${galaxy_client.config_google_analytics(app.config.ga_code)}
@@ -117,14 +102,10 @@
 
 ## Document
 <html>
-    <!--base_panels.mako-->
+    <!-- toolshed webapp base_panels.mako-->
     ${self.init()}
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        ## For mobile browsers, don't scale up
-        <meta name = "viewport" content = "maximum-scale=1.0">
-        ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
-        <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 
         <title>
             Galaxy

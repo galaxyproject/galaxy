@@ -9,9 +9,7 @@ import galaxy.web_stack as stack
 
 @pytest.fixture
 def heartbeat_app(database_app):
-
     class QueueWorker:
-
         def send_control_task(self, *args, **kwargs):
             return
 
@@ -22,10 +20,12 @@ def heartbeat_app(database_app):
 
 @contextlib.contextmanager
 def setup_heartbeat_app(app):
-    app.config.server_name = 'test_heartbeat'
+    app.config.server_name = "test_heartbeat"
     app.config.attach_to_pools = False
     app.application_stack = stack.application_stack_instance(app=app)
-    app.database_heartbeat = heartbeat.DatabaseHeartbeat(application_stack=app.application_stack, heartbeat_interval=0.1)
+    app.database_heartbeat = heartbeat.DatabaseHeartbeat(
+        application_stack=app.application_stack, heartbeat_interval=0.1
+    )
     yield app
     app.database_heartbeat.shutdown()
 
@@ -65,7 +65,7 @@ def wait_for_assertion(assert_f):
             return v
         except AssertionError as e:
             assertion_error = e
-        time.sleep(.2)
+        time.sleep(0.2)
 
     if assertion_error:
         raise assertion_error

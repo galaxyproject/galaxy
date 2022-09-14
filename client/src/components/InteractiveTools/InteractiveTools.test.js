@@ -2,7 +2,6 @@ import InteractiveTools from "./InteractiveTools";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import flushPromises from "flush-promises";
-import _l from "utils/localization";
 import testInteractiveToolsResponse from "./testData/testInteractiveToolsResponse";
 
 import MockAdapter from "axios-mock-adapter";
@@ -10,7 +9,6 @@ import axios from "axios";
 
 describe("InteractiveTools/InteractiveTools.vue", () => {
     const localVue = getLocalVue();
-    localVue.filter("localize", (value) => _l(value));
     let wrapper;
     let axiosMock;
 

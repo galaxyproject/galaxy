@@ -11,7 +11,7 @@ class AuthProvider(metaclass=abc.ABCMeta):
 
     @abc.abstractproperty
     def plugin_type(self):
-        """ Short string providing labelling this plugin """
+        """Short string providing labelling this plugin"""
 
     @abc.abstractmethod
     def authenticate(self, email, username, password, options):

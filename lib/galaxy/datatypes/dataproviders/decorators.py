@@ -21,8 +21,8 @@ from urllib.parse import unquote
 
 log = logging.getLogger(__name__)
 
-_DATAPROVIDER_CLASS_MAP_KEY = 'dataproviders'
-_DATAPROVIDER_METHOD_NAME_KEY = '_dataprovider_name'
+_DATAPROVIDER_CLASS_MAP_KEY = "dataproviders"
+_DATAPROVIDER_METHOD_NAME_KEY = "_dataprovider_name"
 
 
 def has_dataproviders(cls):
@@ -67,9 +67,11 @@ def has_dataproviders(cls):
     #       where it's possible to override a super's provider with a sub's
     for attr_key, attr_value in cls.__dict__.items():
         # can't use isinstance( attr_value, MethodType ) bc of wrapping
-        if((callable(attr_value))
-                and (not attr_key.startswith("__"))
-                and (getattr(attr_value, _DATAPROVIDER_METHOD_NAME_KEY, None))):
+        if (
+            (callable(attr_value))
+            and (not attr_key.startswith("__"))
+            and (getattr(attr_value, _DATAPROVIDER_METHOD_NAME_KEY, None))
+        ):
             name = getattr(attr_value, _DATAPROVIDER_METHOD_NAME_KEY)
             dataproviders[name] = attr_value
     return cls
@@ -110,7 +112,9 @@ def dataprovider_factory(name, settings=None):
         @wraps(func)
         def wrapped_dataprovider_factory(self, *args, **kwargs):
             return func(self, *args, **kwargs)
+
         return wrapped_dataprovider_factory
+
     return named_dataprovider_factory
 
 
@@ -122,15 +126,15 @@ def _parse_query_string_settings(query_kwargs, settings=None):
     # TODO: this was a relatively late addition: review and re-think
     def list_from_query_string(s):
         # assume csv
-        return s.split(',')
+        return s.split(",")
 
     parsers = {
-        'int': int,
-        'float': float,
-        'bool': bool,
-        'list:str': lambda s: list_from_query_string(s),
-        'list:escaped': lambda s: [unquote(e) for e in list_from_query_string(s)],
-        'list:int': lambda s: [int(i) for i in list_from_query_string(s)],
+        "int": int,
+        "float": float,
+        "bool": bool,
+        "list:str": lambda s: list_from_query_string(s),
+        "list:escaped": lambda s: [unquote(e) for e in list_from_query_string(s)],
+        "list:int": lambda s: [int(i) for i in list_from_query_string(s)],
     }
     settings = settings or {}
     # yay! yet another set of query string parsers! <-- sarcasm
@@ -142,7 +146,7 @@ def _parse_query_string_settings(query_kwargs, settings=None):
             # TODO: this would be the place to sanitize any strings
             query_value = query_kwargs[key]
             needed_type = settings[key]
-            if needed_type != 'str':
+            if needed_type != "str":
                 try:
                     query_kwargs[key] = parsers[needed_type](query_value)
                 except (KeyError, ValueError):

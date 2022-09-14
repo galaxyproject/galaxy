@@ -10,7 +10,7 @@
         <div v-else-if="deprecated" class="warningmessagelarge">
             You have used {{ getToolId }} tool. {{ deprecatedMessage }}
         </div>
-        <div id="tool-recommendation" class="tool-recommendation-view"></div>
+        <div id="tool-recommendation" class="ui-tool-recommendation"></div>
     </div>
 </template>
 
@@ -35,9 +35,6 @@ export default {
             showMessage: false,
         };
     },
-    created() {
-        this.loadRecommendations();
-    },
     computed: {
         getToolId() {
             let toolId = this.toolId || "";
@@ -48,6 +45,9 @@ export default {
             return toolId;
         },
     },
+    created() {
+        this.loadRecommendations();
+    },
     methods: {
         loadRecommendations() {
             const toolId = this.getToolId;
@@ -55,7 +55,7 @@ export default {
                 tool_sequence: toolId,
             };
             getToolPredictions(requestData).then((responsePred) => {
-                getDatatypesMapper().then((datatypesMapper) => {
+                getDatatypesMapper(false).then((datatypesMapper) => {
                     const predData = responsePred.predicted_data;
                     this.deprecated = predData.is_deprecated;
                     this.deprecatedMessage = predData.message;

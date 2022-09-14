@@ -2,9 +2,7 @@ import time
 from typing import List
 
 from galaxy import model
-from galaxy.jobs.runners import (
-    JobState
-)
+from galaxy.jobs.runners import JobState
 from galaxy.jobs.runners.local import LocalJobRunner
 from galaxy.model.orm.now import now
 
@@ -25,10 +23,7 @@ class FailsJobRunner(LocalJobRunner):
             if run_for > 0:
                 time.sleep(run_for)
 
-        job_state = JobState(
-            job_wrapper,
-            job_wrapper.job_destination
-        )
+        job_state = JobState(job_wrapper, job_wrapper.job_destination)
         if failure_state is not None:
             job_state.runner_state = failure_state
         job_state.stop_job = False
@@ -84,4 +79,4 @@ class FailOnlyFirstJobRunner(LocalJobRunner):
             self._fail_job_local(job_wrapper, "Failing first attempt")
 
 
-__all__ = ('FailsJobRunner', 'AssertionJobRunner')
+__all__ = ("FailsJobRunner", "AssertionJobRunner")

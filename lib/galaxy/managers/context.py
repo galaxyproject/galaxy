@@ -37,9 +37,16 @@ A method that requires a user but not a history should declare its
 import abc
 import string
 from json import dumps
-from typing import Callable, List, Optional
+from typing import (
+    Callable,
+    List,
+    Optional,
+)
 
-from galaxy.exceptions import UserActivationRequiredException
+from galaxy.exceptions import (
+    AuthenticationRequired,
+    UserActivationRequiredException,
+)
 from galaxy.model import (
     Dataset,
     History,
@@ -48,13 +55,15 @@ from galaxy.model import (
 )
 from galaxy.model.base import ModelMapping
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.tasks import RequestUser
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.security.vault import UserVaultWrapper
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import bunch
 
 
 class ProvidesAppContext:
-    """ For transaction-like objects to provide Galaxy convenience layer for
+    """For transaction-like objects to provide Galaxy convenience layer for
     database and event handling.
 
     Mixed in class must provide `app` property.
@@ -62,8 +71,7 @@ class ProvidesAppContext:
 
     @abc.abstractproperty
     def app(self) -> MinimalManagerApp:
-        """Provide access to the Galaxy ``app`` object.
-        """
+        """Provide access to the Galaxy ``app`` object."""
 
     @abc.abstractproperty
     def url_builder(self) -> Optional[Callable[..., str]]:
@@ -148,7 +156,7 @@ class ProvidesAppContext:
         context = app.model.context
         context.expunge_all()
         # This is a bit hacky, should refctor this. Maybe refactor to app -> expunge_all()
-        if hasattr(app, 'install_model'):
+        if hasattr(app, "install_model"):
             install_model = app.install_model
             if install_model != app.model:
                 install_model.context.expunge_all()
@@ -186,16 +194,27 @@ class ProvidesAppContext:
 
 
 class ProvidesUserContext(ProvidesAppContext):
-    """ For transaction-like objects to provide Galaxy convenience layer for
+    """For transaction-like objects to provide Galaxy convenience layer for
     reasoning about users.
 
     Mixed in class must provide `user` and `app`
     properties.
     """
 
+    @property
+    def async_request_user(self) -> RequestUser:
+        if self.user is None:
+            raise AuthenticationRequired("The async task requires user authentication.")
+        return RequestUser(user_id=self.user.id)
+
     @abc.abstractproperty
     def user(self):
         """Provide access to the user object."""
+
+    @property
+    def user_vault(self):
+        """Provide access to a user's personal vault."""
+        return UserVaultWrapper(self.app.vault, self.user)
 
     @property
     def anonymous(self) -> bool:
@@ -241,15 +260,17 @@ class ProvidesUserContext(ProvidesAppContext):
             identifier_attr = self.app.config.ftp_upload_dir_identifier
             identifier_value = getattr(self.user, identifier_attr)
             template = self.app.config.ftp_upload_dir_template
-            path = string.Template(template).safe_substitute(dict(
-                ftp_upload_dir=base_dir,
-                ftp_upload_dir_identifier=identifier_value,
-            ))
+            path = string.Template(template).safe_substitute(
+                dict(
+                    ftp_upload_dir=base_dir,
+                    ftp_upload_dir_identifier=identifier_value,
+                )
+            )
             return path
 
 
 class ProvidesHistoryContext(ProvidesUserContext):
-    """ For transaction-like objects to provide Galaxy convenience layer for
+    """For transaction-like objects to provide Galaxy convenience layer for
     reasoning about histories.
 
     Mixed in class must provide `user`, `history`, and `app`
@@ -264,8 +285,7 @@ class ProvidesHistoryContext(ProvidesUserContext):
         """
 
     def db_dataset_for(self, dbkey) -> Optional[HistoryDatasetAssociation]:
-        """Optionally return the db_file dataset associated/needed by `dataset`.
-        """
+        """Optionally return the db_file dataset associated/needed by `dataset`."""
         # If no history, return None.
         if self.history is None:
             return None
@@ -276,14 +296,12 @@ class ProvidesHistoryContext(ProvidesUserContext):
             return None
         non_ready_or_ok = set(Dataset.non_ready_states)
         non_ready_or_ok.add(HistoryDatasetAssociation.states.OK)
-        datasets = self.sa_session.query(
-            HistoryDatasetAssociation
-        ).filter_by(
-            deleted=False,
-            history_id=self.history.id,
-            extension="len"
-        ).filter(
-            HistoryDatasetAssociation.table.c._state.in_(non_ready_or_ok),
+        datasets = (
+            self.sa_session.query(HistoryDatasetAssociation)
+            .filter_by(deleted=False, history_id=self.history.id, extension="len")
+            .filter(
+                HistoryDatasetAssociation.table.c._state.in_(non_ready_or_ok),
+            )
         )
         valid_ds = None
         for ds in datasets:

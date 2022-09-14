@@ -9,13 +9,14 @@ class RenamedTemporaryFile:
     A temporary file object which will be renamed to the specified
     path on exit.
     """
+
     def __init__(self, final_path, **kwargs):
         """
         >>> dir = tempfile.mkdtemp()
         >>> with RenamedTemporaryFile(os.path.join(dir, 'test.txt'), mode="w") as out:
         ...     _ = out.write('bla')
         """
-        tmpfile_dir = kwargs.pop('dir', None)
+        tmpfile_dir = kwargs.pop("dir", None)
 
         # Put temporary file in the same directory as the location for the
         # final file so that an atomic move into place can occur.
@@ -39,9 +40,8 @@ class RenamedTemporaryFile:
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is None:
             self.tmpfile.flush()
-            result = self.tmpfile.__exit__(exc_type, exc_val, exc_tb)
+            self.tmpfile.__exit__(exc_type, exc_val, exc_tb)
             os.rename(self.tmpfile.name, self.final_path)
         else:
-            result = self.tmpfile.__exit__(exc_type, exc_val, exc_tb)
-
-        return result
+            self.tmpfile.__exit__(exc_type, exc_val, exc_tb)
+        return False

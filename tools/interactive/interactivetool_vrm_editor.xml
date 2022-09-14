@@ -1,0 +1,44 @@
+<tool id="interactive_tool_vrm_editor" tool_type="interactive" name="VRM Editor" version="@VERSION@" profile="22.01">
+    <description>interative tool for creating Variable Resolution Mesh for NorESM/CESM</description>
+    <macros>
+    <token name="@VERSION@">0.2.1</token>
+    </macros>
+    <requirements>
+        <container type="docker">quay.io/nordicesmhub/docker-vrm-editor:@VERSION@</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="VRM Editor with $infile.display_name" requires_domain="True">
+            <port>5800</port>
+        </entry_point>
+    </entry_points>
+    <command detect_errors="exit_code">
+    <![CDATA[
+    mkdir output &&
+        mkdir /config/home  &&
+        mkdir /config/home/output &&
+        export HOME=/config/home &&
+        cp '$infile' '/config/home/$infile.display_name' &&
+        /init ;
+        echo "Galaxy VRM Editor version @VERSION@" > output/version.txt &&
+        cp /config/home/output/* output/ | true &&
+        cd output &&
+        sleep 2 &&
+        for file in *; do mv "\$file" "\${file// /_}"; done &&
+        for file in *; do mv "\$file" "\$file.\${file\#\#*.}"; done
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" format="txt,netcdf,h5" label="input" optional="true" />
+    </inputs>
+    <outputs>
+        <collection name="outputs" type="list" label="VRM Editor outputs">
+            <discover_datasets pattern="__name_and_ext__" directory="output" />
+        </collection>
+    </outputs>
+    <tests>
+    </tests>
+    <help><![CDATA[
+        `VRM Editor <https://github.com/ESMCI/Community_Mesh_Generation_Toolkit>`_ is a tool to create Variable Resolution Spectral Element Grids in CESM/NorESM.
+    ]]>
+    </help>
+</tool>

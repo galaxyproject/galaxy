@@ -6,12 +6,12 @@ import UploadExtension from "mvc/upload/upload-extension";
 import UploadModel from "mvc/upload/upload-model";
 import UploadWrapper from "./UploadWrapper";
 import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
-import { getGalaxyInstance } from "app";
 import UploadFtp from "mvc/upload/upload-ftp";
 import LazyLimited from "mvc/lazy/lazy-limited";
 import { findExtension } from "./utils";
-import { filesDialog } from "utils/data";
+import { filesDialog, refreshContentsWrapper } from "utils/data";
 import { getAppRoot } from "onload";
+import { UploadQueue } from "utils/uploadbox";
 import axios from "axios";
 
 const localize = _l;
@@ -55,7 +55,7 @@ export default {
             return this.hasCallback ? "Cancel" : "Close";
         },
         history_id() {
-            const storeId = this.$store?.getters["betaHistory/currentHistoryId"];
+            const storeId = this.$store?.getters["history/currentHistoryId"];
             if (storeId) {
                 return storeId;
             }
@@ -69,7 +69,8 @@ export default {
         },
         initUploadbox(options) {
             const $uploadBox = this.$uploadBox();
-            this.uploadbox = $uploadBox.uploadbox(options);
+            options.$uploadBox = $uploadBox;
+            this.uploadbox = new UploadQueue(options);
             if (this.lazyLoadMax !== null) {
                 const $uploadBox = this.$uploadBox();
                 this.loader = new LazyLimited({
@@ -193,8 +194,7 @@ export default {
             this.counterAnnounce--;
             this.counterSuccess++;
             this._updateStateForCounters();
-            const Galaxy = getGalaxyInstance();
-            Galaxy.currHistoryPanel.refreshContents();
+            refreshContentsWrapper();
         },
         /** A new file has been dropped/selected through the uploadbox plugin */
         _eventAnnounce: function (index, file) {
@@ -286,12 +286,8 @@ export default {
             }
         },
         /** Create a new file */
-        _eventCreate: function (withNewFile) {
-            if (withNewFile == true) {
-                this.uploadbox.add([{ name: defaultNewFileName, size: 0, mode: "new" }]);
-            } else if (withNewFile == false) {
-                this.uploadbox.add([{ size: 0, mode: "new" }]);
-            }
+        _eventCreate: function () {
+            this.uploadbox.add([{ name: defaultNewFileName, size: 0, mode: "new" }]);
         },
         /** Pause upload process */
         _eventStop: function () {
@@ -360,22 +356,10 @@ export default {
         },
         updateGenome: function (genome, defaults_only) {
             this.collection.each((model) => {
-                if (
-                    model.get("status") == "init" &&
-                    (model.get("genome") == this.app.defaultGenome || !defaults_only)
-                ) {
+                if (model.get("status") == "init" && (model.get("genome") == this.app.defaultDbKey || !defaults_only)) {
                     model.set("genome", genome);
                 }
             });
-        },
-        getUploadedModels: function () {
-            const Galaxy = getGalaxyInstance();
-            const allHids = [];
-            this.collection.models.forEach((upload) => {
-                allHids.push.apply(allHids, upload.get("hids"));
-            });
-            const models = allHids.map((hid) => Galaxy.currHistoryPanel.collection.getByHid(hid));
-            return models;
         },
         getRequestUrl: function (items, history_id) {
             return `${getAppRoot()}api/tools/fetch`;

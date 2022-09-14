@@ -22,7 +22,12 @@ class BootstrapAdminUser(BaseModel):
         return []
 
 
-class FilterQueryParams(BaseModel):
+class ValueFilterQueryParams(BaseModel):
+    """Allows filtering/querying elements by value like `q=<property>-<operator>&qv=<value>`
+
+    Multiple `q/qv` queries can be concatenated.
+    """
+
     q: Optional[Union[List[str], str]] = Field(
         default=None,
         title="Filter Query",
@@ -35,6 +40,11 @@ class FilterQueryParams(BaseModel):
         description="The value to filter by.",
         example="2015-01-29",
     )
+
+
+class PaginationQueryParams(BaseModel):
+    """Used to paginate a the request results by limiting and offsetting."""
+
     offset: Optional[int] = Field(
         default=0,
         ge=0,
@@ -47,6 +57,11 @@ class FilterQueryParams(BaseModel):
         title="Limit",
         description="The maximum number of items to return.",
     )
+
+
+class FilterQueryParams(ValueFilterQueryParams, PaginationQueryParams):
+    """Contains full filtering options to query elements, paginate and order them."""
+
     order: Optional[str] = Field(
         default=None,
         title="Order",
@@ -61,27 +76,28 @@ class FilterQueryParams(BaseModel):
 
 class SerializationParams(BaseModel):
     """Contains common parameters for customizing model serialization."""
+
     view: Optional[str] = Field(
         default=None,
-        title='View',
+        title="View",
         description=(
-            'The name of the view used to serialize this item. '
-            'This will return a predefined set of attributes of the item.'
+            "The name of the view used to serialize this item. "
+            "This will return a predefined set of attributes of the item."
         ),
-        example="summary"
+        example="summary",
     )
     keys: Optional[List[str]] = Field(
         default=None,
-        title='Keys',
+        title="Keys",
         description=(
-            'List of keys (name of the attributes) that will be returned in addition '
-            'to the ones included in the `view`.'
+            "List of keys (name of the attributes) that will be returned in addition "
+            "to the ones included in the `view`."
         ),
     )
     default_view: Optional[str] = Field(
         default=None,
-        title='Default View',
-        description='The item view that will be used in case none was specified.',
+        title="Default View",
+        description="The item view that will be used in case none was specified.",
     )
 
 

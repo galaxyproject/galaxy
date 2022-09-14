@@ -1,8 +1,9 @@
 // Simple dataset provider, looks at api for result, renders to slot prop
 import axios from "axios";
 import { prependPath } from "utils/redirect";
+import { mapActions, mapGetters } from "vuex";
 import { mapCacheActions } from "vuex-cache";
-import { mapGetters } from "vuex";
+import { HasAttributesMixin } from "./utils";
 
 export const SimpleProviderMixin = {
     props: {
@@ -47,40 +48,7 @@ export const SimpleProviderMixin = {
     },
 };
 
-export const StoreProviderMixin = {
-    computed: {
-        storeItem() {
-            throw new Error("define me");
-        },
-    },
-    watch: {
-        storeItem: {
-            handler(newItem, oldItem) {
-                this.item = newItem;
-            },
-        },
-    },
-};
-
-export const DatasetCollectionProvider = {
-    mixins: [SimpleProviderMixin, StoreProviderMixin],
-    methods: {
-        ...mapCacheActions("datasetCollections", ["fetchDatasetCollection"]),
-        async load() {
-            this.loading = true;
-            this.item = await this.fetchDatasetCollection(this.id);
-            this.loading = false;
-        },
-    },
-    computed: {
-        ...mapGetters("datasetCollections", ["getDatasetCollectionById"]),
-        storeItem() {
-            return this.getDatasetCollectionById(this.id);
-        },
-    },
-};
-
-export const GenomeProvider = {
+export const DbKeyProvider = {
     mixins: [SimpleProviderMixin],
     props: {
         id: null,
@@ -89,20 +57,46 @@ export const GenomeProvider = {
         await this.load();
     },
     methods: {
-        ...mapCacheActions(["fetchUploadGenomes"]),
+        ...mapCacheActions(["fetchUploadDbKeys"]),
         async load() {
             this.loading = true;
-            let genomes = this.getUploadGenomes();
-            if (genomes == null || genomes.length == 0) {
-                await this.fetchUploadGenomes();
-                genomes = this.getUploadGenomes();
+            let dbKeys = this.getUploadDbKeys();
+            if (dbKeys == null || dbKeys.length == 0) {
+                await this.fetchUploadDbKeys();
+                dbKeys = this.getUploadDbKeys();
             }
-            this.item = genomes;
+            this.item = dbKeys;
             this.loading = false;
         },
     },
     computed: {
-        ...mapGetters(["getUploadGenomes"]),
+        ...mapGetters(["getUploadDbKeys"]),
+    },
+};
+
+export const DatatypesProvider = {
+    mixins: [SimpleProviderMixin],
+    props: {
+        id: null,
+    },
+    async mounted() {
+        await this.load();
+    },
+    methods: {
+        ...mapCacheActions(["fetchUploadDatatypes"]),
+        async load() {
+            this.loading = true;
+            let datatypes = this.getUploadDatatypes();
+            if (datatypes == null || datatypes.length == 0) {
+                await this.fetchUploadDatatypes();
+                datatypes = this.getUploadDatatypes();
+            }
+            this.item = datatypes;
+            this.loading = false;
+        },
+    },
+    computed: {
+        ...mapGetters(["getUploadDatatypes"]),
     },
 };
 
@@ -133,3 +127,67 @@ export const JobProvider = {
         },
     },
 };
+
+/**
+ * Provider component interface to the actual stores i.e. history items and collection elements stores.
+ * @param {String} storeAction The store action is executed when the consuming component e.g. the history panel, changes the provider props.
+ * @param {String} storeGetter The store getter passes its result to the slot of the corresponding provider.
+ * @param {String} storeCountGetter The query stats store getter passes its matches counts to the slot of the corresponding provider.
+ */
+export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undefined) => {
+    return {
+        mixins: [HasAttributesMixin],
+        watch: {
+            $attrs(newVal, oldVal) {
+                if (JSON.stringify(newVal) != JSON.stringify(oldVal)) {
+                    this.load();
+                }
+            },
+        },
+        data() {
+            return {
+                loading: false,
+                error: null,
+            };
+        },
+        created() {
+            this.load();
+        },
+        computed: {
+            ...mapGetters([storeGetter, storeCountGetter]),
+            result() {
+                return this[storeGetter](this.attributes);
+            },
+            count() {
+                return storeCountGetter ? this[storeCountGetter]() : undefined;
+            },
+        },
+        render() {
+            return this.$scopedSlots.default({
+                error: this.error,
+                loading: this.loading,
+                result: this.result,
+                count: this.count,
+            });
+        },
+        methods: {
+            ...mapActions([storeAction]),
+            async load() {
+                this.loading = true;
+                try {
+                    await this[storeAction](this.attributes);
+                    this.error = null;
+                    this.loading = false;
+                } catch (error) {
+                    this.error = error;
+                    this.loading = false;
+                }
+            },
+        },
+    };
+};
+
+export const DatasetProvider = StoreProvider("fetchDataset", "getDataset");
+export const CollectionElementsProvider = StoreProvider("fetchCollectionElements", "getCollectionElements");
+export const HistoryItemsProvider = StoreProvider("fetchHistoryItems", "getHistoryItems", "getTotalMatchesCount");
+export const ToolsProvider = StoreProvider("fetchAllTools", "getTools");

@@ -12,16 +12,17 @@ from ..panel import (
 
 
 class ToolPanelViewModelType(str, Enum):
-    default_type = 'default'
-    generic = 'generic'
-    activity = 'activity'
-    ontology = 'ontology'
-    publication = 'publication'
-    training = 'training'
+    default_type = "default"
+    generic = "generic"
+    activity = "activity"
+    ontology = "ontology"
+    publication = "publication"
+    training = "training"
 
 
 class ToolPanelViewModel(BaseModel):
     """A view of ToolPanelView objects serialized for the API."""
+
     id: str
     model_class: str
     name: str
@@ -51,7 +52,6 @@ class ToolBoxRegistry:
 
 
 class ToolPanelView:
-
     @abstractmethod
     def apply_view(self, base_tool_panel: ToolPanelElements, toolbox_registry: ToolBoxRegistry) -> ToolPanelElements:
         """Consume tool panel state and return custom tool panel view."""
@@ -64,12 +64,12 @@ class ToolPanelView:
 def walk_loaded_tools(tool_panel: ToolPanelElements, toolbox_registry: ToolBoxRegistry):
     for key, item_type, val in tool_panel.panel_items_iter():
         if item_type == panel_item_types.TOOL:
-            tool_id = key.replace('tool_', '', 1)
+            tool_id = key.replace("tool_", "", 1)
             if toolbox_registry.has_tool(tool_id):
                 yield (tool_id, key, val, val.name)
         elif item_type == panel_item_types.SECTION:
             for section_key, section_item_type, section_val in val.panel_items_iter():
                 if section_item_type == panel_item_types.TOOL:
-                    tool_id = section_key.replace('tool_', '', 1)
+                    tool_id = section_key.replace("tool_", "", 1)
                     if toolbox_registry.has_tool(tool_id):
                         yield (tool_id, key, section_val, val.name)

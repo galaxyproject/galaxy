@@ -18,7 +18,7 @@ def check_for_duplicate_name(files_to_export):
     seen = set()
     duplicates = set()
     for entry in files_to_export:
-        name = entry['staging_path']
+        name = entry["staging_path"]
         if name in seen:
             duplicates.add(name)
         seen.add(name)
@@ -56,10 +56,10 @@ def main(argv=None):
         if write_if_not_exists(file_sources, target_uri, real_data_path):
             exit_code = 1
         if export_metadata_files:
-            metadata_files = entry.get('metadata_files', [])
+            metadata_files = entry.get("metadata_files", [])
             for metadata_file in metadata_files:
                 metadata_file_uri = f"{directory_uri}{metadata_file['staging_path']}"
-                if write_if_not_exists(file_sources, metadata_file_uri, metadata_file['source_path']):
+                if write_if_not_exists(file_sources, metadata_file_uri, metadata_file["source_path"]):
                     exit_code = 1
         counter += 1
     print(f"{counter} out of {len(files_to_export)} files have been exported.\n")

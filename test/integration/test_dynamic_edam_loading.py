@@ -1,8 +1,6 @@
 import os
 
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-)
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -16,6 +14,7 @@ class DynamicEdamLoadingIntegrationTestCase(integration_util.IntegrationTestCase
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["biotools_content_directory"] = MOCK_BIOTOOLS_CONTENT
         config["biotools_use_api"] = False
 

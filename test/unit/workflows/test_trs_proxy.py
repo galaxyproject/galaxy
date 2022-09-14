@@ -13,15 +13,14 @@ from galaxy.workflow.trs_proxy import (
 # search test is very brittle (depends on production values) and is very slow.
 # still good to know search is working though - even if manually
 search_test = pytest.mark.skipif(
-    not environ.get('GALAXY_TEST_INCLUDE_DOCKSTORE_SEARCH'),
-    reason="GALAXY_TEST_INCLUDE_DOCKSTORE_SEARCH not set"
+    not environ.get("GALAXY_TEST_INCLUDE_DOCKSTORE_SEARCH"), reason="GALAXY_TEST_INCLUDE_DOCKSTORE_SEARCH not set"
 )
 
 
 def test_proxy():
     proxy = TrsProxy()
 
-    assert 'dockstore' == proxy.get_servers()[0]["id"]
+    assert "dockstore" == proxy.get_servers()[0]["id"]
 
     tool_id = "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow"
     tool = proxy.get_tool("dockstore", tool_id)

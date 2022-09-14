@@ -1,5 +1,5 @@
 <template>
-    <base-grid :is-loaded="isLoaded" :columns="columns" id="data-tables-grid">
+    <base-grid id="data-tables-grid" :is-loaded="isLoaded" :columns="columns">
         <template v-slot:title> Current data table registry contains {{ rows.length }} data tables </template>
         <template v-slot:rows>
             <template v-for="row in rows">
@@ -20,6 +20,9 @@
 import BaseGrid from "./BaseGrid.vue";
 
 export default {
+    components: {
+        "base-grid": BaseGrid,
+    },
     props: {
         isLoaded: {
             type: Boolean,
@@ -40,10 +43,6 @@ export default {
                 { text: "Errors", dataIndex: "errors" },
             ],
         };
-    },
-
-    components: {
-        "base-grid": BaseGrid,
     },
 
     methods: {

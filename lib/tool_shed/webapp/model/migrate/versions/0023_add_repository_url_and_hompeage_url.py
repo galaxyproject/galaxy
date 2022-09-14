@@ -6,7 +6,11 @@ columns to the repository table.
 import logging
 import sys
 
-from sqlalchemy import Column, MetaData, Table
+from sqlalchemy import (
+    Column,
+    MetaData,
+    Table,
+)
 
 from galaxy.model.custom_types import TrimmedString
 

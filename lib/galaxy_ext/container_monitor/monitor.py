@@ -18,15 +18,14 @@ from galaxy.util.sockets import get_ip
 
 def parse_ports(container_name, connection_configuration):
     while True:
-        ports_command = docker_util.build_docker_simple_command("port", container_name=container_name, **connection_configuration)
+        ports_command = docker_util.build_docker_simple_command(
+            "port", container_name=container_name, **connection_configuration
+        )
         with tempfile.TemporaryFile(prefix="docker_port_") as stdout_file:
-            exit_code = subprocess.call(ports_command,
-                                        shell=True,
-                                        stdout=stdout_file,
-                                        preexec_fn=os.setpgrp)
+            exit_code = subprocess.call(ports_command, shell=True, stdout=stdout_file, preexec_fn=os.setpgrp)
             if exit_code == 0:
                 stdout_file.seek(0)
-                ports_raw = stdout_file.read().decode('utf-8')
+                ports_raw = stdout_file.read().decode("utf-8")
                 return ports_raw
 
 
@@ -55,8 +54,8 @@ def main():
                 ports = docker_util.parse_port_text(ports_raw)
                 if host_ip is not None:
                     for key in ports:
-                        if ports[key]['host'] == '0.0.0.0':
-                            ports[key]['host'] = host_ip
+                        if ports[key]["host"] == "0.0.0.0":
+                            ports[key]["host"] = host_ip
                 if callback_url:
                     requests.post(callback_url, json={"container_runtime": ports}, timeout=DEFAULT_SOCKET_TIMEOUT)
                 else:

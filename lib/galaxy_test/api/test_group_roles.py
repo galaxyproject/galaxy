@@ -1,16 +1,18 @@
-from typing import List
+from typing import (
+    List,
+    Optional,
+)
 
+from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.populators import DatasetPopulator
-from ._framework import ApiTestCase
 
 
 class GroupRolesApiTestCase(ApiTestCase):
-
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
-    def test_index(self, group_name: str = None):
+    def test_index(self, group_name: Optional[str] = None):
         group_name = group_name or "test-group_roles"
         group = self._create_group(group_name)
         encoded_group_id = group["id"]
@@ -39,7 +41,7 @@ class GroupRolesApiTestCase(ApiTestCase):
         response = self._get(f"groups/{encoded_group_id}/roles/{encoded_role_id}", admin=True)
         self._assert_status_code_is(response, 200)
         group_role = response.json()
-        self._assert_valid_group_role(group_role)
+        self._assert_valid_group_role(group_role, assert_id=encoded_role_id)
 
     def test_show_only_admin(self):
         encoded_group_id = "any-group-id"
@@ -110,7 +112,7 @@ class GroupRolesApiTestCase(ApiTestCase):
         delete_response = self._delete(f"groups/{encoded_group_id}/roles/{encoded_role_id}", admin=True)
         self._assert_status_code_is(delete_response, 400)
 
-    def _create_group(self, group_name: str, encoded_role_ids: List[str] = None):
+    def _create_group(self, group_name: str, encoded_role_ids: Optional[List[str]] = None):
         if encoded_role_ids is None:
             encoded_role_ids = [self.dataset_populator.user_private_role_id()]
         role_ids = encoded_role_ids

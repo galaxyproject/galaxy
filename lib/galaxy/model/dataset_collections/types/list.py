@@ -3,8 +3,8 @@ from ..types import BaseDatasetCollectionType
 
 
 class ListDatasetCollectionType(BaseDatasetCollectionType):
-    """ A flat list of named elements.
-    """
+    """A flat list of named elements."""
+
     collection_type = "list"
 
     def __init__(self):

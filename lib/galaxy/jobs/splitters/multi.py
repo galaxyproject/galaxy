@@ -3,8 +3,10 @@ import os
 import shutil
 from inspect import getfullargspec
 
-from galaxy import model, util
-
+from galaxy import (
+    model,
+    util,
+)
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +39,7 @@ def do_split(job_wrapper):
     task_dirs = []
 
     def get_new_working_directory_name():
-        dir = os.path.join(working_directory, 'task_%d' % subdir_index[0])
+        dir = os.path.join(working_directory, "task_%d" % subdir_index[0])
         subdir_index[0] = subdir_index[0] + 1
         if not os.path.exists(dir):
             os.makedirs(dir)
@@ -92,7 +94,7 @@ def do_split(job_wrapper):
         log_error = f"The type '{str(input_type)}' does not define a method for splitting files"
         log.error(log_error)
         raise
-    log.debug('do_split created %d parts' % len(task_dirs))
+    log.debug("do_split created %d parts" % len(task_dirs))
     # next, after we know how many divisions there are, add the shared inputs via soft links
     for input in parent_job.input_datasets:
         if input and input.name in shared_inputs:
@@ -125,21 +127,21 @@ def do_merge(job_wrapper, task_wrappers):
 
     illegal_outputs = [x for x in merge_outputs if x in pickone_outputs]
     if len(illegal_outputs) > 0:
-        return ('Tool file error', f'Outputs have conflicting parallelism attributes: {str(illegal_outputs)}')
+        return ("Tool file error", f"Outputs have conflicting parallelism attributes: {str(illegal_outputs)}")
 
-    stdout = ''
-    stderr = ''
+    stdout = ""
+    stderr = ""
 
     try:
         working_directory = job_wrapper.working_directory
-        task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
+        task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith("task_")]
         assert task_dirs, "Should be at least one sub-task!"
         # TODO: Output datasets can be very complex. This doesn't handle metadata files
         outputs = job_wrapper.job_io.get_output_hdas_and_fnames()
         output_paths = job_wrapper.job_io.get_output_fnames()
         pickone_done = []
-        task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
-        task_dirs.sort(key=lambda x: int(x.split('task_')[-1]))
+        task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith("task_")]
+        task_dirs.sort(key=lambda x: int(x.split("task_")[-1]))
         for index, output in enumerate(outputs):
             output_file_name = str(output_paths[index])  # Use false_path if set, else real path.
             base_output_name = os.path.basename(output_file_name)
@@ -151,10 +153,12 @@ def do_merge(job_wrapper, task_wrappers):
                 # file f exists; some files may not exist if a task fails.
                 output_files = [f for f in output_files if os.path.exists(f)]
                 if output_files:
-                    log.debug(f'files {output_files} ')
+                    log.debug(f"files {output_files} ")
                     if len(output_files) < len(task_dirs):
-                        log.debug('merging only %i out of expected %i files for %s'
-                                  % (len(output_files), len(task_dirs), output_file_name))
+                        log.debug(
+                            "merging only %i out of expected %i files for %s"
+                            % (len(output_files), len(task_dirs), output_file_name)
+                        )
                     # First two args to merge always output_files and path of dataset. More
                     # complicated merge methods may require more parameters. Set those up here.
                     extra_merge_arg_names = getfullargspec(output_type.merge).args[2:]
@@ -162,10 +166,9 @@ def do_merge(job_wrapper, task_wrappers):
                     if "output_dataset" in extra_merge_arg_names:
                         extra_merge_args["output_dataset"] = output_dataset
                     output_type.merge(output_files, output_file_name, **extra_merge_args)
-                    log.debug(f'merge finished: {output_file_name}')
+                    log.debug(f"merge finished: {output_file_name}")
                 else:
-                    msg = 'nothing to merge for %s (expected %i files)' \
-                          % (output_file_name, len(task_dirs))
+                    msg = "nothing to merge for %s (expected %i files)" % (output_file_name, len(task_dirs))
                     log.debug(msg)
                     stderr += f"{msg}\n"
             elif output in pickone_outputs:
@@ -179,7 +182,7 @@ def do_merge(job_wrapper, task_wrappers):
                 log.exception(log_error)
                 raise Exception(log_error)
     except Exception as e:
-        stdout = 'Error merging files'
+        stdout = "Error merging files"
         log.exception(stdout)
         stderr = util.unicodify(e)
 

@@ -1,6 +1,4 @@
-from galaxy_test.base.populators import (
-    DatasetPopulator
-)
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 
@@ -14,6 +12,7 @@ class DefaultPermissionsIntegrationTestCase(integration_util.IntegrationTestCase
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         if hasattr(cls, "new_user_dataset_access_role_default_private"):
             config["new_user_dataset_access_role_default_private"] = cls.new_user_dataset_access_role_default_private
 

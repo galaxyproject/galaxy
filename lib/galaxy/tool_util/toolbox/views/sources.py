@@ -1,6 +1,9 @@
 import logging
 import os
-from typing import Dict, List
+from typing import (
+    Dict,
+    List,
+)
 
 import yaml
 

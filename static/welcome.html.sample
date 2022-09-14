@@ -18,7 +18,8 @@
                 <p>Take an interactive tour:
                     <a target="_parent" href="../tours/core.galaxy_ui" class="btn btn-secondary btn-sm">Galaxy UI</a>
                     <a target="_parent" href="../tours/core.history" class="btn btn-secondary btn-sm">History</a>
-                    <a target="_parent" href="../tours/core.scratchbook" class="btn btn-secondary btn-sm">Scratchbook</a>
+                    <a target="_parent" href="../tours/core.windows" class="btn btn-secondary btn-sm">Window Manager</a>
+                    <a target="_parent" href="../tours/core.deferred" class="btn btn-secondary btn-sm">Deferred Datasets</a>
                 </p>
             </div>
         </div>

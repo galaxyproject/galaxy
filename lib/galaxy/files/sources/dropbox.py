@@ -7,7 +7,7 @@ from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
 class DropboxFilesSource(PyFilesystem2FilesSource):
-    plugin_type = 'dropbox'
+    plugin_type = "dropbox"
     required_module = DropboxFS
     required_package = "fs.dropboxfs"
 
@@ -17,4 +17,4 @@ class DropboxFilesSource(PyFilesystem2FilesSource):
         return handle
 
 
-__all__ = ('DropboxFilesSource',)
+__all__ = ("DropboxFilesSource",)

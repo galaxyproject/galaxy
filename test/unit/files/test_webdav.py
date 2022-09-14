@@ -4,8 +4,8 @@ import os
 
 import pytest
 
-from galaxy.files import ConfiguredFileSources, ConfiguredFileSourcesConfig
 from ._util import (
+    configured_file_sources,
     find,
     find_file_a,
     list_dir,
@@ -19,15 +19,12 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "webdav_file_sources_conf.yml")
 USER_FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "webdav_user_file_sources_conf.yml")
 
-skip_if_no_webdav = pytest.mark.skipif(
-    not os.environ.get('GALAXY_TEST_WEBDAV'),
-    reason="GALAXY_TEST_WEBDAV not set"
-)
+skip_if_no_webdav = pytest.mark.skipif(not os.environ.get("GALAXY_TEST_WEBDAV"), reason="GALAXY_TEST_WEBDAV not set")
 
 
 @skip_if_no_webdav
 def test_file_source():
-    file_sources = _configured_file_sources()
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
     file_source_pair = file_sources.get_file_source_path("gxfiles://test1")
 
     assert file_source_pair.path == "/"
@@ -59,7 +56,7 @@ def test_file_source():
 
 @skip_if_no_webdav
 def test_sniff_to_tmp():
-    file_sources = _configured_file_sources()
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
     _download_and_check_file(file_sources)
 
 
@@ -67,7 +64,7 @@ def test_sniff_to_tmp():
 def test_serialization():
     # serialize the configured file sources and rematerialize them,
     # ensure they still function. This is needed for uploading files.
-    file_sources = serialize_and_recover(_configured_file_sources())
+    file_sources = serialize_and_recover(configured_file_sources(FILE_SOURCES_CONF))
 
     res = list_root(file_sources, "gxfiles://test1", recursive=True)
     assert find_file_a(res)
@@ -80,7 +77,7 @@ def test_serialization():
 
 @skip_if_no_webdav
 def test_serialization_user():
-    file_sources_o = _configured_file_sources(USER_FILE_SOURCES_CONF)
+    file_sources_o = configured_file_sources(USER_FILE_SOURCES_CONF)
     user_context = user_context_fixture()
 
     res = list_root(file_sources_o, "gxfiles://test1", recursive=True, user_context=user_context)
@@ -89,8 +86,3 @@ def test_serialization_user():
     file_sources = serialize_and_recover(file_sources_o, user_context=user_context)
     res = list_root(file_sources, "gxfiles://test1", recursive=True, user_context=None)
     assert find_file_a(res)
-
-
-def _configured_file_sources(conf_file=FILE_SOURCES_CONF):
-    file_sources_config = ConfiguredFileSourcesConfig()
-    return ConfiguredFileSources(file_sources_config, conf_file=conf_file)

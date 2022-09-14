@@ -29,11 +29,11 @@ def __main__():
     options, args = doc_optparse.parse(__doc__)
 
     cmd = "fq_all2std.pl %s %s > %s"
-    if options.command == 'sol2std':
+    if options.command == "sol2std":
         cmd = cmd % (options.command, options.input, options.outputFastqsanger)
-    elif options.command == 'std2sol':
+    elif options.command == "std2sol":
         cmd = cmd % (options.command, options.input, options.outputFastqsolexa)
-    elif options.command == 'fq2fa':
+    elif options.command == "fq2fa":
         cmd = cmd % (options.command, options.input, options.outputFasta)
     try:
         os.system(cmd)

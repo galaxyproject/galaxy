@@ -7,21 +7,15 @@ from galaxy.util import bunch
 
 
 class App:
-
     def __init__(self):
         self.config = bunch.Bunch(
             log_events=False,
             log_actions=False,
         )
-        self.model = mapping.init(
-            "/tmp",
-            "sqlite:///:memory:",
-            create_tables=True
-        )
+        self.model = mapping.init("/tmp", "sqlite:///:memory:", create_tables=True)
 
 
 class Transaction(context.ProvidesAppContext):
-
     def __init__(self):
         self._app = App()
 

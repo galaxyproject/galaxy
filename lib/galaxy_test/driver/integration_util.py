@@ -6,20 +6,27 @@ testing configuration.
 """
 import os
 from typing import ClassVar
-from unittest import skip, SkipTest, TestCase
+from unittest import (
+    skip,
+    SkipTest,
+    TestCase,
+)
 
 import pytest
 
 from galaxy.app import UniverseApplication
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util.commands import which
-from galaxy_test.base.api import UsesApiTestCaseMixin
+from galaxy_test.base.api import (
+    UsesApiTestCaseMixin,
+    UsesCeleryTasks,
+)
 from .driver_util import GalaxyTestDriver
 
 NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
 # Following should be for Homebrew Rabbitmq and Docker on Mac "amqp://guest:guest@localhost:5672//"
 AMQP_URL = os.environ.get("GALAXY_TEST_AMQP_URL", None)
-POSTGRES_CONFIGURED = 'postgres' in os.environ.get("GALAXY_TEST_DBURI", '')
+POSTGRES_CONFIGURED = "postgres" in os.environ.get("GALAXY_TEST_DBURI", "")
 
 
 def _identity(func):
@@ -60,7 +67,7 @@ def skip_unless_kubernetes():
 
 
 def k8s_config_path():
-    return os.environ.get('GALAXY_TEST_KUBE_CONFIG_PATH', '~/.kube/config')
+    return os.environ.get("GALAXY_TEST_KUBE_CONFIG_PATH", "~/.kube/config")
 
 
 def skip_unless_fixed_port():
@@ -77,15 +84,14 @@ def skip_if_github_workflow():
     return pytest.mark.skip("This test is skipped for Github actions.")
 
 
-class IntegrationInstance(UsesApiTestCaseMixin):
+class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
     """Unit test case with utilities for spinning up Galaxy."""
+
     _test_driver: GalaxyTestDriver  # Optional in parent class, but required for integration tests.
 
     _app_available: ClassVar[bool]
 
     prefer_template_database = True
-    # Subclasses can override this to force uwsgi for tests.
-    require_uwsgi = False
 
     # Don't pull in default configs for un-configured things from Galaxy's
     # config directory and such.
@@ -107,6 +113,12 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         cls._test_driver.tear_down()
         cls._app_available = False
 
+    def tearDown(self):
+        logs = self._test_driver.get_logs()
+        if logs:
+            print(logs)
+        return super().tearDown()
+
     def setUp(self):
         self.test_data_resolver = TestDataResolver()
         self._configure_interactor()
@@ -116,7 +128,8 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         server_wrapper = self._test_driver.server_wrappers[0]
         host = server_wrapper.host
         port = server_wrapper.port
-        self.url = f"http://{host}:{port}"
+        prefix = server_wrapper.prefix or ""
+        self.url = f"http://{host}:{port}{prefix.rstrip('/')}/"
         self._setup_interactor()
 
     def restart(self, handle_reconfig=None):
@@ -150,22 +163,6 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         if not self._app.config.database_connection.startswith("post"):
             raise SkipTest("Test only valid for postgres")
 
-    @classmethod
-    def handle_galaxy_config_kwds(cls, galaxy_config_kwds):
-        """Extension point for subclasses to modify arguments used to configure Galaxy.
-
-        This method will be passed the keyword argument pairs used to call
-        Galaxy Config object and can modify the Galaxy instance created for
-        the test as needed.
-        """
-
-    @classmethod
-    def handle_uwsgi_cli_command(cls, command):
-        """Extension point sub subclasses to modify arguments used to launch uWSGI server.
-
-        Command will a list that can be modified.
-        """
-
     def _run_tool_test(self, *args, **kwargs):
         return self._test_driver.run_tool_test(*args, **kwargs)
 
@@ -175,24 +172,11 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         return os.path.realpath(os.path.join(cls._test_driver.galaxy_test_tmp_dir, name))
 
 
-class UsesCeleryTasks:
-    enable_celery_tasks = True
-
-    @pytest.fixture(autouse=True)
-    def _request_celery_app(self, celery_app):
-        self._celery_app = celery_app
-
-    @pytest.fixture(autouse=True)
-    def _request_celery_worker(self, celery_worker):
-        self._celery_worker = celery_worker
-
-
 class IntegrationTestCase(IntegrationInstance, TestCase):
     """Unit TestCase with utilities for spinning up Galaxy."""
 
 
 def integration_module_instance(clazz):
-
     def _instance():
         instance = clazz()
         instance.setUpClass()
@@ -200,11 +184,10 @@ def integration_module_instance(clazz):
         yield instance
         instance.tearDownClass()
 
-    return pytest.fixture(scope='module')(_instance)
+    return pytest.fixture(scope="module")(_instance)
 
 
 def integration_tool_runner(tool_ids):
-
     def test_tools(instance, tool_id):
         instance._run_tool_test(tool_id)
 

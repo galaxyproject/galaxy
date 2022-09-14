@@ -23,7 +23,7 @@ DATA_MANAGER_REGEX = re.compile(r"\stool_type=\"manage_data\"")
 
 YAML_EXTENSIONS = [".yaml", ".yml", ".json"]
 CWL_EXTENSIONS = YAML_EXTENSIONS + [".cwl"]
-EXCLUDE_WALK_DIRS = ['.hg', '.git', '.venv']
+EXCLUDE_WALK_DIRS = [".hg", ".git", ".venv"]
 
 
 def load_exception_handler(path, exc_info):
@@ -38,15 +38,9 @@ def find_possible_tools_from_path(
 ):
     """Walk a directory and find potential tool files."""
     possible_tool_files = []
-    for possible_tool_file in _find_tool_files(
-        path, recursive=recursive,
-        enable_beta_formats=enable_beta_formats
-    ):
+    for possible_tool_file in _find_tool_files(path, recursive=recursive, enable_beta_formats=enable_beta_formats):
         try:
-            does_look_like_a_tool = looks_like_a_tool(
-                possible_tool_file,
-                enable_beta_formats=enable_beta_formats
-            )
+            does_look_like_a_tool = looks_like_a_tool(possible_tool_file, enable_beta_formats=enable_beta_formats)
         except OSError:
             # Some problem reading the tool file, skip.
             continue
@@ -164,14 +158,16 @@ def looks_like_xml(path, regex=TOOL_REGEX):
     if not os.path.getsize(full_path):
         return False
 
-    if(checkers.check_binary(full_path)
-       or checkers.check_image(full_path)
-       or checkers.is_gzip(full_path)
-       or checkers.is_bz2(full_path)
-       or checkers.is_zip(full_path)):
+    if (
+        checkers.check_binary(full_path)
+        or checkers.check_image(full_path)
+        or checkers.is_gzip(full_path)
+        or checkers.is_bz2(full_path)
+        or checkers.is_zip(full_path)
+    ):
         return False
 
-    with open(path, encoding='utf-8') as f:
+    with open(path, encoding="utf-8") as f:
         try:
             start_contents = f.read(5 * 1024)
         except UnicodeDecodeError:
@@ -192,22 +188,42 @@ def looks_like_a_data_manager_xml(path):
     return looks_like_xml(path=path, regex=DATA_MANAGER_REGEX)
 
 
-def is_a_yaml_with_class(path, classes):
-    """Determine if a file is a valid YAML with a supplied ``class`` entry."""
-    if not _has_extension(path, YAML_EXTENSIONS):
-        return False
+def as_dict_if_looks_like_yaml_or_cwl_with_class(path, classes):
+    """
+    get a dict from yaml file if it contains `class: CLASS`, where CLASS is
+    any string given in CLASSES. must appear in the first 5k and also load
+    properly in total.
+    """
+    with open(path, encoding="utf-8") as f:
+        try:
+            start_contents = f.read(5 * 1024)
+        except UnicodeDecodeError:
+            return False, None
+        if re.search(rf"\nclass:\s+({'|'.join(classes)})\s*\n", start_contents) is None:
+            return False, None
 
     with open(path) as f:
         try:
             as_dict = yaml.safe_load(f)
         except Exception:
-            return False
+            return False, None
 
     if not isinstance(as_dict, dict):
-        return False
+        return False, None
 
     file_class = as_dict.get("class", None)
-    return file_class in classes
+    if file_class not in classes:
+        return False, None
+
+    return True, as_dict
+
+
+def is_a_yaml_with_class(path, classes):
+    """Determine if a file is a valid YAML with a supplied ``class`` entry."""
+    if not _has_extension(path, YAML_EXTENSIONS):
+        return False
+    is_yaml, as_dict = as_dict_if_looks_like_yaml_or_cwl_with_class(path, classes)
+    return is_yaml
 
 
 def looks_like_a_tool_yaml(path):
@@ -220,17 +236,8 @@ def looks_like_a_cwl_artifact(path, classes=None):
     if not _has_extension(path, CWL_EXTENSIONS):
         return False
 
-    with open(path) as f:
-        try:
-            as_dict = yaml.safe_load(f)
-        except Exception:
-            return False
-
-    if not isinstance(as_dict, dict):
-        return False
-
-    file_class = as_dict.get("class", None)
-    if classes is not None and file_class not in classes:
+    is_yaml, as_dict = as_dict_if_looks_like_yaml_or_cwl_with_class(path, classes)
+    if not is_yaml:
         return False
 
     file_cwl_version = as_dict.get("cwlVersion", None)
@@ -273,7 +280,7 @@ def _has_extension(path, extensions):
     return any(path.endswith(e) for e in extensions)
 
 
-def _find_files(directory, pattern='*'):
+def _find_files(directory, pattern="*"):
     if not os.path.exists(directory):
         raise ValueError(f"Directory not found {directory}")
 
@@ -296,14 +303,14 @@ def resolved_path(path_or_uri_like):
     if "://" not in path_or_uri_like:
         return path_or_uri_like
     elif path_or_uri_like.startswith("file://"):
-        return path_or_uri_like[len("file://"):]
+        return path_or_uri_like[len("file://") :]
     else:
         return UNRESOLVED_URI
 
 
 BETA_TOOL_CHECKERS = {
-    'yaml': looks_like_a_tool_yaml,
-    'cwl': looks_like_a_tool_cwl,
+    "yaml": looks_like_a_tool_yaml,
+    "cwl": looks_like_a_tool_cwl,
 }
 
 __all__ = (

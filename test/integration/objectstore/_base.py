@@ -3,17 +3,15 @@ import re
 import string
 import subprocess
 
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-)
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
-
-OBJECT_STORE_HOST = os.environ.get('GALAXY_INTEGRATION_OBJECT_STORE_HOST', '127.0.0.1')
-OBJECT_STORE_PORT = int(os.environ.get('GALAXY_INTEGRATION_OBJECT_STORE_PORT', 9000))
-OBJECT_STORE_ACCESS_KEY = os.environ.get('GALAXY_INTEGRATION_OBJECT_STORE_ACCESS_KEY', 'minioadmin')
-OBJECT_STORE_SECRET_KEY = os.environ.get('GALAXY_INTEGRATION_OBJECT_STORE_SECRET_KEY', 'minioadmin')
-OBJECT_STORE_CONFIG = string.Template("""
+OBJECT_STORE_HOST = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_HOST", "127.0.0.1")
+OBJECT_STORE_PORT = int(os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_PORT", 9000))
+OBJECT_STORE_ACCESS_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_ACCESS_KEY", "minioadmin")
+OBJECT_STORE_SECRET_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_SECRET_KEY", "minioadmin")
+OBJECT_STORE_CONFIG = string.Template(
+    """
 <object_store type="hierarchical" id="primary">
     <backends>
         <object_store id="swifty" type="swift" weight="1" order="0">
@@ -26,27 +24,29 @@ OBJECT_STORE_CONFIG = string.Template("""
         </object_store>
     </backends>
 </object_store>
-""")
+"""
+)
 
 
 def start_minio(container_name):
     minio_start_args = [
-        'docker',
-        'run',
-        '-p',
-        f'{OBJECT_STORE_PORT}:9000',
-        '-d',
-        '--name',
+        "docker",
+        "run",
+        "-p",
+        f"{OBJECT_STORE_PORT}:9000",
+        "-d",
+        "--name",
         container_name,
-        '--rm',
-        'minio/minio:latest',
-        'server',
-        '/tmp/data']
+        "--rm",
+        "minio/minio:latest",
+        "server",
+        "/data",
+    ]
     subprocess.check_call(minio_start_args)
 
 
 def stop_minio(container_name):
-    subprocess.check_call(['docker', 'rm', '-f', container_name])
+    subprocess.check_call(["docker", "rm", "-f", container_name])
 
 
 class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase):
@@ -96,6 +96,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
         cls.object_store_cache_path = f"{temp_directory}/object_store_cache"

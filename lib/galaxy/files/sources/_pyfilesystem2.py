@@ -2,11 +2,17 @@ import abc
 import functools
 import logging
 import os
-from typing import Any, Dict, List, Optional, Type
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+)
 
 import fs
 from fs.base import FS
-from typing_extensions import ClassVar
 
 from ..sources import BaseFilesSource
 
@@ -41,16 +47,16 @@ class PyFilesystem2FilesSource(BaseFilesSource):
                     res.extend(map(to_dict, files))
                 return res
             else:
-                res = h.scandir(path, namespaces=['details'])
+                res = h.scandir(path, namespaces=["details"])
                 to_dict = functools.partial(self._resource_info_to_dict, path)
                 return list(map(to_dict, res))
 
     def _realize_to(self, source_path, native_path, user_context=None):
-        with open(native_path, 'wb') as write_file:
+        with open(native_path, "wb") as write_file:
             self._open_fs(user_context=user_context).download(source_path, write_file)
 
     def _write_from(self, target_path, native_path, user_context=None):
-        with open(native_path, 'rb') as read_file:
+        with open(native_path, "rb") as read_file:
             openfs = self._open_fs(user_context=user_context)
             dirname = fs.path.dirname(target_path)
             if not openfs.isdir(dirname):

@@ -8,6 +8,8 @@ import { mountUploadModal } from "components/Upload";
 import { uploadModelsToPayload } from "components/Upload/helpers";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
+import { submitUpload } from "utils/uploadbox";
+import { rewatchHistory } from "store/historyStore/model/watchHistory";
 
 // This should be moved more centrally (though still hanging off Galaxy for
 // external use?), and populated from the store; just using this as a temporary
@@ -84,8 +86,6 @@ function _mountSelectionDialog(clazz, options) {
  * TODO: This should live somewhere else.
  */
 export function create(options) {
-    const Galaxy = getGalaxyInstance();
-    const history_panel = Galaxy.currHistoryPanel;
     async function getHistory() {
         if (!options.history_id) {
             return getCurrentGalaxyHistory();
@@ -93,12 +93,10 @@ export function create(options) {
         return options.history_id;
     }
     getHistory().then((history_id) => {
-        $.uploadchunk({
+        submitUpload({
             url: `${getAppRoot()}api/tools/fetch`,
             success: (response) => {
-                if (history_panel) {
-                    history_panel.refreshContents();
-                }
+                refreshContentsWrapper();
                 if (options.success) {
                     options.success(response);
                 }
@@ -109,4 +107,12 @@ export function create(options) {
             },
         });
     });
+}
+
+export function refreshContentsWrapper() {
+    const Galaxy = getGalaxyInstance();
+    // Legacy Panel Interface. no-op if using new history
+    Galaxy?.currHistoryPanel?.refreshContents();
+    // Will not do anything in legacy interface
+    rewatchHistory();
 }

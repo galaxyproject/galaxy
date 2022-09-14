@@ -31,9 +31,6 @@ export default {
             paths: [],
         };
     },
-    created: function () {
-        this.load();
-    },
     computed: {
         items: function () {
             return this.paths.map((path) => {
@@ -48,6 +45,9 @@ export default {
             }
             return false;
         },
+    },
+    created: function () {
+        this.load();
     },
     methods: {
         load() {

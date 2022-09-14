@@ -1,7 +1,7 @@
 <template>
     <CurrentUser v-slot="{ user }">
-        <UserHistories v-if="user" :user="user" v-slot="{ currentHistoryId }">
-            <div v-if="currentHistoryId">
+        <UserHistories v-if="user" v-slot="{ currentHistoryId }" :user="user">
+            <div v-if="currentHistoryId" class="workflow-expanded-form">
                 <div class="h4 clearfix mb-3">
                     <b>Workflow: {{ model.name }}</b>
                     <ButtonSpinner
@@ -24,10 +24,10 @@
                 <FormCard v-if="reuseAllowed(user)" title="Job re-use Options">
                     <template v-slot:body>
                         <FormElement
+                            v-model="useCachedJobs"
                             title="Attempt to re-use jobs with identical parameters?"
                             help="This may skip executing jobs that you have already run."
-                            type="boolean"
-                            v-model="useCachedJobs" />
+                            type="boolean" />
                     </template>
                 </FormCard>
                 <FormCard v-if="resourceInputsAvailable" title="Workflow Resource Options">
@@ -39,9 +39,8 @@
                     <WorkflowRunToolStep
                         v-if="step.step_type == 'tool'"
                         :model="step"
-                        :step-data="stepData"
+                        :replace-params="getReplaceParams(step.inputs)"
                         :validation-scroll-to="getValidationScrollTo(step.index)"
-                        :wp-data="wpData"
                         :history-id="currentHistoryId"
                         @onChange="onToolStepInputs"
                         @onValidation="onValidation" />
@@ -63,11 +62,12 @@ import CurrentUser from "components/providers/CurrentUser";
 import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
-import UserHistories from "components/History/providers/UserHistories";
+import UserHistories from "components/providers/UserHistories";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunToolStep from "./WorkflowRunToolStep";
-import { invokeWorkflow } from "./services";
 import { allowCachedJobs } from "components/Tool/utilities";
+import { getReplacements } from "./model";
+import { invokeWorkflow } from "./services";
 
 export default {
     components: {
@@ -145,6 +145,9 @@ export default {
         reuseAllowed(user) {
             return allowCachedJobs(user.preferences);
         },
+        getReplaceParams(inputs) {
+            return getReplacements(inputs, this.stepData, this.wpData);
+        },
         getValidationScrollTo(stepId) {
             if (this.stepScrollTo.stepId == stepId) {
                 return this.stepScrollTo.stepError;
@@ -206,6 +209,9 @@ export default {
                 // Tool form always wants a list of invocations back
                 // so that inputs can be batched.
                 batch: true,
+                // the user is already warned if tool versions are wrong,
+                // they can still choose to invoke the workflow anyway.
+                require_exact_tool_versions: false,
             };
 
             console.debug("WorkflowRunForm::onExecute()", "Ready for submission.", jobDef);
