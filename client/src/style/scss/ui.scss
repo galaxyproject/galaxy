@@ -477,3 +477,20 @@ $ui-margin-horizontal-large: $margin-v * 2;
 .flex-gapx-1 {
     column-gap: 0.25rem;
 }
+
+/* Heading Sizes */
+.h-large {
+    font-size: $h1-font-size;
+}
+
+.h-medium {
+    font-size: $h2-font-size;
+}
+
+.h-small {
+    font-size: $h3-font-size;
+}
+
+.h-text {
+    font-size: $font-size-base;
+}
