@@ -49,7 +49,7 @@ export default {
     },
     methods: {
         clickedSave: function () {
-            this.$emit("clicked-save", "dbkey", this.selectedDatatype);
+            this.$emit("clicked-save", this.selectedDatatype);
             this.selectedDatatype = this.datatypes.find((element) => element.id == this.datatypeFromElements);
         },
     },

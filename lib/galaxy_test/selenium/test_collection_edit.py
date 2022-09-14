@@ -22,10 +22,32 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.navigate_to_database_tab()
         self.check_current_dbkey_value(dbkeyNew)
 
+    @selenium_test
+    def test_change_datatype_simple_list(self):
+        self.use_beta_history()
+        self.create_simple_list_collection_txt()
+        self.open_collection_edit_view()
+        self.navigate_to_datatype_tab()
+        datatypeValue = "txt"
+        self.check_current_datatype_value(datatypeValue)
+        datatypeNew = "tabular"
+        self.change_datatype_value_and_click_submit(datatypeValue, datatypeNew)
+
     def create_simple_list_collection(self):
         self.perform_upload(self.get_filename("1.fasta"))
         self._wait_for_and_select([1])
         self._collection_dropdown("build list")
+        self.collection_builder_set_name("my cool list")
+        self.screenshot("collection_builder_list")
+        self.collection_builder_create()
+        self._wait_for_hid_visible(2)
+
+    def create_simple_list_collection_txt(self):
+        self.perform_upload(self.get_filename("1.txt"))
+        self._wait_for_and_select([1])
+
+        self._collection_dropdown("build list")
+
         self.collection_builder_set_name("my cool list")
         self.screenshot("collection_builder_list")
         self.collection_builder_create()
@@ -37,14 +59,26 @@ class CollectionEditTestCase(SeleniumTestCase):
     def navigate_to_database_tab(self):
         self.components.edit_collection_attributes.database_genome_tab.wait_for_and_click()
 
+    def navigate_to_datatype_tab(self):
+        self.components.edit_collection_attributes.datatypes_tab.wait_for_and_click()
+
     def check_current_dbkey_value(self, dbkeyValue):
         self.components.edit_collection_attributes.database_value(dbkey=dbkeyValue).wait_for_visible()
+
+    def check_current_datatype_value(self, datatypeValue):
+        self.components.edit_collection_attributes.datatype_value(datatype=datatypeValue).wait_for_visible()
 
     def change_dbkey_value_and_click_submit(self, dbkeyValue, dbkeyNew):
         self.components.edit_collection_attributes.database_value(dbkey=dbkeyValue).wait_for_and_click()
         self.find_element_by_selector("input.multiselect__input").send_keys(dbkeyNew)
         self.find_element_by_selector("input.multiselect__input").send_keys(self.keys.ENTER)
         self.components.edit_collection_attributes.save_btn.wait_for_and_click()
+
+    def change_datatype_value_and_click_submit(self, datatypeValue, datatypeNew):
+        self.components.edit_collection_attributes.datatype_value(datatype=datatypeValue).wait_for_and_click()
+        self.find_element_by_selector("input.multiselect__input").send_keys(datatypeNew)
+        # self.find_element_by_selector("input.multiselect__input").send_keys(self.keys.ENTER)
+        # self.components.edit_collection_attributes.save_btn.wait_for_and_click()
 
     def _wait_for_and_select(self, hids):
         """

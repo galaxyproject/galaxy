@@ -3468,7 +3468,7 @@ mapping:
 
       enable_celery_tasks:
         type: bool
-        default: false
+        default: true
         required: false
         desc: |
           Offload long-running tasks to a Celery task queue.

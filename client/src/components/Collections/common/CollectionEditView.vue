@@ -143,8 +143,24 @@ export default {
             axios.post(url, data).catch(this.handleError);
         },
         clickedDatatypeChange: function (selectedDatatype) {
+            const historyId = this.$store?.getters["history/currentHistoryId"];
+
             console.log("New Type:", selectedDatatype);
-            const url = prependPath(`/api/histories/${this.history_id}/contents/bulk`)
+            const url = prependPath(`/api/histories/${historyId}/contents/bulk`);
+            const data = {
+                operation: "change_datatype",
+                items: [
+                    {
+                        history_content_type: "dataset_collection",
+                        id: this.collection_id,
+                    },
+                ],
+                params: {
+                    type: "change_datatype",
+                    datatype: selectedDatatype.id,
+                },
+            };
+            axios.put(url, data).catch(this.handleError);
         },
         handleError: function (err) {
             this.errorMessage = errorMessageAsString(err, "History import failed.");

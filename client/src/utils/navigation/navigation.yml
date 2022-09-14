@@ -308,9 +308,15 @@ edit_collection_attributes:
     database_genome_tab:
       type: xpath
       selector: '//a[contains(text(), "Database/Build")]'
+    datatypes_tab:
+      type: xpath
+      selector: '//a[contains(text(), "Datatypes")]'
     database_value:
       type: xpath
       selector: '//span[contains(text(), "${dbkey}")]'
+    datatype_value:
+      type: xpath
+      selector: '//span[contains(text(), "${datatype}")]'
     save_btn: '.save-collection-edit'
 
 tool_panel:
