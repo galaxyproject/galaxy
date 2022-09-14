@@ -199,19 +199,18 @@ class ObjectNotFound(MessageException):
     err_code = error_codes_by_name["USER_OBJECT_NOT_FOUND"]
 
 
+class Conflict(MessageException):
+    status_code = 409
+    err_code = error_codes_by_name["CONFLICT"]
+
+
 class DeprecatedMethod(MessageException):
     """
     Method (or a particular form/arg signature) has been removed and won't be available later
     """
 
-    status_code = 404
-    # TODO:?? 410 Gone?
+    status_code = 410
     err_code = error_codes_by_name["DEPRECATED_API_CALL"]
-
-
-class Conflict(MessageException):
-    status_code = 409
-    err_code = error_codes_by_name["CONFLICT"]
 
 
 class ConfigurationError(Exception):
