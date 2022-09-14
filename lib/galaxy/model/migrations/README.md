@@ -15,7 +15,6 @@ On startup, the system checks if the version in the database matches the version
 
 To initialize an empty database (or create a new SQLite database) start Galaxy. To upgrade or downgrade an existing database, you'll need to use a script.
 
-To manage database schema migrations, as well as to perform common migration-related operations,
 Galaxy provides two scripts: `db.sh` and `run_alembic.sh`.
 
 The `db.sh` script is the recommended way to interact with Galaxy's database schema migration system.
