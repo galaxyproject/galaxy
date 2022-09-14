@@ -1,12 +1,17 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { BCard, BCardTitle, BButtonToolbar, BButtonGroup } from "bootstrap-vue";
 import { InvocationExportPlugin } from "./model";
 import StsDownloadButton from "components/StsDownloadButton.vue";
 import ExportToRemoteButton from "components/Workflow/Invocation/Export/ExportToRemoteButton.vue";
+import ExportToRemoteModal from "components/Workflow/Invocation/Export/ExportToRemoteModal.vue";
 import { useMarkdown } from "composables/useMarkdown";
+import { useFilesSources } from "composables/useFilesSources";
 
 const md = useMarkdown({ openLinksInNewPage: true });
+const { writableFileSources } = useFilesSources();
+
+const exportRemoteModal = ref(null);
 
 const props = defineProps({
     exportPlugin: { type: InvocationExportPlugin, required: true },
@@ -15,23 +20,35 @@ const props = defineProps({
 
 const invocationDownloadUrl = computed(() => `/api/invocations/${props.invocationId}/prepare_store_download`);
 const descriptionRendered = computed(() => md.render(props.exportPlugin.markdownDescription));
+
+function openExportToFileSourceDialog() {
+    exportRemoteModal.value.showModal();
+}
 </script>
 
 <template>
-    <b-card class="export-plugin-card mb-1">
-        <b-card-title class="align-items-center d-flex justify-content-between">
-            {{ exportPlugin.title }}
-            <b-button-toolbar aria-label="Export Options">
-                <b-button-group>
-                    <sts-download-button
-                        :title="'Download Invocation as ' + exportPlugin.title"
-                        :download-endpoint="invocationDownloadUrl" />
-                    <export-to-remote-button
-                        :title="'Export Invocation as ' + exportPlugin.title + ' and upload to remote source'" />
-                </b-button-group>
-            </b-button-toolbar>
-        </b-card-title>
+    <div>
+        <b-card class="export-plugin-card mb-1">
+            <b-card-title class="align-items-center d-flex justify-content-between">
+                {{ exportPlugin.title }}
+                <b-button-toolbar aria-label="Export Options">
+                    <b-button-group>
+                        <sts-download-button
+                            :title="'Download Invocation as ' + exportPlugin.title"
+                            :download-endpoint="invocationDownloadUrl" />
+                        <export-to-remote-button
+                            :title="'Export Invocation as ' + exportPlugin.title + ' and upload to remote source'"
+                            @onExportToFileSource="openExportToFileSourceDialog" />
+                    </b-button-group>
+                </b-button-toolbar>
+            </b-card-title>
 
-        <div v-html="descriptionRendered"></div>
-    </b-card>
+            <div v-html="descriptionRendered"></div>
+        </b-card>
+        <export-to-remote-modal
+            ref="exportRemoteModal"
+            :invocation-id="props.invocationId"
+            :export-plugin="props.exportPlugin"
+            :writable-file-sources="writableFileSources" />
+    </div>
 </template>

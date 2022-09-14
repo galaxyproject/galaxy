@@ -8,11 +8,14 @@ library.add(faCloudUploadAlt);
 const props = defineProps({
     title: { type: String, required: true },
 });
+
+const emit = defineEmits(["onExportToFileSource"]);
 </script>
 
 <template>
-    <!-- TODO enable remote source export when ready-->
-    <b-button :title="props.title" disabled>
-        <font-awesome-icon icon="cloud-upload-alt" />
-    </b-button>
+    <div>
+        <b-button :title="props.title" @click="() => emit('onExportToFileSource')">
+            <font-awesome-icon icon="cloud-upload-alt" />
+        </b-button>
+    </div>
 </template>
