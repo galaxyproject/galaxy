@@ -60,7 +60,7 @@ positional arguments:
     history (h)         List revision scripts in chronological order
     show (s)            Show the revision(s) denoted by the given symbol
     revision            Create a new revision file
-    init                Initialize empty database(s) for both branches
+    init                Initialize empty database(s)
 
 optional arguments:
   -h, --help            show this help message and exit
