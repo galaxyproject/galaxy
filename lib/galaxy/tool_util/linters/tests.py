@@ -38,7 +38,7 @@ def lint_tsts(tool_xml, lint_ctx):
             if len(assertions) == 0:
                 continue
             if len(assertions) > 1:
-                lint_ctx.error(f"Test {test_idx}: More than one {ta} found. Only the first is considered.")
+                lint_ctx.error(f"Test {test_idx}: More than one {ta} found. Only the first is considered.", node=test)
             has_test = True
             _check_asserts(test_idx, assertions, lint_ctx)
         _check_asserts(test_idx, test.findall(".//assert_contents"), lint_ctx)
@@ -46,7 +46,7 @@ def lint_tsts(tool_xml, lint_ctx):
         # check if expect_num_outputs is set if there are outputs with filters
         filter = tool_xml.findall("./outputs//filter")
         if len(filter) > 0 and "expect_num_outputs" not in test.attrib:
-            lint_ctx.warn("Test should specify 'expect_num_outputs' if outputs have filters")
+            lint_ctx.warn("Test should specify 'expect_num_outputs' if outputs have filters", node=test)
 
         # really simple test that test parameters are also present in the inputs
         for param in test.findall("param"):
