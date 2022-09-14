@@ -61,7 +61,6 @@ positional arguments:
     show (s)            Show the revision(s) denoted by the given symbol
     revision            Create a new revision file
     init                Initialize empty database(s) for both branches
-                        (create database objects for gxy and tsi branch)
 
 optional arguments:
   -h, --help            show this help message and exit
