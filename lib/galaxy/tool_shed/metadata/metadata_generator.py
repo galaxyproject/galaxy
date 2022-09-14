@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import tempfile
@@ -388,31 +387,6 @@ class MetadataGenerator:
                                     else:
                                         for tup in invalid_files_and_errors_tups:
                                             self.invalid_file_tups.append(tup)
-                        # Find all exported workflows.
-                        elif name.endswith(".ga"):
-                            relative_path = os.path.join(root, name)
-                            if os.path.getsize(os.path.abspath(relative_path)) > 0:
-                                fp = open(relative_path, "rb")
-                                workflow_text = fp.read()
-                                fp.close()
-                                if workflow_text:
-                                    valid_exported_galaxy_workflow = True
-                                    try:
-                                        exported_workflow_dict = json.loads(workflow_text)
-                                    except Exception:
-                                        log.exception(
-                                            "Skipping file %s since it does not seem to be a valid exported Galaxy workflow",
-                                            str(relative_path),
-                                        )
-                                        valid_exported_galaxy_workflow = False
-                                if (
-                                    valid_exported_galaxy_workflow
-                                    and "a_galaxy_workflow" in exported_workflow_dict
-                                    and exported_workflow_dict["a_galaxy_workflow"] == "true"
-                                ):
-                                    metadata_dict = self.generate_workflow_metadata(
-                                        relative_path, exported_workflow_dict, metadata_dict
-                                    )
         # Handle any data manager entries
         data_manager_config = get_config_from_disk(suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME, files_dir)
         metadata_dict = self._generate_data_manager_metadata(
