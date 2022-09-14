@@ -2,6 +2,15 @@ import logging
 import os
 import re
 import shutil
+from typing import (
+    Any,
+    cast,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 from urllib.error import HTTPError
 
 from markupsafe import escape
@@ -332,9 +341,16 @@ def get_prior_import_or_install_required_dict(app, tsr_ids, repo_info_dicts):
     return prior_import_or_install_required_dict
 
 
-def get_repo_info_tuple_contents(repo_info_tuple):
+ToolDependenciesDictT = Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]
+OldRepositoryTupleT = Tuple[str, str, str, str, str, ToolDependenciesDictT]
+RepositoryTupleT = Tuple[str, str, str, str, str, Optional[Any], ToolDependenciesDictT]
+AnyRepositoryTupleT = Union[OldRepositoryTupleT, RepositoryTupleT]
+
+
+def get_repo_info_tuple_contents(repo_info_tuple: AnyRepositoryTupleT) -> RepositoryTupleT:
     """Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced."""
     if len(repo_info_tuple) == 6:
+        old_repo_info = cast(OldRepositoryTupleT, repo_info_tuple)
         (
             description,
             repository_clone_url,
@@ -342,9 +358,10 @@ def get_repo_info_tuple_contents(repo_info_tuple):
             ctx_rev,
             repository_owner,
             tool_dependencies,
-        ) = repo_info_tuple
+        ) = old_repo_info
         repository_dependencies = None
     elif len(repo_info_tuple) == 7:
+        repo_info = cast(RepositoryTupleT, repo_info_tuple)
         (
             description,
             repository_clone_url,
@@ -353,7 +370,7 @@ def get_repo_info_tuple_contents(repo_info_tuple):
             repository_owner,
             repository_dependencies,
             tool_dependencies,
-        ) = repo_info_tuple
+        ) = repo_info
     return (
         description,
         repository_clone_url,
