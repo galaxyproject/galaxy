@@ -273,7 +273,7 @@ def set_metadata_portable():
             external_filename = unnamed_id_to_path.get(dataset_instance_id, dataset_filename_override)
             if not os.path.exists(external_filename):
                 matches = glob.glob(external_filename)
-                assert len(matches) == 1, f"More than one file matched by output glob '{external_filename}'"
+                assert len(matches) == 1, f"{len(matches)} file matched by output glob '{external_filename}', should be 1"
                 external_filename = matches[0]
                 assert safe_contains(tool_job_working_directory, external_filename), f"Cannot collect output '{external_filename}' from outside of working directory"
                 created_from_basename = os.path.relpath(external_filename, os.path.join(tool_job_working_directory, 'working'))

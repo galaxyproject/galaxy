@@ -1,0 +1,26 @@
+<tool id="tool_deleting_output" name="tool_deleting_output" version="0.1.0" license="AFL-3.0" profile="21.09">
+    <command><![CDATA[
+rm '$out_file1' || true && ## ensure that this does not fail.
+exit $exit_code
+    ]]></command>
+    <inputs>
+        <param name="exit_code" type="integer" value="0"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test expect_exit_code="0" expect_failure="true">
+            <param name="exit_code" value="0"/>
+        </test>
+        <test expect_exit_code="1" expect_failure="true">
+            <param name="exit_code" value="1"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+        This tool tests what happens if the underlying program removes the output data set:
+        the job should fail independent of the exit code and the exit code should be correctly checked.
+
+        With outputs_to_working_directory this provoked https://github.com/galaxyproject/galaxy/issues/14206
+    ]]></help>
+</tool>

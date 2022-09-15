@@ -1696,7 +1696,13 @@ class JobWrapper(HasResourceParameters):
                     else:
                         # Prior to fail we need to set job.state
                         job.set_state(final_job_state)
-                        return self.fail(f"Job {job.id}'s output dataset(s) could not be read")
+                        return fail(f"Job {job.id}'s output dataset(s) could not be read")
+        else:
+            # check existence of outputs (tools may delete outputs)
+            for dataset_path in self.get_output_fnames():
+                if not os.path.exists(dataset_path.real_path):
+                    job.set_state(final_job_state)
+                    return fail(f"Job {job.id}'s output dataset(s) could not be read")
 
         job_context = ExpressionContext(dict(stdout=job.stdout, stderr=job.stderr))
         if extended_metadata:
@@ -2005,6 +2011,8 @@ class JobWrapper(HasResourceParameters):
 
         results = []
         for da in job.output_datasets + job.output_library_datasets:
+            if da.purged:
+                continue
             da_false_path = dataset_path_rewriter.rewrite_dataset_path(da.dataset, 'output')
             mutable = da.dataset.dataset.external_filename is None
             dataset_path = DatasetPath(da.dataset.dataset.id, da.dataset.file_name, false_path=da_false_path, mutable=mutable)
