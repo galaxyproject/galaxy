@@ -343,7 +343,6 @@ export default {
             }
         },
         steps(newSteps, oldSteps) {
-            console.log("steps watch triggered");
             this.hasChanges = true;
             this.nodeIndex = Math.max(...Object.keys(newSteps).map((k) => parseInt(k))) + 1;
         },
@@ -363,11 +362,9 @@ export default {
     },
     methods: {
         onUpdateStep(stepId, step) {
-            console.log("updating step");
             this.steps[stepId] = step;
         },
         onUpdateStepPosition(stepId, position) {
-            console.log("updating step position");
             this.steps[stepId].position = position;
         },
         onDisconnect(nodeId, inputName) {
@@ -634,7 +631,6 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            console.log(this.nodeIndex);
             Vue.set(this.steps, this.nodeIndex++, {
                 name: name,
                 content_id: contentId,
@@ -683,14 +679,12 @@ export default {
         },
         onActiveNode(nodeId) {
             this.activeNode = this.nodes[nodeId];
-            console.log("active node");
             this.$refs["right-panel"].scrollTop = 0;
         },
         getManager() {
             return this;
         },
         getNode() {
-            console.log("getting node");
             return this.activeNode;
         },
         onInsertedStateMessages(insertedStateMessages) {

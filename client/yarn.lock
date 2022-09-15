@@ -1112,6 +1112,11 @@
     "@citation-js/name" "^0.4.2"
     wikidata-sdk "^8.0.0"
 
+"@coddicat/vue-pinch-scroll-zoom@^3.3.4":
+  version "3.3.4"
+  resolved "https://registry.yarnpkg.com/@coddicat/vue-pinch-scroll-zoom/-/vue-pinch-scroll-zoom-3.3.4.tgz#48f5a2a4ac09c950799e6c2ecf62bde6c6f500c1"
+  integrity sha512-qGBK7TKg5Ii39u/2JnbfoBfQVaQfuVY865KR+X1vWbtaa8LWfwS+q4HgBHlV7JV1729a9zp3c9XDKIJoBVnAmA==
+
 "@colors/colors@1.5.0":
   version "1.5.0"
   resolved "https://registry.npmjs.org/@colors/colors/-/colors-1.5.0.tgz"

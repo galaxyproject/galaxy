@@ -91,11 +91,6 @@ export default {
     },
     watch: {
         terminalPosition(position) {
-            console.log({
-                stepId: this.nodeId,
-                inputName: this.input.name,
-                position,
-            });
             this.$store.commit("workflowState/setInputTerminalPosition", {
                 stepId: this.nodeId,
                 inputName: this.input.name,
@@ -111,16 +106,11 @@ export default {
         onRemove() {
             this.$emit("onDisconnect", this.input.name);
         },
-        mouseOver(e) {
-            console.log("mousOver");
-            // }
-        },
+        mouseOver(e) {},
         mouseLeave() {
             this.showRemove = false;
         },
-        onDrop(e) {
-            console.log("onDrop", e);
-        },
+        onDrop(e) {},
     },
     beforeDestroy() {
         this.$store.commit("workflowState/deleteInputTerminalPosition", {

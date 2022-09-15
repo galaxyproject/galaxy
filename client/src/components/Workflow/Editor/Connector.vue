@@ -23,10 +23,6 @@ export default {
             lineShift: 30,
         };
     },
-    beforeDestroy() {
-        console.log("Destroying connector");
-        // this.terminal.destroy();
-    },
     computed: {
         offsetStart() {
             return 0;

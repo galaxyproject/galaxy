@@ -1,60 +1,59 @@
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
-        <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoomButton" />
-        <div class="canvas-viewport" @dragover.prevent @drop.prevent>
-            <div id="canvas-container" ref="el">
-                <Draggable style="width: 100%; height: 100%" @move="onPanContainer" :apply-scale="false">
-                    <SvgPanZoom
-                        style="width: 100%; height: 100%"
-                        :minZoom="0.1"
-                        :panEnabled="false"
-                        :zoomEnabled="true"
-                        :controlIconsEnabled="false"
-                        :fit="false"
-                        :center="false"
-                        :on-zoom="onZoom"
-                        :onUpdatedCTM="onUpdatedCTM"
-                        @svgpanzoom="registerSvgPanZoom">
-                        <svg class="canvas-svg" width="100%" height="100%" ref="svg">
-                            <g class="zoomable">
-                                <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
-                                <terminal-connector
-                                    v-for="connection in connections"
-                                    :key="connection.id"
-                                    :connection="connection"></terminal-connector>
-                            </g>
-                        </svg>
-                    </SvgPanZoom>
-                    <div class="nodeArea" :style="style">
-                        <!-- this div is only necessary so that we synchronize zoom and pan to the svg coordinates -->
-                        <WorkflowNode
-                            v-for="(step, key) in steps"
-                            :id="key"
-                            :key="key"
-                            :name="step.name"
-                            :type="step.type"
-                            :content-id="step.content_id"
-                            :step="step"
-                            :datatypes-mapper="datatypesMapper"
-                            :get-manager="getManager"
-                            :activeNodeId="activeNodeId"
-                            :root-offset="position"
-                            @pan-by="onPan"
-                            @stopDragging="onStopDragging"
-                            @onDragConnector="onDragConnector"
-                            @onActivate="onActivate"
-                            @onRemove="onRemove"
-                            v-on="$listeners" />
-                    </div>
-                </Draggable>
-            </div>
+        <ZoomControl
+            :zoom-level="zoomLevel"
+            :pan="pan"
+            @onZoom="onZoomButton"
+            @reset-all="onResetAll"
+            @update:pan="onPan" />
+        <div ref="el" class="canvas-viewport" @drop.prevent>
+            <PinchScrollZoom
+                id="canvas-container"
+                ref="zoomControl"
+                :width="position.width"
+                :height="position.height"
+                :within="false"
+                minScale="0.1"
+                maxScale="10"
+                throttleDelay="16"
+                wheelVelocity="0.0015"
+                @dragging="onDrag"
+                @scaling="onScale">
+                <svg class="canvas-svg" width="100%" height="100%" ref="svg">
+                    <g class="zoomable">
+                        <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
+                        <terminal-connector
+                            v-for="connection in connections"
+                            :key="connection.id"
+                            :connection="connection"></terminal-connector>
+                    </g>
+                </svg>
+                <WorkflowNode
+                    v-for="(step, key) in steps"
+                    :id="key"
+                    :key="key"
+                    :name="step.name"
+                    :type="step.type"
+                    :content-id="step.content_id"
+                    :step="step"
+                    :datatypes-mapper="datatypesMapper"
+                    :get-manager="getManager"
+                    :activeNodeId="activeNodeId"
+                    :root-offset="position"
+                    @pan-by="onPan"
+                    @stopDragging="onStopDragging"
+                    @onDragConnector="onDragConnector"
+                    @onActivate="onActivate"
+                    @onRemove="onRemove"
+                    v-on="$listeners" />
+            </PinchScrollZoom>
         </div>
         <Minimap
             :nodes="nodes"
             :steps="steps"
             :root-offset="position"
             :scale="zoomLevel"
-            :pan="currentPan"
+            :pan="pan"
             @pan-by="onPan"
             @moveTo="onMoveTo" />
     </div>
@@ -64,11 +63,11 @@ import ZoomControl from "./ZoomControl";
 import WorkflowNode from "./Node";
 import RawConnector from "./Connector";
 import TerminalConnector from "./TerminalConnector";
-import Draggable from "./Draggable.vue";
 import Minimap from "./Minimap.vue";
 import SvgPanZoom from "vue-svg-pan-zoom";
 import { reactive, ref } from "vue";
 import { useElementBounding } from "@vueuse/core";
+import PinchScrollZoom, { PinchScrollZoomEmitData } from "@coddicat/vue-pinch-scroll-zoom";
 
 export default {
     setup() {
@@ -77,13 +76,13 @@ export default {
         return { el, position };
     },
     components: {
-        Draggable,
         RawConnector,
         SvgPanZoom,
         TerminalConnector,
         WorkflowNode,
         Minimap,
         ZoomControl,
+        PinchScrollZoom,
     },
     data() {
         return {
@@ -91,6 +90,7 @@ export default {
             draggingConnection: null,
             svgpanzoom: null,
             transform: null,
+            pan: { x: 0, y: 0 },
         };
     },
     props: {
@@ -112,11 +112,42 @@ export default {
         },
     },
     methods: {
-        onWheel(e) {
-            console.log("wheel event", e);
+        onPan(pan) {
+            console.log("onPan", pan);
+            this.pan = pan;
+            this.$refs.zoomControl.setData({
+                scale: this.scale,
+                originX: pan.x,
+                originY: pan.y,
+                translateX: pan.x,
+                translateY: pan.y,
+            });
+        },
+        onResetAll() {
+            this.pan = { x: 0, y: 0 };
+            this.setScale(1);
+            this.$refs.zoomControl.setData({
+                scale: 1,
+                originX: 0,
+                originY: 0,
+                translateX: 0,
+                translateY: 0,
+            });
+        },
+        onDrag(panData) {
+            console.log("panData", panData);
+            this.pan = { x: panData.x, y: panData.y };
+        },
+        onScale(scaleData) {
+            console.log("scaleData", scaleData);
+            this.pan = {
+                x: scaleData.translateX * scaleData.scale,
+                y: scaleData.translateY * scaleData.scale,
+            };
+            console.log(this.pan);
+            this.setScale(scaleData.scale);
         },
         onMoveTo(moveTo) {
-            console.log("moving to", moveTo);
             this.svgpanzoom.pan(moveTo);
         },
         onUpdatedCTM(CTM) {
@@ -142,14 +173,10 @@ export default {
         registerSvgPanZoom(svgpanzoom) {
             this.svgpanzoom = svgpanzoom;
         },
-        onPan(pan) {
-            this.svgpanzoom.panBy(pan);
-        },
         onPanContainer(e) {
             this.svgpanzoom.panBy({ x: e.data.deltaX, y: e.data.deltaY });
         },
         onActivate(nodeId) {
-            console.log("onNodeId", nodeId);
             if (this.activeNodeId != nodeId) {
                 this.$store.commit("workflowState/setActiveNode", nodeId);
                 // this.canvasManager.drawOverview();
@@ -163,18 +190,6 @@ export default {
         },
     },
     computed: {
-        style() {
-            if (this.transform) {
-                return `transform: matrix(${this.transform.a}, ${this.transform.b}, ${this.transform.c}, ${this.transform.d}, ${this.transform.e}, ${this.transform.f})`;
-            }
-        },
-        currentPan() {
-            if (this.transform) {
-                return { x: this.transform.e, y: this.transform.f };
-            } else {
-                return { x: 0, y: 0 };
-            }
-        },
         zoomLevel() {
             return this.$store.getters["workflowState/getScale"]();
         },
@@ -182,7 +197,6 @@ export default {
             return this.$store.getters["workflowState/getActiveNode"]();
         },
         connections() {
-            console.log("connection fired");
             const connections = [];
             Object.entries(this.steps).forEach(([stepId, step]) => {
                 Object.entries(step.input_connections).forEach(([input_name, outputArray]) => {

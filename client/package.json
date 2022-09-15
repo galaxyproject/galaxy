@@ -23,6 +23,8 @@
   },
   "dependencies": {
     "@fontsource/atkinson-hyperlegible": "^4.5.10",
+    "@braks/revue-draggable": "file:/Users/mvandenb/src/galaxy/revue-draggable/braks-revue-draggable-no-transform.tgz",
+    "@coddicat/vue-pinch-scroll-zoom": "^3.3.4",
     "@fortawesome/fontawesome-free": "^5.15.4",
     "@fortawesome/fontawesome-svg-core": "^6.2.1",
     "@fortawesome/free-brands-svg-icons": "^5.15.4",

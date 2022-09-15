@@ -29,6 +29,28 @@
             size="sm"
             aria-label="Zoom In"
             @click="onZoomIn" />
+        <b-button
+            v-b-tooltip.hover
+            role="button"
+            class="fa fa-plus"
+            title="Reset all"
+            size="sm"
+            aria-label="Reset all"
+            @click="onResetAll" />
+        <label
+            >panX
+            <input
+                type="number"
+                :value="pan.x"
+                @change="$emit('update:pan', { x: parseInt($event.target.value), y: pan.x })" />
+        </label>
+        <label
+            >panY
+            <input
+                type="number"
+                :value="pan.y"
+                @change="$emit('update:pan', { x: pan.x, y: parseInt($event.target.value) })" />
+        </label>
     </span>
 </template>
 
@@ -44,6 +66,9 @@ export default {
             type: Number,
             default: 1,
         },
+        pan: {
+            type: Object,
+        },
     },
     data() {
         return {
@@ -54,6 +79,7 @@ export default {
             zoomDefault: 1,
         };
     },
+
     computed: {
         isMin() {
             return Math.round(this.zoomLevel * 100) == Math.round(this.zoomLevels[0] * 100);
@@ -90,6 +116,9 @@ export default {
         },
         onZoomReset() {
             this.$emit("onZoom", this.zoomDefault);
+        },
+        onResetAll() {
+            this.$emit("reset-all");
         },
     },
 };

@@ -126,7 +126,6 @@ class Terminal extends EventEmitter {
         this.emit("change");
     }
     redraw() {
-        console.log("redraw");
         this.connectors.forEach((c) => {
             c.redraw();
         });

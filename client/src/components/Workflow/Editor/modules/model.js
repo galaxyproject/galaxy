@@ -18,12 +18,10 @@ export async function fromSimple(workflow, data, appendData = false) {
             step.uuid = null;
         }
     });
-    console.log("setting workflow steps");
     workflow.steps = data.steps;
 }
 
 export function toSimple(workflow) {
-    console.log("to Simple");
     const steps = {};
     _rectifyOutputs(workflow);
     Object.values(workflow.nodes).forEach((node) => {

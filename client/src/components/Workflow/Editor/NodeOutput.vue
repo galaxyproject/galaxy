@@ -145,7 +145,6 @@ export default {
     },
     watch: {
         terminalPosition(position) {
-            console.log("updating position", position);
             this.$store.commit("workflowState/setOutputTerminalPosition", {
                 stepId: this.getNode().id,
                 outputName: this.output.name,
@@ -153,7 +152,6 @@ export default {
             });
         },
         dragPosition() {
-            console.log("dragPosition", this.endX);
             if (this.isDragging) {
                 this.$emit("onDragConnector", this.dragPosition);
             }
@@ -186,21 +184,12 @@ export default {
             this.deltaY = 0;
             this.$emit("stopDragging");
         },
-        inputDragStart(e) {
-            console.log("inputDragStart", e);
-        },
-        inputDragEnter(e) {
-            console.log("inputDragEnter", e);
-        },
-        inputDragLeave(e) {
-            console.log("inputDragLeave", e);
-        },
-        onDrop(e) {
-            console.log("onDrop", e);
-        },
+        inputDragStart(e) {},
+        inputDragEnter(e) {},
+        inputDragLeave(e) {},
+        onDrop(e) {},
         onChange() {
             // this.isMultiple = this.terminal.isMappedOver();
-            console.log("onChange");
             // this.$emit("onChange");
         },
         onToggle() {

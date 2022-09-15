@@ -109,7 +109,6 @@ class Connector {
         // Resize the svg
         const svg = d3.select(this.canvas).select("svg");
         svg.attr("class", "ribbon");
-        console.log(svg);
         svg.style("width", `${canvas_width}px`);
         svg.style("height", `${canvas_height}px`);
 
@@ -174,7 +173,6 @@ class Connector {
             { x: end_x - cp_shift, y: end_y + offset_end },
             { x: end_x, y: end_y + offset_end },
         ];
-        console.log("lineData", lineData);
         const lineFunction = d3.svg
             .line()
             .x(function (d) {

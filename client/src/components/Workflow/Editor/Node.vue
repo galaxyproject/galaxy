@@ -2,8 +2,8 @@
     <draggable-wrapper
         ref="el"
         @updatePosition="onUpdatePosition"
-        @mouseup.prevent="makeActive"
-        @move.prevent="onMove"
+        @mouseup="makeActive"
+        @move="onMove"
         :id="idString"
         :name="name"
         :node-label="label"
@@ -249,7 +249,6 @@ export default {
             return { top: this.step.position.top + "px", left: this.step.position.left + "px" };
         },
         defaultPosition() {
-            console.log("defaultPosition fires");
             const p = document.getElementById("canvas-viewport");
             const o = document.getElementById("canvas-container");
             if (p && o) {
@@ -272,7 +271,6 @@ export default {
             });
         },
         onStopDragging() {
-            console.log("onStopDragging called");
             this.$emit("stopDragging");
         },
         onUpdatePosition(position) {
@@ -280,10 +278,8 @@ export default {
         },
         onMouseDown(e) {
             this.mouseDown = { offsetX: e.offsetX, offsetY: e.offsetY };
-            console.log("mouseDownOffset", this.mouseDown);
         },
         onChange() {
-            console.log("onChange triggered");
             this.$emit("onChange");
         },
         onAddInput(input, terminal) {
@@ -384,7 +380,6 @@ export default {
             this.highlight = false;
         },
         makeActive() {
-            console.log("Clicked");
             this.$emit("onActivate", this.id);
         },
         offsetVaryPosition(offsetRange) {
