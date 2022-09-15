@@ -34,10 +34,10 @@ if (props.size) {
 </script>
 
 <template>
-    <div v-if="props.separator" class="separator heading" :class="[sizeClass, props.bold ? 'font-weight-bold' : '']">
+    <div v-if="props.separator" class="separator heading" :class="sizeClass">
         <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />
         <div v-else class="stripe"></div>
-        <component :is="element" :class="sizeClass">
+        <component :is="element" :class="[sizeClass, props.bold ? 'font-weight-bold' : '']">
             <slot />
         </component>
         <div class="stripe"></div>
