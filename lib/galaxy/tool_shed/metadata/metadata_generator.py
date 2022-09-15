@@ -67,80 +67,6 @@ class BaseMetadataGenerator:
     repository_files_dir: Optional[str]
     persist: bool
 
-    def __init__(
-        self,
-        app: MinimalManagerApp,
-        repository=None,
-        changeset_revision: Optional[str] = None,
-        repository_clone_url: Optional[str] = None,
-        shed_config_dict: Optional[Dict[str, Any]] = None,
-        relative_install_dir=None,
-        repository_files_dir=None,
-        resetting_all_metadata_on_repository=False,
-        updating_installed_repository=False,
-        persist=False,
-        metadata_dict=None,
-        user=None,
-    ):
-        self.app = app
-        self.user = user
-        self.repository = repository
-        if self.app.name == "galaxy":
-            if changeset_revision is None and self.repository is not None:
-                self.changeset_revision = self.repository.changeset_revision
-            else:
-                self.changeset_revision = changeset_revision
-
-            if repository_clone_url is None and self.repository is not None:
-                self.repository_clone_url = generate_clone_url_for_installed_repository(self.app, self.repository)
-            else:
-                self.repository_clone_url = repository_clone_url
-            if shed_config_dict is None:
-                if self.repository is not None:
-                    self.shed_config_dict = self.repository.get_shed_config_dict(self.app)
-                else:
-                    self.shed_config_dict = {}
-            else:
-                self.shed_config_dict = shed_config_dict
-            if relative_install_dir is None and self.repository is not None:
-                tool_path, relative_install_dir = self.repository.get_tool_relative_path(self.app)
-            if repository_files_dir is None and self.repository is not None:
-                repository_files_dir = self.repository.repo_files_directory(self.app)
-            if metadata_dict is None:
-                # Shed related tool panel configs are only relevant to Galaxy.
-                self.metadata_dict = {"shed_config_filename": self.shed_config_dict.get("config_filename", None)}
-            else:
-                self.metadata_dict = metadata_dict
-        else:
-            # We're in the Tool Shed.
-            if changeset_revision is None and self.repository is not None:
-                self.changeset_revision = self.repository.tip()
-            else:
-                self.changeset_revision = changeset_revision
-            if repository_clone_url is None and self.repository is not None:
-                self.repository_clone_url = generate_clone_url_for_repository_in_tool_shed(self.user, self.repository)
-            else:
-                self.repository_clone_url = repository_clone_url
-            if shed_config_dict is None:
-                self.shed_config_dict = {}
-            else:
-                self.shed_config_dict = shed_config_dict
-            if relative_install_dir is None and self.repository is not None:
-                relative_install_dir = self.repository.repo_path(self.app)
-            if repository_files_dir is None and self.repository is not None:
-                repository_files_dir = self.repository.repo_path(self.app)
-            if metadata_dict is None:
-                self.metadata_dict = {}
-            else:
-                self.metadata_dict = metadata_dict
-        self.relative_install_dir = relative_install_dir
-        self.repository_files_dir = repository_files_dir
-        self.resetting_all_metadata_on_repository = resetting_all_metadata_on_repository
-        self.updating_installed_repository = updating_installed_repository
-        self.persist = persist
-        self.invalid_file_tups = []
-        self.sa_session = app.model.session
-
     def _generate_data_manager_metadata(
         self, repo_dir, data_manager_config_filename, metadata_dict: Dict[str, Any], shed_config_dict=None
     ) -> Dict[str, Any]:
@@ -1115,9 +1041,106 @@ class BaseMetadataGenerator:
 class GalaxyMetadataGenerator(BaseMetadataGenerator):
     """A MetadataGenerator building on Galaxy's app and repository constructs."""
 
+    def __init__(
+        self,
+        app: MinimalManagerApp,
+        repository=None,
+        changeset_revision: Optional[str] = None,
+        repository_clone_url: Optional[str] = None,
+        shed_config_dict: Optional[Dict[str, Any]] = None,
+        relative_install_dir=None,
+        repository_files_dir=None,
+        resetting_all_metadata_on_repository=False,
+        updating_installed_repository=False,
+        persist=False,
+        metadata_dict=None,
+        user=None,
+    ):
+        self.app = app
+        self.user = user
+        self.repository = repository
+        if changeset_revision is None and self.repository is not None:
+            self.changeset_revision = self.repository.changeset_revision
+        else:
+            self.changeset_revision = changeset_revision
+
+        if repository_clone_url is None and self.repository is not None:
+            self.repository_clone_url = generate_clone_url_for_installed_repository(self.app, self.repository)
+        else:
+            self.repository_clone_url = repository_clone_url
+        if shed_config_dict is None:
+            if self.repository is not None:
+                self.shed_config_dict = self.repository.get_shed_config_dict(self.app)
+            else:
+                self.shed_config_dict = {}
+        else:
+            self.shed_config_dict = shed_config_dict
+        if relative_install_dir is None and self.repository is not None:
+            tool_path, relative_install_dir = self.repository.get_tool_relative_path(self.app)
+        if repository_files_dir is None and self.repository is not None:
+            repository_files_dir = self.repository.repo_files_directory(self.app)
+        if metadata_dict is None:
+            # Shed related tool panel configs are only relevant to Galaxy.
+            self.metadata_dict = {"shed_config_filename": self.shed_config_dict.get("config_filename", None)}
+        else:
+            self.metadata_dict = metadata_dict
+        self.relative_install_dir = relative_install_dir
+        self.repository_files_dir = repository_files_dir
+        self.resetting_all_metadata_on_repository = resetting_all_metadata_on_repository
+        self.updating_installed_repository = updating_installed_repository
+        self.persist = persist
+        self.invalid_file_tups = []
+        self.sa_session = app.model.session
+
 
 class ToolShedMetadataGenerator(BaseMetadataGenerator):
     """A MetadataGenerator building on ToolShed's app and repository constructs."""
+
+    def __init__(
+        self,
+        app: MinimalManagerApp,
+        repository=None,
+        changeset_revision: Optional[str] = None,
+        repository_clone_url: Optional[str] = None,
+        shed_config_dict: Optional[Dict[str, Any]] = None,
+        relative_install_dir=None,
+        repository_files_dir=None,
+        resetting_all_metadata_on_repository=False,
+        updating_installed_repository=False,
+        persist=False,
+        metadata_dict=None,
+        user=None,
+    ):
+        self.app = app
+        self.user = user
+        self.repository = repository
+        if changeset_revision is None and self.repository is not None:
+            self.changeset_revision = self.repository.tip()
+        else:
+            self.changeset_revision = changeset_revision
+        if repository_clone_url is None and self.repository is not None:
+            self.repository_clone_url = generate_clone_url_for_repository_in_tool_shed(self.user, self.repository)
+        else:
+            self.repository_clone_url = repository_clone_url
+        if shed_config_dict is None:
+            self.shed_config_dict = {}
+        else:
+            self.shed_config_dict = shed_config_dict
+        if relative_install_dir is None and self.repository is not None:
+            relative_install_dir = self.repository.repo_path(self.app)
+        if repository_files_dir is None and self.repository is not None:
+            repository_files_dir = self.repository.repo_path(self.app)
+        if metadata_dict is None:
+            self.metadata_dict = {}
+        else:
+            self.metadata_dict = metadata_dict
+        self.relative_install_dir = relative_install_dir
+        self.repository_files_dir = repository_files_dir
+        self.resetting_all_metadata_on_repository = resetting_all_metadata_on_repository
+        self.updating_installed_repository = updating_installed_repository
+        self.persist = persist
+        self.invalid_file_tups = []
+        self.sa_session = app.model.session
 
 
 def _get_readme_file_names(repository_name: str) -> List[str]:
