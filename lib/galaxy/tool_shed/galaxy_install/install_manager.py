@@ -42,7 +42,7 @@ class InstallRepositoryManager:
         else:
             self.tpm = tpm
 
-    def get_repository_components_for_installation(
+    def _get_repository_components_for_installation(
         self, encoded_tsr_id, encoded_tsr_ids, repo_info_dicts, tool_panel_section_keys
     ):
         """
@@ -468,7 +468,7 @@ class InstallRepositoryManager:
                 self.install_model.ToolShedRepository.installation_status.UNINSTALLED,
             ]:
                 repositories_for_installation.append(repository)
-                repo_info_dict, tool_panel_section_key = self.get_repository_components_for_installation(
+                repo_info_dict, tool_panel_section_key = self._get_repository_components_for_installation(
                     tsr_id, ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys
                 )
                 filtered_repo_info_dicts.append(repo_info_dict)
@@ -797,7 +797,7 @@ class InstallRepositoryManager:
                         (
                             prior_repo_info_dict,
                             prior_tool_panel_section_key,
-                        ) = self.get_repository_components_for_installation(
+                        ) = self._get_repository_components_for_installation(
                             prior_install_required_id,
                             tsr_ids,
                             repo_info_dicts,
@@ -806,7 +806,7 @@ class InstallRepositoryManager:
                         ordered_tsr_ids.append(prior_install_required_id)
                         ordered_repo_info_dicts.append(prior_repo_info_dict)
                         ordered_tool_panel_section_keys.append(prior_tool_panel_section_key)
-                repo_info_dict, tool_panel_section_key = self.get_repository_components_for_installation(
+                repo_info_dict, tool_panel_section_key = self._get_repository_components_for_installation(
                     tsr_id, tsr_ids, repo_info_dicts, tool_panel_section_keys=tool_panel_section_keys
                 )
                 if tsr_id not in ordered_tsr_ids:

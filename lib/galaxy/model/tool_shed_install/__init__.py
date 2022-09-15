@@ -727,13 +727,6 @@ class ToolDependency(Base, _HasTable):
             self.installation_status.UNINSTALLED,
         ]
 
-    def get_env_shell_file_path(self, app):
-        installation_directory = self.installation_directory(app)
-        file_path = os.path.join(installation_directory, "env.sh")
-        if os.path.exists(file_path):
-            return file_path
-        return None
-
     @property
     def in_error_state(self):
         return self.status == self.installation_status.ERROR

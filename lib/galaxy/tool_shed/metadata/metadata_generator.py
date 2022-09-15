@@ -120,7 +120,7 @@ class MetadataGenerator:
             suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME,
         ]
 
-    def generate_data_manager_metadata(
+    def _generate_data_manager_metadata(
         self, repo_dir, data_manager_config_filename, metadata_dict, shed_config_dict=None
     ):
         """
@@ -415,7 +415,7 @@ class MetadataGenerator:
                                     )
         # Handle any data manager entries
         data_manager_config = get_config_from_disk(suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME, files_dir)
-        metadata_dict = self.generate_data_manager_metadata(
+        metadata_dict = self._generate_data_manager_metadata(
             files_dir, data_manager_config, metadata_dict, shed_config_dict=self.shed_config_dict
         )
 
