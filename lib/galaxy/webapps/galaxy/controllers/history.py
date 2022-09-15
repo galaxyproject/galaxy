@@ -47,7 +47,6 @@ from galaxy.webapps.base.controller import (
     SUCCESS,
     WARNING,
 )
-from ._create_history_template import render_item
 from ..api import depends
 
 log = logging.getLogger(__name__)
