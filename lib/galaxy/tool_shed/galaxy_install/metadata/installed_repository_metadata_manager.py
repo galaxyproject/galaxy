@@ -12,7 +12,7 @@ from galaxy import util
 from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
-from galaxy.tool_shed.metadata.metadata_generator import MetadataGenerator
+from galaxy.tool_shed.metadata.metadata_generator import GalaxyMetadataGenerator
 from galaxy.tool_shed.util.repository_util import (
     get_installed_tool_shed_repository,
     get_repository_owner,
@@ -28,7 +28,7 @@ from galaxy.web.form_builder import SelectField
 log = logging.getLogger(__name__)
 
 
-class InstalledRepositoryMetadataManager(MetadataGenerator):
+class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
     def __init__(
         self,
         app: MinimalManagerApp,
