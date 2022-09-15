@@ -2,7 +2,7 @@
 
 #######
 # Use this script to manage Galaxy database schema migrations.
-# For help, run `sh db.sh -h`. 
+# For help, run `sh manage_db.sh -h`. 
 # For detailed help, see documentation at lib/galaxy/model/migrations/README.md.
 #######
 

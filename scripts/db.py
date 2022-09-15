@@ -1,5 +1,5 @@
 """
-This script is intended to be invoked by the db.sh script.
+This script is intended to be invoked by the manage_db.sh script.
 """
 
 import logging
@@ -87,7 +87,7 @@ def main() -> None:
     )
 
     parser = ArgumentParser(
-        prog="db.sh",
+        prog="manage_db.sh",
         description="Common database schema migration operations",
         epilog="Note: these operations are applied to the Galaxy model only (stored in the `gxy` branch)."
         " For migrating the `tsi` branch, use the `run_alembic.sh` script.",
