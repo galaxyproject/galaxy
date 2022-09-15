@@ -23,7 +23,6 @@ import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import DatasetList from "components/Dataset/DatasetList";
 import AvailableDatatypes from "components/AvailableDatatypes/AvailableDatatypes";
-import DisplayStructured from "components/DisplayStructured";
 import FormGeneric from "components/Form/FormGeneric";
 import Grid from "components/Grid/Grid";
 import GridShared from "components/Grid/GridShared";
@@ -195,13 +194,6 @@ export function getRouter(Galaxy) {
                         path: "histories/view_multiple",
                         component: HistoryMultipleView,
                         props: true,
-                    },
-                    {
-                        path: "histories/show_structure",
-                        component: DisplayStructured,
-                        props: (route) => ({
-                            id: route.query.id,
-                        }),
                     },
                     {
                         path: "histories/:historyId/export",
