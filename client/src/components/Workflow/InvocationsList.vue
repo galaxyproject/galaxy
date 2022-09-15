@@ -128,7 +128,11 @@ export default {
         };
     },
     computed: {
-        ...mapState(useWorkflowStore, ["getWorkflowNameByInstanceId", "getWorkflowByInstanceId", "getStoredWorkflowIdByInstanceId"]),
+        ...mapState(useWorkflowStore, [
+            "getWorkflowNameByInstanceId",
+            "getWorkflowByInstanceId",
+            "getStoredWorkflowIdByInstanceId",
+        ]),
         ...mapGetters("history", ["getHistoryById", "getHistoryNameById"]),
         title() {
             let title = `Workflow Invocations`;

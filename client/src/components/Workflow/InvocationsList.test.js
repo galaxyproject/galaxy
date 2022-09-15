@@ -6,7 +6,7 @@ import { getLocalVue } from "jest/helpers";
 import mockInvocationData from "./test/json/invocation.json";
 import { parseISO, formatDistanceToNow } from "date-fns";
 
-import { createPinia }from "pinia";
+import { createPinia } from "pinia";
 
 import "jest-location-mock";
 
@@ -55,7 +55,7 @@ describe("InvocationsList.vue", () => {
             wrapper = mount(InvocationsList, {
                 propsData,
                 localVue,
-                pinia
+                pinia,
             });
         });
 
@@ -75,7 +75,7 @@ describe("InvocationsList.vue", () => {
             wrapper = mount(InvocationsList, {
                 propsData,
                 localVue,
-                pinia
+                pinia,
             });
         });
 
@@ -118,7 +118,7 @@ describe("InvocationsList.vue", () => {
                     },
                 },
                 localVue,
-                pinia
+                pinia,
             });
         });
 
