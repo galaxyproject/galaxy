@@ -968,29 +968,6 @@ class BaseMetadataGenerator:
     def set_relative_install_dir(self, relative_install_dir: Optional[str]):
         self.relative_install_dir = relative_install_dir
 
-    def set_repository(
-        self, repository, relative_install_dir: Optional[str] = None, changeset_revision: Optional[str] = None
-    ):
-        self.repository = repository
-        # Shed related tool panel configs are only relevant to Galaxy.
-        if self.app.name == "galaxy":
-            if relative_install_dir is None and self.repository is not None:
-                tool_path, relative_install_dir = self.repository.get_tool_relative_path(self.app)
-            if changeset_revision is None and self.repository is not None:
-                self.set_changeset_revision(self.repository.changeset_revision)
-            else:
-                self.set_changeset_revision(changeset_revision)
-            self.shed_config_dict = repository.get_shed_config_dict(self.app)
-        else:
-            if relative_install_dir is None and self.repository is not None:
-                relative_install_dir = repository.repo_path(self.app)
-            if changeset_revision is None and self.repository is not None:
-                self.set_changeset_revision(self.repository.tip())
-            else:
-                self.set_changeset_revision(changeset_revision)
-            self.shed_config_dict = {}
-        self._reset_attributes_after_repository_update(relative_install_dir)
-
     def _reset_attributes_after_repository_update(self, relative_install_dir: Optional[str]):
         self.metadata_dict = self.initial_metadata_dict()
         self.set_relative_install_dir(relative_install_dir)
@@ -1092,6 +1069,19 @@ class GalaxyMetadataGenerator(BaseMetadataGenerator):
         metadata_dict = {"shed_config_filename": self.shed_config_dict.get("config_filename")}
         return metadata_dict
 
+    def set_repository(
+        self, repository, relative_install_dir: Optional[str] = None, changeset_revision: Optional[str] = None
+    ):
+        self.repository = repository
+        if relative_install_dir is None and self.repository is not None:
+            tool_path, relative_install_dir = self.repository.get_tool_relative_path(self.app)
+        if changeset_revision is None and self.repository is not None:
+            self.set_changeset_revision(self.repository.changeset_revision)
+        else:
+            self.set_changeset_revision(changeset_revision)
+        self.shed_config_dict = repository.get_shed_config_dict(self.app)
+        self._reset_attributes_after_repository_update(relative_install_dir)
+
 
 class ToolShedMetadataGenerator(BaseMetadataGenerator):
     """A MetadataGenerator building on ToolShed's app and repository constructs."""
@@ -1144,6 +1134,19 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
 
     def initial_metadata_dict(self) -> Dict[str, Any]:
         return {}
+
+    def set_repository(
+        self, repository, relative_install_dir: Optional[str] = None, changeset_revision: Optional[str] = None
+    ):
+        self.repository = repository
+        if relative_install_dir is None and self.repository is not None:
+            relative_install_dir = repository.repo_path(self.app)
+        if changeset_revision is None and self.repository is not None:
+            self.set_changeset_revision(self.repository.tip())
+        else:
+            self.set_changeset_revision(changeset_revision)
+        self.shed_config_dict = {}
+        self._reset_attributes_after_repository_update(relative_install_dir)
 
 
 def _get_readme_file_names(repository_name: str) -> List[str]:
