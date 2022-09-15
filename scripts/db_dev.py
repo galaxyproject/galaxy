@@ -1,5 +1,5 @@
 """
-This script is intended to be invoked by the manage_db.sh script.
+This script is intended to be invoked by the scripts/db_dev.sh script.
 """
 
 import logging
@@ -30,12 +30,24 @@ def exec_downgrade(args: Namespace) -> None:
     _exec_command("downgrade", args)
 
 
+def exec_revision(args: Namespace) -> None:
+    _exec_command("revision", args)
+
+
 def exec_version(args: Namespace) -> None:
     _exec_command("version", args)
 
 
 def exec_dbversion(args: Namespace) -> None:
     _exec_command("dbversion", args)
+
+
+def exec_history(args: Namespace) -> None:
+    _exec_command("history", args)
+
+
+def exec_show(args: Namespace) -> None:
+    _exec_command("show", args)
 
 
 def exec_init(args: Namespace) -> None:
@@ -75,10 +87,13 @@ def main() -> None:
     )
 
     parser = ArgumentParser(
-        prog="manage_db.sh",
+        prog="db_dev.py",
         description="Common database schema migration operations",
+        epilog="Note: these operations are applied to the Galaxy model only (stored in the `gxy` branch)."
+        " For migrating the `tsi` branch, use the `run_alembic.sh` script.",
     )
     parser.add_argument("-c", "--galaxy-config", help="Alternate Galaxy configuration file", dest="config")
+    parser.add_argument("--raiseerr", help="Raise a full stack trace on error", action="store_true")
 
     subparsers = parser.add_subparsers(required=True)
 
@@ -112,6 +127,29 @@ def main() -> None:
         "Show the current revision for Galaxy's database",
         aliases=["dv"],
         parents=[verbose_arg_parser],
+    )
+
+    history_cmd_parser = add_parser(
+        "history",
+        exec_history,
+        "List revision scripts in chronological order",
+        aliases=["h"],
+        parents=[verbose_arg_parser],
+    )
+    history_cmd_parser.add_argument("-i", "--indicate-current", help="Indicate current revision", action="store_true")
+
+    show_cmd_parser = add_parser(
+        "show",
+        exec_show,
+        "Show the revision(s) denoted by the given symbol",
+        aliases=["s"],
+    )
+    show_cmd_parser.add_argument("revision", help="Revision identifier")
+
+    revision_cmd_parser = add_parser("revision", help="Create a new revision file", func=exec_revision)
+    revision_cmd_parser.add_argument("-m", "--message", help="Message string to use with 'revision'", required=True)
+    revision_cmd_parser.add_argument(
+        "--rev-id", help="Specify a revision id instead of generating one (This option is for testing purposes only)"
     )
 
     add_parser(
