@@ -10,8 +10,10 @@ from typing import (
 )
 
 from sqlalchemy import and_
+from typing_extensions import Protocol
 
 from galaxy import util
+from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_shed.repository_type import (
     REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
@@ -56,8 +58,20 @@ NOT_TOOL_CONFIGS = [
 ]
 
 
+class RepositoryProtocol(Protocol):
+    def repo_path(self, app) -> Optional[str]:
+        ...
+
+
+class ToolShedRepositoryProtocol(RepositoryProtocol):
+
+    def tip(self) -> str:
+        ...
+
+
 class BaseMetadataGenerator:
     app: MinimalManagerApp
+    repository: Optional[RepositoryProtocol]
     invalid_file_tups: List[InvalidFileT]
     changeset_revision: Optional[str]
     repository_clone_url: Optional[str]
@@ -78,12 +92,13 @@ class BaseMetadataGenerator:
         """
         if data_manager_config_filename is None:
             return metadata_dict
+        assert self.repository
         repo_path = self.repository.repo_path(self.app)
-        try:
+        if hasattr(self.repository, "repo_files_directory"):
             # Galaxy Side.
-            repo_files_directory = self.repository.repo_files_directory(self.app)
+            repo_files_directory = self.repository.repo_files_directory(self.app)  # type: ignore[attr-defined]
             repo_dir = repo_files_directory
-        except AttributeError:
+        else:
             # Tool Shed side.
             repo_files_directory = repo_path
         relative_data_manager_dir = util.relpath(os.path.split(data_manager_config_filename)[0], repo_dir)
@@ -830,6 +845,8 @@ class BaseMetadataGenerator:
 class GalaxyMetadataGenerator(BaseMetadataGenerator):
     """A MetadataGenerator building on Galaxy's app and repository constructs."""
 
+    repository: Optional[ToolShedRepository]
+
     def __init__(
         self,
         app: MinimalManagerApp,
@@ -996,11 +1013,12 @@ class GalaxyMetadataGenerator(BaseMetadataGenerator):
 
 class ToolShedMetadataGenerator(BaseMetadataGenerator):
     """A MetadataGenerator building on ToolShed's app and repository constructs."""
+    repository: Optional[ToolShedRepositoryProtocol]
 
     def __init__(
         self,
         app: MinimalManagerApp,
-        repository=None,
+        repository: Optional[ToolShedRepositoryProtocol] = None,
         changeset_revision: Optional[str] = None,
         repository_clone_url: Optional[str] = None,
         shed_config_dict: Optional[Dict[str, Any]] = None,
