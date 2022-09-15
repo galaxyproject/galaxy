@@ -49,7 +49,8 @@ def main():
 
 
     # check the user, and add it if it doesn't exist
-    admin_user = sa_session.query(User).filter(User.email==args.galaxy_admin_user).first()
+    #admin_user = sa_session.query(User).filter(User.email==args.galaxy_admin_user).first()
+    admin_user = sa_session.query(User).filter(User.username=='ampuser').first()
     if admin_user is None:
         print("INFO: Creating user", file=sys.stderr)
         admin_user = User(args.galaxy_admin_user)
@@ -60,9 +61,13 @@ def main():
         sa_session.flush()
 
     # update the password to match the config
+    print("INFO: Resetting Email", file=sys.stderr)
+    admin_user.email = args.galaxy_admin_user    
     print("INFO: Resetting password", file=sys.stderr)
     admin_user.set_password_cleartext(args.galaxy_admin_password)
-
+    sa_session.add(admin_user)
+    sa_session.flush()
+    
     # set up the API key
     admin_key = sa_session.query(APIKeys).filter(APIKeys.user_id==admin_user.id).first()
     if admin_key:
