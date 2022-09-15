@@ -13,11 +13,13 @@ const props = defineProps({
     h6: Boolean,
     bold: Boolean,
     separator: Boolean,
+    inline: Boolean,
     // acceptable sizes are "large", "medium", "small", and "text"
     size: String,
     icon: String,
 });
 
+// apply heading element
 for (const key of ["h1", "h2", "h3", "h4", "h5", "h6"]) {
     if (props[key]) {
         element = key;
@@ -25,6 +27,7 @@ for (const key of ["h1", "h2", "h3", "h4", "h5", "h6"]) {
     }
 }
 
+// apply size class
 if (props.size) {
     sizeClass = "h-" + props.size;
 }
@@ -39,7 +42,11 @@ if (props.size) {
         </component>
         <div class="stripe"></div>
     </div>
-    <component v-else :is="element" class="heading" :class="[sizeClass, props.bold ? 'font-weight-bold' : '']">
+    <component
+        v-else
+        :is="element"
+        class="heading"
+        :class="[sizeClass, props.bold ? 'font-weight-bold' : '', props.inline ? 'inline' : '']">
         <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />
         <slot />
     </component>
@@ -57,6 +64,10 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     align-items: center;
     gap: 0.25em;
+
+    &.inline {
+        display: inline-flex;
+    }
 }
 
 .separator {
