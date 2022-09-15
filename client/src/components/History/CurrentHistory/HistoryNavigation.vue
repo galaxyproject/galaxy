@@ -64,14 +64,6 @@
                         <span v-localize>Resume Paused Jobs</span>
                     </b-dropdown-item>
 
-                    <b-dropdown-item
-                        data-description="show structure"
-                        :title="l('Show Detailed Structure View of History')"
-                        @click="$router.push('/histories/show_structure')">
-                        <Icon fixed-width icon="code-branch" class="mr-1" />
-                        <span v-localize>Show Structure</span>
-                    </b-dropdown-item>
-
                     <b-dropdown-divider></b-dropdown-divider>
 
                     <b-dropdown-item
