@@ -768,189 +768,6 @@ class BaseMetadataGenerator:
                         sample_file_metadata_paths.append(relative_path_to_sample_file)
         return sample_file_metadata_paths, sample_file_copy_paths
 
-    def handle_repository_elem(self, repository_elem, only_if_compiling_contained_td=False) -> HandleResultT:
-        """
-        Process the received repository_elem which is a <repository> tag either from a
-        repository_dependencies.xml file or a tool_dependencies.xml file.  If the former,
-        we're generating repository dependencies metadata for a repository in the Tool Shed.
-        If the latter, we're generating package dependency metadata within Galaxy or the
-        Tool Shed.
-        """
-        is_valid = True
-        error_message = ""
-        toolshed = repository_elem.get("toolshed", None)
-        name = repository_elem.get("name", None)
-        owner = repository_elem.get("owner", None)
-        changeset_revision = repository_elem.get("changeset_revision", None)
-        prior_installation_required = str(repository_elem.get("prior_installation_required", False))
-        repository_dependency_tup = [
-            toolshed,
-            name,
-            owner,
-            changeset_revision,
-            prior_installation_required,
-            str(only_if_compiling_contained_td),
-        ]
-        if self.app.name == "galaxy":
-            if self.updating_installed_repository:
-                pass
-            else:
-                # We're installing a repository into Galaxy, so make sure its contained repository
-                # dependency definition is valid.
-                if toolshed is None or name is None or owner is None or changeset_revision is None:
-                    # Several packages exist in the Tool Shed that contain invalid repository
-                    # definitions, but will still install. We will report these errors to the
-                    # installing user. Previously, we would:
-                    # Raise an exception here instead of returning an error_message to keep the
-                    # installation from proceeding.  Reaching here implies a bug in the Tool Shed
-                    # framework.
-                    error_message = "Installation encountered an invalid repository dependency definition:\n"
-                    error_message += util.xml_to_string(repository_elem, pretty=True)
-                    log.error(error_message)
-                    return repository_dependency_tup, False, error_message
-        if not toolshed:
-            # Default to the current tool shed.
-            toolshed = str(url_for("/", qualified=True)).rstrip("/")
-            repository_dependency_tup[0] = toolshed
-        toolshed = remove_protocol_from_tool_shed_url(toolshed)
-        if self.app.name == "galaxy":
-            # We're in Galaxy.  We reach here when we're generating the metadata for a tool
-            # dependencies package defined for a repository or when we're generating metadata
-            # for an installed repository.  See if we can locate the installed repository via
-            # the changeset_revision defined in the repository_elem (it may be outdated).  If
-            # we're successful in locating an installed repository with the attributes defined
-            # in the repository_elem, we know it is valid.
-            repository = get_repository_for_dependency_relationship(self.app, toolshed, name, owner, changeset_revision)
-            if repository:
-                return repository_dependency_tup, is_valid, error_message
-            else:
-                # Send a request to the tool shed to retrieve appropriate additional changeset
-                # revisions with which the repository
-                # may have been installed.
-                text = get_updated_changeset_revisions_from_tool_shed(
-                    self.app, toolshed, name, owner, changeset_revision
-                )
-                if text:
-                    updated_changeset_revisions = util.listify(text)
-                    for updated_changeset_revision in updated_changeset_revisions:
-                        repository = get_repository_for_dependency_relationship(
-                            self.app, toolshed, name, owner, updated_changeset_revision
-                        )
-                        if repository:
-                            return repository_dependency_tup, is_valid, error_message
-                        if self.updating_installed_repository:
-                            # The repository dependency was included in an update to the installed
-                            # repository, so it will not yet be installed.  Return the tuple for later
-                            # installation.
-                            return repository_dependency_tup, is_valid, error_message
-                if self.updating_installed_repository:
-                    # The repository dependency was included in an update to the installed repository,
-                    # so it will not yet be installed.  Return the tuple for later installation.
-                    return repository_dependency_tup, is_valid, error_message
-                # Don't generate an error message for missing repository dependencies that are required
-                # only if compiling the dependent repository's tool dependency.
-                if not only_if_compiling_contained_td:
-                    # We'll currently default to setting the repository dependency definition as invalid
-                    # if an installed repository cannot be found.  This may not be ideal because the tool
-                    # shed may have simply been inaccessible when metadata was being generated for the
-                    # installed tool shed repository.
-                    error_message = (
-                        "Ignoring invalid repository dependency definition for tool shed %s, name %s, owner %s, "
-                        % (toolshed, name, owner)
-                    )
-                    error_message += f"changeset revision {changeset_revision}."
-                    log.debug(error_message)
-                    is_valid = False
-                    return repository_dependency_tup, is_valid, error_message
-        else:
-            # We're in the tool shed.
-            if suc.tool_shed_is_this_tool_shed(toolshed):
-                try:
-                    user = (
-                        self.sa_session.query(self.app.model.User)
-                        .filter(self.app.model.User.table.c.username == owner)
-                        .one()
-                    )
-                except Exception:
-                    error_message = (
-                        "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, "
-                        % (toolshed, name, owner)
-                    )
-                    error_message += f"changeset revision {changeset_revision} because the owner is invalid."
-                    log.debug(error_message)
-                    is_valid = False
-                    return repository_dependency_tup, is_valid, error_message
-                try:
-                    repository = (
-                        self.sa_session.query(self.app.model.Repository)
-                        .filter(
-                            and_(
-                                self.app.model.Repository.table.c.name == name,
-                                self.app.model.Repository.table.c.user_id == user.id,
-                            )
-                        )
-                        .one()
-                    )
-                except Exception:
-                    error_message = (
-                        "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, "
-                        % (toolshed, name, owner)
-                    )
-                    error_message += f"changeset revision {changeset_revision} because the name is invalid.  "
-                    log.debug(error_message)
-                    is_valid = False
-                    return repository_dependency_tup, is_valid, error_message
-                repo = repository.hg_repo
-
-                # The received changeset_revision may be None since defining it in the dependency definition is optional.
-                # If this is the case, the default will be to set its value to the repository dependency tip revision.
-                # This probably occurs only when handling circular dependency definitions.
-                tip_ctx = repo[repo.changelog.tip()]
-                # Make sure the repo.changlog includes at least 1 revision.
-                if changeset_revision is None and tip_ctx.rev() >= 0:
-                    changeset_revision = str(tip_ctx)
-                    repository_dependency_tup = [
-                        toolshed,
-                        name,
-                        owner,
-                        changeset_revision,
-                        prior_installation_required,
-                        str(only_if_compiling_contained_td),
-                    ]
-                    return repository_dependency_tup, is_valid, error_message
-                else:
-                    # Find the specified changeset revision in the repository's changelog to see if it's valid.
-                    found = False
-                    for changeset in repo.changelog:
-                        changeset_hash = str(repo[changeset])
-                        if changeset_hash == changeset_revision:
-                            found = True
-                            break
-                    if not found:
-                        error_message = (
-                            "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, "
-                            % (toolshed, name, owner)
-                        )
-                        error_message += (
-                            f"changeset revision {changeset_revision} because the changeset revision is invalid.  "
-                        )
-                        log.debug(error_message)
-                        is_valid = False
-                        return repository_dependency_tup, is_valid, error_message
-            else:
-                # Repository dependencies are currently supported within a single tool shed.
-                error_message = (
-                    "Repository dependencies are currently supported only within the same tool shed.  Ignoring "
-                )
-                error_message += (
-                    "repository dependency definition  for tool shed %s, name %s, owner %s, changeset revision %s.  "
-                    % (toolshed, name, owner, changeset_revision)
-                )
-                log.debug(error_message)
-                is_valid = False
-                return repository_dependency_tup, is_valid, error_message
-        return repository_dependency_tup, is_valid, error_message
-
     def _set_add_to_tool_panel_attribute_for_tool(self, tool):
         """
         Determine if a tool should be loaded into the Galaxy tool panel.  Examples of valid tools that
@@ -1082,6 +899,100 @@ class GalaxyMetadataGenerator(BaseMetadataGenerator):
         self.shed_config_dict = repository.get_shed_config_dict(self.app)
         self._reset_attributes_after_repository_update(relative_install_dir)
 
+    def handle_repository_elem(self, repository_elem, only_if_compiling_contained_td=False) -> HandleResultT:
+        """
+        Process the received repository_elem which is a <repository> tag either from a
+        repository_dependencies.xml file or a tool_dependencies.xml file.  If the former,
+        we're generating repository dependencies metadata for a repository in the Tool Shed.
+        If the latter, we're generating package dependency metadata within Galaxy or the
+        Tool Shed.
+        """
+        is_valid = True
+        error_message = ""
+        toolshed = repository_elem.get("toolshed", None)
+        name = repository_elem.get("name", None)
+        owner = repository_elem.get("owner", None)
+        changeset_revision = repository_elem.get("changeset_revision", None)
+        prior_installation_required = str(repository_elem.get("prior_installation_required", False))
+        repository_dependency_tup = [
+            toolshed,
+            name,
+            owner,
+            changeset_revision,
+            prior_installation_required,
+            str(only_if_compiling_contained_td),
+        ]
+        if self.updating_installed_repository:
+            pass
+        else:
+            # We're installing a repository into Galaxy, so make sure its contained repository
+            # dependency definition is valid.
+            if toolshed is None or name is None or owner is None or changeset_revision is None:
+                # Several packages exist in the Tool Shed that contain invalid repository
+                # definitions, but will still install. We will report these errors to the
+                # installing user. Previously, we would:
+                # Raise an exception here instead of returning an error_message to keep the
+                # installation from proceeding.  Reaching here implies a bug in the Tool Shed
+                # framework.
+                error_message = "Installation encountered an invalid repository dependency definition:\n"
+                error_message += util.xml_to_string(repository_elem, pretty=True)
+                log.error(error_message)
+                return repository_dependency_tup, False, error_message
+        if not toolshed:
+            # Default to the current tool shed.
+            toolshed = str(url_for("/", qualified=True)).rstrip("/")
+            repository_dependency_tup[0] = toolshed
+        toolshed = remove_protocol_from_tool_shed_url(toolshed)
+
+        # We're in Galaxy.  We reach here when we're generating the metadata for a tool
+        # dependencies package defined for a repository or when we're generating metadata
+        # for an installed repository.  See if we can locate the installed repository via
+        # the changeset_revision defined in the repository_elem (it may be outdated).  If
+        # we're successful in locating an installed repository with the attributes defined
+        # in the repository_elem, we know it is valid.
+        repository = get_repository_for_dependency_relationship(self.app, toolshed, name, owner, changeset_revision)
+        if repository:
+            return repository_dependency_tup, is_valid, error_message
+        else:
+            # Send a request to the tool shed to retrieve appropriate additional changeset
+            # revisions with which the repository
+            # may have been installed.
+            text = get_updated_changeset_revisions_from_tool_shed(self.app, toolshed, name, owner, changeset_revision)
+            if text:
+                updated_changeset_revisions = util.listify(text)
+                for updated_changeset_revision in updated_changeset_revisions:
+                    repository = get_repository_for_dependency_relationship(
+                        self.app, toolshed, name, owner, updated_changeset_revision
+                    )
+                    if repository:
+                        return repository_dependency_tup, is_valid, error_message
+                    if self.updating_installed_repository:
+                        # The repository dependency was included in an update to the installed
+                        # repository, so it will not yet be installed.  Return the tuple for later
+                        # installation.
+                        return repository_dependency_tup, is_valid, error_message
+            if self.updating_installed_repository:
+                # The repository dependency was included in an update to the installed repository,
+                # so it will not yet be installed.  Return the tuple for later installation.
+                return repository_dependency_tup, is_valid, error_message
+            # Don't generate an error message for missing repository dependencies that are required
+            # only if compiling the dependent repository's tool dependency.
+            if not only_if_compiling_contained_td:
+                # We'll currently default to setting the repository dependency definition as invalid
+                # if an installed repository cannot be found.  This may not be ideal because the tool
+                # shed may have simply been inaccessible when metadata was being generated for the
+                # installed tool shed repository.
+                error_message = (
+                    "Ignoring invalid repository dependency definition for tool shed %s, name %s, owner %s, "
+                    % (toolshed, name, owner)
+                )
+                error_message += f"changeset revision {changeset_revision}."
+                log.debug(error_message)
+                is_valid = False
+                return repository_dependency_tup, is_valid, error_message
+        return repository_dependency_tup, is_valid, error_message
+
+
 
 class ToolShedMetadataGenerator(BaseMetadataGenerator):
     """A MetadataGenerator building on ToolShed's app and repository constructs."""
@@ -1147,6 +1058,123 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
             self.set_changeset_revision(changeset_revision)
         self.shed_config_dict = {}
         self._reset_attributes_after_repository_update(relative_install_dir)
+
+    def handle_repository_elem(self, repository_elem, only_if_compiling_contained_td=False) -> HandleResultT:
+        """
+        Process the received repository_elem which is a <repository> tag either from a
+        repository_dependencies.xml file or a tool_dependencies.xml file.  If the former,
+        we're generating repository dependencies metadata for a repository in the Tool Shed.
+        If the latter, we're generating package dependency metadata within Galaxy or the
+        Tool Shed.
+        """
+        is_valid = True
+        error_message = ""
+        toolshed = repository_elem.get("toolshed", None)
+        name = repository_elem.get("name", None)
+        owner = repository_elem.get("owner", None)
+        changeset_revision = repository_elem.get("changeset_revision", None)
+        prior_installation_required = str(repository_elem.get("prior_installation_required", False))
+        repository_dependency_tup = [
+            toolshed,
+            name,
+            owner,
+            changeset_revision,
+            prior_installation_required,
+            str(only_if_compiling_contained_td),
+        ]
+        if not toolshed:
+            # Default to the current tool shed.
+            toolshed = str(url_for("/", qualified=True)).rstrip("/")
+            repository_dependency_tup[0] = toolshed
+        toolshed = remove_protocol_from_tool_shed_url(toolshed)
+
+        if suc.tool_shed_is_this_tool_shed(toolshed):
+            try:
+                user = (
+                    self.sa_session.query(self.app.model.User)
+                    .filter(self.app.model.User.table.c.username == owner)
+                    .one()
+                )
+            except Exception:
+                error_message = (
+                    "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, "
+                    % (toolshed, name, owner)
+                )
+                error_message += f"changeset revision {changeset_revision} because the owner is invalid."
+                log.debug(error_message)
+                is_valid = False
+                return repository_dependency_tup, is_valid, error_message
+            try:
+                repository = (
+                    self.sa_session.query(self.app.model.Repository)
+                    .filter(
+                        and_(
+                            self.app.model.Repository.table.c.name == name,
+                            self.app.model.Repository.table.c.user_id == user.id,
+                        )
+                    )
+                    .one()
+                )
+            except Exception:
+                error_message = (
+                    "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, "
+                    % (toolshed, name, owner)
+                )
+                error_message += f"changeset revision {changeset_revision} because the name is invalid.  "
+                log.debug(error_message)
+                is_valid = False
+                return repository_dependency_tup, is_valid, error_message
+            repo = repository.hg_repo
+
+            # The received changeset_revision may be None since defining it in the dependency definition is optional.
+            # If this is the case, the default will be to set its value to the repository dependency tip revision.
+            # This probably occurs only when handling circular dependency definitions.
+            tip_ctx = repo[repo.changelog.tip()]
+            # Make sure the repo.changlog includes at least 1 revision.
+            if changeset_revision is None and tip_ctx.rev() >= 0:
+                changeset_revision = str(tip_ctx)
+                repository_dependency_tup = [
+                    toolshed,
+                    name,
+                    owner,
+                    changeset_revision,
+                    prior_installation_required,
+                    str(only_if_compiling_contained_td),
+                ]
+                return repository_dependency_tup, is_valid, error_message
+            else:
+                # Find the specified changeset revision in the repository's changelog to see if it's valid.
+                found = False
+                for changeset in repo.changelog:
+                    changeset_hash = str(repo[changeset])
+                    if changeset_hash == changeset_revision:
+                        found = True
+                        break
+                if not found:
+                    error_message = (
+                        "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, "
+                        % (toolshed, name, owner)
+                    )
+                    error_message += (
+                        f"changeset revision {changeset_revision} because the changeset revision is invalid.  "
+                    )
+                    log.debug(error_message)
+                    is_valid = False
+                    return repository_dependency_tup, is_valid, error_message
+        else:
+            # Repository dependencies are currently supported within a single tool shed.
+            error_message = (
+                "Repository dependencies are currently supported only within the same tool shed.  Ignoring "
+            )
+            error_message += (
+                "repository dependency definition  for tool shed %s, name %s, owner %s, changeset revision %s.  "
+                % (toolshed, name, owner, changeset_revision)
+            )
+            log.debug(error_message)
+            is_valid = False
+            return repository_dependency_tup, is_valid, error_message
+        return repository_dependency_tup, is_valid, error_message
+
 
 
 def _get_readme_file_names(repository_name: str) -> List[str]:
