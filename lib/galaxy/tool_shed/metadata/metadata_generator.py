@@ -48,6 +48,13 @@ log = logging.getLogger(__name__)
 InvalidFileT = Tuple[str, str]
 HandleResultT = Tuple[List, bool, str]
 
+NOT_TOOL_CONFIGS = [
+    suc.DATATYPES_CONFIG_FILENAME,
+    REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
+    TOOL_DEPENDENCY_DEFINITION_FILENAME,
+    suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME,
+]
+
 
 class BaseMetadataGenerator:
     app: MinimalManagerApp
@@ -133,12 +140,6 @@ class BaseMetadataGenerator:
         self.persist = persist
         self.invalid_file_tups = []
         self.sa_session = app.model.session
-        self.NOT_TOOL_CONFIGS = [
-            suc.DATATYPES_CONFIG_FILENAME,
-            REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
-            TOOL_DEPENDENCY_DEFINITION_FILENAME,
-            suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME,
-        ]
 
     def _generate_data_manager_metadata(
         self, repo_dir, data_manager_config_filename, metadata_dict: Dict[str, Any], shed_config_dict=None
@@ -377,7 +378,7 @@ class BaseMetadataGenerator:
                             )
                             readme_files.append(relative_path_to_readme)
                         # See if we have a tool config.
-                        elif looks_like_a_tool(os.path.join(root, name), invalid_names=self.NOT_TOOL_CONFIGS):
+                        elif looks_like_a_tool(os.path.join(root, name), invalid_names=NOT_TOOL_CONFIGS):
                             full_path = str(os.path.abspath(os.path.join(root, name)))  # why the str, seems very odd
                             element_tree, error_message = parse_xml(full_path)
                             if element_tree is None:
