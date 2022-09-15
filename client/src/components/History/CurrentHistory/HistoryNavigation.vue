@@ -128,7 +128,6 @@
                         <Icon fixed-width icon="lock" class="mr-1" />
                         <span v-localize>Make Private</span>
                     </b-dropdown-item>
-
                 </b-dropdown>
             </b-button-group>
         </nav>
