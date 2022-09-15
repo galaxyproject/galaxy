@@ -67,7 +67,7 @@
 import _l from "utils/localization";
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
-import { filterToolSections } from "./utilities";
+import { toolSearch } from "./utilities";
 import PanelViewButton from "./Buttons/PanelViewButton";
 
 export default {
@@ -101,6 +101,9 @@ export default {
             required: true,
         },
     },
+    created: function () {
+        this.toolSearch = new toolSearch();
+    },
     data() {
         return {
             query: null,
@@ -127,7 +130,7 @@ export default {
             };
         },
         sections() {
-            return filterToolSections(this.toolsLayout, this.results);
+            return this.toolSearch.filterSections(this.toolsLayout, this.results); //TODO confirm still works in Workflows
         },
         toolsLayout() {
             return this.toolbox.map((section) => {
