@@ -13,7 +13,7 @@ from sqlalchemy import (
 from galaxy import util
 from galaxy.util import inflector
 from galaxy.web.form_builder import SelectField
-from tool_shed.metadata import metadata_generator
+from galaxy.tool_shed.galaxy_install.metadata_generator import ToolShedMetadataGenerator
 from tool_shed.repository_types import util as rt_util
 from tool_shed.repository_types.metadata import TipOnly
 from tool_shed.structured_app import ToolShedApp
@@ -30,7 +30,7 @@ from tool_shed.util import (
 log = logging.getLogger(__name__)
 
 
-class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
+class RepositoryMetadataManager(ToolShedMetadataGenerator):
     def __init__(
         self,
         app: ToolShedApp,

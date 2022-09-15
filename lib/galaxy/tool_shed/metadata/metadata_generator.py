@@ -49,7 +49,7 @@ InvalidFileT = Tuple[str, str]
 HandleResultT = Tuple[List, bool, str]
 
 
-class MetadataGenerator:
+class BaseMetadataGenerator:
     app: MinimalManagerApp
     invalid_file_tups: List[InvalidFileT]
     changeset_revision: Optional[str]
@@ -1109,6 +1109,14 @@ class MetadataGenerator:
             else:
                 metadata["invalid_repository_dependencies"] = repository_dependencies_dict
         return metadata
+
+
+class GalaxyMetadataGenerator(BaseMetadataGenerator):
+    """A MetadataGenerator building on Galaxy's app and repository constructs."""
+
+
+class ToolShedMetadataGenerator(BaseMetadataGenerator):
+    """A MetadataGenerator building on ToolShed's app and repository constructs."""
 
 
 def _get_readme_file_names(repository_name: str) -> List[str]:
