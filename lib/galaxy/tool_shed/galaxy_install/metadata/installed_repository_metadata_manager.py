@@ -124,6 +124,7 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
     def reset_all_metadata_on_installed_repository(self):
         """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""
         if self.relative_install_dir:
+            assert self.repository
             original_metadata_dict = self.repository.metadata_
             self.generate_metadata_for_changeset_revision()
             if self.metadata_dict != original_metadata_dict:
@@ -135,7 +136,9 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
             else:
                 log.debug(f"Metadata did not need to be reset on repository {self.repository.name}.")
         else:
-            log.debug(f"Error locating installation directory for repository {self.repository.name}.")
+            log.debug(
+                f"Error locating installation directory for repository {self.repository and self.repository.name}."
+            )
 
     def reset_metadata_on_selected_repositories(self, user, **kwd):
         """
@@ -202,6 +205,7 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
         A tool shed repository is being updated so change the shed_tool_conf file.  Parse the config
         file to generate the entire list of config_elems instead of using the in-memory list.
         """
+        assert self.repository
         shed_conf_dict = self.shed_config_dict or self.repository.get_shed_config_dict(self.app)
         shed_tool_conf = shed_conf_dict["config_filename"]
         tool_path = shed_conf_dict["tool_path"]
