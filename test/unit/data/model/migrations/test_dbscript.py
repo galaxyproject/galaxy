@@ -35,6 +35,10 @@ TSI_BRANCH_LABEL = "tsi"
 GXY_BASE_ID = "gxy0"
 TSI_BASE_ID = "tsi0"
 
+ADMIN_CMD = "./manage_db.sh"
+DEV_CMD = "./scripts/db_dev.sh"
+COMMANDS = [ADMIN_CMD, DEV_CMD]
+
 
 @pytest.fixture(scope="session")
 def alembic_env_dir() -> str:
@@ -131,7 +135,9 @@ def dburl_from_config(config: Config) -> str:
 def run_command(cmd: str) -> subprocess.CompletedProcess:
     if in_packages():
         cmd = f"../.{cmd}"  # if this is run from `packages`, manage_db.sh is in parent directory
+
     completed_process = subprocess.run(cmd.split(), capture_output=True, text=True)
+
     return completed_process
 
 
@@ -154,9 +160,9 @@ def get_db_heads(config: Config) -> Tuple[str, ...]:
 
 class TestRevisionCommand:
     def test_revision_cmd(self, config):
-        run_command("./manage_db.sh revision --message foo1")
-        run_command("./manage_db.sh revision --rev-id 2 --message foo2")
-        run_command("./manage_db.sh revision --rev-id 3 --message foo3")
+        run_command(f"{DEV_CMD} revision --message foo1")
+        run_command(f"{DEV_CMD} revision --rev-id 2 --message foo2")
+        run_command(f"{DEV_CMD} revision --rev-id 3 --message foo3")
 
         script_dir = ScriptDirectory.from_config(config)
         revisions = [rev for rev in script_dir.walk_revisions()]
@@ -169,7 +175,7 @@ class TestRevisionCommand:
         assert rev.module.__name__ == "3_foo3_py"  # verify message
 
     def test_revision_cmd_missing_message_arg_error(self):
-        completed = run_command("./manage_db.sh revision --rev-id 1")
+        completed = run_command(f"{DEV_CMD} revision --rev-id 1")
         assert completed.returncode == 2
         assert "the following arguments are required: -m/--message" in completed.stderr
 
@@ -177,24 +183,24 @@ class TestRevisionCommand:
 class TestShowCommand:
     def test_show_cmd(self, config):
         alembic.command.revision(config, rev_id="42", head=GXY_BASE_ID)
-        completed = run_command("./manage_db.sh show 42")
+        completed = run_command(f"{DEV_CMD} show 42")
         assert "Revision ID: 42" in completed.stdout
 
     def test_show_cmd_invalid_revision_error(self, config):
         alembic.command.revision(config, rev_id="42", head=GXY_BASE_ID)
-        completed = run_command("./manage_db.sh show idonotexist")
+        completed = run_command(f"{DEV_CMD} show idonotexist")
         assert completed.returncode == 1
         assert "Traceback" not in completed.stderr
         assert "Can't locate revision identified by 'idonotexist'" in completed.stderr
 
     def test_show_cmd_invalid_revision_error_with_traceback(self):
-        completed = run_command("./manage_db.sh --raiseerr show idonotexist")
+        completed = run_command(f"{DEV_CMD} --raiseerr show idonotexist")
         assert completed.returncode == 1
         assert "Traceback" in completed.stderr
         assert "Can't locate revision identified by 'idonotexist'" in completed.stderr
 
     def test_show_cmd_missing_revision_arg_error(self):
-        completed = run_command("./manage_db.sh show")
+        completed = run_command(f"{DEV_CMD} show")
         assert completed.returncode == 2
         assert "the following arguments are required: revision" in completed.stderr
 
@@ -205,7 +211,7 @@ class TestHistoryCommand:
         alembic.command.revision(config, rev_id="2", head="1")
         alembic.command.revision(config, rev_id="3", head="2")
 
-        completed = run_command("./manage_db.sh history")
+        completed = run_command(f"{DEV_CMD} history")
         assert completed.returncode == 0
         assert "2 -> 3 (gxy) (head), empty message" in completed.stdout
         assert "1 -> 2 (gxy)" in completed.stdout
@@ -216,7 +222,7 @@ class TestHistoryCommand:
         alembic.command.revision(config, rev_id="2", head="1")
         alembic.command.revision(config, rev_id="3", head="2")
 
-        completed = run_command("./manage_db.sh history --verbose")
+        completed = run_command(f"{DEV_CMD} history --verbose")
         assert "Revision ID: 2" in completed.stdout
         assert "Revises: 1" in completed.stdout
 
@@ -226,66 +232,69 @@ class TestHistoryCommand:
         alembic.command.revision(config, rev_id="3", head="2")
         alembic.command.upgrade(config, "heads")
 
-        completed = run_command("./manage_db.sh history --indicate-current")
+        completed = run_command(f"{DEV_CMD} history --indicate-current")
         assert completed.returncode == 0
         assert "2 -> 3 (gxy) (head) (current), empty message" in completed.stdout
         assert "1 -> 2 (gxy)" in completed.stdout
         assert "gxy0 -> 1 (gxy)" in completed.stdout
 
 
+@pytest.mark.parametrize("command", COMMANDS)
 class TestVersionCommand:
-    def test_version_cmd(self, config):
+    def test_version_cmd(self, config, command):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="2", head="1")
 
-        completed = run_command("./manage_db.sh version")
+        completed = run_command(f"{command} version")
         assert completed.returncode == 0
         assert "2 (gxy) (head)" in completed.stdout
 
-    def test_version_cmd_verbose(self, config):
+    def test_version_cmd_verbose(self, config, command):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="2", head="1")
 
-        completed = run_command("./manage_db.sh version --verbose")
+        completed = run_command(f"{command} version --verbose")
         assert completed.returncode == 0
         assert "Revision ID: 2" in completed.stdout
         assert "Revises: 1" in completed.stdout
 
 
+@pytest.mark.parametrize("command", COMMANDS)
 class TestDbVersionCommand:
-    def test_dbversion_cmd(self, config):
+    def test_dbversion_cmd(self, config, command):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="2", head="1")
 
-        completed = run_command("./manage_db.sh dbversion")
+        completed = run_command(f"{command} dbversion")
         assert completed.returncode == 0
         assert "(head)" not in completed.stdout  # there has been no upgrade
 
         alembic.command.upgrade(config, "heads")
 
-        completed = run_command("./manage_db.sh dbversion")
+        completed = run_command(f"{command} dbversion")
         assert completed.returncode == 0
         assert "2 (head)" in completed.stdout
 
-    def test_dbversion_cmd_verbose(self, config):
+    def test_dbversion_cmd_verbose(self, config, command):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="2", head="1")
 
         alembic.command.upgrade(config, "heads")
 
-        completed = run_command("./manage_db.sh dbversion --verbose")
+        completed = run_command(f"{command} dbversion --verbose")
         assert completed.returncode == 0
         assert "Revision ID: 2" in completed.stdout
         assert "Revises: 1" in completed.stdout
 
 
+@pytest.mark.parametrize("command", COMMANDS)
 class TestUpgradeCommand:
-    def test_upgrade_cmd(self, config):
+    def test_upgrade_cmd(self, config, command):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="2", head="1")
 
         # first upgrade: upgrades gxy to 2, tsi to base
-        completed = run_command("./manage_db.sh upgrade")
+        completed = run_command(f"{command} upgrade")
         assert completed.returncode == 0
         assert "Running upgrade gxy0 -> 1" in completed.stderr
         assert "Running upgrade 1 -> 2" in completed.stderr
@@ -297,7 +306,7 @@ class TestUpgradeCommand:
         alembic.command.revision(config, rev_id="3", head="2")
 
         # next upgrade: upgrades gxy to 3
-        completed = run_command("./manage_db.sh upgrade")
+        completed = run_command(f"{command} upgrade")
         assert completed.returncode == 0
         assert "Running upgrade 2 -> 3" in completed.stderr
         assert "tsi0" not in completed.stderr  # no effect on tsi
@@ -305,35 +314,35 @@ class TestUpgradeCommand:
         heads = get_db_heads(config)
         assert "3" in heads
 
-    def test_upgrade_cmd_sql_only(self, config):
+    def test_upgrade_cmd_sql_only(self, config, command):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="2", head="1")
 
-        completed = run_command("./manage_db.sh upgrade --sql")
+        completed = run_command(f"{command} upgrade --sql")
         assert completed.returncode == 0
         assert "UPDATE alembic_version SET version_num='2'" in completed.stdout
         assert "UPDATE alembic_version SET version_num='3'" not in completed.stdout
 
         alembic.command.revision(config, rev_id="3", head="2")
 
-        completed = run_command("./manage_db.sh upgrade --sql")
+        completed = run_command(f"{command} upgrade --sql")
         assert completed.returncode == 0
         assert "UPDATE alembic_version SET version_num='2'" in completed.stdout
         assert "UPDATE alembic_version SET version_num='3'" in completed.stdout
 
-    def test_upgrade_cmd_with_revision_arg(self, config):
+    def test_upgrade_cmd_with_revision_arg(self, config, command):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="2", head="1")
 
         # upgrades gxy to 1
-        completed = run_command("./manage_db.sh upgrade 1")
+        completed = run_command(f"{command} upgrade 1")
         assert completed.returncode == 0
         assert "Running upgrade gxy0 -> 1" in completed.stderr
 
         heads = get_db_heads(config)
         assert heads == ("1",)
 
-    def test_upgrade_cmd_with_relative_revision_syntax(self, config):
+    def test_upgrade_cmd_with_relative_revision_syntax(self, config, command):
         alembic.command.revision(config, rev_id="a", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="b", head="a")
         alembic.command.revision(config, rev_id="c", head="b")
@@ -341,7 +350,7 @@ class TestUpgradeCommand:
         alembic.command.revision(config, rev_id="e", head="d")
 
         # upgrades gxy to b: none + 2 (none -> base -> a)
-        completed = run_command("./manage_db.sh upgrade +3")
+        completed = run_command(f"{command} upgrade +3")
         assert completed.returncode == 0
         assert "Running upgrade  -> gxy0" in completed.stderr
         assert "Running upgrade gxy0 -> a" in completed.stderr
@@ -351,7 +360,7 @@ class TestUpgradeCommand:
         assert heads == ("b",)
 
         # upgrades gxy to d relative to b: b + 2 (b -> c -> d)
-        completed = run_command("./manage_db.sh upgrade b+2")
+        completed = run_command(f"{command} upgrade b+2")
         assert completed.returncode == 0
         assert "Running upgrade b -> c" in completed.stderr
         assert "Running upgrade c -> d" in completed.stderr
@@ -360,14 +369,15 @@ class TestUpgradeCommand:
         assert heads == ("d",)
 
 
+@pytest.mark.parametrize("command", COMMANDS)
 class TestDowngradeCommand:
-    def test_downgrade_cmd(self, config):
+    def test_downgrade_cmd(self, config, command):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="2", head="1")
         alembic.command.revision(config, rev_id="3", head="2")
         alembic.command.upgrade(config, "heads")
 
-        completed = run_command("./manage_db.sh downgrade 1")  # downgrade gxy to 1
+        completed = run_command(f"{command} downgrade 1")  # downgrade gxy to 1
         assert completed.returncode == 0
         assert "Running downgrade 3 -> 2" in completed.stderr
         assert "Running downgrade 2 -> 1" in completed.stderr
@@ -376,23 +386,23 @@ class TestDowngradeCommand:
         assert len(heads) == 2
         assert "1" in heads
 
-    def test_downgrade_cmd_sql_only(self, config):
+    def test_downgrade_cmd_sql_only(self, config, command):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="2", head="1")
         alembic.command.revision(config, rev_id="3", head="2")
         alembic.command.upgrade(config, "heads")
 
-        completed = run_command("./manage_db.sh downgrade --sql 3:1")  # downgrade gxy to 1, no effect on tsi
+        completed = run_command(f"{command} downgrade --sql 3:1")  # downgrade gxy to 1, no effect on tsi
         assert completed.returncode == 0
         assert "UPDATE alembic_version SET version_num='2'" in completed.stdout
         assert "UPDATE alembic_version SET version_num='1'" in completed.stdout
 
-    def test_downgrade_cmd_missing_revision_arg_error(self):
-        completed = run_command("./manage_db.sh downgrade")
+    def test_downgrade_cmd_missing_revision_arg_error(self, command):
+        completed = run_command(f"{command} downgrade")
         assert completed.returncode == 2
         assert "the following arguments are required: revision" in completed.stderr
 
-    def test_downgrade_cmd_with_relative_revision_syntax(self, config):
+    def test_downgrade_cmd_with_relative_revision_syntax(self, config, command):
         alembic.command.revision(config, rev_id="a", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="b", head="a")
         alembic.command.revision(config, rev_id="c", head="b")
@@ -401,7 +411,7 @@ class TestDowngradeCommand:
         alembic.command.upgrade(config, "heads")
 
         # downgrades gxy to c: e - 2 (e -> d -> c)
-        completed = run_command("./manage_db.sh downgrade -2")
+        completed = run_command(f"{command} downgrade -2")
 
         assert completed.returncode == 0
         assert "Running downgrade e -> d" in completed.stderr
@@ -411,7 +421,7 @@ class TestDowngradeCommand:
         assert "c" in heads
 
         # downgrades gxy to a relative to c: c - 2 (c -> b -> a)
-        completed = run_command("./manage_db.sh downgrade c-2")
+        completed = run_command(f"{command} downgrade c-2")
         assert completed.returncode == 0
         assert "Running downgrade c -> b" in completed.stderr
         assert "Running downgrade b -> a" in completed.stderr
