@@ -67,6 +67,9 @@ class BaseMetadataGenerator:
     repository_files_dir: Optional[str]
     persist: bool
 
+    def initial_metadata_dict(self) -> Dict[str, Any]:
+        ...
+
     def _generate_data_manager_metadata(
         self, repo_dir, data_manager_config_filename, metadata_dict: Dict[str, Any], shed_config_dict=None
     ) -> Dict[str, Any]:
@@ -195,14 +198,6 @@ class BaseMetadataGenerator:
         assert self.repository_clone_url
         tmp_url = remove_protocol_and_user_from_clone_url(self.repository_clone_url)
         return f"{tmp_url}/{guid_type}/{obj_id}/{version}"
-
-    def initial_metadata_dict(self) -> Dict[str, Any]:
-        if self.app.name == "galaxy":
-            # Shed related tool panel configs are only relevant to Galaxy.
-            metadata_dict = {"shed_config_filename": self.shed_config_dict.get("config_filename")}
-        else:
-            metadata_dict = {}
-        return metadata_dict
 
     def generate_metadata_for_changeset_revision(self):
         """
@@ -1092,6 +1087,11 @@ class GalaxyMetadataGenerator(BaseMetadataGenerator):
         self.invalid_file_tups = []
         self.sa_session = app.model.session
 
+    def initial_metadata_dict(self) -> Dict[str, Any]:
+        # Shed related tool panel configs are only relevant to Galaxy.
+        metadata_dict = {"shed_config_filename": self.shed_config_dict.get("config_filename")}
+        return metadata_dict
+
 
 class ToolShedMetadataGenerator(BaseMetadataGenerator):
     """A MetadataGenerator building on ToolShed's app and repository constructs."""
@@ -1141,6 +1141,9 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
         self.persist = persist
         self.invalid_file_tups = []
         self.sa_session = app.model.session
+
+    def initial_metadata_dict(self) -> Dict[str, Any]:
+        return {}
 
 
 def _get_readme_file_names(repository_name: str) -> List[str]:
