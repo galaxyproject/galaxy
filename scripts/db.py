@@ -2,123 +2,29 @@
 This script is intended to be invoked by the manage_db.sh script.
 """
 
-import logging
 import os
 import sys
-from argparse import (
-    ArgumentParser,
-    Namespace,
-)
-
-import alembic
+from argparse import ArgumentParser
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
-from galaxy.model.migrations import verify_databases_via_script
-from galaxy.model.migrations.dbscript import DbScript
-from galaxy.model.migrations.scripts import get_configuration
-
-logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger(__name__)
-
-
-def exec_upgrade(args: Namespace) -> None:
-    _exec_command("upgrade", args)
-
-
-def exec_downgrade(args: Namespace) -> None:
-    _exec_command("downgrade", args)
-
-
-def exec_version(args: Namespace) -> None:
-    _exec_command("version", args)
-
-
-def exec_dbversion(args: Namespace) -> None:
-    _exec_command("dbversion", args)
-
-
-def exec_init(args: Namespace) -> None:
-    gxy_config, tsi_config, is_auto_migrate = get_configuration(sys.argv, os.getcwd())
-    verify_databases_via_script(gxy_config, tsi_config, is_auto_migrate)
-
-
-def _exec_command(command: str, args: Namespace) -> None:
-    dbscript = DbScript(args.config)
-    try:
-        getattr(dbscript, command)(args)
-    except alembic.util.exc.CommandError as e:
-        if args.raiseerr:
-            raise
-        else:
-            log.error(e)
-            print(f"FAILED: {str(e)}")
-            sys.exit(1)
+from galaxy.model.migrations.dbscript import ParserBuilder
 
 
 def main() -> None:
-    def add_parser(command, func, help, aliases=None, parents=None):
-        aliases = aliases or []
-        parents = parents or []
-        parser = subparsers.add_parser(command, aliases=aliases, help=help, parents=parents)
-        parser.set_defaults(func=func)
-        return parser
-
-    verbose_arg_parser = ArgumentParser(add_help=False)
-    verbose_arg_parser.add_argument("-v", "--verbose", action="store_true", help="Display more detailed output")
-
-    sql_arg_parser = ArgumentParser(add_help=False)
-    sql_arg_parser.add_argument(
-        "--sql",
-        action="store_true",
-        help="Don't emit SQL to database - dump to standard output/file instead. See Alembic docs on offline mode.",
-    )
-
     parser = ArgumentParser(
         prog="manage_db.sh",
         description="Common database schema migration operations",
     )
     parser.add_argument("-c", "--galaxy-config", help="Alternate Galaxy configuration file", dest="config")
 
-    subparsers = parser.add_subparsers(required=True)
+    parser_builder = ParserBuilder(parser)
 
-    upgrade_cmd_parser = add_parser(
-        "upgrade",
-        exec_upgrade,
-        "Upgrade to a later version",
-        parents=[sql_arg_parser],
-    )
-    upgrade_cmd_parser.add_argument("revision", help="Revision identifier", nargs="?")
-
-    downgrade_cmd_parser = add_parser(
-        "downgrade",
-        exec_downgrade,
-        "Revert to a previous version",
-        parents=[sql_arg_parser],
-    )
-    downgrade_cmd_parser.add_argument("revision", help="Revision identifier")
-
-    add_parser(
-        "version",
-        exec_version,
-        "Show the head revision in the migrations script directory",
-        aliases=["v"],
-        parents=[verbose_arg_parser],
-    )
-
-    add_parser(
-        "dbversion",
-        exec_dbversion,
-        "Show the current revision for Galaxy's database",
-        aliases=["dv"],
-        parents=[verbose_arg_parser],
-    )
-
-    add_parser(
-        "init",
-        exec_init,
-        "Initialize empty database(s) for both branches (create database objects for gxy and tsi branch)",
-    )
+    parser_builder.add_upgrade_command()
+    parser_builder.add_downgrade_command()
+    parser_builder.add_version_command()
+    parser_builder.add_dbversion_command()
+    parser_builder.add_init_command()
 
     args = parser.parse_args()
     args.func(args)
