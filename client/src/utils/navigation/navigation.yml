@@ -279,10 +279,6 @@ history_panel:
     options_menu_item:
       type: sizzle
       selector: '.history-options-button-menu > a:contains("${option_label}")'
-
-    options_show_history_structure:
-      type: xpath
-      selector: '//a[contains(text(), "Show Structure")]'
     options_show_export_history_to_file: 'a[data-description="export to file"]'
     options_use_beta_history:
       type: xpath
@@ -306,14 +302,6 @@ history_panel:
   text:
     tooltip_name: 'Rename history...'
     new_name: 'Unnamed history'
-
-
-history_structure:
-  selectors:
-    _: '.tool'
-    header: '.tool > .header.clickable'
-    dataset: '.tool div.list-item.dataset.history-content'
-    details: '.tool .details'
 
 edit_dataset_attributes:
   selectors:
