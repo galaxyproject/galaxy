@@ -15,9 +15,9 @@ On startup, the system checks if the version in the database matches the version
 
 To initialize an empty database (or create a new SQLite database) start Galaxy. To upgrade or downgrade an existing database, you'll need to use a script.
 
-Galaxy provides two scripts: `db.sh` and `run_alembic.sh`.
+Galaxy provides two scripts: `manage_db.sh` and `run_alembic.sh`.
 
-The `db.sh` script is the recommended way to interact with Galaxy's database schema migration system.
+The `manage_db.sh` script is the recommended way to interact with Galaxy's database schema migration system.
 It provides access to a subset of commands offered by Alembic's CLI, while hiding some of the
 implementation complexity of Galaxy's model. The provided commands and options should be
 sufficient for most use cases involving Galaxy development or system and database administration.
@@ -42,13 +42,13 @@ revision scripts located in the branch version directory (`migrations/alembic/ve
 
 For a more detailed description of the system's internals, see pull request [#13108](https://github.com/galaxyproject/galaxy/pull/13108).
 
-## db.sh
+## manage_db.sh
 
 This script offers a set of common database schema migration operations that are executed on the *gxy* branch, which, in the vast majority of cases, is all you need to develop and administer Galaxy.
 To run operations on the *tsi* branch, you need to use `run_alembic.sh`.
 
 ```
-usage: db.sh [-h] [-c CONFIG] [--raiseerr] {upgrade,downgrade,version,v,
+usage: manage_db.sh [-h] [-c CONFIG] [--raiseerr] {upgrade,downgrade,version,v,
        dbversion,dv,history,h,show,s,revision,init} ...
 
 positional arguments:
@@ -77,7 +77,7 @@ revision, you have the option to use a partial number. As long as the partial nu
 identifies the revision, you may use that partial number in any command in place of the full
 revision number.
 
-For example, you may use `./db.sh upgrade 6a` instead of `./db.sh upgrade 6a67bf27e6a6` if `6a` is sufficient to uniquely identify that revision.
+For example, you may use `./manage_db.sh upgrade 6a` instead of `./manage_db.sh upgrade 6a67bf27e6a6` if `6a` is sufficient to uniquely identify that revision.
 
 (Ref: [Alembic documentation](https://alembic.sqlalchemy.org/en/latest/tutorial.html#partial-revision-identifiers))
 
@@ -87,20 +87,20 @@ You may also use Alembic's syntax for relative migration identifiers for the upg
 
 To move 2 versions from the current version, a decimal value `+N` can be supplied: 
 
-`./db.sh upgrade +2`
+`./manage_db.sh upgrade +2`
 
 Negative values are accepted for downgrades: 
 
-`./db.sh downgrade -2`
+`./manage_db.sh downgrade -2`
 
 Relative identifiers may also be in terms of a specific revision. For example, to upgrade to
 revision 6a67bf27e6a6 plus two additional steps:
 
-`.db.sh upgrade 6a67bf27e6a6+2`.
+`.manage_db.sh upgrade 6a67bf27e6a6+2`.
 
 You may also combine relative migration identifiers with partial revision identifiers:
 
-`.db.sh upgrade 6a+2`. 
+`.manage_db.sh upgrade 6a+2`. 
 
 (Ref: [Alembic documentation](https://alembic.sqlalchemy.org/en/latest/tutorial.html#relative-migration-identifiers)
 
@@ -113,11 +113,11 @@ specifying `heads` as the revision identifier; in that case, the database(s) wil
 latest revisions in ***both*** branches, *gxy* and *tsi*.
 
 ***If you are upgrading a database that has not been version-controlled by Alembic, you should run
-this command without the revision argument: `./db.sh upgrade` - this will ensure that both branches,
+this command without the revision argument: `./manage_db.sh upgrade` - this will ensure that both branches,
 `gxy` and `tsi`, are initialized.***
 
 ```
-usage: db.sh upgrade [-h] [--sql] [revision]
+usage: manage_db.sh upgrade [-h] [--sql] [revision]
 
 positional arguments:
   revision    Revision identifier
@@ -134,7 +134,7 @@ For the `--sql` option, see [Alembic documentation on offline mode](https://alem
 Revert to a previous version.
 
 ```
-usage: db.sh downgrade [-h] [--sql] revision
+usage: manage_db.sh downgrade [-h] [--sql] revision
 
 positional arguments:
   revision    Revision identifier
@@ -159,7 +159,7 @@ Show the head revision in the migrations script directory. This will display the
 
 ```
 Activating virtualenv at .venv
-\usage: db.sh version [-h] [-v]
+\usage: manage_db.sh version [-h] [-v]
 
 optional arguments:
   -h, --help     show this help message and exit
@@ -170,7 +170,7 @@ optional arguments:
 If your database is setup to host both branches (*gxy* and *tsi*), the head revisions for both branches will be displayed:
 
 ```
-$ ./db.sh version
+$ ./manage_db.sh version
 186d4835587b (gxy) (head)
 d4a650f47a3c (tsi) (head)
 ```
@@ -180,7 +180,7 @@ d4a650f47a3c (tsi) (head)
 Show the current revision for Galaxy's database.
 
 ```
-usage: db.sh dbversion [-h] [-v]
+usage: manage_db.sh dbversion [-h] [-v]
 
 optional arguments:
   -h, --help     show this help message and exit
@@ -193,7 +193,7 @@ in the codebase, it will be marked as `(head)`. The output will be slightly more
 depending on the database.
 
 ```
-$ ./db.sh dbversion
+$ ./manage_db.sh dbversion
 INFO:alembic.runtime.migration:Context impl PostgresqlImpl.
 INFO:alembic.runtime.migration:Will assume transactional DDL.
 d4a650f47a3c (head)
@@ -205,7 +205,7 @@ d4a650f47a3c (head)
 List revision scripts in chronological order.
 
 ```
-usage: db.sh history [-h] [-v] [-i]
+usage: manage_db.sh history [-h] [-v] [-i]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -220,7 +220,7 @@ revisions are the ones that created the `gxy` and `tsi` branches (introduced in 
 ahead) your database version is compared to the version expected by your codebase:
 
 ```
-$ ./db.sh history --indicate-current
+$ ./manage_db.sh history --indicate-current
 6a67bf27e6a6 -> 186d4835587b (gxy) (head), drop job_state_history.update_time column
 b182f655505f -> 6a67bf27e6a6 (gxy) (current), deferred data tables
 e7b6dcb09efd -> b182f655505f (gxy), add workflow.source_metadata column
@@ -233,7 +233,7 @@ e7b6dcb09efd -> b182f655505f (gxy), add workflow.source_metadata column
 Show the revision(s) denoted by the given revision identifier.
 
 ```
-usage: db.sh show [-h] revision
+usage: manage_db.sh show [-h] revision
 
 positional arguments:
   revision    Revision identifier
@@ -247,7 +247,7 @@ optional arguments:
 Create a new revision file.
 
 ```
-usage: db.sh revision [-h] -m MESSAGE [--rev-id REV_ID]
+usage: manage_db.sh revision [-h] -m MESSAGE [--rev-id REV_ID]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -262,7 +262,7 @@ appended to the new revision identifier to form the filename for the new revisio
 should be a succinct description of the change:
 
 ```
-$ ./db.sh revision --message "add column foo to table bar"
+$ ./manage_db.sh revision --message "add column foo to table bar"
 [output omitted]
 
 $ ls lib/galaxy/model/migrations/alembic/versions_gxy/
@@ -274,7 +274,7 @@ a2e418ad6a15_add_column_foo_to_table_bar.py
 Initialize an empty database (or create a new SQLite database) for both branches, `gxy` and `tsi` (creates database objects in one or two databases, depending on configuration settings).
 
 ```
-usage: db.sh init [-h]
+usage: manage_db.sh init [-h]
 
 optional arguments:
   -h, --help  show this help message and exit
@@ -365,14 +365,14 @@ Galaxy no longer supports SQLAlchemy Migrate. To upgrade to Alembic, follow thes
 
    Once your database has the latest SQLAlchemy Migrate version, switch back to your current branch (22.05 or more recent).
 
-5. Run `db.sh upgrade`.
+5. Run `manage_db.sh upgrade`.
 
 ## Developing Galaxy: creating new revisions
 
 Make sure you have updated the model and have added appropriate tests before creating a new
 revision.
 
-You create a new revision file by running the `revision` subcommand of the `db.sh` or the
+You create a new revision file by running the `revision` subcommand of the `manage_db.sh` or the
 `run_alembic.sh` script (see sections above for usage information). Alembic generates a revision
 script in the appropriate version directory (`migrations/alembic/versions_gxy` for *gxy* and
 `migrations/alembic/versions_tsi` for *tsi*). You'll need to fill out the `upgrade` and `downgrade`
@@ -383,7 +383,7 @@ functions. Use Alembic documentation for examples:
 
 We encourage you to use Galaxy-specific utility functions (`galaxy/model/migrations/util.py`) when appropriate. Don't forget to provide tests for any modifications you make to the model (most likely, you will need to add them to the appropriate `test/unit/data/model/mapping/test_*model_mapping.py` module.
 
-After that, run the upgrade script: `./db.sh upgrade`. And you're done!
+After that, run the upgrade script: `./manage_db.sh upgrade`. And you're done!
 
 ## Troubleshooting
 
