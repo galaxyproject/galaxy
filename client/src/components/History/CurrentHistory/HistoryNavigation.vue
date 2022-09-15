@@ -137,15 +137,6 @@
                         <span v-localize>Make Private</span>
                     </b-dropdown-item>
 
-                    <b-dropdown-divider></b-dropdown-divider>
-
-                    <b-dropdown-item
-                        data-description="switch to legacy history view"
-                        :title="l('Switch to Legacy History Panel')"
-                        @click="switchToLegacyHistoryPanel">
-                        <Icon fixed-width class="mr-1" icon="arrow-up" />
-                        <span v-localize>Return to legacy panel</span>
-                    </b-dropdown-item>
                 </b-dropdown>
             </b-button-group>
         </nav>
@@ -186,7 +177,6 @@
 
 <script>
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
-import { switchToLegacyHistoryPanel } from "components/History/adapters/betaToggle";
 import CopyModal from "components/History/Modals/CopyModal";
 import SelectorModal from "components/History/Modals/SelectorModal";
 import { mapGetters } from "vuex";
@@ -207,7 +197,6 @@ export default {
         ...mapGetters("user", ["currentUser"]),
     },
     methods: {
-        switchToLegacyHistoryPanel,
         userTitle(title) {
             if (this.currentUser.isAnonymous) {
                 return this.l("Log in to") + " " + this.l(title);
