@@ -7,8 +7,13 @@ from galaxy import (
     util,
     web,
 )
-from galaxy.web import expose_api_raw_anonymous_and_sessionless
+from galaxy.web import (
+    expose_api,
+    expose_api_raw_anonymous_and_sessionless,
+    require_admin,
+)
 from galaxy.webapps.base.controller import BaseAPIController
+from tool_shed.util.shed_index import build_index
 from tool_shed.webapp.search.tool_search import ToolSearch
 
 log = logging.getLogger(__name__)
@@ -16,6 +21,26 @@ log = logging.getLogger(__name__)
 
 class ToolsController(BaseAPIController):
     """RESTful controller for interactions with tools in the Tool Shed."""
+
+    @expose_api
+    @require_admin
+    def build_search_index(self, trans, **kwd):
+        """
+        PUT /api/tools/build_search_index
+
+        Not part of the stable API, just something to simplify bootstrapping tool sheds,
+        scripting, testing, etc...
+        """
+        repos_indexed, tools_indexed = build_index(
+            trans.app.config.whoosh_index_dir,
+            trans.app.config.file_path,
+            trans.app.config.hgweb_config_dir,
+            trans.app.config.database_connection,
+        )
+        return {
+            "repositories_indexed": repos_indexed,
+            "tools_indexed": tools_indexed,
+        }
 
     @expose_api_raw_anonymous_and_sessionless
     def index(self, trans, **kwd):

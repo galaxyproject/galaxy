@@ -13,9 +13,14 @@ from tool_shed_client.schema import (
     GetOrderedInstallableRevisionsRequest,
     OrderedInstallableRevisions,
     Repository,
+    RepositoryMetadata,
+    RepositorySearchRequest,
+    RepositorySearchResults,
     RepositoryUpdate,
     ResetMetadataOnRepositoryRequest,
     ResetMetadataOnRepositoryResponse,
+    ToolSearchRequest,
+    ToolSearchResults,
 )
 from .api_util import ShedApiInteractor
 
@@ -49,6 +54,10 @@ class ToolShedPopulator:
         )
         assert response.is_ok
         return repository
+
+    def setup_column_maker_and_get_metadata(self, prefix=DEFAULT_PREFIX) -> RepositoryMetadata:
+        repository = self.setup_column_maker_repo(prefix=prefix)
+        return self.get_metadata(repository)
 
     def update_column_maker_repo(self, repository: HasRepositoryId) -> requests.Response:
         response = self.upload_revision(
@@ -96,6 +105,10 @@ class ToolShedPopulator:
         api_asserts.assert_status_code_is_ok(response)
         return Repository(**response.json())
 
+    def reindex(self):
+        index_response = self._admin_api_interactor.put("tools/build_search_index")
+        index_response.raise_for_status()
+
     def new_category(self, prefix=DEFAULT_PREFIX) -> Category:
         name = random_name(prefix=prefix)
         body = {"name": name, "description": "testcreaterepo"}
@@ -111,12 +124,39 @@ class ToolShedPopulator:
         api_asserts.assert_status_code_is_ok(revisions_response)
         return OrderedInstallableRevisions(__root__=revisions_response.json())
 
+    def get_metadata(self, repository: HasRepositoryId) -> RepositoryMetadata:
+        repository_id = self._repository_id(repository)
+        metadata_response = self._api_interactor.get(f"repositories/{repository_id}/metadata")
+        api_asserts.assert_status_code_is_ok(metadata_response)
+        return RepositoryMetadata(__root__=metadata_response.json())
+
     def reset_metadata(self, repository: HasRepositoryId) -> ResetMetadataOnRepositoryResponse:
         repository_id = self._repository_id(repository)
         request = ResetMetadataOnRepositoryRequest(repository_id=repository_id)
         reset_response = self._api_interactor.post("repositories/reset_metadata_on_repository", json=request.dict())
-        reset_response.raise_for_status()
+        api_asserts.assert_status_code_is_ok(reset_response)
         return ResetMetadataOnRepositoryResponse(**reset_response.json())
+
+    def tool_search_query(self, query: str) -> ToolSearchResults:
+        return self.tool_search(ToolSearchRequest(q=query))
+
+    def tool_search(self, search_request: ToolSearchRequest) -> ToolSearchResults:
+        search_response = self._api_interactor.get("tools", params=search_request.dict())
+        api_asserts.assert_status_code_is_ok(search_response)
+        return ToolSearchResults(**search_response.json())
+
+    def repo_search_query(self, query: str) -> RepositorySearchResults:
+        return self.repo_search(RepositorySearchRequest(q=query))
+
+    def repo_search(self, repo_search_request: RepositorySearchRequest) -> RepositorySearchResults:
+        search_response = self._api_interactor.get("repositories", params=repo_search_request.dict())
+        api_asserts.assert_status_code_is_ok(search_response)
+        return RepositorySearchResults(**search_response.json())
+
+    def guid(self, repository: Repository, tool_id: str, tool_version: str) -> str:
+        url = self._api_interactor.url
+        base = url.split("://")[1].split("/")[0]
+        return f"{base}/repos/{repository.owner}/{repository.name}/{tool_id}/{tool_version}"
 
     def _repository_id(self, has_id: HasRepositoryId) -> str:
         if isinstance(has_id, Repository):

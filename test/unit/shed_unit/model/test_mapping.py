@@ -926,7 +926,7 @@ def ensure_database_is_empty(session, model):
 @pytest.fixture(scope="module")
 def model():
     db_uri = "sqlite:///:memory:"
-    return mapping.init("/tmp", db_uri, create_tables=True)
+    return mapping.init(db_uri, create_tables=True)
 
 
 @pytest.fixture
