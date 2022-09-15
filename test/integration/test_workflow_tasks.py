@@ -9,6 +9,7 @@ from typing import (
     Dict,
 )
 
+from galaxy.util.compression_utils import CompressedFile
 from galaxy_test.api.test_workflows import RunsWorkflowFixtures
 from galaxy_test.base import api_asserts
 from galaxy_test.base.api import UsesCeleryTasks
@@ -52,6 +53,27 @@ class WorkflowTasksIntegrationTestCase(
 
     def test_export_import_invocation_with_input_as_output_sts(self):
         self._test_export_import_invocation_with_input_as_output(False)
+
+    def test_export_ro_crate_basic(self):
+        ro_crate_path = self._export_ro_crate(False)
+        assert CompressedFile(ro_crate_path).file_type == "zip"
+
+    def _export_ro_crate(self, to_uri):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow_with_runtime_data_column_parameter(history_id)
+            invocation_id = summary.invocation_id
+            extension = "rocrate.zip"
+            if to_uri:
+                uri = f"gxfiles://posix_test/invocation.{extension}"
+                self.workflow_populator.download_invocation_to_uri(invocation_id, uri, extension=extension)
+                root = self.root_dir
+                invocation_path = os.path.join(root, f"invocation.{extension}")
+                assert os.path.exists(invocation_path)
+                uri = invocation_path
+            else:
+                temp_tar = self.workflow_populator.download_invocation_to_store(invocation_id, extension=extension)
+                uri = temp_tar
+            return uri
 
     def _test_export_import_invocation_collection_input(self, use_uris, model_store_format="tgz"):
         with self.dataset_populator.test_history() as history_id:
