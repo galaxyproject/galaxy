@@ -129,6 +129,7 @@ pytest-html = "*"
 python-irodsclient = "!=1.1.2"  # https://github.com/irods/python-irodsclient/issues/356
 pytest-json-report = "*"
 pytest-mock = "*"
+pytest-playwright = "*"
 pytest-postgresql = "!=3.0.0"  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
 pytest-shard = "*"
 recommonmark = "*"
