@@ -6,14 +6,7 @@ import logging
 import os
 import shutil
 
-from sqlalchemy import (
-    and_,
-    false,
-    true,
-)
-
 from galaxy import util
-from galaxy.tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
@@ -618,32 +611,6 @@ class InstalledRepositoryManager:
                 else:
                     deleted_tool_dependency_names.append(original_dependency_val_dict["name"])
         return updated_tool_dependency_names, deleted_tool_dependency_names
-
-    def load_proprietary_datatypes(self):
-        cdl = custom_datatype_manager.CustomDatatypeLoader(self.app)
-        for tool_shed_repository in (
-            self.context.query(self.install_model.ToolShedRepository)
-            .filter(
-                and_(
-                    self.install_model.ToolShedRepository.table.c.includes_datatypes == true(),
-                    self.install_model.ToolShedRepository.table.c.deleted == false(),
-                )
-            )
-            .order_by(self.install_model.ToolShedRepository.table.c.id)
-        ):
-            relative_install_dir = self.get_repository_install_dir(tool_shed_repository)
-            if relative_install_dir:
-                installed_repository_dict = cdl.load_installed_datatypes(tool_shed_repository, relative_install_dir)
-                if installed_repository_dict:
-                    self.installed_repository_dicts.append(installed_repository_dict)
-
-    def load_proprietary_converters_and_display_applications(self, deactivate=False):
-        cdl = custom_datatype_manager.CustomDatatypeLoader(self.app)
-        for installed_repository_dict in self.installed_repository_dicts:
-            if installed_repository_dict["converter_path"]:
-                cdl.load_installed_datatype_converters(installed_repository_dict, deactivate=deactivate)
-            if installed_repository_dict["display_path"]:
-                cdl.load_installed_display_applications(installed_repository_dict, deactivate=deactivate)
 
     def uninstall_repository(self, repository, remove_from_disk=True):
         errors = ""
