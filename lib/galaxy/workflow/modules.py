@@ -1437,9 +1437,11 @@ class ToolModule(WorkflowModule):
         self.tool_id = tool_id
         self.tool_version = str(tool_version) if tool_version else None
         self.tool_uuid = tool_uuid
-        self.tool = trans.app.toolbox.get_tool(
-            tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
-        )
+        self.tool = None
+        if getattr(trans.app, "toolbox", None):
+            self.tool = trans.app.toolbox.get_tool(
+                tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
+            )
         if self.tool:
             current_tool_id = self.tool.id
             current_tool_version = str(self.tool.version)
@@ -1789,7 +1791,12 @@ class ToolModule(WorkflowModule):
         input_connections = kwds.get("input_connections", {})
         expected_replacement_keys = input_connections.keys()
 
-        def augment(expected_replacement_key, inputs, inputs_states):
+        def augment(expected_replacement_key, inputs_states):
+            if self.tool is None:
+                raise ToolMissingException(
+                    f"Tool {self.tool_id} missing. Cannot augment tool state for input connections.",
+                    tool_id=self.tool_id,
+                )
             if "|" not in expected_replacement_key:
                 return
 
@@ -1817,12 +1824,11 @@ class ToolModule(WorkflowModule):
 
             if repeat_instance_state:
                 # TODO: untest branch - no test case for nested repeats yet...
-                augment(rest, repeat.inputs, repeat_instance_state)
+                augment(rest, repeat_instance_state)
 
         for expected_replacement_key in expected_replacement_keys:
             inputs_states = self.state.inputs
-            inputs = self.tool.inputs
-            augment(expected_replacement_key, inputs, inputs_states)
+            augment(expected_replacement_key, inputs_states)
 
     def get_runtime_state(self):
         state = DefaultToolState()
@@ -2097,7 +2103,7 @@ class WorkflowModuleFactory:
 
     def from_workflow_step(self, trans, step, **kwargs):
         """
-        Return module initializd from the WorkflowStep object `step`.
+        Return module initialized from the WorkflowStep object `step`.
         """
         type = step.type
         return self.module_types[type].from_workflow_step(trans, step, **kwargs)
