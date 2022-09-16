@@ -20,7 +20,6 @@ from sqlalchemy import (
     Column,
     DateTime,
     desc,
-    false,
     ForeignKey,
     Integer,
     not_,
@@ -132,7 +131,6 @@ class User(Base, Dictifiable, _HasTable):
             & not_(Role.name == User.email)  # type: ignore[has-type]
         ),
     )
-    repository_reviews = relationship("RepositoryReview", back_populates="user")
 
     def __init__(self, email=None, password=None):
         self.email = email
@@ -375,8 +373,6 @@ class Repository(Base, Dictifiable, _HasTable):
         back_populates="repository",
     )
     roles = relationship("RepositoryRoleAssociation", back_populates="repository")
-    reviews = relationship("RepositoryReview", back_populates="repository")
-    reviewers = relationship("User", secondary=lambda: RepositoryReview.__table__, viewonly=True)  # type: ignore
 
     dict_collection_visible_keys = [
         "id",
@@ -539,114 +535,6 @@ class Repository(Base, Dictifiable, _HasTable):
         if "user_id" in rval:
             rval["owner"] = self.user.username
         return rval
-
-
-class RepositoryReview(Base, Dictifiable, _HasTable):
-    __tablename__ = "repository_review"
-
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    repository_id = Column(ForeignKey("repository.id"), index=True)
-    changeset_revision = Column(TrimmedString(255), index=True)
-    user_id = Column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
-    approved = Column(TrimmedString(255))
-    rating = Column(Integer, index=True)
-    deleted = Column(Boolean, index=True, default=False)
-    repository = relationship("Repository", back_populates="reviews")
-    # Take care when using the mapper below!  It should be used only when a new review is being created for a repository change set revision.
-    # Keep in mind that repository_metadata records can be removed from the database for certain change set revisions when metadata is being
-    # reset on a repository!
-    repository_metadata = relationship(
-        "RepositoryMetadata",
-        viewonly=True,
-        foreign_keys=lambda: [RepositoryReview.repository_id, RepositoryReview.changeset_revision],
-        primaryjoin=lambda: (
-            (RepositoryReview.repository_id == RepositoryMetadata.repository_id)  # type: ignore[has-type]
-            & (RepositoryReview.changeset_revision == RepositoryMetadata.changeset_revision)  # type: ignore[has-type]
-        ),
-        back_populates="reviews",
-    )
-    user = relationship("User", back_populates="repository_reviews")
-
-    component_reviews = relationship(
-        "ComponentReview",
-        viewonly=True,
-        primaryjoin=lambda: (
-            (RepositoryReview.id == ComponentReview.repository_review_id)  # type: ignore[has-type]
-            & (ComponentReview.deleted == false())  # type: ignore[has-type]
-        ),
-        back_populates="repository_review",
-    )
-
-    private_component_reviews = relationship(
-        "ComponentReview",
-        viewonly=True,
-        primaryjoin=lambda: (
-            (RepositoryReview.id == ComponentReview.repository_review_id)  # type: ignore[has-type]
-            & (ComponentReview.deleted == false())  # type: ignore[has-type]
-            & (ComponentReview.private == true())  # type: ignore[has-type]
-        ),
-    )
-
-    dict_collection_visible_keys = ["id", "repository_id", "changeset_revision", "user_id", "rating", "deleted"]
-    dict_element_visible_keys = ["id", "repository_id", "changeset_revision", "user_id", "rating", "deleted"]
-    approved_states = Bunch(NO="no", YES="yes")
-
-    def __init__(self, deleted=False, **kwd):
-        super().__init__(**kwd)
-        self.deleted = deleted
-
-
-class ComponentReview(Base, Dictifiable, _HasTable):
-    __tablename__ = "component_review"
-
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    repository_review_id = Column(ForeignKey("repository_review.id"), index=True)
-    component_id = Column(ForeignKey("component.id"), index=True)
-    comment = Column(TEXT)
-    private = Column(Boolean, default=False)
-    approved = Column(TrimmedString(255))
-    rating = Column(Integer)
-    deleted = Column(Boolean, index=True, default=False)
-    repository_review = relationship("RepositoryReview", back_populates="component_reviews")
-    component = relationship("Component")
-
-    dict_collection_visible_keys = [
-        "id",
-        "repository_review_id",
-        "component_id",
-        "private",
-        "approved",
-        "rating",
-        "deleted",
-    ]
-    dict_element_visible_keys = [
-        "id",
-        "repository_review_id",
-        "component_id",
-        "private",
-        "approved",
-        "rating",
-        "deleted",
-    ]
-    approved_states = Bunch(NO="no", YES="yes", NA="not_applicable")
-
-    def __init__(self, private=False, approved=False, deleted=False, **kwd):
-        super().__init__(**kwd)
-        self.private = private
-        self.approved = approved
-        self.deleted = deleted
-
-
-class Component(Base, _HasTable):
-    __tablename__ = "component"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(TrimmedString(255))
-    description = Column(TEXT)
 
 
 class ItemRatingAssociation(_HasTable):
@@ -841,23 +729,13 @@ class RepositoryMetadata(Dictifiable, _HasTable):
 
 
 # After the map_imperatively statement has been executed, the members of the
-# properties dictionary (repository, reviews) will be available as instrumented
+# properties dictionary (repository) will be available as instrumented
 # class attributes on RepositoryMetadata.
 mapper_registry.map_imperatively(
     RepositoryMetadata,
     RepositoryMetadata.table,
     properties=dict(
         repository=relationship(Repository, back_populates="metadata_revisions"),
-        reviews=relationship(
-            RepositoryReview,
-            viewonly=True,
-            foreign_keys=lambda: [RepositoryReview.repository_id, RepositoryReview.changeset_revision],
-            primaryjoin=lambda: (
-                (RepositoryReview.repository_id == RepositoryMetadata.repository_id)
-                & (RepositoryReview.changeset_revision == RepositoryMetadata.changeset_revision)
-            ),
-            back_populates="repository_metadata",
-        ),
     ),
 )
 
