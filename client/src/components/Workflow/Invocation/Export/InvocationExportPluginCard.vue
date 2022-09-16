@@ -6,10 +6,12 @@ import StsDownloadButton from "components/StsDownloadButton.vue";
 import ExportToRemoteButton from "components/Workflow/Invocation/Export/ExportToRemoteButton.vue";
 import ExportToRemoteModal from "components/Workflow/Invocation/Export/ExportToRemoteModal.vue";
 import { useMarkdown } from "composables/useMarkdown";
+import axios from "axios";
 
 const md = useMarkdown({ openLinksInNewPage: true });
 
 const exportRemoteModal = ref(null);
+const exportToRemoteTaskId = ref(null);
 
 const props = defineProps({
     exportPlugin: { type: InvocationExportPlugin, required: true },
@@ -27,8 +29,23 @@ const downloadParams = computed(() => {
     };
 });
 
-function openExportToFileSourceDialog() {
+function openRemoteExportDialog() {
     exportRemoteModal.value.showModal();
+}
+
+function exportToFileSource(exportDirectory, fileName) {
+    const exportDirectoryUri = `${exportDirectory}/${fileName}.${props.exportPlugin.downloadFormat}`;
+    const writeStoreParams = {
+        target_uri: exportDirectoryUri,
+        ...downloadParams.value,
+    };
+    axios
+        .post(`/api/invocations/${props.invocationId}/write_store`, writeStoreParams)
+        .then((response) => {
+            exportToRemoteTaskId.value = response.data.id;
+        })
+        .catch((error) => {});
+    exportRemoteModal.value.hideModal();
 }
 </script>
 
@@ -45,7 +62,8 @@ function openExportToFileSourceDialog() {
                             :post-parameters="downloadParams" />
                         <export-to-remote-button
                             :title="'Export Invocation as ' + exportPlugin.title + ' and upload to remote source'"
-                            @onExportToFileSource="openExportToFileSourceDialog" />
+                            :task-id="exportToRemoteTaskId"
+                            @onClick="openRemoteExportDialog" />
                     </b-button-group>
                 </b-button-toolbar>
             </b-card-title>
@@ -56,6 +74,6 @@ function openExportToFileSourceDialog() {
             ref="exportRemoteModal"
             :invocation-id="props.invocationId"
             :export-plugin="props.exportPlugin"
-            :writable-file-sources="writableFileSources" />
+            @onExportToFileSource="exportToFileSource" />
     </div>
 </template>
