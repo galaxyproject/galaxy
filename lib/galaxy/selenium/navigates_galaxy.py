@@ -1668,12 +1668,6 @@ class NavigatesGalaxy(HasDriver):
         else:
             self.components.history_panel.multi_view_button.wait_for_and_click()
 
-    def history_panel_show_structure(self):
-        if self.is_beta_history():
-            self.use_bootstrap_dropdown(option="show structure", menu="history options")
-        else:
-            self.click_history_option(self.components.history_panel.options_show_history_structure)
-
     def history_multi_view_display_collection_contents(self, collection_hid, collection_type="list"):
         self.open_history_multi_view()
 

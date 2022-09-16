@@ -47,7 +47,6 @@ from galaxy.webapps.base.controller import (
     SUCCESS,
     WARNING,
 )
-from ._create_history_template import render_item
 from ..api import depends
 
 log = logging.getLogger(__name__)
@@ -519,106 +518,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             show_deleted=string_as_bool(show_deleted),
             show_hidden=string_as_bool(show_hidden),
         )
-
-    @web.expose
-    @web.json
-    def display_structured(self, trans, id=None):
-        """
-        Display a history as a nested structure showing the jobs and workflow
-        invocations that created each dataset (if any).
-        """
-        # Get history
-        if id is None:
-            id = trans.history.id
-        else:
-            id = self.decode_id(id)
-        # Expunge history from the session to allow us to force a reload
-        # with a bunch of eager loaded joins
-        trans.sa_session.expunge(trans.history)
-        history = (
-            trans.sa_session.query(model.History)
-            .options(
-                joinedload("active_datasets")
-                .joinedload("creating_job_associations")
-                .joinedload("job")
-                .joinedload("workflow_invocation_step")
-                .joinedload("workflow_invocation")
-                .joinedload("workflow"),
-            )
-            .get(id)
-        )
-        if not (
-            history
-            and (
-                (history.user and trans.user and history.user.id == trans.user.id)
-                or (trans.history and history.id == trans.history.id)
-                or trans.user_is_admin
-            )
-        ):
-            return trans.show_error_message("Cannot display history structure.")
-        # Resolve jobs and workflow invocations for the datasets in the history
-        # items is filled with items (hdas, jobs, or workflows) that go at the
-        # top level
-        items = []
-        # First go through and group hdas by job, if there is no job they get
-        # added directly to items
-        jobs = {}
-        for hda in history.active_datasets:
-            if hda.visible is False:
-                continue
-            # Follow "copied from ..." association until we get to the original
-            # instance of the dataset
-            original_hda = hda
-            # while original_hda.copied_from_history_dataset_association:
-            #     original_hda = original_hda.copied_from_history_dataset_association
-            # Check if the job has a creating job, most should, datasets from
-            # before jobs were tracked, or from the upload tool before it
-            # created a job, may not
-            if not original_hda.creating_job_associations:
-                items.append((hda, None))
-            # Attach hda to correct job
-            # -- there should only be one creating_job_association, so this
-            #    loop body should only be hit once
-            for assoc in original_hda.creating_job_associations:
-                job = assoc.job
-                if job in jobs:
-                    jobs[job].append((hda, None))
-                else:
-                    jobs[job] = [(hda, None)]
-        # Second, go through the jobs and connect to workflows
-        wf_invocations = {}
-        for job, hdas in jobs.items():
-            # Job is attached to a workflow step, follow it to the
-            # workflow_invocation and group
-            if job.workflow_invocation_step:
-                wf_invocation = job.workflow_invocation_step.workflow_invocation
-                if wf_invocation in wf_invocations:
-                    wf_invocations[wf_invocation].append((job, hdas))
-                else:
-                    wf_invocations[wf_invocation] = [(job, hdas)]
-            # Not attached to a workflow, add to items
-            else:
-                items.append((job, hdas))
-        # Finally, add workflow invocations to items, which should now
-        # contain all hdas with some level of grouping
-        items.extend(wf_invocations.items())
-        # Sort items by age
-        items.sort(key=(lambda x: x[0].create_time), reverse=True)
-        # logic taken from mako files
-        from galaxy.managers import hdas
-
-        hda_serializer = hdas.HDASerializer(trans.app)
-        hda_dicts = []
-        id_hda_dict_map = {}
-        for hda in history.active_datasets:
-            hda_dict = hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, view="detailed")
-            id_hda_dict_map[hda_dict["id"]] = hda_dict
-            hda_dicts.append(hda_dict)
-
-        html_template = ""
-        for entity, children in items:
-            html_template += render_item(trans, entity, children)
-        return {"name": history.name, "history_json": hda_dicts, "template": html_template}
 
     @expose_api_anonymous
     def view(self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True):
