@@ -36,7 +36,7 @@
                     </template>
                 </FormCard>
                 <div v-for="step in model.steps" :key="step.index">
-                    <WorkflowRunToolStep
+                    <WorkflowRunDefaultStep
                         v-if="step.step_type == 'tool' || step.step_type == 'subworkflow'"
                         :model="step"
                         :replace-params="getReplaceParams(step.inputs)"
@@ -44,7 +44,7 @@
                         :history-id="currentHistoryId"
                         @onChange="onToolStepInputs"
                         @onValidation="onValidation" />
-                    <WorkflowRunDefaultStep
+                    <WorkflowRunInputStep
                         v-else
                         :model="step"
                         :validation-scroll-to="getValidationScrollTo(step.index)"
@@ -64,7 +64,7 @@ import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
 import UserHistories from "components/providers/UserHistories";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
-import WorkflowRunToolStep from "./WorkflowRunToolStep";
+import WorkflowRunInputStep from "./WorkflowRunInputStep";
 import { allowCachedJobs } from "components/Tool/utilities";
 import { getReplacements } from "./model";
 import { invokeWorkflow } from "./services";
@@ -78,7 +78,7 @@ export default {
         FormElement,
         UserHistories,
         WorkflowRunDefaultStep,
-        WorkflowRunToolStep,
+        WorkflowRunInputStep,
     },
     props: {
         model: {
