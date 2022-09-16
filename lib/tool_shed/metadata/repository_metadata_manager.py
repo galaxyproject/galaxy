@@ -1055,6 +1055,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-ramorits")
             ctx = repo[changeset]
             log.debug("Cloning repository changeset revision: %s", str(ctx.rev()))
+            assert self.repository_clone_url
             cloned_ok, error_message = hg_util.clone_repository(self.repository_clone_url, work_dir, str(ctx.rev()))
             if cloned_ok:
                 log.debug("Generating metadata for changeset revision: %s", str(ctx.rev()))
