@@ -53,7 +53,7 @@
 </%def>
 
 <%def name="javascript_entry()">
-    ${h.dist_js('generic.bundled')}
+    ${h.dist_js('toolshed.bundled')}
 </%def>
 
 <%def name="javascript_app()">
