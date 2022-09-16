@@ -681,6 +681,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     database_connection: str
     tool_path: str
     tool_data_path: str
+    new_file_path: str
+    drmaa_external_runjob_script: str
+    track_jobs_in_database: bool
+    monitor_thread_join_timeout: int
+    manage_dependency_relationships: bool
+    enable_tool_shed_check: bool
     builds_file_path: str
     len_file_path: str
     integrated_tool_panel_config: str
