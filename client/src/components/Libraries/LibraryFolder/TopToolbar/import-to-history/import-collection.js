@@ -83,9 +83,9 @@ var ImportCollectionModal = Backbone.View.extend({
             collection_item.name = dataset.name;
             collection_item.deleted = dataset.deleted;
             collection_item.state = dataset.state;
+            collection_item.src = "ldda";
             collection_elements.push(collection_item);
         }
-
         const new_history_name = this.modal.$("input[name=history_name]").val();
         if (new_history_name !== "") {
             this.createNewHistory(new_history_name)

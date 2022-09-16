@@ -36,7 +36,7 @@ function createListCollection(contents, defaultHideSourceItems = true) {
                 id: element.id,
                 name: element.name,
                 //TODO: this allows for list:list even if the filter above does not - reconcile
-                src: element.history_content_type === "dataset" ? "hda" : "hdca",
+                src: element.src || (element.history_content_type == "dataset" ? "hda" : "hdca"),
             }));
             copyElements = !hideSourceItems;
             return contents.createHDCA(elements, "list", name, hideSourceItems, copyElements);
