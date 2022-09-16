@@ -135,6 +135,7 @@ class StructuredApp(MinimalManagerApp):
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'
     tool_data_tables: "ToolDataTableManager"
     tool_cache: Any  # 'galaxy.tools.cache.ToolCache'
+    tool_shed_registry: ToolShedRegistry
     tool_shed_repository_cache: Optional[Any]  # 'galaxy.tools.cache.ToolShedRepositoryCache'
     watchers: "ConfigWatchers"
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
