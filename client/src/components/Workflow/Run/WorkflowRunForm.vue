@@ -37,7 +37,7 @@
                 </FormCard>
                 <div v-for="step in model.steps" :key="step.index">
                     <WorkflowRunToolStep
-                        v-if="step.step_type == 'tool'"
+                        v-if="step.step_type == 'tool' || step.step_type == 'subworkflow'"
                         :model="step"
                         :replace-params="getReplaceParams(step.inputs)"
                         :validation-scroll-to="getValidationScrollTo(step.index)"
