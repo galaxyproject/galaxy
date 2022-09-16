@@ -22,7 +22,7 @@ function pairCollectionCreatorModal(elements, options) {
         return promise;
     });
 }
-function createPairCollection(contents, defaultHideSourceItems) {
+function createPairCollection(contents, defaultHideSourceItems = true) {
     var elements = contents.toJSON();
     var copyElements;
     var promise = pairCollectionCreatorModal(elements, {

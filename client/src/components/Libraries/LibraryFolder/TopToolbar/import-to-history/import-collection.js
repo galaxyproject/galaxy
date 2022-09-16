@@ -110,7 +110,7 @@ var ImportCollectionModal = Backbone.View.extend({
             models: collectionElements,
         };
         const Galaxy = getGalaxyInstance();
-        Galaxy.currHistoryPanel.buildCollection(this.collectionType, selection, true, historyId);
+        Galaxy.currHistoryPanel.buildCollection(this.collectionType, historyId, selection);
     },
     templateCollectionSelectModal: function () {
         return _.template(

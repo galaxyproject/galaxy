@@ -26,7 +26,7 @@ function listCollectionCreatorModal(elements, options) {
 /** Use a modal to create a list collection, then add it to the given history contents.
  *  @returns {Promise} resolved when the collection is added to the history.
  */
-function createListCollection(contents, defaultHideSourceItems) {
+function createListCollection(contents, defaultHideSourceItems = true) {
     const elements = contents.toJSON();
     let copyElements;
     const promise = listCollectionCreatorModal(elements, {

@@ -200,7 +200,7 @@ export default {
                 selection.elements = this.uris;
             }
             selection.dataType = this.dataType;
-            Galaxy.currHistoryPanel.buildCollection("rules", selection, true, true);
+            Galaxy.currHistoryPanel.buildCollection("rules", null, selection, true);
             this.$emit("dismiss");
         },
     },
