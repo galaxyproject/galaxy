@@ -5,7 +5,9 @@ Galaxy's database schema migration system is built on top of [Alembic](https://a
 
 ## Administering Galaxy: upgrading and downgrading the database
 
-To initialize an empty database (or create a new SQLite database) start Galaxy. To upgrade or downgrade an existing database, you'll need to use the `manage_db.sh` script, which is the recommended way to interact with Galaxy's database schema migration system.
+To initialize an empty database (or create a new SQLite database) start Galaxy. However, this approach is safe only if booting to a single process. A better approach is to use the [*init*](#init) command: `manage_db.sh init`.
+
+To upgrade or downgrade an existing database, you'll need to use the `manage_db.sh` script, which is the recommended way to interact with Galaxy's database schema migration system.
 
 ## manage_db.sh
 
