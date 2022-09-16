@@ -91,7 +91,7 @@ var ImportCollectionModal = Backbone.View.extend({
             this.createNewHistory(new_history_name)
                 .then((new_history) => {
                     Toast.success("History created");
-                    this.collectionImport(collection_elements, new_history.id, new_history.name);
+                    this.collectionImport(collection_elements, new_history.id);
                 })
                 .catch((error) => {
                     console.error(error);
@@ -100,8 +100,7 @@ var ImportCollectionModal = Backbone.View.extend({
         } else {
             this.select_collection_history = this.modal.$el.find("#library-collection-history-select");
             const selected_history_id = this.select_collection_history.val();
-            const selected_history_name = this.select_collection_history.find("option:selected").text();
-            this.collectionImport(collection_elements, selected_history_id, selected_history_name);
+            this.collectionImport(collection_elements, selected_history_id);
         }
     },
     collectionImport: function (collectionElements, historyId) {
