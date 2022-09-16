@@ -34,9 +34,8 @@ if (props.size) {
 </script>
 
 <template>
-    <div v-if="props.separator" class="separator heading" :class="sizeClass">
-        <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />
-        <div v-else class="stripe"></div>
+    <div v-if="props.separator" class="separator heading">
+        <div class="stripe"></div>
         <component :is="element" :class="[sizeClass, props.bold ? 'font-weight-bold' : '']">
             <slot />
         </component>
@@ -72,8 +71,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .separator {
     display: grid;
-    grid-template-columns: auto auto 1fr;
-    gap: 0.25em;
+    grid-template-columns: 1rem auto 1fr;
+    gap: 0.5rem;
     align-items: center;
     margin-bottom: 0.5rem;
 
@@ -86,7 +85,6 @@ h1, h2, h3, h4, h5, h6 {
         display: block;
         height: 1px;
         background-color: $brand-secondary;
-        min-width: 1rem;
     }
 }
 </style>
