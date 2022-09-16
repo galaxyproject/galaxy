@@ -4,15 +4,16 @@
             <div class="float-left">Change Datatype/Extension of all elements in collection</div>
             <div class="text-right">
                 <button
-                    class="save-collection-edit btn btn-primary"
+                    class="save-datatype-edit btn btn-primary"
                     :disabled="selectedDatatype.id == datatypeFromElements"
                     @click="clickedSave">
                     {{ l("Save") }}
                 </button>
             </div>
         </div>
-        <b>{{ l("New Type:") }}: </b>
+        <b>{{ l("New Type") }}: </b>
         <multiselect
+            class="datatype-dropdown"
             v-model="selectedDatatype"
             deselect-label="Can't remove this value"
             track-by="id"
@@ -50,7 +51,7 @@ export default {
     methods: {
         clickedSave: function () {
             this.$emit("clicked-save", this.selectedDatatype);
-            this.selectedDatatype = this.datatypes.find((element) => element.id == this.datatypeFromElements);
+            this.datatypeFromElements = this.selectedDatatype.id;
         },
     },
 };

@@ -2,7 +2,7 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
-
+import time
 
 class CollectionEditTestCase(SeleniumTestCase):
 
@@ -13,14 +13,14 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.create_simple_list_collection()
         self.open_collection_edit_view()
         self.navigate_to_database_tab()
-        dbkeyValue = "unspecified"
-        self.check_current_dbkey_value(dbkeyValue)
-        dbkeyNew = "hg17"
-        self.change_dbkey_value_and_click_submit(dbkeyValue, dbkeyNew)
+        dataValue = "unspecified"
+        self.check_current_data_value(dataValue)
+        dataNew = "hg17"
+        self.change_dbkey_value_and_click_submit(dataValue, dataNew)
         self.history_panel_wait_for_hid_ok(4)
         self.open_collection_edit_view()
         self.navigate_to_database_tab()
-        self.check_current_dbkey_value(dbkeyNew)
+        self.check_current_data_value(dataNew)
 
     @selenium_test
     def test_change_datatype_simple_list(self):
@@ -28,10 +28,21 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.create_simple_list_collection_txt()
         self.open_collection_edit_view()
         self.navigate_to_datatype_tab()
-        datatypeValue = "txt"
-        self.check_current_datatype_value(datatypeValue)
-        datatypeNew = "tabular"
-        self.change_datatype_value_and_click_submit(datatypeValue, datatypeNew)
+        dataValue = "txt"
+        self.check_current_data_value(dataValue)
+        dataNew = "tabular"
+        self.change_datatype_value_and_click_submit(dataValue, dataNew)
+        self.check_current_data_value(dataNew)
+        time.sleep(10)
+        # into collection
+        self.find_element_by_selector("span.content-title").click()
+        time.sleep(3)
+        # into dataset
+        self.find_element_by_selector("div.d-flex.justify-content-between").click()
+        time.sleep(3)
+        assert self.find_element_by_selector("span.datatype > span").text == dataNew
+
+
 
     def create_simple_list_collection(self):
         self.perform_upload(self.get_filename("1.fasta"))
@@ -62,23 +73,20 @@ class CollectionEditTestCase(SeleniumTestCase):
     def navigate_to_datatype_tab(self):
         self.components.edit_collection_attributes.datatypes_tab.wait_for_and_click()
 
-    def check_current_dbkey_value(self, dbkeyValue):
-        self.components.edit_collection_attributes.database_value(dbkey=dbkeyValue).wait_for_visible()
+    def check_current_data_value(self, dataValue):
+        self.components.edit_collection_attributes.data_value(data_change=dataValue).wait_for_visible()
 
-    def check_current_datatype_value(self, datatypeValue):
-        self.components.edit_collection_attributes.datatype_value(datatype=datatypeValue).wait_for_visible()
+    def change_dbkey_value_and_click_submit(self, dataValue, dataNew):
+        self.components.edit_collection_attributes.data_value(data_change=dataValue).wait_for_and_click()
+        self.find_element_by_selector("div.database-dropdown > div.multiselect__tags > input.multiselect__input").send_keys(dataNew)
+        self.find_element_by_selector("div.database-dropdown > div.multiselect__tags > input.multiselect__input").send_keys(self.keys.ENTER)
+        self.components.edit_collection_attributes.save_dbkey_btn.wait_for_and_click()
 
-    def change_dbkey_value_and_click_submit(self, dbkeyValue, dbkeyNew):
-        self.components.edit_collection_attributes.database_value(dbkey=dbkeyValue).wait_for_and_click()
-        self.find_element_by_selector("input.multiselect__input").send_keys(dbkeyNew)
-        self.find_element_by_selector("input.multiselect__input").send_keys(self.keys.ENTER)
-        self.components.edit_collection_attributes.save_btn.wait_for_and_click()
-
-    def change_datatype_value_and_click_submit(self, datatypeValue, datatypeNew):
-        self.components.edit_collection_attributes.datatype_value(datatype=datatypeValue).wait_for_and_click()
-        self.find_element_by_selector("input.multiselect__input").send_keys(datatypeNew)
-        # self.find_element_by_selector("input.multiselect__input").send_keys(self.keys.ENTER)
-        # self.components.edit_collection_attributes.save_btn.wait_for_and_click()
+    def change_datatype_value_and_click_submit(self, dataValue, dataNew):
+        self.components.edit_collection_attributes.data_value(data_change=dataValue).wait_for_and_click()
+        self.find_element_by_selector("div.datatype-dropdown > div.multiselect__tags > input.multiselect__input").send_keys(dataNew)
+        self.find_element_by_selector("div.datatype-dropdown > div.multiselect__tags > input.multiselect__input").send_keys(self.keys.ENTER)
+        self.components.edit_collection_attributes.save_datatype_btn.wait_for_and_click()
 
     def _wait_for_and_select(self, hids):
         """

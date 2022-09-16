@@ -311,13 +311,11 @@ edit_collection_attributes:
     datatypes_tab:
       type: xpath
       selector: '//a[contains(text(), "Datatypes")]'
-    database_value:
+    data_value:
       type: xpath
-      selector: '//span[contains(text(), "${dbkey}")]'
-    datatype_value:
-      type: xpath
-      selector: '//span[contains(text(), "${datatype}")]'
-    save_btn: '.save-collection-edit'
+      selector: '//span[contains(text(), "${data_change}")]'
+    save_dbkey_btn: '.save-dbkey-edit'
+    save_datatype_btn: '.save-datatype-edit'
 
 tool_panel:
   selectors:
