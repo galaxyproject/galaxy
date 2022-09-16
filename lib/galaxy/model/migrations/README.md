@@ -1,120 +1,41 @@
 # Galaxy Database Schema Migrations
 
-## Overview
-
 Galaxy's database schema migration system is built on top of [Alembic](https://alembic.sqlalchemy.org) - a lightweight database migration tool for usage with SQLAlchemy. 
-(This documentation applies to release 22.05 and up. Prior to 22.05, Galaxy has used SQLAlchemy Migrate.)
-
-The purpose of the database schema migration system is to support automated, incremental, reversible changes to Galaxy's database schema. Central to this is the concept of a database version (more specifically, database *schema* version). A version is represented by a revision script (the terms *version* and *revision* may be used interchangeably). Executing a revision script will upgrade, or downgrade, the database schema by applying the changes specified in the script.
-
-Galaxy keeps track of the database schema version in two places: one is a directory we refer to as "the migration environment" (located at `lib/galaxy/model/migrations/alembic`), the other is the `alembic_version` table in the database. For Galaxy to run, these versions must be the same, which, essentially, means that the version of the database matches the version expected by the codebase.
-
-On startup, the system checks if the version in the database matches the version in the codebase. If they do not match, and the `database_auto_migrate` configuration option is not set, Galaxy will fail with an error message explaining how to proceed. In most cases, you'll need to upgrade the database schema to the current version, which is represented by the latest revision script in the migration environment.
+(This documentation applies to release 22.05 and up. Prior to 22.05, Galaxy used SQLAlchemy Migrate.)
 
 ## Administering Galaxy: upgrading and downgrading the database
 
-To initialize an empty database (or create a new SQLite database) start Galaxy. To upgrade or downgrade an existing database, you'll need to use a script.
-
-Galaxy provides two scripts: `manage_db.sh` and `run_alembic.sh`.
-
-The `manage_db.sh` script is the recommended way to interact with Galaxy's database schema migration system.
-It provides access to a subset of commands offered by Alembic's CLI, while hiding some of the
-implementation complexity of Galaxy's model. The provided commands and options should be
-sufficient for most use cases involving Galaxy development or system and database administration.
-
-The `run_alembic.sh` script is a thin wrapper around the Alembic CLI runner. It offers more
-flexibility and the full scope of Alembic's CLI commands and options; however, it requires more detailed command arguments, as well as basic familiarity with [Alembic branches](https://alembic.sqlalchemy.org/en/latest/branches.html). 
-
-#### Implementation detail: branches
-
-Galaxy's data model is split into the [galaxy model](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py) and the [install model](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/tool_shed_install/__init__.py).
-These two models may be persisted in one combined database (which is the default) or two separate databases (which is enabled by setting the
-[`install_database_connection`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/webapps/galaxy/config_schema.yml#L157) configuration option). 
-
-To accommodate this setup, Galaxy uses [Alembic
-branches](https://alembic.sqlalchemy.org/en/latest/branches.html#working-with-branches). A branch is
-a versioning lineage that starts at a common base revision and represents part of Galaxy's data
-model. These branches are identified by labels (***gxy*** for the galaxy model and ***tsi*** for the install
-model) and may share the same Alembic version table (if they share the same database; otherwise,
-each database has its own version table). Each branch has its own version history, represented by
-revision scripts located in the branch version directory (`migrations/alembic/versions_gxy` for
-*gxy* and `migrations/alembic/versions_tsi` for *tsi*). 
-
-For a more detailed description of the system's internals, see pull request [#13108](https://github.com/galaxyproject/galaxy/pull/13108).
+To initialize an empty database (or create a new SQLite database) start Galaxy. To upgrade or downgrade an existing database, you'll need to use the `manage_db.sh` script, which is the recommended way to interact with Galaxy's database schema migration system.
 
 ## manage_db.sh
 
-This script offers a set of common database schema migration operations that are executed on the *gxy* branch, which, in the vast majority of cases, is all you need to develop and administer Galaxy.
-To run operations on the *tsi* branch, you need to use `run_alembic.sh`.
-
 ```
-usage: manage_db.sh [-h] [-c CONFIG] [--raiseerr] {upgrade,downgrade,version,v,
-       dbversion,dv,history,h,show,s,revision,init} ...
+usage: manage_db.sh [-h] [-c CONFIG] {upgrade,downgrade,version,v,dbversion,dv,init} ...
 
 positional arguments:
-  {upgrade,downgrade,version,v,dbversion,dv,history,h,show,s,revision,init}
+  {upgrade,downgrade,version,v,dbversion,dv,init}
     upgrade             Upgrade to a later version
     downgrade           Revert to a previous version
     version (v)         Show the head revision in the migrations script directory
     dbversion (dv)      Show the current revision for Galaxy's database
-    history (h)         List revision scripts in chronological order
-    show (s)            Show the revision(s) denoted by the given symbol
-    revision            Create a new revision file
     init                Initialize empty database(s)
 
 optional arguments:
   -h, --help            show this help message and exit
   -c CONFIG, --galaxy-config CONFIG
                         Alternate Galaxy configuration file
-  --raiseerr            Raise a full stack trace on error
 ```
-
-#### Revision identifiers
-
-Some of the commands accept revision identifiers as arguments. A revision is usually identified by a
-12-digit hexadecimal number (i.e., `6a67bf27e6a6`). Anytime you need to refer to a specific
-revision, you have the option to use a partial number. As long as the partial number uniquely
-identifies the revision, you may use that partial number in any command in place of the full
-revision number.
-
-For example, you may use `./manage_db.sh upgrade 6a` instead of `./manage_db.sh upgrade 6a67bf27e6a6` if `6a` is sufficient to uniquely identify that revision.
-
-(Ref: [Alembic documentation](https://alembic.sqlalchemy.org/en/latest/tutorial.html#partial-revision-identifiers))
-
-#### Relative migration identifiers
-
-You may also use Alembic's syntax for relative migration identifiers for the upgrade/downgrade commands:
-
-To move 2 versions from the current version, a decimal value `+N` can be supplied: 
-
-`./manage_db.sh upgrade +2`
-
-Negative values are accepted for downgrades: 
-
-`./manage_db.sh downgrade -2`
-
-Relative identifiers may also be in terms of a specific revision. For example, to upgrade to
-revision 6a67bf27e6a6 plus two additional steps:
-
-`.manage_db.sh upgrade 6a67bf27e6a6+2`.
-
-You may also combine relative migration identifiers with partial revision identifiers:
-
-`.manage_db.sh upgrade 6a+2`. 
-
-(Ref: [Alembic documentation](https://alembic.sqlalchemy.org/en/latest/tutorial.html#relative-migration-identifiers)
 
 ### Subcommands
 
 #### upgrade
 
-Upgrade to a later version. The revision argument is optional: omitting it is equivalent to
-specifying `heads` as the revision identifier; in that case, the database(s) will be upgraded to the
-latest revisions in ***both*** branches, *gxy* and *tsi*.
+Upgrade to a later version. The revision argument is optional.
 
-***If you are upgrading a database that has not been version-controlled by Alembic, you should run
-this command without the revision argument: `./manage_db.sh upgrade` - this will ensure that both branches,
-`gxy` and `tsi`, are initialized.***
+If you are upgrading a database that
+has not been version-controlled by Alembic, you should run this command for the fist time without
+the revision argument: `./manage_db.sh upgrade` - this will ensure proper initialization of the
+migration system for your database(s).
 
 ```
 usage: manage_db.sh upgrade [-h] [--sql] [revision]
@@ -144,18 +65,12 @@ optional arguments:
   --sql       Don't emit SQL to database - dump to standard output/file instead.
 ```
 
-Specifying `base` as the revision identifier will downgrade both branches, *gxy* and *tsi*, to their
-initial state prior to any revisions; the `alembic_version` table will be empty.
-
 For the `--sql` option, see [Alembic documentation on offline mode](https://alembic.sqlalchemy.org/en/latest/offline.html). 
-Note that in this mode, instead of specifying a revision identifier, you have to specify a range of revisions using the following format: `<from-rev>:<to-ref>`*.
-
-*You cannot use this script to downgrade past the initial Alembic revisions that created the *gxy* and *tsi* branches.
-
+Note that in this mode, instead of specifying a revision identifier, you have to specify a range of revisions using the following format: `<from-rev>:<to-ref>`.
 
 #### version
 
-Show the head revision in the migrations script directory. This will display the latest (i.e., head) revision in the migration environment.
+Show the latest (i.e., head) revisions in the codebase.
 
 ```
 Activating virtualenv at .venv
@@ -167,17 +82,10 @@ optional arguments:
 
 ```
 
-If your database is setup to host both branches (*gxy* and *tsi*), the head revisions for both branches will be displayed:
-
-```
-$ ./manage_db.sh version
-186d4835587b (gxy) (head)
-d4a650f47a3c (tsi) (head)
-```
 
 #### dbversion
 
-Show the current revision for Galaxy's database.
+Show the current revision for Galaxy's database. If the database revision corresponds to the head revision in the codebase, it will be marked as `(head)`.
 
 ```
 usage: manage_db.sh dbversion [-h] [-v]
@@ -187,13 +95,217 @@ optional arguments:
   -v, --verbose  Display more detailed output
 ```
 
-Similar to the version command, this command will display the revision(s) stored in the
-`alembic_version` table in the database. If the database revision corresponds to the head revision
+#### init
+
+Initialize an empty database (or create a new SQLite database).
+
+```
+usage: manage_db.sh init [-h]
+
+optional arguments:
+  -h, --help  show this help message and exit
+```
+
+# Advanced usage
+
+The following sections provide more details on the migration system and describe commands that are relevant for development scenarios.
+
+## Overview
+
+The purpose of the database schema migration system is to support automated, incremental, reversible changes to Galaxy's database schema. Central to this is the concept of a database version (more specifically, database *schema* version). A version is represented by a revision script (the terms *version* and *revision* may be used interchangeably). Executing a revision script will upgrade, or downgrade, the database schema by applying the changes specified in the script.
+
+Galaxy keeps track of the database schema version in two places: one is a directory we refer to as "the migration environment" (located at `lib/galaxy/model/migrations/alembic`), the other is the `alembic_version` table in the database. For Galaxy to run, these versions must be the same, which, essentially, means that the version of the database matches the version expected by the codebase.
+
+On startup, the system checks if the version in the database matches the version in the codebase. If they do not match, and the `database_auto_migrate` configuration option is not set, Galaxy will fail with an error message explaining how to proceed. In most cases, you'll need to upgrade the database schema to the current version, which is represented by the latest revision script in the migration environment.
+
+### A note on models and branch labels
+
+Galaxy's data model includes the [galaxy model](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py) and the [install model](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/tool_shed_install/__init__.py).
+These two models may be persisted in one combined database (which is the default) or two separate databases (which is enabled by setting the
+[`install_database_connection`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/webapps/galaxy/config_schema.yml#L157) configuration option). 
+
+These models are represented by migration [branches](https://alembic.sqlalchemy.org/en/latest/branches.html#working-with-branches) (versioning lineages with a common base) labeled as *gxy* for the galaxy model and *tsi* for the install model. If both models are hosted in the same databases, the branches will share the same Alembic version table; otherwise, each database has its own version table. 
+
+Each branch has its own version history, represented by revision scripts located in the branch version directory (`migrations/alembic/versions_gxy` for *gxy* and `migrations/alembic/versions_tsi` for *tsi*). 
+
+For a more detailed description of the system's internals, see pull request [#13108](https://github.com/galaxyproject/galaxy/pull/13108).
+
+## Migration management scripts
+
+The **`manage_db.sh`** script is the recommended way to interact with Galaxy's database schema migration system.
+It provides access to a subset of commands offered by Alembic's CLI, while hiding some of the
+implementation complexity of Galaxy's model. The provided commands and options should be
+sufficient for most use cases involving Galaxy development or system and database administration.
+
+Additionally, Galaxy provides two scripts for advanced usage: `db_dev.sh` and `run_alembic.sh`. Both are located in the `scripts` directory.
+
+The **`db_dev.sh`** script is similar to `manage_db.sh`, but provides additional commands and options.
+
+The **`run_alembic.sh`** script is a thin wrapper around the Alembic CLI runner. It offers more
+flexibility and the full scope of Alembic's CLI commands and options; however, it requires more detailed command arguments, as well as basic familiarity with [Alembic branches](https://alembic.sqlalchemy.org/en/latest/branches.html). 
+
+### Revision identifiers
+
+Some of the commands accept revision identifiers as arguments. A revision is usually identified by a
+12-digit hexadecimal number (i.e., `6a67bf27e6a6`). Anytime you need to refer to a specific
+revision, you have the option to use a partial number.
+
+For example, you may use `./db_dev.sh upgrade 6a` instead of `./db_dev.sh upgrade 6a67bf27e6a6` if `6a` is sufficient to uniquely identify that revision.
+
+(Ref: [Alembic documentation](https://alembic.sqlalchemy.org/en/latest/tutorial.html#partial-revision-identifiers))
+
+### Relative migration identifiers
+
+You may also use Alembic's syntax for relative migration identifiers for the upgrade/downgrade commands:
+
+To move 2 versions from the current version, a decimal value `+N` can be supplied: 
+
+`./db_dev.sh upgrade +2`
+
+Negative values are accepted for downgrades: 
+
+`./db_dev.sh downgrade -2`
+
+Relative identifiers may also be in terms of a specific revision. For example, to upgrade to
+revision 6a67bf27e6a6 plus two additional steps:
+
+`./db_dev.sh upgrade 6a67bf27e6a6+2`.
+
+You may also combine relative migration identifiers with partial revision identifiers:
+
+`./db_dev.sh upgrade 6a+2`. 
+
+(Ref: [Alembic documentation](https://alembic.sqlalchemy.org/en/latest/tutorial.html#relative-migration-identifiers)
+
+*Revision identifiers and relative migration identifiers can be used with all the provided scripts.*
+
+## db_dev.sh
+
+This script offers a set of common database schema migration operations that are executed on the *gxy* branch, which, in the vast majority of cases, is all you need to develop and administer Galaxy.
+To run operations on the *tsi* branch, you need to use `run_alembic.sh`.
+
+```
+usage: db_dev.sh [-h] [-c CONFIG] [--raiseerr] {upgrade,downgrade,version,v,
+       dbversion,dv,history,h,show,s,revision,init} ...
+
+positional arguments:
+  {upgrade,downgrade,version,v,dbversion,dv,history,h,show,s,revision,init}
+    upgrade             Upgrade to a later version
+    downgrade           Revert to a previous version
+    version (v)         Show the head revision in the migrations script directory
+    dbversion (dv)      Show the current revision for Galaxy's database
+    history (h)         List revision scripts in chronological order
+    show (s)            Show the revision(s) denoted by the given symbol
+    revision            Create a new revision file
+    init                Initialize empty database(s)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c CONFIG, --galaxy-config CONFIG
+                        Alternate Galaxy configuration file
+  --raiseerr            Raise a full stack trace on error
+```
+
+### Subcommands
+
+#### upgrade
+
+This command is identical to the *upgrade* command in the `manage_db.sh` script.
+
+Upgrade to a later version. The revision argument is optional.
+
+Omitting the revision argument is equivalent to specifying `heads` as the revision identifier; in
+that case, the database(s) will be upgraded to the latest revisions in both branches, *gxy* and
+*tsi*.
+
+If you are upgrading a database that has not been version-controlled by Alembic, you should run this
+command for the fist time without the revision argument: `./db_dev.sh upgrade` - this will ensure
+proper initialization of the migration system for your database(s).
+
+
+```
+usage: db_dev.sh upgrade [-h] [--sql] [revision]
+
+positional arguments:
+  revision    Revision identifier
+
+optional arguments:
+  -h, --help  show this help message and exit
+  --sql       Don't emit SQL to database - dump to standard output/file instead.
+```
+
+For the `--sql` option, see [Alembic documentation on offline mode](https://alembic.sqlalchemy.org/en/latest/offline.html).
+
+#### downgrade
+
+This command is identical to the *upgrade* command in the `manage_db.sh` script.
+
+Revert to a previous version.
+
+```
+usage: db_dev.sh downgrade [-h] [--sql] revision
+
+positional arguments:
+  revision    Revision identifier
+
+optional arguments:
+  -h, --help  show this help message and exit
+  --sql       Don't emit SQL to database - dump to standard output/file instead.
+```
+
+Specifying `base` as the revision identifier will downgrade both branches, *gxy* and *tsi*, to their
+initial state prior to any revisions; the `alembic_version` table will be empty.
+
+For the `--sql` option, see [Alembic documentation on offline mode](https://alembic.sqlalchemy.org/en/latest/offline.html). 
+Note that in this mode, instead of specifying a revision identifier, you have to specify a range of revisions using the following format: `<from-rev>:<to-ref>`*.
+
+*You cannot use this script to downgrade past the initial Alembic revisions that created the *gxy* and *tsi* branches.
+
+
+#### version
+
+This command is identical to the *upgrade* command in the `manage_db.sh` script.
+
+Show the latest (i.e., head) revisions in the codebase.
+
+```
+Activating virtualenv at .venv
+\usage: db_dev.sh version [-h] [-v]
+
+optional arguments:
+  -h, --help     show this help message and exit
+  -v, --verbose  Display more detailed output
+
+```
+
+The output of this command will include the head revisions for both branches:
+
+```
+$ .db_dev.sh version
+186d4835587b (gxy) (head)
+d4a650f47a3c (tsi) (head)
+```
+
+#### dbversion
+
+This command is identical to the *upgrade* command in the `manage_db.sh` script.
+
+Show the current revision for Galaxy's database.
+
+```
+usage: db_dev.sh dbversion [-h] [-v]
+
+optional arguments:
+  -h, --help     show this help message and exit
+  -v, --verbose  Display more detailed output
+```
+
+If the database revision corresponds to the head revision
 in the codebase, it will be marked as `(head)`. The output will be slightly more verbose and will vary
 depending on the database.
 
 ```
-$ ./manage_db.sh dbversion
+$ ./db_dev.sh dbversion
 INFO:alembic.runtime.migration:Context impl PostgresqlImpl.
 INFO:alembic.runtime.migration:Will assume transactional DDL.
 d4a650f47a3c (head)
@@ -205,7 +317,7 @@ d4a650f47a3c (head)
 List revision scripts in chronological order.
 
 ```
-usage: manage_db.sh history [-h] [-v] [-i]
+usage: db_dev.sh history [-h] [-v] [-i]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -215,12 +327,12 @@ optional arguments:
 ```
 
 Depending on your setup, the list may include revision histories for both branches. The oldest
-revisions are the ones that created the `gxy` and `tsi` branches (introduced in 22.05). The
+revisions are the ones that created the *gxy* and *tsi* branches (introduced in 22.05). The
 `--indicate-current` option is particularly useful when you need to determine how far behind (or
 ahead) your database version is compared to the version expected by your codebase:
 
 ```
-$ ./manage_db.sh history --indicate-current
+$ ./db_dev.sh history --indicate-current
 6a67bf27e6a6 -> 186d4835587b (gxy) (head), drop job_state_history.update_time column
 b182f655505f -> 6a67bf27e6a6 (gxy) (current), deferred data tables
 e7b6dcb09efd -> b182f655505f (gxy), add workflow.source_metadata column
@@ -233,7 +345,7 @@ e7b6dcb09efd -> b182f655505f (gxy), add workflow.source_metadata column
 Show the revision(s) denoted by the given revision identifier.
 
 ```
-usage: manage_db.sh show [-h] revision
+usage: db_dev.sh show [-h] revision
 
 positional arguments:
   revision    Revision identifier
@@ -247,7 +359,7 @@ optional arguments:
 Create a new revision file.
 
 ```
-usage: manage_db.sh revision [-h] -m MESSAGE [--rev-id REV_ID]
+usage: db_dev.sh revision [-h] -m MESSAGE [--rev-id REV_ID]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -262,7 +374,7 @@ appended to the new revision identifier to form the filename for the new revisio
 should be a succinct description of the change:
 
 ```
-$ ./manage_db.sh revision --message "add column foo to table bar"
+$ ./db_dev.sh revision --message "add column foo to table bar"
 [output omitted]
 
 $ ls lib/galaxy/model/migrations/alembic/versions_gxy/
@@ -271,10 +383,10 @@ a2e418ad6a15_add_column_foo_to_table_bar.py
 
 #### init
 
-Initialize an empty database (or create a new SQLite database) for both branches, `gxy` and `tsi` (creates database objects in one or two databases, depending on configuration settings).
+Initialize an empty database (or create a new SQLite database) for both branches, *gxy* and *tsi*.
 
 ```
-usage: manage_db.sh init [-h]
+usage: db_dev.sh init [-h]
 
 optional arguments:
   -h, --help  show this help message and exit

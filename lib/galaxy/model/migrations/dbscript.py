@@ -147,7 +147,7 @@ class ParserBuilder:
         self._add_parser(
             "init",
             Command.init,
-            "Initialize empty database(s) for both branches (create database objects for gxy and tsi branch)",
+            "Initialize empty database(s)",
         )
 
     def add_revision_command(self):
