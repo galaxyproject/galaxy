@@ -93,6 +93,7 @@ export default {
             stepValidations: {},
             stepScrollTo: {},
             wpData: {},
+            inputs: {},
             historyData: {},
             useCachedJobs: false,
             historyInputs: [
@@ -155,8 +156,7 @@ export default {
             return [];
         },
         onDefaultStepInputs(stepId, data) {
-            this.stepData[stepId] = data;
-            this.stepData = Object.assign({}, this.stepData);
+            this.inputs[stepId] = data.input;
         },
         onToolStepInputs(stepId, data) {
             this.stepData[stepId] = data;
@@ -201,6 +201,7 @@ export default {
                 resource_params: this.resourceData,
                 replacement_params: this.wpData,
                 use_cached_job: this.useCachedJobs,
+                inputs: this.inputs,
                 parameters: parameters,
                 // Tool form will submit flat maps for each parameter
                 // (e.g. "repeat_0|cond|param": "foo" instead of nested
