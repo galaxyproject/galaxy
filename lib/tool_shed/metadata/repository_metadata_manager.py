@@ -1,5 +1,9 @@
 import logging
 import tempfile
+from typing import (
+    List,
+    Optional,
+)
 
 from sqlalchemy import (
     false,
@@ -835,7 +839,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         # The list of changeset_revisions refers to repository_metadata records that have been created
         # or updated.  When the following loop completes, we'll delete all repository_metadata records
         # for this repository that do not have a changeset_revision value in this list.
-        changeset_revisions = []
+        changeset_revisions: List[Optional[str]] = []
         # When a new repository_metadata record is created, it always uses the values of
         # metadata_changeset_revision and metadata_dict.
         metadata_changeset_revision = None
