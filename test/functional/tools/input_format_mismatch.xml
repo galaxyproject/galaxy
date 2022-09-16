@@ -1,0 +1,34 @@
+<tool id="input_format_mismatch" name="input_format_mismatch" version="1.0" profile="20.05">
+    <command detect_errors="exit_code"><![CDATA[
+        echo $forward.ext > '$output'
+    ]]>
+    </command>
+    <inputs>
+        <param argument="--forward" type="data" format="sam" label="First set of reads" help="This is usually the forward reads in your experiment." />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+    <tests>
+        <!-- one can not supply bam for a sam input -->
+        <test expect_num_outputs="1" expect_failure="true">
+            <param name="forward" value="3unsorted.bam" ftype="unsorted.bam"/>
+            <output name="output">
+                <assert_contents>
+                    <has_text text="sam"/>
+                    <not_has_text text="unsorted.bam"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- one can not supply bed for a sam input -->
+        <test expect_num_outputs="1" expect_failure="true">
+            <param name="forward" value="1.bed" ftype="bed"/>
+            <output name="output">
+                <assert_contents>
+                    <has_text text="sam"/>
+                    <not_has_text text="bed"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

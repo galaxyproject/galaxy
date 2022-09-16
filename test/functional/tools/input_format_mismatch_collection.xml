@@ -1,0 +1,44 @@
+<tool id="input_format_mismatch_collection" name="input_format_mismatch_collection" version="1.0" profile="20.05">
+    <command detect_errors="exit_code"><![CDATA[
+        echo $reads.forward.ext $reads.reverse.ext > '$output'
+    ]]>
+    </command>
+    <inputs>
+        <param argument="--reads" type="data_collection" collection_type="paired" format="sam" label="First set of reads" help="This is usually the forward reads in your experiment." />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+    <tests>
+        <!-- one can not supply bam for a sam input -->
+        <test expect_num_outputs="1" expect_failure="true">
+            <param name="reads">
+                <collection type="paired">
+                    <element name="forward" value="3unsorted.bam" ftype="unsorted.bam"/>
+                    <element name="reverse" value="3unsorted.bam" ftype="unsorted.bam"/>
+                </collection>
+            </param>
+            <output name="output">
+                <assert_contents>
+                    <has_text text="sam"/>
+                    <not_has_text text="unsorted.bam"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- one can not supply bed for a sam input -->
+        <test expect_num_outputs="1" expect_failure="true">
+            <param name="reads">
+                <collection type="paired">
+                    <element name="forward" value="1.bed" ftype="bed"/>
+                    <element name="reverse" value="1.bed" ftype="bed"/>
+                </collection>
+            </param>
+            <output name="output">
+                <assert_contents>
+                    <has_text text="sam"/>
+                    <not_has_text text="bed"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
