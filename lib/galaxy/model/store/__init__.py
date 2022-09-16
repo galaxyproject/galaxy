@@ -2240,8 +2240,8 @@ class ROCrateArchiveModelExportStore(DirectoryModelExportStore, WriteCrates):
         else:
             file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
             file_source = file_source_path.file_source
-            assert os.path.exists(self.out_file)
-            file_source.write_from(file_source_path.path, self.out_file)
+            assert os.path.exists(rval), rval
+            file_source.write_from(file_source_path.path, rval)
         shutil.rmtree(self.temp_output_dir)
 
 

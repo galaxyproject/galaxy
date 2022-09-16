@@ -58,6 +58,10 @@ class WorkflowTasksIntegrationTestCase(
         ro_crate_path = self._export_ro_crate(False)
         assert CompressedFile(ro_crate_path).file_type == "zip"
 
+    def test_export_ro_crate_to_uri(self):
+        ro_crate_path = self._export_ro_crate(True)
+        assert CompressedFile(ro_crate_path).file_type == "zip"
+
     def _export_ro_crate(self, to_uri):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow_with_runtime_data_column_parameter(history_id)
