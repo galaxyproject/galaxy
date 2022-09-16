@@ -3,7 +3,6 @@ from .framework import (
     SeleniumTestCase,
 )
 import time
-
 class CollectionEditTestCase(SeleniumTestCase):
 
     ensure_registered = True
@@ -41,8 +40,6 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.find_element_by_selector("div.d-flex.justify-content-between").click()
         time.sleep(3)
         assert self.find_element_by_selector("span.datatype > span").text == dataNew
-
-
 
     def create_simple_list_collection(self):
         self.perform_upload(self.get_filename("1.fasta"))
