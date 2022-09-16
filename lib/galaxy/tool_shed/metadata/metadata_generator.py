@@ -3,6 +3,7 @@ import os
 import tempfile
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
@@ -57,6 +58,9 @@ NOT_TOOL_CONFIGS = [
 
 
 class RepositoryProtocol(Protocol):
+    name: str
+    id: str
+
     def repo_path(self, app) -> Optional[str]:
         ...
 
@@ -74,6 +78,9 @@ class BaseMetadataGenerator:
     persist: bool
 
     def initial_metadata_dict(self) -> Dict[str, Any]:
+        ...
+
+    def handle_repository_elem(self, repository_elem, only_if_compiling_contained_td=False) -> HandleResultT:
         ...
 
     def _generate_data_manager_metadata(
@@ -222,10 +229,12 @@ class BaseMetadataGenerator:
         """
         if self.shed_config_dict is None:
             self.shed_config_dict = {}
+        assert self.repository
         if self.updating_installed_repository:
             # Keep the original tool shed repository metadata if setting metadata on a repository
             # installed into a local Galaxy instance for which we have pulled updates.
-            original_repository_metadata = self.repository.metadata_
+            gx_repository = cast(ToolShedRepository, self.repository)  # definitely in Galaxy version
+            original_repository_metadata = gx_repository.metadata_
         else:
             original_repository_metadata = None
         readme_file_names = _get_readme_file_names(str(self.repository.name))
@@ -249,9 +258,11 @@ class BaseMetadataGenerator:
             work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-gmfcr")
             # All other files are on disk in the repository's repo_path, which is the value of
             # self.relative_install_dir.
+            assert self.relative_install_dir
             files_dir = self.relative_install_dir
             if self.shed_config_dict.get("tool_path"):
                 files_dir = os.path.join(self.shed_config_dict["tool_path"], files_dir)
+        assert files_dir
         # Create ValidationContext to load and validate tools, data tables and datatypes
         with ValidationContext.from_app(app=self.app, work_dir=work_dir) as validation_context:
             tv = ToolValidator(validation_context)
@@ -371,7 +382,7 @@ class BaseMetadataGenerator:
         """
         # TODO: make this function a class.
         repository_dependency_is_valid = True
-        repository_dependency_tup = []
+        repository_dependency_tup: list = []
         requirements_dict = {}
         error_message = ""
         package_name = elem.get("name", None)
@@ -495,7 +506,7 @@ class BaseMetadataGenerator:
                         prior_installation_required,
                         only_if_compiling_contained_td,
                     ) = repository_dependency_tup
-                    repository_dependency_tup = (
+                    invalid_repository_dependency_tup = (
                         toolshed,
                         name,
                         owner,
@@ -504,7 +515,7 @@ class BaseMetadataGenerator:
                         only_if_compiling_contained_td,
                         err_msg,
                     )
-                    invalid_repository_dependency_tups.append(repository_dependency_tup)
+                    invalid_repository_dependency_tups.append(invalid_repository_dependency_tup)
                     error_message += err_msg
             if invalid_repository_dependency_tups:
                 invalid_repository_dependencies_dict["repository_dependencies"] = invalid_repository_dependency_tups
@@ -622,11 +633,10 @@ class BaseMetadataGenerator:
         root = tree.getroot()
 
         class RecurserValueStore:
-            pass
+            valid_tool_dependencies_dict = {}
+            invalid_tool_dependencies_dict = {}
 
         rvs = RecurserValueStore()
-        rvs.valid_tool_dependencies_dict = {}
-        rvs.invalid_tool_dependencies_dict = {}
         valid_repository_dependency_tups = []
         invalid_repository_dependency_tups = []
         description = root.get("description")
