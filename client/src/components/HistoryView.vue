@@ -52,8 +52,6 @@ export default {
     computed: {
         ...mapGetters({ getHistoryById: "history/getHistoryById" }),
         getHistory() {
-            console.log(this.id);
-            console.log(this.getHistoryById(this.id));
             return this.getHistoryById(this.id);
         },
     },
