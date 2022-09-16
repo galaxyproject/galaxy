@@ -6,10 +6,8 @@ import StsDownloadButton from "components/StsDownloadButton.vue";
 import ExportToRemoteButton from "components/Workflow/Invocation/Export/ExportToRemoteButton.vue";
 import ExportToRemoteModal from "components/Workflow/Invocation/Export/ExportToRemoteModal.vue";
 import { useMarkdown } from "composables/useMarkdown";
-import { useFilesSources } from "composables/useFilesSources";
 
 const md = useMarkdown({ openLinksInNewPage: true });
-const { writableFileSources } = useFilesSources();
 
 const exportRemoteModal = ref(null);
 
@@ -18,8 +16,16 @@ const props = defineProps({
     invocationId: { type: String, required: true },
 });
 
-const invocationDownloadUrl = computed(() => `/api/invocations/${props.invocationId}/prepare_store_download`);
 const descriptionRendered = computed(() => md.render(props.exportPlugin.markdownDescription));
+const invocationDownloadUrl = computed(() => `/api/invocations/${props.invocationId}/prepare_store_download`);
+const downloadParams = computed(() => {
+    return {
+        model_store_format: props.exportPlugin.downloadFormat,
+        include_files: false,
+        include_deleted: false,
+        include_hidden: false,
+    };
+});
 
 function openExportToFileSourceDialog() {
     exportRemoteModal.value.showModal();
@@ -35,7 +41,8 @@ function openExportToFileSourceDialog() {
                     <b-button-group>
                         <sts-download-button
                             :title="'Download Invocation as ' + exportPlugin.title"
-                            :download-endpoint="invocationDownloadUrl" />
+                            :download-endpoint="invocationDownloadUrl"
+                            :post-parameters="downloadParams" />
                         <export-to-remote-button
                             :title="'Export Invocation as ' + exportPlugin.title + ' and upload to remote source'"
                             @onExportToFileSource="openExportToFileSourceDialog" />
