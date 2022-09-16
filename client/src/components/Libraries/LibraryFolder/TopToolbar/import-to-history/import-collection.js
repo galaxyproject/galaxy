@@ -104,12 +104,18 @@ var ImportCollectionModal = Backbone.View.extend({
         }
     },
     collectionImport: function (collectionElements, historyId) {
-        this.collectionType = this.modal.$el.find("#library-collection-type-select").val();
-        const selection = {
-            models: collectionElements,
-        };
+        const collectionType = this.modal.$el.find("#library-collection-type-select").val();
+        let selection = null;
+        if (collectionType == "rules") {
+            selection = collectionElements;
+            selection.selectionType = "library_datasets";
+        } else {
+            selection = {
+                models: collectionElements,
+            };
+        }
         const Galaxy = getGalaxyInstance();
-        Galaxy.currHistoryPanel.buildCollection(this.collectionType, historyId, selection);
+        Galaxy.currHistoryPanel.buildCollection(collectionType, selection, historyId);
     },
     templateCollectionSelectModal: function () {
         return _.template(

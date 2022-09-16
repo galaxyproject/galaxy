@@ -314,7 +314,7 @@ export default {
             await this.buildNewCollection("rules");
         },
         async buildNewCollection(collectionType) {
-            const modalResult = await buildCollectionModal(collectionType, this.history.id, this.contentSelection);
+            const modalResult = await buildCollectionModal(collectionType, this.contentSelection, this.history.id);
             await createDatasetCollection(this.history, modalResult);
 
             // have to hide the source items if that was requested

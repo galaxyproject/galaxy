@@ -61,7 +61,7 @@ export class HistoryPanelProxy {
         this.model.id = historyId;
         store.dispatch("history/setCurrentHistory", historyId);
     }
-    async buildCollection(collectionType, historyId, selection, fromRulesInput = false) {
+    async buildCollection(collectionType, selection, historyId = null, fromRulesInput = false) {
         let selectionContent = null;
         historyId = historyId || this.model.id;
         if (fromRulesInput) {
@@ -72,7 +72,7 @@ export class HistoryPanelProxy {
                 selectionContent.set(obj.id, obj);
             });
         }
-        const modalResult = await buildCollectionModal(collectionType, historyId, selectionContent, fromRulesInput);
+        const modalResult = await buildCollectionModal(collectionType, selectionContent, historyId, fromRulesInput);
         if (modalResult) {
             console.debug("Submitting collection build request.", modalResult);
             await createDatasetCollection({ id: historyId }, modalResult);
