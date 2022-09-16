@@ -3,6 +3,8 @@ from .framework import (
     SeleniumTestCase,
 )
 import time
+
+
 class CollectionEditTestCase(SeleniumTestCase):
 
     ensure_registered = True
