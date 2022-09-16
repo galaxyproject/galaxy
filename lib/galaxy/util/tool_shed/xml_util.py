@@ -12,6 +12,7 @@ from galaxy.util import (
     unicodify,
     xml_to_string,
 )
+from galaxy.util.path import StrPath
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ def create_and_write_tmp_file(elem):
     return tmp_filename
 
 
-def parse_xml(file_name, check_exists=True) -> Tuple[Optional[etree.ElementTree], str]:
+def parse_xml(file_name: StrPath, check_exists=True) -> Tuple[Optional[etree.ElementTree], str]:
     """Returns a parsed xml tree with comments intact."""
     error_message = ""
     if check_exists and not os.path.exists(file_name):

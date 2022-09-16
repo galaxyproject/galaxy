@@ -1,15 +1,22 @@
 import logging
-from typing import NamedTuple
+from typing import (
+    Dict,
+    NamedTuple,
+    Optional,
+)
 
 from galaxy.util import parse_xml_string
+from galaxy.util.path import StrPath
 from galaxy.util.tool_shed.common_util import remove_protocol_from_tool_shed_url
 from galaxy.util.tool_shed.xml_util import parse_xml
 
 log = logging.getLogger(__name__)
 
-DEFAULT_TOOL_SHEDS_CONF_XML = """<?xml version="1.0"?>
+DEFAULT_TOOL_SHED_URL = "https://toolshed.g2.bx.psu.edu/"
+DEFAULT_TOOL_SHED_NAME = "Galaxy Main Tool Shed"
+DEFAULT_TOOL_SHEDS_CONF_XML = f"""<?xml version="1.0"?>
 <tool_sheds>
-    <tool_shed name="Galaxy Main Tool Shed" url="https://toolshed.g2.bx.psu.edu/"/>
+    <tool_shed name="{DEFAULT_TOOL_SHED_NAME}" url="{DEFAULT_TOOL_SHED_URL}"/>
 </tool_sheds>
 """
 
@@ -20,7 +27,10 @@ class AUTH_TUPLE(NamedTuple):
 
 
 class Registry:
-    def __init__(self, config=None):
+    tool_sheds: Dict[str, str]
+    tool_sheds_auth: Dict[str, Optional[AUTH_TUPLE]]
+
+    def __init__(self, config: Optional[StrPath] = None):
         self.tool_sheds = {}
         self.tool_sheds_auth = {}
         if config:
@@ -49,7 +59,7 @@ class Registry:
             except Exception as e:
                 log.warning(f'Error loading reference to tool shed "{name}", problem: {str(e)}')
 
-    def url_auth(self, url):
+    def url_auth(self, url: str) -> Optional[AUTH_TUPLE]:
         """
         If the tool shed is using external auth, the client to the tool shed must authenticate to that
         as well.  This provides access to the six.moves.urllib.request.HTTPPasswordMgrWithdefaultRealm() object for the
