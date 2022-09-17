@@ -2750,7 +2750,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam", ext="bam"
         )
         fasta1_contents = open(self.get_filename("1.fasta")).read()
-        fasta = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
+        fasta = self.dataset_populator.new_dataset(history_id, content=fasta1_contents, file_type="fasta")
         inputs = {"input1": dataset_to_param(deferred_bam_details), "reference": dataset_to_param(fasta)}
         run_response = self.dataset_populator.run_tool(tool_id="pileup", inputs=inputs, history_id=history_id)
         self.dataset_populator.wait_for_job(run_response["jobs"][0]["id"], assert_ok=True)
