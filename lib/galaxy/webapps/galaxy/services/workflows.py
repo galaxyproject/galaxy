@@ -15,7 +15,7 @@ from galaxy.managers.workflows import (
     WorkflowsManager,
 )
 from galaxy.schema.schema import WorkflowIndexQueryPayload
-from galaxy.tool_shed.tool_shed_registry import Registry
+from galaxy.util.tool_shed.tool_shed_registry import Registry
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 

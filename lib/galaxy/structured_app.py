@@ -30,6 +30,7 @@ from galaxy.security.vault import Vault
 from galaxy.tool_util.deps.views import DependencyResolversView
 from galaxy.tool_util.verify import test_data
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.tool_shed.tool_shed_registry import Registry as ToolShedRegistry
 from galaxy.web_stack import ApplicationStack
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
@@ -134,6 +135,7 @@ class StructuredApp(MinimalManagerApp):
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'
     tool_data_tables: "ToolDataTableManager"
     tool_cache: Any  # 'galaxy.tools.cache.ToolCache'
+    tool_shed_registry: ToolShedRegistry
     tool_shed_repository_cache: Optional[Any]  # 'galaxy.tools.cache.ToolShedRepositoryCache'
     watchers: "ConfigWatchers"
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
