@@ -205,9 +205,10 @@ class SentryClientMixin:
             self.application_stack.register_postfork_function(postfork_sentry_client)
 
 
-class ConfiguresGalaxyMixin:
-    """Shared code for configuring Galaxy-like app objects."""
+class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMixin):
+    """Encapsulates the state of a minimal Galaxy application"""
 
+    model: GalaxyModelMapping
     config: config.GalaxyAppConfiguration
     tool_cache: ToolCache
     job_config: jobs.JobConfiguration
@@ -215,6 +216,48 @@ class ConfiguresGalaxyMixin:
     toolbox_search: ToolBoxSearch
     container_finder: containers.ContainerFinder
     install_model: ModelMapping
+
+    def __init__(self, fsmon=False, **kwargs) -> None:
+        super().__init__()
+        self.haltables = [
+            ("object store", self._shutdown_object_store),
+            ("database connection", self._shutdown_model),
+        ]
+        self._register_singleton(BasicSharedApp, self)
+        if not log.handlers:
+            # Paste didn't handle it, so we need a temporary basic log
+            # configured.  The handler added here gets dumped and replaced with
+            # an appropriately configured logger in configure_logging below.
+            logging.basicConfig(level=logging.DEBUG)
+        log.debug("python path is: %s", ", ".join(sys.path))
+        self.name = "galaxy"
+        self.is_webapp = False
+        # Read config file and check for errors
+        self.config: Any = self._register_singleton(config.Configuration, config.Configuration(**kwargs))
+        self.config.check()
+        self._configure_object_store(fsmon=True)
+        self._register_singleton(BaseObjectStore, self.object_store)
+        config_file = kwargs.get("global_conf", {}).get("__file__", None)
+        if config_file:
+            log.debug('Using "galaxy.ini" config file: %s', config_file)
+        self._configure_models(check_migrate_databases=self.config.check_migrate_databases, config_file=config_file)
+        # Security helper
+        self._configure_security()
+        self._register_singleton(IdEncodingHelper, self.security)
+        self._register_singleton(SharedModelMapping, self.model)
+        self._register_singleton(GalaxyModelMapping, self.model)
+        self._register_singleton(galaxy_scoped_session, self.model.context)
+        self._register_singleton(install_model_scoped_session, self.install_model.context)
+
+    def configure_fluent_log(self):
+        if self.config.fluent_log:
+            from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
+
+            self.trace_logger: Optional[FluentTraceLogger] = FluentTraceLogger(
+                "galaxy", self.config.fluent_host, self.config.fluent_port
+            )
+        else:
+            self.trace_logger = None
 
     def _configure_genome_builds(self, data_table_name="__dbkeys__", load_old_style=True):
         self.genome_builds = GenomeBuilds(self, data_table_name=data_table_name, load_old_style=load_old_style)
@@ -441,54 +484,6 @@ class ConfiguresGalaxyMixin:
     @property
     def tool_dependency_dir(self):
         return self.toolbox.dependency_manager.default_base_path
-
-
-class MinimalGalaxyApplication(BasicSharedApp, ConfiguresGalaxyMixin, HaltableContainer, SentryClientMixin):
-    """Encapsulates the state of a minimal Galaxy application"""
-
-    model: GalaxyModelMapping
-
-    def __init__(self, fsmon=False, **kwargs) -> None:
-        super().__init__()
-        self.haltables = [
-            ("object store", self._shutdown_object_store),
-            ("database connection", self._shutdown_model),
-        ]
-        self._register_singleton(BasicSharedApp, self)
-        if not log.handlers:
-            # Paste didn't handle it, so we need a temporary basic log
-            # configured.  The handler added here gets dumped and replaced with
-            # an appropriately configured logger in configure_logging below.
-            logging.basicConfig(level=logging.DEBUG)
-        log.debug("python path is: %s", ", ".join(sys.path))
-        self.name = "galaxy"
-        self.is_webapp = False
-        # Read config file and check for errors
-        self.config: Any = self._register_singleton(config.Configuration, config.Configuration(**kwargs))
-        self.config.check()
-        self._configure_object_store(fsmon=True)
-        self._register_singleton(BaseObjectStore, self.object_store)
-        config_file = kwargs.get("global_conf", {}).get("__file__", None)
-        if config_file:
-            log.debug('Using "galaxy.ini" config file: %s', config_file)
-        self._configure_models(check_migrate_databases=self.config.check_migrate_databases, config_file=config_file)
-        # Security helper
-        self._configure_security()
-        self._register_singleton(IdEncodingHelper, self.security)
-        self._register_singleton(SharedModelMapping, self.model)
-        self._register_singleton(GalaxyModelMapping, self.model)
-        self._register_singleton(galaxy_scoped_session, self.model.context)
-        self._register_singleton(install_model_scoped_session, self.install_model.context)
-
-    def configure_fluent_log(self):
-        if self.config.fluent_log:
-            from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
-
-            self.trace_logger: Optional[FluentTraceLogger] = FluentTraceLogger(
-                "galaxy", self.config.fluent_host, self.config.fluent_port
-            )
-        else:
-            self.trace_logger = None
 
     def _shutdown_object_store(self):
         self.object_store.shutdown()
