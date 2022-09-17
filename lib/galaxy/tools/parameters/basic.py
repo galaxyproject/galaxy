@@ -2397,18 +2397,19 @@ class DataCollectionToolParameter(BaseDataToolParameter):
                 raise ParameterValueError("the previously selected dataset collection has been deleted", self.name)
             # TODO: Handle error states, implement error states ...
 
-        # prepare dataset/collection matching
-        values = util.listify(rval)
-        dataset_matcher_factory = get_dataset_matcher_factory(trans)
-        dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
-        dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
+        if rval is not None:
+            # prepare dataset/collection matching
+            dataset_matcher_factory = get_dataset_matcher_factory(trans)
+            dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
+            dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
 
-        for v in values:
-            match = dataset_collection_matcher.hdca_match(v)
+            match = dataset_collection_matcher.hdca_match(rval)
             if not match:
-
-                representative = v.to_hda_representative()
-                raise ParameterValueError(f"data set ({v.name}) with invalid datatype ({representative.ext}) supplied to input dataset parameter (expecting {dataset_matcher.param.extensions})", self.name)
+                if isinstance(rval, HistoryDatasetCollectionAssociation):
+                    representative = rval.to_hda_representative()
+                elif isinstance(rval, DatasetCollectionElement):
+                    representative = rval.first_dataset_instance
+                raise ParameterValueError(f"data set ({rval.name}) with invalid datatype ({representative.ext}) supplied to input dataset parameter (expecting {dataset_matcher.param.extensions})", self.name)
 
         return rval
 
