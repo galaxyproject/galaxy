@@ -77,14 +77,22 @@ class CollectionEditTestCase(SeleniumTestCase):
 
     def change_dbkey_value_and_click_submit(self, dataValue, dataNew):
         self.components.edit_collection_attributes.data_value(data_change=dataValue).wait_for_and_click()
-        self.find_element_by_selector("div.database-dropdown > div.multiselect__tags > input.multiselect__input").send_keys(dataNew)
-        self.find_element_by_selector("div.database-dropdown > div.multiselect__tags > input.multiselect__input").send_keys(self.keys.ENTER)
+        self.find_element_by_selector(
+            "div.database-dropdown > div.multiselect__tags > input.multiselect__input"
+        ).send_keys(dataNew)
+        self.find_element_by_selector(
+            "div.database-dropdown > div.multiselect__tags > input.multiselect__input"
+        ).send_keys(self.keys.ENTER)
         self.components.edit_collection_attributes.save_dbkey_btn.wait_for_and_click()
 
     def change_datatype_value_and_click_submit(self, dataValue, dataNew):
         self.components.edit_collection_attributes.data_value(data_change=dataValue).wait_for_and_click()
-        self.find_element_by_selector("div.datatype-dropdown > div.multiselect__tags > input.multiselect__input").send_keys(dataNew)
-        self.find_element_by_selector("div.datatype-dropdown > div.multiselect__tags > input.multiselect__input").send_keys(self.keys.ENTER)
+        self.find_element_by_selector(
+            "div.datatype-dropdown > div.multiselect__tags > input.multiselect__input"
+        ).send_keys(dataNew)
+        self.find_element_by_selector(
+            "div.datatype-dropdown > div.multiselect__tags > input.multiselect__input"
+        ).send_keys(self.keys.ENTER)
         self.components.edit_collection_attributes.save_datatype_btn.wait_for_and_click()
 
     def _wait_for_and_select(self, hids):
