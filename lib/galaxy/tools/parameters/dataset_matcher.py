@@ -151,11 +151,33 @@ class DatasetMatcher:
             return self.valid_hda_match(hda, check_implicit_conversions=check_implicit_conversions)
 
     def filter(self, hda):
-        """Filter out this value based on other values for job (if
-        applicable).
+        """Filter out this value based on other values for job
+
+        Returns True iff it should be filtered
+
+        If the parameter does not define a options element False will be returned in any case.
+        It is checked if the metadata of the hda (by default dbkey) is in the set of allowed
+        metadata (defined by the key attribute of options-filter element) if the referred
+        parameter (defined by the ref attribute of the options-filter element).
+
+        If another metadata element of the hda should be used this can only be specified with
+        the (deprecated options_filter_attribute of the options element) Which metadata
+
+        For profile < 22.09 the function returns always False if the metadata element
+        of the referred dataset was not set. For later profiles the function returns true
+        in any case (which makes it analoguous to the behaviour of the dynamic options filter
+        for select parameters).
         """
         param = self.param
-        return param.options and param.get_options_filter_attribute(hda) not in self.filter_values and len(self.filter_values) > 0
+
+        if param.tool.profile < 22.09:
+            return param.options and param.get_options_filter_attribute(hda) not in self.filter_values
+        else:
+            return (
+                param.options
+                and param.get_options_filter_attribute(hda) not in self.filter_values
+                and len(self.filter_values) > 0
+            )
 
 
 class HdaDirectMatch:
