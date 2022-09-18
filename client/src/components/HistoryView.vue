@@ -1,17 +1,30 @@
 <template>
     <CurrentUser v-slot="{ user }">
         <UserHistories v-if="user" v-slot="{ handlers }" :user="user">
-            <div v-if="getHistory" class="d-flex flex-column h-100">
+            <div v-if="history" class="d-flex flex-column h-100">
+                <div class="flex-row flex-grow-0">
+                    <b-button
+                        v-if="user.id == history.user_id"
+                        size="sm"
+                        variant="outline-info"
+                        title="Switch to this history"
+                        @click="handlers.setCurrentHistory(history)">
+                        Switch to this history
+                    </b-button>
+                    <b-button v-else size="sm" variant="outline-info" title="Import this history">
+                        Import this history
+                    </b-button>
+                </div>
                 <CollectionPanel
                     v-if="selectedCollections.length && selectedCollections[0].history_id == id"
-                    :history="getHistory"
+                    :history="history"
                     :selected-collections.sync="selectedCollections"
                     :show-controls="false"
                     @view-collection="onViewCollection" />
                 <HistoryPanel
                     v-else
                     v-on="handlers"
-                    :history="getHistory"
+                    :history="history"
                     :show-controls="false"
                     @view-collection="onViewCollection" />
             </div>
@@ -49,9 +62,12 @@ export default {
             selectedCollections: [],
         };
     },
+    created() {
+        this.$store.dispatch("history/loadHistoryById", this.id);
+    },
     computed: {
         ...mapGetters({ getHistoryById: "history/getHistoryById" }),
-        getHistory() {
+        history() {
             return this.getHistoryById(this.id);
         },
     },
