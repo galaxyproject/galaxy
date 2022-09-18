@@ -12,7 +12,12 @@
                         @click="handlers.setCurrentHistory(history)">
                         Switch to this history
                     </b-button>
-                    <b-button v-else size="sm" variant="outline-info" title="Import this history" @click="onImport">
+                    <b-button
+                        v-else
+                        size="sm"
+                        variant="outline-info"
+                        title="Import this history"
+                        v-b-modal:copy-history-modal>
                         Import this history
                     </b-button>
                 </div>
@@ -28,9 +33,10 @@
                     :history="history"
                     :show-controls="false"
                     @view-collection="onViewCollection" />
+                <CopyModal id="copy-history-modal" :history="history" />
             </div>
             <b-alert v-else class="m-2" variant="info" show>
-                <LoadingSpan message="Loading Histories" />
+                <LoadingSpan message="Loading History" />
             </b-alert>
         </UserHistories>
     </CurrentUser>
@@ -38,11 +44,12 @@
 
 <script>
 import { mapGetters } from "vuex";
-import CollectionPanel from "components/History/CurrentCollection/CollectionPanel";
 import CurrentUser from "components/providers/CurrentUser";
-import HistoryPanel from "components/History/CurrentHistory/HistoryPanel";
-import LoadingSpan from "components/LoadingSpan";
 import UserHistories from "components/providers/UserHistories";
+import LoadingSpan from "components/LoadingSpan";
+import CollectionPanel from "./CurrentCollection/CollectionPanel";
+import HistoryPanel from "./CurrentHistory/HistoryPanel";
+import CopyModal from "./Modals/CopyModal";
 
 export default {
     components: {
@@ -51,6 +58,7 @@ export default {
         CollectionPanel,
         CurrentUser,
         UserHistories,
+        CopyModal,
     },
     props: {
         id: {
@@ -73,7 +81,6 @@ export default {
         },
     },
     methods: {
-        onImport() {},
         onViewCollection(collection) {
             this.selectedCollections = [...this.selectedCollections, collection];
         },

@@ -28,7 +28,7 @@ import Grid from "components/Grid/Grid";
 import GridShared from "components/Grid/GridShared";
 import GridHistory from "components/Grid/GridHistory";
 import HistoryImport from "components/HistoryImport";
-import HistoryView from "components/HistoryView";
+import HistoryView from "components/History/HistoryView";
 import HistoryMultipleView from "components/History/Multiple/MultipleView";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
