@@ -5,7 +5,7 @@
             <div class="text-right">
                 <button
                     class="save-datatype-edit btn btn-primary"
-                    :disabled="selectedDatatype.id == datatypeFromElements"
+                    :disabled="selectedDatatype.id == currentDatatype"
                     @click="clickedSave">
                     {{ l("Save") }}
                 </button>
@@ -43,15 +43,17 @@ export default {
     data: function () {
         return {
             selectedDatatype: {},
+            currentDatatype: "",
         };
     },
     created() {
         this.selectedDatatype = this.datatypes.find((element) => element.id == this.datatypeFromElements);
+        this.currentDatatype = this.datatypeFromElements;
     },
     methods: {
         clickedSave: function () {
             this.$emit("clicked-save", this.selectedDatatype);
-            this.datatypeFromElements = this.selectedDatatype.id;
+            this.currentDatatype = this.selectedDatatype.id;
         },
     },
 };
