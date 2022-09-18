@@ -2,7 +2,8 @@
     <CurrentUser v-slot="{ user }">
         <UserHistories v-if="user" v-slot="{ handlers }" :user="user">
             <div v-if="history" class="d-flex flex-column h-100">
-                <div class="flex-row flex-grow-0">
+                <b-alert v-if="history.purged" variant="info" show>This history has been purged.</b-alert>
+                <div v-else class="flex-row flex-grow-0">
                     <b-button
                         v-if="user.id == history.user_id"
                         size="sm"
@@ -11,7 +12,7 @@
                         @click="handlers.setCurrentHistory(history)">
                         Switch to this history
                     </b-button>
-                    <b-button v-else size="sm" variant="outline-info" title="Import this history">
+                    <b-button v-else size="sm" variant="outline-info" title="Import this history" @click="onImport">
                         Import this history
                     </b-button>
                 </div>
@@ -72,6 +73,7 @@ export default {
         },
     },
     methods: {
+        onImport() {},
         onViewCollection(collection) {
             this.selectedCollections = [...this.selectedCollections, collection];
         },
