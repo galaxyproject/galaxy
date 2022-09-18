@@ -135,7 +135,7 @@ const actions = {
                 .finally(() => {
                     isLoadingHistory.delete(id);
                 });
-            isLoadingHistory.set(id, p);
+            //isLoadingHistory.set(id, p);
         }
     },
     resetHistory({ commit }) {
