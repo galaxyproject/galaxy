@@ -77,7 +77,9 @@
                 });
         });
 
-        window.historyView = new window.bundleEntries.HistoryViewAnnotated.AnnotatedHistoryView({
+        window.bundleEntries.mountHistory("#history-" + historyJSON.id, { id: historyJSON.id });
+
+        /*window.historyView = new window.bundleEntries.HistoryViewAnnotated.AnnotatedHistoryView({
             el              : $( "#history-" + historyJSON.id ),
             className       : window.bundleEntries.HistoryViewAnnotated.AnnotatedHistoryView.prototype.className + ' wide',
             model           : historyModel,
@@ -90,7 +92,7 @@
             .done( function(){
                 historyView.trigger( 'loading-done' );
                 historyView.render();
-            });
+            });*/
     });
     
 </script>
