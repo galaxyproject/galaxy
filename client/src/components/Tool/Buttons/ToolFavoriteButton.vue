@@ -2,7 +2,6 @@
 import { computed } from "vue";
 import { useCurrentUser } from "composables/user";
 import ariaAlert from "utils/ariaAlert";
-import { addFavorite, removeFavorite } from "components/Tool/services";
 
 const props = defineProps({
     id: {
@@ -13,7 +12,7 @@ const props = defineProps({
 
 const emit = defineEmits(["onSetError", "onUpdateFavorites"]);
 
-const { currentUser: user } = useCurrentUser();
+const { currentUser: user, addFavoriteTool, removeFavoriteTool } = useCurrentUser();
 
 const hasUser = computed(() => !user.value.isAnonymous);
 const isFavorite = computed(() => getFavorites().tools.includes(props.id));
@@ -40,8 +39,7 @@ function onToggleFavorite() {
 
 async function onAddFavorite() {
     try {
-        const data = await addFavorite(user.value.id, props.id);
-        updateFavorites("tools", data);
+        await addFavoriteTool(props.id);
         emit("onSetError", null);
         ariaAlert("added to favorites");
     } catch {
@@ -52,8 +50,7 @@ async function onAddFavorite() {
 
 async function onRemoveFavorite() {
     try {
-        const data = await removeFavorite(user.value.id, props.id);
-        updateFavorites("tools", data);
+        await removeFavoriteTool(props.id);
         emit("onSetError", null);
         ariaAlert("removed from favorites");
     } catch {
@@ -70,12 +67,6 @@ function getFavorites() {
     } else {
         return { tools: [] };
     }
-}
-
-function updateFavorites(objectType, newFavorites) {
-    const favorites = getFavorites();
-    favorites[objectType] = newFavorites[objectType];
-    user.value.preferences["favorites"] = JSON.stringify(favorites);
 }
 </script>
 

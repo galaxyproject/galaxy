@@ -13,5 +13,8 @@ export function useCurrentUser() {
         store.dispatch("user/loadUser");
     });
 
-    return { currentUser };
+    const addFavoriteTool = async (toolId) => await store.dispatch("user/addFavoriteTool", toolId);
+    const removeFavoriteTool = async (toolId) => await store.dispatch("user/removeFavoriteTool", toolId);
+
+    return { currentUser, addFavoriteTool, removeFavoriteTool };
 }
