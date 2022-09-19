@@ -142,18 +142,31 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :type   show_deleted:        boolean
         :param  missing_tools:       if True, include a list of missing tools per workflow
         :type   missing_tools:       boolean
+         ***AMP Customization***
+        :param  search               search name, creator, tags, annotation, update time
+        :type   search               dict
         """
         rval = []
         filter1 = trans.app.model.StoredWorkflow.user == trans.user
         user = trans.get_user()
         if show_published or user is None and show_published is None:
             filter1 = or_(filter1, (trans.app.model.StoredWorkflow.published == true()))
+        # # AMP Customization
+        # amp_filters = None
+        # if 'search' in kwd:
+        #     search = kwd['search']
+        #     amp_filters = and_(trans.app.model.StoredWorkflow.name.like(F"%{search['name']}%") if 'name' in search.keys(),
+        #                     trans.app.model.StoredWorkflow.annotations.annotation.like(F"%{search['annotation']}%") if 'annotation' in search.keys(),
+        #                     trans.app.model.tags.value.like(F"%{search['tag']}%") if 'tag' in search.keys(),
+        #     )
+
         query = trans.sa_session.query(trans.app.model.StoredWorkflow).options(
             joinedload("annotations")).options(
             joinedload("latest_workflow").undefer("step_count").lazyload("steps")).options(
             joinedload("tags")
         ).filter(filter1)
         query = query.filter_by(hidden=true() if show_hidden else false(), deleted=true() if show_deleted else false())
+        
         for wf in query.order_by(desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
             item = wf.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf.id)
@@ -161,6 +174,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['url'] = url_for('workflow', id=encoded_id)
             item['owner'] = wf.user.username
             item['number_of_steps'] = wf.latest_workflow.step_count
+            item['creator'] = wf.latest_workflow.creator_metadata #AMP Customization
             item['show_in_tool_panel'] = False
             if user is not None:
                 item['show_in_tool_panel'] = wf.show_in_tool_panel(user_id=user.id)
@@ -180,6 +194,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['slug'] = wf_sa.stored_workflow.slug
             item['owner'] = wf_sa.stored_workflow.user.username
             item['number_of_steps'] = wf_sa.stored_workflow.latest_workflow.step_count
+            item['creator'] = wf_sa.stored_workflow.latest_workflow.creator_metadata #AMP Customization
             item['show_in_tool_panel'] = False
             if user is not None:
                 item['show_in_tool_panel'] = wf_sa.stored_workflow.show_in_tool_panel(user_id=user.id)
