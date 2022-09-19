@@ -12,9 +12,6 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_galaxy_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_galaxy_private_role(admin_user)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
         assert (
