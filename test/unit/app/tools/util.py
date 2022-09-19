@@ -7,16 +7,18 @@ from galaxy.util import (
 )
 from galaxy.util.unittest import TestCase
 
+class MockTool:
+    def __init__(self, app):
+        self.app = app
+        self.tool_type = "default"
+        self.valid_input_states = model.Dataset.valid_input_states
+        self.profile = 23.0
+
 
 class BaseParameterTestCase(TestCase, UsesApp):
     def setUp(self):
         self.setup_app()
-        self.mock_tool = bunch.Bunch(
-            app=self.app,
-            tool_type="default",
-            valid_input_states=model.Dataset.valid_input_states,
-            profile=23.0,
-        )
+        self.mock_tool = MockTool(self.app)
 
     def _parameter_for(self, **kwds):
         content = kwds["xml"]

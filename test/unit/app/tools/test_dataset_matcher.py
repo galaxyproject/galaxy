@@ -10,14 +10,7 @@ from galaxy.util import (
 )
 from galaxy.util.unittest import TestCase
 from .test_data_parameters import MockHistoryDatasetAssociation
-
-
-class MockTool:
-    def __init__(self, app):
-        self.app = app
-        self.tool_type = "default"
-        self.valid_input_states = model.Dataset.valid_input_states
-
+from .util import MockTool
 
 class TestDatasetMatcher(TestCase, UsesApp):
     def test_hda_mismatches(self):
