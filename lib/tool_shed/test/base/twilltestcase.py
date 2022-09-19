@@ -5,10 +5,7 @@ import string
 import tempfile
 import time
 from json import loads
-from typing import (
-    List,
-    Optional,
-)
+from typing import List
 from urllib.parse import (
     quote_plus,
     urlencode,
