@@ -127,7 +127,7 @@ or manually satisfy the dependencies listed below.</p>
                         <th bgcolor="#EBD9B2">Confirm dependency installation</th>
                     </table>
                 </div>
-                ${render_dependencies_section( install_resolver_dependencies_check_box, install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict, revision_label=None, export=False, requirements_status=requirements_status )}
+                ${render_dependencies_section( install_resolver_dependencies_check_box, install_repository_dependencies_check_box, containers_dict, revision_label=None, export=False, requirements_status=requirements_status )}
                 <div style="clear: both"></div>
             %endif
             %if shed_tool_conf_select_field:

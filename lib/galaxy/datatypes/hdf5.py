@@ -69,7 +69,6 @@ class HDF5SummarizedExperiment(Data):
 
     def sniff(self, filename):
         """Not sure whether this is necessary (or possible) with binaries."""
-        pass
 
     def get_mime(self):
         """Return the mime type of the datatype."""

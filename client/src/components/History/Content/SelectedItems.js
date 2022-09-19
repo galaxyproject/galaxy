@@ -10,12 +10,13 @@ export default {
         scopeKey: { type: String, required: true },
         getItemKey: { type: Function, required: true },
         filterText: { type: String, required: true },
+        totalItemsInQuery: { type: Number, required: false },
     },
     data() {
         return {
             items: new Map(),
             showSelection: false,
-            totalItemsInQuery: 0,
+            allSelected: false,
         };
     },
     computed: {
@@ -23,7 +24,7 @@ export default {
             return this.isQuerySelection ? this.totalItemsInQuery : this.items.size;
         },
         isQuerySelection() {
-            return this.totalItemsInQuery !== this.items.size;
+            return this.allSelected && this.totalItemsInQuery !== this.items.size;
         },
         currentFilters() {
             return getFilters(this.filterText);
@@ -33,9 +34,9 @@ export default {
         setShowSelection(val) {
             this.showSelection = val;
         },
-        selectAllInCurrentQuery(loadedItems = [], totalItemsInQuery) {
+        selectAllInCurrentQuery(loadedItems = []) {
             this.selectItems(loadedItems);
-            this.totalItemsInQuery = totalItemsInQuery;
+            this.allSelected = true;
         },
         isSelected(item) {
             if (this.isQuerySelection) {
@@ -49,7 +50,7 @@ export default {
             const newSelected = new Map(this.items);
             selected ? newSelected.set(key, item) : newSelected.delete(key);
             this.items = newSelected;
-            this.resetQuerySelection();
+            this.breakQuerySelection();
         },
         selectItems(items = []) {
             const newItems = [...this.items.values(), ...items];
@@ -58,19 +59,26 @@ export default {
                 return [key, item];
             });
             this.items = new Map(newEntries);
-            this.resetQuerySelection();
+            this.breakQuerySelection();
         },
-        resetQuerySelection() {
-            this.totalItemsInQuery = this.items.size;
+        breakQuerySelection() {
+            if (this.allSelected) {
+                this.$emit("query-selection-break");
+            }
+            this.allSelected = false;
         },
         reset() {
             this.items = new Map();
-            this.resetQuerySelection();
+            this.allSelected = false;
+        },
+        cancelSelection() {
+            this.showSelection = false;
         },
     },
     watch: {
         scopeKey(newKey, oldKey) {
             if (newKey !== oldKey) {
+                this.cancelSelection();
                 this.reset();
             }
         },
@@ -82,6 +90,11 @@ export default {
         showSelection(newVal) {
             if (!newVal) {
                 this.reset();
+            }
+        },
+        totalItemsInQuery(newVal, oldVal) {
+            if (this.allSelected && newVal !== oldVal) {
+                this.breakQuerySelection();
             }
         },
     },

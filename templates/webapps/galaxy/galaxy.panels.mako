@@ -28,10 +28,6 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        ## for mobile browsers, don't scale up
-        <meta name = "viewport" content = "maximum-scale=1.0">
-        ## force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
-        <meta http-equiv="x-ua-compatible" content="ie=edge,chrome=1">
 
         <title>
             Galaxy
@@ -190,21 +186,10 @@
         ## TODO: Some visualizations (and more?) currently use this config, should be refactored.
         window.galaxy_config = galaxyConfig;
 
-        var panelConfig = Object.assign(galaxyConfig, {
-            rightPanelSelector: '#right',
-            leftPanelSelector: '#left'
-        });
-
         config.addInitialization(function() {
-            console.log("base/base_panels.mako, panel init");
-            window.bundleEntries.panelManagement(panelConfig);
-        });
-
-        config.addInitialization(function() {
-            console.log("base/base_panels.mako, panelConfig init");
-            console.log("runs an init function named in python config", panelConfig);
+            console.log("runs an init function named in python config", galaxyConfig);
             try {
-                var initFn = panelConfig.app.jscript;
+                var initFn = galaxyConfig.app.jscript;
                 if (initFn in window.bundleEntries) {
                     window.bundleEntries[initFn]();
                 } else {

@@ -442,7 +442,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
         rel_path_dir = os.path.dirname(rel_path)
         if not os.path.exists(self._get_cache_path(rel_path_dir)):
-            os.makedirs(self._get_cache_path(rel_path_dir))
+            os.makedirs(self._get_cache_path(rel_path_dir), exist_ok=True)
         # Now pull in the file
         file_ok = self._download(rel_path)
         self._fix_permissions(self._get_cache_path(rel_path_dir))
@@ -455,6 +455,10 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
             key = self._bucket.get_key(rel_path)
+            if key is None:
+                message = f"Attempting to download an invalid key for path {rel_path}."
+                log.critical(message)
+                raise Exception(message)
             # Test if cache is large enough to hold the new file
             if self.cache_size > 0 and key.size > self.cache_size:
                 log.critical(
@@ -573,7 +577,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             # for JOB_WORK directory
             elif base_dir:
                 if not os.path.exists(rel_path):
-                    os.makedirs(rel_path)
+                    os.makedirs(rel_path, exist_ok=True)
                 return True
             else:
                 return False
@@ -609,7 +613,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             # Create given directory in cache
             cache_dir = os.path.join(self.staging_path, rel_path)
             if not os.path.exists(cache_dir):
-                os.makedirs(cache_dir)
+                os.makedirs(cache_dir, exist_ok=True)
 
             # Although not really necessary to create S3 folders (because S3 has
             # flat namespace), do so for consistency with the regular file system

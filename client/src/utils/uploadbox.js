@@ -19,6 +19,14 @@ function submitPayload(payload, cnf) {
         });
 }
 
+function buildFingerprint(cnf) {
+    async function customFingerprint(file, options) {
+        return ["tus-br", file.name, file.type, file.size, file.lastModified, cnf.data.history_id].join("-");
+    }
+
+    return customFingerprint;
+}
+
 function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
     // uploadables must be an array of files or blobs with a name property
     const startTime = performance.now();
@@ -32,15 +40,25 @@ function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
     console.debug(`Starting chunked upload for ${uploadable.name} [chunkSize=${chunkSize}].`);
     const upload = new tus.Upload(uploadable, {
         endpoint: tusEndpoint,
+        retryDelays: [0, 3000, 10000],
+        fingerprint: buildFingerprint(cnf),
         chunkSize: chunkSize,
         metadata: data.payload,
-        onError: function (error) {
-            console.log("Failed because: " + error);
-            cnf.error(error);
+        onError: function (err) {
+            const status = err.originalResponse?.getStatus();
+            if (status == 403) {
+                console.error(`Failed because of missing authorization: ${err}`);
+                cnf.error(err);
+            } else {
+                // 🎵 Never gonna give you up 🎵
+                console.log(`Failed because: ${err}\n, will retry in 10 seconds`);
+
+                setTimeout(() => startTusUpload(upload), 10000);
+            }
         },
-        onProgress: function (bytesUploaded, bytesTotal) {
-            var percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2);
-            console.log(bytesUploaded, bytesTotal, percentage + "%");
+        onChunkComplete: function (chunkSize, bytesAccepted, bytesTotal) {
+            const percentage = ((bytesAccepted / bytesTotal) * 100).toFixed(2);
+            console.log(bytesAccepted, bytesTotal, percentage + "%");
             cnf.progress(percentage);
         },
         onSuccess: function () {
@@ -54,6 +72,10 @@ function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
             tusUpload(uploadables, index + 1, data, tusEndpoint, cnf);
         },
     });
+    startTusUpload(upload);
+}
+
+function startTusUpload(upload) {
     // Check if there are any previous uploads to continue.
     upload.findPreviousUploads().then(function (previousUploads) {
         // Found previous uploads so we select the first one.
@@ -93,7 +115,9 @@ export function submitUpload(config) {
     }
     const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload/`;
 
-    if (isPasted(data)) {
+    if (hasFiles(data) || isComposite(data)) {
+        return tusUpload(data.files, 0, data, tusEndpoint, cnf);
+    } else {
         if (data.targets.length && data.targets[0].elements.length) {
             const pasted = data.targets[0].elements[0];
             if (isUrl(pasted)) {
@@ -104,13 +128,15 @@ export function submitUpload(config) {
                 return tusUpload([blob], 0, data, tusEndpoint, cnf);
             }
         }
-    } else {
-        return tusUpload(data.files, 0, data, tusEndpoint, cnf);
     }
 }
 
-function isPasted(data) {
-    return !data.files.length;
+function hasFiles(data) {
+    return data.files.length;
+}
+
+function isComposite(data) {
+    return data.targets.length && data.targets[0].items && data.targets[0].items[0].composite;
 }
 
 function isUrl(pasted_item) {

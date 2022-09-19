@@ -36,7 +36,7 @@ window.TourGenerator = Backbone.View.extend({
         _.each(obj.data.hids, (hid) => {
             Galaxy.currHistoryPanel.collection.each((dataset) => {
                 datasets.push(dataset);
-            }, `hid=${hid} state=ok`);
+            }, `hid:${hid} state:ok`);
         });
         if (datasets.length === obj.data.hids.length) {
             this._generateTour(obj.data.tour);
@@ -50,8 +50,7 @@ window.TourGenerator = Backbone.View.extend({
         }
     },
     _generateTour: function (data) {
-        const Galaxy = window.bundleEntries.getGalaxyInstance();
-        const tour = Galaxy.giveTourWithData(data);
+        const tour = window.bundleEntries.runTour("auto.generated", data);
         // Force ending the tour when pressing the Execute button
         $("#execute").on("mousedown", () => {
             if (tour) {

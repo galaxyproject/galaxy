@@ -81,14 +81,6 @@ galaxy.managers.configuration module
    :undoc-members:
    :show-inheritance:
 
-galaxy.managers.containers module
----------------------------------
-
-.. automodule:: galaxy.managers.containers
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.managers.context module
 ------------------------------
 
@@ -105,10 +97,26 @@ galaxy.managers.datasets module
    :undoc-members:
    :show-inheritance:
 
+galaxy.managers.datatypes module
+--------------------------------
+
+.. automodule:: galaxy.managers.datatypes
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.managers.deletable module
 --------------------------------
 
 .. automodule:: galaxy.managers.deletable
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.managers.display\_applications module
+--------------------------------------------
+
+.. automodule:: galaxy.managers.display_applications
    :members:
    :undoc-members:
    :show-inheritance:
@@ -125,6 +133,38 @@ galaxy.managers.folders module
 ------------------------------
 
 .. automodule:: galaxy.managers.folders
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.managers.genomes module
+------------------------------
+
+.. automodule:: galaxy.managers.genomes
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.managers.group\_roles module
+-----------------------------------
+
+.. automodule:: galaxy.managers.group_roles
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.managers.group\_users module
+-----------------------------------
+
+.. automodule:: galaxy.managers.group_users
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.managers.groups module
+-----------------------------
+
+.. automodule:: galaxy.managers.groups
    :members:
    :undoc-members:
    :show-inheritance:
@@ -225,10 +265,34 @@ galaxy.managers.markdown\_util module
    :undoc-members:
    :show-inheritance:
 
+galaxy.managers.metrics module
+------------------------------
+
+.. automodule:: galaxy.managers.metrics
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.managers.model\_stores module
+------------------------------------
+
+.. automodule:: galaxy.managers.model_stores
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.managers.pages module
 ----------------------------
 
 .. automodule:: galaxy.managers.pages
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.managers.quotas module
+-----------------------------
+
+.. automodule:: galaxy.managers.quotas
    :members:
    :undoc-members:
    :show-inheritance:
@@ -245,6 +309,14 @@ galaxy.managers.rbac\_secured module
 ------------------------------------
 
 .. automodule:: galaxy.managers.rbac_secured
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.managers.remote\_files module
+------------------------------------
+
+.. automodule:: galaxy.managers.remote_files
    :members:
    :undoc-members:
    :show-inheritance:
@@ -285,6 +357,22 @@ galaxy.managers.taggable module
 -------------------------------
 
 .. automodule:: galaxy.managers.taggable
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.managers.tags module
+---------------------------
+
+.. automodule:: galaxy.managers.tags
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.managers.tool\_data module
+---------------------------------
+
+.. automodule:: galaxy.managers.tool_data
    :members:
    :undoc-members:
    :show-inheritance:

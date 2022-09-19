@@ -3,14 +3,14 @@
         <div>
             <div class="h4 clearfix mb-3">
                 <b>Workflow: {{ model.name }}</b>
-                <ButtonSpinner class="float-right" title="Run Workflow" id="run-workflow" @onClick="onExecute" />
+                <ButtonSpinner id="run-workflow" class="float-right" title="Run Workflow" @onClick="onExecute" />
                 <b-dropdown
+                    v-if="showRuntimeSettings(user)"
+                    id="dropdown-form"
+                    ref="dropdown"
                     class="workflow-run-settings float-right"
                     style="margin-right: 10px"
-                    id="dropdown-form"
                     title="Workflow Run Settings"
-                    ref="dropdown"
-                    v-if="showRuntimeSettings(user)"
                     no-caret>
                     <template v-slot:button-content>
                         <span class="fa fa-cog" />
@@ -21,8 +21,8 @@
                         >
                         <b-form-checkbox
                             v-if="reuseAllowed(user)"
-                            title="This may skip executing jobs that you have already run."
                             v-model="useCachedJobs"
+                            title="This may skip executing jobs that you have already run."
                             >Attempt to re-use jobs with identical parameters?</b-form-checkbox
                         >
                     </b-dropdown-form>

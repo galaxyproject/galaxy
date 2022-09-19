@@ -1,4 +1,3 @@
-import json
 import operator
 import os
 import shutil
@@ -34,6 +33,7 @@ class ConfiguresRemoteFilesIntegrationTestCase(integration_util.IntegrationTestC
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         root = os.path.realpath(mkdtemp())
         cls._test_driver.temp_directories.append(root)
         cls.root = root
@@ -103,7 +103,7 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
                 "destination": {"type": "hdas"},
                 "elements": [element],
             }
-            targets = json.dumps([target])
+            targets = [target]
             payload = {
                 "history_id": history_id,
                 "targets": targets,
@@ -123,7 +123,7 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
                 "destination": {"type": "hdas"},
                 "elements": [element],
             }
-            targets = json.dumps([target])
+            targets = [target]
             payload = {
                 "history_id": history_id,
                 "targets": targets,
@@ -216,11 +216,11 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
         assert "test0" not in os.listdir(ftp_dir)
         _write_file_fixtures(self.root, ftp_dir)
         with dataset_populator.test_history() as history_id:
-            hdca = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json()
+            hdca = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True).json()
             outer_elements = hdca["elements"][0]
             assert outer_elements["element_identifier"] == "test0"
             for i in range(2):
-                assert outer_elements["object"]["elements"][i]["element_identifier"] == f"data{i + 1}"
+                assert outer_elements["object"]["elements"][i]["element_identifier"] == f"data{i}"
                 assert outer_elements["object"]["elements"][i]["object"]["file_ext"] == "txt"
             incollection = {"src": "hdca", "id": hdca["id"]}
             inputs = {
@@ -232,7 +232,7 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
             dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
             assert "test0" in os.listdir(ftp_dir)
             subdir_content = os.listdir(os.path.join(ftp_dir, "test0"))
-            assert sorted(subdir_content) == ["data1.txt", "data2.txt", "data3.txt"]
+            assert sorted(subdir_content) == ["data0.txt", "data1.txt", "data2.txt"]
 
     def _assert_index_empty(self, index):
         assert len(index) == 0
@@ -258,6 +258,7 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
 class RemoteFilesNotConfiguredIntegrationTestCase(integration_util.IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["library_import_dir"] = None
         config["user_library_import_dir"] = None
         config["ftp_upload_dir"] = None

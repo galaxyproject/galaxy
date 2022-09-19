@@ -9,11 +9,6 @@ log = logging.getLogger(__name__)
 
 category_name = "Test 0460 Automatic repository revision completion"
 category_description = "Test 0460 Automatic repository revision completion"
-datatypes_repository_name = "emboss_datatypes_0460"
-datatypes_repository_description = "Galaxy applicable data formats used by Emboss tools."
-datatypes_repository_long_description = (
-    "Galaxy applicable data formats used by Emboss tools.  This repository contains no tools."
-)
 bwa_repository_name = "package_bwa_0_5_9_0460"
 bwa_repository_description = (
     "Contains a tool dependency definition that downloads and compiles version 0.5.9 of the BWA package"
@@ -23,7 +18,7 @@ bwa_repository_long_description = "bwa (alignment via Burrows-Wheeler transforma
 """
 For all steps, verify that the generated dependency points to the tip of the specified repository.
 
-1)  Create and populate emboss_datatypes_0460.
+1)  Create category...
 
 2)  Create and populate package_bwa_0_5_9_0460
 
@@ -47,7 +42,7 @@ For all steps, verify that the generated dependency points to the tip of the spe
     repository_dependency_test_4_0460, repository_dependency_test_4_0460.
 
 11) Upload an uncompressed repository_dependencies.xml to repository_dependency_test_1_0460 that specifies a
-    repository dependency on emboss_datatypes_0460 without a specified changeset revision or tool shed url.
+    repository dependency on the package without a specified changeset revision or tool shed url.
 
 12) Upload a tarball to repository_dependency_test_1_0460 with a repository_dependencies.xml in the root of the tarball.
 
@@ -90,26 +85,6 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         """
         self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        category = self.test_db_util.get_category_by_name(category_name)
-        repository = self.get_or_create_repository(
-            name=datatypes_repository_name,
-            description=datatypes_repository_description,
-            long_description=datatypes_repository_long_description,
-            owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
-            strings_displayed=[],
-        )
-        self.upload_file(
-            repository,
-            filename="emboss/datatypes/datatypes_conf.xml",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Populate emboss_datatypes_0460 with datatype definitions.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
 
     def test_0010_create_bwa_package_repository(self):
         """Create and populate the package_bwa_0_5_9_0460 repository.
@@ -396,7 +371,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             "repository_dependency_test_1_0460", common.test_user_1_name
         )
         package_repository = self.test_db_util.get_repository_by_name_and_owner(
-            "emboss_datatypes_0460", common.test_user_1_name
+            bwa_repository_name, common.test_user_1_name
         )
         self.upload_file(
             repository,
@@ -410,7 +385,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             strings_not_displayed=[],
         )
         changeset_revision = self.get_repository_tip(package_repository)
-        strings_displayed = ["emboss_datatypes_0460", "user1", changeset_revision]
+        strings_displayed = [bwa_repository_name, "user1", changeset_revision]
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
         self.display_repository_file_contents(
             repository, filename="repository_dependencies.xml", strings_displayed=[changeset_revision]
@@ -425,11 +400,11 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             "repository_dependency_test_2_0460", common.test_user_1_name
         )
         package_repository = self.test_db_util.get_repository_by_name_and_owner(
-            "emboss_datatypes_0460", common.test_user_1_name
+            bwa_repository_name, common.test_user_1_name
         )
         self.upload_file(
             repository,
-            filename="0460_files/repository_dependencies_in_root.tar",
+            filename="0460_files/in_root/repository_dependencies_in_root.tar",
             filepath=None,
             valid_tools_only=True,
             uncompress_file=False,
@@ -439,7 +414,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             strings_not_displayed=[],
         )
         changeset_revision = self.get_repository_tip(package_repository)
-        strings_displayed = ["emboss_datatypes_0460", "user1", changeset_revision]
+        strings_displayed = [bwa_repository_name, "user1", changeset_revision]
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
         self.display_repository_file_contents(
             repository, filename="repository_dependencies.xml", strings_displayed=[changeset_revision]
@@ -455,11 +430,11 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             "repository_dependency_test_3_0460", common.test_user_1_name
         )
         package_repository = self.test_db_util.get_repository_by_name_and_owner(
-            "emboss_datatypes_0460", common.test_user_1_name
+            bwa_repository_name, common.test_user_1_name
         )
         self.upload_file(
             repository,
-            filename="0460_files/repository_dependencies_in_subfolder.tar",
+            filename="0460_files/in_subfolder/repository_dependencies_in_subfolder.tar",
             filepath=None,
             valid_tools_only=True,
             uncompress_file=False,
@@ -469,7 +444,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             strings_not_displayed=[],
         )
         changeset_revision = self.get_repository_tip(package_repository)
-        strings_displayed = ["emboss_datatypes_0460", "user1", changeset_revision]
+        strings_displayed = [bwa_repository_name, "user1", changeset_revision]
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
         self.display_repository_file_contents(
             repository,
@@ -514,7 +489,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         )
         self.upload_file(
             repository,
-            filename="0460_files/repository_dependencies_in_subfolder.tar",
+            filename="0460_files/in_subfolder/repository_dependencies_in_subfolder.tar",
             filepath=None,
             valid_tools_only=True,
             uncompress_file=False,
@@ -535,7 +510,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             "repository_dependency_test_4_0460", common.test_user_1_name
         )
         package_repository = self.test_db_util.get_repository_by_name_and_owner(
-            "emboss_datatypes_0460", common.test_user_1_name
+            bwa_repository_name, common.test_user_1_name
         )
         self.upload_url(
             repository,
@@ -549,7 +524,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             strings_not_displayed=[],
         )
         changeset_revision = self.get_repository_tip(package_repository)
-        strings_displayed = ["emboss_datatypes_0460", "user1", changeset_revision]
+        strings_displayed = [bwa_repository_name, "user1", changeset_revision]
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
         self.display_repository_file_contents(
             repository, filename="repository_dependencies.xml", strings_displayed=[changeset_revision]
@@ -566,7 +541,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             "repository_dependency_test_5_0460", common.test_user_1_name
         )
         package_repository = self.test_db_util.get_repository_by_name_and_owner(
-            "emboss_datatypes_0460", common.test_user_1_name
+            bwa_repository_name, common.test_user_1_name
         )
         self.upload_url(
             repository,
@@ -580,7 +555,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             strings_not_displayed=[],
         )
         changeset_revision = self.get_repository_tip(package_repository)
-        strings_displayed = ["emboss_datatypes_0460", "user1", changeset_revision]
+        strings_displayed = [bwa_repository_name, "user1", changeset_revision]
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
         self.display_repository_file_contents(
             repository,

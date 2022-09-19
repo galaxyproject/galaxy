@@ -19,16 +19,14 @@ These options include:
    framework but tested here for FTP uploads.
 """
 
-import json
 import os
 import re
 import shutil
 import tempfile
 import unittest
 from typing import (
+    Any,
     Dict,
-    TextIO,
-    Union,
 )
 
 from galaxy_test.base.api_util import TEST_USER
@@ -59,9 +57,9 @@ class BaseUploadContentConfigurationInstance(integration_util.IntegrationInstanc
         self.history_id = self.dataset_populator.new_history()
 
     def fetch_target(self, target, assert_ok=False, attach_test_file=False, wait=False):
-        payload: Dict[str, Union[str, Dict[str, TextIO]]] = {
+        payload: Dict[str, Any] = {
             "history_id": self.history_id,
-            "targets": json.dumps([target]),
+            "targets": [target],
         }
         if attach_test_file:
             payload["__files"] = {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))}
@@ -113,6 +111,7 @@ class InvalidFetchRequestsTestCase(BaseUploadContentConfigurationTestCase):
 class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["allow_path_paste"] = True
 
     def test_disallowed_for_primary_file(self):
@@ -189,6 +188,7 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["allow_path_paste"] = True
 
     def test_admin_path_paste(self):
@@ -258,6 +258,7 @@ class DefaultBinaryContentFiltersTestCase(BaseUploadContentConfigurationTestCase
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["allow_path_paste"] = True
 
     def test_random_binary_allowed(self):
@@ -281,6 +282,7 @@ class DisableContentCheckingTestCase(BaseUploadContentConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["allow_path_paste"] = True
         config["check_upload_content"] = False
 
@@ -299,6 +301,7 @@ class AutoDecompressTestCase(BaseUploadContentConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["allow_path_paste"] = True
 
     def test_auto_decompress_off(self):
@@ -360,6 +363,7 @@ class LocalAddressWhitelisting(BaseUploadContentConfigurationTestCase):
 class BaseFtpUploadConfigurationTestCase(BaseUploadContentConfigurationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         ftp_dir = cls.ftp_dir()
         os.makedirs(ftp_dir)
         config["ftp_upload_dir"] = ftp_dir
@@ -419,10 +423,10 @@ class SimpleFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
         assert len(ftp_files) == 1, ftp_files
         assert ftp_files[0]["path"] == "test"
         assert os.path.exists(ftp_path)
-        # set to_posix_lines to None to exercise purging - by default this file type wouldn't
+        # set to_posix_lines to False to exercise purging - by default this file type wouldn't
         # be purged.
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, ftp_files="test", file_type="txt", to_posix_lines=None, wait=True
+            self.history_id, ftp_files="test", file_type="txt", to_posix_lines=False, wait=True
         )
         self._check_content(dataset, content)
 
@@ -508,7 +512,7 @@ class AdvancedFtpUploadFetchTestCase(BaseFtpUploadConfigurationTestCase):
             "ftp_path": "subdir",
             "collection_type": "list",
         }
-        self.fetch_target(target, assert_ok=True)
+        self.fetch_target(target, assert_ok=True, wait=True)
         hdca = self.dataset_populator.get_history_collection_details(self.history_id, hid=1)
         assert len(hdca["elements"]) == 3, hdca
         element0 = hdca["elements"][0]
@@ -668,6 +672,7 @@ class ServerDirectoryOffByDefaultTestCase(BaseUploadContentConfigurationTestCase
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["library_import_dir"] = None
 
     def test_server_dir_uploads_403_if_dir_not_set(self):
@@ -688,6 +693,7 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         server_dir = cls.server_dir()
         os.makedirs(server_dir)
         config["library_import_dir"] = server_dir
@@ -735,6 +741,7 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
 class UserServerDirectoryOffByDefaultTestCase(BaseUploadContentConfigurationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["user_library_import_dir"] = None
 
     def test_library_import_dir_not_available_to_non_admins(self):
@@ -754,6 +761,7 @@ class UserServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCa
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         user_server_dir = cls.user_server_dir()
         os.makedirs(user_server_dir)
         config["user_library_import_dir"] = os.path.join(user_server_dir)
@@ -784,6 +792,7 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["allow_path_paste"] = True
 
     def test_fetch_path_to_folder(self):
@@ -794,7 +803,7 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
         targets = [{"destination": destination, "items": items}]
         payload = {
             "history_id": history_id,  # TODO: Shouldn't be needed :(
-            "targets": json.dumps(targets),
+            "targets": targets,
         }
         self.dataset_populator.fetch(payload)
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
@@ -809,7 +818,7 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
         targets = [{"destination": destination, "items": items}]
         payload = {
             "history_id": history_id,  # TODO: Shouldn't be needed :(
-            "targets": json.dumps(targets),
+            "targets": targets,
         }
         self.dataset_populator.fetch(payload)
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
@@ -830,7 +839,7 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
         ]
         payload = {
             "history_id": history_id,  # TODO: Shouldn't be needed :(
-            "targets": json.dumps(targets),
+            "targets": targets,
         }
         self.dataset_populator.fetch(payload)
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/file1")
@@ -853,7 +862,7 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
         ]
         payload = {
             "history_id": self.history_id,  # TODO: Shouldn't be needed :(
-            "targets": json.dumps(targets),
+            "targets": targets,
         }
         fetch_response = self.dataset_populator.fetch(payload)
         self._assert_status_code_is(fetch_response, 200)
@@ -882,7 +891,7 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
         ]
         payload = {
             "history_id": self.history_id,  # TODO: Shouldn't be needed :(
-            "targets": json.dumps(targets),
+            "targets": targets,
         }
         self.dataset_populator.fetch(payload)
         contents_response = self.dataset_populator._get_contents_request(self.history_id)
@@ -902,7 +911,7 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
         ]
         payload = {
             "history_id": self.history_id,  # TODO: Shouldn't be needed :(
-            "targets": json.dumps(targets),
+            "targets": targets,
         }
         self.dataset_populator.fetch(payload)
         libraries = self.library_populator.get_libraries()
@@ -919,6 +928,7 @@ class TestDirectoryAndCompressedTypes(BaseUploadContentConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["allow_path_paste"] = True
 
     def test_tar_to_directory(self):

@@ -67,23 +67,23 @@ class RolesApiTestCase(ApiTestCase):
         assert "description" in response.json()["err_msg"]
 
         # Test missing name
-        payload = {
+        payload_missing_name = {
             "name": None,
             "description": description,
             "user_ids": [self.dataset_populator.user_id()],
         }
-        response = self._post("roles", payload, admin=True, json=True)
+        response = self._post("roles", payload_missing_name, admin=True, json=True)
         assert_status_code_is(response, 400)
         assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_MISSING_PARAMETER"].code)
         assert "name" in response.json()["err_msg"]
 
         # Test invalid type for name
-        payload = {
+        payload_invalid_type = {
             "name": ["a test", "name"],
             "description": description,
             "user_ids": [self.dataset_populator.user_id()],
         }
-        response = self._post("roles", payload, admin=True, json=True)
+        response = self._post("roles", payload_invalid_type, admin=True, json=True)
         assert_status_code_is(response, 400)
         assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"].code)
         assert "name" in response.json()["err_msg"]

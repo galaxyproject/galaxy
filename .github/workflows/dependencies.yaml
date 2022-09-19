@@ -11,12 +11,12 @@ jobs:
       matrix:
         python-version: ['3.7']
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
       - name: Cache pip dir
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
@@ -25,7 +25,7 @@ jobs:
           python -m venv .venv
           make update-dependencies
       - name: Create pull request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
           author: galaxybot <galaxybot@users.noreply.github.com>
           token: ${{ secrets.GALAXYBOT_PAT }}
@@ -35,4 +35,6 @@ jobs:
           push-to-fork: galaxybot/galaxy
           title: Update Python dependencies
           body: Run `make update-dependencies`.
-          labels: area/dependencies
+          labels: |
+            area/dependencies
+            kind/enhancement

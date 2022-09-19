@@ -8,16 +8,6 @@
 import axios from "axios";
 import { prependPath } from "utils/redirect";
 
-// #region setup & utils
-
-/**
- * Prefix axios with configured path prefix and /api
- */
-
-const api = axios.create({
-    baseURL: prependPath("/api"),
-});
-
 /**
  * Generic json getter
  * @param {*} response
@@ -55,11 +45,11 @@ function buildQueryStringFrom(filters) {
  * @param {Boolean} recursive Scorch the earth?
  */
 export async function deleteContent(content, deleteParams = {}) {
-    const defaults = { purge: false, recursive: false };
+    const defaults = { purge: false, recursive: false, stop_job: true };
     const params = Object.assign({}, defaults, deleteParams);
     const { history_id, history_content_type, id } = content;
-    const url = `/histories/${history_id}/contents/${history_content_type}s/${id}`;
-    const response = await api.delete(url, { params });
+    const url = `api/histories/${history_id}/contents/${history_content_type}s/${id}`;
+    const response = await axios.delete(prependPath(url), { params });
     return doResponse(response);
 }
 
@@ -70,8 +60,8 @@ export async function deleteContent(content, deleteParams = {}) {
  */
 export async function updateContentFields(content, newFields = {}) {
     const { history_id, id, history_content_type: type } = content;
-    const url = `/histories/${history_id}/contents/${type}s/${id}`;
-    const response = await api.put(url, newFields);
+    const url = `api/histories/${history_id}/contents/${type}s/${id}`;
+    const response = await axios.put(prependPath(url), newFields);
     return doResponse(response);
 }
 
@@ -85,17 +75,19 @@ export async function updateContentFields(content, newFields = {}) {
  * @param {String} operation The operation to perform on all items
  * @param {Object} filters The filter query parameters
  * @param {Object[]} items The set of items to process as `{ id, history_content_type }`
+ * @param {Object} params Optional extra parameters passed to the operation
  */
-export async function bulkUpdate(history, operation, filters, items = []) {
+export async function bulkUpdate(history, operation, filters, items = [], params = null) {
     const { id } = history;
     const filterQuery = buildQueryStringFrom(filters);
-    const url = `/histories/${id}/contents/bulk?${filterQuery}`;
+    const url = `api/histories/${id}/contents/bulk?${filterQuery}`;
     const payload = {
         operation,
         items,
+        params,
     };
-    const response = await api.put(url, payload);
-    console.debug(`Submitted request to ${operation} selected content in bulk.`, response);
+    const response = await axios.put(prependPath(url), payload);
+    console.debug(`Submitted request to ${operation} selected content in bulk. Parameters: ${params}`, response);
     return doResponse(response);
 }
 
@@ -114,40 +106,7 @@ export async function createDatasetCollection(history, inputs = {}) {
     };
 
     const payload = Object.assign({}, defaults, inputs);
-    const url = `/histories/${history.id}/contents`;
-    const response = await api.post(url, payload);
+    const url = `api/histories/${history.id}/contents`;
+    const response = await axios.post(prependPath(url), payload);
     return doResponse(response);
-}
-
-/**
- * Job Queries
- */
-const jobStash = new Map();
-const toolStash = new Map();
-
-async function loadJobById(jobId) {
-    if (!jobStash.has(jobId)) {
-        const url = `/jobs/${jobId}?full=false`;
-        const response = await api.get(url);
-        const job = response.data;
-        jobStash.set(jobId, job);
-    }
-    return jobStash.get(jobId);
-}
-
-async function loadToolForJob(job) {
-    const { tool_id, history_id } = job;
-    const key = `${tool_id}-${history_id}`;
-    if (!toolStash.has(key)) {
-        const url = `/tools/${tool_id}/build?history_id=${history_id}`;
-        const response = await api.get(url);
-        const tool = response.data;
-        toolStash.set(key, tool);
-    }
-    return toolStash.get(key);
-}
-
-export async function loadToolFromJob(jobId) {
-    const job = await loadJobById(jobId);
-    return await loadToolForJob(job);
 }

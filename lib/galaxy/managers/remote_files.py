@@ -122,7 +122,7 @@ class RemoteFilesManager:
         """Display plugin information for each of the gxfiles:// URI targets available."""
         user_file_source_context = ProvidesUserFileSourcesUserContext(user_context)
         plugins = self._file_sources.plugins_to_dict(user_context=user_file_source_context)
-        return FilesSourcePluginList.parse_obj(plugins)
+        return FilesSourcePluginList.construct(__root__=plugins)
 
     @property
     def _file_sources(self) -> ConfiguredFileSources:

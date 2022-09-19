@@ -326,6 +326,8 @@ class MetadataType(JSONType):
     writes in JSON.
     """
 
+    cache_ok = True
+
     def process_bind_param(self, value, dialect):
         if value is not None:
             if MAX_METADATA_VALUE_SIZE is not None:

@@ -38,7 +38,7 @@ from galaxy.main_config import (
     WebappConfigResolver,
     WebappSetupProps,
 )
-from tool_shed.webapp.buildapp import app_factory
+from tool_shed.webapp.buildapp import app_pair
 from tool_shed.webapp.config import TOOLSHED_APP_NAME
 from .fast_app import initialize_fast_app
 
@@ -51,7 +51,7 @@ def factory():
     )
     config_provider = WebappConfigResolver(props)
     config = config_provider.resolve_config()
-    gx_webapp = app_factory(
+    gx_webapp, app = app_pair(
         global_conf=config.global_conf, load_app_kwds=config.load_app_kwds, wsgi_preflight=config.wsgi_preflight
     )
-    return initialize_fast_app(gx_webapp)
+    return initialize_fast_app(gx_webapp, app)

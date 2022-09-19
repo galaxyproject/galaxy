@@ -88,7 +88,7 @@ class LibraryActions:
     Mixin for controllers that provide library functionality.
     """
 
-    def _upload_dataset(self, trans, folder_id: str, replace_dataset: Optional[LibraryDataset] = None, **kwd):
+    def _upload_dataset(self, trans, folder_id: int, replace_dataset: Optional[LibraryDataset] = None, **kwd):
         # Set up the traditional tool state/params
         cntrller = "api"
         tool_id = "upload1"
@@ -302,13 +302,11 @@ class LibraryActions:
             trans.sa_session.flush()
         return uploaded_dataset
 
-    def _create_folder(self, trans, parent_id, library_id, **kwd):
+    def _create_folder(self, trans, parent_id: int, **kwd):
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         try:
-            parent_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(
-                trans.security.decode_id(parent_id)
-            )
+            parent_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(parent_id)
         except Exception:
             parent_folder = None
         # Check the library which actually contains the user-supplied parent folder, not the user-supplied

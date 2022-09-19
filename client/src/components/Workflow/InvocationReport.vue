@@ -38,6 +38,14 @@ export default {
             invocationMarkdown: null,
         };
     },
+    computed: {
+        dataUrl() {
+            return `${getAppRoot()}api/invocations/${this.invocationId}/report`;
+        },
+        exportUrl() {
+            return `${this.dataUrl}.pdf`;
+        },
+    },
     created() {
         this.getMarkdown()
             .then((response) => {
@@ -47,14 +55,6 @@ export default {
             .catch((error) => {
                 Toast.error(`Failed to load invocation markdown: ${error}`);
             });
-    },
-    computed: {
-        dataUrl() {
-            return `${getAppRoot()}api/invocations/${this.invocationId}/report`;
-        },
-        exportUrl() {
-            return `${this.dataUrl}.pdf`;
-        },
     },
     methods: {
         onEdit() {

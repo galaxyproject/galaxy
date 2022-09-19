@@ -59,19 +59,6 @@ export default {
             editLicense: false,
         };
     },
-    mounted() {
-        const url = `${getAppRoot()}api/licenses`;
-        axios
-            .get(url)
-            .then((response) => response.data)
-            .then((data) => {
-                this.licenses = data;
-                this.licensesLoading = false;
-            })
-            .catch((e) => {
-                console.error(e);
-            });
-    },
     computed: {
         currentLicenseInfo() {
             for (const license of this.licenses) {
@@ -102,6 +89,19 @@ export default {
         inputLicense() {
             this.license = this.inputLicense;
         },
+    },
+    mounted() {
+        const url = `${getAppRoot()}api/licenses`;
+        axios
+            .get(url)
+            .then((response) => response.data)
+            .then((data) => {
+                this.licenses = data;
+                this.licensesLoading = false;
+            })
+            .catch((e) => {
+                console.error(e);
+            });
     },
     methods: {
         onSave() {

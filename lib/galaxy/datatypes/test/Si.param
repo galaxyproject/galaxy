@@ -1,0 +1,13 @@
+task : geometryoptimisation
+opt_strategy : speed
+num_dump_cycles : 0
+cutoff_energy : 450 eV
+elec_energy_tol : 1.0e-9 eV
+write_cell_structure : true
+max_scf_cycles : 100
+xc_functional : pbe
+geom_max_iter : 100
+geom_force_tol : 0.05
+backup_interval : 3600
+continuation : default 
+write_formatted_density : true 

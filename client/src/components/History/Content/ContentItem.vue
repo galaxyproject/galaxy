@@ -1,12 +1,10 @@
 <template>
     <div
         :id="contentId"
-        :class="['content-item m-1 p-0 rounded', contentCls]"
-        draggable
+        :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls]"
         :data-hid="id"
-        :data-state="state"
-        @dragstart="onDragStart">
-        <div class="p-1 cursor-pointer" @click.stop="onClick">
+        :data-state="state">
+        <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @click.stop="onClick">
             <div class="d-flex justify-content-between">
                 <span class="p-1 font-weight-bold">
                     <span v-if="selectable" class="selector">
@@ -23,104 +21,116 @@
                             :icon="['far', 'square']"
                             @click.stop="$emit('update:selected', true)" />
                     </span>
-                    <span v-if="hasStateIcon">
+                    <span v-if="highlight == 'input'" v-b-tooltip.hover title="Input" @click.stop="toggleHighlights">
+                        <font-awesome-icon class="text-info" icon="arrow-circle-up" />
+                    </span>
+                    <span
+                        v-else-if="highlight == 'noInputs'"
+                        v-b-tooltip.hover
+                        title="No Inputs for this item"
+                        @click.stop="toggleHighlights">
+                        <font-awesome-icon icon="minus-circle" />
+                    </span>
+                    <span
+                        v-else-if="highlight == 'output'"
+                        v-b-tooltip.hover
+                        title="Inputs highlighted for this item"
+                        @click.stop="toggleHighlights">
+                        <font-awesome-icon icon="check-circle" />
+                    </span>
+                    <span v-if="hasStateIcon" class="state-icon">
                         <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
                     </span>
                     <span class="id hid">{{ id }}</span>
                     <span>:</span>
                     <span class="content-title name">{{ name }}</span>
-                    <CollectionDescription
-                        v-if="!isDataset"
-                        :collection-type="item.collection_type"
-                        :element-count="item.element_count" />
-                    <div v-if="item.tags && item.tags.length > 0" class="nametags">
-                        <Nametag v-for="tag in item.tags" :key="tag" :tag="tag" />
-                    </div>
                 </span>
-                <span class="align-self-start btn-group">
-                    <b-button
-                        v-if="isDataset"
-                        :disabled="displayDisabled"
-                        :title="displayButtonTitle"
-                        class="px-1"
-                        size="sm"
-                        variant="link"
-                        @click.stop="onDisplay">
-                        <icon icon="eye" />
-                    </b-button>
-                    <b-button
-                        v-if="isHistoryItem"
-                        :disabled="editDisabled"
-                        class="px-1"
-                        title="Edit attributes"
-                        size="sm"
-                        variant="link"
-                        @click.stop="onEdit">
-                        <icon icon="pen" />
-                    </b-button>
-                    <b-button
-                        v-if="isHistoryItem && !item.deleted"
-                        class="px-1"
-                        title="Delete"
-                        size="sm"
-                        variant="link"
-                        :disabled="item.purged"
-                        @click.stop="$emit('delete', item)">
-                        <icon icon="trash" />
-                    </b-button>
-                    <b-button
-                        v-if="isHistoryItem && item.deleted"
-                        class="px-1"
-                        title="Undelete"
-                        size="sm"
-                        variant="link"
-                        :disabled="item.purged"
-                        @click.stop="$emit('undelete', item)">
-                        <icon icon="trash-restore" />
-                    </b-button>
-                    <b-button
-                        v-if="isHistoryItem && !item.visible"
-                        class="px-1"
-                        title="Unhide"
-                        size="sm"
-                        variant="link"
-                        @click.stop="$emit('unhide', item)">
-                        <icon icon="unlock" />
-                    </b-button>
+                <span v-if="item.purged" class="align-self-start btn-group p-1">
+                    <b-badge variant="secondary" title="This dataset has been permanently deleted">
+                        <icon icon="burn" /> Purged
+                    </b-badge>
                 </span>
+                <ContentOptions
+                    v-else
+                    :is-dataset="isDataset"
+                    :is-deleted="item.deleted"
+                    :is-history-item="isHistoryItem"
+                    :is-visible="item.visible"
+                    :state="state"
+                    :item-urls="itemUrls"
+                    @delete="$emit('delete')"
+                    @display="onDisplay"
+                    @edit="onEdit"
+                    @undelete="$emit('undelete')"
+                    @unhide="$emit('unhide')" />
             </div>
         </div>
+        <CollectionDescription
+            v-if="!isDataset"
+            class="px-2 pb-2"
+            :job-state-summary="jobState"
+            :collection-type="item.collection_type"
+            :element-count="item.element_count"
+            :elements-datatypes="item.elements_datatypes" />
+        <StatelessTags
+            v-if="!tagsDisabled || hasTags"
+            class="alltags p-1"
+            :value="tags"
+            :use-toggle-link="false"
+            :disabled="tagsDisabled"
+            @tag-click="onTagClick"
+            @input="onTags" />
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
-        <div class="detail-animation-wrapper" :class="expandDataset ? '' : 'collapsed'">
-            <DatasetDetails v-if="expandDataset" @edit="onEdit" :dataset="item" />
-        </div>
+        <b-collapse :visible="expandDataset">
+            <DatasetDetails
+                v-if="expandDataset"
+                :dataset="item"
+                :show-highlight="isHistoryItem"
+                :item-urls="itemUrls"
+                @edit="onEdit"
+                @toggleHighlights="toggleHighlights" />
+        </b-collapse>
     </div>
 </template>
 
 <script>
-import { backboneRoute, useGalaxy, iframeRedirect } from "components/plugins/legacyNavigation";
-import { Nametag } from "components/Nametags";
+import { iframeAdd } from "components/plugins/legacyNavigation";
+import { StatelessTags } from "components/Tags";
+import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./model/states";
 import CollectionDescription from "./Collection/CollectionDescription";
+import ContentOptions from "./ContentOptions";
 import DatasetDetails from "./Dataset/DatasetDetails";
-import STATES from "./contentStates";
+import { updateContentFields } from "components/History/model/queries";
+import { JobStateSummary } from "./Collection/JobStateSummary";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faArrowCircleUp, faMinusCircle, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faArrowCircleUp, faMinusCircle, faCheckCircle);
 
 export default {
     components: {
         CollectionDescription,
+        ContentOptions,
         DatasetDetails,
-        Nametag,
+        StatelessTags,
+        FontAwesomeIcon,
     },
     props: {
         expandDataset: { type: Boolean, required: true },
-        item: { type: Object, required: true },
+        highlight: { type: String, default: null },
         id: { type: Number, required: true },
         isDataset: { type: Boolean, default: true },
-        isHistoryItem: { type: Boolean, default: true },
+        isHistoryItem: { type: Boolean, default: false },
+        item: { type: Object, required: true },
         name: { type: String, required: true },
         selected: { type: Boolean, default: false },
         selectable: { type: Boolean, default: false },
     },
     computed: {
+        jobState() {
+            return new JobStateSummary(this.item);
+        },
         contentId() {
             return `dataset-${this.item.id}`;
         },
@@ -137,71 +147,52 @@ export default {
         contentState() {
             return STATES[this.state] && STATES[this.state];
         },
-        displayButtonTitle() {
-            if (this.item.purged) {
-                return "Cannot display datasets removed from disk.";
-            }
-            if (this.displayDisabled) {
-                return "This dataset is not yet viewable.";
-            }
-            return "Display";
-        },
-        displayDisabled() {
-            return this.item.purged || ["discarded", "new", "upload"].includes(this.state);
-        },
-        editButtonTitle() {
-            if (this.item.purged) {
-                return "Cannot edit attributes of datasets removed from disk.";
-            }
-            if (this.editDisabled) {
-                return "This dataset is not yet editable.";
-            }
-            return "Edit Attributes";
-        },
-        editDisabled() {
-            return (
-                this.item.purged || ["discarded", "new", "upload", "queued", "running", "waiting"].includes(this.state)
-            );
+        hasTags() {
+            return this.tags && this.tags.length > 0;
         },
         hasStateIcon() {
             return this.contentState && this.contentState.icon;
         },
         state() {
             if (this.item.job_state_summary) {
-                for (const key of ["error", "failed", "paused", "upload", "running"]) {
-                    if (this.item.job_state_summary[key] > 0) {
-                        return key;
+                for (const state of HIERARCHICAL_COLLECTION_JOB_STATES) {
+                    if (this.item.job_state_summary[state] > 0) {
+                        return state;
                     }
                 }
-                return "ok";
-            } else {
+            } else if (this.item.state) {
                 return this.item.state;
             }
+            return "ok";
+        },
+        tags() {
+            return this.item.tags;
+        },
+        tagsDisabled() {
+            return !this.expandDataset || !this.isHistoryItem;
+        },
+        isCollection() {
+            return "collection_type" in this.item;
+        },
+        /** Relative URLs for history item actions */
+        itemUrls() {
+            const id = this.item.id;
+            if (this.isCollection) {
+                return {
+                    edit: `/collection/edit/${id}`,
+                };
+            }
+            return {
+                display: `/datasets/${id}/display/?preview=True`,
+                edit: `/datasets/edit/${id}`,
+                showDetails: `/datasets/${id}/details`,
+                reportError: `/datasets/${id}/error`,
+                rerun: `/tool_runner/rerun?id=${id}`,
+                visualize: `/visualizations?dataset_id=${id}`,
+            };
         },
     },
     methods: {
-        onDragStart(evt) {
-            evt.dataTransfer.dropEffect = "move";
-            evt.dataTransfer.effectAllowed = "move";
-            evt.dataTransfer.setData("text", JSON.stringify([this.item]));
-        },
-        onDisplay() {
-            const id = this.item.id;
-            useGalaxy((Galaxy) => {
-                if (Galaxy.frame && Galaxy.frame.active) {
-                    Galaxy.frame.addDataset(id);
-                } else {
-                    iframeRedirect(`datasets/${id}/display/?preview=True`);
-                }
-            });
-        },
-        onEdit() {
-            if (this.item.collection_type) {
-                backboneRoute(`collection/edit/${this.item.id}`);
-            } else {
-                backboneRoute("datasets/edit", { dataset_id: this.item.id });
-            }
-        },
         onClick() {
             if (this.isDataset) {
                 this.$emit("update:expand-dataset", !this.expandDataset);
@@ -209,10 +200,31 @@ export default {
                 this.$emit("view-collection", this.item, this.name);
             }
         },
+        onDisplay() {
+            iframeAdd({ path: this.itemUrls.display, title: this.name });
+        },
+        onDragStart(evt) {
+            evt.dataTransfer.dropEffect = "move";
+            evt.dataTransfer.effectAllowed = "move";
+            evt.dataTransfer.setData("text", JSON.stringify([this.item]));
+        },
+        onEdit() {
+            this.$router.push(this.itemUrls.edit);
+        },
+        onTags(newTags) {
+            this.$emit("tag-change", this.item, newTags);
+            updateContentFields(this.item, { tags: newTags });
+        },
+        onTagClick(tag) {
+            this.$emit("tag-click", tag.label);
+        },
+        toggleHighlights() {
+            this.$emit("toggleHighlights", this.item);
+        },
     },
 };
 </script>
-<style>
+<style lang="scss">
 .content-item:hover {
     filter: brightness(105%);
 }
@@ -220,14 +232,5 @@ export default {
     .name {
         word-break: break-all;
     }
-}
-.detail-animation-wrapper {
-    overflow: hidden;
-    transition: max-height 0.2s ease-out;
-    height: auto;
-    max-height: 400px;
-}
-.detail-animation-wrapper.collapsed {
-    max-height: 0;
 }
 </style>

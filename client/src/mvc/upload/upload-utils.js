@@ -9,7 +9,7 @@ const AUTO_EXTENSION = {
     description:
         "This system will try to detect the file type automatically. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be.  You can also upload compressed files, which will automatically be decompressed.",
 };
-const DEFAULT_GENOME = "?";
+const DEFAULT_DBKEY = "?";
 const DEFAULT_EXTENSION = "auto";
 
 export function getUploadDatatypes(datatypesDisableAuto, auto) {
@@ -55,45 +55,45 @@ function loadUploadDatatypes() {
         });
 }
 
-export function getUploadGenomes(defaultGenome) {
-    return loadGenomes().then((result) => {
-        const listGenomes = [...result];
-        listGenomes.sort(genomeSort(defaultGenome));
-        return listGenomes;
+export function getUploadDbKeys(defaultDbKey) {
+    return loadDbKeys().then((result) => {
+        const dbKeyList = [...result];
+        dbKeyList.sort(dbKeySort(defaultDbKey));
+        return dbKeyList;
     });
 }
 
-const genomeSort = (defaultGenome) => (a, b) => {
-    if (a.id == defaultGenome) {
+const dbKeySort = (defaultDbKey) => (a, b) => {
+    if (a.id == defaultDbKey) {
         return -1;
     }
-    if (b.id == defaultGenome) {
+    if (b.id == defaultDbKey) {
         return 1;
     }
     return a.text > b.text ? 1 : a.text < b.text ? -1 : 0;
 };
 
-let _cachedGenomes;
-function loadGenomes() {
-    if (_cachedGenomes) {
-        return Promise.resolve(_cachedGenomes);
+let _cachedDbKeys;
+function loadDbKeys() {
+    if (_cachedDbKeys) {
+        return Promise.resolve(_cachedDbKeys);
     }
     const url = `${getAppRoot()}api/genomes`;
     return axios
         .get(url)
         .then((response) => {
-            const genomes = response.data;
-            const listGenomes = [];
-            for (var key in genomes) {
-                listGenomes.push({
-                    id: genomes[key][1],
-                    text: genomes[key][0],
+            const dbKeys = response.data;
+            const dbKeyList = [];
+            for (var key in dbKeys) {
+                dbKeyList.push({
+                    id: dbKeys[key][1],
+                    text: dbKeys[key][0],
                 });
             }
-            return listGenomes;
+            return dbKeyList;
         })
         .then((result) => {
-            _cachedGenomes = result;
+            _cachedDbKeys = result;
             return result;
         });
 }
@@ -120,10 +120,10 @@ function getRemoteFiles(success, error) {
 
 export default {
     AUTO_EXTENSION,
-    DEFAULT_GENOME,
+    DEFAULT_DBKEY,
     DEFAULT_EXTENSION,
     getRemoteFiles,
     getRemoteFilesAt,
     getUploadDatatypes,
-    getUploadGenomes,
+    getUploadDbKeys,
 };

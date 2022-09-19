@@ -19,8 +19,8 @@ from tool_shed.util import (
     metadata_util,
     repository_util,
     review_util,
+    shed_util_common as suc,
 )
-from tool_shed.util import shed_util_common as suc
 from tool_shed.util.container_util import STRSEP
 from tool_shed.util.web_util import escape
 from tool_shed.webapp.framework.decorators import require_login

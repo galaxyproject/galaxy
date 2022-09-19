@@ -34,7 +34,7 @@ List of behavior changes associated with profile versions:
 - Use a separate home directory for each job.
 - Introduce `provided_metadata_style` with default `"default"` before `"legacy"`.
 
-#### 18.09 
+#### 18.09
 
 - References to other inputs need to be fully qualified by using `|`.
 - Do not allow provided but illegal default values.
@@ -46,7 +46,7 @@ List of behavior changes associated with profile versions:
 
 #### 20.05
 
-- json config files: 
+- json config files:
    - unselected optional `select` and `data_column` parameters get `None` instead of `"None"`
    - multiple `select` and `data_column` parameters are lists (before comma separated string)
 
@@ -602,7 +602,7 @@ practice.
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
-This is a container tag set for the ``requirement`` and ``container`` tags
+This is a container tag set for the ``requirement``, ``resource`` and ``container`` tags
 described in greater detail below. ``requirement``s describe software packages
 and other individual computing requirements required to execute a tool, while
 ``container``s describe Docker or Singularity containers that should be able to
@@ -613,9 +613,9 @@ serve as complete descriptions of the runtime of a tool.
     <xs:sequence>
       <xs:element name="requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="container" type="Container" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="resource" type="Resource" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:complexType name="Requirement">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -669,12 +669,23 @@ resolver.
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="RequirementType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This value defines the type of the 3rd party module required by this tool.</xs:documentation>
+            <xs:documentation xml:lang="en">Valid values are ``package``, ``set_environment``, ``python-module`` (deprecated), ``binary`` (deprecated)</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="version" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">For requirements of type ``package`` this value defines a specific version of the tool dependency.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="Resource">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="ResourceType" use="required">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">This value describes the type of resource required by the tool at runtime. Not yet implemented in Galaxy.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -1095,8 +1106,16 @@ specified and instead a series of assertions is made about the output.
     </xs:attribute>
     <xs:attribute name="expect_num_outputs" type="xs:integer">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Assert the number of outputs this test
-should produce, this is useful to ensure ``filter`` directives are implemented correctly.</xs:documentation>
+        <xs:documentation xml:lang="en">Assert the number of statically defined items (datasets and collections) this test
+should produce. Each `data` or `collection` tag that is listed in the
+outputs section is a statically defined output and adds one to this count.  For
+instance a statically defined pair adds a count of 3; 1 for the collection and 1 for each
+of the two datasets.  Dynamically defined output datasets (using ``discover_datasets`` tag)
+are not counted here, but note that the ``collection`` or ``data`` tag that
+includes the ``discover_datasets`` still adds a count of one.  This is useful to
+ensure ``filter`` directives are implemented correctly.  See
+[here](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/expect_num_outputs.xml)
+for examples.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="expect_failure" type="PermissiveBoolean" default="false">
@@ -1669,13 +1688,18 @@ When this attribute is true and ``compare`` is set to ``diff``, try to decompres
         <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the maximum allowed relative size difference between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. A value of 0.1 means that the file that is generated in the test can differ by at most 10% of the file in ``test-data``. The default is not to check for  relative size difference. Can be combined with ``delta``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="count" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Number or datasets for this output. Should be used for outputs with ``discover_datasets``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:group name="TestOutputElement">
     <xs:choice>
       <xs:element name="element" type="TestOutput"/>
-      <!-- TODO: This would be more percise if this was only allowed at the top-level. -->
+      <!-- TODO: This would be more precise if this was only allowed at the top-level. -->
       <xs:element name="discovered_dataset" type="TestDiscoveredDataset"/>
-      <!-- TODO: To be more percise only one assert_contents is allowed - this should not be in here. -->
+      <!-- TODO: To be more precise only one assert_contents is allowed - this should not be in here. -->
       <xs:element name="assert_contents" type="TestAssertions">
         <xs:annotation>
           <xs:documentation xml:lang="en"><![CDATA[
@@ -1829,7 +1853,7 @@ provides a demonstration of using this tag.
 </test>
 ```
 
-Note that this tool uses ``assign_primary_output="true"`` for ``<discover_data_sets>``. Hence, the content of the first discovered dataset (which is the first in the alphabetically sorted list of discovered designations) is checked directly in the ``<output>`` tag of the test.
+Note that this tool uses ``assign_primary_output="true"`` for ``<discover_datasets>``. Hence, the content of the first discovered dataset (which is the first in the alphabetically sorted list of discovered designations) is checked directly in the ``<output>`` tag of the test.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:complexContent>
@@ -2260,10 +2284,10 @@ is a regular expression that is matched against the full paths of the objects in
 the compressed file (remember that "matching" means it is checked if a prefix of
 the full path of an archive member is described by the regular expression).
 Valid archive formats include ``.zip``, ``.tar``, and ``.tar.gz``. Note that
-depending on the archive creation method: 
+depending on the archive creation method:
 
 - full paths of the members may be prefixed with ``./``
-- directories may be treated as empty files 
+- directories may be treated as empty files
 
 ```xml
 <has_archive_member path="./path/to/my-file.txt"/>
@@ -2281,7 +2305,7 @@ e.g., to assert an archive containing n&plusmn;1 elements out of which at least
 
 In addition the tag can contain additional assertions as child elements about
 the first member in the archive matching the regular expression ``path``. For
-instance 
+instance
 
 ```xml
 <has_archive_member path=".*/my-file.txt">
@@ -2320,7 +2344,7 @@ $attribute_list::5
       </xs:annotation>
     </xs:attribute>
     <xs:attributeGroup ref="AssertAttributeN"/>
-  </xs:complexType> 
+  </xs:complexType>
   <xs:complexType name="AssertIsValidXML">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -2388,7 +2412,7 @@ $attribute_list::5
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 Asserts the XML output contains at least one element (or tag) with the specified
-XPath-like ``path``, e.g. 
+XPath-like ``path``, e.g.
 
 ```xml
 <has_element_with_path path="BlastOutput_param/Parameters/Parameters_matrix" />
@@ -2543,7 +2567,7 @@ XPath-like ``path``, e.g.
 ```
 
 The assertion implicitly also asserts that an element matching ``path`` exists.
-With ``negate`` the result of the implicit assertions can be inverted. 
+With ``negate`` the result of the implicit assertions can be inverted.
 The sub-assertions, which have their own ``negate`` attribute, are not affected
 by ``negate``.
 
@@ -2600,7 +2624,7 @@ $attribute_list::5
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  
+
   <xs:attributeGroup name="AssertAttributePath">
     <xs:attribute name="path" type="xs:string" use="required">
       <xs:annotation>
@@ -2616,7 +2640,7 @@ $attribute_list::5
       </xs:annotation>
     </xs:attribute>
   </xs:attributeGroup>
-  
+
   <xs:attributeGroup name="AssertAttributeN">
     <xs:attribute name="n" type="Bytes" use="optional">
       <xs:annotation>
@@ -3023,7 +3047,7 @@ Note that references to other parameters in the `<inputs>` section are only poss
     </section>
 ```
 
-In the above example `bar` and `qux` will refer to the first foo outside of the section and `baz` to the `foo` inside the section. This illustrates why non-unique parameter names are strongly discouraged. 
+In the above example `bar` and `qux` will refer to the first foo outside of the section and `baz` to the `foo` inside the section. This illustrates why non-unique parameter names are strongly discouraged.
 
 The following will not work:
 
@@ -3227,6 +3251,12 @@ This parameter type is used to select columns from a parameter.
 $attribute_list:force_select,numerical,use_header_name:5
 
 #### ``drill_down``
+
+Allows to select values from a hierarchy. The default (``hierarchy="exact"``) is
+that only exactly the selected options are used. With ``hierarchy="recurse"``
+all leaf nodes in the subtree are used.
+
+See [drill_down.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/drill_down.xml)
 
 $attribute_list:hierarchy:5
 
@@ -3547,7 +3577,7 @@ allow access to Python code to generate options for a select list. See
         </xs:annotation>
       </xs:element>
       <xs:element name="conversion" type="ParamConversion" />
-      <xs:element name="option" type="ParamOption" />
+      <xs:element name="option" type="ParamSelectOption" />
       <xs:element name="options" type="ParamOptions"/>
       <xs:element name="validator" type="Validator" />
       <xs:element name="sanitizer" type="Sanitizer"/>
@@ -3731,6 +3761,7 @@ Name | Description
 ``$__app__`` | The ``galaxy.app.UniverseApplication`` instance, gives access to all other configuration file variables (e.g. $__app__.config.output_size_limit). Should be used as a last resort, may go away in future releases.
 ``$__target_datatype__`` | Only available in converter tools when run internally by Galaxy. Contains the target datatype of the conversion
 
+
 Additional runtime properties are available as environment variables. Since these
 are not Cheetah variables (the values aren't available until runtime) these should likely
 be escaped with a backslash (``\``) when appearing in ``command`` or ``configfile`` elements.
@@ -3826,7 +3857,7 @@ of "type" specified for this expression block.
     </xs:restriction>
   </xs:simpleType>
 
-  <xs:complexType name="ParamOption">
+  <xs:complexType name="ParamSelectOption">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
@@ -3888,6 +3919,27 @@ if the corresponding option is selected by default (the default is ``false``).
     </xs:simpleContent>
   </xs:complexType>
 
+  <xs:complexType name="ParamDrillDownOption">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+See [drill_down.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/drill_down.xml)
+      ]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="option" type="ParamDrillDownOption" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Name of the ``drill_down`` option.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Value of the ``drill_down`` option.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
   <xs:complexType name="ParamConversion">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -3914,7 +3966,6 @@ dataset for the contained input of the type specified using the ``type`` tag.
     </xs:attribute>
   </xs:complexType>
 
-
   <xs:complexType name="ParamOptions">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -3937,7 +3988,7 @@ exclusively use ``filter``s to populate options.
 * ``from_dataset`` - The options for the select list are dynamically obtained
   from input dataset selected for the tool from the current history.
 * ``from_file`` - The options for the select list are dynamically obtained from
-  a file. This mechanis is discourage in favor of the more generic
+  a file. This mechanism is discouraged in favor of the more generic
   ``from_data_table``.
 * ``from_parameter`` - The options for the select list are dynamically obtained
   from a parameter.
@@ -4013,6 +4064,10 @@ Starting from Galaxy v21.01, ``meta_file_key`` can be used together with
 medadata file that the ``meta_file_key`` implies, instead of the dataset
 itself.
 
+Note that in any case only the first mega byte of the referred dataset (or file)
+is considered. Lines starting with ``#`` are ignored. By using the ``startswith``
+attribute also lines starting with other strings can be ignored.
+
 ```xml
 <param name="input" type="data" format="maf" label="MAF File"/>
 <param name="species" type="select" optional="False" label="Select species for the input dataset" multiple="True">
@@ -4087,7 +4142,7 @@ used to generate dynamic options.
     </xs:sequence>
     <xs:attribute name="from_dataset" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Determine options from the dataset given in the referred input parameter. If 'meta_file_key' is given, the options are determined from the data in the metadata file of the input.</xs:documentation>
+        <xs:documentation xml:lang="en">Determine options from (the first MB of) the dataset given in the referred input parameter. If 'meta_file_key' is given, the options are determined from (the first MB of) the data in the metadata file of the input.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_file" type="xs:string">
@@ -4117,12 +4172,17 @@ used to generate dynamic options.
     </xs:attribute>
     <xs:attribute name="startswith" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Ignore lines starting with the given character.</xs:documentation>
+        <xs:documentation xml:lang="en">Keep only lines starting with the given string.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="meta_file_key" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Works with from_dataset only. See [docs](#from-dataset)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="separator" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Split tabular data with this character (default is tab)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -4136,6 +4196,7 @@ used to generate dynamic options.
           <xs:documentation xml:lang="en">Documentation for file</xs:documentation>
         </xs:annotation>
       </xs:element>
+      <xs:element name="option" type="ParamDrillDownOption" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:group>
   <xs:complexType name="Column">
@@ -4232,7 +4293,7 @@ Check if a metadata value is contained in a specific column of a file in the ``t
 
 - ``regex``: Check if a regular expression **matches** the value, i.e. appears
 at the beginning of the value. To enforce a match of the complete value use
-``$`` at the end of the expression. The expression is given is the content 
+``$`` at the end of the expression. The expression is given is the content
 of the validator tag. Note that for ``selects`` each option is checked
 separately.
 - ``length``: Check if the length of the value is within a range.
@@ -4606,20 +4667,20 @@ a tool data table) or a dataset in the current history.
 
 Currently the following filters are defined:
 
-* ``static_value`` filter options for which the entry in a given ``column`` of the referenced file based on equality to the ``value`` attribute of the filter. 
+* ``static_value`` filter options for which the entry in a given ``column`` of the referenced file based on equality to the ``value`` attribute of the filter.
 * ``regexp`` similar to the ``static_value`` filter, but checks if the regular expression given by ``value`` matches the entry.
 * ``param_value`` filter options for which the entry in a given ``column`` of the referenced file based on properties of another input parameter specified by ``ref``. This property is by default the value of the parameter, but also the values of another attribute (``ref_attribute``) of the parameter can be used, e.g. the extension of a data input.
-* ``data_meta`` populate or filter options based on the metadata of another input parameter specified by ``ref``. If a ``column`` is given options are filtered for which the entry in this column ``column`` is equal to metadata of the input parameter specified by ``ref``. 
-If no ``column`` is given the metadata value of the referenced input is added to the options list (in this case the corresponding ``options`` tag must not have the ``from_data_table`` or ``from_dataset`` attributes). 
+* ``data_meta`` populate or filter options based on the metadata of another input parameter specified by ``ref``. If a ``column`` is given options are filtered for which the entry in this column ``column`` is equal to metadata of the input parameter specified by ``ref``.
+If no ``column`` is given the metadata value of the referenced input is added to the options list (in this case the corresponding ``options`` tag must not have the ``from_data_table`` or ``from_dataset`` attributes).
 In both cases the desired metadata is selected by ``key``.
 
 The ``static_value`` and ``regexp`` filters can be inverted by setting ``keep`` to true.
 
-* ``add_value``: add an option with a given ``name`` and ``value`` to the options. By default the new option is appended, with ``index`` the insertion position can be specified.
-* ``remove_value``: remove a value from the options. Either specified explicitly with ``value``, the value of another input specifified with ``ref``, or the metatdata ``key`` of another input ``meta_ref``.
+* ``add_value``: add an option with a given ``name`` and ``value`` to the options. By default, the new option is appended, with ``index`` the insertion position can be specified.
+* ``remove_value``: remove a value from the options. Either specified explicitly with ``value``, the value of another input specified with ``ref``, or the metadata ``key`` of another input ``meta_ref``.
 * ``unique_value``: remove options that have duplicate entries in the given ``column``.
-* ``sort_by``: sort options by the entries of a given ``column``.
-* ``multiple_splitter``: split the entries of the specified ``column``(s) in the referenced file using a ``separator``. Thereby the number of columns is increased. 
+* ``sort_by``: sort options by the entries of a given ``column``. If ``reverse_sort_order`` is set to ``true``, reverse sort order from ascending to descending.
+* ``multiple_splitter``: split the entries of the specified ``column``(s) in the referenced file using a ``separator``. Thereby the number of columns is increased.
 
 ### Examples
 
@@ -4722,11 +4783,11 @@ demonstrates splitting up strings into multiple values.
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
 Currently the filters in the ``filter_types`` dictionary in the module
-[/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/dynamic_options.py) are defined. 
+[/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/dynamic_options.py) are defined.
 
 Deprecated filter types:
 
-* ``attribute_value_splitter`` 
+* ``attribute_value_splitter``
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -4805,6 +4866,13 @@ added to the end of the list.</xs:documentation>
         <xs:documentation xml:lang="en">Only used when ``type`` is
 ``remove_value``. Dataset to look for the value of metadata ``key`` to remove
 from the list.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="reverse_sort_order" type="xs:boolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Used when ``type`` is ``sort_by``, if set to
+        ``true`` it will reverse the sort order from ascending to descending. Default
+        is ``false``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -5180,7 +5248,7 @@ Note that also parameters in sections are accessed via a dictionary.
     </outputs>
 ```
 
-Note that variables that correspond to optional select parameters are `None` if nothing is selected. 
+Note that variables that correspond to optional select parameters are `None` if nothing is selected.
 Therefore a filter for such a variable looks like the following example.
 
 ### Example
@@ -5417,6 +5485,11 @@ based on inputs, as shown below:
 </data>
 ```
 
+Note that the value given in ``when`` tags needs to be the python string representation
+of the value of the referred parameter, e.g. ``True`` or ``False`` if the referred
+parameter is a boolean.
+
+
 ### Unconditional Actions and Column Names
 
 For a static file that contains a fixed number of columns, it is straight forward:
@@ -5641,7 +5714,8 @@ of this directive.
     <xs:attribute name="value" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Value to match conditional input value
-against.</xs:documentation>
+against. This needs to be the python string representation of the parameter value,
+e.g. ``True`` or ``False`` if the referred parameter is a boolean.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="datatype_isinstance" type="xs:string" use="optional">
@@ -5669,7 +5743,7 @@ against.</xs:documentation>
 
 - insert a column with a value in the options
   - if ``column`` is given then the column is inserted before this column, otherwise the column is appended
-  - the value can be given by ``ref`` or ``value`` 
+  - the value can be given by ``ref`` or ``value``
 
 ``column_strip``
 
@@ -6684,6 +6758,43 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="set_environment"/>
     </xs:restriction>
   </xs:simpleType>
+  <xs:simpleType name="ResourceType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Type of resource specification.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="cores_min">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum reserved number of CPU cores, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="cores_max">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Maximum reserved number of CPU cores, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="ram_min">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum reserved RAM in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="ram_max">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Maximum reserved RAM in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="tmpdir_min">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum reserved filesystem-based storage for the designated temporary directory in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="tmpdir_max">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Maximum reserved filesystem based storage for the designated temporary directory, in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
   <xs:simpleType name="ContainerType">
     <xs:annotation>
       <xs:documentation xml:lang="en">Type of container for tool execution.</xs:documentation>
@@ -6898,7 +7009,7 @@ and ``contains``. In addtion there is ``sim_size`` which is discouraged in fafou
       <xs:documentation xml:lang="en">Number of bytes alowing for suffix (k|K|M|G|P|E)i? </xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:pattern value="[1-9][0-9]*([kKMGTPE]i?)?"></xs:pattern>
+      <xs:pattern value="(0|[1-9][0-9]*)([kKMGTPE]i?)?"></xs:pattern>
     </xs:restriction>
   </xs:simpleType>
   <xs:complexType name="EdamTopics">
@@ -6955,7 +7066,7 @@ A tool can have any number of EDAM operation references.
       <xs:documentation xml:lang="en"><![CDATA[
 Container tag set for the ``<xref>`` tags.
 A tool can refer multiple reference IDs.
-	
+
 ```xml
    <!-- Example: this tool is dada2 -->
    <xrefs>

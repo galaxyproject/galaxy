@@ -101,10 +101,10 @@
                 <collection-creator
                     :oncancel="oncancel"
                     :hide-source-items="hideSourceItems"
+                    :render-extensions-toggle="true"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
-                    @remove-extensions-toggle="removeExtensionsToggle"
-                    :render-extensions-toggle="true">
+                    @remove-extensions-toggle="removeExtensionsToggle">
                     <template v-slot:help-content>
                         <p>
                             {{
@@ -250,9 +250,9 @@
                                     <div
                                         class="unpaired-filter forward-unpaired-filter float-left search-input search-query input-group">
                                         <input
+                                            v-model="forwardFilter"
                                             type="text"
                                             :placeholder="filterTextPlaceholder"
-                                            v-model="forwardFilter"
                                             title="filterTextTitle" />
                                         <div class="input-group-append" :title="chooseFilterTitle">
                                             <button
@@ -303,9 +303,9 @@
                                     <div
                                         class="unpaired-filter reverse-unpaired-filter float-left search-input search-query input-group">
                                         <input
+                                            v-model="reverseFilter"
                                             type="text"
                                             :placeholder="filterTextPlaceholder"
-                                            v-model="reverseFilter"
                                             title="filterTextTitle" />
                                         <div class="input-group-append" :title="chooseFilterTitle">
                                             <button
@@ -337,22 +337,22 @@
                                             <unpaired-dataset-element-view
                                                 v-for="element in forwardElements"
                                                 :key="element.id"
-                                                @element-is-selected="forwardElementSelected"
                                                 :class="{
                                                     selected:
                                                         selectedForwardElement &&
                                                         element.id == selectedForwardElement.id,
                                                 }"
-                                                :element="element" />
+                                                :element="element"
+                                                @element-is-selected="forwardElementSelected" />
                                         </ol>
                                     </div>
                                     <div class="paired-column flex-column no-flex column truncate">
-                                        <ol class="column-datasets" v-if="forwardFilter !== '' && reverseFilter !== ''">
+                                        <ol v-if="forwardFilter !== '' && reverseFilter !== ''" class="column-datasets">
                                             <li
                                                 v-for="(pairableElement, index) in pairableElements"
                                                 :key="index"
-                                                @click="_pair(pairableElement.forward, pairableElement.reverse)"
-                                                class="dataset">
+                                                class="dataset"
+                                                @click="_pair(pairableElement.forward, pairableElement.reverse)">
                                                 {{ l("Pair these datasets") }}
                                             </li>
                                         </ol>
@@ -362,13 +362,13 @@
                                             <unpaired-dataset-element-view
                                                 v-for="element in reverseElements"
                                                 :key="element.id"
-                                                @element-is-selected="reverseElementSelected"
                                                 :class="{
                                                     selected:
                                                         selectedReverseElement &&
                                                         element.id == selectedReverseElement.id,
                                                 }"
-                                                :element="element" />
+                                                :element="element"
+                                                @element-is-selected="reverseElementSelected" />
                                         </ol>
                                     </div>
                                 </div>
@@ -422,15 +422,6 @@ import BootstrapVue from "bootstrap-vue";
 
 Vue.use(BootstrapVue);
 export default {
-    mixins: [mixin],
-    created() {
-        this.strategy = this.autopairLCS;
-        //TODO convert to Fwd/Rev
-        // Setup inital filters and shallow copy the items
-        this.forwardFilter = this.commonFilters[this.DEFAULT_FILTERS][0];
-        this.reverseFilter = this.commonFilters[this.DEFAULT_FILTERS][1];
-        this._elementsSetUp();
-    },
     components: {
         UnpairedDatasetElementView,
         PairedElementView,
@@ -438,6 +429,7 @@ export default {
         Pane,
         draggable,
     },
+    mixins: [mixin],
     data: function () {
         return {
             state: "build", //error, duplicates
@@ -532,6 +524,79 @@ export default {
             allInvalidElementsPartTwo: _l("and reselect new elements."),
             duplicatePairNames: [],
         };
+    },
+    computed: {
+        forwardElements: {
+            get() {
+                return this.filterElements(this.workingElements, this.forwardFilter);
+            },
+        },
+        reverseElements: {
+            get() {
+                return this.filterElements(this.workingElements, this.reverseFilter);
+            },
+        },
+        pairableElements: {
+            get() {
+                var pairable = [];
+                this.forwardElements.forEach((elem, index) => {
+                    if (this.reverseElements[index] && elem.id != this.reverseElements[index].id) {
+                        pairable.push({
+                            forward: this.forwardElements[index],
+                            reverse: this.reverseElements[index],
+                        });
+                    }
+                });
+                return pairable;
+            },
+        },
+        numOfUnpairedForwardElements: function () {
+            return this.forwardElements.length;
+        },
+        numOfFilteredOutForwardElements: function () {
+            return this.workingElements.length - this.numOfUnpairedForwardElements;
+        },
+        numOfUnpairedReverseElements: function () {
+            return this.reverseElements.length;
+        },
+        numOfFilteredOutReverseElements: function () {
+            return this.workingElements.length - this.numOfUnpairedReverseElements;
+        },
+        numOfPairs: function () {
+            return this.pairedElements.length;
+        },
+        returnInvalidElementsLength: function () {
+            return this.invalidElements.length > 0;
+        },
+        returnInvalidElements: function () {
+            return this.invalidElements;
+        },
+        allElementsAreInvalid: function () {
+            return this.initialElements.length == this.invalidElements.length;
+        },
+        noElementsSelected: function () {
+            return this.initialElements.length == 0;
+        },
+        tooFewElementsSelected: function () {
+            return this.workingElements.length < 2 && this.pairedElements.length == 0;
+        },
+        showDuplicateError() {
+            return this.duplicatePairNames.length > 0;
+        },
+        noUnpairedElementsDisplayed() {
+            return this.numOfUnpairedForwardElements + this.numOfUnpairedReverseElements == 0;
+        },
+        renderPairButton() {
+            return this;
+        },
+    },
+    created() {
+        this.strategy = this.autopairLCS;
+        //TODO convert to Fwd/Rev
+        // Setup inital filters and shallow copy the items
+        this.forwardFilter = this.commonFilters[this.DEFAULT_FILTERS][0];
+        this.reverseFilter = this.commonFilters[this.DEFAULT_FILTERS][1];
+        this._elementsSetUp();
     },
     methods: {
         l(str) {
@@ -945,71 +1010,6 @@ export default {
         },
         stripExtension(name) {
             return name.includes(".") ? name.substring(0, name.lastIndexOf(".")) : name;
-        },
-    },
-    computed: {
-        forwardElements: {
-            get() {
-                return this.filterElements(this.workingElements, this.forwardFilter);
-            },
-        },
-        reverseElements: {
-            get() {
-                return this.filterElements(this.workingElements, this.reverseFilter);
-            },
-        },
-        pairableElements: {
-            get() {
-                var pairable = [];
-                this.forwardElements.forEach((elem, index) => {
-                    if (this.reverseElements[index] && elem.id != this.reverseElements[index].id) {
-                        pairable.push({
-                            forward: this.forwardElements[index],
-                            reverse: this.reverseElements[index],
-                        });
-                    }
-                });
-                return pairable;
-            },
-        },
-        numOfUnpairedForwardElements: function () {
-            return this.forwardElements.length;
-        },
-        numOfFilteredOutForwardElements: function () {
-            return this.workingElements.length - this.numOfUnpairedForwardElements;
-        },
-        numOfUnpairedReverseElements: function () {
-            return this.reverseElements.length;
-        },
-        numOfFilteredOutReverseElements: function () {
-            return this.workingElements.length - this.numOfUnpairedReverseElements;
-        },
-        numOfPairs: function () {
-            return this.pairedElements.length;
-        },
-        returnInvalidElementsLength: function () {
-            return this.invalidElements.length > 0;
-        },
-        returnInvalidElements: function () {
-            return this.invalidElements;
-        },
-        allElementsAreInvalid: function () {
-            return this.initialElements.length == this.invalidElements.length;
-        },
-        noElementsSelected: function () {
-            return this.initialElements.length == 0;
-        },
-        tooFewElementsSelected: function () {
-            return this.workingElements.length < 2 && this.pairedElements.length == 0;
-        },
-        showDuplicateError() {
-            return this.duplicatePairNames.length > 0;
-        },
-        noUnpairedElementsDisplayed() {
-            return this.numOfUnpairedForwardElements + this.numOfUnpairedReverseElements == 0;
-        },
-        renderPairButton() {
-            return this;
         },
     },
 };

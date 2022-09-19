@@ -200,7 +200,7 @@ class HDAManagerTestCase(HDATestCase):
 
         history1 = self.history_manager.create(name="history1", user=owner)
         dataset1 = self.dataset_manager.create()
-        item1 = self.hda_manager.create(history1, dataset1)
+        item1 = self.hda_manager.create(history=history1, dataset=dataset1)
 
         self.log("should be able to poll whether a given user owns an item")
         self.assertTrue(self.hda_manager.is_owner(item1, owner))
@@ -224,7 +224,7 @@ class HDAManagerTestCase(HDATestCase):
 
         history1 = self.history_manager.create(name="history1", user=owner)
         dataset1 = self.dataset_manager.create()
-        item1 = self.hda_manager.create(history1, dataset1)
+        item1 = self.hda_manager.create(history=history1, dataset=dataset1)
 
         self.log("(by default, dataset permissions are lax) should be accessible to all")
 
@@ -285,7 +285,7 @@ class HDAManagerTestCase(HDATestCase):
         history1 = self.history_manager.create(name="anon_history", user=anon_user)
         self.trans.set_history(history1)
         dataset1 = self.dataset_manager.create()
-        item1 = self.hda_manager.create(history1, dataset1)
+        item1 = self.hda_manager.create(history=history1, dataset=dataset1)
 
         self.log("should not raise an error when checking ownership on anonymous' own dataset")
         # need to pass the current history for comparison
@@ -308,7 +308,7 @@ class HDAManagerTestCase(HDATestCase):
         history1 = self.history_manager.create(name="anon_history", user=anon_user)
         self.trans.set_history(history1)
         dataset1 = self.dataset_manager.create()
-        item1 = self.hda_manager.create(history1, dataset1)
+        item1 = self.hda_manager.create(history=history1, dataset=dataset1)
 
         # datasets are public by default
         self.assertTrue(self.hda_manager.is_accessible(item1, anon_user))
@@ -514,7 +514,7 @@ class HDASerializerTestCase(HDATestCase):
 
         history1 = self.history_manager.create(name="history1", user=owner)
         dataset1 = self.dataset_manager.create()
-        item1 = self.hda_manager.create(history1, dataset1)
+        item1 = self.hda_manager.create(history=history1, dataset=dataset1)
 
         keys_in_inaccessible_view = self.hda_serializer._view_to_keys("inaccessible")
 

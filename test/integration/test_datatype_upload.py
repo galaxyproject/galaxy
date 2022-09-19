@@ -4,6 +4,7 @@ import shutil
 
 import pytest
 
+from galaxy.datatypes.data import Text
 from galaxy.datatypes.registry import Registry
 from galaxy.util.checkers import (
     is_bz2,
@@ -56,7 +57,7 @@ TEST_CASES = collect_test_data(registry)
 
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
-def test_upload_datatype_auto(instance, test_data, temp_file):
+def test_upload_datatype_auto(instance, test_data, temp_file, celery_session_worker, celery_session_app):
     upload_datatype_helper(instance, test_data, temp_file)
 
 
@@ -72,7 +73,11 @@ def upload_datatype_helper(instance, test_data, temp_file, delete_cache_dir=Fals
         else:
             file_type = test_data.datatype.file_ext
         dataset = instance.dataset_populator.new_dataset(
-            instance.history_id, content=content, wait=False, file_type=file_type
+            instance.history_id,
+            content=content,
+            wait=False,
+            file_type=file_type,
+            auto_decompress=True,
         )
     dataset = instance.dataset_populator.get_history_dataset_details(
         instance.history_id, dataset=dataset, assert_ok=False
@@ -113,4 +118,13 @@ def upload_datatype_helper(instance, test_data, temp_file, delete_cache_dir=Fals
             )
         )
         temp_file.flush()
-        assert md5_hash_file(test_data.path) == md5_hash_file(temp_file.name)
+        expected_hash = md5_hash_file(test_data.path)
+        test_hash = md5_hash_file(temp_file.name)
+        message = f"Expected md5 sum '{expected_hash}' for {os.path.relpath(test_data.path)}, but test file md5sum is {test_hash}."
+        if expected_hash != test_hash:
+            if isinstance(datatype, Text):
+                with open(test_data.path, "rb") as fh:
+                    fh.seek(-1, os.SEEK_END)
+                    if fh.read() != b"\n":
+                        message = f"{message} You need to add a final newline to {os.path.relpath(test_data.path)}."
+        assert expected_hash == test_hash, message

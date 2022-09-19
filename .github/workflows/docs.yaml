@@ -9,7 +9,7 @@ on:
       - 'client/**'
       - 'lib/galaxy_test/selenium/**'
 concurrency:
-  group: docs-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   build:
@@ -26,14 +26,14 @@ jobs:
         run: echo "TARGET_BRANCH=$GITHUB_BASE_REF" >> $GITHUB_ENV
       - name: Show target branch name
         run: echo $TARGET_BRANCH
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
       - name: Cache pip dir
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}

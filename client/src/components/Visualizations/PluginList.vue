@@ -30,7 +30,7 @@
                             <div v-if="hdas && hdas.length > 0">
                                 <div class="font-weight-bold">{{ titleSelectDataset }}</div>
                                 <div class="ui-select">
-                                    <select class="select" v-model="selected">
+                                    <select v-model="selected" class="select">
                                         <option v-for="file in hdas" :key="file.id" :value="file.id">
                                             {{ file.name }}
                                         </option>
@@ -45,7 +45,7 @@
                                     <span class="title">{{ titleCreateVisualization }}</span>
                                 </button>
                             </div>
-                            <div v-else class="alert alert-danger" v-localize>
+                            <div v-else v-localize class="alert alert-danger">
                                 There is no suitable dataset in your current history which can be visualized with this
                                 plugin.
                             </div>

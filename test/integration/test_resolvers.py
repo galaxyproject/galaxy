@@ -18,6 +18,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls.conda_tmp_prefix = mkdtemp()
         cls._test_driver.temp_directories.append(cls.conda_tmp_prefix)
         config["use_cached_dependency_manager"] = True

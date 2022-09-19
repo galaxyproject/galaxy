@@ -1,6 +1,9 @@
+from tempfile import NamedTemporaryFile
 from typing import (
+    Any,
     cast,
     List,
+    NamedTuple,
     Optional,
 )
 
@@ -18,10 +21,20 @@ from galaxy.managers.base import (
     SortableManager,
 )
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.model_stores import create_objects_from_store
 from galaxy.model import User
+from galaxy.model.store import (
+    get_export_store_factory,
+    ModelExportStore,
+)
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import AsyncTaskResultSummary
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.util import ready_name_for_url
+from galaxy.web.short_term_storage import (
+    ShortTermStorageAllocator,
+    ShortTermStorageTarget,
+)
 
 
 def ensure_celery_tasks_enabled(config):
@@ -102,6 +115,53 @@ class ServiceBase:
         return cast(User, trans.user)
 
 
+class ServedExportStore(NamedTuple):
+    export_store: ModelExportStore
+    export_target: Any
+
+
+def model_store_storage_target(
+    short_term_storage_allocator: ShortTermStorageAllocator, file_name: str, model_store_format: str
+) -> ShortTermStorageTarget:
+    cleaned_filename = ready_name_for_url(f"{file_name}.{model_store_format}")
+    if model_store_format.endswith("gz"):
+        mime_type = "application/x-gzip"
+    else:
+        mime_type = "application/x-tar"
+
+    return short_term_storage_allocator.new_target(
+        cleaned_filename,
+        mime_type,
+    )
+
+
+class ServesExportStores:
+    def serve_export_store(self, app, download_format: str):
+        export_target = NamedTemporaryFile("wb")
+        export_store = get_export_store_factory(app, download_format)(export_target.name)
+        return ServedExportStore(export_store, export_target)
+
+
+class ConsumesModelStores:
+    def create_objects_from_store(
+        self,
+        trans,
+        payload,
+        history=None,
+        for_library=False,
+    ):
+        galaxy_user = None
+        if isinstance(trans.user, User):
+            galaxy_user = trans.user
+        return create_objects_from_store(
+            app=trans.app,
+            galaxy_user=galaxy_user,
+            payload=payload,
+            history=history,
+            for_library=for_library,
+        )
+
+
 def async_task_summary(async_result: AsyncResult) -> AsyncTaskResultSummary:
     name = None
     try:
@@ -117,7 +177,7 @@ def async_task_summary(async_result: AsyncResult) -> AsyncTaskResultSummary:
         pass
 
     return AsyncTaskResultSummary(
-        id=async_result.id,
+        id=str(async_result.id),
         ignored=async_result.ignored,
         name=name,
         queue=queue,

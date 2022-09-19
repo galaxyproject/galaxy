@@ -2,8 +2,8 @@ import os
 from collections import namedtuple
 
 from galaxy_test.base.populators import DatasetPopulator
-from galaxy_test.base.uses_shed import UsesShed
 from galaxy_test.driver import integration_util
+from galaxy_test.driver.uses_shed import UsesShed
 from tool_shed.util import hg_util
 
 REPO_TYPE = namedtuple("REPO_TYPE", "name owner changeset")
@@ -22,6 +22,7 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls.configure_shed(config)
 
     def setUp(self):
@@ -111,17 +112,23 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         assert int(response["ctx_rev"]) >= 4
 
     def _uninstall_repository(self):
-        tool = self._get("/api/tools/collection_column_join").json()
+        tool = self.get_tool()
         assert tool["version"] == "0.0.2"
         self.uninstall_repository(REPO.owner, REPO.name, REPO.changeset)
-        response = self._get("/api/tools/collection_column_join").json()
+        response = self.get_tool(assert_ok=False)
         assert response["err_msg"]
 
     def _install_repository(self, revision=None, version="0.0.2", verify_tool_absent=True):
         if verify_tool_absent:
-            response = self._get("/api/tools/collection_column_join").json()
+            response = self.get_tool(assert_ok=False)
             assert response["err_msg"]
         install_response = self.install_repository(REPO.owner, REPO.name, revision or REPO.changeset)
-        tool = self._get("/api/tools/collection_column_join").json()
-        assert tool["version"] == version
+        tool = self.get_tool()
+        assert tool.get("version") == version, tool
         return install_response
+
+    def get_tool(self, assert_ok=True):
+        response = self._get("/api/tools/collection_column_join")
+        if assert_ok:
+            self._assert_status_code_is_ok(response)
+        return response.json()

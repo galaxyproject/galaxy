@@ -3,17 +3,17 @@ import os
 import pprint
 import sys
 
-import yaml
-
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.util.properties import load_app_properties
 
 
 def main(config, setting):
     # Use explicit config, then env, then guess.
     config = config or os.environ.get("GALAXY_CONFIG_FILE", "config/galaxy.yml")
     if config and os.path.exists(config):
-        gx_config = GalaxyAppConfiguration(**yaml.safe_load(open(config))["galaxy"])
+        app_properties = load_app_properties(config_file=config)
+        gx_config = GalaxyAppConfiguration(**app_properties)
         if setting:
             print(gx_config.get(setting))
         else:

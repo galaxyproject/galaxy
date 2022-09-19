@@ -14,8 +14,11 @@ from logging import getLogger
 from typing import Optional
 
 import requests
-from packaging.version import parse as parse_version
-from packaging.version import Version
+from packaging.version import (
+    parse as parse_version,
+    Version,
+)
+from requests.cookies import RequestsCookieJar
 
 try:
     from nose.tools import nottest
@@ -119,7 +122,7 @@ class GalaxyInteractorApi:
         )
         if kwds.get("user_api_key_is_admin_key", False):
             self.master_api_key = self.api_key
-        self.keep_outputs_dir = kwds["keep_outputs_dir"]
+        self.keep_outputs_dir = kwds.get("keep_outputs_dir", None)
         self.download_attempts = kwds.get("download_attempts", 1)
         self.download_sleep = kwds.get("download_sleep", 1)
         # Local test data directories.
@@ -139,18 +142,15 @@ class GalaxyInteractorApi:
     def supports_test_data_download(self):
         return self.target_galaxy_version >= Version("19.01")
 
-    def __get_user_key(self, user_key, admin_key, test_user=None):
+    def __get_user_key(self, user_key: Optional[str], admin_key: Optional[str], test_user: Optional[str] = None) -> str:
         if not test_user:
             test_user = "test@bx.psu.edu"
         if user_key:
             return user_key
-        test_user = self.ensure_user_with_email(test_user)
-        return self._post(f"users/{test_user['id']}/api_key", key=admin_key).json()
-
-    # def get_tools(self):
-    #    response = self._get("tools?in_panel=false")
-    #    assert response.status_code == 200, "Non 200 response from tool index API. [%s]" % response.content
-    #    return response.json()
+        test_user_response = self.ensure_user_with_email(test_user)
+        if not admin_key:
+            raise Exception("Must specify either a user key or admin key to interact with the Galaxy API")
+        return self._post(f"users/{test_user_response['id']}/api_key", key=admin_key).json()
 
     def get_tests_summary(self):
         response = self._get("tools/tests_summary")
@@ -193,7 +193,7 @@ class GalaxyInteractorApi:
         outfile = output_testdef.outfile
         attributes = output_testdef.attributes
         name = output_testdef.name
-
+        expected_count = attributes.get("count")
         self.wait_for_jobs(history_id, jobs, maxseconds)
         hid = self.__output_id(output_data)
         # TODO: Twill version verifies dataset is 'ok' in here.
@@ -210,10 +210,16 @@ class GalaxyInteractorApi:
             raise AssertionError(f"Output {name}: {str(e)}")
 
         primary_datasets = attributes.get("primary_datasets", {})
-        if primary_datasets:
-            job_id = self._dataset_provenance(history_id, hid)["job_id"]
-            outputs = self._get(f"jobs/{job_id}/outputs").json()
-
+        job_id = self._dataset_provenance(history_id, hid)["job_id"]
+        outputs = self._get(f"jobs/{job_id}/outputs").json()
+        found_datasets = 0
+        for output in outputs:
+            if output["name"] == name or output["name"].startswith(f"__new_primary_file_{name}|"):
+                found_datasets += 1
+        if expected_count is not None and expected_count != found_datasets:
+            raise AssertionError(
+                f"Output '{name}': expected to have '{expected_count}' datasets, but it had '{found_datasets}'"
+            )
         for designation, (primary_outfile, primary_attributes) in primary_datasets.items():
             primary_output = None
             for output in outputs:
@@ -294,21 +300,22 @@ class GalaxyInteractorApi:
 
                     def compare(val, expected):
                         if str(val) != str(expected):
-                            msg = f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}]. Dataset API value was [{dataset}]."
-                            raise Exception(msg)
+                            raise Exception(
+                                f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}]. Dataset API value was [{dataset}]."  # noqa: B023
+                            )
 
                     if isinstance(dataset_value, list):
                         value = str(value).split(",")
                         if len(value) != len(dataset_value):
-                            msg = f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}], lists differ in length. Dataset API value was [{dataset}]."
-                            raise Exception(msg)
+                            raise Exception(
+                                f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}], lists differ in length. Dataset API value was [{dataset}]."
+                            )
                         for val, expected in zip(dataset_value, value):
                             compare(val, expected)
                     else:
                         compare(dataset_value, value)
                 except KeyError:
-                    msg = f"Failed to verify dataset metadata, metadata key [{key}] was not found."
-                    raise Exception(msg)
+                    raise Exception(f"Failed to verify dataset metadata, metadata key [{key}] was not found.")
 
     def wait_for_job(self, job_id, history_id=None, maxseconds=DEFAULT_TOOL_TEST_WAIT):
         self.wait_for(lambda: self.__job_ready(job_id, history_id), maxseconds=maxseconds)
@@ -329,7 +336,8 @@ class GalaxyInteractorApi:
 
     def get_history(self, history_name="test_history"):
         # Return the most recent non-deleted history matching the provided name
-        response = self._get(f"histories?q=name&qv={history_name}&order=update_time")
+        filters = urllib.parse.urlencode({"q": "name", "qv": history_name, "order": "update_time"})
+        response = self._get(f"histories?{filters}")
         try:
             return response.json()[-1]
         except IndexError:
@@ -837,42 +845,55 @@ class GalaxyInteractorApi:
         allow files to be specified with the json parameter - so rewrite the parameters
         to handle that if as_json is True with specified files.
         """
-        params = params or {}
-        data = data or {}
+        return prepare_request_params(
+            data=data, files=files, as_json=as_json, params=params, headers=headers, cookies=self.cookies
+        )
 
-        # handle encoded files
-        if files is None:
-            # if not explicitly passed, check __files... convention used in tool testing
-            # and API testing code
-            files = data.get("__files", None)
-            if files is not None:
-                del data["__files"]
 
-        # files doesn't really work with json, so dump the parameters
-        # and do a normal POST with request's data parameter.
-        if bool(files) and as_json:
-            as_json = False
-            new_items = {}
-            for key, val in data.items():
-                if isinstance(val, dict) or isinstance(val, list):
-                    new_items[key] = dumps(val)
-            data.update(new_items)
+def prepare_request_params(
+    data=None,
+    files=None,
+    as_json: bool = False,
+    params: Optional[dict] = None,
+    headers: Optional[dict] = None,
+    cookies: Optional[RequestsCookieJar] = None,
+):
+    params = params or {}
+    data = data or {}
 
-        kwd = {
-            "files": files,
-        }
-        if headers:
-            kwd["headers"] = headers
-        if as_json:
-            kwd["json"] = data or None
-            kwd["params"] = params
-        else:
-            data.update(params)
-            kwd["data"] = data
-        if self.cookies:
-            kwd["cookies"] = self.cookies
+    # handle encoded files
+    if files is None:
+        # if not explicitly passed, check __files... convention used in tool testing
+        # and API testing code
+        files = data.get("__files", None)
+        if files is not None:
+            del data["__files"]
 
-        return kwd
+    # files doesn't really work with json, so dump the parameters
+    # and do a normal POST with request's data parameter.
+    if bool(files) and as_json:
+        as_json = False
+        new_items = {}
+        for key, val in data.items():
+            if isinstance(val, dict) or isinstance(val, list):
+                new_items[key] = dumps(val)
+        data.update(new_items)
+
+    kwd = {
+        "files": files,
+    }
+    if headers:
+        kwd["headers"] = headers
+    if as_json:
+        kwd["json"] = data or None
+        kwd["params"] = params
+    else:
+        data.update(params)
+        kwd["data"] = data
+    if cookies:
+        kwd["cookies"] = cookies
+
+    return kwd
 
 
 def ensure_tool_run_response_okay(submit_response_object, request_desc, inputs=None):
@@ -972,13 +993,13 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
 
     def verify_elements(element_objects, element_tests):
         expected_sort_order = {}
-
         eo_ids = [_["element_identifier"] for _ in element_objects]
         for element_identifier, element_test in element_tests.items():
             if isinstance(element_test, dict):
                 element_outfile, element_attrib = None, element_test
             else:
                 element_outfile, element_attrib = element_test
+            expected_count = element_attrib.get("count")
             if "expected_sort_order" in element_attrib:
                 expected_sort_order[element_attrib["expected_sort_order"]] = element_identifier
 
@@ -989,10 +1010,16 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
 
             element_type = element["element_type"]
             if element_type != "dataset_collection":
+                element_count = 1
                 verify_dataset(element, element_attrib, element_outfile)
             else:
                 elements = element["object"]["elements"]
+                element_count = len(elements)
                 verify_elements(elements, element_attrib.get("elements", {}))
+            if expected_count is not None and expected_count != element_count:
+                raise AssertionError(
+                    f"Element '{element_identifier}': expected to have {expected_count} elements, but it had {element_count}"
+                )
 
         if len(expected_sort_order) > 0:
             generated_sort_order = [_["element_identifier"] for _ in element_objects]

@@ -135,14 +135,14 @@
       "message": "No such object found."
    },
    {
-      "name": "DEPRECATED_API_CALL",
-      "code": 404002,
-      "message": "This API method or call signature has been deprecated and is no longer available"
-   },
-   {
       "name": "CONFLICT",
       "code": 409001,
       "message": "Database conflict prevented fulfilling the request."
+   },
+   {
+      "name": "DEPRECATED_API_CALL",
+      "code": 410001,
+      "message": "This API method or call signature has been deprecated and is no longer available"
    },
    {
       "name": "INTERNAL_SERVER_ERROR",

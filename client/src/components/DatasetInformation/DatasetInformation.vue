@@ -14,7 +14,7 @@
                     </tr>
                     <tr>
                         <td>Created</td>
-                        <td id="created" v-if="dataset.create_time">
+                        <td v-if="dataset.create_time" id="created">
                             <UtcDate :date="dataset.create_time" mode="pretty" />
                         </td>
                     </tr>
@@ -85,18 +85,18 @@ import DatasetSources from "./DatasetSources";
 import DatasetHashes from "./DatasetHashes";
 
 export default {
-    props: {
-        hda_id: {
-            type: String,
-            required: true,
-        },
-    },
     components: {
         DatasetHashes,
         DatasetProvider,
         DatasetSources,
         DecodedId,
         UtcDate,
+    },
+    props: {
+        hda_id: {
+            type: String,
+            required: true,
+        },
     },
     methods: {
         bytesToString(raw_size) {

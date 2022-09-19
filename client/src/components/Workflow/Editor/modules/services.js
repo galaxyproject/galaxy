@@ -36,7 +36,7 @@ export async function refactor(id, actions, dryRun = false) {
     }
 }
 
-export async function loadWorkflow(workflow, id, version, appendData) {
+export async function loadWorkflow({ workflow, id, version = null, appendData = false }) {
     try {
         const versionQuery = Number.isInteger(version) ? `version=${version}` : "";
         const { data } = await axios.get(`${getAppRoot()}workflow/load_workflow?_=true&id=${id}&${versionQuery}`);

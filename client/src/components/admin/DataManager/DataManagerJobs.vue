@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-breadcrumb v-if="dataManager && !loading" :items="breadcrumbItems" id="breadcrumb" />
+        <b-breadcrumb v-if="dataManager && !loading" id="breadcrumb" :items="breadcrumbItems" />
         <Alert :message="message" :variant="status" />
         <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
         <Alert v-else-if="loading" message="Waiting for data" variant="info" />
@@ -31,29 +31,29 @@
                 </b-row>
             </b-container>
             <b-table
+                id="jobs-table"
                 :fields="tableFields"
                 :items="tableItems"
                 :filter="filter"
                 hover
                 responsive
-                striped
-                id="jobs-table">
+                striped>
                 <template v-slot:cell(actions)="row">
                     <b-button-group>
                         <b-button v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
                             <span class="fa fa-redo" />
                         </b-button>
                         <b-button
+                            :id="'job-' + jobs[row.index]['encId']"
                             v-b-tooltip.hover
                             title="View Info"
-                            :to="{ name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] } }"
-                            :id="'job-' + jobs[row.index]['encId']">
+                            :to="{ name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] } }">
                             <span class="fa fa-info-circle" />
                         </b-button>
                         <b-button
                             v-if="!showCommandLine"
-                            @click.stop="row.toggleDetails()"
-                            :pressed.sync="row.detailsShowing">
+                            :pressed.sync="row.detailsShowing"
+                            @click.stop="row.toggleDetails()">
                             {{ row.detailsShowing ? "Hide" : "Show" }} Command Line
                         </b-button>
                     </b-button-group>

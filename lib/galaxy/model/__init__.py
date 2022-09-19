@@ -17,10 +17,7 @@ import random
 import string
 from collections import defaultdict
 from collections.abc import Callable
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import timedelta
 from enum import Enum
 from string import Template
 from typing import (
@@ -102,10 +99,10 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.sql import exists
+from typing_extensions import Protocol
 
 import galaxy.exceptions
 import galaxy.model.metadata
-import galaxy.model.orm.now
 import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
@@ -123,6 +120,7 @@ from galaxy.model.item_attrs import (
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
+from galaxy.objectstore import ObjectStore
 from galaxy.security import get_permitted_actions
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.validate_user_input import validate_password_str
@@ -148,7 +146,7 @@ from galaxy.util.form_builder import (
     WorkflowField,
     WorkflowMappingField,
 )
-from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.hash_util import new_insecure_hash
 from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -185,7 +183,7 @@ else:
     _HasTable = object
 
 
-def get_uuid(uuid: Optional[Union[UUID, str]] = None):
+def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
     if isinstance(uuid, UUID):
         return uuid
     if not uuid:
@@ -279,9 +277,18 @@ class HasTags:
         return [t for t in self.tags if t.user_tname in AUTO_PROPAGATED_TAGS]
 
 
+class SerializeFilesHandler(Protocol):
+    def serialize_files(self, dataset: "DatasetInstance", as_dict: Dict[str, Any]) -> None:
+        pass
+
+
 class SerializationOptions:
     def __init__(
-        self, for_edit, serialize_dataset_objects=None, serialize_files_handler=None, strip_metadata_files=None
+        self,
+        for_edit,
+        serialize_dataset_objects=None,
+        serialize_files_handler: Optional[SerializeFilesHandler] = None,
+        strip_metadata_files=None,
     ):
         self.for_edit = for_edit
         if serialize_dataset_objects is None:
@@ -446,7 +453,7 @@ class JobLike:
 
     def set_streams(self, tool_stdout, tool_stderr, job_stdout=None, job_stderr=None, job_messages=None):
         def shrink_and_unicodify(what, stream):
-            if len(stream) > galaxy.util.DATABASE_MAX_STRING_SIZE:
+            if stream and len(stream) > galaxy.util.DATABASE_MAX_STRING_SIZE:
                 log.info(
                     "%s for %s %d is greater than %s, only a portion will be logged to database",
                     what,
@@ -631,8 +638,8 @@ class User(Base, Dictifiable, RepresentById):
         if User.use_pbkdf2:
             self.password = galaxy.security.passwords.hash_password(cleartext)
         else:
-            self.password = new_secure_hash(text_type=cleartext)
-        self.last_password_change = datetime.now()
+            self.password = new_insecure_hash(text_type=cleartext)
+        self.last_password_change = now()
 
     def set_random_password(self, length=16):
         """
@@ -943,7 +950,7 @@ class TaskMetricNumeric(BaseJobMetric, RepresentById):
 
 
 class IoDicts(NamedTuple):
-    inp_data: Dict[str, "DatasetInstance"]
+    inp_data: Dict[str, Optional["DatasetInstance"]]
     out_data: Dict[str, "DatasetInstance"]
     out_collections: Dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]]
 
@@ -1089,7 +1096,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         ]
 
     def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
-        inp_data: Dict[str, "DatasetInstance"] = {da.name: da.dataset for da in self.input_datasets}
+        inp_data: Dict[str, Optional["DatasetInstance"]] = {da.name: da.dataset for da in self.input_datasets}
         out_data: Dict[str, "DatasetInstance"] = {da.name: da.dataset for da in self.output_datasets}
         inp_data.update([(da.name, da.dataset) for da in self.input_library_datasets])
         out_data.update([(da.name, da.dataset) for da in self.output_library_datasets])
@@ -2027,7 +2034,6 @@ class JobStateHistory(Base, RepresentById):
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
     job_id = Column(Integer, ForeignKey("job.id"), index=True)
     state = Column(String(64), index=True)
     info = Column(TrimmedString(255))
@@ -2587,6 +2593,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     def empty(self):
         return self.hid_counter is None or self.hid_counter == 1
 
+    @property
+    def count(self):
+        return self.hid_counter - 1
+
     def add_pending_items(self, set_output_hid=True):
         # These are assumed to be either copies of existing datasets or new, empty datasets,
         # so we don't need to set the quota.
@@ -2652,9 +2662,9 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         else:
             if set_hid:
                 dataset.hid = self._next_hid()
+        add_object_to_object_session(dataset, self)
         if quota and is_dataset and self.user:
             self.user.adjust_total_disk_usage(dataset.quota_amount(self.user))
-        add_object_to_object_session(dataset, self)
         dataset.history = self
         if is_dataset and genome_build not in [None, "?"]:
             self.genome_build = genome_build
@@ -2877,7 +2887,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             .distinct()
         )
         # postgres needs an alias on FROM
-        distinct_datasets_alias = aliased(distinct_datasets, name="datasets")
+        distinct_datasets_alias = aliased(distinct_datasets.subquery(), name="datasets")
         # then, bind as property of history using the cls.id
         size_query = (
             select([func.coalesce(func.sum(distinct_datasets_alias.c.dataset_size), 0)])
@@ -3333,7 +3343,67 @@ class StorableObject:
             sa_session.flush()
 
 
-class Dataset(StorableObject, Serializable, _HasTable):
+class Dataset(Base, StorableObject, Serializable, _HasTable):
+    __tablename__ = "dataset"
+
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey("job.id"), index=True, nullable=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, index=True, default=now, onupdate=now)
+    state = Column(TrimmedString(64), index=True)
+    deleted = Column(Boolean, index=True, default=False)
+    purged = Column(Boolean, index=True, default=False)
+    purgable = Column(Boolean, default=True)
+    object_store_id = Column(TrimmedString(255), index=True)
+    external_filename = Column(TEXT)
+    _extra_files_path = Column(TEXT)
+    created_from_basename = Column(TEXT)
+    file_size = Column(Numeric(15, 0))
+    total_size = Column(Numeric(15, 0))
+    uuid = Column(UUIDType())
+
+    actions = relationship("DatasetPermissions", back_populates="dataset")
+    job = relationship(Job, primaryjoin=(lambda: Dataset.job_id == Job.id))
+    active_history_associations = relationship(
+        "HistoryDatasetAssociation",
+        primaryjoin=(
+            lambda: and_(
+                Dataset.id == HistoryDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
+                HistoryDatasetAssociation.deleted == false(),  # type: ignore[has-type]
+                HistoryDatasetAssociation.purged == false(),  # type: ignore[attr-defined]
+            )
+        ),
+        viewonly=True,
+    )
+    purged_history_associations = relationship(
+        "HistoryDatasetAssociation",
+        primaryjoin=(
+            lambda: and_(
+                Dataset.id == HistoryDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
+                HistoryDatasetAssociation.purged == true(),  # type: ignore[attr-defined]
+            )
+        ),
+        viewonly=True,
+    )
+    active_library_associations = relationship(
+        "LibraryDatasetDatasetAssociation",
+        primaryjoin=(
+            lambda: and_(
+                Dataset.id == LibraryDatasetDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
+                LibraryDatasetDatasetAssociation.deleted == false(),  # type: ignore[has-type]
+            )
+        ),
+        viewonly=True,
+    )
+    hashes = relationship("DatasetHash", back_populates="dataset")
+    sources = relationship("DatasetSource", back_populates="dataset")
+    history_associations = relationship("HistoryDatasetAssociation", back_populates="dataset")
+    library_associations = relationship(
+        "LibraryDatasetDatasetAssociation",
+        primaryjoin=(lambda: LibraryDatasetDatasetAssociation.table.c.dataset_id == Dataset.id),
+        back_populates="dataset",
+    )
+
     class states(str, Enum):
         NEW = "new"
         UPLOAD = "upload"
@@ -3342,10 +3412,17 @@ class Dataset(StorableObject, Serializable, _HasTable):
         OK = "ok"
         EMPTY = "empty"
         ERROR = "error"
-        DISCARDED = "discarded"
         PAUSED = "paused"
         SETTING_METADATA = "setting_metadata"
         FAILED_METADATA = "failed_metadata"
+        # Non-deleted, non-purged datasets that don't have physical files.
+        # These shouldn't have objectstores attached -
+        # 'deferred' can be materialized for jobs using
+        # attached DatasetSource objects but 'discarded'
+        # cannot (e.g. imported histories). These should still
+        # be able to have history contents associated (normal HDAs?)
+        DEFERRED = "deferred"
+        DISCARDED = "discarded"
 
         @classmethod
         def values(self):
@@ -3360,6 +3437,7 @@ class Dataset(StorableObject, Serializable, _HasTable):
         states.OK,
         states.EMPTY,
         states.ERROR,
+        states.DEFERRED,
         states.DISCARDED,
         states.FAILED_METADATA,
     )
@@ -3376,7 +3454,7 @@ class Dataset(StorableObject, Serializable, _HasTable):
 
     permitted_actions = get_permitted_actions(filter="DATASET")
     file_path = "/tmp/"
-    object_store = None  # This get initialized in mapping.py (method init) by app.py
+    object_store: Optional[ObjectStore] = None  # This get initialized in mapping.py (method init) by app.py
     engine = None
 
     def __init__(
@@ -3410,12 +3488,20 @@ class Dataset(StorableObject, Serializable, _HasTable):
         return self.state in self.ready_states
 
     def get_file_name(self):
+        if self.purged:
+            log.warning(f"Attempt to get file name of purged dataset {self.id}")
+            return ""
         if not self.external_filename:
             assert self.object_store is not None, f"Object Store has not been initialized for dataset {self.id}"
             if self.object_store.exists(self):
-                return self.object_store.get_filename(self)
+                file_name = self.object_store.get_filename(self)
             else:
-                return ""
+                file_name = ""
+            if not file_name and self.state not in (self.states.NEW, self.states.QUEUED):
+                # Queued datasets can be assigned an object store and have a filename, but they aren't guaranteed to.
+                # Anything after queued should have a file name.
+                log.warning(f"Failed to determine file name for dataset {self.id}")
+            return file_name
         else:
             filename = self.external_filename
         # Make filename absolute
@@ -3484,18 +3570,21 @@ class Dataset(StorableObject, Serializable, _HasTable):
         else:
             return self.object_store.size(self)
 
-    def get_size(self, nice_size=False):
+    def get_size(self, nice_size=False, calculate_size=True):
         """Returns the size of the data on disk"""
         if self.file_size:
             if nice_size:
                 return galaxy.util.nice_size(self.file_size)
             else:
                 return self.file_size
-        else:
+        elif calculate_size:
+            # Hopefully we only reach this branch in sessionless mode
             if nice_size:
                 return galaxy.util.nice_size(self._calculate_size())
             else:
                 return self._calculate_size()
+        else:
+            return self.file_size or 0
 
     def set_size(self, no_extra_files=False):
         """Sets the size of the data on disk.
@@ -3643,6 +3732,14 @@ class DatasetSource(Base, Dictifiable, Serializable):
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
 
+    def copy(self) -> "DatasetSource":
+        new_source = DatasetSource()
+        new_source.source_uri = self.source_uri
+        new_source.extra_files_path = self.extra_files_path
+        new_source.transform = self.transform
+        new_source.hashes = [h.copy() for h in self.hashes]
+        return new_source
+
 
 class DatasetSourceHash(Base, Serializable):
     __tablename__ = "dataset_source_hash"
@@ -3661,6 +3758,12 @@ class DatasetSourceHash(Base, Serializable):
         )
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
+
+    def copy(self) -> "DatasetSourceHash":
+        new_hash = DatasetSourceHash()
+        new_hash.hash_function = self.hash_function
+        new_hash.hash_value = self.hash_value
+        return new_hash
 
 
 class DatasetHash(Base, Dictifiable, Serializable):
@@ -3685,6 +3788,13 @@ class DatasetHash(Base, Dictifiable, Serializable):
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
 
+    def copy(self) -> "DatasetHash":
+        new_hash = DatasetHash()
+        new_hash.hash_function = self.hash_function
+        new_hash.hash_value = self.hash_value
+        new_hash.extra_files_path = self.extra_files_path
+        return new_hash
+
 
 def datatype_for_extension(extension, datatypes_registry=None) -> "Data":
     if extension is not None:
@@ -3704,8 +3814,10 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
 
     states = Dataset.states
+    _state: str
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
+    purged: bool
 
     class validated_states(str, Enum):
         UNKNOWN = "unknown"
@@ -3736,6 +3848,7 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
         sa_session=None,
         extended_metadata=None,
         flush=True,
+        metadata_deferred=False,
         creating_job_id=None,
     ):
         self.name = name or "Unnamed dataset"
@@ -3749,11 +3862,12 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
         # set private variable to None here, since the attribute may be needed in by MetadataCollection.__init__
         self._metadata = None
         self.metadata = metadata or dict()
+        self.metadata_deferred = metadata_deferred
         self.extended_metadata = extended_metadata
         if (
             dbkey
         ):  # dbkey is stored in metadata, only set if non-zero, or else we could clobber one supplied by input 'metadata'
-            self._metadata["dbkey"] = dbkey
+            self._metadata["dbkey"] = listify(dbkey)
         self.deleted = deleted
         self.visible = visible
         self.validated_state = validated_state
@@ -3766,7 +3880,8 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
             if flush:
                 sa_session.add(dataset)
                 sa_session.flush()
-        add_object_to_object_session(self, dataset)
+        elif dataset:
+            add_object_to_object_session(self, dataset)
         self.dataset = dataset
         self.parent_id = parent_id
 
@@ -3781,6 +3896,10 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
     @property
     def ext(self):
         return self.extension
+
+    @property
+    def has_deferred_data(self):
+        return self.get_dataset_state() == Dataset.states.DEFERRED
 
     def get_dataset_state(self):
         # self._state is currently only used when setting metadata externally
@@ -3906,11 +4025,11 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
         self.clear_associated_files()
         _get_datatypes_registry().change_datatype(self, new_ext)
 
-    def get_size(self, nice_size=False):
+    def get_size(self, nice_size=False, calculate_size=True):
         """Returns the size of the data on disk"""
         if nice_size:
-            return galaxy.util.nice_size(self.dataset.get_size())
-        return self.dataset.get_size()
+            return galaxy.util.nice_size(self.dataset.get_size(calculate_size=calculate_size))
+        return self.dataset.get_size(calculate_size=calculate_size)
 
     def set_size(self, **kwds):
         """Sets and gets the size of the data on disk"""
@@ -3943,10 +4062,6 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
     @property
     def hashes(self):
         return self.dataset.hashes
-
-    def get_raw_data(self):
-        """Returns the full data. To stream it open the file_name and read/write as needed"""
-        return self.datatype.get_raw_data(self)
 
     def get_mime(self):
         """Returns the mime type of the data"""
@@ -4358,12 +4473,13 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             self.version = self.version + 1 if self.version else 1
             session.add(past_hda)
 
-    def copy_from(self, other_hda):
+    def copy_from(self, other_hda, new_dataset=None, include_tags=True, include_metadata=False):
         # This deletes the old dataset, so make sure to only call this on new things
         # in the history (e.g. during job finishing).
         old_dataset = self.dataset
-        self._metadata = None
-        self.metadata = other_hda.metadata
+        if include_metadata:
+            self._metadata = other_hda._metadata
+        self.metadata_deferred = other_hda.metadata_deferred
         self.info = other_hda.info
         self.blurb = other_hda.blurb
         self.peek = other_hda.peek
@@ -4373,9 +4489,11 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         self.visible = other_hda.visible
         self.validated_state = other_hda.validated_state
         self.validated_state_message = other_hda.validated_state_message
-        self.copy_tags_from(self.history.user, other_hda)
-        self.dataset = other_hda.dataset
-        old_dataset.full_delete()
+        if include_tags and self.history:
+            self.copy_tags_from(self.history.user, other_hda)
+        self.dataset = new_dataset or other_hda.dataset
+        if old_dataset:
+            old_dataset.full_delete()
 
     def copy(self, parent_id=None, copy_tags=None, flush=True, copy_hid=True, new_name=None):
         """
@@ -4406,10 +4524,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         hda.copy_tags_to(copy_tags)
         object_session(self).add(hda)
         hda.metadata = self.metadata
-        # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        if not self.datatype.copy_safe_peek:
-            object_session(self).flush([self])
-            hda.set_peek()
         if flush:
             object_session(self).flush()
         return hda
@@ -4474,9 +4588,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             )
             trans.sa_session.add(dp)
         # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
-        flushed = False
         if self.set_metadata_requires_flush:
-            flushed = True
             object_session(self).flush()
         ldda.metadata = self.metadata
         # TODO: copy #tags from history
@@ -4486,11 +4598,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             target_folder.add_library_dataset(library_dataset, genome_build=ldda.dbkey)
             object_session(self).add(target_folder)
         object_session(self).add(library_dataset)
-        if not self.datatype.copy_safe_peek:
-            # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-            if not flushed:
-                object_session(self).flush()
-            ldda.set_peek()
         object_session(self).flush()
         return ldda
 
@@ -5122,8 +5229,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         hda.metadata = self.metadata  # need to set after flushed, as MetadataFiles require dataset.id
         if add_to_history and target_history:
             target_history.add_dataset(hda)
-        if not self.datatype.copy_safe_peek:
-            hda.set_peek()  # in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         sa_session.flush()
         return hda
 
@@ -5153,9 +5258,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         sa_session.flush()
         # Need to set after flushed, as MetadataFiles require dataset.id
         ldda.metadata = self.metadata
-        if not self.datatype.copy_safe_peek:
-            # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-            ldda.set_peek()
         sa_session.flush()
         return ldda
 
@@ -5601,6 +5703,27 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return self._dataset_states_and_extensions_summary
 
     @property
+    def has_deferred_data(self):
+        if not hasattr(self, "_has_deferred_data"):
+            has_deferred_data = False
+            if object_session(self):
+                # TODO: Optimize by just querying without returning the states...
+                q = self._get_nested_collection_attributes(dataset_attributes=("state",))
+                for (state,) in q:
+                    if state == Dataset.states.DEFERRED:
+                        has_deferred_data = True
+                        break
+            else:
+                # This will be in a remote tool evaluation context, so can't query database
+                for dataset_element in self.dataset_elements_and_identifiers():
+                    if dataset_element.hda.state == Dataset.states.DEFERRED:
+                        has_deferred_data = True
+                        break
+            self._has_deferred_data = has_deferred_data
+
+        return self._has_deferred_data
+
+    @property
     def populated_optimized(self):
         if not hasattr(self, "_populated_optimized"):
             _populated_optimized = True
@@ -5882,6 +6005,10 @@ class DatasetCollectionInstance(HasName, UsesCreateAndUpdateTime):
             changed[key] = new_val
 
         return changed
+
+    @property
+    def has_deferred_data(self):
+        return self.collection.has_deferred_data
 
 
 class HistoryDatasetCollectionAssociation(
@@ -6172,6 +6299,9 @@ class HistoryDatasetCollectionAssociation(
         """Checks to see that the indicated collection is a member of the
         hdca by using a recursive CTE sql query to find the collection's parents
         and checking to see if any of the parents are associated with this hdca"""
+        if collection_id == self.collection_id:
+            # collection_id is root collection
+            return True
 
         sa_session = object_session(self)
         DCE = DatasetCollectionElement
@@ -6360,6 +6490,10 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
         else:
             return [element_object]
 
+    @property
+    def has_deferred_data(self):
+        return self.element_object.has_deferred_data
+
     def copy_to_collection(
         self,
         collection,
@@ -6470,7 +6604,7 @@ class GalaxySession(Base, RepresentById):
     def __init__(self, is_valid=False, **kwd):
         super().__init__(**kwd)
         self.is_valid = is_valid
-        self.last_action = self.last_action or datetime.now()
+        self.last_action = self.last_action or now()
 
     def add_history(self, history, association=None):
         if association is None:
@@ -7182,7 +7316,7 @@ class WorkflowStepConnection(Base, RepresentById):
         return copied_connection
 
 
-class WorkflowOutput(Base, RepresentById):
+class WorkflowOutput(Base, Serializable):
     __tablename__ = "workflow_output"
 
     id = Column(Integer, primary_key=True)
@@ -7207,6 +7341,14 @@ class WorkflowOutput(Base, RepresentById):
         copied_output.output_name = self.output_name
         copied_output.label = self.label
         return copied_output
+
+    def _serialize(self, id_encoder, serialization_options):
+        return dict_for(
+            self,
+            output_name=self.output_name,
+            label=self.label,
+            uuid=str(self.uuid),
+        )
 
 
 class StoredWorkflowUserShareAssociation(Base, UserShareAssociation):
@@ -7239,7 +7381,7 @@ class StoredWorkflowMenuEntry(Base, RepresentById):
     )
 
 
-class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
+class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation"
 
     id = Column(Integer, primary_key=True)
@@ -7475,6 +7617,60 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentBy
             inputs.append(input_dataset_collection_assoc)
         return inputs
 
+    def _serialize(self, id_encoder, serialization_options):
+        invocation_attrs = dict_for(self)
+        invocation_attrs["state"] = self.state
+        invocation_attrs["create_time"] = self.create_time.__str__()
+        invocation_attrs["update_time"] = self.update_time.__str__()
+
+        steps = []
+        for step in self.steps:
+            steps.append(step.serialize(id_encoder, serialization_options))
+        invocation_attrs["steps"] = steps
+
+        input_parameters = []
+        for input_parameter in self.input_parameters:
+            input_parameters.append(input_parameter.serialize(id_encoder, serialization_options))
+        invocation_attrs["input_parameters"] = input_parameters
+
+        step_states = []
+        for step_state in self.step_states:
+            step_states.append(step_state.serialize(id_encoder, serialization_options))
+        invocation_attrs["step_states"] = step_states
+
+        input_step_parameters = []
+        for input_step_parameter in self.input_step_parameters:
+            input_step_parameters.append(input_step_parameter.serialize(id_encoder, serialization_options))
+        invocation_attrs["input_step_parameters"] = input_step_parameters
+
+        input_datasets = []
+        for input_dataset in self.input_datasets:
+            input_datasets.append(input_dataset.serialize(id_encoder, serialization_options))
+        invocation_attrs["input_datasets"] = input_datasets
+
+        input_dataset_collections = []
+        for input_dataset_collection in self.input_dataset_collections:
+            input_dataset_collections.append(input_dataset_collection.serialize(id_encoder, serialization_options))
+        invocation_attrs["input_dataset_collections"] = input_dataset_collections
+
+        output_dataset_collections = []
+        for output_dataset_collection in self.output_dataset_collections:
+            output_dataset_collections.append(output_dataset_collection.serialize(id_encoder, serialization_options))
+        invocation_attrs["output_dataset_collections"] = output_dataset_collections
+
+        output_datasets = []
+        for output_dataset in self.output_datasets:
+            output_datasets.append(output_dataset.serialize(id_encoder, serialization_options))
+        invocation_attrs["output_datasets"] = output_datasets
+
+        output_values = []
+        for output_value in self.output_values:
+            output_values.append(output_value.serialize(id_encoder, serialization_options))
+        invocation_attrs["output_values"] = output_values
+
+        serialization_options.attach_identifier(id_encoder, self, invocation_attrs)
+        return invocation_attrs
+
     def to_dict(self, view="collection", value_mapper=None, step_details=False, legacy_job_state=False):
         rval = super().to_dict(view=view, value_mapper=value_mapper)
         if view == "element":
@@ -7657,7 +7853,7 @@ class WorkflowInvocationToSubworkflowInvocationAssociation(Base, Dictifiable, Re
     dict_element_visible_keys = ["id", "workflow_step_id", "workflow_invocation_id", "subworkflow_invocation_id"]
 
 
-class WorkflowInvocationStep(Base, Dictifiable, RepresentById):
+class WorkflowInvocationStep(Base, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation_step"
 
     id = Column(Integer, primary_key=True)
@@ -7750,6 +7946,46 @@ class WorkflowInvocationStep(Base, Dictifiable, RepresentById):
         else:
             return []
 
+    def _serialize(self, id_encoder, serialization_options):
+        step_attrs = dict_for(self)
+        step_attrs["state"] = self.state
+        step_attrs["create_time"] = self.create_time.__str__()
+        step_attrs["update_time"] = self.update_time.__str__()
+        step_attrs["order_index"] = self.workflow_step.order_index
+        step_attrs["action"] = self.action
+        if self.job:
+            step_attrs["job"] = self.job.serialize(id_encoder, serialization_options, for_link=True)
+        elif self.implicit_collection_jobs:
+            step_attrs["implicit_collection_jobs"] = self.implicit_collection_jobs.serialize(
+                id_encoder, serialization_options, for_link=True
+            )
+
+        outputs = []
+        for output_dataset_assoc in self.output_datasets:
+            output = dict(
+                output_name=output_dataset_assoc.output_name,
+            )
+            dataset = output_dataset_assoc.dataset
+            if dataset:
+                output["dataset"] = dataset.serialize(id_encoder, serialization_options, for_link=True)
+            outputs.append(output)
+        step_attrs["outputs"] = outputs
+
+        output_collections = []
+        for output_dataset_collection_assoc in self.output_dataset_collections:
+            output_collection = dict(
+                output_name=output_dataset_collection_assoc.output_name,
+            )
+            dataset_collection = output_dataset_collection_assoc.dataset_collection
+            if dataset_collection:
+                output_collection["dataset_collection"] = dataset_collection.serialize(
+                    id_encoder, serialization_options, for_link=True
+                )
+            output_collections.append(output_collection)
+        step_attrs["output_collections"] = output_collections
+
+        return step_attrs
+
     def to_dict(self, view="collection", value_mapper=None):
         rval = super().to_dict(view=view, value_mapper=value_mapper)
         rval["order_index"] = self.workflow_step.order_index
@@ -7787,7 +8023,7 @@ class WorkflowInvocationStep(Base, Dictifiable, RepresentById):
         return rval
 
 
-class WorkflowRequestInputParameter(Base, Dictifiable, RepresentById):
+class WorkflowRequestInputParameter(Base, Dictifiable, Serializable):
     """Workflow-related parameters not tied to steps or inputs."""
 
     __tablename__ = "workflow_request_input_parameters"
@@ -7809,8 +8045,15 @@ class WorkflowRequestInputParameter(Base, Dictifiable, RepresentById):
         META_PARAMETERS = "meta"
         RESOURCE_PARAMETERS = "resource"
 
+    def _serialize(self, id_encoder, serialization_options):
+        request_input_parameter_attrs = dict_for(self)
+        request_input_parameter_attrs["name"] = self.name
+        request_input_parameter_attrs["value"] = self.value
+        request_input_parameter_attrs["type"] = self.type
+        return request_input_parameter_attrs
 
-class WorkflowRequestStepState(Base, Dictifiable, RepresentById):
+
+class WorkflowRequestStepState(Base, Dictifiable, Serializable):
     """Workflow step value parameters."""
 
     __tablename__ = "workflow_request_step_states"
@@ -7826,8 +8069,14 @@ class WorkflowRequestStepState(Base, Dictifiable, RepresentById):
 
     dict_collection_visible_keys = ["id", "name", "value", "workflow_step_id"]
 
+    def _serialize(self, id_encoder, serialization_options):
+        request_step_state = dict_for(self)
+        request_step_state["value"] = self.value
+        request_step_state["order_index"] = self.workflow_step.order_index
+        return request_step_state
 
-class WorkflowRequestToInputDatasetAssociation(Base, Dictifiable, RepresentById):
+
+class WorkflowRequestToInputDatasetAssociation(Base, Dictifiable, Serializable):
     """Workflow step input dataset parameters."""
 
     __tablename__ = "workflow_request_to_input_dataset"
@@ -7845,8 +8094,17 @@ class WorkflowRequestToInputDatasetAssociation(Base, Dictifiable, RepresentById)
     history_content_type = "dataset"
     dict_collection_visible_keys = ["id", "workflow_invocation_id", "workflow_step_id", "dataset_id", "name"]
 
+    def _serialize(self, id_encoder, serialization_options):
+        request_input_dataset_attrs = dict_for(self)
+        request_input_dataset_attrs["name"] = self.name
+        request_input_dataset_attrs["dataset"] = self.dataset.serialize(
+            id_encoder, serialization_options, for_link=True
+        )
+        request_input_dataset_attrs["order_index"] = self.workflow_step.order_index
+        return request_input_dataset_attrs
 
-class WorkflowRequestToInputDatasetCollectionAssociation(Base, Dictifiable, RepresentById):
+
+class WorkflowRequestToInputDatasetCollectionAssociation(Base, Dictifiable, Serializable):
     """Workflow step input dataset collection parameters."""
 
     __tablename__ = "workflow_request_to_input_collection_dataset"
@@ -7863,8 +8121,17 @@ class WorkflowRequestToInputDatasetCollectionAssociation(Base, Dictifiable, Repr
     history_content_type = "dataset_collection"
     dict_collection_visible_keys = ["id", "workflow_invocation_id", "workflow_step_id", "dataset_collection_id", "name"]
 
+    def _serialize(self, id_encoder, serialization_options):
+        request_input_collection_attrs = dict_for(self)
+        request_input_collection_attrs["name"] = self.name
+        request_input_collection_attrs["dataset_collection"] = self.dataset_collection.serialize(
+            id_encoder, serialization_options, for_link=True
+        )
+        request_input_collection_attrs["order_index"] = self.workflow_step.order_index
+        return request_input_collection_attrs
 
-class WorkflowRequestInputStepParameter(Base, Dictifiable, RepresentById):
+
+class WorkflowRequestInputStepParameter(Base, Dictifiable, Serializable):
     """Workflow step parameter inputs."""
 
     __tablename__ = "workflow_request_input_step_parameter"
@@ -7879,8 +8146,14 @@ class WorkflowRequestInputStepParameter(Base, Dictifiable, RepresentById):
 
     dict_collection_visible_keys = ["id", "workflow_invocation_id", "workflow_step_id", "parameter_value"]
 
+    def _serialize(self, id_encoder, serialization_options):
+        request_input_step_parameter_attrs = dict_for(self)
+        request_input_step_parameter_attrs["parameter_value"] = self.parameter_value
+        request_input_step_parameter_attrs["order_index"] = self.workflow_step.order_index
+        return request_input_step_parameter_attrs
 
-class WorkflowInvocationOutputDatasetAssociation(Base, Dictifiable, RepresentById):
+
+class WorkflowInvocationOutputDatasetAssociation(Base, Dictifiable, Serializable):
     """Represents links to output datasets for the workflow."""
 
     __tablename__ = "workflow_invocation_output_dataset_association"
@@ -7899,8 +8172,15 @@ class WorkflowInvocationOutputDatasetAssociation(Base, Dictifiable, RepresentByI
     history_content_type = "dataset"
     dict_collection_visible_keys = ["id", "workflow_invocation_id", "workflow_step_id", "dataset_id", "name"]
 
+    def _serialize(self, id_encoder, serialization_options):
+        output_dataset_attrs = dict_for(self)
+        output_dataset_attrs["dataset"] = self.dataset.serialize(id_encoder, serialization_options, for_link=True)
+        output_dataset_attrs["order_index"] = self.workflow_step.order_index
+        output_dataset_attrs["workflow_output"] = self.workflow_output.serialize(id_encoder, serialization_options)
+        return output_dataset_attrs
 
-class WorkflowInvocationOutputDatasetCollectionAssociation(Base, Dictifiable, RepresentById):
+
+class WorkflowInvocationOutputDatasetCollectionAssociation(Base, Dictifiable, Serializable):
     """Represents links to output dataset collections for the workflow."""
 
     __tablename__ = "workflow_invocation_output_dataset_collection_association"
@@ -7921,8 +8201,17 @@ class WorkflowInvocationOutputDatasetCollectionAssociation(Base, Dictifiable, Re
     history_content_type = "dataset_collection"
     dict_collection_visible_keys = ["id", "workflow_invocation_id", "workflow_step_id", "dataset_collection_id", "name"]
 
+    def _serialize(self, id_encoder, serialization_options):
+        output_collection_attrs = dict_for(self)
+        output_collection_attrs["dataset_collection"] = self.dataset_collection.serialize(
+            id_encoder, serialization_options, for_link=True
+        )
+        output_collection_attrs["order_index"] = self.workflow_step.order_index
+        output_collection_attrs["workflow_output"] = self.workflow_output.serialize(id_encoder, serialization_options)
+        return output_collection_attrs
 
-class WorkflowInvocationOutputValue(Base, Dictifiable, RepresentById):
+
+class WorkflowInvocationOutputValue(Base, Dictifiable, Serializable):
     """Represents a link to a specified or computed workflow parameter."""
 
     __tablename__ = "workflow_invocation_output_value"
@@ -7952,6 +8241,13 @@ class WorkflowInvocationOutputValue(Base, Dictifiable, RepresentById):
     workflow_output = relationship("WorkflowOutput")
 
     dict_collection_visible_keys = ["id", "workflow_invocation_id", "workflow_step_id", "value"]
+
+    def _serialize(self, id_encoder, serialization_options):
+        output_value_attrs = dict_for(self)
+        output_value_attrs["value"] = self.value
+        output_value_attrs["order_index"] = self.workflow_step.order_index
+        output_value_attrs["workflow_output"] = self.workflow_output.serialize(id_encoder, serialization_options)
+        return output_value_attrs
 
 
 class WorkflowInvocationStepOutputDatasetAssociation(Base, Dictifiable, RepresentById):
@@ -8247,7 +8543,7 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
             assoc = cls.sa_session.query(cls).filter_by(server_url=server_url, handle=association.handle)[0]
         except IndexError:
             assoc = cls(server_url=server_url, handle=association.handle)
-        assoc.secret = base64.encodestring(association.secret).decode()
+        assoc.secret = base64.encodebytes(association.secret).decode()
         assoc.issued = association.issued
         assoc.lifetime = association.lifetime
         assoc.assoc_type = association.assoc_type
@@ -8507,8 +8803,8 @@ class CloudAuthz(Base, _HasTable):
         self.provider = provider
         self.config = config
         self.authn_id = authn_id
-        self.last_update = datetime.now()
-        self.last_activity = datetime.now()
+        self.last_update = now()
+        self.last_activity = now()
         self.description = description
 
     def equals(self, user_id, provider, authn_id, config):
@@ -8613,8 +8909,8 @@ class PageRevision(Base, Dictifiable, RepresentById):
 
     def to_dict(self, view="element"):
         rval = super().to_dict(view=view)
-        rval["create_time"] = str(self.create_time)
-        rval["update_time"] = str(self.update_time)
+        rval["create_time"] = self.create_time.isoformat()
+        rval["update_time"] = self.update_time.isoformat()
         return rval
 
 
@@ -9337,31 +9633,11 @@ class CleanupEventImplicitlyConvertedDatasetAssociationAssociation(Base):
     icda_id = Column(Integer, ForeignKey("implicitly_converted_dataset_association.id"), index=True)
 
 
-# The following models (Dataset, HDA, LDDA) are mapped imperatively (for details see discussion in PR #12064)
+# The following models (HDA, LDDA) are mapped imperatively (for details see discussion in PR #12064)
 # TLDR: there are issues ('metadata' property, Galaxy object wrapping) that need to be addressed separately
 # before these models can be mapped declaratively. Keeping them in the mapping module breaks the auth package
 # tests (which import model directly bypassing the mapping module); fixing that is possible by importing
 # mapping into the test; however, having all models mapped in the same module is cleaner.
-
-Dataset.table = Table(
-    "dataset",
-    mapper_registry.metadata,
-    Column("id", Integer, primary_key=True),
-    Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, index=True, default=now, onupdate=now),
-    Column("state", TrimmedString(64), index=True),
-    Column("deleted", Boolean, index=True, default=False),
-    Column("purged", Boolean, index=True, default=False),
-    Column("purgable", Boolean, default=True),
-    Column("object_store_id", TrimmedString(255), index=True),
-    Column("external_filename", TEXT),
-    Column("_extra_files_path", TEXT),
-    Column("created_from_basename", TEXT),
-    Column("file_size", Numeric(15, 0)),
-    Column("total_size", Numeric(15, 0)),
-    Column("uuid", UUIDType()),
-)
 
 HistoryDatasetAssociation.table = Table(
     "history_dataset_association",
@@ -9391,6 +9667,7 @@ HistoryDatasetAssociation.table = Table(
     Column("tool_version", TEXT),
     Column("extension", TrimmedString(64)),
     Column("metadata", MetadataType, key="_metadata"),
+    Column("metadata_deferred", Boolean, key="metadata_deferred"),
     Column("parent_id", Integer, ForeignKey("history_dataset_association.id"), nullable=True),
     Column("designation", TrimmedString(255)),
     Column("deleted", Boolean, index=True, default=False),
@@ -9438,6 +9715,7 @@ LibraryDatasetDatasetAssociation.table = Table(
     Column("tool_version", TEXT),
     Column("extension", TrimmedString(64)),
     Column("metadata", MetadataType, key="_metadata"),
+    Column("metadata_deferred", Boolean, key="metadata_deferred"),
     Column("parent_id", Integer, ForeignKey("library_dataset_dataset_association.id"), nullable=True),
     Column("designation", TrimmedString(255)),
     Column("deleted", Boolean, index=True, default=False),
@@ -9449,47 +9727,6 @@ LibraryDatasetDatasetAssociation.table = Table(
     Column("message", TrimmedString(255)),
 )
 
-mapper_registry.map_imperatively(
-    Dataset,
-    Dataset.table,
-    properties=dict(
-        actions=relationship(DatasetPermissions, back_populates="dataset"),
-        job=relationship(Job, primaryjoin=(Dataset.table.c.job_id == Job.id)),
-        active_history_associations=relationship(
-            HistoryDatasetAssociation,
-            primaryjoin=(
-                (Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id)
-                & (HistoryDatasetAssociation.table.c.deleted == false())
-                & (HistoryDatasetAssociation.table.c.purged == false())
-            ),
-            viewonly=True,
-        ),
-        purged_history_associations=relationship(
-            HistoryDatasetAssociation,
-            primaryjoin=(
-                (Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id)
-                & (HistoryDatasetAssociation.table.c.purged == true())
-            ),
-            viewonly=True,
-        ),
-        active_library_associations=relationship(
-            LibraryDatasetDatasetAssociation,
-            primaryjoin=(
-                (Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id)
-                & (LibraryDatasetDatasetAssociation.table.c.deleted == false())
-            ),
-            viewonly=True,
-        ),
-        hashes=relationship(DatasetHash, back_populates="dataset"),
-        sources=relationship(DatasetSource, back_populates="dataset"),
-        history_associations=relationship(HistoryDatasetAssociation, back_populates="dataset"),
-        library_associations=relationship(
-            LibraryDatasetDatasetAssociation,
-            primaryjoin=(LibraryDatasetDatasetAssociation.table.c.dataset_id == Dataset.table.c.id),
-            back_populates="dataset",
-        ),
-    ),
-)
 
 mapper_registry.map_imperatively(
     HistoryDatasetAssociation,
@@ -9497,7 +9734,7 @@ mapper_registry.map_imperatively(
     properties=dict(
         dataset=relationship(
             Dataset,
-            primaryjoin=(Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id),
+            primaryjoin=(lambda: Dataset.id == HistoryDatasetAssociation.table.c.dataset_id),
             lazy="joined",
             back_populates="history_associations",
         ),
@@ -9585,7 +9822,7 @@ mapper_registry.map_imperatively(
     properties=dict(
         dataset=relationship(
             Dataset,
-            primaryjoin=(LibraryDatasetDatasetAssociation.table.c.dataset_id == Dataset.table.c.id),
+            primaryjoin=(lambda: LibraryDatasetDatasetAssociation.table.c.dataset_id == Dataset.id),
             back_populates="library_associations",
         ),
         library_dataset=relationship(

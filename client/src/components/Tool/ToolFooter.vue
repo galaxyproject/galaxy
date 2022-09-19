@@ -1,7 +1,7 @@
 <template>
-    <b-card class="tool-footer" v-if="hasContent">
+    <b-card v-if="hasContent" class="tool-footer">
         <div v-if="hasCitations" class="mb-1">
-            <span class="font-weight-bold">Citations:</span>
+            <span v-localize class="footer-section-name">Citations</span>
             <font-awesome-icon
                 v-b-tooltip.hover
                 title="Copy all citations as BibTeX"
@@ -9,31 +9,28 @@
                 style="cursor: pointer"
                 @click="copyBibtex" />
             <Citation
-                class="formatted-reference"
                 v-for="(citation, index) in citations"
                 :key="index"
+                class="formatted-reference"
                 :citation="citation"
-                output-format="bibliography"
                 prefix="-" />
         </div>
         <div v-if="hasRequirements" class="mb-1">
-            <span class="font-weight-bold"
-                >Requirements:
-                <a href="https://galaxyproject.org/tools/requirements/" target="_blank">
-                    <font-awesome-icon v-b-tooltip.hover title="Learn more about Galaxy Requirements" icon="question" />
-                </a>
-            </span>
+            <span v-localize class="footer-section-name">Requirements</span>
+            <a href="https://galaxyproject.org/tools/requirements/" target="_blank">
+                <font-awesome-icon v-b-tooltip.hover title="Learn more about Galaxy Requirements" icon="question" />
+            </a>
             <div v-for="(requirement, index) in requirements" :key="index">
                 - {{ requirement.name }}
                 <span v-if="requirement.version"> (Version {{ requirement.version }}) </span>
             </div>
         </div>
-        <div class="mb-1" v-if="hasLicense">
-            <span class="font-weight-bold">License:</span>
+        <div v-if="hasLicense" class="mb-1">
+            <span v-localize class="footer-section-name">License</span>
             <License :license-id="license" />
         </div>
         <div v-if="hasReferences" class="mb-1">
-            <span class="font-weight-bold">References:</span>
+            <span v-localize class="footer-section-name">References</span>
             <div v-for="(xref, index) in xrefs" :key="index">
                 -
                 <template v-if="xref.reftype == 'bio.tools'">
@@ -108,6 +105,11 @@ export default {
             type: Array,
         },
     },
+    data() {
+        return {
+            citations: [],
+        };
+    },
     computed: {
         hasRequirements() {
             return this.requirements && this.requirements.length > 0;
@@ -126,11 +128,6 @@ export default {
                 this.hasRequirements || this.hasReferences || this.hasCreators || this.hasCitations || this.hasLicense
             );
         },
-    },
-    data() {
-        return {
-            citations: [],
-        };
     },
     watch: {
         id() {
@@ -164,3 +161,12 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.footer-section-name {
+    font-weight: bold;
+}
+.footer-section-name::after {
+    content: ":";
+}
+</style>

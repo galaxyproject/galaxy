@@ -25,6 +25,7 @@ class DefaultUserExposeIntegrationTestCase(_BaseUserExposeIntegerationTestCase):
 class EmailUserExposeIntegrationTestCase(_BaseUserExposeIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["expose_user_email"] = True
 
     def test_only_email_exposed(self):
@@ -41,6 +42,7 @@ class EmailUserExposeIntegrationTestCase(_BaseUserExposeIntegerationTestCase):
 class UsernameUserExposeIntegrationTestCase(_BaseUserExposeIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["expose_user_name"] = True
 
     def test_only_username_exposed(self):

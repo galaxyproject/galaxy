@@ -3,16 +3,24 @@ Determine if installed tool shed repositories have updates available in their re
 """
 import logging
 import threading
+from typing import NamedTuple
 
 from sqlalchemy import false
 
 from galaxy import util
+from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.util.repository_util import get_tool_shed_status_for_installed_repository
 from galaxy.tool_shed.util.shed_util_common import clean_dependency_relationships
+from galaxy.util.sleeper import Sleeper
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
 from galaxy.util.tool_shed.encoding_util import tool_shed_decode
 
 log = logging.getLogger(__name__)
+
+
+class UpdateToChangeset(NamedTuple):
+    changeset_revision: str
+    ctx_rev: str
 
 
 class UpdateRepositoryManager:
@@ -28,9 +36,8 @@ class UpdateRepositoryManager:
             self.app.application_stack.register_postfork_function(self.restarter.start)
             self.seconds_to_sleep = int(app.config.hours_between_check * 3600)
 
-    def get_update_to_changeset_revision_and_ctx_rev(self, repository):
+    def get_update_to_changeset_revision_and_ctx_rev(self, repository: ToolShedRepository) -> UpdateToChangeset:
         """Return the changeset revision hash to which the repository can be updated."""
-        changeset_revision_dict = {}
         tool_shed_url = get_tool_shed_url_from_tool_shed_registry(self.app, str(repository.tool_shed))
         params = dict(
             name=str(repository.name),
@@ -45,53 +52,19 @@ class UpdateRepositoryManager:
                 pathspec=pathspec,
                 params=params,
             )
-            if encoded_update_dict:
-                update_dict = tool_shed_decode(encoded_update_dict)
-                includes_data_managers = update_dict.get("includes_data_managers", False)
-                includes_datatypes = update_dict.get("includes_datatypes", False)
-                includes_tools = update_dict.get("includes_tools", False)
-                includes_tools_for_display_in_tool_panel = update_dict.get(
-                    "includes_tools_for_display_in_tool_panel", False
-                )
-                includes_tool_dependencies = update_dict.get("includes_tool_dependencies", False)
-                includes_workflows = update_dict.get("includes_workflows", False)
-                has_repository_dependencies = update_dict.get("has_repository_dependencies", False)
-                has_repository_dependencies_only_if_compiling_contained_td = update_dict.get(
-                    "has_repository_dependencies_only_if_compiling_contained_td", False
-                )
-                changeset_revision = update_dict.get("changeset_revision", None)
-                ctx_rev = update_dict.get("ctx_rev", None)
-            changeset_revision_dict["includes_data_managers"] = includes_data_managers
-            changeset_revision_dict["includes_datatypes"] = includes_datatypes
-            changeset_revision_dict["includes_tools"] = includes_tools
-            changeset_revision_dict[
-                "includes_tools_for_display_in_tool_panel"
-            ] = includes_tools_for_display_in_tool_panel
-            changeset_revision_dict["includes_tool_dependencies"] = includes_tool_dependencies
-            changeset_revision_dict["includes_workflows"] = includes_workflows
-            changeset_revision_dict["has_repository_dependencies"] = has_repository_dependencies
-            changeset_revision_dict[
-                "has_repository_dependencies_only_if_compiling_contained_td"
-            ] = has_repository_dependencies_only_if_compiling_contained_td
-            changeset_revision_dict["changeset_revision"] = changeset_revision
-            changeset_revision_dict["ctx_rev"] = ctx_rev
+            update_dict = tool_shed_decode(encoded_update_dict)
+            changeset_revision = update_dict.get("changeset_revision", None)
+            ctx_rev = update_dict.get("ctx_rev", None)
         except Exception as e:
             log.debug(
                 f"Error getting change set revision for update from the tool shed for repository '{repository.name}': {str(e)}"
             )
-            changeset_revision_dict["includes_data_managers"] = False
-            changeset_revision_dict["includes_datatypes"] = False
-            changeset_revision_dict["includes_tools"] = False
-            changeset_revision_dict["includes_tools_for_display_in_tool_panel"] = False
-            changeset_revision_dict["includes_tool_dependencies"] = False
-            changeset_revision_dict["includes_workflows"] = False
-            changeset_revision_dict["has_repository_dependencies"] = False
-            changeset_revision_dict["has_repository_dependencies_only_if_compiling_contained_td"] = False
-            changeset_revision_dict["changeset_revision"] = None
-            changeset_revision_dict["ctx_rev"] = None
-        return changeset_revision_dict
+            changeset_revision = None
+            ctx_rev = None
+        # restore_repository uses changeset_revision, ctx_rev
+        return UpdateToChangeset(changeset_revision, ctx_rev)
 
-    def __restarter(self):
+    def __restarter(self) -> None:
         log.info("Update repository manager restarter starting up...")
         while self.running:
             # Make a call to the Tool Shed for each installed repository to get the latest
@@ -116,12 +89,14 @@ class UpdateRepositoryManager:
             self.sleeper.sleep(self.seconds_to_sleep)
         log.info("Update repository manager restarter shutting down...")
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         if self.app.config.enable_tool_shed_check:
             self.running = False
             self.sleeper.wake()
 
-    def update_repository_record(self, repository, updated_metadata_dict, updated_changeset_revision, updated_ctx_rev):
+    def update_repository_record(
+        self, repository: ToolShedRepository, updated_metadata_dict, updated_changeset_revision, updated_ctx_rev
+    ) -> ToolShedRepository:
         """
         Update a tool_shed_repository database record with new information retrieved from the
         Tool Shed.  This happens when updating an installed repository to a new changeset revision.
@@ -142,23 +117,3 @@ class UpdateRepositoryManager:
         self.app.install_model.context.flush()
         self.app.install_model.context.refresh(repository)
         return repository
-
-
-class Sleeper:
-    """
-    Provides a 'sleep' method that sleeps for a number of seconds *unless* the notify method
-    is called (from a different thread).
-    """
-
-    def __init__(self):
-        self.condition = threading.Condition()
-
-    def sleep(self, seconds):
-        self.condition.acquire()
-        self.condition.wait(seconds)
-        self.condition.release()
-
-    def wake(self):
-        self.condition.acquire()
-        self.condition.notify()
-        self.condition.release()

@@ -3,11 +3,9 @@ from ..base.twilltestcase import (
     ShedTwillTestCase,
 )
 
-datatypes_repository_name = "emboss_datatypes_0030"
-datatypes_repository_description = "Galaxy applicable data formats used by Emboss tools."
-datatypes_repository_long_description = (
-    "Galaxy applicable data formats used by Emboss tools.  This repository contains no tools."
-)
+column_maker_repository_name = "column_maker_0030"
+column_maker_repository_description = "Add column"
+column_maker_repository_long_description = "Compute an expression on every row"
 
 emboss_repository_name = "emboss_0030"
 emboss_5_repository_name = "emboss_5_0030"
@@ -15,8 +13,6 @@ emboss_6_repository_name = "emboss_6_0030"
 emboss_repository_description = "Galaxy wrappers for Emboss version 5.0.0 tools"
 emboss_repository_long_description = "Galaxy wrappers for Emboss version 5.0.0 tools"
 
-base_datatypes_count = 0
-repository_datatypes_count = 0
 running_standalone = False
 
 
@@ -42,22 +38,21 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
 
     def test_0005_ensure_repositories_and_categories_exist(self):
         """Create the 0030 category and upload the emboss repository to the tool shed, if necessary."""
-        global repository_datatypes_count
         global running_standalone
         category = self.create_category(
             name="Test 0030 Repository Dependency Revisions",
             description="Tests for a repository with tool dependencies.",
         )
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        datatypes_repository = self.get_or_create_repository(
-            name=datatypes_repository_name,
-            description=datatypes_repository_description,
-            long_description=datatypes_repository_long_description,
+        column_maker_repository = self.get_or_create_repository(
+            name=column_maker_repository_name,
+            description=column_maker_repository_description,
+            long_description=column_maker_repository_long_description,
             owner=common.test_user_1_name,
             category_id=self.security.encode_id(category.id),
             strings_displayed=[],
         )
-        if self.repository_is_new(datatypes_repository):
+        if self.repository_is_new(column_maker_repository):
             running_standalone = True
             emboss_5_repository = self.get_or_create_repository(
                 name=emboss_5_repository_name,
@@ -68,26 +63,26 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
                 strings_displayed=[],
             )
             self.upload_file(
-                datatypes_repository,
-                filename="emboss/datatypes/datatypes_conf.xml",
+                column_maker_repository,
+                filename="column_maker/column_maker.tar",
                 filepath=None,
-                valid_tools_only=True,
-                uncompress_file=False,
+                valid_tools_only=False,
+                uncompress_file=True,
                 remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded datatypes_conf.xml.",
+                commit_message="Uploaded bismark tarball.",
                 strings_displayed=[],
                 strings_not_displayed=[],
             )
             repository_dependencies_path = self.generate_temp_path("test_1030", additional_paths=["emboss", "5"])
-            datatypes_tuple = (
+            column_maker_tuple = (
                 self.url,
-                datatypes_repository.name,
-                datatypes_repository.user.username,
-                self.get_repository_tip(datatypes_repository),
+                column_maker_repository.name,
+                column_maker_repository.user.username,
+                self.get_repository_tip(column_maker_repository),
             )
             self.create_repository_dependency(
                 repository=emboss_5_repository,
-                repository_tuples=[datatypes_tuple],
+                repository_tuples=[column_maker_tuple],
                 filepath=repository_dependencies_path,
             )
             emboss_6_repository = self.get_or_create_repository(
@@ -110,15 +105,15 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
                 strings_not_displayed=[],
             )
             repository_dependencies_path = self.generate_temp_path("test_1030", additional_paths=["emboss", "6"])
-            datatypes_tuple = (
+            column_maker_tuple = (
                 self.url,
-                datatypes_repository.name,
-                datatypes_repository.user.username,
-                self.get_repository_tip(datatypes_repository),
+                column_maker_repository.name,
+                column_maker_repository.user.username,
+                self.get_repository_tip(column_maker_repository),
             )
             self.create_repository_dependency(
                 repository=emboss_6_repository,
-                repository_tuples=[datatypes_tuple],
+                repository_tuples=[column_maker_tuple],
                 filepath=repository_dependencies_path,
             )
             emboss_repository = self.get_or_create_repository(
@@ -163,15 +158,11 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
                 repository_tuples=[dependency_tuple],
                 filepath=repository_dependencies_path,
             )
-        repository_datatypes_count = int(self.get_repository_datatypes_count(datatypes_repository))
 
     def test_0010_install_emboss_repository(self):
         """Install the emboss repository into the Galaxy instance."""
-        global repository_datatypes_count
-        global base_datatypes_count
         global running_standalone
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        base_datatypes_count = int(self.get_datatypes_count())
         strings_displayed = ["Handle", "Never installed", "tool dependencies", "emboss", "5.0.0", "package"]
         self.install_repository(
             emboss_repository_name,
@@ -191,24 +182,6 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             installed_repository.installed_changeset_revision,
         ]
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
-        current_datatypes = int(self.get_datatypes_count())
-        # If we are running this test by itself, installing the emboss repository should also install the emboss_datatypes
-        # repository, and this should add datatypes to the datatypes registry. If that is the case, verify that datatypes
-        # have been added, otherwise verify that the count is unchanged.
-        if running_standalone:
-            assert current_datatypes == base_datatypes_count + repository_datatypes_count, (
-                "Installing emboss resulted in unexpected count in datatypes registry, expected: %s, actual: %s, original: %s, added from repo: %s"
-                % (
-                    str(base_datatypes_count + repository_datatypes_count),
-                    str(current_datatypes),
-                    str(base_datatypes_count),
-                    str(repository_datatypes_count),
-                )
-            )
-        else:
-            assert (
-                current_datatypes == base_datatypes_count
-            ), f"Installing emboss added new datatypes, current datatypes: {current_datatypes}, original datatypes: {base_datatypes_count}"
 
     def test_0015_uninstall_emboss_repository(self):
         """Uninstall the emboss repository."""

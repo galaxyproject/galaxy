@@ -39,7 +39,7 @@
                     </template>
                     <p class="card-text" v-html="helpSummary(info.help) || info.description" />
                     <p class="card-text">
-                        <b-btn :index="index" v-b-modal="'modal-' + '-' + index">Info</b-btn>
+                        <b-btn v-b-modal="'modal-' + '-' + index" :index="index">Info</b-btn>
                         <b-modal :id="'modal-' + '-' + index" centered ok-only :static="true" :title="info.name">
                             <b>{{ info.version + " / " + info.id }}</b>
                             <p>{{ info.description }}</p>

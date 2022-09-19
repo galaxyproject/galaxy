@@ -14,8 +14,8 @@
                     v-else-if="canClearItems"
                     href="#"
                     class="card-link"
-                    @click="onReviewItems"
-                    data-test-id="review-link">
+                    data-test-id="review-link"
+                    @click="onReviewItems">
                     <b>{{ reviewAndClearText }} {{ summary.niceTotalSize }}</b>
                 </b-link>
                 <b v-else class="text-secondary" data-test-id="no-items-indicator">
@@ -61,14 +61,22 @@ export default {
             errorMessage: null,
         };
     },
-    async created() {
-        await this.refresh();
-    },
     computed: {
         /** @returns {Boolean} */
         canClearItems() {
             return this.summary.totalItems > 0;
         },
+    },
+    watch: {
+        /** The parent signaled that `operationId` must be updated */
+        async refreshOperationId(operationId) {
+            if (this.operation.id === operationId) {
+                await this.refresh();
+            }
+        },
+    },
+    async created() {
+        await this.refresh();
     },
     methods: {
         async refresh() {
@@ -89,14 +97,6 @@ export default {
         },
         onReviewItems() {
             this.$emit("onReviewItems", this.operation, this.summary.totalItems);
-        },
-    },
-    watch: {
-        /** The parent signaled that `operationId` must be updated */
-        async refreshOperationId(operationId) {
-            if (this.operation.id === operationId) {
-                await this.refresh();
-            }
         },
     },
 };

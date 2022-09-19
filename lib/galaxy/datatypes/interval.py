@@ -27,6 +27,7 @@ from galaxy.datatypes.util.gff_util import (
     parse_gff3_attributes,
     parse_gff_attributes,
 )
+from galaxy.model import DatasetInstance
 from galaxy.util import compression_utils
 from . import (
     data,
@@ -85,6 +86,7 @@ class Interval(Tabular):
     MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
     MetadataElement(
         name="strandCol",
+        default=0,
         desc="Strand column (click box & select)",
         param=metadata.ColumnParameter,
         optional=True,
@@ -167,10 +169,11 @@ class Interval(Tabular):
                     else:
                         empty_line_count += 1
 
-    def displayable(self, dataset):
+    def displayable(self, dataset: DatasetInstance):
         try:
             return (
-                dataset.has_data()
+                not dataset.dataset.purged
+                and dataset.has_data()
                 and dataset.state == dataset.states.OK
                 and dataset.metadata.columns > 0
                 and dataset.metadata.data_lines != 0
@@ -457,6 +460,7 @@ class Bed(Interval):
     MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
     MetadataElement(
         name="strandCol",
+        default=0,
         desc="Strand column (click box & select)",
         param=metadata.ColumnParameter,
         optional=True,
@@ -685,6 +689,7 @@ class BedStrict(Bed):
     MetadataElement(name="endCol", default=3, desc="End column", readonly=True, param=metadata.MetadataParameter)
     MetadataElement(
         name="strandCol",
+        default=0,
         desc="Strand column (click box & select)",
         readonly=True,
         param=metadata.MetadataParameter,
@@ -1611,6 +1616,7 @@ class ENCODEPeak(Interval):
     MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
     MetadataElement(
         name="strandCol",
+        default=0,
         desc="Strand column (click box & select)",
         param=metadata.ColumnParameter,
         optional=True,

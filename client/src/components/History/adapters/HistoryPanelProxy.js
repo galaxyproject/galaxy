@@ -2,12 +2,8 @@
  * This is an adapter for the History component. It's required since the previous
  * history provided the same interface for other components.
  */
-import $ from "jquery";
 import Backbone from "backbone";
 import store from "store";
-import { getGalaxyInstance } from "app";
-import { mountVueComponent } from "utils/mountVueComponent";
-import HistoryIndex from "components/History/Index";
 import { buildCollectionModal } from "./buildCollectionModal";
 import { createDatasetCollection } from "components/History/model/queries";
 import { watchHistory } from "store/historyStore/model/watchHistory";
@@ -15,14 +11,8 @@ import { watchHistory } from "store/historyStore/model/watchHistory";
 // extend existing current history panel
 export class HistoryPanelProxy {
     constructor() {
-        const Galaxy = getGalaxyInstance();
-        Galaxy.currHistoryPanel = this;
         const model = (this.model = new Backbone.Model({}));
         this.collection = {
-            constructor(models) {
-                this.models = models;
-                this.unwatch = null;
-            },
             each(callback, filterText = "") {
                 const historyItems = store.getters.getHistoryItems({ historyId: model.id, filterText: filterText });
                 historyItems.forEach((model) => {
@@ -61,14 +51,15 @@ export class HistoryPanelProxy {
         watchHistory();
     }
     refreshContents() {
-        // to be removed after disabling legacy history
+        // to be removed after disabling legacy history, present to provide uniform interface
+        // with History Panel Backbone View.
     }
     loadCurrentHistory() {
         store.dispatch("history/loadCurrentHistory");
     }
     switchToHistory(historyId) {
         this.model.id = historyId;
-        store.dispatch("history/setCurrentHistoryId", historyId);
+        store.dispatch("history/setCurrentHistory", historyId);
     }
     async buildCollection(collectionType, selection, hideSourceItems, fromRulesInput = false) {
         let selectionContent = null;
@@ -91,14 +82,5 @@ export class HistoryPanelProxy {
             console.debug("Submitting collection build request.", modalResult);
             await createDatasetCollection({ id: this.model.id }, modalResult);
         }
-    }
-    render() {
-        const container = document.createElement("div");
-        $("#right > .unified-panel-header").remove();
-        $("#right > .unified-panel-controls").remove();
-        $("#right > .unified-panel-body").remove();
-        $("#right").addClass("beta").prepend(container);
-        const mountFn = mountVueComponent(HistoryIndex);
-        mountFn({}, container);
     }
 }

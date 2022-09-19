@@ -11,7 +11,7 @@ on:
 env:
   YARN_INSTALL_OPTS: --frozen-lockfile
 concurrency:
-  group: first-startup-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
 
@@ -26,11 +26,11 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         path: 'galaxy root'
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
     - name: Get full Python version
@@ -38,13 +38,13 @@ jobs:
       shell: bash
       run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
     - name: Cache pip dir
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       id: pip-cache
       with:
         path: ~/.cache/pip
         key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
     - name: Cache tox env
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: .tox
         key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-first-startup

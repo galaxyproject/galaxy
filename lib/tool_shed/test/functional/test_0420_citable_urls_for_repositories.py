@@ -17,10 +17,10 @@ first_changeset_hash = ""
 1. Add and populate a repository to the tool shed with change set revision 0 (assume owner is test).
 2. Add valid change set revision 1.
 3. Visit the following url and check for appropriate strings: <tool shed base url>/view/user1
-4. Visit the following url and check for appropriate strings: <tool shed base url>/view/user1/filtering_0420
-    Resulting page should contain change set revision 1
-5. Visit the following url and check for appropriate strings: <tool shed base url>/view/user1/filtering_0420/<revision 0>
-    Resulting page should not contain change set revision 1, but should contain change set revision 0.
+4. Visit the following url and check for appropriate strings: <tool shed base url>/view/user1/filtering_0420 .
+   The resulting page should contain change set revision 1
+5. Visit the following url and check for appropriate strings: <tool shed base url>/view/user1/filtering_0420/<revision 0> .
+   The resulting page should not contain change set revision 1, but should contain change set revision 0.
 6. Visit the following url and check for appropriate strings: <tool shed base url>/view/user1/filtering_0420/<invalid revision>
 7. Visit the following url and check for appropriate strings: <tool shed base url>/view/user1/<invalid repository name>
 8. Visit the following url and check for appropriate strings: <tool shed base url>/view/<invalid owner>
@@ -129,8 +129,8 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         """Load the /view/<user>/<repository> page and check for the appropriate strings.
 
         We are at step 4.
-        Visit the following url and check for strings: <tool shed base url>/view/user1/filtering_0420
-            Resulting page should contain change set revision 1
+        Visit the following url and check for strings: ``<tool shed base url>/view/user1/filtering_0420`` .
+        The resulting page should contain change set revision 1
         """
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
@@ -158,8 +158,8 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         """Load a citable url for a past changeset revision and verify that strings display.
 
         We are at step 5.
-        Visit the following url and check for appropriate strings: <tool shed base url>/view/user1/filtering_0420/<revision 0>
-            Resulting page should not contain change set revision 1, but should contain change set revision 0.
+        Visit the following url and check for appropriate strings: ``<tool shed base url>/view/user1/filtering_0420/<revision 0>`` .
+        The resulting page should not contain change set revision 1, but should contain change set revision 0.
         """
         global first_changeset_hash
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
@@ -216,7 +216,7 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
     def test_0035_load_sharable_url_with_invalid_repository_name(self):
         """Load a citable url with an invalid changeset revision specified.
 
-        We are at step 7
+        We are at step 7.
         Visit the following url and check for appropriate strings: <tool shed base url>/view/user1/!!invalid!!
         """
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)

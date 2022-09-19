@@ -1,12 +1,12 @@
 <template>
     <b-button
         id="tool-panel-upload-button"
-        @click="showUploadDialog"
         v-b-tooltip.hover.bottom
         :aria-label="title | localize"
         :title="title | localize"
         class="upload-button"
-        size="sm">
+        size="sm"
+        @click="showUploadDialog">
         <div class="progress">
             <div
                 class="progress-bar progress-bar-notransition"
@@ -23,6 +23,7 @@
 </template>
 
 <script>
+import Query from "utils/query-string-parsing";
 import { VBTooltip } from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -44,8 +45,19 @@ export default {
             percentage: 0,
         };
     },
+    mounted() {
+        this.eventHub.$on("upload:status", this.setStatus);
+        this.eventHub.$on("upload:percentage", this.setPercentage);
+        if (Query.get("tool_id") == "upload1") {
+            this.showUploadDialog();
+        }
+    },
+    beforeDestroy() {
+        this.eventHub.$off("upload:status", this.setStatus);
+        this.eventHub.$off("upload:percentage", this.setPercentage);
+    },
     methods: {
-        showUploadDialog(e) {
+        showUploadDialog() {
             openGlobalUploadModal();
         },
         setStatus(val) {
@@ -54,14 +66,6 @@ export default {
         setPercentage(val) {
             this.percentage = Math.round(val);
         },
-    },
-    created() {
-        this.eventHub.$on("upload:status", this.setStatus);
-        this.eventHub.$on("upload:percentage", this.setPercentage);
-    },
-    beforeDestroy() {
-        this.eventHub.$off("upload:status", this.setStatus);
-        this.eventHub.$off("upload:percentage", this.setPercentage);
     },
 };
 </script>

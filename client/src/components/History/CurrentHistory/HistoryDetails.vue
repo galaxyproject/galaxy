@@ -1,36 +1,27 @@
 <template>
-    <Details
+    <DetailsLayout
         :name="history.name"
         :annotation="history.annotation"
         :tags="history.tags"
         :writeable="writeable"
         @save="onSave">
         <template v-slot:name>
-            <h3 data-description="name display" v-short="history.name || 'History'" />
-            <h5 class="history-size mt-1">
-                <span v-if="history.size">{{ history.size | niceFileSize }}</span>
-                <span v-else v-localize>(empty)</span>
-            </h5>
+            <!-- eslint-disable-next-line vuejs-accessibility/heading-has-content -->
+            <h3 v-short="history.name || 'History'" data-description="name display" class="my-2" />
         </template>
-    </Details>
+    </DetailsLayout>
 </template>
 
 <script>
-import prettyBytes from "pretty-bytes";
 import short from "components/directives/v-short";
-import Details from "components/History/Layout/Details";
+import DetailsLayout from "components/History/Layout/DetailsLayout";
 
 export default {
     components: {
-        Details,
+        DetailsLayout,
     },
     directives: {
         short,
-    },
-    filters: {
-        niceFileSize(rawSize = 0) {
-            return prettyBytes(rawSize);
-        },
     },
     props: {
         history: { type: Object, required: true },
@@ -39,7 +30,7 @@ export default {
     methods: {
         onSave(newDetails) {
             const id = this.history.id;
-            this.$emit("updateHistory", { ...newDetails, id });
+            this.$emit("update:history", { ...newDetails, id });
         },
     },
 };

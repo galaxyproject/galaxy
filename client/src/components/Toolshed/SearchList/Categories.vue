@@ -23,6 +23,7 @@ import LoadingSpan from "components/LoadingSpan";
 Vue.use(BootstrapVue);
 
 export default {
+    components: { LoadingSpan },
     props: {
         toolshedUrl: {
             type: String,
@@ -33,7 +34,6 @@ export default {
             required: true,
         },
     },
-    components: { LoadingSpan },
     data() {
         return {
             categories: [],
@@ -44,14 +44,14 @@ export default {
             ],
         };
     },
-    created() {
-        this.services = new Services();
-        this.load();
-    },
     watch: {
         toolshedUrl() {
             this.load();
         },
+    },
+    created() {
+        this.services = new Services();
+        this.load();
     },
     methods: {
         load() {

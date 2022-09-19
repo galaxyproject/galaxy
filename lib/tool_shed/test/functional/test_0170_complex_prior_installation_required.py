@@ -145,9 +145,9 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
     def test_0020_verify_generated_dependency(self):
         """Verify that matplotlib now has a package tool dependency and a complex repository dependency.
 
-        This is step 3 - Verify that package_matplotlib_1_2_0170 now depends on package_numpy_1_7_0170, and that the inherited tool
-                         dependency displays correctly.
-        'Inhherited' in this case means that matplotlib should show a package tool dependency on numpy version 1.7, and a repository
+        This is step 3 - Verify that package_matplotlib_1_2_0170 now depends on
+        package_numpy_1_7_0170, and that the inherited tool dependency displays correctly.
+        'Inherited' in this case means that matplotlib should show a package tool dependency on numpy version 1.7, and a repository
         dependency on the latest revision of package_numpy_1_7_0170.
         """
         numpy_repository = self.test_db_util.get_repository_by_name_and_owner(

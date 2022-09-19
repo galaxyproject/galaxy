@@ -11,11 +11,11 @@
                     title="Download PDF"></sts-download-button>
                 <b-button
                     v-if="!readOnly"
+                    v-b-tooltip.hover.bottom
                     class="float-right markdown-edit"
                     title="Edit Markdown"
                     variant="link"
                     role="button"
-                    v-b-tooltip.hover.bottom
                     @click="$emit('onEdit')">
                     <font-awesome-icon icon="edit" />
                 </b-button>
@@ -39,7 +39,7 @@
                 </b-alert>
             </div>
             <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-components">
-                <p v-if="obj.name == 'default'" v-html="obj.content" class="text-justify m-2" />
+                <p v-if="obj.name == 'default'" class="text-justify m-2" v-html="obj.content" />
                 <div v-else-if="obj.name == 'generate_galaxy_version'" class="galaxy-version">
                     <pre><code>{{ getVersion }}</code></pre>
                 </div>

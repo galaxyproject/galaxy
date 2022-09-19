@@ -12,8 +12,8 @@ class HistoryCopyElementsTestCase(SeleniumTestCase):
     def test_copy_hdca(self):
         history_id = self.current_history_id()
         input_collection = self.dataset_collection_populator.create_list_in_history(
-            history_id, contents=["0", "1", "0", "1"]
-        ).json()
+            history_id, contents=["0", "1", "0", "1"], wait=True
+        ).json()["outputs"][0]
         input_hid = input_collection["hid"]
 
         failed_response = self.dataset_populator.run_exit_code_from_file(history_id, input_collection["id"])

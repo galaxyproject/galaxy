@@ -1,11 +1,26 @@
-import { checkFilter, getFilters, getQueryDict, testFilters } from "./filtering";
+import { checkFilter, getFilters, toAlias, getQueryDict, testFilters } from "./filtering";
 
 const filterTexts = [
-    "name='name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state=success extension=ext tag=first deleted=False visible='TRUE'",
-    "name='name of item' hid_gt=10 hid-lt=100 create_time-gt='2021-01-01' update_time-lt='2022-01-01' state=sUccEss extension=EXT tag=FirsT deleted=false visible=true",
+    "name:'name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state:success extension:ext tag:first deleted:False visible:'TRUE'",
+    "name:'name of item' hid_gt:10 hid-lt:100 create_time-gt:'2021-01-01' update_time-lt:'2022-01-01' state:sUccEss extension:EXT tag:FirsT deleted:false visible:true",
 ];
 describe("filtering", () => {
     test("parse default filter", () => {
+        let queryDict = getQueryDict("");
+        expect(queryDict["deleted"]).toBe(false);
+        expect(queryDict["visible"]).toBe(true);
+        queryDict = getQueryDict("deleted:true");
+        expect(queryDict["deleted"]).toBe(true);
+        expect(queryDict["visible"]).toBeUndefined();
+        queryDict = getQueryDict("visible:false");
+        expect(queryDict["deleted"]).toBeUndefined;
+        expect(queryDict["visible"]).toBe(false);
+        queryDict = getQueryDict("extension:ext");
+        expect(queryDict["extension-eq"]).toBe("ext");
+        expect(queryDict["deleted"]).toBe(false);
+        expect(queryDict["visible"]).toBe(true);
+    });
+    test("parse name filter", () => {
         const filters = getFilters("name of item");
         expect(filters[0][0]).toBe("name");
         expect(filters[0][1]).toBe("name of item");
@@ -60,19 +75,19 @@ describe("filtering", () => {
         });
     });
     test("validate filtering of a history item", () => {
+        const item = {
+            create_time: "2021-06-01",
+            extension: "ext",
+            deleted: false,
+            hid: 11,
+            name: "contains the name of item.",
+            state: "success",
+            tags: ["first", "second"],
+            update_time: "2021-06-01",
+            visible: true,
+        };
         filterTexts.forEach((filterText) => {
             const filters = getFilters(filterText);
-            const item = {
-                create_time: "2021-06-01",
-                extension: "ext",
-                deleted: false,
-                hid: 11,
-                name: "contains the name of item.",
-                state: "success",
-                tags: ["first", "second"],
-                update_time: "2021-06-01",
-                visible: true,
-            };
             expect(testFilters(filters, { ...item })).toBe(true);
             expect(testFilters(filters, { ...item, hid: 10 })).toBe(false);
             expect(testFilters(filters, { ...item, hid: 100 })).toBe(false);
@@ -85,6 +100,33 @@ describe("filtering", () => {
             expect(testFilters(filters, { ...item, tags: ["second"] })).toBe(false);
             expect(testFilters(filters, { ...item, visible: false })).toBe(false);
             expect(testFilters(filters, { ...item, deleted: true })).toBe(false);
+            expect(testFilters(filters, { ...item, deleted: "nottrue" })).toBe(true);
         });
+    });
+    test("Parsing & sync of filter settings", () => {
+        // Expected parsed settings
+        const parsedFilterSettings = {
+            "name:": "name of item",
+            "hid>": "10",
+            "hid<": "100",
+            "create_time>": "2021-01-01",
+            "update_time<": "2022-01-01",
+            "state:": "success",
+            "extension:": "ext",
+            "tag:": "first",
+            "deleted:": "false",
+            "visible:": "true",
+        };
+        // iterate through filterTexts and compare with parsedFilterSettings
+        filterTexts.forEach((filterText) => {
+            expect(toAlias(getFilters(filterText))).toEqual(parsedFilterSettings);
+        });
+    });
+    test("named tag (hash) conversion", () => {
+        const filters = getFilters("tag:#test");
+        expect(filters[0][0]).toBe("tag");
+        expect(filters[0][1]).toBe("#test");
+        const queryDict = getQueryDict("tag:#test");
+        expect(queryDict["tag"]).toBe("name:test");
     });
 });

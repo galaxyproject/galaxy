@@ -77,73 +77,6 @@ class BaseModelTestCase(unittest.TestCase):
 
 
 class MappingTests(BaseModelTestCase):
-    def test_annotations(self):
-        u = model.User(email="annotator@example.com", password="password")
-        self.persist(u)
-
-        def persist_and_check_annotation(annotation_class, **kwds):
-            annotated_association = annotation_class()
-            annotated_association.annotation = "Test Annotation"
-            annotated_association.user = u
-            for key, value in kwds.items():
-                add_object_to_object_session(annotated_association, value)
-                setattr(annotated_association, key, value)
-            self.persist(annotated_association)
-            self.expunge()
-            stored_annotation = self.query(annotation_class).all()[0]
-            assert stored_annotation.annotation == "Test Annotation"
-            assert stored_annotation.user.email == "annotator@example.com"
-
-        sw = model.StoredWorkflow()
-        add_object_to_object_session(sw, u)
-        sw.user = u
-        self.persist(sw)
-        persist_and_check_annotation(model.StoredWorkflowAnnotationAssociation, stored_workflow=sw)
-
-        workflow = model.Workflow()
-        workflow.stored_workflow = sw
-        self.persist(workflow)
-
-        ws = model.WorkflowStep()
-        add_object_to_object_session(ws, workflow)
-        ws.workflow = workflow
-        self.persist(ws)
-        persist_and_check_annotation(model.WorkflowStepAnnotationAssociation, workflow_step=ws)
-
-        h = model.History(name="History for Annotation", user=u)
-        self.persist(h)
-        persist_and_check_annotation(model.HistoryAnnotationAssociation, history=h)
-
-        d1 = model.HistoryDatasetAssociation(
-            extension="txt", history=h, create_dataset=True, sa_session=self.model.session
-        )
-        self.persist(d1)
-        persist_and_check_annotation(model.HistoryDatasetAssociationAnnotationAssociation, hda=d1)
-
-        page = model.Page()
-        page.user = u
-        self.persist(page)
-        persist_and_check_annotation(model.PageAnnotationAssociation, page=page)
-
-        visualization = model.Visualization()
-        visualization.user = u
-        self.persist(visualization)
-        persist_and_check_annotation(model.VisualizationAnnotationAssociation, visualization=visualization)
-
-        dataset_collection = model.DatasetCollection(collection_type="paired")
-        history_dataset_collection = model.HistoryDatasetCollectionAssociation(collection=dataset_collection)
-        self.persist(history_dataset_collection)
-        persist_and_check_annotation(
-            model.HistoryDatasetCollectionAssociationAnnotationAssociation,
-            history_dataset_collection=history_dataset_collection,
-        )
-
-        library_dataset_collection = model.LibraryDatasetCollectionAssociation(collection=dataset_collection)
-        self.persist(library_dataset_collection)
-        persist_and_check_annotation(
-            model.LibraryDatasetCollectionAnnotationAssociation, library_dataset_collection=library_dataset_collection
-        )
-
     def test_ratings(self):
         user_email = "rater@example.com"
         u = model.User(email=user_email, password="password")
@@ -807,23 +740,7 @@ class MappingTests(BaseModelTestCase):
     def test_workflows(self):
         user = model.User(email="testworkflows@bx.psu.edu", password="password")
 
-        def workflow_from_steps(steps):
-            stored_workflow = model.StoredWorkflow()
-            add_object_to_object_session(stored_workflow, user)
-            stored_workflow.user = user
-            workflow = model.Workflow()
-
-            if steps:
-                for step in steps:
-                    if get_object_session(step):
-                        add_object_to_object_session(workflow, step)
-                        break
-
-            workflow.steps = steps
-            workflow.stored_workflow = stored_workflow
-            return workflow
-
-        child_workflow = workflow_from_steps([])
+        child_workflow = _workflow_from_steps(user, [])
         self.persist(child_workflow)
 
         workflow_step_1 = model.WorkflowStep()
@@ -840,7 +757,7 @@ class MappingTests(BaseModelTestCase):
         workflow_step_2.get_or_add_input("moo")
         workflow_step_1.add_connection("foo", "cow", workflow_step_2)
 
-        workflow = workflow_from_steps([workflow_step_1, workflow_step_2])
+        workflow = _workflow_from_steps(user, [workflow_step_1, workflow_step_2])
         self.persist(workflow)
         workflow_id = workflow.id
 
@@ -852,14 +769,11 @@ class MappingTests(BaseModelTestCase):
         self.persist(annotation)
 
         assert workflow_step_1.id is not None
-        h1 = model.History(name="WorkflowHistory1", user=user)
+        workflow_invocation = _invocation_for_workflow(user, workflow)
 
         invocation_uuid = uuid.uuid1()
 
-        workflow_invocation = model.WorkflowInvocation()
         workflow_invocation.uuid = invocation_uuid
-        add_object_to_object_session(workflow_invocation, h1)
-        workflow_invocation.history = h1
 
         workflow_invocation_step1 = model.WorkflowInvocationStep()
         add_object_to_object_session(workflow_invocation_step1, workflow_invocation)
@@ -874,8 +788,8 @@ class MappingTests(BaseModelTestCase):
         workflow_invocation_step2.workflow_invocation = workflow_invocation
         workflow_invocation_step2.workflow_step = workflow_step_2
 
-        workflow_invocation.workflow = workflow
-
+        h1 = workflow_invocation.history
+        add_object_to_object_session(workflow_invocation, h1)
         d1 = self.new_hda(h1, name="1")
         workflow_request_dataset = model.WorkflowRequestToInputDatasetAssociation()
         add_object_to_object_session(workflow_request_dataset, workflow_invocation)
@@ -1092,6 +1006,30 @@ class PostgresMappingTests(MappingTests):
         postgres_url = base + dbname
         create_database(postgres_url)
         return postgres_url
+
+
+def _invocation_for_workflow(user, workflow):
+    h1 = galaxy.model.History(name="WorkflowHistory1", user=user)
+    workflow_invocation = galaxy.model.WorkflowInvocation()
+    workflow_invocation.workflow = workflow
+    workflow_invocation.history = h1
+    return workflow_invocation
+
+
+def _workflow_from_steps(user, steps):
+    stored_workflow = galaxy.model.StoredWorkflow()
+    add_object_to_object_session(stored_workflow, user)
+    stored_workflow.user = user
+    workflow = galaxy.model.Workflow()
+    if steps:
+        for step in steps:
+            if get_object_session(step):
+                add_object_to_object_session(workflow, step)
+                break
+
+    workflow.steps = steps
+    workflow.stored_workflow = stored_workflow
+    return workflow
 
 
 class MockObjectStore:

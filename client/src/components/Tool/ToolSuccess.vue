@@ -66,7 +66,7 @@ export default {
             return this.jobResponse && this.jobResponse.jobs ? this.jobResponse.jobs.length : 0;
         },
         nJobsText() {
-            return this.nJobs > 1 ? `${this.njobs} jobs` : `1 job`;
+            return this.nJobs > 1 ? `${this.nJobs} jobs` : `1 job`;
         },
         nInputsText() {
             return this.nInputs > 1 ? `${this.nInputs} inputs` : `this input`;

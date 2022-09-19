@@ -1,37 +1,37 @@
 <template>
-    <div class="rule-column-selector" v-if="!multiple || !ordered">
+    <div v-if="!multiple || !ordered" class="rule-column-selector">
         <label class="d-flex justify-content-end align-items-center">
-            <span class="mr-auto" v-b-tooltip.hover :title="help">{{ label }}</span>
-            <div class="mr-1" v-b-tooltip.hover :title="title">
-                <select2 :value="target" @input="handleInput" :multiple="multiple">
-                    <option v-for="(col, index) in colHeaders" :value="index" :key="col">{{ col }}</option>
+            <span v-b-tooltip.hover class="mr-auto" :title="help">{{ label }}</span>
+            <div v-b-tooltip.hover class="mr-1" :title="title">
+                <select2 :value="target" :multiple="multiple" @input="handleInput">
+                    <option v-for="(col, index) in colHeaders" :key="col" :value="index">{{ col }}</option>
                 </select2>
             </div>
             <slot></slot>
         </label>
     </div>
-    <div class="rule-column-selector" v-else>
+    <div v-else class="rule-column-selector">
         <span>{{ label }}</span>
         <slot></slot>
         <ol>
-            <li v-for="(targetEl, index) in target" :index="index" :key="targetEl" class="rule-column-selector-target">
+            <li v-for="(targetEl, index) in target" :key="targetEl" :index="index" class="rule-column-selector-target">
                 {{ colHeaders[targetEl] }}
                 <span class="fa fa-times rule-column-selector-target-remove" @click="handleRemove(index)"></span>
-                <span class="fa fa-arrow-up rule-column-selector-up" v-if="index !== 0" @click="moveUp(index)"></span>
+                <span v-if="index !== 0" class="fa fa-arrow-up rule-column-selector-up" @click="moveUp(index)"></span>
                 <span
-                    class="fa fa-arrow-down rule-column-selector-down"
                     v-if="index < target.length - 1"
+                    class="fa fa-arrow-down rule-column-selector-down"
                     @click="moveUp(index + 1)"></span>
             </li>
-            <li v-if="this.target.length < this.colHeaders.length">
-                <span class="rule-column-selector-target-add" v-if="!orderedEdit">
+            <li v-if="target.length < colHeaders.length">
+                <span v-if="!orderedEdit" class="rule-column-selector-target-add">
                     <i @click="$emit('update:orderedEdit', true)">... {{ l("Assign Another Column") }}</i>
                 </span>
-                <span class="rule-column-selector-target-select" v-else>
-                    <select2 @input="handleAdd" placeholder="Select a column">
+                <span v-else class="rule-column-selector-target-select">
+                    <select2 placeholder="Select a column" @input="handleAdd">
                         <option />
                         <!-- empty option selection for placeholder -->
-                        <option v-for="(col, index) in remainingHeaders" :value="index" :key="col">{{ col }}</option>
+                        <option v-for="(col, index) in remainingHeaders" :key="col" :value="index">{{ col }}</option>
                     </select2>
                 </span>
             </li>

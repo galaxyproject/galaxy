@@ -39,13 +39,6 @@ export default {
             expanded: this.model.expanded,
         };
     },
-    watch: {
-        validationScrollTo() {
-            if (this.validationScrollTo.length > 0) {
-                this.expanded = true;
-            }
-        },
-    },
     computed: {
         icon() {
             return WorkflowIcons[this.model.step_type];
@@ -68,6 +61,13 @@ export default {
         },
         hasInputs() {
             return this.inputs.length > 0;
+        },
+    },
+    watch: {
+        validationScrollTo() {
+            if (this.validationScrollTo.length > 0) {
+                this.expanded = true;
+            }
         },
     },
     methods: {

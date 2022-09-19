@@ -1,6 +1,7 @@
 <template>
     <div>
         <b-table
+            v-model="innerValue"
             :fields="fields"
             :items="items"
             :filter="filter"
@@ -8,10 +9,9 @@
             responsive
             striped
             caption-top
-            @row-clicked="toggleDetails"
-            v-model="innerValue"
             :busy="busy"
-            show-empty>
+            show-empty
+            @row-clicked="toggleDetails">
             <template v-slot:table-caption>
                 {{ tableCaption }}
             </template>

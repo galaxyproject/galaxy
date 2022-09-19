@@ -123,7 +123,7 @@
           <!-- <param id="pulsar_config">path/to/pulsar/app.yml</param> -->
         </plugin>
         <plugin id="k8s" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
-            <!-- The Kubernetes (k8s) plugin allows to send jobs to a k8s cluster which shares filesystem with Galaxy.
+            <!-- The Kubernetes (k8s) plugin allows Galaxy to send jobs to a k8s cluster which it shares a filesystem with.
 
                  The shared file system needs to be exposed to k8s through a Persistent Volume (rw) and a Persistent
                  Volume Claim. An example of a Persistent Volume could be, in yaml (access modes, reclaim policy and
@@ -148,7 +148,7 @@
                  The path (nfs:path: in the example) set needs to be a parent directory of the directories used for
                  variables “file_path” and “new_file_path” on the galaxy.yml files. Clearly, for this particular example
                  to work, there needs to be a NFS server serving that directory on that ip. Please make sure that you
-                 use reasonable storage size for your set up (possibly larger that the 10Gi written).
+                 use a reasonable storage size for your setup (possibly larger that the 10Gi written).
                  An example of the volume claim should be (this needs to be followed more closely) (pv_claim.yaml):
 
                     kind: PersistentVolumeClaim
@@ -164,7 +164,7 @@
                           storage: 2Gi
 
                  The volume claim needs to reference the name of the volume in spec:volumeName. The name of the claim
-                 (metadat:name) is referenced in the plugin definition (see below), through param
+                 (metadata:name) is referenced in the plugin definition (see below), through param
                  "k8s_persistent_volume_claim_name". These two k8s object need to be created before galaxy can use them:
 
                  kubectl create -f <path/to/persistent_volume.yaml>
@@ -182,7 +182,7 @@
             <!-- Sets the pull policy to be used for all containers invoked for jobs by the Kubernetes cluster. Can take
                  any value among the possible Kubernetes container image pull policies: Always, IfNotPresent or Never
                  (respecting capitalization). Any other value, such as "Default", will not change the setting on k8s and
-                 leave for the containers to run with the default pull policy specified at the cluster (this is normally
+                 leave for the containers to run with the default pull policy of the cluster (this is normally
                  IfNotPresent). Container images using latest are by default always pulled, so you need to use defined
                  versions for offline cases to work (and images need to be previously pulled). -->
 
@@ -368,6 +368,17 @@
             <!-- Password to access Mesos cluster. -->
             <param id="insecure">false</param>
             <!-- False to communicate with Chronos over HTTPS; true otherwise-->
+        </plugin>
+        <plugin id="aws_batch" type="runner" load="galaxy.jobs.runners.aws:AWSBatchJobRunner">
+            <!-- Run `aws configure` with aws cli or set params below -->
+            <!-- <param id="aws_access_key_id">xxxxxxxxx</param>
+            <param id="aws_secret_access_key">xxxxxxxxxxxxxxxxxxx</param>
+            <param id="region">us-west-1</param> -->
+            <!--
+               This runner requires that an AWS EFS is mounted as a local drive  and all Galaxy
+               job-related paths, such as objects, job_directory, tool_directory and so on, are placed
+               in the EFS drive.
+            -->
         </plugin>
         <!-- Additionally any plugin or destination (below) may define an "enabled" parameter that should
              evaluate to True or False. When setup using
@@ -606,6 +617,11 @@
           <!-- Following option can be used to tweak sudo command used by
                default. -->
           <!-- <param id="singularity_sudo_cmd">/usr/bin/sudo -extra_param</param> -->
+          <!-- Singularity by default passes most host environment variables into the container.
+               This may be a security or configuration issue, hence galaxy passes the `cleanenv`
+               argument by default. You can turn this off by setting singularity_cleanenv to `false`.
+          -->
+          <!-- <param id="singularity_cleanenv">true</param> -->
           <!-- Pass extra arguments to the singularity exec command not covered by the
                above options. -->
           <!-- <param id="singularity_run_extra_arguments"></param> -->
@@ -798,6 +814,15 @@
             <!-- Pick next available server and resubmit if an unknown error occurs -->
             <resubmit condition="unknown_error and attempt &lt;= 3" destination="galaxycloudrunner" />
         </destination>
+        <destination id="tpv_dispatcher" runner="dynamic">
+            <!-- Demonstrates how to use total-perspective-vortex, which enables dynamic destination
+            selection for entities (Tools, Users, Groups) based on a configurable yaml file.
+            See: https://total-perspective-vortex.readthedocs.io/ for documentation. -->
+            <param id="type">python</param>
+            <param id="function">map_tool_to_destination</param>
+            <param id="rules_module">tpv.rules</param>
+            <param id="tpv_config_files">https://raw.githubusercontent.com/galaxyproject/total-perspective-vortex/main/tests/fixtures/mapping-sample.yml</param>
+        </destination>
         <destination id="docker_dispatch" runner="dynamic">
             <!-- Follow dynamic destination type will send all tool's that
             support docker to static destination defined by
@@ -959,7 +984,7 @@
                - "seconds_running" (the number of seconds the job was in a running state within Galaxy)
 
              The ``handler`` attribute is optional, if not present, the job's original
-             handler will be reused for the resubmitted job. The ``destination`` attriubte
+             handler will be reused for the resubmitted job. The ``destination`` attribute
              is optional, if not present the job's original destination will be reused for the
              re-submission. The ``delay`` attribute is optional, if present it will cause the job to
              delay for that number of seconds before being re-submitted.
@@ -1112,7 +1137,42 @@
             <param id="max_retries">0</param>
             <!-- Number of retries to attempt if a command returns a non-zero status -->
         </destination>
-
+        <destination id="aws_batch_auto" runner="aws_batch">
+            <param id="docker_enabled">true</param>
+            <!-- `docker_enabled = true` is always required -->
+            <param id="job_queue">arn_for_Fargate_job_queue, arn_for_EC2_job_queue</param>
+            <!-- Fargate and non-GPU EC2 -->
+            <param id="job_role_arn">arn:aws:iam::xxxxxxxxxxxxxxxxxx</param>
+            <param id="vcpu">1</param>
+            <param id="memory">2048</param>
+            <param id="efs_filesystem_id">fs-xxxxxxxxxxxxxx</param>
+            <param id="efs_mount_point">/mnt/efs/fs1</param>
+            <!-- This is the location where the EFS is mounted -->
+            <param id="fargate_version">1.4.0</param>
+            <!-- `fargate_version` is required to use Fargate compute resources -->
+            <param id="auto_platform">true</param>
+            <!-- To let AWS Batch retry on failed jobs, set the number of attempts to 2-10 and `on_exit` conditions -->
+            <!-- 
+            <param id="retry_attempts">2</param>
+            <param id="retry_on_exit_statusReason">...</param>
+            <param id="retry_on_exit_reason">...</param>
+            <param id="retry_on_exit_exitCode">...</param>
+            <param id="retry_on_exit_action">exit</param>
+            -->
+        </destination>
+        <destination id="aws_batch_gpu" runner="aws_batch">
+            <param id="docker_enabled">true</param>
+            <!-- `docker_enabled = true` is always required -->
+            <param id="job_queue">arn_for_gpu_job_queue</param>
+            <!-- Job queue must be built on GPU-specific compute environment -->
+            <param id="job_role_arn">arn:aws:iam::xxxxxxxxxxxxxxxxxx</param>
+            <param id="vcpu">4</param>
+            <param id="memory">20000</param>
+            <param id="gpu">1</param>
+            <param id="efs_filesystem_id">fs-xxxxxxxxxxxxxx</param>
+            <param id="efs_mount_point">/mnt/efs/fs1</param>
+             <!-- This is the location where the EFS is mounted -->
+        </destination>
         <!-- Templatized destinations - macros can be used to create templated
         destinations with reduced XML duplication. Here we are creating 4 destinations in 4 lines instead of 28 using the macros defined below.
         -->

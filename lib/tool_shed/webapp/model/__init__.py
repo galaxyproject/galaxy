@@ -11,6 +11,10 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from mercurial import (
+    hg,
+    ui,
+)
 from sqlalchemy import (
     Boolean,
     Column,
@@ -44,7 +48,7 @@ from galaxy.security.validate_user_input import validate_password_str
 from galaxy.util import unique_id
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
-from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.hash_util import new_insecure_hash
 from tool_shed.dependencies.repository import relation_builder
 from tool_shed.util import (
     hg_util,
@@ -148,7 +152,7 @@ class User(Base, Dictifiable, _HasTable):
 
     def check_password(self, cleartext):
         """Check if 'cleartext' matches 'self.password' when hashed."""
-        return self.password == new_secure_hash(text_type=cleartext)
+        return self.password == new_insecure_hash(text_type=cleartext)
 
     def get_disk_usage(self, nice_size=False):
         return 0
@@ -167,7 +171,7 @@ class User(Base, Dictifiable, _HasTable):
         if message:
             raise Exception(f"Invalid password: {message}")
         # Set 'self.password' to the digest of 'cleartext'.
-        self.password = new_secure_hash(text_type=cleartext)
+        self.password = new_insecure_hash(text_type=cleartext)
 
 
 class PasswordResetToken(Base, _HasTable):
@@ -414,11 +418,6 @@ class Repository(Base, Dictifiable, _HasTable):
 
     @property
     def hg_repo(self):
-        from mercurial import (
-            hg,
-            ui,
-        )
-
         if not WEAK_HG_REPO_CACHE.get(self):
             WEAK_HG_REPO_CACHE[self] = hg.cachedlocalrepo(hg.repository(ui.ui(), self.repo_path().encode("utf-8")))
         return WEAK_HG_REPO_CACHE[self].fetch()[0]

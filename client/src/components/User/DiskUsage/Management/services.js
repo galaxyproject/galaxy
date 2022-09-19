@@ -10,6 +10,9 @@ const isNotPurged = "q=purged-eq&qv=False";
 const maxItemsToFetch = 500;
 const discardedDatasetsQueryParams = `${isDataset}&${isDeleted}&${isNotPurged}&limit=${maxItemsToFetch}`;
 
+const historyKeys = "id,name,size,update_time";
+const discardedHistoriesQueryParams = `&${isDeleted}&${isNotPurged}&limit=${maxItemsToFetch}`;
+
 /**
  * Calculates the total amount of bytes that can be cleaned by permanently removing
  * deleted datasets.
@@ -99,6 +102,72 @@ export async function cleanupDatasets(datasets) {
             (partial_sum, item) => partial_sum + (erroredIds.includes(item.id) ? 0 : datasetsTable[item.id].size),
             0
         );
+    } catch (error) {
+        result.errorMessage = error;
+    }
+    return result;
+}
+
+export async function fetchDiscardedHistoriesSummary() {
+    const summaryKeys = "size";
+    const url = `${getAppRoot()}api/histories?keys=${summaryKeys}&${discardedHistoriesQueryParams}`;
+    try {
+        const { data } = await axios.get(url);
+        const totalSizeInBytes = data.reduce((partial_sum, item) => partial_sum + item.size, 0);
+        return new CleanableSummary({
+            totalSize: totalSizeInBytes,
+            totalItems: data.length,
+        });
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
+
+export async function fetchDiscardedHistories(options = {}) {
+    let params = "";
+    if (options.sortBy) {
+        const sortPostfix = options.sortDesc ? "-dsc" : "-asc";
+        params += `order=${options.sortBy}${sortPostfix}&`;
+    }
+    if (options.limit) {
+        params += `limit=${options.limit}&`;
+    }
+    if (options.offset) {
+        params += `offset=${options.offset}&`;
+    }
+    const url = `${getAppRoot()}api/histories?keys=${historyKeys}&${discardedHistoriesQueryParams}&${params}`;
+    try {
+        const { data } = await axios.get(url);
+        return data;
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
+
+async function purgeHistory(historyId) {
+    const payload = {
+        purge: true,
+    };
+    const url = `${getAppRoot()}api/histories/${historyId}`;
+    try {
+        const { data } = await axios.delete(url, { data: payload });
+        return data;
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
+
+export async function cleanupHistories(histories) {
+    const result = new CleanupResult();
+    const historiesTable = histories.reduce((acc, item) => ((acc[item.id] = item), acc), {});
+    // TODO: Promise.all() and do this in parallel?  Or add a bulk delete endpoint?
+    try {
+        for (const history of histories) {
+            const requestResult = await purgeHistory(history.id);
+            console.debug(requestResult);
+            result.totalFreeBytes += historiesTable[history.id].size;
+            result.totalItemCount += 1;
+        }
     } catch (error) {
         result.errorMessage = error;
     }

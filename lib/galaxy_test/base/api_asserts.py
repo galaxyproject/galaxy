@@ -62,17 +62,11 @@ def assert_error_code_is(response: Union[Response, dict], error_code: Union[int,
 
     Galaxy error codes can be imported from :py:mod:`galaxy.exceptions.error_codes`
     to test against.
-
-    ::
-
-        from galaxy.exceptions import error_codes
-        assert_error_code_is(response, error_codes.USER_REQUEST_MISSING_PARAMETER)
-
     """
     as_dict = _as_dict(response)
     assert_has_keys(as_dict, "err_code")
     err_code = as_dict["err_code"]
-    assert err_code == int(error_code), ASSERT_FAIL_ERROR_CODE % (err_code, int(error_code))
+    assert err_code == int(error_code), ASSERT_FAIL_ERROR_CODE % (error_code, err_code)
 
 
 def assert_object_id_error(response: Response):

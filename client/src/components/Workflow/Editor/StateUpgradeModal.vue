@@ -43,6 +43,13 @@ export default {
             show: this.stateMessages.length > 0,
         };
     },
+    watch: {
+        stateMessages() {
+            if (this.stateMessages.length > 0) {
+                this.show = true;
+            }
+        },
+    },
     methods: {
         humanIndex(stateMessage) {
             return `${parseInt(stateMessage.stepIndex, 10) + 1}`;
@@ -57,13 +64,6 @@ export default {
                 iconClassStr = `icon fa fa-fw ${stateMessage.iconType}`;
             }
             return iconClassStr;
-        },
-    },
-    watch: {
-        stateMessages() {
-            if (this.stateMessages.length > 0) {
-                this.show = true;
-            }
         },
     },
 };

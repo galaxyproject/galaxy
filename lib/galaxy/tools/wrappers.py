@@ -27,13 +27,18 @@ from galaxy.model import (
     HasTags,
     HistoryDatasetCollectionAssociation,
 )
+from galaxy.model.metadata import FileParameter
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
+from galaxy.tools.parameters.basic import BooleanToolParameter
 from galaxy.tools.parameters.wrapped_json import (
     data_collection_input_to_staging_path_and_source_path,
     data_input_to_staging_path_and_source_path,
 )
-from galaxy.util import filesystem_safe_string
+from galaxy.util import (
+    filesystem_safe_string,
+    string_as_bool,
+)
 
 if TYPE_CHECKING:
     from galaxy.datatypes.registry import Registry
@@ -41,17 +46,18 @@ if TYPE_CHECKING:
     from galaxy.model.metadata import MetadataCollection
     from galaxy.tools import Tool
     from galaxy.tools.parameters.basic import (
+        BaseDataToolParameter,
         SelectToolParameter,
         ToolParameter,
     )
 
 log = logging.getLogger(__name__)
 
-# Fields in .log files corresponding to paths, must have one of the following
-# field names and all such fields are assumed to be paths. This is to allow
-# remote ComputeEnvironments (such as one used by Pulsar) determine what values to
-# rewrite or transfer...
-PATH_ATTRIBUTES = ["path"]
+# Fields in tool config files corresponding to paths (e.g .loc or .len)
+# must have one of the following field names, and all such fields are
+# assumed to be paths. This is to allow remote ComputeEnvironments (such
+# as one used by Pulsar) to determine what values to rewrite or transfer.
+PATH_ATTRIBUTES = ["len_path", "path"]
 
 
 class ToolParameterValueWrapper:
@@ -120,25 +126,29 @@ class InputValueWrapper(ToolParameterValueWrapper):
         self.value = value
         self._other_values: Dict[str, str] = other_values or {}
 
-    def _get_cast_value(self, other: Any) -> Union[str, int, float, bool, None]:
-        if self.input.type == "boolean" and isinstance(other, str):
-            return str(self)
+    def _get_cast_values(self, other: Any) -> Tuple[Union[str, int, float, bool, None], Any]:
+        if isinstance(self.input, BooleanToolParameter) and isinstance(other, str):
+            if other in (self.input.truevalue, self.input.falsevalue):
+                return str(self), other
+            else:
+                return bool(self), string_as_bool(other)
         # For backward compatibility, allow `$wrapper != ""` for optional non-text param
         if self.input.optional and self.value is None:
             if isinstance(other, str):
-                return str(self)
+                return str(self), other
             else:
-                return None
+                return None, other
         cast_table = {
             "text": str,
             "integer": int,
             "float": float,
             "boolean": bool,
         }
-        return cast(Union[str, int, float, bool], cast_table.get(self.input.type, str)(self))
+        return cast(Union[str, int, float, bool], cast_table.get(self.input.type, str)(self)), other
 
     def __eq__(self, other: Any) -> bool:
-        return bool(self._get_cast_value(other) == other)
+        casted_self, casted_other = self._get_cast_values(other)
+        return casted_self == casted_other
 
     def __ne__(self, other: Any) -> bool:
         return not self == other
@@ -161,7 +171,8 @@ class InputValueWrapper(ToolParameterValueWrapper):
         return getattr(self.value, key)
 
     def __gt__(self, other: Any) -> bool:
-        return bool(self._get_cast_value(other) > other)
+        casted_self, casted_other = self._get_cast_values(other)
+        return casted_self > casted_other
 
     def __int__(self) -> int:
         return int(float(self))
@@ -289,7 +300,6 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
                 if rval is None:
                     rval = self.metadata.spec[name].no_value
                 metadata_param = self.metadata.spec[name].param
-                from galaxy.model.metadata import FileParameter
 
                 rval = metadata_param.to_safe_string(rval)
                 if isinstance(metadata_param, FileParameter) and self.compute_environment:
@@ -337,11 +347,16 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         formats: Optional[List[str]] = None,
     ) -> None:
         if not dataset:
-            try:
-                # TODO: allow this to work when working with grouping
-                ext = tool.inputs[name].extensions[0]  # type: ignore[union-attr]
-            except Exception:
-                ext = "data"
+            ext = "data"
+            if tool is not None and name is not None:
+                try:
+                    tool_input = tool.inputs[name]
+                    if TYPE_CHECKING:
+                        assert isinstance(tool_input, BaseDataToolParameter)
+                    # TODO: allow this to work when working with grouping
+                    ext = tool_input.extensions[0]
+                except Exception:
+                    pass
             self.dataset = cast(
                 DatasetInstance,
                 wrap_with_safe_string(

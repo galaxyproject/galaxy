@@ -19,6 +19,11 @@ import DataTablesGrid from "./DataTablesGrid.vue";
 import DataManagerGrid from "./DataManagerGrid.vue";
 
 export default {
+    components: {
+        message: Message,
+        "data-tables-grid": DataTablesGrid,
+        "data-manager-grid": DataManagerGrid,
+    },
     data() {
         return {
             currentView: "data-tables-grid",
@@ -30,12 +35,6 @@ export default {
             message: "",
             status: "",
         };
-    },
-
-    components: {
-        message: Message,
-        "data-tables-grid": DataTablesGrid,
-        "data-manager-grid": DataManagerGrid,
     },
 
     computed: {
@@ -57,6 +56,20 @@ export default {
 
             return props;
         },
+    },
+
+    created() {
+        axios
+            .get(`${getAppRoot()}admin/data_tables_list`)
+            .then((response) => {
+                this.isLoaded = true;
+                this.dataTables = response.data.data;
+                this.message = response.data.message;
+                this.status = response.data.status;
+            })
+            .catch((error) => {
+                console.error(error);
+            });
     },
 
     methods: {
@@ -102,20 +115,6 @@ export default {
                     console.error(error);
                 });
         },
-    },
-
-    created() {
-        axios
-            .get(`${getAppRoot()}admin/data_tables_list`)
-            .then((response) => {
-                this.isLoaded = true;
-                this.dataTables = response.data.data;
-                this.message = response.data.message;
-                this.status = response.data.status;
-            })
-            .catch((error) => {
-                console.error(error);
-            });
     },
 };
 </script>

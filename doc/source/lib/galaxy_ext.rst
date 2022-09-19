@@ -12,5 +12,6 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   galaxy_ext.container_monitor
    galaxy_ext.expressions
    galaxy_ext.metadata

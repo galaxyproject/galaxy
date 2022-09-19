@@ -12,8 +12,8 @@ import shutil
 import struct
 import sys
 import tempfile
-import urllib.request
 import zipfile
+from functools import partial
 from typing import (
     Dict,
     IO,
@@ -25,12 +25,11 @@ from typing import (
 from typing_extensions import Protocol
 
 from galaxy import util
-from galaxy.files import ConfiguredFileSources
+from galaxy.files.uris import stream_url_to_file as files_stream_url_to_file
 from galaxy.util import (
     compression_utils,
     file_reader,
     is_binary,
-    stream_to_open_named_file,
 )
 from galaxy.util.checkers import (
     check_html,
@@ -63,28 +62,7 @@ def sniff_with_cls(cls, fname):
         return False
 
 
-def stream_url_to_file(path: str, file_sources: Optional[ConfiguredFileSources] = None):
-    prefix = "url_paste"
-    if file_sources and file_sources.looks_like_uri(path):
-        file_source_path = file_sources.get_file_source_path(path)
-        with tempfile.NamedTemporaryFile(prefix=prefix, delete=False) as temp:
-            temp_name = temp.name
-        file_source_path.file_source.realize_to(file_source_path.path, temp_name)
-        return temp_name
-    else:
-        page = urllib.request.urlopen(
-            path, timeout=util.DEFAULT_SOCKET_TIMEOUT
-        )  # page will be .close()ed in stream_to_file
-        temp_name = stream_to_file(
-            page, prefix=prefix, source_encoding=util.get_charset_from_http_headers(page.headers)
-        )
-        return temp_name
-
-
-def stream_to_file(stream, suffix="", prefix="", dir=None, text=False, **kwd):
-    """Writes a stream to a temporary file, returns the temporary file's name"""
-    fd, temp_name = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=dir, text=text)
-    return stream_to_open_named_file(stream, fd, temp_name, **kwd)
+stream_url_to_file = partial(files_stream_url_to_file, prefix="gx_url_paste")
 
 
 def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts):
@@ -423,6 +401,15 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> fname = get_test_fname('Si.extxyz')
     >>> guess_ext(fname, sniff_order)
     'extxyz'
+    >>> fname = get_test_fname('Si.castep')
+    >>> guess_ext(fname, sniff_order)
+    'castep'
+    >>> fname = get_test_fname('Si.param')
+    >>> guess_ext(fname, sniff_order)
+    'param'
+    >>> fname = get_test_fname('Si.den_fmt')
+    >>> guess_ext(fname, sniff_order)
+    'den_fmt'
     >>> fname = get_test_fname('mothur_datatypetest_true.mothur.otu')
     >>> guess_ext(fname, sniff_order)
     'mothur.otu'
@@ -559,6 +546,12 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     if is_column_based(file_prefix, "\t", 1):
         return "tabular"  # default tabular data type file extension
     return "txt"  # default text data type file extension
+
+
+def guess_ext_from_file_name(fname, registry, requested_ext="auto"):
+    if requested_ext != "auto":
+        return requested_ext
+    return registry.get_datatype_from_filename(fname).file_ext
 
 
 class FilePrefix:

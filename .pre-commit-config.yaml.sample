@@ -37,10 +37,9 @@ repos:
         name: client eslint
         language: system
         files: ^client/
-        entry: make client-eslint-precommit
+        entry: .ci/eslint_wrapper.sh
         types: [file]
         types_or: [javascript, jsx, ts, tsx, vue]
-        pass_filenames: false
 #  - repo: https://github.com/pycqa/isort
 #    rev: 5.10.1
 #    hooks:

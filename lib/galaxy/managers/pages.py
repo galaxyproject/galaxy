@@ -9,7 +9,17 @@ import logging
 import re
 from html.entities import name2codepoint
 from html.parser import HTMLParser
-from typing import Callable
+from typing import (
+    Callable,
+    List,
+    Tuple,
+)
+
+from sqlalchemy import (
+    false,
+    or_,
+    true,
+)
 
 from galaxy import (
     exceptions,
@@ -19,13 +29,20 @@ from galaxy.managers import (
     base,
     sharable,
 )
-from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     ready_galaxy_markdown_for_import,
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.schema.schema import PageContentFormat
+from galaxy.schema.schema import (
+    CreatePagePayload,
+    PageContentFormat,
+    PageIndexQueryPayload,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
@@ -80,39 +97,75 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         super().__init__(app)
         self.workflow_manager = app.workflow_manager
 
-    def create(self, trans, payload):
+    def index_query(self, trans: ProvidesUserContext, payload: PageIndexQueryPayload) -> Tuple[List[model.Page], int]:
+        deleted: bool = payload.deleted
+
+        query = trans.sa_session.query(model.Page)
+        is_admin = trans.user_is_admin
+        user = trans.user
+        if not is_admin:
+            filters = [model.Page.user == trans.user]
+            if payload.show_published:
+                filters.append(model.Page.published == true())
+
+            if user and payload.show_shared:
+                filters.append(model.PageUserShareAssociation.user == user)
+                query = query.outerjoin(model.Page.users_shared_with)
+
+            query = query.filter(or_(*filters))
+
+        if not deleted:
+            query = query.filter(model.Page.deleted == false())
+        elif not is_admin:
+            # non-admin query that should include deleted pages...
+            # don't let non-admins see other user's deleted pages...
+            query = query.filter(or_(model.Page.deleted == false(), model.Page.user == user))
+
+        if payload.user_id:
+            query = query.filter(model.Page.user_id == payload.user_id)
+
+        total_matches = query.count()
+        sort_column = getattr(model.Page, payload.sort_by)
+        if payload.sort_desc:
+            sort_column = sort_column.desc()
+        query = query.order_by(sort_column)
+        if payload.limit is not None:
+            query = query.limit(payload.limit)
+        if payload.offset is not None:
+            query = query.offset(payload.offset)
+        return query, total_matches
+
+    def create_page(self, trans, payload: CreatePagePayload):
         user = trans.get_user()
 
-        if not payload.get("title"):
+        if not payload.title:
             raise exceptions.ObjectAttributeMissingException("Page name is required")
-        elif not payload.get("slug"):
+        elif not payload.slug:
             raise exceptions.ObjectAttributeMissingException("Page id is required")
-        elif not base.is_valid_slug(payload["slug"]):
+        elif not base.is_valid_slug(payload.slug):
             raise exceptions.ObjectAttributeInvalidException(
                 "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
             )
         elif (
-            trans.sa_session.query(trans.app.model.Page)
-            .filter_by(user=user, slug=payload["slug"], deleted=False)
-            .first()
+            trans.sa_session.query(trans.app.model.Page).filter_by(user=user, slug=payload.slug, deleted=False).first()
         ):
             raise exceptions.DuplicatedSlugException("Page identifier must be unique")
 
-        if payload.get("invocation_id"):
-            invocation_id = payload.get("invocation_id")
+        if payload.invocation_id:
+            invocation_id = payload.invocation_id
             invocation_report = self.workflow_manager.get_invocation_report(trans, invocation_id)
             content = invocation_report.get("markdown")
             content_format = "markdown"
         else:
-            content = payload.get("content", "")
-            content_format = payload.get("content_format", "html")
+            content = payload.content
+            content_format = payload.content_format
         content = self.rewrite_content_for_import(trans, content, content_format)
 
         # Create the new stored page
         page = trans.app.model.Page()
-        page.title = payload["title"]
-        page.slug = payload["slug"]
-        page_annotation = payload.get("annotation", None)
+        page.title = payload.title
+        page.slug = payload.slug
+        page_annotation = payload.annotation
         if page_annotation is not None:
             page_annotation = sanitize_html(page_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
@@ -120,7 +173,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         page.user = user
         # And the first (empty) page revision
         page_revision = trans.app.model.PageRevision()
-        page_revision.title = payload["title"]
+        page_revision.title = payload.title
         page_revision.page = page
         page.latest_revision = page_revision
         page_revision.content = content

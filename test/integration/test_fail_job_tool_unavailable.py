@@ -22,6 +22,7 @@ class FailJobWhenToolUnavailableTestCase(integration_util.IntegrationTestCase):
         cls,
         config,
     ):
+        super().handle_galaxy_config_kwds(config)
         # config["jobs_directory"] = cls.jobs_directory
         # Disable tool dependency resolution.
         config["tool_dependency_dir"] = "none"
@@ -34,7 +35,7 @@ steps:
   sleep:
     run:
       class: GalaxyTool
-      command: sleep 20s && echo 'hello world 2' > '$output1'
+      command: sleep 10s && echo 'hello world 2' > '$output1'
       outputs:
         output1:
           format: txt
@@ -52,7 +53,7 @@ steps:
             wait=False,
         )
         # Wait until workflow is fully scheduled, otherwise can't test effect of removing tool from queued job
-        time.sleep(10)
+        time.sleep(5)
         self._app.toolbox.remove_tool_by_id("cat1")
         self.dataset_populator.wait_for_history(self.history_id, assert_ok=False)
         state_details = self.galaxy_interactor.get("histories/%s" % self.history_id).json()["state_details"]

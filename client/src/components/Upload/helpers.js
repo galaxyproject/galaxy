@@ -25,6 +25,7 @@ export function uploadModelsToPayload(items, history_id, composite = false) {
                 ext: item.get("extension", "auto"),
                 space_to_tab: item.get("space_to_tab"),
                 to_posix_lines: item.get("to_posix_lines"),
+                deferred: item.get("deferred"),
             };
             switch (item.get("file_mode")) {
                 case "new":
@@ -84,7 +85,6 @@ export function uploadModelsToPayload(items, history_id, composite = false) {
         })
         .filter((item) => item)
         .flat();
-
     const target = {
         destination: { type: "hdas" },
         elements: elements,
@@ -127,9 +127,9 @@ export const commonProps = {
         type: String,
         default: "",
     },
-    defaultGenome: {
+    defaultDbKey: {
         type: String,
-        default: UploadUtils.DEFAULT_GENOME,
+        default: UploadUtils.DEFAULT_DBKEY,
     },
     defaultExtension: {
         type: String,

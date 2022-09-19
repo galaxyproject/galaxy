@@ -7,12 +7,12 @@
                     <u class="step-title">{{ stepLabel }}</u>
                 </span>
             </div>
-            <div class="portlet-content" v-if="expanded">
+            <div v-if="expanded" class="portlet-content">
                 <InvocationStepProvider
                     v-if="isReady && invocationStepId !== undefined"
                     :id="invocationStepId"
-                    auto-refresh
-                    v-slot="{ result: stepDetails, loading }">
+                    v-slot="{ result: stepDetails, loading }"
+                    auto-refresh>
                     <div style="min-width: 1">
                         <loading-span v-if="loading" :message="`Loading invocation step details`"> </loading-span>
                         <div v-else>
@@ -113,10 +113,6 @@ export default {
             polling: null,
         };
     },
-    created() {
-        this.fetchTool();
-        this.fetchSubworkflow();
-    },
     computed: {
         ...mapGetters(["getToolForId", "getToolNameById", "getWorkflowByInstanceId", "getInvocationStepById"]),
         isReady() {
@@ -154,6 +150,10 @@ export default {
         stepLabel() {
             return this.labelForWorkflowStep(this.workflowStep.id);
         },
+    },
+    created() {
+        this.fetchTool();
+        this.fetchSubworkflow();
     },
     methods: {
         ...mapCacheActions(["fetchToolForId", "fetchWorkflowForInstanceId"]),

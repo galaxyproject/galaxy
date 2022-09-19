@@ -18,7 +18,7 @@ env:
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
   GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT: '1'
 concurrency:
-  group: integration-selenium-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   test:
@@ -43,10 +43,10 @@ jobs:
           echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
       - name: Prune unused docker image, volumes and containers
         run: docker system prune -a -f
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: 'galaxy root'
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
       - name: Get full Python version
@@ -54,19 +54,19 @@ jobs:
         shell: bash
         run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
       - name: Cache pip dir
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
       - name: Cache galaxy venv
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-integration-selenium
       - uses: mvdbeek/gha-yarn-cache@master
         with:
           yarn-lock-file: 'galaxy root/client/yarn.lock'
-      - uses: nanasess/setup-chromedriver@master
+      - uses: nanasess/setup-chromedriver@v1
       - name: Run tests
         run: ./run_tests.sh --coverage -integration test/integration_selenium
         working-directory: 'galaxy root'
@@ -74,12 +74,12 @@ jobs:
         with:
           flags: integration-selenium
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: Integration Selenium test results (${{ matrix.python-version }})
           path: 'galaxy root/run_integration_tests.html'
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: Integration Selenium debug info (${{ matrix.python-version }})

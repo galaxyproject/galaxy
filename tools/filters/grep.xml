@@ -1,4 +1,4 @@
-<tool id="Grep1" name="Select" version="1.0.3" profile="20.05">
+<tool id="Grep1" name="Select" version="1.0.4" profile="20.05">
   <description>lines that match an expression</description>
   <requirements>
     <requirement type="package" version="3.4">grep</requirement>
@@ -17,7 +17,7 @@
     #else
       cat '$input'
     #end if
-    | grep -P -f '$pattern_file' $invert > '$out_file1'
+    | grep -P -f '$pattern_file' $invert >> '$out_file1'
   ]]></command>
   <configfiles>
     <configfile name="pattern_file">$pattern</configfile>
@@ -53,7 +53,19 @@
       <param name="keep_header" value="true"/>
       <output name="out_file1">
         <assert_contents>
+          <has_text text="CCDS989.1_cds_0_0_chr1_147962193_r"/>
+          <not_has_text text="CCDS993.1_cds_0_0_chr1_148078401_r"/>
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <param name="input" value="1.bed"/>
+      <param name="invert" value=""/>
+      <param name="pattern" value="+"/>
+      <output name="out_file1">
+        <assert_contents>
           <not_has_text text="CCDS989.1_cds_0_0_chr1_147962193_r"/>
+          <not_has_text text="CCDS993.1_cds_0_0_chr1_148078401_r"/>
         </assert_contents>
       </output>
     </test>

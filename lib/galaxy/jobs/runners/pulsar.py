@@ -21,15 +21,13 @@ from pulsar.client import (
     ClientJobDescription,
     ClientOutputs,
     EXTENDED_METADATA_DYNAMIC_COLLECTION_PATTERN,
-)
-from pulsar.client import finish_job as pulsar_finish_job
-from pulsar.client import (
+    finish_job as pulsar_finish_job,
     PathMapper,
     PulsarClientTransportError,
     PulsarOutputs,
+    submit_job as pulsar_submit_job,
+    url_to_destination_params,
 )
-from pulsar.client import submit_job as pulsar_submit_job
-from pulsar.client import url_to_destination_params
 
 # TODO: Perform pulsar release with this included in the client package
 from pulsar.client.staging import DEFAULT_DYNAMIC_COLLECTION_PATTERN
@@ -41,6 +39,7 @@ from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
+    JobState,
 )
 from galaxy.tool_util.deps import dependencies
 from galaxy.util import (
@@ -314,7 +313,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             else:
                 message = LOST_REMOTE_ERROR
             if not job_state.job_wrapper.get_job().finished:
-                self.fail_job(job_state, message, full_status=full_status)
+                self.fail_job(job_state, message=message, full_status=full_status)
             return None
         if pulsar_status == "running" and not job_state.running:
             job_state.running = True
@@ -434,12 +433,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
             log.exception("failure running job %d", job_wrapper.job_id)
             return
 
-        pulsar_job_state = AsynchronousJobState()
-        pulsar_job_state.job_wrapper = job_wrapper
-        pulsar_job_state.job_id = job_id
+        pulsar_job_state = AsynchronousJobState(job_wrapper=job_wrapper, job_id=job_id, job_destination=job_destination)
         pulsar_job_state.old_state = True
         pulsar_job_state.running = False
-        pulsar_job_state.job_destination = job_destination
         self.monitor_job(pulsar_job_state)
 
     def __needed_features(self, client):
@@ -607,7 +603,10 @@ class PulsarJobRunner(AsynchronousJobRunner):
         job_destination_params = dict(job_destination_params.items())
         return self.client_manager.get_client(job_destination_params, **get_client_kwds)
 
-    def finish_job(self, job_state):
+    def finish_job(self, job_state: JobState):
+        assert isinstance(
+            job_state, AsynchronousJobState
+        ), f"job_state type is '{type(job_state)}', expected AsynchronousJobState"
         stderr = stdout = ""
         job_wrapper = job_state.job_wrapper
         try:
@@ -618,11 +617,11 @@ class PulsarJobRunner(AsynchronousJobRunner):
             stderr = run_results.get("stderr", "")
             exit_code = run_results.get("returncode", None)
             pulsar_outputs = PulsarOutputs.from_status_response(run_results)
-            job_state = job_wrapper.get_state()
+            state = job_wrapper.get_state()
             # Use Pulsar client code to transfer/copy files back
             # and cleanup job if needed.
-            completed_normally = job_state not in [model.Job.states.ERROR, model.Job.states.DELETED]
-            if completed_normally and job_state == model.Job.states.STOPPED:
+            completed_normally = state not in [model.Job.states.ERROR, model.Job.states.DELETED]
+            if completed_normally and state == model.Job.states.STOPPED:
                 # Discard pulsar exit code (probably -9), we know the user stopped the job
                 log.debug("Setting exit code for stopped job {job_wrapper.job_id} to 0 (was {exit_code})")
                 exit_code = 0
@@ -666,20 +665,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
         except Exception:
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
-
-    def fail_job(self, job_state, message=GENERIC_REMOTE_ERROR, full_status=None, exception=False):
-        """Seperated out so we can use the worker threads for it."""
-        self.stop_job(job_state.job_wrapper)
-        stdout = ""
-        stderr = ""
-        if full_status:
-            stdout = full_status.get("stdout", "")
-            stderr = full_status.get("stderr", "")
-        self._handle_runner_state("failure", job_state)
-        if not job_state.runner_state_handled:
-            job_state.job_wrapper.fail(
-                getattr(job_state, "fail_message", message), tool_stdout=stdout, tool_stderr=stderr, exception=exception
-            )
 
     def check_pid(self, pid):
         try:
@@ -754,14 +739,13 @@ class PulsarJobRunner(AsynchronousJobRunner):
             self.pulsar_app.shutdown()
 
     def _job_state(self, job, job_wrapper):
-        job_state = AsynchronousJobState()
+        raw_job_id = job.get_job_runner_external_id() or job_wrapper.job_id
+        job_state = AsynchronousJobState(
+            job_wrapper=job_wrapper, job_id=raw_job_id, job_destination=job_wrapper.job_destination
+        )
         # TODO: Determine why this is set when using normal message queue updates
         # but not CLI submitted MQ updates...
-        raw_job_id = job.get_job_runner_external_id() or job_wrapper.job_id
-        job_state.job_id = str(raw_job_id)
         job_state.runner_url = job_wrapper.get_job_runner_url()
-        job_state.job_destination = job_wrapper.job_destination
-        job_state.job_wrapper = job_wrapper
         return job_state
 
     def __client_outputs(self, client, job_wrapper):

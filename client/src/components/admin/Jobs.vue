@@ -1,7 +1,7 @@
 <template>
     <div>
         <h2 id="jobs-title">Jobs</h2>
-        <b-alert v-if="this.message" :variant="status" show>
+        <b-alert v-if="message" :variant="status" show>
             {{ message }}
         </b-alert>
         <p>
@@ -29,15 +29,12 @@
                 </b-form-group>
                 <b-form name="jobs" @submit.prevent="onRefresh">
                     <b-form-group
+                        v-show="!showAllRunning"
                         id="cutoff"
                         label="Cutoff time period"
-                        :disabled="showAllRunning"
                         description="in minutes">
                         <b-input-group>
-                            <b-form-input id="cutoff" type="number" v-model="cutoffMin"> </b-form-input>
-                            <b-input-group-append>
-                                <b-btn type="submit">Refresh</b-btn>
-                            </b-input-group-append>
+                            <b-form-input id="cutoff" v-model="cutoffMin" type="number"> </b-form-input>
                         </b-input-group>
                     </b-form-group>
                 </b-form>
@@ -47,9 +44,6 @@
                     description="by strings or regular expressions">
                     <b-input-group id="filter-regex">
                         <b-form-input v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
-                        <b-input-group-append>
-                            <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
-                        </b-input-group-append>
                     </b-input-group>
                 </b-form-group>
             </b-col>
@@ -73,8 +67,8 @@
             :fields="unfinishedJobFields"
             :items="unfinishedJobs"
             :filter="filter"
-            :tableCaption="runningTableCaption"
-            :noItemsMessage="runningNoJobsMessage"
+            :table-caption="runningTableCaption"
+            :no-items-message="runningNoJobsMessage"
             :loading="loading"
             :busy="busy">
             <template v-slot:head(selected)>
@@ -85,9 +79,9 @@
             </template>
             <template v-slot:cell(selected)="data">
                 <b-form-checkbox
+                    :key="data.index"
                     v-model="selectedStopJobIds"
                     :checked="allSelected"
-                    :key="data.index"
                     :value="data.item['id']"></b-form-checkbox>
             </template>
         </jobs-table>
@@ -99,7 +93,7 @@
                 :fields="finishedJobFields"
                 :items="finishedJobs"
                 :filter="filter"
-                :noItemsMessage="finishedNoJobsMessage"
+                :no-items-message="finishedNoJobsMessage"
                 :loading="loading"
                 :busy="busy">
             </jobs-table>
@@ -115,6 +109,7 @@ import JobLock from "./JobLock";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import { commonJobFields } from "./JobFields";
 import { errorMessageAsString } from "utils/simple-error";
+import { jobsProvider } from "components/providers/JobProvider";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;
@@ -149,7 +144,32 @@ export default {
             showAllRunning: false,
         };
     },
+    computed: {
+        finishedTableCaption() {
+            return `These jobs have completed in the previous ${this.cutoffMin} minutes.`;
+        },
+        runningTableCaption() {
+            return `These jobs are unfinished and have had their state updated in the previous ${this.cutoffMin} minutes. For currently running jobs, the "Last Update" column should indicate the runtime so far.`;
+        },
+        finishedNoJobsMessage() {
+            return `There are no recently finished jobs to show with current cutoff time of ${this.cutoffMin} minutes.`;
+        },
+        runningNoJobsMessage() {
+            let message = `There are no unfinished jobs`;
+            if (!this.showAllRunning) {
+                message += ` to show with current cutoff time of ${this.cutoffMin} minutes`;
+            }
+            message += ".";
+            return message;
+        },
+    },
     watch: {
+        filter(newVal) {
+            this.update();
+        },
+        cutoffMin(newVal) {
+            this.update();
+        },
         selectedStopJobIds(newVal) {
             if (newVal.length === 0) {
                 this.indeterminate = false;
@@ -176,51 +196,35 @@ export default {
             this.finishedJobs = finishedJobs;
         },
     },
-    computed: {
-        finishedTableCaption() {
-            return `These jobs have completed in the previous ${this.cutoffMin} minutes.`;
-        },
-        runningTableCaption() {
-            return `These jobs are unfinished and have had their state updated in the previous ${this.cutoffMin} minutes. For currently running jobs, the "Last Update" column should indicate the runtime so far.`;
-        },
-        finishedNoJobsMessage() {
-            return `There are no recently finished jobs to show with current cutoff time of ${this.cutoffMin} minutes.`;
-        },
-        runningNoJobsMessage() {
-            let message = `There are no unfinished jobs`;
-            if (!this.showAllRunning) {
-                message += ` to show with current cutoff time of ${this.cutoffMin} minutes`;
-            }
-            message += ".";
-            return message;
-        },
+    created() {
+        this.update();
     },
     methods: {
-        update() {
+        async update() {
             this.busy = true;
-            let params = [];
-            params.push("view=admin_job_list");
+            const params = { view: "admin_job_list" };
             if (this.showAllRunning) {
-                params.push("state=running");
+                params.state = "running";
             } else {
                 const cutoff = Math.floor(this.cutoffMin);
                 const dateRangeMin = new Date(Date.now() - cutoff * 60 * 1000).toISOString();
-                params.push(`date_range_min=${dateRangeMin}`);
+                params.date_range_min = `${dateRangeMin}`;
             }
-            params = params.join("&");
-            axios
-                .get(`${getAppRoot()}api/jobs?${params}`)
-                .then((response) => {
-                    this.jobs = response.data;
-                    this.loading = false;
-                    this.busy = false;
-                    this.status = "info";
-                })
-                .catch((error) => {
-                    this.message = errorMessageAsString(error);
-                    this.status = "danger";
-                    console.log(error.response);
-                });
+            const ctx = {
+                root: getAppRoot(),
+                ...params,
+            };
+            try {
+                const jobs = await jobsProvider(ctx);
+                this.jobs = jobs;
+                this.loading = false;
+                this.busy = false;
+                this.status = "info";
+            } catch (error) {
+                console.log(error);
+                this.message = errorMessageAsString(error);
+                this.status = "danger";
+            }
         },
         onRefresh() {
             this.update();
@@ -235,9 +239,6 @@ export default {
         toggleAll(checked) {
             this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];
         },
-    },
-    created() {
-        this.update();
     },
 };
 </script>

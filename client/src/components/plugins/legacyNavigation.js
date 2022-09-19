@@ -7,29 +7,20 @@ import { getGalaxyInstance } from "app";
 import { redirectToUrl, prependPath } from "utils/redirect";
 import _l from "utils/localization";
 
-// wrapper for backbone router
-export function backboneRoute(path, ...args) {
-    try {
-        getGalaxyInstance().router.push(path, ...args);
-    } catch (err) {
-        console.warn("Failed galaxy route change", err, ...arguments);
-        throw err;
-    }
-}
-
-// wrapper for scratchbook/multiview feature
-export function iframeAdd({ path, title = "Galaxy", tryIframe = true }) {
+// wrapper for window manager
+export function iframeAdd({ path, title = "Galaxy", $router = null }) {
     const Galaxy = getGalaxyInstance();
     if (Galaxy.frame && Galaxy.frame.active) {
         Galaxy.frame.add({
-            url: prependPath(path),
             title: _l(title),
+            url: path,
         });
         return true;
-    } else if (tryIframe) {
-        return iframeRedirect(path);
+    } else if ($router) {
+        $router.push(path);
+        return true;
     } else {
-        return false;
+        return iframeRedirect(path);
     }
 }
 
@@ -54,19 +45,12 @@ export function redirect(path) {
     redirectToUrl(prependPath(path));
 }
 
-// arbitrary Galaxy wrapper
-export function useGalaxy(fn) {
-    return fn(getGalaxyInstance());
-}
-
 // wrapper for navigation to be used as mixin
 export const legacyNavigationMixin = {
     methods: {
         redirect,
         iframeAdd,
         iframeRedirect,
-        backboneRoute,
-        useGalaxy,
         prependPath,
     },
 };

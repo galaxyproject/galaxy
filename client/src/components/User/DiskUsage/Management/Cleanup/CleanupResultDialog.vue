@@ -47,9 +47,6 @@ export default {
             required: false,
         },
     },
-    created() {
-        this.showModal = this.show;
-    },
     data() {
         return {
             showModal: false,
@@ -76,6 +73,9 @@ export default {
             }
             return message;
         },
+    },
+    created() {
+        this.showModal = this.show;
     },
 };
 </script>

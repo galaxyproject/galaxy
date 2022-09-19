@@ -28,6 +28,7 @@ attribute change to a model object.
 import datetime
 import logging
 import re
+from functools import partial
 from typing import (
     Any,
     Callable,
@@ -54,6 +55,7 @@ from galaxy import (
 )
 from galaxy.model import tool_shed_install
 from galaxy.schema import ValueFilterQueryParams
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import (
     BasicSharedApp,
@@ -67,6 +69,7 @@ log = logging.getLogger(__name__)
 class ParsedFilter(NamedTuple):
     filter_type: str  # orm_function, function, or orm
     filter: Any
+    case_insensitive: bool = False
 
 
 parsed_filter = ParsedFilter
@@ -141,7 +144,10 @@ def get_class(class_name):
 def decode_id(app: BasicSharedApp, id: Any):
     # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
     #   resulting in error for valid id
-    return decode_with_security(app.security, id)
+    if isinstance(id, DecodedDatabaseIdField):
+        return int(id)
+    else:
+        return decode_with_security(app.security, id)
 
 
 def decode_with_security(security: IdEncodingHelper, id: Any):
@@ -159,7 +165,7 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
     controller mixin code - however whenever possible the managers for a
     particular model should be used to load objects.
     """
-    decoded_id = decode_id(trans.app, id)
+    decoded_id = id if isinstance(id, int) else decode_id(trans.app, id)
     try:
         item_class = get_class(class_name)
         assert item_class is not None
@@ -199,8 +205,11 @@ def munge_lists(listA, listB):
     return listA + listB
 
 
+U = TypeVar("U", bound=model._HasTable)
+
+
 # -----------------------------------------------------------------------------
-class ModelManager:
+class ModelManager(Generic[U]):
     """
     Base class for all model/resource managers.
 
@@ -208,7 +217,7 @@ class ModelManager:
     over the ORM.
     """
 
-    model_class: Type[model._HasTable]
+    model_class: Type[U]
     foreign_key_name: str
     app: BasicSharedApp
 
@@ -309,14 +318,14 @@ class ModelManager:
         return query
 
     # .... query resolution
-    def one(self, **kwargs):
+    def one(self, **kwargs) -> Query:
         """
         Sends kwargs to build the query and returns one and only one model.
         """
         query = self.query(**kwargs)
         return self._one_with_recast_errors(query)
 
-    def _one_with_recast_errors(self, query):
+    def _one_with_recast_errors(self, query: Query) -> Query:
         """
         Call sqlalchemy's one and recast errors to serializable errors if any.
 
@@ -343,7 +352,7 @@ class ModelManager:
             return None
 
     # NOTE: at this layer, all ids are expected to be decoded and in int form
-    def by_id(self, id: int):
+    def by_id(self, id: int) -> Query:
         """
         Gets a model by primary id.
         """
@@ -475,10 +484,8 @@ class ModelManager:
                 in_order.append(item_dict[id])
         return in_order
 
-    def create(self, flush=True, *args, **kwargs):
-        """
-        Generically create a new model.
-        """
+    def create(self, flush: bool = True, *args: Any, **kwargs: Any) -> U:
+        """Generically create a new model."""
         # override in subclasses
         item = self.model_class(*args, **kwargs)
         self.session().add(item)
@@ -1020,7 +1027,7 @@ class ModelFilterParser(HasAModelManager):
                 "id": {"op": ("in")},
                 "encoded_id": {"column": "id", "op": ("in"), "val": self.parse_id_list},
                 # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
-                "extension": {"op": ("eq", "like", "in")},
+                "extension": {"op": ("eq", "like", "in"), "val": {"in": lambda v: v.split(",")}},
                 "create_time": {"op": ("le", "ge", "lt", "gt"), "val": self.parse_date},
                 "update_time": {"op": ("le", "ge", "lt", "gt"), "val": self.parse_date},
             }
@@ -1115,7 +1122,7 @@ class ModelFilterParser(HasAModelManager):
         """
         Attempt to parse a non-ORM filter function.
         """
-        # fn_filter_list is a dict: fn_filter_list[ attr ] = { 'opname1' : opfn1, 'opname2' : opfn2, etc. }
+        # fn_filter_parsers is a dict: fn_filter_parsers[attr] = {"opname1": opfn1, "opname2": opfn2, etc. }
 
         # attr, op is a nested dictionary pointing to the filter fn
         attr_map = self.fn_filter_parsers.get(attr, None)
@@ -1135,13 +1142,13 @@ class ModelFilterParser(HasAModelManager):
         return self.parsed_filter(filter_type="function", filter=lambda i: filter_fn(i, val))
 
     # ---- ORM filters
-    def _parse_orm_filter(self, attr, op, val):
+    def _parse_orm_filter(self, attr, op, val) -> Optional[ParsedFilter]:
         """
         Attempt to parse a ORM-based filter.
 
         Using SQLAlchemy, this would yield a sql.elements.BinaryExpression.
         """
-        # orm_filter_list is a dict: orm_filter_list[ attr ] = <list of allowed ops>
+        # orm_filter_parsers is a dict: orm_filter_parsers[attr] = <column map>
         column_map = self.orm_filter_parsers.get(attr, None)
         if not column_map:
             # no column mapping (not allowlisted)
@@ -1164,17 +1171,25 @@ class ModelFilterParser(HasAModelManager):
         allowed_ops = column_map["op"]
         if op not in allowed_ops:
             return None
-        op = self._convert_op_string_to_fn(column, op)
-        if not op:
+
+        converted_op = self._convert_op_string_to_fn(column, op)
+        if not converted_op:
             return None
 
         # parse the val from string using the 'val' parser if present (otherwise, leave as string)
-        val_parser = column_map.get("val", None)
+        val_parser = column_map.get("val")
+        # val_parser can be a dictionary indexed by the operations, in case different functions
+        # need to be called depending on the operation
+        if isinstance(val_parser, dict):
+            val_parser = val_parser.get(op)
         if val_parser:
             val = val_parser(val)
+        if op == "contains":
+            # Do we want to make this configurable ?
+            val = val.lower()
 
-        orm_filter = op(val)
-        return self.parsed_filter(filter_type="orm", filter=orm_filter)
+        orm_filter = converted_op(val)
+        return self.parsed_filter(filter_type="orm", filter=orm_filter, case_insensitive=op == "contains")
 
     #: these are the easier/shorter string equivalents to the python operator fn names that need '__' around them
     UNDERSCORED_OPS = ("lt", "le", "eq", "ne", "ge", "gt")
@@ -1196,6 +1211,8 @@ class ModelFilterParser(HasAModelManager):
         op_fn = getattr(column, fn_name, None)
         if not op_fn or not callable(op_fn):
             return None
+        if op_string == "contains":
+            op_fn = partial(op_fn, autoescape=True)
         return op_fn
 
     # ---- preset fn_filters: dictionaries of standard filter ops for standard datatypes
@@ -1203,7 +1220,7 @@ class ModelFilterParser(HasAModelManager):
         return {
             "op": {
                 "eq": lambda i, v: v == getattr(i, key),
-                "contains": lambda i, v: v in getattr(i, key),
+                "contains": lambda i, v: v in partial(getattr(i, key), autoescape=True),  # type: ignore[operator]
             }
         }
 
@@ -1211,7 +1228,7 @@ class ModelFilterParser(HasAModelManager):
     # TODO: These should go somewhere central - we've got ~6 parser modules/sections now
     def parse_id_list(self, id_list_string, sep=","):
         """
-        Split `id_list_string` at `sep`.
+        Split `id_list_string` at `sep` and decode as ids.
         """
         # TODO: move id decoding out
         id_list = [self.app.security.decode_id(id_) for id_ in id_list_string.split(sep)]

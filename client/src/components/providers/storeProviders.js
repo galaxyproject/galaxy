@@ -3,6 +3,7 @@ import axios from "axios";
 import { prependPath } from "utils/redirect";
 import { mapActions, mapGetters } from "vuex";
 import { mapCacheActions } from "vuex-cache";
+import { HasAttributesMixin } from "./utils";
 
 export const SimpleProviderMixin = {
     props: {
@@ -47,7 +48,7 @@ export const SimpleProviderMixin = {
     },
 };
 
-export const GenomeProvider = {
+export const DbKeyProvider = {
     mixins: [SimpleProviderMixin],
     props: {
         id: null,
@@ -56,20 +57,20 @@ export const GenomeProvider = {
         await this.load();
     },
     methods: {
-        ...mapCacheActions(["fetchUploadGenomes"]),
+        ...mapCacheActions(["fetchUploadDbKeys"]),
         async load() {
             this.loading = true;
-            let genomes = this.getUploadGenomes();
-            if (genomes == null || genomes.length == 0) {
-                await this.fetchUploadGenomes();
-                genomes = this.getUploadGenomes();
+            let dbKeys = this.getUploadDbKeys();
+            if (dbKeys == null || dbKeys.length == 0) {
+                await this.fetchUploadDbKeys();
+                dbKeys = this.getUploadDbKeys();
             }
-            this.item = genomes;
+            this.item = dbKeys;
             this.loading = false;
         },
     },
     computed: {
-        ...mapGetters(["getUploadGenomes"]),
+        ...mapGetters(["getUploadDbKeys"]),
     },
 };
 
@@ -135,6 +136,7 @@ export const JobProvider = {
  */
 export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undefined) => {
     return {
+        mixins: [HasAttributesMixin],
         watch: {
             $attrs(newVal, oldVal) {
                 if (JSON.stringify(newVal) != JSON.stringify(oldVal)) {
@@ -153,9 +155,6 @@ export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undef
         },
         computed: {
             ...mapGetters([storeGetter, storeCountGetter]),
-            attributes() {
-                return this.toCamelCase(this.$attrs);
-            },
             result() {
                 return this[storeGetter](this.attributes);
             },
@@ -184,14 +183,6 @@ export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undef
                     this.loading = false;
                 }
             },
-            toCamelCase(attributes) {
-                const result = {};
-                for (const key in attributes) {
-                    const newKey = key.replace(/-./g, (x) => x[1].toUpperCase());
-                    result[newKey] = attributes[key];
-                }
-                return result;
-            },
         },
     };
 };
@@ -199,3 +190,4 @@ export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undef
 export const DatasetProvider = StoreProvider("fetchDataset", "getDataset");
 export const CollectionElementsProvider = StoreProvider("fetchCollectionElements", "getCollectionElements");
 export const HistoryItemsProvider = StoreProvider("fetchHistoryItems", "getHistoryItems", "getTotalMatchesCount");
+export const ToolsProvider = StoreProvider("fetchAllTools", "getTools");

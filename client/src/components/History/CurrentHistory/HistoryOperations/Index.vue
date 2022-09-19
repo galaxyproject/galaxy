@@ -22,14 +22,13 @@
                     <Icon icon="compress" />
                 </b-button>
             </b-button-group>
-            <b-button-group v-if="showSelection">
+            <b-button-group v-show="showSelection">
                 <slot name="selection-operations" />
             </b-button-group>
             <DefaultOperations
-                v-else
+                v-show="!showSelection"
                 :history="history"
-                :show-selection="showSelection"
-                :expanded-count="expandedCount" />
+                @update:operation-running="onUpdateOperationStatus" />
         </nav>
     </section>
 </template>
@@ -45,11 +44,14 @@ export default {
         history: { type: Object, required: true },
         showSelection: { type: Boolean, required: true },
         hasMatches: { type: Boolean, required: true },
-        expandedCount: { type: Number, required: false, default: 0 },
+        expandedCount: { type: Number, default: 0 },
     },
     methods: {
         toggleSelection() {
             this.$emit("update:show-selection", !this.showSelection);
+        },
+        onUpdateOperationStatus(updateTime) {
+            this.$emit("update:operation-running", updateTime);
         },
     },
 };

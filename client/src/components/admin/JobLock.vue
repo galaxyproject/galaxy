@@ -23,6 +23,9 @@ export default {
             this.handleJobLock(axios.put(`${getAppRoot()}api/job_lock`, { active: this.jobLock }));
         },
     },
+    created() {
+        this.initJobLock();
+    },
     methods: {
         initJobLock() {
             this.handleJobLock(axios.get(`${getAppRoot()}api/job_lock`));
@@ -37,9 +40,6 @@ export default {
                     console.error(error);
                 });
         },
-    },
-    created() {
-        this.initJobLock();
     },
 };
 </script>

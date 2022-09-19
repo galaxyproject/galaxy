@@ -143,7 +143,6 @@ class LocalJobRunner(BaseJobRunner):
 
         job_destination = job_wrapper.job_destination
         job_state = JobState(job_wrapper, job_destination)
-        job_state.exit_code_file = default_exit_code_file(job_wrapper.working_directory, job_id)
         job_state.stop_job = False
         self._finish_or_resubmit_job(job_state, stdout, stderr, job_id=job_id)
 
@@ -196,6 +195,8 @@ class LocalJobRunner(BaseJobRunner):
 
     def _embed_metadata(self, job_wrapper):
         job_destination = job_wrapper.job_destination
+        if "celery" in job_wrapper.metadata_strategy:
+            return False
         embed_metadata = asbool(job_destination.params.get("embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB))
         return embed_metadata
 

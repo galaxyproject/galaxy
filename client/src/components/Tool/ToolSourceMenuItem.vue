@@ -20,12 +20,13 @@
 <script>
 import ConfigProvider from "components/providers/ConfigProvider";
 import CurrentUser from "components/providers/CurrentUser";
-import ToolSource from "components/Tool/ToolSource";
+import ToolSource from "./ToolSource.vue";
 
 export default {
     components: {
         ConfigProvider,
         CurrentUser,
+        // dynamically import toolsource component
         ToolSource,
     },
     props: {

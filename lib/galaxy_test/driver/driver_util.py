@@ -14,7 +14,10 @@ import tempfile
 import threading
 import time
 from pathlib import Path
-from typing import Optional
+from typing import (
+    List,
+    Optional,
+)
 from urllib.parse import urlparse
 
 import nose.config
@@ -34,6 +37,7 @@ from galaxy.tool_util.verify.interactor import (
     GalaxyInteractorApi,
     verify_tool,
 )
+from galaxy.tools import ToolBox
 from galaxy.util import (
     asbool,
     download_to_file,
@@ -254,6 +258,10 @@ def setup_galaxy_config(
         logging=LOGGING_CONFIG_DEFAULT,
         monitor_thread_join_timeout=5,
         object_store_store_by="uuid",
+        fetch_url_allowlist="127.0.0.1",
+        job_handler_monitor_sleep=0.2,
+        job_runner_monitor_sleep=0.2,
+        workflow_monitor_sleep=0.2,
     )
     if default_shed_tool_data_table_config:
         config["shed_tool_data_table_config"] = default_shed_tool_data_table_config
@@ -530,9 +538,9 @@ def attempt_port(port):
 
 def attempt_ports(port=None, set_galaxy_web_port=True):
     if port is not None:
+        if not attempt_port(port):
+            raise Exception(f"An existing process seems bound to specified test server port [{port}]")
         return port
-
-        raise Exception(f"An existing process seems bound to specified test server port [{port}]")
     else:
         random.seed()
         for _ in range(0, 9):
@@ -607,9 +615,7 @@ def setup_shed_tools_for_test(app, tmpdir, testing_migrated_tools, testing_insta
             tool_configs.remove(relative_migrated_tool_panel_config)
         for installed_tool_panel_config in INSTALLED_TOOL_PANEL_CONFIGS:
             tool_configs.append(installed_tool_panel_config)
-        from galaxy import tools  # delay import because this brings in so many modules for small tests # noqa: E402
-
-        app.toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
+        app.toolbox = ToolBox(tool_configs, app.config.tool_path, app)
 
 
 def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:
@@ -701,6 +707,10 @@ class ServerWrapper:
         self.port = port
         self.prefix = prefix
 
+    def get_logs(self) -> Optional[str]:
+        # Subclasses can implement a way to return relevant logs
+        pass
+
     @property
     def app(self):
         raise NotImplementedError("Test can be run against target - requires a Galaxy app object.")
@@ -743,7 +753,8 @@ class EmbeddedServerWrapper(ServerWrapper):
             self._app.shutdown()
             log.info(f"Application {self.name} stopped.")
 
-        log.info(f"{threading.active_count()} active after stopping embedded server")
+        thread_count = threading.active_count()
+        log.info(f"{thread_count} active after stopping embedded server")
 
 
 class GravityServerWrapper(ServerWrapper):
@@ -768,10 +779,10 @@ class GravityServerWrapper(ServerWrapper):
     def get_logs(self):
         gunicorn_logs = (self.state_dir / "log" / "gunicorn.log").read_text()
         gxit_logs = (self.state_dir / "log" / "gx-it-proxy.log").read_text()
-        return f"Gunicorn logs:{os.linesep}{gunicorn_logs}{os.linesep}gx-it-proxy logs:{os.linesep}{gxit_logs}"
+        celery_logs = (self.state_dir / "log" / "celery.log").read_text()
+        return f"Gunicorn logs:{os.linesep}{gunicorn_logs}{os.linesep}gx-it-proxy logs:{os.linesep}{gxit_logs}celery logs:{os.linesep}{celery_logs}"
 
     def stop(self):
-        log.info("Gravity logs:\n%s", self.get_logs())
         self.stop_command()
 
 
@@ -781,9 +792,11 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
         gxit_port = attempt_ports(set_galaxy_web_port=False)
     if "interactivetools_proxy_host" not in galaxy_config:
         galaxy_config["interactivetools_proxy_host"] = f"localhost:{gxit_port}"
+    # Can't use in-memory celery broker, just fall back to sqlalchemy
+    galaxy_config.pop("celery_broker", None)
     config = {
         "gravity": {
-            "gunicorn": {"bind": f"localhost:{port}"},
+            "gunicorn": {"bind": f"localhost:{port}", "preload": "false"},
             "gx_it_proxy": {
                 "enable": galaxy_config.get("interactivetools_enable", False),
                 "port": gxit_port,
@@ -845,7 +858,7 @@ def launch_server(app_factory, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, gal
     if name == "galaxy":
         asgi_app = init_galaxy_fast_app(wsgi_webapp, app)
     elif name == "tool_shed":
-        asgi_app = init_tool_shed_fast_app(wsgi_webapp)
+        asgi_app = init_tool_shed_fast_app(wsgi_webapp, app)
     else:
         raise NotImplementedError(f"Launching {name} not implemented")
 
@@ -885,6 +898,15 @@ class TestDriver:
     def stop_servers(self):
         for server_wrapper in self.server_wrappers:
             server_wrapper.stop()
+        for th in threading.enumerate():
+            log.debug(f"After stopping all servers thread {th} is alive.")
+        active_count = threading.active_count()
+        if active_count > 100:
+            # For an unknown reason running iRODS tests results in application threads not shutting down immediately,
+            # but if we've accumulated over 100 active threads something else is wrong that needs to be fixed.
+            raise Exception(
+                f"{active_count} active threads after stopping embedded server. Have all threads been shut down?"
+            )
         self.server_wrappers = []
 
     def mkdtemp(self):
@@ -916,6 +938,7 @@ class TestDriver:
 class GalaxyTestDriver(TestDriver):
     """Instantial a Galaxy-style nose TestDriver for testing Galaxy."""
 
+    server_wrappers: List[ServerWrapper]
     testing_shed_tools = False
 
     def _configure(self, config_object=None):
@@ -953,6 +976,11 @@ class GalaxyTestDriver(TestDriver):
         self._saved_galaxy_config = None
         self._configure(config_object)
         self._register_and_run_servers(config_object)
+
+    def get_logs(self):
+        if self.server_wrappers:
+            server_wrapper = self.server_wrappers[0]
+            return server_wrapper.get_logs()
 
     def restart(self, config_object=None, handle_config=None):
         self.stop_servers()

@@ -1,0 +1,98 @@
+<tool id="bigwigtowig" name="bigWigToWig" version="@TOOL_VERSION@+galaxy@SUFFIX_VERSION@" profile="20.01">
+    <description>Convert bigWig to wig</description>
+    <macros>
+        <token name="@TOOL_VERSION@">377</token>
+        <token name="@SUFFIX_VERSION@">0</token>
+    </macros>
+    <requirements>
+        <requirement type="package" version="@TOOL_VERSION@">ucsc-bigwigtowig</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+        bigWigToWig '${bigwig_input}'
+        #if $chrom
+            -chrom='${chrom}'
+        #end if
+        #if str($start)
+            -start=$start
+        #end if
+        #if str($end)
+            -end=$end
+        #end if
+        output.wig
+    ]]></command>
+    <inputs>
+        <param name="bigwig_input" type="data" format="bigwig" label="BigWig input"/>
+        <param argument="-chrom" type="text" value="" optional="true" label="Restrict output to given chromosome">
+            <sanitizer invalid_char="">
+                <valid initial="string.letters,string.digits">
+                    <add value="+" />
+                    <add value="-" />
+                    <add value=" " />
+                    <add value="_" />
+                </valid>
+            </sanitizer>
+            <validator type="regex">[A-Za-z0-9 -_+]+</validator>
+        </param>
+        <param argument="-start" type="integer" min="0" optional="true" label="Restrict output to only that over start" />
+        <param argument="-end" type="integer" min="0" optional="true" label="Restrict output to only that under end" />
+    </inputs>
+    <outputs>
+        <data name="wig_output" format="wig" from_work_dir="output.wig" label="${tool.name} on ${on_string}: wig"/>
+    </outputs>
+    <tests>
+        <!--Test 01 -->
+        <test expect_num_outputs="1">
+            <param name="bigwig_input" value="1.bigwig"/>
+            <output name="wig_output" value="output.wig" ftype="wig"/>
+        </test>
+        <!--Test 02 -->
+        <test expect_num_outputs="1">
+            <param name="bigwig_input" value="1.bigwig"/>
+            <param name="chrom" value="chr21"/>
+            <output name="wig_output" value="output.wig" ftype="wig"/>
+            <assert_command>
+                <has_text text="-chrom='chr21'"/>
+            </assert_command>
+        </test>
+        <!--Test 03 -->
+        <test expect_num_outputs="1">
+            <param name="bigwig_input" value="1.bigwig"/>
+            <param name="start" value="100"/>
+            <output name="wig_output" value="output.wig" ftype="wig"/>
+            <assert_command>
+                <has_text text="-start=100"/>
+            </assert_command>
+        </test>
+        <!--Test 04 -->
+        <test expect_num_outputs="1">
+            <param name="bigwig_input" value="1.bigwig"/>
+            <param name="end" value="100000000"/>
+            <output name="wig_output" value="output.wig" ftype="wig"/>
+            <assert_command>
+                <has_text text="-end=100000000"/>
+            </assert_command>
+        </test>
+    </tests>
+    <help><![CDATA[
+
+.. class:: infomark
+
+**Purpose**
+
+bigWigToWig - Convert bigWig to wig.  This will keep more of the same structure of the
+original wig than bigWigToBedGraph does, but still will break up large stepped sections
+into smaller ones.
+
+    ]]></help>
+    <citations>
+        <citation type="bibtex">
+            @misc{githubKent,
+            author = {Kent, Jim},
+            year = {2021},
+            title = {bigwigtowig},
+            publisher = {GitHub},
+            journal = {GitHub repository},
+            url = {https://github.com/ucscGenomeBrowser/kent}}
+        </citation>
+    </citations>
+</tool>

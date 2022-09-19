@@ -45,7 +45,7 @@ class ToolRunner(BaseUIController):
     @web.expose
     def index(self, trans, tool_id=None, from_noframe=None, **kwd):
         def __tool_404__():
-            log.error("index called with tool id '%s' but no such tool exists", tool_id)
+            log.debug("index called with tool id '%s' but no such tool exists", tool_id)
             trans.log_event("Tool id '%s' does not exist" % tool_id)
             trans.response.status = 404
             return trans.show_error_message("Tool '%s' does not exist." % (escape(tool_id)))

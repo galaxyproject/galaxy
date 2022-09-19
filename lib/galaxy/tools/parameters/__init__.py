@@ -4,6 +4,10 @@ Classes encapsulating Galaxy tool parameters.
 import logging
 
 from json import dumps
+from typing import (
+    Dict,
+    Union,
+)
 
 from boltons.iterutils import remap
 
@@ -17,9 +21,11 @@ from .basic import (
     ParameterValueError,
     runtime_to_json,
     SelectToolParameter,
+    ToolParameter,
 )
 from .grouping import (
     Conditional,
+    Group,
     Repeat,
     Section,
     UploadDataset,
@@ -247,7 +253,9 @@ def check_param(trans, param, incoming_value, param_values, simple_errors=True):
     return value, error
 
 
-def params_to_strings(params, param_values, app, nested=False, use_security=False):
+def params_to_strings(
+    params: Dict[str, Union[Group, ToolParameter]], param_values: Dict, app, nested=False, use_security=False
+) -> Dict:
     """
     Convert a dictionary of parameter values to a dictionary of strings
     suitable for persisting. The `value_to_basic` method of each parameter
@@ -263,7 +271,7 @@ def params_to_strings(params, param_values, app, nested=False, use_security=Fals
     return rval
 
 
-def params_from_strings(params, param_values, app, ignore_errors=False):
+def params_from_strings(params: Dict[str, Union[Group, ToolParameter]], param_values, app, ignore_errors=False) -> Dict:
     """
     Convert a dictionary of strings as produced by `params_to_strings`
     back into parameter values (decode the json representation and then

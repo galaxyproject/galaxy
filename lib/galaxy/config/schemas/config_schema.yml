@@ -443,17 +443,6 @@ mapping:
           File containing the Galaxy Tool Sheds that should be made available to
           install from in the admin interface (.sample used if default does not exist).
 
-      load_tool_shed_datatypes:
-        type: bool
-        default: true
-        required: false
-        desc: |
-          This option controls whether legacy datatypes are loaded from installed tool shed repositories.
-          We're are in the process of disabling Tool Shed datatypes. This option with a default of true
-          will be added in 22.01, we will disable the datatypes on the big public servers during that
-          release. This option will be switched to False by default in 22.05 and this broken functionality
-          will be removed all together during some future release.
-
       watch_tools:
         type: str
         default: 'false'
@@ -517,9 +506,10 @@ mapping:
       short_term_storage_maximum_duration:
         type: int
         required: false
+        default: 0
         desc: |
           The maximum duration short term storage files can hosted before they will be marked for
-          clean up. By default there is no default.
+          clean up.  The default setting of 0 indicates no limit here.
 
       short_term_storage_cleanup_interval:
         type: int
@@ -778,15 +768,6 @@ mapping:
 
           The value of this option will be resolved with respect to <data_dir>.
 
-      cluster_files_directory:
-        type: str
-        default: pbs
-        path_resolves_to: data_dir
-        required: false
-        desc: |
-          If using a cluster, Galaxy will write job scripts and stdout/stderr to this
-          directory.
-
       template_cache_path:
         type: str
         default: compiled_templates
@@ -960,6 +941,13 @@ mapping:
         required: false
         desc: |
           Lock directory used by beaker for caching mulled resolution requests.
+
+      mulled_resolution_cache_expire:
+        type: int
+        default: 3600
+        required: false
+        desc: |
+          Seconds until the beaker cache is considered old and a new value is created.
 
       object_store_config_file:
         type: str
@@ -1863,12 +1851,41 @@ mapping:
           If true, Galaxy will attempt to configure a simple root logger if a
           "loggers" section does not appear in this configuration file.
 
+      log_destination:
+        type: str
+        default: stdout
+        required: false
+        desc: |
+          Log destination, defaults to special value "stdout" that logs to standard output. If set to anything else,
+          then it will be interpreted as a path that will be used as the log file, and logging to stdout will be
+          disabled.
+
+      log_rotate_size:
+        type: str
+        default: "0"
+        required: false
+        desc: |
+          Size of log file at which size it will be rotated as per the documentation in
+          https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+          If log_rotate_count is not also set, no log rotation will be performed. A value of 0 (the default) means no
+          rotation. Size can be a number of bytes or a human-friendly representation like "100 MB" or "1G".
+
+      log_rotate_count:
+        type: int
+        default: 0
+        required: false
+        desc: |
+          Number of log file backups to keep, per the documentation in
+          https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+          Any additional rotated log files will automatically be pruned. If log_rotate_size is not also set, no log
+          rotation will be performed. A value of 0 (the default) means no rotation.
+
       log_level:
         type: str
         default: DEBUG
         required: false
         desc: |
-          Verbosity of console log messages.  Acceptable values can be found here:
+          Verbosity of console log messages. Acceptable values can be found here:
           https://docs.python.org/library/logging.html#logging-levels
           A custom debug level of "TRACE" is available for even more verbosity.
 
@@ -1876,9 +1893,8 @@ mapping:
         type: map
         allowempty: true
         desc: |
-          Controls where and how the server logs messages. If unset, the default is to log all messages to standard
-          output at the level defined by the `log_level` configuration option. Configuration is described in the
-          documentation at:
+          Controls where and how the server logs messages. If set, overrides all settings in the log_* configuration
+          options. Configuration is described in the documentation at:
           https://docs.galaxyproject.org/en/master/admin/config_logging.html
 
       database_engine_option_echo:
@@ -1954,7 +1970,7 @@ mapping:
           their HTML sanitized on display.  This can be manually edited or manipulated
           through the Admin control panel -- see "Manage Allowlist"
 
-          The value of this option will be resolved with respect to <mutable_config_dir>.
+          The value of this option will be resolved with respect to <managed_config_dir>.
 
       serve_xss_vulnerable_mimetypes:
         type: bool
@@ -2198,25 +2214,31 @@ mapping:
 
       tool_name_boost:
         type: float
-        default: 9.0
+        default: 20.0
         required: false
         reloadable: true
         desc: |
-          Boosts are used to customize this instance's toolbox search.
-          The higher the boost, the more importance the scoring algorithm gives to the
-          given field.  Section refers to the tool group in the tool panel.  Rest of
-          the fields are tool's attributes.
+          In tool search, a query match against a tool's name text will receive
+          this score multiplier.
+
+      tool_name_exact_multiplier:
+        type: float
+        default: 10.0
+        required: false
+        reloadable: true
+        desc: |
+          If a search query matches a tool name exactly, the score will be
+          multiplied by this factor.
 
       tool_id_boost:
         type: float
-        default: 9.0
+        default: 20.0
         required: false
         reloadable: true
         desc: |
-          Boosts are used to customize this instance's toolbox search.
-          The higher the boost, the more importance the scoring algorithm gives to the
-          given field.  Section refers to the tool group in the tool panel.  Rest of
-          the fields are tool's attributes.
+          In tool search, a query match against a tool's ID text will receive
+          this score multiplier. The query must be an exact match against ID
+          in order to be counted as a match.
 
       tool_section_boost:
         type: float
@@ -2224,21 +2246,17 @@ mapping:
         required: false
         reloadable: true
         desc: |
-          Boosts are used to customize this instance's toolbox search.
-          The higher the boost, the more importance the scoring algorithm gives to the
-          given field.  Section refers to the tool group in the tool panel.  Rest of
-          the fields are tool's attributes.
+          In tool search, a query match against a tool's section text will
+          receive this score multiplier.
 
       tool_description_boost:
         type: float
-        default: 2.0
+        default: 8.0
         required: false
         reloadable: true
         desc: |
-          Boosts are used to customize this instance's toolbox search.
-          The higher the boost, the more importance the scoring algorithm gives to the
-          given field.  Section refers to the tool group in the tool panel.  Rest of
-          the fields are tool's attributes.
+          In tool search, a query match against a tool's description text will
+          receive this score multiplier.
 
       tool_label_boost:
         type: float
@@ -2246,32 +2264,39 @@ mapping:
         required: false
         reloadable: true
         desc: |
-          Boosts are used to customize this instance's toolbox search.
-          The higher the boost, the more importance the scoring algorithm gives to the
-          given field.  Section refers to the tool group in the tool panel.  Rest of
-          the fields are tool's attributes.
+          In tool search, a query match against a tool's label text will
+          receive this score multiplier.
 
       tool_stub_boost:
         type: float
-        default: 5.0
+        default: 2.0
         required: false
         reloadable: true
         desc: |
-          Boosts are used to customize this instance's toolbox search.
-          The higher the boost, the more importance the scoring algorithm gives to the
-          given field.  Section refers to the tool group in the tool panel.  Rest of
-          the fields are tool's attributes.
+          A stub is parsed from the GUID as "owner/repo/tool_id".
+          In tool search, a query match against a tool's stub text will receive
+          this score multiplier.
 
       tool_help_boost:
+        type: float
+        default: 1.0
+        required: false
+        reloadable: true
+        desc: |
+          In tool search, a query match against a tool's help text will receive
+          this score multiplier.
+
+      tool_help_bm25f_k1:
         type: float
         default: 0.5
         required: false
         reloadable: true
         desc: |
-          Boosts are used to customize this instance's toolbox search.
-          The higher the boost, the more importance the scoring algorithm gives to the
-          given field.  Section refers to the tool group in the tool panel.  Rest of
-          the fields are tool's attributes.
+          The lower this parameter, the greater the diminishing reward for
+          term frequency in the help text. A higher K1 increases the level
+          of reward for additional occurences of a term. The default value will
+          provide a slight increase in score for the first, second and third
+          occurrence and little reward thereafter.
 
       tool_search_limit:
         type: int
@@ -2279,8 +2304,8 @@ mapping:
         required: false
         reloadable: true
         desc: |
-          Limits the number of results in toolbox search.  Can be used to tweak how many
-          results will appear.
+          Limits the number of results in toolbox search. Use to set the
+          maximum number of tool search results to display.
 
       tool_enable_ngram_search:
         type: bool
@@ -2288,10 +2313,11 @@ mapping:
         required: false
         reloadable: true
         desc: |
-          Enable/ disable Ngram-search for tools. It makes tool
-          search results tolerant for spelling mistakes in the query
-          by dividing the query into multiple ngrams and search for
-          each ngram
+          Disabling this will prevent partial matches on tool names.
+          Enable/disable Ngram-search for tools. It makes tool
+          search results tolerant for spelling mistakes in the query, and will
+          also match query substrings e.g. "genome" will match "genomics" or
+          "metagenome".
 
       tool_ngram_minsize:
         type: int
@@ -2299,7 +2325,7 @@ mapping:
         required: false
         reloadable: true
         desc: |
-          Set minimum size of ngrams
+          Set minimum character length of ngrams
 
       tool_ngram_maxsize:
         type: int
@@ -2307,7 +2333,16 @@ mapping:
         required: false
         reloadable: true
         desc: |
-          Set maximum size of ngrams
+          Set maximum character length of ngrams
+
+      tool_ngram_factor:
+        type: float
+        default: 0.2
+        required: false
+        reloadable: true
+        desc: |
+          Ngram matched scores will be multiplied by this factor. Should always
+          be below 1, because an ngram match is a partial match of a search term.
 
       tool_test_data_directories:
         type: str
@@ -2381,6 +2416,13 @@ mapping:
           If use_remote_user is enabled, you can set this to a URL that will log your
           users out.
 
+      post_user_logout_href:
+        type: str
+        default: /root/login?is_logout_redirect=true
+        required: false
+        desc: |
+          This is the default url to which users are redirected after they log out.
+
       normalize_remote_user_email:
         type: bool
         default: false
@@ -2425,6 +2467,13 @@ mapping:
         desc: |
           Show the site's welcome page (see welcome_url) alongside the login page
           (even if require_login is true).
+
+      prefer_custos_login:
+        type: bool
+        default: false
+        required: False
+        desc: |
+          Controls the order of the login page to prefer Custos-based login and registration.
 
       allow_user_creation:
         type: bool
@@ -2708,9 +2757,10 @@ mapping:
           Optional list of email addresses of API users who can make calls on behalf of
           other users.
 
-      master_api_key:
+      bootstrap_admin_api_key:
         type: str
         required: false
+        deprecated_alias: master_api_key
         desc: |
           API key that allows performing some admin actions without actually
           having a real admin user in the database and config.
@@ -3038,17 +3088,30 @@ mapping:
           decreased if extremely high job throughput is necessary, but doing so can increase CPU
           usage of handler processes. Float values are allowed.
 
+      workflow_monitor_sleep:
+        type: float
+        default: 1.0
+        required: false
+        desc: |
+          Each Galaxy workflow handler process runs one thread responsible for
+          checking the state of active workflow invocations.  This thread operates in a loop and
+          sleeps for the given number of seconds at the end of each iteration. This can be
+          decreased if extremely high job throughput is necessary, but doing so can increase CPU
+          usage of handler processes. Float values are allowed.
+
       metadata_strategy:
         type: str
         required: false
         default: directory
         desc: |
-          Determines how metadata will be set. Valid values are `directory` and `extended`.
+          Determines how metadata will be set. Valid values are `directory`, `extended`,
+          `directory_celery` and `extended_celery`.
           In extended mode jobs will decide if a tool run failed, the object stores
           configuration is serialized and made available to the job and is used for
           writing output datasets to the object store as part of the job and dynamic
           output discovery (e.g. discovered datasets <discover_datasets>, unpopulated collections,
-          etc) happens as part of the job.
+          etc) happens as part of the job. In `directory_celery` and `extended_celery` metadata
+          will be set within a celery task.
 
       retry_metadata_internally:
         type: bool
@@ -3396,7 +3459,7 @@ mapping:
           example, when reloading the toolbox or locking job execution, the process
           that handled that particular request will tell all others to also reload,
           lock jobs, etc.
-          For connection examples, see http://docs.celeryproject.org/projects/kombu/en/latest/userguide/connections.html
+          For connection examples, see https://docs.celeryq.dev/projects/kombu/en/stable/userguide/connections.html
 
           Without specifying anything here, galaxy will first attempt to use your
           specified database_connection above.  If that's not specified either, Galaxy

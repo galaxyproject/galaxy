@@ -4,11 +4,11 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,
 )
-from galaxy_test.base.uses_shed import UsesShed
+from galaxy_test.base.uses_shed_api import UsesShedApi
 from galaxy_test.driver import integration_util
 
 
-class WorkflowInvocationTestCase(integration_util.IntegrationTestCase, UsesShed):
+class WorkflowInvocationTestCase(integration_util.IntegrationTestCase, UsesShedApi):
 
     framework_tool_and_types = True
     require_admin_user = False

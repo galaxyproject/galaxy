@@ -48,14 +48,11 @@ DEFAULT_TEST_REPO = REPO_TYPE("github.com", "galaxyproject", "example", "1", "1"
 
 
 class SimplifiedToolBox(ToolBox):
-    def __init__(self, test_case):
+    def __init__(self, test_case: "BaseToolBoxTestCase"):
         app = test_case.app
         app.watchers.tool_config_watcher.reload_callback = lambda: reload_callback(test_case)
         # Handle app/config stuff needed by toolbox but not by tools.
         app.tool_cache = ToolCache() if not hasattr(app, "tool_cache") else app.tool_cache
-        app.job_config.get_tool_resource_parameters = lambda tool_id: None
-        app.config.update_integrated_tool_panel = True
-        app.config.schema.defaults = {"tool_dependency_dir": "dependencies"}
         config_files = test_case.config_files
         tool_root_dir = test_case.test_directory
         super().__init__(
@@ -93,7 +90,7 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesTools):
         install_model = mapping.init("sqlite:///:memory:", create_tables=True)
         self.app.tool_cache = ToolCache()
         self.app.install_model = install_model
-        self.app.reindex_tool_search = self.__reindex
+        self.app.reindex_tool_search = self.__reindex  # type: ignore[assignment]
         itp_config = os.path.join(self.test_directory, "integrated_tool_panel.xml")
         self.app.config.integrated_tool_panel_config = itp_config
         self.app.watchers = ConfigWatchers(self.app)

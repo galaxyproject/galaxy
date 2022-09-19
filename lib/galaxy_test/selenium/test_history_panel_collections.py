@@ -76,7 +76,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         history_id = self.current_history_id()
         input_collection = self.dataset_collection_populator.create_list_in_history(
             history_id, contents=["0", "1", "0", "1"]
-        ).json()
+        ).json()["outputs"][0]
 
         ok_inputs = {"input1": {"src": "hdca", "id": input_collection["id"]}}
         ok_response = self.dataset_populator.run_tool("collection_creates_list", ok_inputs, history_id)
@@ -194,8 +194,8 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         self._back_to_history()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.history_panel_wait_for_hid_state(collection_hid, "ok")
-        nametags = self.history_panel_item_get_nametags(collection_hid)
-        assert nametags == ["moo"]
+        nametags = self.history_panel_item_get_tags(collection_hid)
+        assert nametags == ["#moo"]
         self.screenshot("history_panel_collection_with_nametag")
 
     @selenium_test
@@ -212,7 +212,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         selector = ".title .name"
         if self.is_beta_history():
             selector = ".content-title"
-        titles = [de.find_element_by_css_selector(selector).text for de in dataset_elements]
+        titles = [de.find_element(self.by.CSS_SELECTOR, selector).text for de in dataset_elements]
         assert titles == ["forward", "reverse"]
         self.screenshot("history_panel_collection_view_paired")
 
@@ -237,7 +237,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
             selector = ".title .name"
             if self.is_beta_history():
                 selector = ".content-title"
-            title_elements = [de.find_element_by_css_selector(selector).text for de in dataset_elements]
+            title_elements = [de.find_element(self.by.CSS_SELECTOR, selector).text for de in dataset_elements]
             assert title_elements == ["data1", "data2", "data3", "data4"]
 
         check_four_datasets_shown()
@@ -285,15 +285,17 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
     def _generate_partially_failed_collection_with_input(self):
         history_id = self.current_history_id()
         input_collection = self.dataset_collection_populator.create_list_in_history(
-            history_id, contents=["0", "1", "0", "1"]
-        ).json()
+            history_id, contents=["0", "1", "0", "1"], wait=True
+        ).json()["outputs"][0]
         failed_response = self.dataset_populator.run_exit_code_from_file(history_id, input_collection["id"])
         failed_collection = failed_response["implicit_collections"][0]
         return input_collection, failed_collection
 
     def _populated_paired_and_wait_for_it(self):
         history_id = self.current_history_id()
-        input_collection = self.dataset_collection_populator.create_pair_in_history(history_id).json()
+        input_collection = self.dataset_collection_populator.create_pair_in_history(history_id, wait=True).json()[
+            "outputs"
+        ][0]
         collection_hid = input_collection["hid"]
         if not self.is_beta_history():
             self.home()

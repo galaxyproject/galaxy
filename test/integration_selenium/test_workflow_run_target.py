@@ -17,6 +17,7 @@ class WorkflowRunTargetNewSeleniumIntegrationTestCase(
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["simplified_workflow_run_ui_target_history"] = "new"
         config["simplified_workflow_run_ui"] = "prefer"
 
@@ -45,6 +46,7 @@ class WorkflowRunTargetCurrentSeleniumIntegrationTestCase(
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["simplified_workflow_run_ui_target_history"] = "current"
         config["simplified_workflow_run_ui"] = "prefer"
 
@@ -72,6 +74,7 @@ class WorkflowRunTargetSelectNewSeleniumIntegrationTestCase(
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["simplified_workflow_run_ui_target_history"] = "prefer_current"
         config["simplified_workflow_run_ui"] = "prefer"
 

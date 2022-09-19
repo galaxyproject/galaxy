@@ -29,7 +29,6 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy_test.base.api_util import get_admin_api_key
-from galaxy_test.driver.testcase import DrivenFunctionalTestCase
 from tool_shed.util import (
     hg_util,
     hgweb_config,
@@ -39,20 +38,20 @@ from . import (
     common,
     test_db_util,
 )
+from .api import ShedBaseTestCase
 
 # Set a 10 minute timeout for repository installation.
 repository_installation_timeout = 600
 
-# Dial ClientCookie logging down (very noisy)
-logging.getLogger("ClientCookie.cookies").setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 tc.options["equiv_refresh_interval"] = 0
 
 
-class ShedTwillTestCase(DrivenFunctionalTestCase):
+class ShedTwillTestCase(ShedBaseTestCase):
     """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
     def setUp(self):
+        super().setUp()
         # Security helper
         self.security = idencoding.IdEncodingHelper(id_secret="changethisinproductiontoo")
         self.history_id = None
@@ -60,19 +59,11 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         self.hgweb_config_manager = hgweb_config.hgweb_config_manager
         self.hgweb_config_manager.hgweb_config_dir = self.hgweb_config_dir
         self.tool_shed_test_tmp_dir = os.environ.get("TOOL_SHED_TEST_TMP_DIR", None)
-        self.host = os.environ.get("TOOL_SHED_TEST_HOST")
-        self.port = os.environ.get("TOOL_SHED_TEST_PORT")
-        self.url = f"http://{self.host}:{self.port}"
-        self.galaxy_host = os.environ.get("GALAXY_TEST_HOST")
-        self.galaxy_port = os.environ.get("GALAXY_TEST_PORT")
-        self.galaxy_url = f"http://{self.galaxy_host}:{self.galaxy_port}"
         self.shed_tool_data_table_conf = os.environ.get("TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF")
         self.file_dir = os.environ.get("TOOL_SHED_TEST_FILE_DIR", None)
         self.tool_data_path = os.environ.get("GALAXY_TEST_TOOL_DATA_PATH")
         self.shed_tool_conf = os.environ.get("GALAXY_TEST_SHED_TOOL_CONF")
         self.test_db_util = test_db_util
-        # TODO: Figure out a way to alter these attributes during tests.
-        self.galaxy_tool_dependency_dir = os.environ.get("GALAXY_TEST_TOOL_DEPENDENCY_DIR")
 
     def check_for_strings(self, strings_displayed=None, strings_not_displayed=None):
         strings_displayed = strings_displayed or []
@@ -353,22 +344,6 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         assert (
             tool_panel_section == expected_tool_panel_section
         ), f"Expected to find tool panel section *{expected_tool_panel_section}*, but instead found *{tool_panel_section}*\nMetadata: {metadata}\n"
-
-    def check_installed_repository_tool_dependencies(
-        self, installed_repository, strings_displayed=None, strings_not_displayed=None, dependencies_installed=False
-    ):
-        # Tool dependencies are not being installed in these functional tests. If this is changed, the test method will also need to be updated.
-        if not dependencies_installed:
-            strings_displayed.append("Missing tool dependencies")
-        else:
-            strings_displayed.append("Tool dependencies")
-        if dependencies_installed:
-            strings_displayed.append("Installed")
-        else:
-            strings_displayed.append("Never installed")
-        params = {"id": self.security.encode_id(installed_repository.id)}
-        self.visit_galaxy_url("/admin_toolshed/manage_repository", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def check_repository_changelog(self, repository, strings_displayed=None, strings_not_displayed=None):
         params = {"id": self.security.encode_id(repository.id)}
@@ -898,13 +873,6 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         datatypes = loads(html)
         return len(datatypes)
 
-    def get_env_sh_path(self, tool_dependency_name, tool_dependency_version, repository):
-        """Return the absolute path to an installed repository's env.sh file."""
-        env_sh_path = os.path.join(
-            self.get_tool_dependency_path(tool_dependency_name, tool_dependency_version, repository), "env.sh"
-        )
-        return env_sh_path
-
     def get_filename(self, filename, filepath=None):
         if filepath is not None:
             return os.path.abspath(os.path.join(filepath, filename))
@@ -930,17 +898,6 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             url = f"/api/categories/{self.security.encode_id(category.id)}/repositories"
             self.visit_url(url)
             self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def get_tool_dependency_path(self, tool_dependency_name, tool_dependency_version, repository):
-        """Return the absolute path for an installed tool dependency."""
-        return os.path.join(
-            self.galaxy_tool_dependency_dir,
-            tool_dependency_name,
-            tool_dependency_version,
-            repository.owner,
-            repository.name,
-            repository.installed_changeset_revision,
-        )
 
     def get_or_create_repository(self, owner=None, strings_displayed=None, strings_not_displayed=None, **kwd):
         # If not checking for a specific string, it should be safe to assume that

@@ -1,4 +1,3 @@
-import json
 import zipfile
 from io import BytesIO
 from typing import List
@@ -26,7 +25,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
             self.history_id,
             instance_type="history",
         )
-        create_response = self._post("dataset_collections", payload, json=True)
+        create_response = self.dataset_populator.fetch(payload, wait=True)
         dataset_collection = self._check_create_response(create_response)
         returned_datasets = dataset_collection["elements"]
         assert len(returned_datasets) == 2, dataset_collection
@@ -51,7 +50,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
             self.history_id,
             instance_type="history",
         )
-        pair_create_response = self._post("dataset_collections", pair_payload, json=True)
+        pair_create_response = self._post("tools/fetch", pair_payload, json=True)
         dataset_collection = self._check_create_response(pair_create_response)
         hdca_id = dataset_collection["id"]
 
@@ -153,8 +152,9 @@ class DatasetCollectionApiTestCase(ApiTestCase):
             )
 
     def test_list_list_download(self):
-        dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(self.history_id).json()
-        self.dataset_collection_populator.wait_for_dataset_collection(dataset_collection, assert_ok=True)
+        dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(
+            self.history_id, wait=True
+        ).json()
         returned_dce = dataset_collection["elements"]
         assert len(returned_dce) == 1, dataset_collection
         create_response = self._download_dataset_collection(
@@ -167,9 +167,10 @@ class DatasetCollectionApiTestCase(ApiTestCase):
 
     def test_list_list_list_download(self):
         dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(
-            self.history_id, collection_type="list:list:list"
+            self.history_id,
+            collection_type="list:list:list",
+            wait=True,
         ).json()
-        self.dataset_collection_populator.wait_for_dataset_collection(dataset_collection, assert_ok=True)
         returned_dce = dataset_collection["elements"]
         assert len(returned_dce) == 1, dataset_collection
         create_response = self._download_dataset_collection(
@@ -227,7 +228,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         ]
         payload = {
             "history_id": self.history_id,
-            "targets": json.dumps(targets),
+            "targets": targets,
             "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
         }
         self.dataset_populator.fetch(payload)
@@ -256,7 +257,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         ]
         payload = {
             "history_id": self.history_id,
-            "targets": json.dumps(targets),
+            "targets": targets,
             "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
         }
         self.dataset_populator.fetch(payload)
@@ -284,7 +285,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         ]
         payload = {
             "history_id": self.history_id,
-            "targets": json.dumps(targets),
+            "targets": targets,
         }
         self.dataset_populator.fetch(payload)
         hdca = self._assert_one_collection_created_in_history()
@@ -292,6 +293,34 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         element0 = hdca["elements"][0]
         assert element0["element_identifier"] == "4.bed"
         assert element0["object"]["file_size"] == 61
+
+    def test_upload_collection_deferred(self):
+        elements = [
+            {
+                "src": "url",
+                "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                "info": "my cool bed",
+                "deferred": True,
+            }
+        ]
+        targets = [
+            {
+                "destination": {"type": "hdca"},
+                "elements": elements,
+                "collection_type": "list",
+            }
+        ]
+        payload = {
+            "history_id": self.history_id,
+            "targets": targets,
+        }
+        self.dataset_populator.fetch(payload)
+        hdca = self._assert_one_collection_created_in_history()
+        assert len(hdca["elements"]) == 1, hdca
+        element0 = hdca["elements"][0]
+        assert element0["element_identifier"] == "4.bed"
+        object0 = element0["object"]
+        assert object0["state"] == "deferred"
 
     @skip_if_github_down
     def test_upload_collection_failed_expansion_url(self):
@@ -306,7 +335,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         ]
         payload = {
             "history_id": self.history_id,
-            "targets": json.dumps(targets),
+            "targets": targets,
         }
         self.dataset_populator.fetch(payload, assert_ok=False, wait=True)
         hdca = self._assert_one_collection_created_in_history()
@@ -328,6 +357,10 @@ class DatasetCollectionApiTestCase(ApiTestCase):
     def _check_create_response(self, create_response):
         self._assert_status_code_is(create_response, 200)
         dataset_collection = create_response.json()
+        if "output_collections" in dataset_collection:
+            # fetch data response, we'll have to check the final response
+            dataset_collection = dataset_collection["output_collections"][0]
+            dataset_collection = self._get(f"dataset_collections/{dataset_collection['id']}").json()
         self._assert_has_keys(dataset_collection, "elements", "url", "name", "collection_type", "element_count")
         return dataset_collection
 
@@ -398,6 +431,17 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(offset_contents) == 1
         assert offset_contents[0]["element_index"] == 1
 
+    def test_collection_contents_empty_root(self):
+        create_response = self.dataset_collection_populator.create_list_in_history(
+            self.history_id, contents=[], wait=True
+        ).json()
+        hdca = create_response["output_collections"][0]
+        assert hdca["elements"] == []
+        root_contents_url = hdca["contents_url"]
+        response = self._get(root_contents_url)
+        response.raise_for_status()
+        assert response.json() == []
+
     def test_get_suitable_converters_single_datatype(self):
         response = self.dataset_collection_populator.upload_collection(
             self.history_id,
@@ -418,6 +462,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
                     ],
                 },
             ],
+            wait=True,
         )
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
@@ -461,6 +506,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
                     ],
                 },
             ],
+            wait=True,
         )
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
@@ -491,6 +537,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
                     ],
                 },
             ],
+            wait=True,
         )
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
@@ -513,7 +560,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         ]
         payload = {
             "history_id": self.history_id,
-            "targets": json.dumps(targets),
+            "targets": targets,
             "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
         }
         hdca_id = self.dataset_populator.fetch(payload).json()["output_collections"][0]["id"]
@@ -545,7 +592,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
     def _create_collection_contents_pair(self):
         # Create a simple collection, return hdca and contents_url
         payload = self.dataset_collection_populator.create_pair_payload(self.history_id, instance_type="history")
-        create_response = self._post("dataset_collections", payload, json=True)
+        create_response = self.dataset_populator.fetch(payload=payload, wait=True)
         hdca = self._check_create_response(create_response)
         root_contents_url = self._get_contents_url_for_hdca(hdca)
         return hdca, root_contents_url

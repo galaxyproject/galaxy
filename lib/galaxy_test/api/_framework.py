@@ -4,7 +4,10 @@ from unittest import (
     TestCase,
 )
 
-from galaxy_test.base.api import UsesApiTestCaseMixin
+from galaxy_test.base.api import (
+    UsesApiTestCaseMixin,
+    UsesCeleryTasks,
+)
 from galaxy_test.base.testcase import FunctionalTestCase
 
 try:
@@ -15,7 +18,7 @@ except ImportError:
     GalaxyTestDriver = None  # type: ignore[misc,assignment]
 
 
-class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, TestCase):
+class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, UsesCeleryTasks, TestCase):
     galaxy_driver_class = GalaxyTestDriver
     _test_driver: Optional[GalaxyTestDriver]
 

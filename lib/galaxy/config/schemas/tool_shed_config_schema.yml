@@ -611,6 +611,16 @@ mapping:
           (e.g. LDAP) instead or in addition to local authentication (.sample is used
           if default does not exist).
 
+      bootstrap_admin_api_key:
+        type: str
+        required: false
+        desc: |
+          API key that allows performing some admin actions without actually
+          having a real admin user in the database and config.
+          Only set this if you need to bootstrap Galaxy, in particular to create
+          a real admin user account via API.
+          You should probably not set this on a production server.
+
       shed_tool_data_table_config:
         type: str
         default: shed_tool_data_table_conf.xml

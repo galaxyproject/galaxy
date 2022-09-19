@@ -9,6 +9,7 @@ import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import { mountNametags } from "components/Nametags";
 import { Toast } from "ui/toast";
+import { getAppRoot } from "onload/loadConfig";
 
 var logNamespace = "dataset";
 /*==============================================================================
@@ -187,7 +188,8 @@ export var DatasetListItemView = _super.extend(
                     if (Galaxy.frame && Galaxy.frame.active) {
                         // Add dataset to frames.
                         const identifier = self.model.get("element_id") || self.model.get("id");
-                        Galaxy.frame.addDataset(identifier);
+                        const url = `${getAppRoot()}datasets/${identifier}/display/?preview=True`;
+                        Galaxy.frame.add({ url });
                         ev.preventDefault();
                     }
                 };
@@ -369,7 +371,9 @@ export var DatasetListItemView = _super.extend(
                         ${_.map(
                             this.model.get("meta_files"),
                             (meta_file) =>
-                                `<a class="dropdown-item" href="${urls.meta_download + meta_file.file_type}">
+                                `<a class="dropdown-item" href="${
+                                    urls.meta_download + meta_file.file_type
+                                }" data-description="download ${meta_file.file_type}">
                                     ${_l("Download")} ${meta_file.file_type}
                                 </a>`
                         )}
@@ -525,7 +529,21 @@ DatasetListItemView.prototype.templates = (() => {
         "dataset"
     );
     summaryTemplates[STATES.DISCARDED] = BASE_MVC.wrapTemplate(
-        ["<div>", _l("The job creating this dataset was cancelled before completion"), "</div>"],
+        [
+            "<div>",
+            _l(
+                "This dataset is discarded - the job creating it may have been cancelled or it may have been imported with file data"
+            ),
+            "</div>",
+        ],
+        "dataset"
+    );
+    summaryTemplates[STATES.DEFERRED] = BASE_MVC.wrapTemplate(
+        [
+            "<div>",
+            _l("This dataset is remote, has not be ingested by Galaxy, and full metadata may not be available"),
+            "</div>",
+        ],
         "dataset"
     );
     summaryTemplates[STATES.QUEUED] = BASE_MVC.wrapTemplate(

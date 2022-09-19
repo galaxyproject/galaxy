@@ -11,11 +11,16 @@ from typing import (
     Dict,
     List,
     Optional,
+    Union,
 )
 
 from galaxy import model
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.setup import ensure_configs_directory
+from galaxy.model.deferred import (
+    materialize_collection_input,
+    materializer_factory,
+)
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
 from galaxy.structured_app import (
@@ -84,6 +89,11 @@ def global_tool_logs(func, config_file, action_str):
         raise e
 
 
+DeferrableObjectsT = Union[
+    model.DatasetInstance, model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement
+]
+
+
 class ToolEvaluator:
     """An abstraction linking together a tool and a job runtime to evaluate
     tool inputs in an isolated, testable manner.
@@ -91,6 +101,7 @@ class ToolEvaluator:
 
     app: MinimalToolApp
     job: model.Job
+    materialize_datasets: bool = True
 
     def __init__(self, app: MinimalToolApp, tool, job, local_working_directory):
         self.app = app
@@ -115,18 +126,22 @@ class ToolEvaluator:
         incoming = {p.name: p.value for p in job.parameters}
         incoming = self.tool.params_from_strings(incoming, self.app)
 
-        # Full parameter validation
-        request_context = WorkRequestContext(app=self.app, user=self._user, history=self._history)
         self.file_sources_dict = compute_environment.get_file_sources_dict()
 
-        def validate_inputs(input, value, context, **kwargs):
-            value = input.from_json(value, request_context, context)
-            input.validate(value, request_context)
-
-        visit_input_values(self.tool.inputs, incoming, validate_inputs)
+        # Full parameter validation
+        self._validate_incoming(incoming)
 
         # Restore input / output data lists
         inp_data, out_data, out_collections = job.io_dicts()
+
+        # collect deferred datasets and collections.
+        deferred_objects = self._deferred_objects(inp_data, incoming)
+
+        # materialize deferred datasets
+        materialized_objects = self._materialize_objects(deferred_objects, self.local_working_directory)
+
+        # replace materialized objects back into tool input parameters
+        self._replaced_deferred_objects(inp_data, incoming, materialized_objects)
 
         if get_special:
             special = get_special()
@@ -196,6 +211,84 @@ class ToolEvaluator:
         # Return the dictionary of parameters
         return param_dict
 
+    def _materialize_objects(
+        self, deferred_objects: Dict[str, DeferrableObjectsT], job_working_directory: str
+    ) -> Dict[str, DeferrableObjectsT]:
+        if not self.materialize_datasets:
+            return {}
+
+        undeferred_objects: Dict[str, DeferrableObjectsT] = {}
+        transient_directory = os.path.join(job_working_directory, "inputs")
+        safe_makedirs(transient_directory)
+        dataset_materializer = materializer_factory(
+            False,  # unattached to a session.
+            transient_directory=transient_directory,
+            file_sources=self.app.file_sources,
+        )
+        for key, value in deferred_objects.items():
+            if isinstance(value, model.DatasetInstance):
+                if value.state != model.Dataset.states.DEFERRED:
+                    continue
+
+                assert isinstance(value, (model.HistoryDatasetAssociation, model.LibraryDatasetDatasetAssociation))
+                undeferred = dataset_materializer.ensure_materialized(value)
+                undeferred_objects[key] = undeferred
+            else:
+                undeferred_collection = materialize_collection_input(value, dataset_materializer)
+                undeferred_objects[key] = undeferred_collection
+
+        return undeferred_objects
+
+    def _replaced_deferred_objects(
+        self,
+        inp_data: Dict[str, Optional[model.DatasetInstance]],
+        incoming: dict,
+        materalized_objects: Dict[str, DeferrableObjectsT],
+    ):
+        for key, value in materalized_objects.items():
+            if isinstance(value, model.DatasetInstance):
+                inp_data[key] = value
+
+        def replace_deferred(input, value, context, prefixed_name=None, **kwargs):
+            if prefixed_name in materalized_objects:
+                return materalized_objects[prefixed_name]
+
+        visit_input_values(self.tool.inputs, incoming, replace_deferred)
+
+    def _validate_incoming(self, incoming: dict):
+        request_context = WorkRequestContext(app=self.app, user=self._user, history=self._history)
+
+        def validate_inputs(input, value, context, **kwargs):
+            value = input.from_json(value, request_context, context)
+            input.validate(value, request_context)
+
+        visit_input_values(self.tool.inputs, incoming, validate_inputs)
+
+    def _deferred_objects(
+        self,
+        input_datasets: Dict[str, Optional[model.DatasetInstance]],
+        incoming: dict,
+    ) -> Dict[str, DeferrableObjectsT]:
+        """Collect deferred objects required for execution.
+
+        Walk input datasets and collections and find inputs that need to be materialized.
+        """
+        deferred_objects: Dict[str, DeferrableObjectsT] = {}
+        for key, value in input_datasets.items():
+            if value is not None and value.state == model.Dataset.states.DEFERRED:
+                deferred_objects[key] = value
+
+        def find_deferred_collections(input, value, context, prefixed_name=None, **kwargs):
+            if (
+                isinstance(value, (model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement))
+                and value.has_deferred_data
+            ):
+                deferred_objects[prefixed_name] = value
+
+        visit_input_values(self.tool.inputs, incoming, find_deferred_collections)
+
+        return deferred_objects
+
     def __walk_inputs(self, inputs, input_values, func):
         def do_walk(inputs, input_values):
             """
@@ -237,7 +330,7 @@ class ToolEvaluator:
                 dataset = input_values[input.name]
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
-                    tool=self,
+                    tool=self.tool,
                     name=input.name,
                     compute_environment=self.compute_environment,
                 )
@@ -250,7 +343,7 @@ class ToolEvaluator:
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
                     compute_environment=self.compute_environment,
-                    tool=self,
+                    tool=self.tool,
                     name=input.name,
                 )
                 wrapper = DatasetCollectionWrapper(job_working_directory, dataset_collection, **wrapper_kwds)
@@ -297,7 +390,7 @@ class ToolEvaluator:
             if not isinstance(param_dict_value, (DatasetFilenameWrapper, DatasetListWrapper)):
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
-                    tool=self,
+                    tool=self.tool,
                     name=name,
                     compute_environment=self.compute_environment,
                 )
@@ -343,6 +436,7 @@ class ToolEvaluator:
             # Conditionally create empty output:
             # - may already exist (e.g. symlink output)
             # - parent directory might not exist (e.g. Pulsar)
+            # TODO: put into JobIO, needed for fetch_data tasks
             if not os.path.exists(output_path) and os.path.exists(os.path.dirname(output_path)):
                 open(output_path, "w").close()
 
@@ -513,13 +607,13 @@ class ToolEvaluator:
             config_text, is_template = self.__build_config_file_text(content)
             # If a particular filename was forced by the config use it
             directory = ensure_configs_directory(self.local_working_directory)
+            with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
+                config_filename = temp.name
             if filename is not None:
-                # Explicit filename was requested, needs to be placed in tool working directory
+                # Explicit filename was requested, this is implemented as symbolic link
+                # to the actual config file that is placed in tool working directory
                 directory = os.path.join(self.local_working_directory, "working")
-                config_filename = os.path.join(directory, filename)
-            else:
-                with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
-                    config_filename = temp.name
+                os.link(config_filename, os.path.join(directory, filename))
             self.__write_workdir_file(config_filename, config_text, param_dict, is_template=is_template)
             self.__register_extra_file(name, config_filename)
             config_filenames.append(config_filename)
@@ -667,6 +761,8 @@ class PartialToolEvaluator(ToolEvaluator):
     ToolEvaluator that only builds Environment Variables.
     """
 
+    materialize_datasets = False
+
     def build(self):
         config_file = self.tool.config_file
         global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables")
@@ -675,6 +771,8 @@ class PartialToolEvaluator(ToolEvaluator):
 
 class RemoteToolEvaluator(ToolEvaluator):
     """ToolEvaluator that skips unnecessary steps already executed during job setup."""
+
+    materialize_datasets = True
 
     def execute_tool_hooks(self, inp_data, out_data, incoming):
         # These have already run while preparing the job

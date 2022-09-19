@@ -1,0 +1,19 @@
+<tool id="resource_requirements" name="resource_requirements" version="1.0.0" profile="22.05">
+    <requirements>
+        <resource type="cores_min">1.1</resource>
+        <resource type="cores_max">2</resource>
+        <resource type="ram_min">1.1</resource>
+        <resource type="ram_max">2></resource>
+        <resource type="tmpdir_min"><![CDATA[$(inputs.input1.size)]]></resource>
+        <resource type="tmpdir_max"><![CDATA[$(inputs.input1.size * 2)]]></resource>
+    </requirements>
+    <command><![CDATA[
+echo "\$GALAXY_SLOTS" > $output
+    ]]></command>
+    <inputs>
+        <param type="data" name="input1" format="txt"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+</tool>

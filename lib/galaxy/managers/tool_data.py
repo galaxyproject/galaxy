@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import (
+    cast,
     Dict,
     Optional,
 )
@@ -9,6 +10,7 @@ from galaxy.structured_app import StructuredApp
 from galaxy.tools.data import (
     TabularToolDataField,
     TabularToolDataTable,
+    ToolDataTable,
 )
 from galaxy.tools.data._schema import (
     ToolDataDetails,
@@ -26,24 +28,23 @@ class ToolDataManager:
         self._app = app
 
     @property
-    def data_tables(self) -> Dict[str, TabularToolDataTable]:
+    def data_tables(self) -> Dict[str, ToolDataTable]:
         return self._app.tool_data_tables.data_tables
 
     def index(self) -> ToolDataEntryList:
         """Return all tool data tables."""
-        data_tables = [table.to_dict() for table in self.data_tables.values()]
-        return ToolDataEntryList.parse_obj(data_tables)
+        return self._app.tool_data_tables.index()
 
     def show(self, table_name: str) -> ToolDataDetails:
         """Get details of a given data table"""
         data_table = self._data_table(table_name)
         element_view = data_table.to_dict(view="element")
-        return ToolDataDetails.parse_obj(element_view)
+        return ToolDataDetails.construct(**element_view)
 
     def show_field(self, table_name: str, field_name: str) -> ToolDataField:
         """Get information about a partiular field in a tool data table"""
         field = self._data_table_field(table_name, field_name)
-        return ToolDataField.parse_obj(field.to_dict())
+        return ToolDataField.construct(**field.to_dict())
 
     def reload(self, table_name: str) -> ToolDataDetails:
         """Reloads a tool data table."""
@@ -62,7 +63,7 @@ class ToolDataManager:
 
     def delete(self, table_name: str, values: Optional[str] = None) -> ToolDataDetails:
         """Removes an item from a data table"""
-        data_table = self._data_table(table_name)
+        data_table = self._tabular_data_table(table_name)
         if not values:
             raise exceptions.RequestParameterInvalidException("Invalid values for data table item specified.")
 
@@ -76,14 +77,17 @@ class ToolDataManager:
         data_table.remove_entry(split_values)
         return self._reload_data_table(table_name)
 
-    def _data_table(self, table_name: str) -> TabularToolDataTable:
+    def _tabular_data_table(self, table_name: str) -> TabularToolDataTable:
+        return cast(TabularToolDataTable, self._data_table(table_name))
+
+    def _data_table(self, table_name: str) -> ToolDataTable:
         try:
             return self.data_tables[table_name]
         except KeyError:
             raise exceptions.ObjectNotFound(f"No such data table {table_name}")
 
     def _data_table_field(self, table_name: str, field_name: str) -> TabularToolDataField:
-        out = self._data_table(table_name).get_field(field_name)
+        out = self._tabular_data_table(table_name).get_field(field_name)
         if out is None:
             raise exceptions.ObjectNotFound(f"No such field {field_name} in data table {table_name}.")
         return out

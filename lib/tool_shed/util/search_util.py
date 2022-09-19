@@ -107,9 +107,7 @@ def search_names_versions(
     return match_tuples
 
 
-def search_repository_metadata(
-    app, exact_matches_checked, tool_ids="", tool_names="", tool_versions="", workflow_names="", all_workflows=False
-):
+def search_repository_metadata(app, exact_matches_checked, tool_ids="", tool_names="", tool_versions=""):
     sa_session = app.model.session
     match_tuples = []
     ok = True
@@ -229,30 +227,4 @@ def search_repository_metadata(
                                     )
                         else:
                             ok = False
-    elif workflow_names or all_workflows:
-        for repository_metadata in (
-            sa_session.query(app.model.RepositoryMetadata)
-            .filter(app.model.RepositoryMetadata.table.c.includes_workflows == true())
-            .join(app.model.Repository)
-            .filter(
-                and_(
-                    app.model.Repository.table.c.deleted == false(), app.model.Repository.table.c.deprecated == false()
-                )
-            )
-        ):
-            metadata = repository_metadata.metadata
-            if metadata:
-                # metadata[ 'workflows' ] is a list of tuples where each contained tuple is
-                # [ <relative path to the .ga file in the repository>, <exported workflow dict> ]
-                if workflow_names:
-                    workflow_tups = metadata.get("workflows", [])
-                    workflows = [workflow_tup[1] for workflow_tup in workflow_tups]
-                    for workflow_dict in workflows:
-                        for workflow_name in workflow_names:
-                            if in_workflow_dict(workflow_dict, exact_matches_checked, workflow_name):
-                                match_tuples.append(
-                                    (repository_metadata.repository_id, repository_metadata.changeset_revision)
-                                )
-                elif all_workflows:
-                    match_tuples.append((repository_metadata.repository_id, repository_metadata.changeset_revision))
     return ok, match_tuples

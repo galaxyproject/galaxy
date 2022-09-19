@@ -3,7 +3,7 @@
         <b-container fluid>
             <b-link to="StorageDashboard">{{ goBackText }}</b-link>
             <h2 class="text-center my-3">
-                <b>{{ title }}</b> <sup class="text-secondary">(Beta)</sup>
+                <b>{{ title }}</b> <sup class="text-beta">(Beta)</sup>
             </h2>
 
             <b-row class="justify-content-md-center">
@@ -102,3 +102,8 @@ export default {
     },
 };
 </script>
+<style lang="css" scoped>
+.text-beta {
+    color: #717273;
+}
+</style>

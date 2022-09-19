@@ -1,6 +1,10 @@
 import json
 import logging
 import typing
+from datetime import (
+    date,
+    datetime,
+)
 
 from boltons.iterutils import remap
 from pydantic import (
@@ -18,6 +22,7 @@ from sqlalchemy.sql import select
 
 from galaxy import model
 from galaxy.exceptions import (
+    AdminRequiredException,
     ItemAccessibilityException,
     ObjectNotFound,
     RequestParameterInvalidException,
@@ -30,13 +35,26 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.model.index_filter_util import (
+    raw_text_column_filter,
+    text_column_filter,
+)
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.schema import (
+    JobIndexQueryPayload,
+    JobIndexSortByEnum,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     defaultdict,
     ExecutionTimer,
     listify,
+)
+from galaxy.util.search import (
+    FilteredTerm,
+    parse_filters_structured,
+    RawTextTerm,
 )
 
 log = logging.getLogger(__name__)
@@ -69,6 +87,128 @@ class JobManager:
     def __init__(self, app: StructuredApp):
         self.app = app
         self.dataset_manager = DatasetManager(app)
+
+    def index_query(self, trans, payload: JobIndexQueryPayload):
+        is_admin = trans.user_is_admin
+        user_details = payload.user_details
+
+        decoded_user_id = payload.user_id
+
+        if is_admin:
+            if decoded_user_id is not None:
+                query = trans.sa_session.query(model.Job).filter(model.Job.user_id == decoded_user_id)
+            else:
+                query = trans.sa_session.query(model.Job)
+            if user_details:
+                query = query.outerjoin(model.Job.user)
+
+        else:
+            if user_details:
+                raise AdminRequiredException("Only admins can index the jobs with user details enabled")
+            if decoded_user_id is not None and decoded_user_id != trans.user.id:
+                raise AdminRequiredException("Only admins can index the jobs of others")
+            query = trans.sa_session.query(model.Job).filter(model.Job.user_id == trans.user.id)
+
+        def build_and_apply_filters(query, objects, filter_func):
+            if objects is not None:
+                if isinstance(objects, (str, date, datetime)):
+                    query = query.filter(filter_func(objects))
+                elif isinstance(objects, list):
+                    t = []
+                    for obj in objects:
+                        t.append(filter_func(obj))
+                    query = query.filter(or_(*t))
+            return query
+
+        query = build_and_apply_filters(query, payload.states, lambda s: model.Job.state == s)
+        query = build_and_apply_filters(query, payload.tool_ids, lambda t: model.Job.tool_id == t)
+        query = build_and_apply_filters(query, payload.tool_ids_like, lambda t: model.Job.tool_id.like(t))
+        query = build_and_apply_filters(query, payload.date_range_min, lambda dmin: model.Job.update_time >= dmin)
+        query = build_and_apply_filters(query, payload.date_range_max, lambda dmax: model.Job.update_time <= dmax)
+
+        history_id = payload.history_id
+        workflow_id = payload.workflow_id
+        invocation_id = payload.invocation_id
+        if history_id is not None:
+            query = query.filter(model.Job.history_id == history_id)
+        if workflow_id or invocation_id:
+            if workflow_id is not None:
+                wfi_step = (
+                    trans.sa_session.query(model.WorkflowInvocationStep)
+                    .join(model.WorkflowInvocation)
+                    .join(model.Workflow)
+                    .filter(
+                        model.Workflow.stored_workflow_id == workflow_id,
+                    )
+                    .subquery()
+                )
+            elif invocation_id is not None:
+                wfi_step = (
+                    trans.sa_session.query(model.WorkflowInvocationStep)
+                    .filter(model.WorkflowInvocationStep.workflow_invocation_id == invocation_id)
+                    .subquery()
+                )
+            query1 = query.join(wfi_step)
+            query2 = query.join(model.ImplicitCollectionJobsJobAssociation).join(
+                wfi_step,
+                model.ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id
+                == wfi_step.c.implicit_collection_jobs_id,
+            )
+            query = query1.union(query2)
+
+        search = payload.search
+        if search:
+            search_filters = {
+                "tool": "tool",
+                "t": "tool",
+            }
+            if user_details:
+                search_filters.update(
+                    {
+                        "user": "user",
+                        "u": "user",
+                    }
+                )
+
+            if is_admin:
+                search_filters.update(
+                    {
+                        "runner": "runner",
+                        "r": "runner",
+                        "handler": "handler",
+                        "h": "handler",
+                    }
+                )
+            parsed_search = parse_filters_structured(search, search_filters)
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    if key == "user":
+                        query = query.filter(text_column_filter(model.User.email, term))
+                    elif key == "tool":
+                        query = query.filter(text_column_filter(model.Job.tool_id, term))
+                    elif key == "handler":
+                        query = query.filter(text_column_filter(model.Job.handler, term))
+                    elif key == "runner":
+                        query = query.filter(text_column_filter(model.Job.job_runner_name, term))
+                elif isinstance(term, RawTextTerm):
+                    columns = [model.Job.tool_id]
+                    if user_details:
+                        columns.append(model.User.email)
+                    if is_admin:
+                        columns.append(model.Job.handler)
+                        columns.append(model.Job.job_runner_name)
+                    query = query.filter(raw_text_column_filter(columns, term))
+
+        if payload.order_by == JobIndexSortByEnum.create_time:
+            order_by = model.Job.create_time.desc()
+        else:
+            order_by = model.Job.update_time.desc()
+        query = query.order_by(order_by)
+
+        query = query.offset(payload.offset)
+        query = query.limit(payload.limit)
+        return query
 
     def job_lock(self) -> JobLock:
         return JobLock(active=self.app.job_manager.job_lock)

@@ -25,9 +25,7 @@ from tool_shed.util import (
     hg_util,
     readme_util,
     repository_util,
-)
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import (
+    shed_util_common as suc,
     tool_dependency_util,
     tool_util,
 )
@@ -115,11 +113,11 @@ class AdminToolshed(AdminGalaxy):
             # repository dependencies and tool dependencies will be current.  Only allow selecting a different section
             # in the tool panel if the repository was uninstalled and it contained tools that should be displayed in
             # the tool panel.
-            changeset_revision_dict = trans.app.update_repository_manager.get_update_to_changeset_revision_and_ctx_rev(
+            update_to_changeset = trans.app.update_repository_manager.get_update_to_changeset_revision_and_ctx_rev(
                 repository
             )
-            current_changeset_revision = changeset_revision_dict.get("changeset_revision", None)
-            current_ctx_rev = changeset_revision_dict.get("ctx_rev", None)
+            current_changeset_revision = update_to_changeset.changeset_revision
+            current_ctx_rev = update_to_changeset.ctx_rev
             if current_changeset_revision and current_ctx_rev:
                 if current_ctx_rev == repository.ctx_rev:
                     # The uninstalled repository is current.
@@ -305,52 +303,6 @@ class AdminToolshed(AdminGalaxy):
     @web.expose
     @web.require_admin
     @legacy_tool_shed_endpoint
-    def initiate_tool_dependency_installation(self, trans, tool_dependencies, **kwd):
-        """
-        Install specified dependencies for repository tools.  The received list of tool_dependencies
-        are the database records for those dependencies defined in the tool_dependencies.xml file
-        (contained in the repository) that should be installed.  This allows for filtering out dependencies
-        that have not been checked for installation on the 'Manage tool dependencies' page for an installed
-        tool shed repository.
-        """
-        # Get the tool_shed_repository from one of the tool_dependencies.
-        message = str(escape(kwd.get("message", "")))
-        status = kwd.get("status", "done")
-        err_msg = ""
-        tool_shed_repository = tool_dependencies[0].tool_shed_repository
-        # Get the tool_dependencies.xml file from the repository.
-        tool_dependencies_config = hg_util.get_config_from_disk(
-            rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME, tool_shed_repository.repo_path(trans.app)
-        )
-        itdm = install_manager.InstallToolDependencyManager(trans.app)
-        installed_tool_dependencies = itdm.install_specified_tool_dependencies(
-            tool_shed_repository=tool_shed_repository,
-            tool_dependencies_config=tool_dependencies_config,
-            tool_dependencies=tool_dependencies,
-        )
-        for installed_tool_dependency in installed_tool_dependencies:
-            if installed_tool_dependency.status == trans.app.install_model.ToolDependency.installation_status.ERROR:
-                text = unicodify(installed_tool_dependency.error_message)
-                if text is not None:
-                    err_msg += f"  {text}"
-        if err_msg:
-            message += err_msg
-            status = "error"
-        message += f"Installed tool dependencies: {', '.join(td.name for td in installed_tool_dependencies)}"
-        td_ids = [trans.security.encode_id(td.id) for td in tool_shed_repository.tool_dependencies]
-        return trans.response.send_redirect(
-            web.url_for(
-                controller="admin_toolshed",
-                action="manage_tool_dependencies",
-                tool_dependency_ids=td_ids,
-                message=message,
-                status=status,
-            )
-        )
-
-    @web.expose
-    @web.require_admin
-    @legacy_tool_shed_endpoint
     def install_latest_repository_revision(self, trans, **kwd):
         """Install the latest installable revision of a repository that has been previously installed."""
         repository_id = kwd.get("id", None)
@@ -436,10 +388,6 @@ class AdminToolshed(AdminGalaxy):
         else:
             tool_dependencies_dict = {}
         encoded_relative_install_dir = kwd.get("encoded_relative_install_dir", None)
-        if encoded_relative_install_dir is not None:
-            relative_install_dir = encoding_util.tool_shed_decode(encoded_relative_install_dir)
-        else:
-            relative_install_dir = ""
         updating_to_changeset_revision = kwd.get("updating_to_changeset_revision", None)
         updating_to_ctx_rev = kwd.get("updating_to_ctx_rev", None)
         encoded_updated_metadata = kwd.get("encoded_updated_metadata", None)
@@ -458,27 +406,6 @@ class AdminToolshed(AdminGalaxy):
                 updated_changeset_revision=updating_to_changeset_revision,
                 updated_ctx_rev=updating_to_ctx_rev,
             )
-            if tool_dependencies_dict:
-                tool_dependencies = tool_dependency_util.create_tool_dependency_objects(
-                    trans.app, repository, relative_install_dir, set_status=False
-                )
-                message = f"The installed repository named '{escape(str(repository.name))}' has been updated to change set revision '{updating_to_changeset_revision}'.  "
-                self.initiate_tool_dependency_installation(trans, tool_dependencies, message=message, status=status)
-        # Handle tool dependencies check box.
-        if not trans.app.toolbox.dependency_manager.uses_tool_shed_dependencies:
-            if tool_dependencies_dict:
-                message = (
-                    "Tool dependencies defined in this repository can be automatically installed if you set "
-                    "the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file "
-                    "(galaxy.yml) and restart your Galaxy server."
-                )
-                status = "warning"
-            install_tool_dependencies_check_box_checked = False
-        else:
-            install_tool_dependencies_check_box_checked = True
-        install_tool_dependencies_check_box = CheckboxField(
-            "install_tool_dependencies", value=install_tool_dependencies_check_box_checked
-        )
         view = views.DependencyResolversView(self.app)
         if view.installable_resolvers:
             install_resolver_dependencies_check_box = CheckboxField("install_resolver_dependencies", value=True)
@@ -494,7 +421,6 @@ class AdminToolshed(AdminGalaxy):
             encoded_relative_install_dir=encoded_relative_install_dir,
             encoded_tool_dependencies_dict=encoded_tool_dependencies_dict,
             install_resolver_dependencies_check_box=install_resolver_dependencies_check_box,
-            install_tool_dependencies_check_box=install_tool_dependencies_check_box,
             tool_dependencies_dict=tool_dependencies_dict,
             message=message,
             status=status,
@@ -928,19 +854,6 @@ class AdminToolshed(AdminGalaxy):
                 containers_dicts.append(containers_dict)
             # Merge all containers into a single container.
             containers_dict = dd.merge_containers_dicts_for_new_install(containers_dicts)
-        # Handle tool dependencies check box.
-        if not trans.app.toolbox.dependency_manager.uses_tool_shed_dependencies:
-            if includes_tool_dependencies:
-                message = "Tool dependencies defined in this repository can be automatically installed if you set "
-                message += "the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file "
-                message += "(galaxy.yml) and restart your Galaxy server before installing the repository."
-                status = "warning"
-            install_tool_dependencies_check_box_checked = False
-        else:
-            install_tool_dependencies_check_box_checked = True
-        install_tool_dependencies_check_box = CheckboxField(
-            "install_tool_dependencies", value=install_tool_dependencies_check_box_checked
-        )
         # Handle repository dependencies check box.
         install_repository_dependencies_check_box = CheckboxField("install_repository_dependencies", value=True)
         view = views.DependencyResolversView(self.app)
@@ -961,7 +874,6 @@ class AdminToolshed(AdminGalaxy):
             includes_tools=includes_tools,
             includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
             includes_tool_dependencies=includes_tool_dependencies,
-            install_tool_dependencies_check_box=install_tool_dependencies_check_box,
             install_resolver_dependencies_check_box=install_resolver_dependencies_check_box,
             has_repository_dependencies=has_repository_dependencies,
             install_repository_dependencies_check_box=install_repository_dependencies_check_box,
@@ -1203,27 +1115,19 @@ class AdminToolshed(AdminGalaxy):
             updated_repo_info_dict = encoding_util.tool_shed_decode(encoded_updated_repo_info_dict)
             readme_files_dict = updated_repo_info_dict.get("readme_files_dict", None)
             includes_data_managers = updated_repo_info_dict.get("includes_data_managers", False)
-            includes_datatypes = updated_repo_info_dict.get("includes_datatypes", False)
-            includes_workflows = updated_repo_info_dict.get("includes_workflows", False)
             includes_tool_dependencies = updated_repo_info_dict.get("includes_tool_dependencies", False)
             repo_info_dict = updated_repo_info_dict["repo_info_dict"]
         else:
             # There are no updates available from the tool shed for the repository, so use its locally stored metadata.
             includes_data_managers = False
-            includes_datatypes = False
             includes_tool_dependencies = False
-            includes_workflows = False
             readme_files_dict = None
             tool_dependencies = None
             if metadata:
                 if "data_manager" in metadata:
                     includes_data_managers = True
-                if "datatypes" in metadata:
-                    includes_datatypes = True
                 if "tool_dependencies" in metadata:
                     includes_tool_dependencies = True
-                if "workflows" in metadata:
-                    includes_workflows = True
                 # Since we're reinstalling, we need to send a request to the tool shed to get the README files.
                 params = dict(
                     name=tool_shed_repository.name,
@@ -1324,18 +1228,6 @@ class AdminToolshed(AdminGalaxy):
         containers_dict = dd.merge_missing_repository_dependencies_to_installed_container(containers_dict)
         # Handle repository dependencies check box.
         install_repository_dependencies_check_box = CheckboxField("install_repository_dependencies", value=True)
-        # Handle tool dependencies check box.
-        if not trans.app.toolbox.dependency_manager.uses_tool_shed_dependencies:
-            if includes_tool_dependencies:
-                message += "Tool dependencies defined in this repository can be automatically installed if you set the value of your <b>tool_dependency_dir</b> "
-                message += "setting in your Galaxy config file (galaxy.yml) and restart your Galaxy server before installing the repository.  "
-                status = "warning"
-            install_tool_dependencies_check_box_checked = False
-        else:
-            install_tool_dependencies_check_box_checked = True
-        install_tool_dependencies_check_box = CheckboxField(
-            "install_tool_dependencies", value=install_tool_dependencies_check_box_checked
-        )
         view = views.DependencyResolversView(self.app)
         if view.installable_resolvers:
             install_resolver_dependencies_check_box = CheckboxField("install_resolver_dependencies", value=True)
@@ -1347,14 +1239,11 @@ class AdminToolshed(AdminGalaxy):
             no_changes_check_box=no_changes_check_box,
             original_section_name=original_section_name,
             includes_data_managers=includes_data_managers,
-            includes_datatypes=includes_datatypes,
             includes_tools=includes_tools,
             includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
             includes_tool_dependencies=includes_tool_dependencies,
-            includes_workflows=includes_workflows,
             has_repository_dependencies=has_repository_dependencies,
             install_repository_dependencies_check_box=install_repository_dependencies_check_box,
-            install_tool_dependencies_check_box=install_tool_dependencies_check_box,
             install_resolver_dependencies_check_box=install_resolver_dependencies_check_box,
             containers_dict=containers_dict,
             tool_panel_section_select_field=tool_panel_section_select_field,
@@ -1460,26 +1349,6 @@ class AdminToolshed(AdminGalaxy):
                         updating=True,
                     )
                     return self.prepare_for_install(trans, **new_kwd)
-                elif install_dependencies == "tool":
-                    # Updates received did not include any newly defined repository dependencies but did include
-                    # newly defined tool dependencies.  If the newly defined tool dependencies are not the same
-                    # as the originally defined tool dependencies, we need to install them.
-                    relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir(trans.app, repository)[2]
-                    encoded_tool_dependencies_dict = encoding_util.tool_shed_encode(
-                        irmm_metadata_dict.get("tool_dependencies", {})
-                    )
-                    encoded_relative_install_dir = encoding_util.tool_shed_encode(relative_install_dir)
-                    new_kwd = dict(
-                        updating_repository_id=trans.security.encode_id(repository.id),
-                        updating_to_ctx_rev=latest_ctx_rev,
-                        updating_to_changeset_revision=latest_changeset_revision,
-                        encoded_updated_metadata=encoding_util.tool_shed_encode(irmm_metadata_dict),
-                        encoded_relative_install_dir=encoded_relative_install_dir,
-                        encoded_tool_dependencies_dict=encoded_tool_dependencies_dict,
-                        message=message,
-                        status=status,
-                    )
-                    return self.install_tool_dependencies_with_update(trans, **new_kwd)
                 message = f"The installed repository named '{name}' has been updated to change set revision '{latest_changeset_revision}'.  "
         else:
             message = (

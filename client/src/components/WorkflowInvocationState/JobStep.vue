@@ -5,7 +5,7 @@
                 <job-provider :id="row.item.id" v-slot="{ item, loading }">
                     <div v-if="loading"><b-spinner label="Loading Job..."></b-spinner></div>
                     <div v-else>
-                        <job-information :job_id="item.id" v-if="item" />
+                        <job-information v-if="item" :job_id="item.id" />
                         <p></p>
                         <job-parameters v-if="item" :job-id="item.id" :include-title="false" />
                     </div>
@@ -40,6 +40,16 @@ export default {
     props: {
         jobs: { type: Array, required: true },
     },
+    data() {
+        return {
+            fields: [
+                { key: "state", sortable: true },
+                { key: "update_time", label: "Updated", sortable: true },
+                { key: "create_time", label: "Created", sortable: true },
+            ],
+            toggledItems: {},
+        };
+    },
     methods: {
         jobsProvider(ctx, callback) {
             // It may seem unnecessary to use a provider here, since the jobs prop
@@ -64,16 +74,6 @@ export default {
             // update state
             this.toggledItems[item.id] = item._showDetails;
         },
-    },
-    data() {
-        return {
-            fields: [
-                { key: "state", sortable: true },
-                { key: "update_time", label: "Updated", sortable: true },
-                { key: "create_time", label: "Created", sortable: true },
-            ],
-            toggledItems: {},
-        };
     },
 };
 </script>

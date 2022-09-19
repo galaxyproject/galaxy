@@ -3,10 +3,11 @@
         <div unselectable="on">
             <div class="unified-panel-header-inner">
                 <nav class="d-flex justify-content-between mx-3 my-2">
-                    <h4 class="m-1" v-localize>Tools</h4>
-                    <div class="panel-header-buttons">
+                    <h4 v-if="!showAdvanced" v-localize class="m-1">Tools</h4>
+                    <h4 v-else v-localize class="m-1">Advanced Tool Search</h4>
+                    <div v-if="!showAdvanced" class="panel-header-buttons">
                         <b-button-group>
-                            <favorites-button :query="query" @onFavorites="onQuery" v-if="isUser" />
+                            <favorites-button :query="query" @onFavorites="onQuery" />
                             <panel-view-button
                                 v-if="panelViews && Object.keys(panelViews).length > 1"
                                 :panel-views="panelViews"
@@ -21,37 +22,40 @@
             <tool-search
                 :current-panel-view="currentPanelView"
                 :placeholder="titleSearchTools"
+                :show-advanced.sync="showAdvanced"
                 :query="query"
                 @onQuery="onQuery"
                 @onResults="onResults" />
-            <upload-button />
-            <div class="pb-2" v-if="hasResults">
-                <b-button @click="onToggle" size="sm" class="w-100">
-                    <span :class="buttonIcon" />
-                    <span class="mr-1">{{ buttonText }}</span>
-                </b-button>
-            </div>
-            <div class="pb-2" v-else-if="queryTooShort">
-                <b-badge class="alert-danger w-100">Search string too short!</b-badge>
-            </div>
-            <div class="pb-2" v-else-if="queryFinished">
-                <b-badge class="alert-danger w-100">No results found!</b-badge>
-            </div>
+            <section v-if="!showAdvanced">
+                <upload-button />
+                <div v-if="hasResults" class="pb-2">
+                    <b-button size="sm" class="w-100" @click="onToggle">
+                        <span :class="buttonIcon" />
+                        <span class="mr-1">{{ buttonText }}</span>
+                    </b-button>
+                </div>
+                <div v-else-if="queryTooShort" class="pb-2">
+                    <b-badge class="alert-danger w-100">Search string too short!</b-badge>
+                </div>
+                <div v-else-if="queryFinished" class="pb-2">
+                    <b-badge class="alert-danger w-100">No results found!</b-badge>
+                </div>
+            </section>
         </div>
-        <div class="unified-panel-body">
+        <div v-if="!showAdvanced" class="unified-panel-body">
             <div class="toolMenuContainer">
                 <div class="toolMenu">
                     <tool-section
                         v-for="(section, key) in sections"
+                        :key="key"
                         :category="section"
                         :query-filter="queryFilter"
-                        :key="key"
                         @onClick="onOpen" />
                 </div>
                 <tool-section :category="{ text: workflowTitle }" />
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg" />
-                    <div class="toolTitle" v-for="wf in workflows" :key="wf.id">
+                    <div v-for="wf in workflows" :key="wf.id" class="toolTitle">
                         <a class="title-link" :href="wf.href">{{ wf.title }}</a>
                     </div>
                 </div>
@@ -79,18 +83,6 @@ export default {
         ToolSection,
         ToolSearch,
     },
-    data() {
-        return {
-            query: null,
-            results: null,
-            queryFilter: null,
-            queryPending: false,
-            showSections: false,
-            buttonText: "",
-            buttonIcon: "",
-            titleSearchTools: _l("search tools"),
-        };
-    },
     props: {
         toolbox: {
             type: Array,
@@ -110,6 +102,19 @@ export default {
             type: String,
             default: _l("Workflows"),
         },
+    },
+    data() {
+        return {
+            query: null,
+            results: null,
+            queryFilter: null,
+            queryPending: false,
+            showSections: false,
+            showAdvanced: false,
+            buttonText: "",
+            buttonIcon: "",
+            titleSearchTools: _l("search tools"),
+        };
     },
     computed: {
         queryTooShort() {
@@ -166,12 +171,10 @@ export default {
                 openGlobalUploadModal();
             } else if (tool.form_style === "regular") {
                 evt.preventDefault();
-                const Galaxy = getGalaxyInstance();
                 // encode spaces in tool.id
-                Galaxy.router.push("/", {
-                    tool_id: tool.id.replace(/ /g, "%20"),
-                    version: tool.version,
-                });
+                const toolId = tool.id;
+                const toolVersion = tool.version;
+                this.$router.push(`/?tool_id=${encodeURIComponent(toolId)}&version=${toolVersion}`);
             }
         },
         onToggle() {

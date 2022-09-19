@@ -11,10 +11,14 @@ import time
 
 import pytest
 
-from galaxy.util import unicodify
+from galaxy.util import (
+    shlex_join,
+    unicodify,
+)
 from galaxy_test.base.populators import (
     DatasetPopulator,
     skip_without_tool,
+    wait_on,
 )
 from galaxy_test.driver import integration_util
 from .test_containerized_jobs import MulledJobTestCases
@@ -120,21 +124,21 @@ def job_config(jobs_directory):
     <destinations default="k8s_destination">
         <destination id="k8s_destination" runner="k8s">
             <param id="limits_cpu">1.1</param>
-            <param id="limits_memory">10M</param>
+            <param id="limits_memory">100M</param>
             <param id="docker_enabled">true</param>
             <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
             <env id="SOME_ENV_VAR">42</env>
         </destination>
         <destination id="k8s_destination_walltime_short" runner="k8s_walltime_short">
             <param id="limits_cpu">1.1</param>
-            <param id="limits_memory">10M</param>
+            <param id="limits_memory">100M</param>
             <param id="docker_enabled">true</param>
             <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
             <env id="SOME_ENV_VAR">42</env>
         </destination>
         <destination id="k8s_destination_no_cleanup" runner="k8s_no_cleanup">
             <param id="limits_cpu">1.1</param>
-            <param id="limits_memory">10M</param>
+            <param id="limits_memory">100M</param>
             <param id="docker_enabled">true</param>
             <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
             <env id="SOME_ENV_VAR">42</env>
@@ -143,7 +147,7 @@ def job_config(jobs_directory):
         </destination>
     </destinations>
     <tools>
-        <tool id="upload1" destination="local_dest"/>
+        <tool id="__DATA_FETCH__" destination="local_dest"/>
         <tool id="create_2" destination="k8s_destination_walltime_short"/>
         <tool id="galaxy_slots_and_memory" destination="k8s_destination_no_cleanup"/>
     </tools>
@@ -207,7 +211,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         # TODO: implement metadata setting as separate job, as service or side-car
-        config["retry_metadata_internally"] = True
+        super().handle_galaxy_config_kwds(config)
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config.path
@@ -308,20 +312,36 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
     def test_exit_code_127(self):
         inputs = {
             "failbool": True,
-            "sleepsecs": 20,
+            "sleepsecs": 5,
         }
         running_response = self.dataset_populator.run_tool_raw(
             "job_properties",
             inputs,
             self.history_id,
         )
-        time.sleep(10)
         # check that logs are also available in job logs
         app = self._app
-        sa_session = app.model.context.current
-        job = sa_session.query(app.model.Job).get(app.security.decode_id(running_response.json()["jobs"][0]["id"]))
+        job_id = app.security.decode_id(running_response.json()["jobs"][0]["id"])
+        sa_session = app.model.context
+        job = sa_session.query(app.model.Job).get(job_id)
+        self._wait_for_external_state(sa_session=sa_session, job=job, expected=app.model.Job.states.RUNNING)
+
         external_id = job.job_runner_external_id
-        output = unicodify(subprocess.check_output(["kubectl", "logs", "-l" f"job-name={external_id}"]))
+
+        def get_kubectl_logs(allow_wait=True):
+            log_cmd = ["kubectl", "logs", "-l", f"job-name={external_id}"]
+            p = subprocess.run(log_cmd, capture_output=True, text=True)
+            if p.returncode:
+                if allow_wait and "is waiting to start" in p.stderr:
+                    return None
+                raise Exception(
+                    f"Command '{shlex_join(log_cmd)}' failed with exit code: {p.returncode}.\nstdout: {p.stdout}\nstderr: {p.stderr}"
+                )
+            return p.stdout
+
+        wait_on(get_kubectl_logs, "k8s logs")
+        output = get_kubectl_logs(allow_wait=False)
+
         EXPECTED_STDOUT = "The bool is not true"
         EXPECTED_STDERR = "The bool is very not true"
         assert EXPECTED_STDOUT in output
@@ -355,8 +375,8 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         )
         dataset_content = self.dataset_populator.get_history_dataset_content(self.history_id, hid=1).strip()
         CPU = "2"
-        MEM = "10"
-        MEM_PER_SLOT = "5"
+        MEM = "100"
+        MEM_PER_SLOT = "50"
         assert [CPU, MEM, MEM_PER_SLOT] == dataset_content.split("\n"), dataset_content
 
         # Tool is mapped to destination without cleanup, make sure job still exists in kubernetes API

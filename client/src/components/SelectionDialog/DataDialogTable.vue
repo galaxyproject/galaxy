@@ -15,10 +15,10 @@
             @filtered="filtered">
             <template v-slot:head(select_icon)="">
                 <font-awesome-icon
-                    @click="$emit('toggleSelectAll')"
                     class="select-checkbox cursor-pointer"
                     title="Check to select all datasets"
-                    :icon="selectionIcon(selectAllIcon)" />
+                    :icon="selectionIcon(selectAllIcon)"
+                    @click="$emit('toggleSelectAll')" />
             </template>
             <template v-slot:cell(select_icon)="data">
                 <font-awesome-icon :icon="selectionIcon(data.item._rowVariant)" />
@@ -33,7 +33,7 @@
                             <i :class="leafIcon" />
                             <span :title="`label-${data.item.labelTitle}`">{{ data.value ? data.value : "-" }}</span>
                         </div>
-                        <div @click.stop="open(data.item)" v-else>
+                        <div v-else @click.stop="open(data.item)">
                             <font-awesome-icon icon="folder" />
                             <b-link :title="`label-${data.item.labelTitle}`">{{
                                 data.value ? data.value : "-"
@@ -49,22 +49,22 @@
                 {{ data.value ? data.value : "-" }}
             </template>
         </b-table>
-        <div class="text-center" v-if="isBusy">
+        <div v-if="isBusy" class="text-center">
             <b-spinner small type="grow"></b-spinner>
             <b-spinner small type="grow"></b-spinner>
             <b-spinner small type="grow"></b-spinner>
         </div>
         <div v-if="nItems === 0">
             <div v-if="filter">
-                No search results found for: <b>{{ this.filter }}</b
+                No search results found for: <b>{{ filter }}</b
                 >.
             </div>
             <div v-else>No entries.</div>
         </div>
         <b-pagination
-            class="justify-content-md-center"
             v-if="nItems > perPage"
             v-model="currentPage"
+            class="justify-content-md-center"
             :per-page="perPage"
             :total-rows="nItems" />
     </div>
@@ -140,14 +140,6 @@ export default {
             perPage: 100,
         };
     },
-    watch: {
-        items: {
-            immediate: true,
-            handler(items) {
-                this.filtered(items);
-            },
-        },
-    },
     computed: {
         fields: function () {
             const fields = [];
@@ -163,6 +155,14 @@ export default {
             }
 
             return fields;
+        },
+    },
+    watch: {
+        items: {
+            immediate: true,
+            handler(items) {
+                this.filtered(items);
+            },
         },
     },
     methods: {

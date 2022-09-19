@@ -31,19 +31,26 @@ from galaxy.selenium.navigates_galaxy import (
     NavigatesGalaxy,
     retry_during_transitions,
 )
+from galaxy.tool_util.verify.interactor import prepare_request_params
 from galaxy.util import (
     asbool,
     classproperty,
     DEFAULT_SOCKET_TIMEOUT,
 )
 from galaxy_test.base import populators
-from galaxy_test.base.api import UsesApiTestCaseMixin
+from galaxy_test.base.api import (
+    UsesApiTestCaseMixin,
+    UsesCeleryTasks,
+)
 from galaxy_test.base.api_util import get_admin_api_key
 from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     get_ip_address,
 )
-from galaxy_test.base.populators import load_data_dict
+from galaxy_test.base.populators import (
+    load_data_dict,
+    skip_if_github_down,
+)
 from galaxy_test.base.testcase import FunctionalTestCase
 
 try:
@@ -62,7 +69,7 @@ DEFAULT_DOWNLOAD_PATH = driver_factory.DEFAULT_DOWNLOAD_PATH
 TIMEOUT_MULTIPLIER = float(os.environ.get("GALAXY_TEST_TIMEOUT_MULTIPLIER", DEFAULT_TIMEOUT_MULTIPLIER))
 GALAXY_TEST_ERRORS_DIRECTORY = os.environ.get("GALAXY_TEST_ERRORS_DIRECTORY", DEFAULT_TEST_ERRORS_DIRECTORY)
 GALAXY_TEST_SCREENSHOTS_DIRECTORY = os.environ.get("GALAXY_TEST_SCREENSHOTS_DIRECTORY", None)
-# Test browser can be ["CHROME", "FIREFOX", "OPERA"]
+# Test browser can be ["CHROME", "FIREFOX"]
 GALAXY_TEST_SELENIUM_BROWSER = os.environ.get("GALAXY_TEST_SELENIUM_BROWSER", driver_factory.DEFAULT_SELENIUM_BROWSER)
 GALAXY_TEST_SELENIUM_REMOTE = os.environ.get("GALAXY_TEST_SELENIUM_REMOTE", driver_factory.DEFAULT_SELENIUM_REMOTE)
 GALAXY_TEST_SELENIUM_REMOTE_PORT = os.environ.get(
@@ -82,7 +89,6 @@ GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_ADM
 GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD = os.environ.get(
     "GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD", DEFAULT_ADMIN_PASSWORD
 )
-GALAXY_TEST_SELENIUM_BETA_HISTORY = os.environ.get("GALAXY_TEST_SELENIUM_BETA_HISTORY", "0") == "1"
 
 # JS code to execute in Galaxy JS console to setup localStorage of session for logging and
 # logging "flatten" messages because it seems Selenium (with Chrome at least) only grabs
@@ -233,7 +239,7 @@ class GalaxyTestSeleniumContext(GalaxySeleniumContext):
         return SeleniumSessionWorkflowPopulator(self)
 
 
-class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
+class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, UsesCeleryTasks):
     # If run one-off via nosetests, the next line ensures test
     # tools and datatypes are used instead of configured tools.
     framework_tool_and_types = True
@@ -243,8 +249,6 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
     # GALAXY_TEST_SELENIUM_USER_PASSWORD are set these values
     # will be used to login.
     ensure_registered = False
-
-    ensure_beta_history = GALAXY_TEST_SELENIUM_BETA_HISTORY
 
     # Override this in subclasses to annotate that an admin user
     # is required for the test to run properly. Override admin user
@@ -285,8 +289,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
         """
         if self.ensure_registered:
             self.login()
-            if self.ensure_beta_history:
-                self.use_beta_history()
+            self.use_beta_history()
 
     def tear_down_selenium(self):
         self.tear_down_driver()
@@ -388,16 +391,10 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
     def assert_initial_history_panel_state_correct(self):
         # Move into a TestsHistoryPanel mixin
         unnamed_name = self.components.history_panel.new_name.text
-
         name_element = self.history_panel_name_element()
+
         assert name_element.is_displayed()
         assert unnamed_name in name_element.text
-
-        initial_size_str = self.components.history_panel.new_size.text
-        size_selector = self.components.history_panel.size
-        size_text = size_selector.wait_for_text()
-
-        assert initial_size_str in size_text, f"{initial_size_str} not in {size_text}"
 
         self.components.history_panel.empty_message.wait_for_visible()
 
@@ -538,6 +535,45 @@ class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
         assert hid_text == str(hid), hid_text
 
 
+EXAMPLE_WORKFLOW_URL_1 = (
+    "https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga"
+)
+
+
+class UsesWorkflowAssertions(NavigatesGalaxyMixin):
+    @retry_assertion_during_transitions
+    def _assert_showing_n_workflows(self, n):
+        actual_count = len(self.workflow_index_table_elements())
+        if actual_count != n:
+            message = f"Expected {n} workflows to be displayed, based on DOM found {actual_count} workflow rows."
+            raise AssertionError(message)
+
+    @skip_if_github_down
+    def _workflow_import_from_url(self, url=EXAMPLE_WORKFLOW_URL_1):
+        self.workflow_index_click_import()
+        self.workflow_import_submit_url(url)
+
+
+class TestsGalaxyPagers(GalaxyTestSeleniumContext):
+    @retry_assertion_during_transitions
+    def _assert_current_page_is(self, component, expected_page: int):
+        component.pager.wait_for_visible()
+        page_from_pager = component.pager_page_active.wait_for_present().text
+        assert int(page_from_pager) == expected_page
+
+    def _next_page(self, component):
+        component.pager_page_next.wait_for_and_click()
+
+    def _previous_page(self, component):
+        component.pager_page_previous.wait_for_and_click()
+
+    def _last_page(self, component):
+        component.pager_page_last.wait_for_and_click()
+
+    def _first_page(self, component):
+        component.pager_page_first.wait_for_and_click()
+
+
 class RunsWorkflows(GalaxyTestSeleniumContext):
     def workflow_upload_yaml_with_random_name(self, content: str, **kwds) -> str:
         name = self._get_random_name()
@@ -672,59 +708,36 @@ class SeleniumSessionGetPostMixin:
 
     def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
-        if data is None:
-            data = {}
-
-        if files is None:
-            files = data.get("__files", None)
-            if files is not None:
-                del data["__files"]
-
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        request_kwd = self._prepare_request_data(
-            dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT, files=files), data, as_json=json
-        )
-        response = requests.post(full_url, **request_kwd)
+        request_kwd = prepare_request_params(data=data, files=files, as_json=json, headers=headers, cookies=cookies)
+        response = requests.post(full_url, timeout=DEFAULT_SOCKET_TIMEOUT, **request_kwd)
         return response
 
     def _delete(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
-        data = data or {}
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        request_kwd = self._prepare_request_data(
-            dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT), data, as_json=json
-        )
-        response = requests.delete(full_url, **request_kwd)
+        request_kwd = prepare_request_params(data=data, as_json=json, headers=headers, cookies=cookies)
+        response = requests.delete(full_url, timeout=DEFAULT_SOCKET_TIMEOUT, **request_kwd)
         return response
 
     def _put(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
-        data = data or {}
         full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         cookies = None
         if admin:
             full_url = f"{full_url}?key={self._mixin_admin_api_key}"
         else:
             cookies = self.selenium_context.selenium_to_requests_cookies()
-        request_kwd = self._prepare_request_data(
-            dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT), data, as_json=json
-        )
+        request_kwd = prepare_request_params(data=data, as_json=json, headers=headers, cookies=cookies)
         response = requests.put(full_url, **request_kwd)
         return response
-
-    def _prepare_request_data(self, request_kwd: Dict[str, Any], data: Dict[str, Any], as_json: bool = False):
-        if as_json:
-            request_kwd["json"] = data
-        else:
-            request_kwd["data"] = data
-        return request_kwd
 
 
 class SeleniumSessionDatasetPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetPopulator):

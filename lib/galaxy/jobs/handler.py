@@ -19,6 +19,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.sql.expression import (
     and_,
     func,
+    not_,
     null,
     or_,
     select,
@@ -596,7 +597,12 @@ class JobHandlerQueue(Monitors):
                 .filter(
                     or_(
                         model.Dataset.deleted == true(),
-                        model.Dataset.state != model.Dataset.states.OK,
+                        not_(
+                            or_(
+                                model.Dataset.state == model.Dataset.states.OK,
+                                model.Dataset.state == model.Dataset.states.DEFERRED,
+                            )
+                        ),
                         input_association.deleted == true(),
                         input_association._state == input_association.states.FAILED_METADATA,
                     )
@@ -1192,7 +1198,7 @@ class JobHandlerStopQueue(Monitors):
 
 
 class DefaultJobDispatcher:
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
         self.job_runners = self.app.job_config.get_job_runner_plugins(self.app.config.server_name)
         # Once plugins are loaded, all job destinations that were created from
@@ -1254,6 +1260,10 @@ class DefaultJobDispatcher:
         # The runner name is not set until the job has started.
         # If we're stopping a task, then the runner_name may be
         # None, in which case it hasn't been scheduled.
+        if self.app.config.enable_celery_tasks and job.tool_id == "__DATA_FETCH__":
+            from galaxy.celery import celery_app
+
+            celery_app.control.revoke(job.job_runner_external_id)
         job_runner_name = job.get_job_runner_name()
         if job_runner_name is not None:
             runner_name = job_runner_name.split(":", 1)[0]

@@ -1,6 +1,7 @@
 import json
 
 import yaml
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
 from galaxy_test.base.workflow_fixtures import (
@@ -240,6 +241,9 @@ steps:
     label: tool_exec
     in:
       inttest: input_int
+  cat1:
+    # regression test, ensures connecting works in the presence of data input terminals
+    tool_id: cat1
 """
         )
         self.screenshot("workflow_editor_parameter_connection_simple")
@@ -532,6 +536,89 @@ steps:
         element.wait_for_and_send_keys(value)
 
     @selenium_test
+    def test_change_datatype(self):
+        self.open_in_workflow_editor(
+            """
+class: GalaxyWorkflow
+inputs: []
+steps:
+  - tool_id: create_2
+    label: create_2
+  - tool_id: checksum
+    label: checksum
+    in:
+      input: create_2/out_file1
+"""
+        )
+        editor = self.components.workflow_editor
+        self.assert_connected("create_2#out_file1", "checksum#input")
+        node = editor.node._(label="create_2")
+        node.wait_for_and_click()
+        editor.configure_output(output="out_file1").wait_for_and_click()
+        editor.change_datatype.wait_for_and_click()
+        editor.select_dataype_text_search.wait_for_and_send_keys("bam")
+        editor.select_datatype(datatype="bam").wait_for_and_click()
+        editor.node.output_data_row(output_name="out_file1", extension="bam").wait_for_visible()
+        self.assert_not_connected("create_2#out_file1", "checksum#input")
+
+    @selenium_test
+    def test_change_datatype_post_job_action_lost_regression(self):
+        self.open_in_workflow_editor(
+            """
+class: GalaxyWorkflow
+inputs: []
+steps:
+  - tool_id: create_2
+    label: create_2
+    outputs:
+      out_file1:
+        change_datatype: bam
+  - tool_id: metadata_bam
+    label: metadata_bam
+    in:
+      input_bam: create_2/out_file1
+"""
+        )
+        self.assert_connected("create_2#out_file1", "metadata_bam#input_bam")
+        editor = self.components.workflow_editor
+        node = editor.node._(label="create_2")
+        node.wait_for_and_click()
+        self.assert_connected("create_2#out_file1", "metadata_bam#input_bam")
+
+    @selenium_test
+    def test_change_datatype_in_subworkflow(self):
+        self.open_in_workflow_editor(
+            """
+class: GalaxyWorkflow
+inputs: []
+steps:
+  nested_workflow:
+    run:
+        class: GalaxyWorkflow
+        inputs: []
+        steps:
+          - tool_id: create_2
+            label: create_2
+            outputs:
+              out_file1:
+                change_datatype: bam
+        outputs:
+          workflow_output:
+            outputSource: create_2/out_file1
+  metadata_bam:
+    tool_id: metadata_bam
+"""
+        )
+        editor = self.components.workflow_editor
+        node = editor.node._(label="nested_workflow")
+        node.wait_for_and_click()
+        node.output_data_row(output_name="workflow_output", extension="bam").wait_for_visible()
+        # Move canvas, so terminals are in viewport
+        self.move_center_of_canvas(xoffset=100, yoffset=100)
+        self.workflow_editor_connect("nested_workflow#workflow_output", "metadata_bam#input_bam")
+        self.assert_connected("nested_workflow#workflow_output", "metadata_bam#input_bam")
+
+    @selenium_test
     def test_editor_duplicate_node(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.workflow_index_open()
@@ -648,14 +735,10 @@ steps:
         self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
         self.components.masthead.workflow.wait_for_and_click()
 
-        # parse workflow table
-        table_elements = self.workflow_index_table_elements()
+        self.components.tool_panel.search.wait_for_and_send_keys(new_workflow_name)
         self.sleep_for(self.wait_types.UX_RENDER)
-        bookmark_td = table_elements[0].find_elements_by_tag_name("td")[4]
-
-        # get bookmark pseudo element
-        # https://stackoverflow.com/questions/45427223/click-on-pseudo-element-using-selenium
-        self.action_chains().move_to_element_with_offset(bookmark_td, 20, 20).click().perform()
+        self.components.workflows.bookmark_link.wait_for_and_click()
+        self.components.masthead.workflow.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
 
         # search for bookmark in tools menu
@@ -671,8 +754,8 @@ steps:
 
     def workflow_editor_connect(self, source, sink, screenshot_partial=None):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
-        source_element = self.driver.find_element_by_css_selector(f"#{source_id}")
-        sink_element = self.driver.find_element_by_css_selector(f"#{sink_id}")
+        source_element = self.find_element_by_selector(f"#{source_id}")
+        sink_element = self.find_element_by_selector(f"#{sink_id}")
 
         ac = self.action_chains()
         ac = ac.move_to_element(source_element).click_and_hold()
@@ -788,3 +871,8 @@ steps:
         modal_element = self.components.workflow_editor.state_modal_body.wait_for_visible()
         text = modal_element.text
         assert expected_text in text, f"Failed to find expected text [{expected_text}] in modal text [{text}]"
+
+    def move_center_of_canvas(self, xoffset=0, yoffset=0):
+        canvas = self.find_element_by_id("canvas-container")
+        chains = ActionChains(self.driver)
+        chains.click_and_hold(canvas).move_by_offset(xoffset=xoffset, yoffset=yoffset).release().perform()

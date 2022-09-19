@@ -254,7 +254,6 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
             repository_dependencies=None,
             tool_dependencies=None,
             valid_tools=None,
-            workflows=None,
             valid_data_managers=None,
         )
         if repository_metadata:
@@ -263,12 +262,6 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
             lock.acquire(True)
             try:
                 folder_id = 0
-                # Datatypes container.
-                if metadata:
-                    if "datatypes" not in exclude and "datatypes" in metadata:
-                        datatypes = metadata["datatypes"]
-                        folder_id, datatypes_root_folder = self.build_datatypes_folder(folder_id, datatypes)
-                        containers_dict["datatypes"] = datatypes_root_folder
                 # Invalid repository dependencies container.
                 if metadata:
                     if (
@@ -349,18 +342,6 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                             folder_id, valid_tools, repository, changeset_revision, label="Valid tools"
                         )
                         containers_dict["valid_tools"] = valid_tools_root_folder
-                # Workflows container.
-                if metadata:
-                    if "workflows" not in exclude and "workflows" in metadata:
-                        workflows = metadata["workflows"]
-                        folder_id, workflows_root_folder = self.build_workflows_folder(
-                            folder_id=folder_id,
-                            workflows=workflows,
-                            repository_metadata_id=repository_metadata.id,
-                            repository_id=None,
-                            label="Workflows",
-                        )
-                        containers_dict["workflows"] = workflows_root_folder
                 # Valid Data Managers container
                 if metadata:
                     if "data_manager" not in exclude and "data_manager" in metadata:

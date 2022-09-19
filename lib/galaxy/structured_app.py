@@ -3,10 +3,10 @@ from typing import (
     Any,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from kombu import Connection
+from typing_extensions import Protocol
 
 from galaxy.auth import AuthManager
 from galaxy.datatypes.registry import Registry
@@ -18,12 +18,10 @@ from galaxy.model.base import (
     SharedModelMapping,
 )
 from galaxy.model.mapping import GalaxyModelMapping
-from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.security import (
     GalaxyRBACAgent,
     HostAgent,
 )
-from galaxy.model.store import SessionlessContext
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.objectstore import ObjectStore
 from galaxy.quota import QuotaAgent
@@ -32,38 +30,46 @@ from galaxy.security.vault import Vault
 from galaxy.tool_util.deps.views import DependencyResolversView
 from galaxy.tool_util.verify import test_data
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.tool_shed.tool_shed_registry import Registry as ToolShedRegistry
 from galaxy.web_stack import ApplicationStack
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
 
 if TYPE_CHECKING:
+    from galaxy.config_watchers import ConfigWatchers
+    from galaxy.jobs import JobConfiguration
+    from galaxy.managers.collections import DatasetCollectionManager
+    from galaxy.managers.hdas import HDAManager
+    from galaxy.managers.histories import HistoryManager
+    from galaxy.managers.workflows import WorkflowsManager
+    from galaxy.tools import ToolBox
     from galaxy.tools.data import ToolDataTableManager
+    from galaxy.tools.error_reports import ErrorReports
+    from galaxy.visualization.genomes import Genomes
 
 
-class BasicApp(Container):
-    name: str
-    config: Any  # 'galaxy.config.BaseAppConfiguration'
-    datatypes_registry: Registry
-
-
-class BasicSharedApp(BasicApp):
+class BasicSharedApp(Container):
     """Stripped down version of the ``app`` shared between Galaxy and ToolShed.
 
     Code that is shared between Galaxy and the Tool Shed should be annotated as
     using BasicSharedApp instead of StructuredApp below.
     """
 
+    name: str
+    config: Any  # 'galaxy.config.BaseAppConfiguration'
+    datatypes_registry: Registry
     application_stack: ApplicationStack
     model: SharedModelMapping
     security: IdEncodingHelper
     auth_manager: AuthManager
-    toolbox: Any  # 'galaxy.tools.ToolBox'
+    toolbox: "ToolBox"
     security_agent: Any
     quota_agent: QuotaAgent
 
 
-class MinimalToolApp(BasicApp):
-    sa_session: Union[galaxy_scoped_session, SessionlessContext]
+class MinimalToolApp(Protocol):
+    name: str
+    config: Any  # 'galaxy.config.BaseAppConfiguration'
     datatypes_registry: Registry
     object_store: ObjectStore
     tool_data_tables: "ToolDataTableManager"
@@ -82,20 +88,25 @@ class MinimalApp(BasicSharedApp):
 
 
 class MinimalManagerApp(MinimalApp):
+    # Minimal App that is sufficient to run Celery tasks
     file_sources: ConfiguredFileSources
     genome_builds: GenomeBuilds
-    dataset_collection_manager: Any  # 'galaxy.managers.collections.DatasetCollectionManager'
-    history_manager: Any  # 'galaxy.managers.histories.HistoryManager'
-    hda_manager: Any  # 'galaxy.managers.hdas.HDAManager'
-    workflow_manager: Any  # 'galaxy.managers.workflows.WorkflowsManager'
+    dataset_collection_manager: "DatasetCollectionManager"
+    history_manager: "HistoryManager"
+    hda_manager: "HDAManager"
+    workflow_manager: "WorkflowsManager"
     workflow_contents_manager: Any  # 'galaxy.managers.workflows.WorkflowContentsManager'
     library_folder_manager: Any  # 'galaxy.managers.folders.FolderManager'
     library_manager: Any  # 'galaxy.managers.libraries.LibraryManager'
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
     installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
     user_manager: Any
-    job_config: Any  # 'galaxy.jobs.JobConfiguration'
+    job_config: "JobConfiguration"
     job_manager: Any  # galaxy.jobs.manager.JobManager
+    job_metrics: JobMetrics
+    dynamic_tool_manager: Any  # 'galaxy.managers.tools.DynamicToolManager'
+    genomes: "Genomes"
+    error_reports: "ErrorReports"
 
     @property
     def is_job_handler(self) -> bool:
@@ -114,43 +125,20 @@ class StructuredApp(MinimalManagerApp):
     Any.
     """
 
-    is_webapp: bool  # is_webapp will be set to true when building WSGI app
-    tag_handler: GalaxyTagHandler
     amqp_internal_connection_obj: Optional[Connection]
     dependency_resolvers_view: DependencyResolversView
     test_data_resolver: test_data.TestDataResolver
-    file_sources: ConfiguredFileSources
-    genome_builds: GenomeBuilds
-    job_metrics: JobMetrics
-    model: GalaxyModelMapping
-    install_model: ModelMapping
-    security_agent: GalaxyRBACAgent
-    host_security_agent: HostAgent
     trs_proxy: TrsProxy
     vault: Vault
     webhooks_registry: WebhooksRegistry
-
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
-    history_manager: Any  # 'galaxy.managers.histories.HistoryManager'
-    hda_manager: Any  # 'galaxy.managers.hdas.HDAManager'
-    workflow_manager: Any  # 'galaxy.managers.workflows.WorkflowsManager'
-    workflow_contents_manager: Any  # 'galaxy.managers.workflows.WorkflowContentsManager'
-    library_folder_manager: Any  # 'galaxy.managers.folders.FolderManager'
-    library_manager: Any  # 'galaxy.managers.libraries.LibraryManager'
-    role_manager: Any  # 'galaxy.managers.roles.RoleManager'
-    dynamic_tool_manager: Any  # 'galaxy.managers.tools.DynamicToolManager'
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'
     tool_data_tables: "ToolDataTableManager"
-    genomes: Any  # 'galaxy.visualization.genomes.Genomes'
-    error_reports: Any  # 'galaxy.tools.error_reports.ErrorReports'
     tool_cache: Any  # 'galaxy.tools.cache.ToolCache'
+    tool_shed_registry: ToolShedRegistry
     tool_shed_repository_cache: Optional[Any]  # 'galaxy.tools.cache.ToolShedRepositoryCache'
-    watchers: Any  # 'galaxy.config_watchers.ConfigWatchers'
-    installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
+    watchers: "ConfigWatchers"
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
     interactivetool_manager: Any
-    job_config: Any  # 'galaxy.jobs.JobConfiguration'
-    job_manager: Any  # galaxy.jobs.manager.JobManager
-    user_manager: Any
     api_keys_manager: Any  # 'galaxy.managers.api_keys.ApiKeyManager'
     visualizations_registry: Any  # 'galaxy.visualization.plugins.registry.VisualizationsRegistry'

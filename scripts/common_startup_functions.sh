@@ -90,6 +90,16 @@ conda_activate() {
     fi
 }
 
+find_python_command() {
+    if [ -z "$GALAXY_PYTHON" ]; then
+        if command -v python3 >/dev/null; then
+            GALAXY_PYTHON=python3
+        else
+            GALAXY_PYTHON=python
+        fi
+    fi
+}
+
 setup_python() {
     # If there is a .venv/ directory, assume it contains a virtualenv that we
     # should run this instance in.
@@ -120,7 +130,8 @@ setup_python() {
     # in case you don't.
     [ -n "$PYTHONPATH" ] && echo 'WARNING: $PYTHONPATH is set, this can cause problems importing Galaxy dependencies'
 
-    python ./scripts/check_python.py || exit 1
+    find_python_command
+    "$GALAXY_PYTHON" ./scripts/check_python.py || exit 1
 }
 
 setup_gravity_state_dir() {

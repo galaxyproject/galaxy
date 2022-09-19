@@ -98,10 +98,11 @@ class JobExportHistoryArchiveWrapper:
         """
         Perform setup for job to export a history into an archive.
         """
-        app = self.app
         # TODO: prevent circular import here...
         from galaxy.celery.tasks import export_history
 
+        app = self.app
+        # TODO: parameterize API on include_files here...
         request = SetupHistoryExportJob(
             history_id=history.id,
             job_id=self.job_id,

@@ -180,11 +180,13 @@ class ChronosJobRunner(AsynchronousJobRunner):
     def recover(self, job, job_wrapper):
         msg = "(name!r/runner!r) is still in {state!s} state, adding to" " the runner monitor queue"
         job_id = job.get_job_runner_external_id()
-        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
-        ajs.job_id = self.JOB_NAME_PREFIX + str(job_id)
+        ajs = AsynchronousJobState(
+            files_dir=job_wrapper.working_directory,
+            job_wrapper=job_wrapper,
+            job_id=self.JOB_NAME_PREFIX + str(job_id),
+            job_destination=job_wrapper.job_destination,
+        )
         ajs.command_line = job.command_line
-        ajs.job_wrapper = job_wrapper
-        ajs.job_destination = job_wrapper.job_destination
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             LOGGER.debug(msg.format(name=job.id, runner=job.job_runner_external_id, state=job.state))
             ajs.old_state = model.Job.states.RUNNING
@@ -195,17 +197,6 @@ class ChronosJobRunner(AsynchronousJobRunner):
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
             self.monitor_queue.put(ajs)
-
-    def fail_job(self, job_state, exception=False):
-        if getattr(job_state, "stop_job", True):
-            self.stop_job(job_state.job_wrapper)
-        job_state.job_wrapper.reclaim_ownership()
-        self._handle_runner_state("failure", job_state)
-        if not job_state.runner_state_handled:
-            job_state.job_wrapper.fail(getattr(job_state, "fail_message", "Job failed"), exception=exception)
-            self._finish_or_resubmit_job(job_state, "", job_state.fail_message, job_id=job_state.job_id)
-            if job_state.job_wrapper.cleanup_job == "always":
-                job_state.cleanup()
 
     @handle_exception_call
     def check_watched_item(self, job_state):

@@ -26,6 +26,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
 )
 from galaxy.util import (
+    asbool,
     directory_hash_id,
     force_symlink,
     parse_xml,
@@ -254,6 +255,10 @@ class ObjectStore(metaclass=abc.ABCMeta):
         Certain Galaxy remote data features aren't available if objects are stored by 'id'.
         """
         raise NotImplementedError()
+
+    @abc.abstractmethod
+    def to_dict(self) -> Dict[str, Any]:
+        raise NotImplementedError
 
 
 class BaseObjectStore(ObjectStore):
@@ -652,9 +657,11 @@ class DiskObjectStore(ConcreteObjectStore):
             if entire_dir and (extra_dir or obj_dir):
                 shutil.rmtree(path)
                 return True
-            if self._exists(obj, **kwargs):
-                os.remove(path)
-                return True
+            os.remove(path)
+            return True
+        except FileNotFoundError:
+            # Absolutely possible that a delete request races, but that's "fine".
+            return True
         except OSError as ex:
             log.critical(f"{self.__get_filename(obj, **kwargs)} delete error {ex}")
         return False
@@ -850,6 +857,7 @@ class DistributedObjectStore(NestedObjectStore):
         self.original_weighted_backend_ids = []
         self.max_percent_full = {}
         self.global_max_percent_full = config_dict.get("global_max_percent_full", 0)
+        self.search_for_missing = config_dict.get("search_for_missing", True)
         random.seed()
 
         for backend_def in config_dict["backends"]:
@@ -887,6 +895,7 @@ class DistributedObjectStore(NestedObjectStore):
 
         backends: List[Dict[str, Any]] = []
         config_dict = {
+            "search_for_missing": asbool(backends_root.get("search_for_missing", True)),
             "global_max_percent_full": float(backends_root.get("maxpctfull", 0)),
             "backends": backends,
         }
@@ -933,6 +942,7 @@ class DistributedObjectStore(NestedObjectStore):
     def to_dict(self) -> Dict[str, Any]:
         as_dict = super().to_dict()
         as_dict["global_max_percent_full"] = self.global_max_percent_full
+        as_dict["search_for_missing"] = self.search_for_missing
         backends: List[Dict[str, Any]] = []
         for backend_id, backend in self.backends.items():
             backend_as_dict = backend.to_dict()
@@ -1003,17 +1013,17 @@ class DistributedObjectStore(NestedObjectStore):
                     "The backend object store ID (%s) for %s object with ID %s is invalid"
                     % (obj.object_store_id, obj.__class__.__name__, obj.id)
                 )
-        # if this instance has been switched from a non-distributed to a
-        # distributed object store, or if the object's store id is invalid,
-        # try to locate the object
-        for id, store in self.backends.items():
-            if store.exists(obj, **kwargs):
-                log.warning(
-                    "%s object with ID %s found in backend object store with ID %s"
-                    % (obj.__class__.__name__, obj.id, id)
-                )
-                obj.object_store_id = id
-                return id
+        elif self.search_for_missing:
+            # if this instance has been switched from a non-distributed to a
+            # distributed object store, or if the object's store id is invalid,
+            # try to locate the object
+            for id, store in self.backends.items():
+                if store.exists(obj, **kwargs):
+                    log.warning(
+                        f"{obj.__class__.__name__} object with ID {obj.id} found in backend object store with ID {id}"
+                    )
+                    obj.object_store_id = id
+                    return id
         return None
 
 
@@ -1225,18 +1235,25 @@ class ObjectStorePopulator:
     datasets from a job end up with the same object_store_id.
     """
 
-    def __init__(self, app, user):
-        self.object_store = app.object_store
+    def __init__(self, has_object_store, user):
+        if hasattr(has_object_store, "object_store"):
+            object_store = has_object_store.object_store
+        else:
+            object_store = has_object_store
+        self.object_store = object_store
         self.object_store_id = None
         self.user = user
 
     def set_object_store_id(self, data):
+        self.set_dataset_object_store_id(data.dataset)
+
+    def set_dataset_object_store_id(self, dataset):
         # Create an empty file immediately.  The first dataset will be
         # created in the "default" store, all others will be created in
         # the same store as the first.
-        data.dataset.object_store_id = self.object_store_id
+        dataset.object_store_id = self.object_store_id
         try:
-            self.object_store.create(data.dataset)
+            self.object_store.create(dataset)
         except ObjectInvalid:
             raise Exception("Unable to create output dataset: object store is full")
-        self.object_store_id = data.dataset.object_store_id  # these will be the same thing after the first output
+        self.object_store_id = dataset.object_store_id  # these will be the same thing after the first output

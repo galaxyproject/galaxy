@@ -1,10 +1,11 @@
 <template>
     <b-button
+        v-b-tooltip.hover
         class="panel-header-button-toolbox"
         size="sm"
         variant="link"
         aria-label="Show favorite tools"
-        v-b-tooltip.hover
+        :disabled="currentUser.isAnonymous"
         :title="tooltipText"
         @click="onFavorites">
         <icon v-if="toggle" :icon="['fas', 'star']" />
@@ -13,7 +14,7 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import { mapGetters } from "vuex";
 
 export default {
     name: "FavoritesButton",
@@ -25,23 +26,27 @@ export default {
     data() {
         return {
             searchKey: "#favorites",
-            tooltipToggle: _l("Show favorites"),
-            tooltipUntoggle: "Clear",
             toggle: false,
         };
+    },
+    computed: {
+        ...mapGetters("user", ["currentUser"]),
+
+        tooltipText() {
+            if (this.currentUser.isAnonymous) {
+                return this.l("Log in to Favorite Tools");
+            } else {
+                if (this.toggle) {
+                    return this.l("Clear");
+                } else {
+                    return this.l("Show favorites");
+                }
+            }
+        },
     },
     watch: {
         query() {
             this.toggle = this.query == this.searchKey;
-        },
-    },
-    computed: {
-        tooltipText() {
-            if (this.toggle) {
-                return this.tooltipUntoggle;
-            } else {
-                return this.tooltipToggle;
-            }
         },
     },
     methods: {

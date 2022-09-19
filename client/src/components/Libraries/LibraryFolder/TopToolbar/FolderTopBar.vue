@@ -3,7 +3,7 @@
         <div class="form-inline d-flex align-items-center mb-2">
             <b-button
                 class="mr-1 btn btn-secondary"
-                :to="{ path: `/` }"
+                :to="{ path: `/libraries` }"
                 data-toggle="tooltip"
                 title="Go to libraries list">
                 <font-awesome-icon icon="home" />
@@ -61,7 +61,7 @@
                             class="primary-button dropdown-toggle add-to-history"
                             data-toggle="dropdown">
                             <font-awesome-icon icon="book" />
-                            Export to History <span class="caret"></span>
+                            Add to History <span class="caret"></span>
                         </button>
                         <div class="dropdown-menu" role="menu">
                             <a
@@ -81,10 +81,10 @@
                         </div>
                     </div>
                     <div
+                        v-if="dataset_manipulation"
                         title="Download items as archive"
-                        class="dropdown dataset-manipulation mr-1"
-                        v-if="dataset_manipulation">
-                        <button type="button" id="download--btn" class="primary-button" @click="downloadData('zip')">
+                        class="dropdown dataset-manipulation mr-1">
+                        <button id="download--btn" type="button" class="primary-button" @click="downloadData('zip')">
                             <font-awesome-icon icon="download" />
                             Download
                         </button>
@@ -99,13 +99,9 @@
                         <font-awesome-icon icon="trash" />
                         Delete
                     </button>
-                    <FolderDetails class="mr-1" :id="folder_id" :metadata="metadata" />
-                    <div class="form-check logged-dataset-manipulation mr-1" v-if="canDelete">
-                        <b-form-checkbox
-                            id="checkbox-1"
-                            :checked="include_deleted"
-                            @input="toggle_include_deleted($event)"
-                            name="checkbox-1">
+                    <FolderDetails :id="folder_id" class="mr-1" :metadata="metadata" />
+                    <div v-if="canDelete" class="form-check logged-dataset-manipulation mr-1">
+                        <b-form-checkbox :checked="includeDeleted" @change="$emit('update:includeDeleted', $event)">
                             include deleted
                         </b-form-checkbox>
                     </div>
@@ -144,12 +140,18 @@ Vue.use(BootstrapVue);
 
 export default {
     name: "FolderTopBar",
+    components: {
+        SearchField,
+        FontAwesomeIcon,
+        LibraryBreadcrumb,
+        FolderDetails,
+    },
     props: {
         folder_id: {
             type: String,
             required: true,
         },
-        include_deleted: {
+        includeDeleted: {
             type: Boolean,
             required: true,
         },
@@ -174,12 +176,6 @@ export default {
             required: true,
         },
     },
-    components: {
-        SearchField,
-        FontAwesomeIcon,
-        LibraryBreadcrumb,
-        FolderDetails,
-    },
     data() {
         return {
             is_admin: false,
@@ -201,16 +197,6 @@ export default {
             },
         };
     },
-    created() {
-        const Galaxy = getGalaxyInstance();
-        this.services = new Services();
-        this.is_admin = Galaxy.user.attributes.is_admin;
-        this.user_library_import_dir_available = Galaxy.config.user_library_import_dir_available;
-        this.library_import_dir = Galaxy.config.library_import_dir;
-        this.allow_library_path_paste = Galaxy.config.allow_library_path_paste;
-
-        this.fetchExtAndGenomes();
-    },
     computed: {
         contains_file_or_folder: function () {
             return this.folderContents.find((el) => el.type === "folder" || el.type === "file");
@@ -223,6 +209,16 @@ export default {
             // logic from legacy code
             return !!(this.contains_file_or_folder && Galaxy.user);
         },
+    },
+    created() {
+        const Galaxy = getGalaxyInstance();
+        this.services = new Services();
+        this.is_admin = Galaxy.user.attributes.is_admin;
+        this.user_library_import_dir_available = Galaxy.config.user_library_import_dir_available;
+        this.library_import_dir = Galaxy.config.library_import_dir;
+        this.allow_library_path_paste = Galaxy.config.allow_library_path_paste;
+
+        this.fetchExtAndGenomes();
     },
     methods: {
         updateSearch: function (value) {
@@ -244,7 +240,7 @@ export default {
                 const selected = await this.services.getFilteredFolderContents(
                     this.folder_id,
                     this.unselected,
-                    this.$parent.search_text
+                    this.$parent.searchText
                 );
                 this.$emit("setBusy", false);
                 return selected;
@@ -340,9 +336,6 @@ export default {
                 },
                 cache: true,
             });
-        },
-        toggle_include_deleted: function (value) {
-            this.$emit("fetchFolderContents", value);
         },
         updateContent: function () {
             this.$emit("fetchFolderContents");

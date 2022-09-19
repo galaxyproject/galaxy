@@ -6,11 +6,13 @@ created (or copied) by users over the course of an analysis.
 """
 import logging
 from typing import (
+    Any,
     cast,
     Dict,
     List,
     Optional,
     Set,
+    Union,
 )
 
 from sqlalchemy import (
@@ -18,9 +20,12 @@ from sqlalchemy import (
     asc,
     desc,
 )
+from typing_extensions import Literal
 
-from galaxy import exceptions as glx_exceptions
-from galaxy import model
+from galaxy import (
+    exceptions as glx_exceptions,
+    model,
+)
 from galaxy.managers import (
     deletable,
     hdas,
@@ -31,6 +36,7 @@ from galaxy.managers.base import (
     Serializer,
     SortableManager,
 )
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     HDABasicInfo,
     ShareHistoryExtra,
@@ -58,7 +64,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         hda_manager: hdas.HDAManager,
         contents_manager: history_contents.HistoryContentsManager,
         contents_filters: history_contents.HistoryContentsFilters,
-    ):
+    ) -> None:
         super().__init__(app)
         self.hda_manager = hda_manager
         self.contents_manager = contents_manager
@@ -72,7 +78,9 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
     # .... sharable
     # overriding to handle anonymous users' current histories in both cases
-    def by_user(self, user, current_history=None, **kwargs):
+    def by_user(
+        self, user: model.User, current_history: Optional[model.History] = None, **kwargs: Any
+    ) -> List[model.History]:
         """
         Get all the histories for a given user (allowing anon users' theirs)
         ordered by update time.
@@ -82,16 +90,22 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             return [current_history] if current_history else []
         return super().by_user(user, **kwargs)
 
-    def is_owner(self, history, user, current_history=None, **kwargs):
+    def is_owner(
+        self,
+        item: model._HasTable,
+        user: Optional[model.User],
+        current_history: Optional[model.History] = None,
+        **kwargs: Any,
+    ) -> bool:
         """
         True if the current user is the owner of the given history.
         """
         # anon users are only allowed to view their current history
         if self.user_manager.is_anonymous(user):
-            if current_history and history == current_history:
+            if current_history and item == current_history:
                 return True
             return False
-        return super().is_owner(history, user)
+        return super().is_owner(item, user)
 
     # TODO: possibly to sharable or base
     def most_recent(self, user, filters=None, current_history=None, **kwargs):
@@ -174,7 +188,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         if default:
             return self.parse_order_by(default)
         raise glx_exceptions.RequestParameterInvalidException(
-            "Unkown order_by", order_by=order_by_string, available=["create_time", "update_time", "name", "size"]
+            "Unknown order_by", order_by=order_by_string, available=["create_time", "update_time", "name", "size"]
         )
 
     def non_ready_jobs(self, history):
@@ -308,7 +322,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         extra.can_share = not errors and (extra.accessible_count == total_dataset_count or option is not None)
         return extra
 
-    def is_history_shared_with(self, history, user) -> bool:
+    def is_history_shared_with(self, history: model.History, user: model.User) -> bool:
         return bool(
             self.session()
             .query(self.user_share_model)
@@ -341,18 +355,21 @@ class HistoryExportView:
     def __init__(self, app: MinimalManagerApp):
         self.app = app
 
-    def get_exports(self, trans, history_id):
+    def get_exports(self, trans, history_id: int):
         history = self._history(trans, history_id)
         matching_exports = history.exports
         return [self.serialize(trans, history_id, e) for e in matching_exports]
 
-    def serialize(self, trans, history_id, jeha):
+    def serialize(self, trans, history_id: int, jeha):
         rval = jeha.to_dict()
-        encoded_jeha_id = trans.security.encode_id(jeha.id)
-        api_url = trans.url_builder("history_archive_download", id=history_id, jeha_id=encoded_jeha_id)
-        external_url = trans.url_builder("history_archive_download", id=history_id, jeha_id="latest", qualified=True)
+        encoded_jeha_id = DecodedDatabaseIdField.encode(jeha.id)
+        encoded_history_id = DecodedDatabaseIdField.encode(history_id)
+        api_url = trans.url_builder("history_archive_download", id=encoded_history_id, jeha_id=encoded_jeha_id)
+        external_url = trans.url_builder(
+            "history_archive_download", id=encoded_history_id, jeha_id="latest", qualified=True
+        )
         external_permanent_url = trans.url_builder(
-            "history_archive_download", id=history_id, jeha_id=encoded_jeha_id, qualified=True
+            "history_archive_download", id=encoded_history_id, jeha_id=encoded_jeha_id, qualified=True
         )
         rval["download_url"] = api_url
         rval["external_download_latest_url"] = external_url
@@ -360,12 +377,11 @@ class HistoryExportView:
         rval = trans.security.encode_all_ids(rval)
         return rval
 
-    def get_ready_jeha(self, trans, history_id, jeha_id="latest"):
+    def get_ready_jeha(self, trans, history_id: int, jeha_id: Union[int, Literal["latest"]] = "latest"):
         history = self._history(trans, history_id)
         matching_exports = history.exports
         if jeha_id != "latest":
-            decoded_jeha_id = trans.security.decode_id(jeha_id)
-            matching_exports = [e for e in matching_exports if e.id == decoded_jeha_id]
+            matching_exports = [e for e in matching_exports if e.id == jeha_id]
         if len(matching_exports) == 0:
             raise glx_exceptions.ObjectNotFound("Failed to find target history export")
 
@@ -375,13 +391,8 @@ class HistoryExportView:
 
         return jeha
 
-    def _history(self, trans, history_id):
-        if history_id is not None:
-            history = self.app.history_manager.get_accessible(
-                trans.security.decode_id(history_id), trans.user, current_history=trans.history
-            )
-        else:
-            history = trans.history
+    def _history(self, trans, history_id: int) -> model.History:
+        history = self.app.history_manager.get_accessible(history_id, trans.user, current_history=trans.history)
         return history
 
 
@@ -416,7 +427,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
                 "name",
                 "deleted",
                 "purged",
-                # 'count'
+                "count",
                 "url",
                 # TODO: why these?
                 "published",
@@ -480,9 +491,11 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             "size": lambda item, key, **context: int(item.disk_size),
             "nice_size": lambda item, key, **context: item.disk_nice_size,
             "state": self.serialize_history_state,
-            "url": lambda item, key, **context: self.url_for("history", id=self.app.security.encode_id(item.id)),
+            "url": lambda item, key, **context: self.url_for(
+                "history", id=self.app.security.encode_id(item.id), context=context
+            ),
             "contents_url": lambda item, key, **context: self.url_for(
-                "history_contents", history_id=self.app.security.encode_id(item.id)
+                "history_contents", history_id=self.app.security.encode_id(item.id), context=context
             ),
             "empty": lambda item, key, **context: (len(item.datasets) + len(item.dataset_collections)) <= 0,
             "count": lambda item, key, **context: len(item.datasets),
@@ -569,7 +582,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
                 state = states.QUEUED
             elif hda_state_counts[states.ERROR] > 0 or hda_state_counts[states.FAILED_METADATA] > 0:
                 state = states.ERROR
-            elif hda_state_counts[states.OK] == num_hdas:
+            elif (hda_state_counts[states.OK] + hda_state_counts[states.DEFERRED]) == num_hdas:
                 state = states.OK
 
         return state

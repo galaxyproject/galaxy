@@ -17,7 +17,7 @@
                 @open="onLoad" />
         </template>
         <template v-slot:buttons>
-            <b-btn size="sm" class="float-left" v-if="undoShow" @click="load()">
+            <b-btn v-if="undoShow" size="sm" class="float-left" @click="load()">
                 <div class="fa fa-caret-left mr-1" />
                 Back
             </b-btn>
@@ -30,8 +30,8 @@
                 size="sm"
                 class="float-right ml-1"
                 variant="primary"
-                @click="onOk"
-                :disabled="!hasValue">
+                :disabled="!hasValue"
+                @click="onOk">
                 Ok
             </b-btn>
         </template>

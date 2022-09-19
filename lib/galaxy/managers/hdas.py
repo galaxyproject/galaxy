@@ -11,6 +11,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Optional,
 )
 
 from sqlalchemy.orm.session import object_session
@@ -24,11 +25,18 @@ from galaxy.managers import (
     annotatable,
     base,
     datasets,
+    lddas,
     secured,
     taggable,
     users,
 )
+from galaxy.model.deferred import materializer_factory
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.schema.schema import DatasetSourceType
+from galaxy.schema.tasks import (
+    MaterializeDatasetInstanceTaskRequest,
+    RequestUser,
+)
 from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
@@ -61,13 +69,20 @@ class HDAManager(
     # TODO: move what makes sense into DatasetManager
     # TODO: which of these are common with LDDAs and can be pushed down into DatasetAssociationManager?
 
-    def __init__(self, app: MinimalManagerApp, user_manager: users.UserManager, tag_handler: GalaxyTagHandler):
+    def __init__(
+        self,
+        app: MinimalManagerApp,
+        user_manager: users.UserManager,
+        ldda_manager: lddas.LDDAManager,
+        tag_handler: GalaxyTagHandler,
+    ):
         """
         Set up and initialize other managers needed by hdas.
         """
         super().__init__(app)
         self.user_manager = user_manager
         self.tag_handler = tag_handler
+        self.ldda_manager = ldda_manager
 
     def get_owned_ids(self, object_ids, history=None):
         """Get owned IDs."""
@@ -75,7 +90,7 @@ class HDAManager(
         return self.list(filters=filters)
 
     # .... security and permissions
-    def is_accessible(self, hda, user, **kwargs):
+    def is_accessible(self, item: model.HistoryDatasetAssociation, user: Optional[model.User], **kwargs: Any) -> bool:
         """
         Override to allow owners (those that own the associated history).
         """
@@ -84,15 +99,17 @@ class HDAManager(
         #   I can not access that dataset even if it's in my history
         # if self.is_owner( hda, user, **kwargs ):
         #     return True
-        return super().is_accessible(hda, user, **kwargs)
+        return super().is_accessible(item, user, **kwargs)
 
-    def is_owner(self, hda, user, current_history=None, **kwargs):
+    def is_owner(self, item: model._HasTable, user: Optional[model.User], current_history=None, **kwargs: Any) -> bool:
         """
         Use history to see if current user owns HDA.
         """
         if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
             return True
-        history = hda.history
+        if not isinstance(item, model.HistoryDatasetAssociation):
+            raise TypeError('"item" must be of type HistoryDatasetAssociation.')
+        history = item.history
         if history is None:
             raise HistoryDatasetAssociationNoHistoryException
         # allow anonymous user to access current history
@@ -105,7 +122,9 @@ class HDAManager(
         return history.user == user
 
     # .... create and copy
-    def create(self, history=None, dataset=None, flush=True, **kwargs):
+    def create(
+        self, flush: bool = True, history=None, dataset=None, *args: Any, **kwargs: Any
+    ) -> model.HistoryDatasetAssociation:
         """
         Create a new hda optionally passing in it's history and dataset.
 
@@ -127,10 +146,33 @@ class HDAManager(
             self.session().flush()
         return hda
 
-    def copy(self, hda, history=None, hide_copy=False, flush=True, **kwargs):
+    def materialize(self, request: MaterializeDatasetInstanceTaskRequest) -> None:
+        request_user: RequestUser = request.user
+        materializer = materializer_factory(
+            True,  # attached...
+            object_store=self.app.object_store,
+            file_sources=self.app.file_sources,
+            sa_session=self.app.model.context,
+        )
+        user = self.user_manager.by_id(request_user.user_id)
+        if request.source == DatasetSourceType.hda:
+            dataset_instance = self.get_accessible(request.content, user)
+        else:
+            dataset_instance = self.ldda_manager.get_accessible(request.content, user)
+        history = self.app.history_manager.by_id(request.history_id)
+        new_hda = materializer.ensure_materialized(dataset_instance, target_history=history)
+        history.add_dataset(new_hda, set_hid=True)
+        self.session().flush()
+
+    def copy(
+        self, item: Any, history=None, hide_copy: bool = False, flush: bool = True, **kwargs: Any
+    ) -> model.HistoryDatasetAssociation:
         """
         Copy hda, including annotation and tags, add to history and return the given HDA.
         """
+        if not isinstance(item, model.HistoryDatasetAssociation):
+            raise TypeError()
+        hda = item
         copy = hda.copy(parent_id=kwargs.get("parent_id"), copy_hid=False, copy_tags=hda.tags, flush=flush)
         if hide_copy:
             copy.visible = False
@@ -159,7 +201,7 @@ class HDAManager(
         if self.app.config.enable_celery_tasks:
             from galaxy.celery.tasks import purge_hda
 
-            purge_hda.delay(hda_id=hda.id)
+            return purge_hda.delay(hda_id=hda.id)
         else:
             self._purge(hda, flush=flush)
 

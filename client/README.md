@@ -86,6 +86,14 @@ Sometimes you want to run your local UI against a remote Galaxy server. This is 
 
     CHANGE_ORIGIN=true GALAXY_URL="https://usegalaxy.org/" make client-dev-server
 
+## Running a Separate Server
+
+When developing the client it can be helpful to run a local server for the
+client to connect to, and run the client separately with one of the above
+commands. This command will run galaxy without building the client:
+
+    make skip-client
+
 ## Changing Styles/CSS
 
 Galaxy uses Sass for its styling, which is a superset of CSS that compiles down

@@ -1,7 +1,16 @@
 import copy
 import logging
+from typing import (
+    Dict,
+    List,
+    Optional,
+    Tuple,
+)
 
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    etree,
+)
 from galaxy.web import url_for
 from tool_shed.dependencies.tool import tag_attribute_handler
 from tool_shed.repository_types.util import (
@@ -96,7 +105,7 @@ class RepositoryDependencyAttributeHandler:
                 prior_installation_required = elem.get("prior_installation_required")
                 if asbool(prior_installation_required):
                     attributes["prior_installation_required"] = "True"
-                new_elem = xml_util.create_element("repository", attributes=attributes, sub_elements=sub_elements)
+                new_elem = _create_element("repository", attributes=attributes, sub_elements=sub_elements)
                 altered = True
             return altered, new_elem, error_message
         # From here on we're populating the toolshed and changeset_revision attributes if necessary.
@@ -200,3 +209,51 @@ class ToolDependencyAttributeHandler:
         root = tree.getroot()
         altered, new_root, error_message = tah.process_config(root, skip_actions_tags=False)
         return altered, new_root, error_message
+
+
+def _create_element(
+    tag: str,
+    attributes: Optional[Dict[str, str]] = None,
+    sub_elements: Optional[Dict[str, List[Tuple[str, str]]]] = None,
+) -> Optional[etree.Element]:
+    """
+    Create a new element whose tag is the value of the received tag, and whose attributes are all
+    key / value pairs in the received attributes and sub_elements.
+    """
+    if tag:
+        elem = etree.Element(tag)
+        if attributes:
+            # The received attributes is an odict to preserve ordering.
+            for k, attribute_value in attributes.items():
+                elem.set(k, attribute_value)
+        if sub_elements:
+            # The received attributes is an odict.  These handle information that tends to be
+            # long text including paragraphs (e.g., description and long_description.
+            for k, v in sub_elements.items():
+                # Don't include fields that are blank.
+                if v:
+                    if k == "packages":
+                        # The received sub_elements is an odict whose key is 'packages' and whose
+                        # value is a list of ( name, version ) tuples.
+                        for v_tuple in v:
+                            sub_elem = etree.SubElement(elem, "package")
+                            sub_elem_name, sub_elem_version = v_tuple
+                            sub_elem.set("name", sub_elem_name)
+                            sub_elem.set("version", sub_elem_version)
+                    elif isinstance(v, list):
+                        sub_elem = etree.SubElement(elem, k)
+                        # If v is a list, then it must be a list of tuples where the first
+                        # item is the tag and the second item is the text value.
+                        for v_tuple in v:
+                            if len(v_tuple) == 2:
+                                v_tag = v_tuple[0]
+                                v_text = v_tuple[1]
+                                # Don't include fields that are blank.
+                                if v_text:
+                                    v_elem = etree.SubElement(sub_elem, v_tag)
+                                    v_elem.text = v_text
+                    else:
+                        sub_elem = etree.SubElement(elem, k)
+                        sub_elem.text = v
+        return elem
+    return None

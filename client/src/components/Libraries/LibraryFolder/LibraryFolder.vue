@@ -2,23 +2,24 @@
     <CurrentUser v-slot="{ user }">
         <div>
             <FolderTopBar
+                :folder-contents="folderContents"
+                :include-deleted.sync="includeDeleted"
+                :folder_id="currentFolderId"
+                :selected="selected"
+                :metadata="folder_metadata"
+                :unselected="unselected"
+                :is-all-selected-mode="isAllSelectedMode"
                 @updateSearch="updateSearchValue($event)"
                 @refreshTable="refreshTable"
                 @refreshTableContent="refreshTableContent"
                 @fetchFolderContents="fetchFolderContents($event)"
                 @deleteFromTable="deleteFromTable"
                 @setBusy="setBusy($event)"
-                @newFolder="newFolder"
-                :folder-contents="folderContents"
-                :include_deleted="include_deleted"
-                :folder_id="current_folder_id"
-                :selected="selected"
-                :metadata="folder_metadata"
-                :unselected="unselected"
-                :is-all-selected-mode="isAllSelectedMode" />
+                @newFolder="newFolder" />
 
             <b-table
                 id="folder_list_body"
+                ref="folder_content_table"
                 striped
                 hover
                 :busy.sync="isBusy"
@@ -27,9 +28,9 @@
                 :per-page="perPage"
                 selectable
                 no-select-on-click
-                @row-clicked="onRowClick"
-                ref="folder_content_table"
-                show-empty>
+                show-empty
+                @sort-changed="onSort"
+                @row-clicked="onRowClick">
                 <template v-slot:empty>
                     <div v-if="isBusy" class="text-center my-2">
                         <b-spinner class="align-middle"></b-spinner>
@@ -46,24 +47,24 @@
                 <template v-slot:head(selected)="">
                     <font-awesome-icon
                         v-if="isAllSelectedMode && !isAllSelectedOnPage()"
-                        @click="toggleSelect"
                         class="select-checkbox cursor-pointer"
                         size="lg"
                         title="Check to select all datasets"
-                        icon="minus-square" />
+                        icon="minus-square"
+                        @click="toggleSelect" />
                     <font-awesome-icon
                         v-else
-                        @click="toggleSelect"
                         class="select-checkbox cursor-pointer"
                         size="lg"
                         title="Check to select all datasets"
-                        :icon="isAllSelectedOnPage() ? ['far', 'check-square'] : ['far', 'square']" />
+                        :icon="isAllSelectedOnPage() ? ['far', 'check-square'] : ['far', 'square']"
+                        @click="toggleSelect" />
                 </template>
                 <template v-slot:cell(selected)="row">
                     <font-awesome-icon
+                        v-if="!row.item.isNewFolder && !row.item.deleted"
                         class="select-checkbox lib-folder-checkbox"
                         size="lg"
-                        v-if="!row.item.isNewFolder && !row.item.deleted"
                         :icon="row.rowSelected ? ['far', 'check-square'] : ['far', 'square']" />
                 </template>
                 <!-- Name -->
@@ -71,15 +72,15 @@
                     <div v-if="row.item.editMode">
                         <textarea
                             v-if="row.item.isNewFolder"
-                            class="form-control"
-                            name="input_folder_name"
                             :ref="'name' + row.item.id"
                             v-model="row.item.name"
+                            class="form-control"
+                            name="input_folder_name"
                             rows="3" />
                         <textarea
                             v-else
-                            class="form-control"
                             :ref="'name' + row.item.id"
+                            class="form-control"
                             :value="row.item.name"
                             rows="3" />
                     </div>
@@ -110,19 +111,19 @@
                     <div v-if="row.item.editMode">
                         <textarea
                             v-if="row.item.isNewFolder"
-                            class="form-control input_folder_description"
                             :ref="'description' + row.item.id"
                             v-model="row.item.description"
+                            class="form-control input_folder_description"
                             rows="3"></textarea>
                         <textarea
                             v-else
-                            class="form-control input_folder_description"
                             :ref="'description' + row.item.id"
+                            class="form-control input_folder_description"
                             :value="row.item.description"
                             rows="3"></textarea>
                     </div>
                     <div v-else>
-                        <div class="description-field" v-if="getMessage(row.item)">
+                        <div v-if="getMessage(row.item)" class="description-field">
                             <div
                                 v-if="
                                     getMessage(row.item).length > maxDescriptionLength &&
@@ -134,7 +135,7 @@
                                     v-html="linkify(getMessage(row.item).substring(0, maxDescriptionLength))">
                                 </span>
                                 <span :title="getMessage(row.item)"> ...</span>
-                                <a class="more-text-btn" @click="expandMessage(row.item)" href="javascript:void(0)"
+                                <a class="more-text-btn" href="javascript:void(0)" @click="expandMessage(row.item)"
                                     >(more)</a
                                 >
                             </div>
@@ -159,11 +160,7 @@
                     </div>
                 </template>
                 <template v-slot:cell(update_time)="row">
-                    <UtcDate
-                        v-if="row.item.update_time"
-                        :date="row.item.update_time"
-                        custom-format="'YYYY-MM-DD- HH:mm a'"
-                        mode="elapsed" />
+                    <UtcDate v-if="row.item.update_time" :date="row.item.update_time" mode="elapsed" />
                 </template>
                 <template v-slot:cell(is_unrestricted)="row">
                     <font-awesome-icon v-if="row.item.is_unrestricted" title="Unrestricted dataset" icon="globe" />
@@ -181,9 +178,9 @@
                 <template v-slot:cell(buttons)="row">
                     <div v-if="row.item.editMode">
                         <button
-                            @click="row.item.isNewFolder ? createNewFolder(row.item) : saveChanges(row.item)"
                             class="primary-button btn-sm permission_folder_btn save_folder_btn"
-                            :title="'save ' + row.item.name">
+                            :title="'save ' + row.item.name"
+                            @click="row.item.isNewFolder ? createNewFolder(row.item) : saveChanges(row.item)">
                             <font-awesome-icon :icon="['far', 'save']" />
                             Save
                         </button>
@@ -198,12 +195,12 @@
                     <div v-else>
                         <b-button
                             v-if="row.item.can_manage && !row.item.deleted && row.item.type === 'folder'"
-                            @click="toggleEditMode(row.item)"
                             data-toggle="tooltip"
                             data-placement="top"
                             size="sm"
                             class="lib-btn permission_folder_btn edit_folder_btn"
-                            :title="'Edit ' + row.item.name">
+                            :title="'Edit ' + row.item.name"
+                            @click="toggleEditMode(row.item)">
                             <font-awesome-icon icon="pencil-alt" />
                             Edit
                         </b-button>
@@ -217,11 +214,11 @@
                             Manage
                         </b-button>
                         <button
-                            @click="undelete(row.item, folder_id)"
                             v-if="row.item.deleted"
                             :title="'Undelete ' + row.item.name"
                             class="lib-btn primary-button btn-sm undelete_dataset_btn"
-                            type="button">
+                            type="button"
+                            @click="undelete(row.item, folder_id)">
                             <font-awesome-icon icon="unlock" />
                             Undelete
                         </button>
@@ -242,8 +239,8 @@
                             :value="currentPage"
                             :total-rows="total_rows"
                             :per-page="perPage"
-                            @input="changePage"
-                            aria-controls="folder_list_body">
+                            aria-controls="folder_list_body"
+                            @input="changePage">
                         </b-pagination>
                     </b-col>
 
@@ -252,11 +249,11 @@
                             <tr>
                                 <td class="m-0 p-0">
                                     <b-form-input
-                                        class="pagination-input-field"
                                         id="paginationPerPage"
+                                        v-model="perPage"
+                                        class="pagination-input-field"
                                         autocomplete="off"
-                                        type="number"
-                                        v-model="perPage" />
+                                        type="number" />
                                 </td>
                                 <td class="text-muted ml-1 paginator-text">
                                     <span class="pagination-total-pages-text">per page, {{ total_rows }} total</span>
@@ -296,12 +293,21 @@ function initialFolderState() {
         unselected: [],
         expandedMessage: [],
         folderContents: [],
-        include_deleted: false,
-        search_text: "",
+        includeDeleted: false,
         isAllSelectedMode: false,
     };
 }
 export default {
+    components: {
+        FolderTopBar,
+        UtcDate,
+        FontAwesomeIcon,
+        CurrentUser,
+    },
+    beforeRouteUpdate(to, from, next) {
+        this.getFolder(to.params.folder_id, to.params.page);
+        next();
+    },
     props: {
         folder_id: {
             type: String,
@@ -313,18 +319,15 @@ export default {
             required: false,
         },
     },
-    components: {
-        FolderTopBar,
-        UtcDate,
-        FontAwesomeIcon,
-        CurrentUser,
-    },
     data() {
         return {
             ...initialFolderState(),
             ...{
-                currentPage: null,
-                current_folder_id: null,
+                currentPage: 1,
+                sortBy: "name",
+                sortDesc: false,
+                searchText: "",
+                currentFolderId: null,
                 error: null,
                 isBusy: false,
                 folder_metadata: {},
@@ -337,31 +340,50 @@ export default {
             },
         };
     },
+    watch: {
+        perPage() {
+            this.fetchFolderContents();
+        },
+        includeDeleted() {
+            this.fetchFolderContents();
+        },
+        sortBy() {
+            this.fetchFolderContents();
+        },
+        sortDesc() {
+            this.fetchFolderContents();
+        },
+    },
     created() {
         this.services = new Services({ root: this.root });
         this.getFolder(this.folder_id, this.page);
     },
     methods: {
         getFolder(folder_id, page) {
-            this.current_folder_id = folder_id;
+            this.currentFolderId = folder_id;
             this.currentPage = page;
             this.resetData();
-            this.fetchFolderContents(this.include_deleted);
+            this.fetchFolderContents();
         },
         resetData() {
             const data = initialFolderState();
             Object.keys(data).forEach((k) => (this[k] = data[k]));
         },
-        fetchFolderContents(include_deleted = false) {
-            this.include_deleted = include_deleted;
+        onSort(props) {
+            this.sortBy = props.sortBy;
+            this.sortDesc = props.sortDesc;
+        },
+        fetchFolderContents() {
             this.setBusy(true);
             this.services
                 .getFolderContents(
-                    this.current_folder_id,
-                    include_deleted,
+                    this.currentFolderId,
+                    this.includeDeleted,
+                    this.sortBy,
+                    this.sortDesc,
                     this.perPage,
                     (this.currentPage - 1) * this.perPage,
-                    this.search_text
+                    this.searchText
                 )
                 .then((response) => {
                     this.folderContents = response.folder_contents;
@@ -384,9 +406,9 @@ export default {
                 });
         },
         updateSearchValue(value) {
-            this.search_text = value;
+            this.searchText = value;
             this.folderContents = [];
-            this.fetchFolderContents(this.include_deleted);
+            this.fetchFolderContents();
         },
         selectAllRenderedRows() {
             this.$refs.folder_content_table.items.forEach((row, index) => {
@@ -406,7 +428,7 @@ export default {
             this.$refs.folder_content_table.refresh();
         },
         refreshTableContent() {
-            this.fetchFolderContents(this.include_deleted);
+            this.fetchFolderContents();
         },
         deleteFromTable(deletedItem) {
             this.folderContents = this.folderContents.filter((element) => {
@@ -488,9 +510,9 @@ export default {
         },
         navigateToPermission(element) {
             if (element.type === "file") {
-                return `/folders/${this.folder_id}/dataset/${element.id}/permissions`;
+                return `/libraries/folders/${this.folder_id}/dataset/${element.id}/permissions`;
             } else if (element.type === "folder") {
-                return `/folders/${element.id}/permissions`;
+                return `/libraries/folders/${element.id}/permissions`;
             }
         },
         getMessage(element) {
@@ -526,7 +548,7 @@ export default {
             } else {
                 this.services.newFolder(
                     {
-                        parent_id: this.current_folder_id,
+                        parent_id: this.currentFolderId,
                         name: folder.name,
                         description: folder.description,
                     },
@@ -627,17 +649,6 @@ export default {
                 Toast.info("Nothing has changed.");
             }
         },
-    },
-    watch: {
-        perPage: {
-            handler: function (value) {
-                this.fetchFolderContents(this.include_deleted);
-            },
-        },
-    },
-    beforeRouteUpdate(to, from, next) {
-        this.getFolder(to.params.folder_id, to.params.page);
-        next();
     },
 };
 </script>

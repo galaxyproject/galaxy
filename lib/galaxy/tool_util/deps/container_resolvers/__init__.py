@@ -4,9 +4,16 @@ from abc import (
     abstractmethod,
     abstractproperty,
 )
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
+
+if TYPE_CHECKING:
+    from beaker.cache import Cache
 
 
 class ResolutionCache(Bunch):
@@ -15,6 +22,8 @@ class ResolutionCache(Bunch):
     This should not be assumed to be thread safe - resolution using a given cache should all occur
     one resolution at a time in a single thread.
     """
+
+    mulled_resolution_cache: Optional["Cache"] = None
 
 
 class ContainerResolver(Dictifiable, metaclass=ABCMeta):

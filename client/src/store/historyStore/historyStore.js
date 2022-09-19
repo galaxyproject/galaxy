@@ -32,7 +32,14 @@ const mutations = {
         Vue.delete(state.histories, doomed.id);
     },
     setHistories(state, newHistories = []) {
+        const currentHistoryId = state.currentHistoryId;
+        const currentHistory = state.histories[currentHistoryId];
         const newMap = newHistories.reduce((acc, h) => ({ ...acc, [h.id]: h }), {});
+        if (currentHistory) {
+            // The incoming history list contains less information than the current history
+            // so we restore the existing current history since it gets updated regularly anyway
+            newMap[currentHistoryId] = currentHistory;
+        }
         Vue.set(state, "histories", newMap);
     },
     setHistoriesLoading(state, isLoading) {
@@ -75,38 +82,36 @@ const getters = {
     },
 };
 
-// Holds promises for in-flight loads
-const promises = {
-    load: null,
-    byId: new Map(),
-};
+// flags to keep track of loading states
+const isLoadingHistory = new Map();
+let isLoadingHistories = false;
 
 const actions = {
     async copyHistory({ dispatch }, { history, name, copyAll }) {
         const newHistory = await cloneHistory(history, name, copyAll);
-        dispatch("selectHistory", newHistory);
+        return dispatch("selectHistory", newHistory);
     },
     async createNewHistory({ dispatch }) {
         // create history, then select it as current at the same time
         const newHistory = await createNewHistory();
-        dispatch("selectHistory", newHistory);
+        return dispatch("selectHistory", newHistory);
     },
     async deleteHistory({ dispatch, commit, getters }, { history, purge = false }) {
         const deletedHistory = await deleteHistoryById(history.id, purge);
         commit("deleteHistory", deletedHistory);
         if (getters.firstHistoryId) {
-            await dispatch("setCurrentHistoryId", getters.firstHistoryId);
+            return dispatch("setCurrentHistory", getters.firstHistoryId);
         } else {
-            await dispatch("createNewHistory");
+            return dispatch("createNewHistory");
         }
     },
-    loadCurrentHistory({ dispatch }) {
-        getCurrentHistoryFromServer().then((history) => dispatch("selectHistory", history));
+    async loadCurrentHistory({ dispatch }) {
+        return getCurrentHistoryFromServer().then((history) => dispatch("selectHistory", history));
     },
     loadHistories({ commit }) {
-        if (!promises.load) {
+        if (!isLoadingHistories) {
             commit("setHistoriesLoading", true);
-            promises.load = getHistoryList()
+            isLoadingHistories = getHistoryList()
                 .then((list) => {
                     commit("setHistories", list);
                 })
@@ -114,31 +119,24 @@ const actions = {
                     console.warn("loadHistories error", err);
                 })
                 .finally(() => {
-                    promises.load = null;
+                    isLoadingHistories = false;
                     commit("setHistoriesLoading", false);
                 });
         }
     },
-    loadHistoryById({ commit, getters, dispatch }, id) {
-        if (!promises.byId.has(id)) {
-            // immediately set if we have something current
-            const existing = getters.getHistoryById(id);
-            if (existing) {
-                commit("setHistory", existing);
-            }
-
-            // but also check for updates
+    loadHistoryById({ dispatch }, id) {
+        if (!isLoadingHistory.has(id)) {
             const p = getHistoryById(id)
                 .then((history) => {
-                    dispatch("selectHistory", history);
+                    dispatch("setHistory", history);
                 })
                 .catch((err) => {
                     console.warn("loadHistoryById error", id, err);
                 })
                 .finally(() => {
-                    promises.byId.delete(id);
+                    isLoadingHistory.delete(id);
                 });
-            promises.byId.set(id, p);
+            isLoadingHistory.set(id, p);
         }
     },
     resetHistory({ commit }) {
@@ -153,14 +151,9 @@ const actions = {
         commit("setHistory", history);
         commit("setCurrentHistoryId", history.id);
     },
-    async setCurrentHistoryId({ commit, dispatch, getters }, id) {
-        // Need to do 2 requests because apparently the response from "setHistory"
-        // can't be twisted to be the same as a normal lookup
-        if (id !== getters.currentHistoryId) {
-            commit("setCurrentHistoryId", id);
-            const changedHistory = await setCurrentHistoryOnServer(id);
-            dispatch("loadHistoryById", changedHistory.id);
-        }
+    async setCurrentHistory({ dispatch, getters }, id) {
+        const changedHistory = await setCurrentHistoryOnServer(id);
+        return dispatch("selectHistory", changedHistory);
     },
     setHistory({ commit }, history) {
         commit("setHistory", history);

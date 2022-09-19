@@ -161,6 +161,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job_wrapper,
             include_metadata=False,
             modify_command_for_container=False,
+            stream_stdout_stderr=True,
         ):
             return
 
@@ -922,11 +923,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         if job_id is None:
             self.put(job_wrapper)
             return
-        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
-        ajs.job_id = str(job_id)
+        ajs = AsynchronousJobState(
+            files_dir=job_wrapper.working_directory,
+            job_wrapper=job_wrapper,
+            job_id=job_id,
+            job_destination=job_wrapper.job_destination,
+        )
         ajs.command_line = job.command_line
-        ajs.job_wrapper = job_wrapper
-        ajs.job_destination = job_wrapper.job_destination
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(
                 "({}/{}) is still in {} state, adding to the runner monitor queue".format(

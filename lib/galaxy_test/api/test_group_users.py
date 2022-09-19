@@ -3,8 +3,8 @@ from typing import (
     Optional,
 )
 
+from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.populators import DatasetPopulator
-from ._framework import ApiTestCase
 
 
 class GroupUsersApiTestCase(ApiTestCase):
@@ -41,7 +41,7 @@ class GroupUsersApiTestCase(ApiTestCase):
         response = self._get(f"groups/{encoded_group_id}/users/{encoded_user_id}", admin=True)
         self._assert_status_code_is(response, 200)
         group_user = response.json()
-        self._assert_valid_group_user(group_user)
+        self._assert_valid_group_user(group_user, assert_id=encoded_user_id)
 
     def test_show_only_admin(self):
         encoded_group_id = "any-group-id"
@@ -69,7 +69,7 @@ class GroupUsersApiTestCase(ApiTestCase):
         self._assert_status_code_is_ok(update_response)
         group_user = update_response.json()
         self._assert_valid_group_user(group_user, assert_id=encoded_user_id)
-        assert group_user["url"] == f"/api/groups/{encoded_group_id}/users/{encoded_user_id}"
+        assert group_user["url"] == f"/api/groups/{encoded_group_id}/user/{encoded_user_id}"
 
     def test_update_only_admin(self):
         encoded_group_id = "any-group-id"

@@ -9,7 +9,7 @@ on:
       - 'client/**'
       - '.github/workflows/jest.yaml'
 concurrency:
-  group: client-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   client-unit-test:
@@ -18,9 +18,9 @@ jobs:
       matrix:
         node: [16]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Setup node
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node}}
         cache: 'yarn'

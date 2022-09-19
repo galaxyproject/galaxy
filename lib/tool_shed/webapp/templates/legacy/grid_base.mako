@@ -58,7 +58,7 @@
         config.addInitialization(function() {
             var legacyGridViewConfig = ${ h.dumps( self.get_grid_config( embedded=embedded, insert=insert ) ) };
             console.log("grid_base.mako, javascript_app", legacyGridViewConfig);
-            new window.bundleEntries.LegacyGridView(legacyGridViewConfig);
+            new window.bundleToolshed.LegacyGridView(legacyGridViewConfig);
         });
     </script>
 </%def>

@@ -2,18 +2,17 @@
     <div class="dataset-actions mb-1">
         <div class="clearfix">
             <div class="btn-group float-left">
-                <b-button v-if="showError" class="px-1" title="Error" size="sm" variant="link" @click.stop="onError">
-                    <span class="fa fa-bug" />
-                </b-button>
                 <b-button
-                    v-if="showDownloads"
-                    class="download-btn px-1"
-                    title="Download"
+                    v-if="showError"
+                    class="px-1"
+                    title="Error"
                     size="sm"
                     variant="link"
-                    @click.stop="onDownload">
-                    <span class="fa fa-save" />
+                    :href="reportErrorUrl"
+                    @click.prevent.stop="onError">
+                    <span class="fa fa-bug" />
                 </b-button>
+                <dataset-download v-if="showDownloads" :item="item" @on-download="onDownload" />
                 <b-button
                     v-if="showDownloads"
                     class="px-1"
@@ -29,7 +28,8 @@
                     title="Dataset Details"
                     size="sm"
                     variant="link"
-                    @click.stop="onInfo">
+                    :href="showDetailsUrl"
+                    @click.prevent.stop="onInfo">
                     <span class="fa fa-info-circle" />
                 </b-button>
                 <b-button
@@ -38,7 +38,8 @@
                     title="Run Job Again"
                     size="sm"
                     variant="link"
-                    @click.stop="onRerun">
+                    :href="rerunUrl"
+                    @click.prevent.stop="onRerun">
                     <span class="fa fa-redo" />
                 </b-button>
                 <b-button
@@ -47,57 +48,45 @@
                     title="Visualize"
                     size="sm"
                     variant="link"
-                    @click.stop="onVisualize">
+                    :href="visualizeUrl"
+                    @click.prevent.stop="onVisualize">
                     <span class="fa fa-bar-chart-o" />
+                </b-button>
+                <b-button
+                    v-if="showHighlight"
+                    class="px-1"
+                    title="Show Inputs for this item"
+                    size="sm"
+                    variant="link"
+                    @click.stop="onHighlight">
+                    <span class="fa fa-sitemap" />
                 </b-button>
                 <b-button v-if="showRerun" class="px-1" title="Help" size="sm" variant="link" @click.stop="onRerun">
                     <span class="fa fa-question" />
                 </b-button>
             </div>
-            <div class="btn-group float-right">
-                <b-button
-                    class="px-1"
-                    title="Edit Tags"
-                    size="sm"
-                    variant="link"
-                    :pressed="showTags"
-                    @click="onToggleTags">
-                    <span class="fa fa-tags" />
-                </b-button>
-            </div>
-        </div>
-        <div v-if="showTags" class="mb-2">
-            <StatelessTags class="tags" v-model="tags" @input="onTags" />
         </div>
     </div>
 </template>
 
 <script>
-import { StatelessTags } from "components/Tags";
-import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
-import { prependPath } from "utils/redirect";
 import { copy as sendToClipboard } from "utils/clipboard";
-import { absPath } from "utils/redirect";
-import { updateContentFields } from "components/History/model/queries";
+import { absPath, prependPath } from "utils/redirect.js";
+import { downloadUrlMixin } from "./mixins.js";
+import DatasetDownload from "./DatasetDownload";
+import { iframeAdd } from "components/plugins/legacyNavigation";
 
 export default {
-    mixins: [legacyNavigationMixin],
     components: {
-        StatelessTags,
+        DatasetDownload,
     },
+    mixins: [downloadUrlMixin],
     props: {
         item: { type: Object, required: true },
-    },
-    data() {
-        return {
-            showTags: false,
-            tags: this.item.tags,
-        };
+        showHighlight: { type: Boolean, default: false },
+        itemUrls: { type: Object, required: true },
     },
     computed: {
-        downloadUrl() {
-            return prependPath(`api/datasets/${this.item.id}/display?to_ext=${this.item.extension}`);
-        },
         showDownloads() {
             return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);
         },
@@ -119,40 +108,45 @@ export default {
             // TODO: Check hasViz, if visualizations are activated in the config
             return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);
         },
+        reportErrorUrl() {
+            return prependPath(this.itemUrls.reportError);
+        },
+        showDetailsUrl() {
+            return prependPath(this.itemUrls.showDetails);
+        },
+        rerunUrl() {
+            return prependPath(this.itemUrls.rerun);
+        },
+        visualizeUrl() {
+            return prependPath(this.itemUrls.visualize);
+        },
     },
     methods: {
         onCopyLink() {
             const msg = this.localize("Link is copied to your clipboard");
             sendToClipboard(absPath(this.downloadUrl), msg);
         },
-        onDownload() {
-            window.location.href = this.downloadUrl;
+        onDownload(resource) {
+            window.location.href = resource;
         },
         onError() {
-            this.backboneRoute("datasets/error", { dataset_id: this.item.id });
+            this.$router.push(this.itemUrls.reportError);
         },
         onInfo() {
-            this.backboneRoute(`datasets/${this.item.id}/details`);
+            this.$router.push(this.itemUrls.showDetails);
         },
         onRerun() {
-            this.backboneRoute(`root?job_id=${this.item.creating_job}`);
-        },
-        onTags() {
-            updateContentFields(this.item, { tags: this.tags });
-        },
-        onToggleTags() {
-            this.showTags = !this.showTags;
+            this.$router.push(`/root?job_id=${this.item.creating_job}`);
         },
         onVisualize() {
-            const path = `visualizations?dataset_id=${this.item.id}`;
-            const redirectParams = {
-                path: path,
-                title: "Dataset details",
-                tryIframe: false,
-            };
-            if (!this.iframeAdd(redirectParams)) {
-                this.backboneRoute(path);
-            }
+            iframeAdd({
+                path: this.itemUrls.visualize,
+                title: `Visualization of ${this.item.name || ""}`,
+                $router: this.$router,
+            });
+        },
+        onHighlight() {
+            this.$emit("toggleHighlights");
         },
     },
 };

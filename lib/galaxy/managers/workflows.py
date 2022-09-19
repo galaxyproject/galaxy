@@ -9,6 +9,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
 )
 
 from gxformat2 import (
@@ -17,10 +18,21 @@ from gxformat2 import (
     ImportOptions,
     python_to_workflow,
 )
+from gxformat2.abstract import from_dict
+from gxformat2.cytoscape import to_cytoscape
+from gxformat2.yaml import ordered_dump
 from pydantic import BaseModel
-from sqlalchemy import and_
+from sqlalchemy import (
+    and_,
+    desc,
+    false,
+    or_,
+    true,
+)
 from sqlalchemy.orm import (
+    aliased,
     joinedload,
+    Query,
     subqueryload,
 )
 
@@ -31,7 +43,18 @@ from galaxy import (
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.managers import sharable
+from galaxy.managers.base import decode_id
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.executables import artifact_class
+from galaxy.model import StoredWorkflow
+from galaxy.model.index_filter_util import (
+    append_user_filter,
+    raw_text_column_filter,
+    tag_filter,
+    text_column_filter,
+)
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.schema.schema import WorkflowIndexQueryPayload
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.parameters import (
     params_to_incoming,
@@ -48,7 +71,13 @@ from galaxy.util.json import (
     safe_loads,
 )
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.search import (
+    FilteredTerm,
+    parse_filters_structured,
+    RawTextTerm,
+)
 from galaxy.web import url_for
+from galaxy.work.context import WorkRequestContext
 from galaxy.workflow.modules import (
     is_tool_module_type,
     module_factory,
@@ -63,10 +92,19 @@ from galaxy.workflow.refactor.schema import (
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.resources import get_resource_mapper_function
 from galaxy.workflow.steps import attach_ordered_steps
-from .base import decode_id
-from .executables import artifact_class
 
 log = logging.getLogger(__name__)
+
+
+INDEX_SEARCH_FILTERS = {
+    "name": "name",
+    "tag": "tag",
+    "n": "name",
+    "t": "tag",
+    "user": "user",
+    "u": "user",
+    "is": "is",
+}
 
 
 class WorkflowsManager(sharable.SharableModelManager):
@@ -83,7 +121,115 @@ class WorkflowsManager(sharable.SharableModelManager):
         super().__init__(app)
         self.app = app
 
-    def get_stored_workflow(self, trans, workflow_id, by_stored_id=True):
+    def index_query(
+        self, trans: ProvidesUserContext, payload: WorkflowIndexQueryPayload, include_total_count: bool = False
+    ) -> Tuple[Query, Optional[int]]:
+        show_published = payload.show_published
+        show_hidden = payload.show_hidden
+        show_deleted = payload.show_deleted
+        show_shared = payload.show_shared
+
+        if show_shared is None:
+            show_shared = not show_hidden and not show_deleted
+
+        if show_shared and show_deleted:
+            message = "show_shared and show_deleted cannot both be specified as true"
+            raise exceptions.RequestParameterInvalidException(message)
+        if show_shared and show_hidden:
+            message = "show_shared and show_hidden cannot both be specified as true"
+            raise exceptions.RequestParameterInvalidException(message)
+
+        filters = [
+            model.StoredWorkflow.user == trans.user,
+        ]
+        user = trans.user
+        if user and show_shared:
+            filters.append(model.StoredWorkflowUserShareAssociation.user == user)
+
+        if show_published or user is None and show_published is None:
+            filters.append(model.StoredWorkflow.published == true())
+
+        query = trans.sa_session.query(model.StoredWorkflow)
+        if show_shared:
+            query = query.outerjoin(model.StoredWorkflow.users_shared_with)
+        query = query.outerjoin(model.StoredWorkflow.tags)
+
+        latest_workflow_load = joinedload("latest_workflow")
+        if not payload.skip_step_counts:
+            latest_workflow_load = latest_workflow_load.undefer("step_count")
+        latest_workflow_load = latest_workflow_load.lazyload("steps")
+
+        query = query.options(joinedload(model.StoredWorkflow.annotations))
+        query = query.options(latest_workflow_load)
+        query = query.filter(or_(*filters))
+        query = query.filter(model.StoredWorkflow.table.c.hidden == (true() if show_hidden else false()))
+        query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
+        if payload.search:
+            search_query = payload.search
+            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+
+            def w_tag_filter(term_text: str, quoted: bool):
+                nonlocal query
+                alias = aliased(model.StoredWorkflowTagAssociation)
+                query = query.outerjoin(model.StoredWorkflow.tags.of_type(alias))
+                return tag_filter(alias, term_text, quoted)
+
+            def name_filter(term):
+                return text_column_filter(model.StoredWorkflow.name, term)
+
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
+                    if key == "tag":
+                        tf = w_tag_filter(term.text, term.quoted)
+                        query = query.filter(tf)
+                    elif key == "name":
+                        query = query.filter(name_filter(term))
+                    elif key == "user":
+                        query = append_user_filter(query, model.StoredWorkflow, term)
+                    elif key == "is":
+                        if q == "published":
+                            query = query.filter(model.StoredWorkflow.published == true())
+                        elif q == "shared_with_me":
+                            if not show_shared:
+                                message = "Can only use tag is:shared_with_me if show_shared parameter also true."
+                                raise exceptions.RequestParameterInvalidException(message)
+                            query = query.filter(model.StoredWorkflowUserShareAssociation.user == user)
+                elif isinstance(term, RawTextTerm):
+                    tf = w_tag_filter(term.text, False)
+                    alias = aliased(model.User)
+                    query = query.outerjoin(model.StoredWorkflow.user.of_type(alias))
+                    query = query.filter(
+                        raw_text_column_filter(
+                            [
+                                model.StoredWorkflow.name,
+                                tf,
+                                alias.username,
+                            ],
+                            term,
+                        )
+                    )
+        if include_total_count:
+            total_matches = query.count()
+        else:
+            total_matches = None
+        if payload.sort_by is None:
+            if user:
+                query = query.order_by(desc(model.StoredWorkflow.user == user))
+            query = query.order_by(desc(model.StoredWorkflow.table.c.update_time))
+        else:
+            sort_column = getattr(model.StoredWorkflow, payload.sort_by)
+            if payload.sort_desc:
+                sort_column = sort_column.desc()
+            query = query.order_by(sort_column)
+        if payload.limit is not None:
+            query = query.limit(payload.limit)
+        if payload.offset is not None:
+            query = query.offset(payload.offset)
+        return query, total_matches
+
+    def get_stored_workflow(self, trans, workflow_id, by_stored_id=True) -> StoredWorkflow:
         """Use a supplied ID (UUID or encoded stored workflow ID) to find
         a workflow.
         """
@@ -96,19 +242,19 @@ class WorkflowsManager(sharable.SharableModelManager):
                     trans.app.model.Workflow.uuid == workflow_uuid,
                 )
             )
-        elif by_stored_id:
-            workflow_id = decode_id(self.app, workflow_id)
-            workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
-                trans.app.model.StoredWorkflow.id == workflow_id
-            )
         else:
-            workflow_id = decode_id(self.app, workflow_id)
-            workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
-                and_(
-                    trans.app.model.StoredWorkflow.id == trans.app.model.Workflow.stored_workflow_id,
-                    trans.app.model.Workflow.id == workflow_id,
+            workflow_id = workflow_id if isinstance(workflow_id, int) else decode_id(self.app, workflow_id)
+            if by_stored_id:
+                workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
+                    trans.app.model.StoredWorkflow.id == workflow_id
                 )
-            )
+            else:
+                workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
+                    and_(
+                        trans.app.model.StoredWorkflow.id == trans.app.model.Workflow.stored_workflow_id,
+                        trans.app.model.Workflow.id == workflow_id,
+                    )
+                )
         stored_workflow = workflow_query.options(
             joinedload("annotations"),
             joinedload("tags"),
@@ -131,7 +277,7 @@ class WorkflowsManager(sharable.SharableModelManager):
         stored_workflow = self.get_stored_workflow(trans, workflow_id, by_stored_id=by_stored_id)
 
         # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin and not stored_workflow.published:
+        if stored_workflow.user != trans.user and not trans.user_is_admin and not stored_workflow.importable:
             if (
                 trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation)
                 .filter_by(user=trans.user, stored_workflow=stored_workflow)
@@ -222,7 +368,9 @@ class WorkflowsManager(sharable.SharableModelManager):
         return workflow_invocation
 
     def get_invocation_report(self, trans, invocation_id, **kwd):
-        decoded_workflow_invocation_id = trans.security.decode_id(invocation_id)
+        decoded_workflow_invocation_id = (
+            trans.security.decode_id(invocation_id) if isinstance(invocation_id, str) else invocation_id
+        )
         workflow_invocation = self.get_invocation(trans, decoded_workflow_invocation_id)
         generator_plugin_type = kwd.get("generator_plugin_type")
         runtime_report_config_json = kwd.get("runtime_report_config_json")
@@ -286,7 +434,7 @@ class WorkflowsManager(sharable.SharableModelManager):
 
     def build_invocations_query(
         self,
-        trans,
+        trans: ProvidesUserContext,
         stored_workflow_id=None,
         history_id=None,
         job_id=None,
@@ -296,7 +444,7 @@ class WorkflowsManager(sharable.SharableModelManager):
         offset=None,
         sort_by=None,
         sort_desc=None,
-    ):
+    ) -> Tuple[Query, int]:
         """Get invocations owned by the current user."""
         sa_session = trans.sa_session
         invocations_query = sa_session.query(model.WorkflowInvocation)
@@ -338,19 +486,6 @@ class WorkflowsManager(sharable.SharableModelManager):
         ]
         return invocations, total_matches
 
-    def serialize_workflow_invocation(self, invocation, **kwd):
-        app = self.app
-        view = kwd.get("view", "element")
-        step_details = util.string_as_bool(kwd.get("step_details", False))
-        legacy_job_state = util.string_as_bool(kwd.get("legacy_job_state", False))
-        as_dict = invocation.to_dict(view, step_details=step_details, legacy_job_state=legacy_job_state)
-        return app.security.encode_all_ids(as_dict, recursive=True)
-
-    def serialize_workflow_invocations(self, invocations, **kwd):
-        if "view" not in kwd:
-            kwd["view"] = "collection"
-        return list(map(lambda i: self.serialize_workflow_invocation(i, **kwd), invocations))
-
 
 CreatedWorkflow = namedtuple("CreatedWorkflow", ["stored_workflow", "workflow", "missing_tools"])
 
@@ -384,6 +519,21 @@ class WorkflowContentsManager(UsesAnnotations):
         if not isinstance(dict_or_raw_description, RawWorkflowDescription):
             dict_or_raw_description = RawWorkflowDescription(dict_or_raw_description)
         return dict_or_raw_description
+
+    def read_workflow_from_path(self, app, user, path, allow_in_directory=None):
+        trans = WorkRequestContext(app=self.app, user=user)
+
+        as_dict = {"src": "from_path", "path": path}
+        workflow_class, as_dict, object_id = artifact_class(trans, as_dict, allow_in_directory=allow_in_directory)
+        assert workflow_class == "GalaxyWorkflow"
+        # Format 2 Galaxy workflow.
+        galaxy_interface = Format2ConverterGalaxyInterface()
+        import_options = ImportOptions()
+        import_options.deduplicate_subworkflows = True
+        as_dict = python_to_workflow(as_dict, galaxy_interface, workflow_directory=None, import_options=import_options)
+        raw_description = RawWorkflowDescription(as_dict, path)
+        created_workflow = self.build_workflow_from_raw_description(trans, raw_description, WorkflowCreateOptions())
+        return created_workflow.workflow
 
     def normalize_workflow_format(self, trans, as_dict):
         """Process incoming workflow descriptions for consumption by other methods.
@@ -660,11 +810,35 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def _sync_stored_workflow(self, trans, stored_workflow):
         workflow_path = stored_workflow.from_path
+        self.store_workflow_to_path(workflow_path, stored_workflow, stored_workflow.latest_workflow, trans=trans)
+
+    def store_workflow_artifacts(self, directory, filename_base, workflow, **kwd):
+        modern_workflow_path = os.path.join(directory, f"{filename_base}.gxwf.yml")
+        legacy_workflow_path = os.path.join(directory, f"{filename_base}.ga")
+        abstract_cwl_workflow_path = os.path.join(directory, f"{filename_base}.abstract.cwl")
+        for path in [legacy_workflow_path, modern_workflow_path, abstract_cwl_workflow_path]:
+            self.app.workflow_contents_manager.store_workflow_to_path(path, workflow.stored_workflow, workflow, **kwd)
+        try:
+            cytoscape_path = os.path.join(directory, f"{filename_base}.html")
+            to_cytoscape(modern_workflow_path, cytoscape_path)
+        except Exception:
+            # completely optional and currently broken so ignore...
+            pass
+
+    def store_workflow_to_path(self, workflow_path, stored_workflow, workflow, **kwd):
+        trans = kwd.get("trans")
+        if trans is None:
+            trans = WorkRequestContext(app=self.app, user=kwd.get("user"), history=kwd.get("history"))
+
         workflow = stored_workflow.latest_workflow
         with open(workflow_path, "w") as f:
             if workflow_path.endswith(".ga"):
                 wf_dict = self._workflow_to_dict_export(trans, stored_workflow, workflow=workflow)
                 json.dump(wf_dict, f, indent=4)
+            elif workflow_path.endswith(".abstract.cwl"):
+                wf_dict = self._workflow_to_dict_export(trans, stored_workflow, workflow=workflow)
+                abstract_dict = from_dict(wf_dict)
+                ordered_dump(abstract_dict, f)
             else:
                 wf_dict = self._workflow_to_dict_export(trans, stored_workflow, workflow=workflow)
                 wf_dict = from_galaxy_native(wf_dict, None, json_wrapper=True)
@@ -920,7 +1094,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "outputs": module.get_all_outputs(),
                 "config_form": config_form,
                 "annotation": annotation_str,
-                "post_job_actions": {},
+                "post_job_actions": module.get_post_job_actions({}),
                 "uuid": str(step.uuid) if step.uuid else None,
                 "workflow_outputs": [],
             }
@@ -936,12 +1110,12 @@ class WorkflowContentsManager(UsesAnnotations):
 
                 def callback(input, prefixed_name, **kwargs):
                     if isinstance(input, DataToolParameter) or isinstance(input, DataCollectionToolParameter):
-                        data_input_names[prefixed_name] = True
-                        multiple_input[prefixed_name] = input.multiple
+                        data_input_names[prefixed_name] = True  # noqa: B023
+                        multiple_input[prefixed_name] = input.multiple  # noqa: B023
                         if isinstance(input, DataToolParameter):
-                            input_connections_type[input.name] = "dataset"
+                            input_connections_type[input.name] = "dataset"  # noqa: B023
                         if isinstance(input, DataCollectionToolParameter):
-                            input_connections_type[input.name] = "dataset_collection"
+                            input_connections_type[input.name] = "dataset_collection"  # noqa: B023
 
                 visit_input_values(module.tool.inputs, module.state.inputs, callback)
                 # post_job_actions
@@ -1243,7 +1417,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
                 def callback(input, prefixed_name, **kwargs):
                     if isinstance(input, DataToolParameter) or isinstance(input, DataCollectionToolParameter):
-                        data_input_names[prefixed_name] = True
+                        data_input_names[prefixed_name] = True  # noqa: B023
 
                 # FIXME: this updates modules silently right now; messages from updates should be provided.
                 module.check_and_update_state()

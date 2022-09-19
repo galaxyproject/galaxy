@@ -7,7 +7,7 @@
         <pre v-if="miscInfo"><code v-html="miscInfo"/></pre>
         <pre v-if="peek"><code v-html="peek"/></pre>
         <div v-if="node && node.elements && node.elements.length" :class="{ 'ml-3': !skipHead }">
-            <CollectionNode v-for="child in node.elements" :node="child" :key="child.id" />
+            <CollectionNode v-for="child in node.elements" :key="child.id" :node="child" />
         </div>
     </div>
 </template>

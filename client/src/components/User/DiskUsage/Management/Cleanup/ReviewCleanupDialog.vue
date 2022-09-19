@@ -1,5 +1,11 @@
 <template>
-    <b-modal id="review-cleanup-dialog" title-tag="h2" centered @show="onShowModal" v-model="showDialog" static>
+    <b-modal
+        id="review-cleanup-dialog"
+        v-model="showDialog"
+        title-tag="h2"
+        :static="modalStatic"
+        centered
+        @show="onShowModal">
         <template v-slot:modal-title>
             {{ title }}
             <span class="text-primary h3">{{ totalItems }}<span v-if="rowLimitReached">+</span> items</span>
@@ -18,24 +24,24 @@
             :per-page="perPage"
             :current-page="currentPage"
             :busy="isBusy"
-            @sort-changed="onSort"
             hover
             no-local-sorting
             no-provider-filtering
             sticky-header="50vh"
-            data-test-id="review-table">
+            data-test-id="review-table"
+            @sort-changed="onSort">
             <template v-slot:head(selected)>
                 <b-form-checkbox
                     v-model="allSelected"
                     :indeterminate="indeterminate"
-                    @change="toggleSelectAll"
-                    data-test-id="select-all-checkbox" />
+                    data-test-id="select-all-checkbox"
+                    @change="toggleSelectAll" />
             </template>
             <template v-slot:cell(selected)="data">
                 <b-form-checkbox
+                    :key="data.index"
                     v-model="selectedItems"
                     :checked="allSelected"
-                    :key="data.index"
                     :value="data.item"></b-form-checkbox>
             </template>
             <template v-slot:cell(update_time)="data">
@@ -46,9 +52,9 @@
             <span v-if="rowLimitReached" class="font-italic">{{ rowLimitReachedText }}</span>
             <b-pagination v-if="hasPages" v-model="currentPage" :total-rows="totalRows" :per-page="perPage" />
             <b-button
+                v-b-modal.confirmation-modal
                 :disabled="!hasItemsSelected"
                 :variant="deleteButtonVariant"
-                v-b-modal.confirmation-modal
                 class="mx-2"
                 data-test-id="delete-button">
                 {{ permanentlyDeleteText }} {{ deleteItemsText }}
@@ -62,10 +68,10 @@
             :ok-title="permanentlyDeleteText"
             :ok-variant="confirmButtonVariant"
             :ok-disabled="!confirmChecked"
-            @show="resetConfirmationModal"
-            @ok="onConfirmCleanupSelectedItems"
             static
-            centered>
+            centered
+            @show="resetConfirmationModal"
+            @ok="onConfirmCleanupSelectedItems">
             <b-form-checkbox id="confirm-delete-checkbox" v-model="confirmChecked" data-test-id="agreement-checkbox">
                 {{ agreementText }}
             </b-form-checkbox>
@@ -98,9 +104,10 @@ export default {
             type: Boolean,
             required: false,
         },
-    },
-    created() {
-        this.showDialog = this.show;
+        modalStatic: {
+            type: Boolean,
+            required: false,
+        },
     },
     data() {
         return {
@@ -142,6 +149,73 @@ export default {
             agreementText: _l("I understand that once I delete the items, they cannot be recovered."),
             isBusy: false,
         };
+    },
+    computed: {
+        /** @returns {Number} */
+        selectedItemCount() {
+            return this.selectedItems.length;
+        },
+        /** @returns {Boolean} */
+        hasItemsSelected() {
+            return this.selectedItems.length > 0;
+        },
+        /** @returns {Boolean} */
+        hasPages() {
+            return this.totalRows > this.perPage;
+        },
+        /** @returns {String} */
+        title() {
+            return this.operation ? this.operation.name : "";
+        },
+        /** @returns {String} */
+        confirmationTitle() {
+            return `Permanently delete ${this.selectedItemCount} items?`;
+        },
+        /** @returns {String} */
+        deleteButtonVariant() {
+            return this.hasItemsSelected ? "danger" : "";
+        },
+        /** @returns {String} */
+        deleteItemsText() {
+            return this.hasItemsSelected ? `${this.selectedItemCount} items` : "";
+        },
+        /** @returns {String} */
+        confirmButtonVariant() {
+            return this.confirmChecked ? "danger" : "";
+        },
+        /** @returns {Boolean} */
+        rowLimitReached() {
+            return this.totalRows >= this.itemLimit;
+        },
+        /** @returns {String} */
+        rowLimitReachedText() {
+            return _l(
+                `Displaying a maximum of ${this.itemLimit} items here. If there are more, you can rerun this operation after deleting some.`
+            );
+        },
+    },
+    watch: {
+        operation() {
+            this.currentPage = 1;
+        },
+        totalItems(newVal) {
+            this.totalRows = newVal;
+        },
+        selectedItems(newVal) {
+            if (newVal.length === 0) {
+                this.indeterminate = false;
+                this.allSelected = false;
+            } else if (newVal.length === this.items.length) {
+                this.indeterminate = false;
+                this.allSelected = true;
+            } else {
+                this.indeterminate = true;
+                this.allSelected = false;
+            }
+        },
+    },
+    created() {
+        this.showDialog = this.show;
     },
     methods: {
         toNiceSize(sizeInBytes) {
@@ -197,67 +271,6 @@ export default {
             const allItems = await this.operation.fetchItems(options);
             this.selectedItems = allItems;
             this.isBusy = false;
-        },
-    },
-    computed: {
-        /** @returns {Number} */
-        selectedItemCount() {
-            return this.selectedItems.length;
-        },
-        /** @returns {Boolean} */
-        hasItemsSelected() {
-            return this.selectedItems.length > 0;
-        },
-        /** @returns {Boolean} */
-        hasPages() {
-            return this.totalRows > this.perPage;
-        },
-        /** @returns {String} */
-        title() {
-            return this.operation ? this.operation.name : "";
-        },
-        /** @returns {String} */
-        confirmationTitle() {
-            return `Permanently delete ${this.selectedItemCount} items?`;
-        },
-        /** @returns {String} */
-        deleteButtonVariant() {
-            return this.hasItemsSelected ? "danger" : "";
-        },
-        /** @returns {String} */
-        deleteItemsText() {
-            return this.hasItemsSelected ? `${this.selectedItemCount} items` : "";
-        },
-        /** @returns {String} */
-        confirmButtonVariant() {
-            return this.confirmChecked ? "danger" : "";
-        },
-        /** @returns {Boolean} */
-        rowLimitReached() {
-            return this.totalRows >= this.itemLimit;
-        },
-        /** @returns {String} */
-        rowLimitReachedText() {
-            return _l(
-                `Displaying a maximum of ${this.itemLimit} items here. If there are more, you can rerun this operation after deleting some.`
-            );
-        },
-    },
-    watch: {
-        totalItems(newVal) {
-            this.totalRows = newVal;
-        },
-        selectedItems(newVal) {
-            if (newVal.length === 0) {
-                this.indeterminate = false;
-                this.allSelected = false;
-            } else if (newVal.length === this.items.length) {
-                this.indeterminate = false;
-                this.allSelected = true;
-            } else {
-                this.indeterminate = true;
-                this.allSelected = false;
-            }
         },
     },
 };

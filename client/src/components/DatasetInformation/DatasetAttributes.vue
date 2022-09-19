@@ -15,9 +15,9 @@
                         <div class="mt-2">
                             <b-button
                                 id="dataset-attributes-default-save"
-                                @click="submit('attribute', 'attributes')"
                                 variant="primary"
-                                class="mr-1">
+                                class="mr-1"
+                                @click="submit('attribute', 'attributes')">
                                 <font-awesome-icon icon="save" class="mr-1" />{{ "Save" | l }}
                             </b-button>
                             <b-button @click="submit('attribute', 'autodetect')">
@@ -25,29 +25,53 @@
                             </b-button>
                         </div>
                     </b-tab>
-                    <b-tab v-if="!result['conversion_disable']">
+                    <b-tab v-if="!result['conversion_disable'] || !result['datatype_disable']">
                         <template v-slot:title>
-                            <font-awesome-icon icon="cog" class="mr-1" />{{ "Convert" | l }}
+                            <span v-if="!result['conversion_disable']">
+                                <font-awesome-icon icon="cog" class="mr-1" />{{ "Convert" | l }}
+                            </span>
+                            <span v-else>
+                                <font-awesome-icon icon="database" class="mr-1" />{{ "Datatypes" | l }}
+                            </span>
                         </template>
-                        <FormDisplay :inputs="result['conversion_inputs']" @onChange="onConversion" />
-                        <div class="mt-2">
-                            <b-button @click="submit('conversion', 'conversion')" variant="primary">
-                                <font-awesome-icon icon="exchange-alt" class="mr-1" />{{ "Create Dataset" | l }}
-                            </b-button>
+                        <div v-if="!result['conversion_disable']" class="ui-portlet-section">
+                            <div class="portlet-header">
+                                <div class="portlet-title">
+                                    <font-awesome-icon icon="cog" class="portlet-title-icon fa-fw mr-1" />
+                                    <span class="portlet-title-text">
+                                        <b itemprop="name">{{ "Convert" | l }}</b>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="portlet-content">
+                                <FormDisplay :inputs="result['conversion_inputs']" @onChange="onConversion" />
+                                <div class="mt-2">
+                                    <b-button variant="primary" @click="submit('conversion', 'conversion')">
+                                        <font-awesome-icon icon="exchange-alt" class="mr-1" />{{ "Create Dataset" | l }}
+                                    </b-button>
+                                </div>
+                            </div>
                         </div>
-                    </b-tab>
-                    <b-tab v-if="!result['datatype_disable']">
-                        <template v-slot:title>
-                            <font-awesome-icon icon="database" class="mr-1" />{{ "Datatypes" | l }}
-                        </template>
-                        <FormDisplay :inputs="result['datatype_inputs']" @onChange="onDatatype" />
-                        <div class="mt-2">
-                            <b-button @click="submit('datatype', 'datatype')" variant="primary" class="mr-1">
-                                <font-awesome-icon icon="save" class="mr-1" />{{ "Save" | l }}
-                            </b-button>
-                            <b-button @click="submit('datatype', 'datatype_detect')">
-                                <font-awesome-icon icon="redo" class="mr-1" />{{ "Auto-detect" | l }}
-                            </b-button>
+                        <div v-if="!result['datatype_disable']" class="ui-portlet-section">
+                            <div class="portlet-header">
+                                <div class="portlet-title">
+                                    <font-awesome-icon icon="database" class="portlet-title-icon fa-fw mr-1" />
+                                    <span class="portlet-title-text">
+                                        <b itemprop="name">{{ "Datatypes" | l }}</b>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="portlet-content">
+                                <FormDisplay :inputs="result['datatype_inputs']" @onChange="onDatatype" />
+                                <div class="mt-2">
+                                    <b-button variant="primary" class="mr-1" @click="submit('datatype', 'datatype')">
+                                        <font-awesome-icon icon="save" class="mr-1" />{{ "Save" | l }}
+                                    </b-button>
+                                    <b-button @click="submit('datatype', 'datatype_detect')">
+                                        <font-awesome-icon icon="redo" class="mr-1" />{{ "Auto-detect" | l }}
+                                    </b-button>
+                                </div>
+                            </div>
                         </div>
                     </b-tab>
                     <b-tab v-if="!result['permission_disable']">
@@ -56,7 +80,7 @@
                         </template>
                         <FormDisplay :inputs="result['permission_inputs']" @onChange="onPermission" />
                         <div class="mt-2">
-                            <b-button @click="submit('permission', 'permission')" variant="primary">
+                            <b-button variant="primary" @click="submit('permission', 'permission')">
                                 <font-awesome-icon icon="save" class="mr-1" />{{ "Save" | l }}
                             </b-button>
                         </div>

@@ -58,7 +58,7 @@ def output_properties(
     path: Optional[str] = None,
     content: Optional[bytes] = None,
     basename=None,
-    pseduo_location=False,
+    pseudo_location=False,
 ) -> OutputPropertiesType:
     checksum = hashlib.sha1()
     properties: OutputPropertiesType = {"class": "File", "checksum": "", "size": 0}
@@ -83,12 +83,12 @@ def output_properties(
     properties["checksum"] = f"sha1${checksum.hexdigest()}"
     properties["size"] = filesize
     set_basename_and_derived_properties(properties, basename)
-    _handle_pseudo_location(properties, pseduo_location)
+    _handle_pseudo_location(properties, pseudo_location)
     return properties
 
 
-def _handle_pseudo_location(properties, pseduo_location):
-    if pseduo_location:
+def _handle_pseudo_location(properties, pseudo_location):
+    if pseudo_location:
         properties["location"] = properties["basename"]
 
 
@@ -403,32 +403,29 @@ class DirectoryUploadTarget:
 GalaxyOutput = namedtuple("GalaxyOutput", ["history_id", "history_content_type", "history_content_id", "metadata"])
 
 
-def tool_response_to_output(tool_response, history_id, output_id):
+def tool_response_to_output(tool_response, history_id, output_name):
     for output in tool_response["outputs"]:
-        if output["output_name"] == output_id:
+        if output["output_name"] == output_name:
             return GalaxyOutput(history_id, "dataset", output["id"], None)
 
     for output_collection in tool_response["output_collections"]:
-        if output_collection["output_name"] == output_id:
+        if output_collection["output_name"] == output_name:
             return GalaxyOutput(history_id, "dataset_collection", output_collection["id"], None)
 
-    raise Exception(f"Failed to find output with label [{output_id}]")
+    raise Exception(f"Failed to find output with label [{output_name}]")
 
 
-def invocation_to_output(invocation, history_id, output_id):
-    if output_id in invocation["outputs"]:
-        dataset = invocation["outputs"][output_id]
-        galaxy_output = GalaxyOutput(history_id, "dataset", dataset["id"], None)
-    elif output_id in invocation["output_collections"]:
-        collection = invocation["output_collections"][output_id]
-        galaxy_output = GalaxyOutput(history_id, "dataset_collection", collection["id"], None)
-    elif output_id in invocation["output_values"]:
-        output_value = invocation["output_values"][output_id]
-        galaxy_output = GalaxyOutput(None, "raw_value", output_value, None)
-    else:
-        raise Exception(f"Failed to find output with label [{output_id}] in [{invocation}]")
-
-    return galaxy_output
+def invocation_to_output(invocation, history_id, output_name):
+    if output_name in invocation["outputs"]:
+        dataset = invocation["outputs"][output_name]
+        return GalaxyOutput(history_id, "dataset", dataset["id"], None)
+    elif output_name in invocation["output_collections"]:
+        collection = invocation["output_collections"][output_name]
+        return GalaxyOutput(history_id, "dataset_collection", collection["id"], None)
+    elif output_name in invocation["output_values"]:
+        output_value = invocation["output_values"][output_name]
+        return GalaxyOutput(None, "raw_value", output_value, None)
+    raise Exception(f"Failed to find output with label [{output_name}] in [{invocation}]")
 
 
 def output_to_cwl_json(
@@ -436,7 +433,7 @@ def output_to_cwl_json(
     get_metadata,
     get_dataset,
     get_extra_files,
-    pseduo_location=False,
+    pseudo_location=False,
 ):
     """Convert objects in a Galaxy history into a CWL object.
 
@@ -459,7 +456,7 @@ def output_to_cwl_json(
             metadata,
         )
         return output_to_cwl_json(
-            element_output, get_metadata, get_dataset, get_extra_files, pseduo_location=pseduo_location
+            element_output, get_metadata, get_dataset, get_extra_files, pseudo_location=pseudo_location
         )
 
     output_metadata = galaxy_output.metadata
@@ -486,7 +483,7 @@ def output_to_cwl_json(
 
             if file_or_directory == "File":
                 dataset_dict = get_dataset(output_metadata)
-                properties = output_properties(pseduo_location=pseduo_location, **dataset_dict)
+                properties = output_properties(pseudo_location=pseudo_location, **dataset_dict)
                 basename = properties["basename"]
                 extra_files = get_extra_files(output_metadata)
                 found_index = False
@@ -512,7 +509,7 @@ def output_to_cwl_json(
                             if extra_file_class == "File":
                                 ec = get_dataset(output_metadata, filename=path)
                                 ec["basename"] = extra_file_basename
-                                ec_properties = output_properties(pseduo_location=pseduo_location, **ec)
+                                ec_properties = output_properties(pseudo_location=pseudo_location, **ec)
                             elif extra_file_class == "Directory":
                                 ec_properties = {}
                                 ec_properties["class"] = "Directory"
@@ -540,7 +537,7 @@ def output_to_cwl_json(
                             if extra_file_class == "File":
                                 ec = get_dataset(output_metadata, filename=path)
                                 ec["basename"] = ec_basename
-                                ec_properties = output_properties(pseduo_location=pseduo_location, **ec)
+                                ec_properties = output_properties(pseudo_location=pseudo_location, **ec)
                             elif extra_file_class == "Directory":
                                 ec_properties = {}
                                 ec_properties["class"] = "Directory"
@@ -568,7 +565,7 @@ def output_to_cwl_json(
                         path = extra_file["path"]
                         ec = get_dataset(output_metadata, filename=path)
                         ec["basename"] = os.path.basename(path)
-                        ec_properties = output_properties(pseduo_location=pseduo_location, **ec)
+                        ec_properties = output_properties(pseudo_location=pseudo_location, **ec)
                         listing.append(ec_properties)
 
             if secondary_files:

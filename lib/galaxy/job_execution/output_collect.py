@@ -29,11 +29,9 @@ from galaxy.model.store.discover import (
     discover_target_directory,
     DiscoveredFile,
     JsonCollectedDatasetMatch,
-)
-from galaxy.model.store.discover import MetadataSourceProvider as AbstractMetadataSourceProvider
-from galaxy.model.store.discover import ModelPersistenceContext
-from galaxy.model.store.discover import PermissionProvider as AbstractPermissionProvider
-from galaxy.model.store.discover import (
+    MetadataSourceProvider as AbstractMetadataSourceProvider,
+    ModelPersistenceContext,
+    PermissionProvider as AbstractPermissionProvider,
     persist_elements_to_folder,
     persist_elements_to_hdca,
     persist_hdas,
@@ -51,6 +49,7 @@ from galaxy.tool_util.parser.output_objects import (
     ToolOutput,
     ToolOutputCollection,
 )
+from galaxy.tool_util.provided_metadata import BaseToolProvidedMetadata
 from galaxy.util import (
     shrink_and_unicodify,
     unicodify,
@@ -189,31 +188,33 @@ def collect_dynamic_outputs(
         job_context.add_dataset_collection(has_collection)
 
 
-class BaseJobContext:
+class BaseJobContext(ModelPersistenceContext):
 
     max_discovered_files: Union[int, float]
+    tool_provided_metadata: BaseToolProvidedMetadata
+    job_working_directory: str
 
     def add_dataset_collection(self, collection):
         pass
 
-    def find_files(self, output_name, collection, dataset_collectors):
-        filenames = {}
+    def find_files(self, output_name, collection, dataset_collectors) -> list:
+        discovered_files = []
         for discovered_file in discover_files(
             output_name, self.tool_provided_metadata, dataset_collectors, self.job_working_directory, collection
         ):
             self.increment_discovered_file_count()
-            filenames[discovered_file.path] = discovered_file
-        return filenames
+            discovered_files.append(discovered_file)
+        return discovered_files
 
     def get_job_id(self):
         return None  # overwritten in subclasses
 
 
-class JobContext(ModelPersistenceContext, BaseJobContext):
+class JobContext(BaseJobContext):
     def __init__(
         self,
         tool,
-        tool_provided_metadata,
+        tool_provided_metadata: BaseToolProvidedMetadata,
         job,
         job_working_directory,
         permission_provider,
@@ -297,9 +298,9 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
     def get_library_folder(self, destination):
         app = self.app
         library_folder_manager = app.library_folder_manager
-        library_folder = library_folder_manager.get(
-            self.work_context, app.security.decode_id(destination.get("library_folder_id"))
-        )
+        folder_id = destination.get("library_folder_id")
+        decoded_folder_id = app.security.decode_id(folder_id) if isinstance(folder_id, str) else folder_id
+        library_folder = library_folder_manager.get(self.work_context, decoded_folder_id)
         return library_folder
 
     def get_hdca(self, object_id):
@@ -393,7 +394,7 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
     def __init__(
         self,
         metadata_params,
-        tool_provided_metadata,
+        tool_provided_metadata: BaseToolProvidedMetadata,
         object_store,
         export_store,
         import_store,
@@ -440,7 +441,7 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
             for collection_dataset in hdca.dataset_instances:
                 include_files = True
                 self.export_store.add_dataset(collection_dataset, include_files=include_files)
-                self.export_store.collection_datasets[collection_dataset.id] = True
+                self.export_store.collection_datasets.add(collection_dataset.id)
 
         return hdca
 
@@ -449,7 +450,7 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         for collection_dataset in collection.dataset_instances:
             include_files = True
             self.export_store.add_dataset(collection_dataset, include_files=include_files)
-            self.export_store.collection_datasets[collection_dataset.id] = True
+            self.export_store.collection_datasets.add(collection_dataset.id)
 
     def add_output_dataset_association(self, name, dataset_instance):
         self.export_store.add_job_output_dataset_associations(self.get_job_id(), name, dataset_instance)
@@ -547,6 +548,7 @@ def collect_primary_datasets(job_context: Union[JobContext, SessionlessJobContex
             outdata.init_meta()
             outdata.set_meta()
             outdata.set_peek()
+            outdata.discovered = True
             sa_session = job_context.sa_session
             if sa_session:
                 sa_session.add(outdata)
@@ -644,7 +646,7 @@ class DatasetCollector:
     def __init__(self, dataset_collection_description):
         self.discover_via = dataset_collection_description.discover_via
         # dataset_collection_description is an abstract description
-        # built from the tool parsing module - see galaxy.tool_util.parser.output_colleciton_def
+        # built from the tool parsing module - see galaxy.tool_util.parser.output_collection_def
         self.sort_key = dataset_collection_description.sort_key
         self.sort_reverse = dataset_collection_description.sort_reverse
         self.sort_comp = dataset_collection_description.sort_comp

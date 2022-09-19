@@ -13,8 +13,8 @@ from galaxy.util import pretty_print_time_interval
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
+    require_admin,
 )
-from galaxy.web import require_admin as require_admin
 from galaxy.webapps.base.controller import BaseAPIController
 from tool_shed.managers import groups
 

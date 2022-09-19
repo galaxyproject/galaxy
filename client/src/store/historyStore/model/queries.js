@@ -6,7 +6,6 @@
  */
 
 import axios from "axios";
-import moment from "moment";
 import { prependPath } from "utils/redirect";
 import { History } from "./History";
 
@@ -40,7 +39,15 @@ function formData(fields = {}) {
  */
 const stdHistoryParams = {
     view: "summary",
-    keys: "size",
+};
+
+/**
+ * Extended history request parameters.
+ * Retrieves additional details which are usually more "expensive".
+ */
+const extendedHistoryParams = {
+    view: "summary",
+    keys: "size,contents_active",
 };
 
 /**
@@ -57,11 +64,9 @@ export async function getHistoryList() {
  * Load one history by id
  * @param {String} id
  */
-export async function getHistoryById(id, since) {
+export async function getHistoryById(id) {
     const path = `api/histories/${id}`;
-    const sinceParam = since !== undefined ? moment.utc(since).toISOString() : null;
-    const url = sinceParam ? `${path}?q=update_time-gt&qv=${sinceParam}` : path;
-    const response = await axios.get(prependPath(url), { params: stdHistoryParams });
+    const response = await axios.get(prependPath(path), { params: extendedHistoryParams });
     const props = doResponse(response);
     return new History(props);
 }
@@ -123,7 +128,7 @@ export async function deleteHistoryById(id, purge = false) {
  */
 export async function updateHistoryFields(id, payload) {
     const url = `api/histories/${id}`;
-    const response = await axios.put(prependPath(url), payload, { params: stdHistoryParams });
+    const response = await axios.put(prependPath(url), payload, { params: extendedHistoryParams });
     const props = doResponse(response);
     return new History(props);
 }
@@ -146,11 +151,13 @@ export async function secureHistory(history) {
 /**
  * Content Current History
  */
-export async function getCurrentHistoryFromServer() {
+export async function getCurrentHistoryFromServer(since) {
     const url = "history/current_history_json";
-    const response = await axios.get(prependPath(url));
+    const response = await axios.get(prependPath(url), { params: { since: since } });
     const props = doResponse(response);
-    return new History(props);
+    if (props) {
+        return new History(props);
+    }
 }
 
 export async function setCurrentHistoryOnServer(history_id) {

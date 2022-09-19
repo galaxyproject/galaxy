@@ -25,10 +25,11 @@
 </template>
 
 <script>
+import { mapGetters } from "vuex";
 import { WorkflowInvocationState } from "components/WorkflowInvocationState";
 import Webhooks from "mvc/webhooks";
 import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
+import { refreshContentsWrapper } from "utils/data";
 
 export default {
     components: {
@@ -44,12 +45,8 @@ export default {
             required: true,
         },
     },
-    data() {
-        return {
-            refreshHistoryTimeout: null,
-        };
-    },
     computed: {
+        ...mapGetters("history", ["currentHistoryId"]),
         timesExecuted() {
             return this.invocations.length;
         },
@@ -58,7 +55,7 @@ export default {
         },
         historyTarget() {
             if (this.multipleInvocations) {
-                return `${getAppRoot()}history/view_multiple`;
+                return `${getAppRoot()}histories/view_multiple`;
             } else {
                 return `${getAppRoot()}history/switch_to_history?hist_id=${this.invocations[0].history_id}`;
             }
@@ -67,32 +64,7 @@ export default {
             if (this.invocations.length < 1) {
                 return false;
             }
-            const Galaxy = getGalaxyInstance();
-            return (
-                (this.invocations[0].history_id &&
-                    Galaxy.currHistoryPanel &&
-                    Galaxy.currHistoryPanel.model.id != this.invocations[0].history_id) ||
-                false
-            );
-        },
-    },
-    methods: {
-        _refreshHistory() {
-            // remove when disabling backbone history
-            const Galaxy = getGalaxyInstance();
-            var history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
-            if (this.refreshHistoryTimeout) {
-                window.clearTimeout(this.refreshHistoryTimeout);
-            }
-            if (history && history.refresh) {
-                history.refresh().success(() => {
-                    if (history.numOfUnfinishedShownContents() === 0) {
-                        this.refreshHistoryTimeout = window.setTimeout(() => {
-                            this._refreshHistory();
-                        }, history.UPDATE_DELAY);
-                    }
-                });
-            }
+            return this.invocations[0].history_id && this.currentHistoryId != this.invocations[0].history_id;
         },
     },
     mounted() {
@@ -101,7 +73,7 @@ export default {
             toolId: null,
             toolVersion: null,
         });
-        this._refreshHistory();
+        refreshContentsWrapper();
     },
 };
 </script>
