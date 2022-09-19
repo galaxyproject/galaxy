@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { BCard, BCardTitle, BButtonToolbar, BButtonGroup } from "bootstrap-vue";
 import { InvocationExportPlugin } from "./model";
+import ActionButton from "./ActionButton.vue";
 import StsDownloadButton from "components/StsDownloadButton.vue";
 import ExportToRemoteButton from "components/Workflow/Invocation/Export/ExportToRemoteButton.vue";
 import ExportToRemoteModal from "components/Workflow/Invocation/Export/ExportToRemoteModal.vue";
@@ -64,6 +65,10 @@ function exportToFileSource(exportDirectory, fileName) {
                             :title="'Export Invocation as ' + exportPlugin.title + ' and upload to remote source'"
                             :task-id="exportToRemoteTaskId"
                             @onClick="openRemoteExportDialog" />
+                        <action-button
+                            v-for="action in exportPlugin.additionalActions"
+                            :key="action.id"
+                            :action="action" />
                     </b-button-group>
                 </b-button-toolbar>
             </b-card-title>
