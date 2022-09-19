@@ -14,7 +14,7 @@ cp '$input.extra_files_path'/Log '$output.extra_files_path'/nested/nested_log
     </outputs>
     <tests>
         <test>
-            <param name="input" value="velveth_test1/output.html" ftype="velvet" >
+            <param name="input" ftype="velvet" >
                 <composite_data name="Sequences" value="velveth_test1/Sequences" />
                 <composite_data name="Roadmaps" value="velveth_test1/Roadmaps" />
                 <composite_data name="Log" value="velveth_test1/Log" />
