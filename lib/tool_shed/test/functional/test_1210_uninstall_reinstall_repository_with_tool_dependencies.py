@@ -38,7 +38,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             description="Galaxy's freebayes tool",
             long_description="Long description of Galaxy's freebayes tool",
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
         )
         if self.repository_is_new(repository):
             self.upload_file(

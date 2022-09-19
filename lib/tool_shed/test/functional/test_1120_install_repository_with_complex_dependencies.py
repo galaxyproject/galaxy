@@ -48,7 +48,7 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
             description=bwa_package_repository_description,
             long_description=bwa_package_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
@@ -87,7 +87,7 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
                 description=bwa_base_repository_description,
                 long_description=bwa_base_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.test_db_util.get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)

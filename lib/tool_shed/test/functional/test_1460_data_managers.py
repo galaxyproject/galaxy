@@ -57,13 +57,13 @@ class TestDataManagers(ShedTwillTestCase):
 
         Create and populate a repository that contains a Data manager.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=data_manager_repository_name,
             description=data_manager_repository_description,
             long_description=data_manager_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         # Upload the data manager files to the repository.

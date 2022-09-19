@@ -71,7 +71,7 @@ class TestGetUpdatedMetadata(ShedTwillTestCase):
             description=repositories["freebayes"]["description"],
             long_description=repositories["freebayes"]["long_description"],
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         assert freebayes is not None, f"Error creating freebayes {repositories['freebayes']['name']}"
@@ -99,7 +99,7 @@ class TestGetUpdatedMetadata(ShedTwillTestCase):
             description=repositories["samtools"]["description"],
             long_description=repositories["samtools"]["long_description"],
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         assert samtools is not None, f"Error creating samtools {repositories['samtools']['name']}"
@@ -123,7 +123,7 @@ class TestGetUpdatedMetadata(ShedTwillTestCase):
             description=repositories["filtering"]["description"],
             long_description=repositories["filtering"]["long_description"],
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         assert repository is not None, f"Error creating repository {repositories['filtering']['name']}"

@@ -44,7 +44,7 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
             description=freebayes_repository_description,
             long_description=freebayes_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
@@ -73,7 +73,7 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
             description=filtering_repository_description,
             long_description=filtering_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):

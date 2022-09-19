@@ -52,7 +52,7 @@ class TestRepositoryCircularDependenciesAgain(ShedTwillTestCase):
             description=bwa_base_repository_description,
             long_description=bwa_base_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -76,7 +76,7 @@ class TestRepositoryCircularDependenciesAgain(ShedTwillTestCase):
             description=bwa_color_repository_description,
             long_description=bwa_color_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -99,7 +99,7 @@ class TestRepositoryCircularDependenciesAgain(ShedTwillTestCase):
             description=emboss_repository_description,
             long_description=emboss_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -122,7 +122,7 @@ class TestRepositoryCircularDependenciesAgain(ShedTwillTestCase):
             description=filtering_repository_description,
             long_description=filtering_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -145,7 +145,7 @@ class TestRepositoryCircularDependenciesAgain(ShedTwillTestCase):
             description=freebayes_repository_description,
             long_description=freebayes_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(

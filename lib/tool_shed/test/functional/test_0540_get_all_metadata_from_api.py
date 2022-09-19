@@ -67,7 +67,7 @@ class TestGetAllMetadata(ShedTwillTestCase):
             description=repositories["bwa"]["description"],
             long_description=repositories["bwa"]["long_description"],
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         assert repository is not None, f"Error creating repository {repositories['bwa']['name']}"
@@ -95,7 +95,7 @@ class TestGetAllMetadata(ShedTwillTestCase):
             description=repositories["convert"]["description"],
             long_description=repositories["convert"]["long_description"],
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         assert repository is not None, f"Error creating repository {repositories['convert']['name']}"
@@ -133,7 +133,7 @@ class TestGetAllMetadata(ShedTwillTestCase):
             description=repositories["column"]["description"],
             long_description=repositories["column"]["long_description"],
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         assert repository is not None, f"Error creating repository {repositories['column']['name']}"

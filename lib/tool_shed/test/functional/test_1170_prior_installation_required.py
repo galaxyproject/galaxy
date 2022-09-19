@@ -67,7 +67,7 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
             description=convert_repository_description,
             long_description=convert_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
@@ -93,7 +93,7 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
             description=column_repository_description,
             long_description=column_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if running_standalone:

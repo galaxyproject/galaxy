@@ -1,4 +1,8 @@
-from typing import Union
+from typing import (
+    List,
+    Optional,
+    Union,
+)
 
 import requests
 
@@ -10,6 +14,7 @@ from galaxy_test.base import api_asserts
 from galaxy_test.base.api_util import random_name
 from tool_shed_client.schema import (
     Category,
+    CreateCategoryRequest,
     GetOrderedInstallableRevisionsRequest,
     OrderedInstallableRevisions,
     Repository,
@@ -109,12 +114,29 @@ class ToolShedPopulator:
         index_response = self._admin_api_interactor.put("tools/build_search_index")
         index_response.raise_for_status()
 
-    def new_category(self, prefix=DEFAULT_PREFIX) -> Category:
-        name = random_name(prefix=prefix)
-        body = {"name": name, "description": "testcreaterepo"}
-        response = self._admin_api_interactor.post("categories", json=body)
+    def new_category(
+        self, name: Optional[str] = None, description: Optional[str] = None, prefix=DEFAULT_PREFIX
+    ) -> Category:
+        category_name = name or random_name(prefix=prefix)
+        category_description = description or "testcreaterepo"
+        request = CreateCategoryRequest(name=category_name, description=category_description)
+        response = self._admin_api_interactor.post("categories", json=request.dict())
         response.raise_for_status()
         return Category(**response.json())
+
+    def get_categories(self) -> List[Category]:
+        response = self._api_interactor.get("categories")
+        response.raise_for_status()
+        return [Category(**c) for c in response.json()]
+
+    def get_category_with_name(self, name: str) -> Optional[Category]:
+        response = self._api_interactor.get("categories")
+        response.raise_for_status()
+        categories = [c for c in self.get_categories() if c.name == name]
+        return categories[0] if categories else None
+
+    def has_category_with_name(self, name: str) -> bool:
+        return self.get_category_with_name(name) is not None
 
     def get_ordered_installable_revisions(self, owner: str, name: str) -> OrderedInstallableRevisions:
         request = GetOrderedInstallableRevisionsRequest(owner=owner, name=name)

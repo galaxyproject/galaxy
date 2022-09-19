@@ -43,7 +43,7 @@ class BasicToolShedFeatures(ShedTwillTestCase):
             description="Galaxy's filtering tool",
             long_description="Long description of Galaxy's filtering tool",
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
         )
         if self.repository_is_new(repository):
             self.upload_file(
@@ -101,7 +101,7 @@ class BasicToolShedFeatures(ShedTwillTestCase):
 
     def test_0015_browse_test_0000_category(self):
         """Browse the category created in test 0000. It should contain the filtering_0000 repository also created in that test."""
-        category = self.test_db_util.get_category_by_name("Test 0000 Basic Repository Features 1")
+        category = self.populator.get_category_with_name("Test 0000 Basic Repository Features 1")
         self.browse_category(category, strings_displayed=["filtering_0000"])
 
     def test_0020_preview_filtering_repository(self):

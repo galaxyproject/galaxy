@@ -64,7 +64,7 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
             description=datatypes_repository_description,
             long_description=datatypes_repository_long_description,
             owner=common.test_user_2_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=strings_displayed,
         )
         self.upload_file(
@@ -117,7 +117,7 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
             description=tool_repository_description,
             long_description=tool_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=strings_displayed,
         )
         self.upload_file(

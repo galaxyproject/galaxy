@@ -52,13 +52,13 @@ class TestDependencyDefinitionValidation(ShedTwillTestCase):
 
         Create a repository named package_invalid_tool_dependency_xml_1_0_0 that will contain only a single file named tool_dependencies.xml.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=repository_name,
             description=repository_description,
             long_description=repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(

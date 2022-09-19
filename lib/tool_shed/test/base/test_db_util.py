@@ -56,10 +56,6 @@ def get_all_installed_repositories(actually_installed=False):
         return install_session.query(galaxy.model.tool_shed_install.ToolShedRepository).all()
 
 
-def get_category_by_name(name):
-    return sa_session.query(model.Category).filter(model.Category.table.c.name == name).first()
-
-
 def get_default_user_permissions_by_role(role):
     return (
         sa_session.query(model.DefaultUserPermissions)

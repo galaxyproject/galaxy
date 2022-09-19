@@ -52,14 +52,14 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
     def test_0015_create_repository(self):
         """Create the filtering repository"""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        category = self.test_db_util.get_category_by_name("Test 0000 Basic Repository Features 1")
+        category = self.populator.get_category_with_name("Test 0000 Basic Repository Features 1")
         strings_displayed = self.expect_repo_created_strings(repository_name)
         self.get_or_create_repository(
             name=repository_name,
             description=repository_description,
             long_description=repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=strings_displayed,
         )
 
@@ -305,7 +305,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
 
     def test_0095_verify_reserved_repository_name_handling(self):
         """Check that reserved repository names are handled correctly."""
-        category = self.test_db_util.get_category_by_name("Test 0000 Basic Repository Features 1")
+        category = self.populator.get_category_with_name("Test 0000 Basic Repository Features 1")
         error_message = (
             "The term 'repos' is a reserved word in the Tool Shed, so it cannot be used as a repository name."
         )
@@ -314,7 +314,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
             description=repository_description,
             long_description=repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[error_message],
         )
 
@@ -433,8 +433,8 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
     def test_0135_api_get_repositories_in_category(self):
         """Load the api endpoint for repositories in a category."""
         categories = []
-        categories.append(self.test_db_util.get_category_by_name("Test 0000 Basic Repository Features 1"))
-        categories.append(self.test_db_util.get_category_by_name("Test 0000 Basic Repository Features 2"))
+        categories.append(self.populator.get_category_with_name("Test 0000 Basic Repository Features 1"))
+        categories.append(self.populator.get_category_with_name("Test 0000 Basic Repository Features 2"))
         self.get_repositories_category_api(categories)
 
     def test_0140_view_invalid_changeset(self):

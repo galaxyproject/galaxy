@@ -51,7 +51,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
             description=repository_description,
             long_description=repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(

@@ -40,13 +40,13 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
         """Create and populate the column_maker repository."""
         global running_standalone
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         column_maker_repository = self.get_or_create_repository(
             name=column_maker_repository_name,
             description=column_maker_repository_description,
             long_description=column_maker_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(column_maker_repository):
@@ -67,13 +67,13 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
         """Create and populate the emboss_5_0110 repository."""
         global running_standalone
         if running_standalone:
-            category = self.test_db_util.get_category_by_name(category_name)
+            category = self.populator.get_category_with_name(category_name)
             repository = self.get_or_create_repository(
                 name=emboss_repository_name,
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
