@@ -88,7 +88,7 @@ def _normalize_inputs(steps, inputs, inputs_by):
             if possible_input_key in inputs:
                 inputs_key = possible_input_key
         default_value = step.tool_inputs.get("default")
-        optional = step.tool_inputs.get("optional") or False
+        optional = step.input_optional
         # Need to be careful here to make sure 'default' has correct type - not sure how to do that
         # but asserting 'optional' is definitely a bool and not a String->Bool or something is a good
         # start to ensure tool state is being preserved and loaded in a type safe way.

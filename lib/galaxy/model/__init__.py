@@ -7063,12 +7063,16 @@ class WorkflowStep(Base, RepresentById):
 
     @property
     def input_default_value(self):
-        tool_inputs = self.tool_inputs
-        tool_state = tool_inputs
+        tool_state = self.tool_inputs
         default_value = tool_state.get("default")
         if default_value:
             default_value = json.loads(default_value)["value"]
         return default_value
+
+    @property
+    def input_optional(self):
+        tool_state = self.tool_inputs
+        return tool_state.get("optional") or False
 
     def get_input(self, input_name):
         for step_input in self.inputs:
