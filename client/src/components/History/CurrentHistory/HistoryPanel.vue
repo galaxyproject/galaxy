@@ -83,7 +83,7 @@
                             @hide="operationError = null" />
                     </section>
                     <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
-                        <div>
+                        <div @drop.prevent="onDrop" @dragover.prevent>
                             <div v-if="loading && itemsLoaded && itemsLoaded.length === 0">
                                 <b-alert class="m-2" variant="info" show>
                                     <LoadingSpan message="Loading History" />
@@ -138,6 +138,9 @@
 
 <script>
 import Vue from "vue";
+import { Toast } from "ui/toast";
+import { mapActions } from "vuex";
+import { getAppRoot } from "onload/loadConfig";
 import { HistoryItemsProvider } from "components/providers/storeProviders";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
@@ -157,6 +160,7 @@ import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
 import SelectionChangeWarning from "./HistoryOperations/SelectionChangeWarning";
 import OperationErrorDialog from "./HistoryOperations/OperationErrorDialog";
 import { rewatchHistory } from "store/historyStore/model/watchHistory";
+import { Services as DatasetServices } from "components/Dataset/services";
 
 export default {
     components: {
@@ -242,7 +246,12 @@ export default {
             this.filterText = newVal;
         },
     },
+    created() {
+        this.root = getAppRoot();
+        this.datasetServices = new DatasetServices({ root: this.root });
+    },
     methods: {
+        ...mapActions("history", ["loadHistoryById"]),
         getHighlight(item) {
             return this.highlights[this.getItemKey(item)];
         },
@@ -307,6 +316,29 @@ export default {
         resetHighlights() {
             this.highlights = {};
             this.highlightsKey = null;
+        },
+        onDrop(evt) {
+            const data = JSON.parse(evt.dataTransfer.getData("text"))[0];
+            const dataSources = data.history_content_type === "dataset" ? "hda" : "hdca";
+            if (data.history_id === this.historyId) {
+                return;
+            }
+            this.datasetServices
+                .copyDataset(data.id, this.historyId, data.history_content_type, dataSources)
+                .then(() => {
+                    if (data.history_content_type === "dataset") {
+                        Toast.info("Dataset copied to history");
+                    } else {
+                        Toast.info("Collection copied to history");
+                    }
+                    this.loadHistoryById(this.historyId);
+                })
+                .catch((error) => {
+                    this.onError(error);
+                });
+        },
+        onError(error) {
+            Toast.error(error);
         },
     },
 };

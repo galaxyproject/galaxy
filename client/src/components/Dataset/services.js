@@ -31,12 +31,12 @@ export class Services {
         }
     }
 
-    async copyDataset(dataset_id, history_id) {
+    async copyDataset(dataset_id, history_id, type = "dataset", source = "hda") {
         const url = `${this.root}api/histories/${history_id}/contents`;
         try {
             const response = await axios.post(url, {
-                type: "dataset",
-                source: "hda",
+                type: type,
+                source: source,
                 content: dataset_id,
             });
             return response.data;
