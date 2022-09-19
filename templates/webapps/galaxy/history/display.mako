@@ -15,12 +15,12 @@
 </%def>
 
 <%def name="render_item( item, item_data )">
-<div id="history-${ history_dict[ 'id' ] }"></div>
-<script type="text/javascript">
-    config.addInitialization(function(galaxy, config) {
-        console.log("display.mako render_item");
-        const historyId = "${ history_dict[ 'id' ] }";
-        window.bundleEntries.mountHistory("#history-" + historyId, { id: historyId });
-    });
-</script>
+    <% history_id = trans.security.encode_id(item.id) %>
+    <div id="history-${ history_id }"></div>
+    <script type="text/javascript">
+        config.addInitialization(function(galaxy, config) {
+            console.log("display.mako render_item");
+            window.bundleEntries.mountHistory("#history-${ history_id }", { id: "${ history_id }" });
+        });
+    </script>
 </%def>

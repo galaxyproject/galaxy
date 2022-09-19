@@ -566,13 +566,12 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         user = session.query(model.User).filter_by(username=username).first()
         history = (
             trans.sa_session.query(model.History)
-            .options(joinedload("tags"))
-            .options(joinedload("annotations"))
             .filter_by(user=user, slug=slug, deleted=False)
             .first()
         )
         if history is None:
             raise web.httpexceptions.HTTPNotFound()
+
         # Security check raises error if user cannot access history.
         self.history_manager.error_unless_accessible(history, trans.user, current_history=trans.history)
 
@@ -587,18 +586,10 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, history)
 
         # create ownership flag for template, dictify models
-        user_is_owner = trans.user == history.user
-        history_dictionary = self.history_serializer.serialize_to_view(
-            history, view="dev-detailed", user=trans.user, trans=trans
-        )
-        history_dictionary["annotation"] = self.get_item_annotation_str(trans.sa_session, history.user, history)
-
         return trans.fill_template_mako(
             "history/display.mako",
             item=history,
             item_data=[],
-            user_is_owner=user_is_owner,
-            history_dict=history_dictionary,
             user_item_rating=user_item_rating,
             ave_item_rating=ave_item_rating,
             num_ratings=num_ratings,
