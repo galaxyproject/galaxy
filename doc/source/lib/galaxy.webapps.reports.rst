@@ -12,8 +12,8 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   galaxy.webapps.reports.api
    galaxy.webapps.reports.controllers
-   galaxy.webapps.reports.framework
 
 Submodules
 ----------
@@ -38,6 +38,22 @@ galaxy.webapps.reports.config module
 ------------------------------------
 
 .. automodule:: galaxy.webapps.reports.config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.webapps.reports.fast\_app module
+---------------------------------------
+
+.. automodule:: galaxy.webapps.reports.fast_app
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.webapps.reports.fast\_factory module
+-------------------------------------------
+
+.. automodule:: galaxy.webapps.reports.fast_factory
    :members:
    :undoc-members:
    :show-inheritance:

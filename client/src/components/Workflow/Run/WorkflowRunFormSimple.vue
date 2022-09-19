@@ -1,20 +1,60 @@
 <template>
-    <div ref="form"></div>
+    <CurrentUser v-slot="{ user }">
+        <div>
+            <div class="h4 clearfix mb-3">
+                <b>Workflow: {{ model.name }}</b>
+                <ButtonSpinner id="run-workflow" class="float-right" title="Run Workflow" @onClick="onExecute" />
+                <b-dropdown
+                    v-if="showRuntimeSettings(user)"
+                    id="dropdown-form"
+                    ref="dropdown"
+                    class="workflow-run-settings float-right"
+                    style="margin-right: 10px"
+                    title="Workflow Run Settings"
+                    no-caret>
+                    <template v-slot:button-content>
+                        <span class="fa fa-cog" />
+                    </template>
+                    <b-dropdown-form>
+                        <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target"
+                            >Send results to a new history</b-form-checkbox
+                        >
+                        <b-form-checkbox
+                            v-if="reuseAllowed(user)"
+                            v-model="useCachedJobs"
+                            title="This may skip executing jobs that you have already run."
+                            >Attempt to re-use jobs with identical parameters?</b-form-checkbox
+                        >
+                    </b-dropdown-form>
+                </b-dropdown>
+            </div>
+            <FormDisplay :inputs="formInputs" @onChange="onChange" />
+            <!-- Options to default one way or the other, disable if admins want, etc.. -->
+            <a href="#" class="workflow-expand-form-link" @click="$emit('showAdvanced')"
+                >Expand to full workflow form.</a
+            >
+        </div>
+    </CurrentUser>
 </template>
 
 <script>
-import Form from "mvc/form/form-view";
+import CurrentUser from "components/providers/CurrentUser";
+import FormDisplay from "components/Form/FormDisplay";
+import ButtonSpinner from "components/Common/ButtonSpinner";
 import { invokeWorkflow } from "./services";
 import { isWorkflowInput } from "components/Workflow/constants";
+import { errorMessageAsString } from "utils/simple-error";
+import { allowCachedJobs } from "components/Tool/utilities";
 
 export default {
+    components: {
+        ButtonSpinner,
+        CurrentUser,
+        FormDisplay,
+    },
     props: {
         model: {
             type: Object,
-            required: true,
-        },
-        setRunButtonStatus: {
-            type: Function,
             required: true,
         },
         targetHistory: {
@@ -27,23 +67,17 @@ export default {
         },
     },
     data() {
+        const newHistory = this.targetHistory == "new" || this.targetHistory == "prefer_new";
         return {
-            form: null,
+            formData: {},
             inputTypes: {},
+            sendToNewHistory: newHistory,
+            useCachedJobs: this.useJobCache, // TODO:
         };
     },
-    computed: {},
-    created() {
-        this.form = new Form(this.formDefinition());
-        this.$nextTick(() => {
-            const el = this.$refs["form"];
-            el.appendChild(this.form.$el[0]);
-        });
-    },
-    methods: {
-        formDefinition() {
+    computed: {
+        formInputs() {
             const inputs = [];
-
             // Add workflow parameters.
             Object.values(this.model.wpInputs).forEach((input) => {
                 const inputCopy = Object.assign({}, input);
@@ -52,7 +86,6 @@ export default {
                 inputs.push(inputCopy);
                 this.inputTypes[inputCopy.name] = "replacement_parameter";
             });
-
             // Add actual input modules.
             this.model.steps.forEach((step, i) => {
                 if (!isWorkflowInput(step.step_type)) {
@@ -68,18 +101,24 @@ export default {
                 inputs.push(stepAsInput);
                 this.inputTypes[stepName] = step.step_type;
             });
-
-            const def = {
-                inputs: inputs,
-            };
-            return def;
+            return inputs;
         },
-        execute() {
+    },
+    methods: {
+        reuseAllowed(user) {
+            return allowCachedJobs(user.preferences);
+        },
+        showRuntimeSettings(user) {
+            return this.targetHistory.indexOf("prefer") >= 0 || this.reuseAllowed(user);
+        },
+        onChange(data) {
+            this.formData = data;
+        },
+        onExecute() {
             const replacementParams = {};
             const inputs = {};
-            const formData = this.form.data.create();
-            for (const inputName in formData) {
-                const value = formData[inputName];
+            for (const inputName in this.formData) {
+                const value = this.formData[inputName];
                 const inputType = this.inputTypes[inputName];
                 if (inputType == "replacement_parameter") {
                     replacementParams[inputName] = value;
@@ -92,21 +131,28 @@ export default {
                 inputs: inputs,
                 inputs_by: "step_index",
                 batch: true,
-                use_cached_job: this.useJobCache,
+                use_cached_job: this.useCachedJobs,
+                require_exact_tool_versions: false,
             };
-            if (this.targetHistory == "current") {
-                data.history_id = this.model.historyId;
-            } else {
+            if (this.sendToNewHistory) {
                 data.new_history_name = this.model.name;
+            } else {
+                data.history_id = this.model.historyId;
             }
             invokeWorkflow(this.model.workflowId, data)
                 .then((invocations) => {
                     this.$emit("submissionSuccess", invocations);
                 })
                 .catch((error) => {
-                    console.log(error);
+                    this.$emit("submissionError", errorMessageAsString(error));
                 });
         },
     },
 };
 </script>
+
+<style scoped>
+.workflow-settings-botton {
+    margin-right: 10px;
+}
+</style>

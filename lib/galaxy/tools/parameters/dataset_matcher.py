@@ -36,7 +36,7 @@ class DatasetMatcherFactory:
             for input in tool.inputs.values():
                 self._collect_data_inputs(input)
 
-            require_public = self._tool and self._tool.tool_type == 'data_destination'
+            require_public = self._tool and self._tool.tool_type == "data_destination"
             if not require_public and self._data_inputs:
                 can_process_summary = True
                 for data_input in self._data_inputs:
@@ -58,7 +58,9 @@ class DatasetMatcherFactory:
 
         formats = self._matches_format_cache[hda_extension]
         if format not in formats:
-            datatype = galaxy.model.datatype_for_extension(hda_extension, datatypes_registry=self._trans.app.datatypes_registry)
+            datatype = galaxy.model.datatype_for_extension(
+                hda_extension, datatypes_registry=self._trans.app.datatypes_registry
+            )
             formats[format] = datatype.matches_any([format])
 
         return formats[format]
@@ -86,7 +88,7 @@ class DatasetMatcherFactory:
 
 
 class DatasetMatcher:
-    """ Utility class to aid DataToolParameter and similar classes in reasoning
+    """Utility class to aid DataToolParameter and similar classes in reasoning
     about what HDAs could match or are selected for a parameter and value.
 
     Goal here is to both encapsulate and reuse logic related to filtering,
@@ -109,7 +111,7 @@ class DatasetMatcher:
         self.filter_values = filter_values
 
     def valid_hda_match(self, hda, check_implicit_conversions=True):
-        """ Return False if this parameter can not be matched to the supplied
+        """Return False if this parameter can not be matched to the supplied
         HDA, otherwise return a description of the match (either a
         HdaDirectMatch describing a direct match or a HdaImplicitMatch
         describing an implicit conversion.)
@@ -134,7 +136,7 @@ class DatasetMatcher:
         return rval
 
     def hda_match(self, hda, check_implicit_conversions=True, ensure_visible=True):
-        """ If HDA is accessible, return information about whether it could
+        """If HDA is accessible, return information about whether it could
         match this parameter and if so how. See valid_hda_match for more
         information.
         """
@@ -143,13 +145,13 @@ class DatasetMatcher:
         if valid_state and (not ensure_visible or hda.visible):
             # If we are sending data to an external application, then we need to make sure there are no roles
             # associated with the dataset that restrict its access from "public".
-            require_public = self.tool and self.tool.tool_type == 'data_destination'
+            require_public = self.tool and self.tool.tool_type == "data_destination"
             if require_public and not self.trans.app.security_agent.dataset_is_public(dataset):
                 return False
             return self.valid_hda_match(hda, check_implicit_conversions=check_implicit_conversions)
 
     def filter(self, hda):
-        """ Filter out this value based on other values for job (if
+        """Filter out this value based on other values for job (if
         applicable).
         """
         param = self.param
@@ -157,7 +159,7 @@ class DatasetMatcher:
 
 
 class HdaDirectMatch:
-    """ Supplied HDA was a valid option directly (did not need to find implicit
+    """Supplied HDA was a valid option directly (did not need to find implicit
     conversion).
     """
 
@@ -170,7 +172,7 @@ class HdaDirectMatch:
 
 
 class HdaImplicitMatch:
-    """ Supplied HDA was a valid option directly (did not need to find implicit
+    """Supplied HDA was a valid option directly (did not need to find implicit
     conversion).
     """
 
@@ -199,7 +201,6 @@ class HdcaImplicitMatch:
 
 
 class SummaryDatasetCollectionMatcher:
-
     def __init__(self, dataset_matcher_factory, trans, dataset_matcher):
         self.dataset_matcher_factory = dataset_matcher_factory
         self._trans = trans
@@ -220,7 +221,9 @@ class SummaryDatasetCollectionMatcher:
         uses_implicit_conversion = False
         for extension in extensions:
             datatypes_registry = self._trans.app.datatypes_registry
-            direct_match, converted_ext, _ = datatypes_registry.find_conversion_destination_for_dataset_by_extensions(extension, formats)
+            direct_match, converted_ext, _ = datatypes_registry.find_conversion_destination_for_dataset_by_extensions(
+                extension, formats
+            )
             if direct_match:
                 continue
             if not converted_ext:
@@ -232,7 +235,6 @@ class SummaryDatasetCollectionMatcher:
 
 
 class DatasetCollectionMatcher:
-
     def __init__(self, trans, dataset_matcher):
         self.dataset_matcher = dataset_matcher
         self._trans = trans
@@ -277,4 +279,4 @@ class DatasetCollectionMatcher:
         return valid and (HdcaImplicitMatch() if uses_implicit_conversion else HdcaDirectMatch())
 
 
-__all__ = ('get_dataset_matcher_factory', 'set_dataset_matcher_factory', 'unset_dataset_matcher_factory')
+__all__ = ("get_dataset_matcher_factory", "set_dataset_matcher_factory", "unset_dataset_matcher_factory")

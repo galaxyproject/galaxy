@@ -5,19 +5,19 @@ import logging
 
 import requests
 
+from galaxy.structured_app import StructuredApp
 from galaxy.tool_util.deps import views
 from galaxy.web import (
     expose_api,
-    require_admin
+    require_admin,
 )
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class ContainerResolutionAPIController(BaseAPIController):
-
-    def __init__(self, app):
+class ContainerResolutionAPIController(BaseGalaxyAPIController):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self._view = views.ContainerResolutionView(app)
 
@@ -64,7 +64,7 @@ class ContainerResolutionAPIController(BaseAPIController):
         :returns:   a dictified description of the container dependency, with attribute
                     ``dependency_type: None`` if no match was found.
         """
-        kwds['session'] = requests.session()
+        kwds["session"] = requests.session()
         return self._view.resolve(index=index, **kwds)
 
     @expose_api
@@ -84,7 +84,7 @@ class ContainerResolutionAPIController(BaseAPIController):
         :rtype:     list
         :returns:   list of items returned from resolve()
         """
-        kwds['session'] = requests.session()
+        kwds["session"] = requests.session()
         return self._view.resolve_toolbox(**kwds)
 
     @expose_api
@@ -103,7 +103,7 @@ class ContainerResolutionAPIController(BaseAPIController):
         """
         kwds.update(payload)
         kwds["install"] = True
-        kwds['session'] = requests.session()
+        kwds["session"] = requests.session()
         return self._view.resolve_toolbox(**kwds)
 
     @expose_api

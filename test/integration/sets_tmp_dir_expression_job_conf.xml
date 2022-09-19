@@ -6,7 +6,7 @@
 
     <destinations>
         <destination id="local_dest" runner="local">
-            <param id="tmp_dir">$(mktemp cooltmpXXXXXXXXXXXX)</param>
+            <param id="tmp_dir">$(mktemp -d -p $(pwd) cooltmpXXXXXXXXXXXX)</param>
         </destination>
     </destinations>
 

@@ -13,10 +13,12 @@ Subpackages
    :maxdepth: 4
 
    galaxy.model.dataset_collections
-   galaxy.model.migrate
+   galaxy.model.migrations
    galaxy.model.orm
    galaxy.model.store
    galaxy.model.tool_shed_install
+   galaxy.model.triggers
+   galaxy.model.unittest_utils
    galaxy.model.view
 
 Submodules
@@ -42,6 +44,30 @@ galaxy.model.database\_heartbeat module
 ---------------------------------------
 
 .. automodule:: galaxy.model.database_heartbeat
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.model.database\_utils module
+-----------------------------------
+
+.. automodule:: galaxy.model.database_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.model.deferred module
+----------------------------
+
+.. automodule:: galaxy.model.deferred
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.model.index\_filter\_util module
+---------------------------------------
+
+.. automodule:: galaxy.model.index_filter_util
    :members:
    :undoc-members:
    :show-inheritance:
@@ -78,6 +104,14 @@ galaxy.model.none\_like module
    :undoc-members:
    :show-inheritance:
 
+galaxy.model.scoped\_session module
+-----------------------------------
+
+.. automodule:: galaxy.model.scoped_session
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.model.search module
 --------------------------
 
@@ -98,14 +132,6 @@ galaxy.model.tags module
 ------------------------
 
 .. automodule:: galaxy.model.tags
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-galaxy.model.triggers module
-----------------------------
-
-.. automodule:: galaxy.model.triggers
    :members:
    :undoc-members:
    :show-inheritance:

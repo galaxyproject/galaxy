@@ -1,8 +1,10 @@
-if [ -n "$SLURM_JOB_ID" ]; then
-    GALAXY_MEMORY_MB=`scontrol -do show job "$SLURM_JOB_ID" | sed 's/.*\( \|^\)Mem=\([0-9][0-9]*\)\( \|$\).*/\2/p;d'` 2>memory_statement.log
-fi
-if [ -n "$SGE_HGR_h_vmem" ]; then
-    GALAXY_MEMORY_MB=`echo "$SGE_HGR_h_vmem" | sed 's/G$/ * 1024/' | bc | cut -d"." -f1` 2>memory_statement.log
+if [ -z "$GALAXY_MEMORY_MB" ]; then
+    if [ -n "$SLURM_JOB_ID" ]; then
+        GALAXY_MEMORY_MB=`scontrol -do show job "$SLURM_JOB_ID" | sed 's/.*\( \|^\)Mem=\([0-9][0-9]*\)\( \|$\).*/\2/p;d'` 2>memory_statement.log
+    fi
+    if [ -n "$SGE_HGR_h_vmem" ]; then
+        GALAXY_MEMORY_MB=`echo "$SGE_HGR_h_vmem" | sed 's/G$/ * 1024/' | bc | cut -d"." -f1` 2>memory_statement.log
+    fi
 fi
 
 if [ -z "$GALAXY_MEMORY_MB_PER_SLOT" -a -n "$GALAXY_MEMORY_MB" ]; then

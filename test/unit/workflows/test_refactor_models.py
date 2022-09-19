@@ -1,4 +1,7 @@
-from galaxy.workflow.refactor.schema import RefactorRequest
+from galaxy.workflow.refactor.schema import (
+    RefactorActionExecution,
+    RefactorActions,
+)
 
 
 def test_root_list():
@@ -8,15 +11,19 @@ def test_root_list():
             {"action_type": "update_step_label", "label": "new_label", "step": {"order_index": 5}},
             {"action_type": "update_step_label", "label": "new_label", "step": {"label": "cool_label"}},
             {"action_type": "connect", "input": {"input_name": "foobar", "order_index": 6}, "output": {"label": "cow"}},
-            {"action_type": "disconnect", "input": {"input_name": "foobar2", "label": "foolabel"}, "output": {"order_index": 7, "output_name": "o_name"}},
+            {
+                "action_type": "disconnect",
+                "input": {"input_name": "foobar2", "label": "foolabel"},
+                "output": {"order_index": 7, "output_name": "o_name"},
+            },
             {"action_type": "add_input", "type": "data"},
             {"action_type": "add_input", "type": "integer", "optional": True, "default": 5},
             {"action_type": "extract_input", "input": {"order_index": 5, "input_name": "foobar"}},
-            {"action_type": "extract_legacy_parameter", "name": "foo"},
-            {"action_type": "extract_legacy_parameter", "name": "foo", "label": "new_foo"},
+            {"action_type": "extract_untyped_parameter", "name": "foo"},
+            {"action_type": "extract_untyped_parameter", "name": "foo", "label": "new_foo"},
         ],
     }
-    ar = RefactorRequest(**request)
+    ar = RefactorActions(**request)
     actions = ar.actions
 
     a0 = actions[0]
@@ -57,3 +64,11 @@ def test_root_list():
     a9 = actions[9]
     assert a9.name == "foo"
     assert a9.label == "new_foo"
+
+
+def test_executions():
+    ar = RefactorActions(actions=[{"action_type": "extract_untyped_parameter", "name": "foo"}])
+    execution = RefactorActionExecution(action={"action_type": "extract_untyped_parameter", "name": "foo"}, messages=[])
+    assert isinstance(execution.messages, (list,))
+    execution = RefactorActionExecution(action=ar.actions[0].dict(), messages=[])
+    assert isinstance(execution.messages, (list,))

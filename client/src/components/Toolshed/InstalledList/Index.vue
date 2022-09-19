@@ -9,7 +9,7 @@
                     <span class="installed-message text-muted">
                         {{ repositories.length }} repositories installed on this instance.
                     </span>
-                    <b-link @click="toggleMonitor" class="font-weight-bold">
+                    <b-link class="font-weight-bold" @click="toggleMonitor">
                         <span v-if="showMonitor">
                             <span class="fa fa-angle-double-up" />
                             <span>Hide installation progress.</span>
@@ -28,8 +28,7 @@
                     :sort-by="sortBy"
                     :items="repositories"
                     :filter="filter"
-                    @filtered="filtered"
-                >
+                    @filtered="filtered">
                     <template v-slot:cell(name)="row">
                         <b-link href="#" role="button" class="font-weight-bold" @click="row.toggleDetails">
                             <div v-if="!isLatest(row.item)">
@@ -44,7 +43,7 @@
                     </template>
                 </b-table>
                 <div v-if="showNotFound">
-                    No matching entries found for: <span class="font-weight-bold">{{ this.filter }}</span
+                    No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
                     >.
                 </div>
                 <div v-if="showNotAvailable">No installed repositories found.</div>
@@ -69,23 +68,15 @@ export default {
         Monitor,
         RepositoryDetails,
     },
-    props: ["filter"],
+    props: {
+        filter: {
+            type: String,
+            required: true,
+        },
+    },
     data() {
         return {
             error: null,
-            fields: [
-                {
-                    key: "name",
-                    sortable: true,
-                    sortByFormatted: (value, key, item) => {
-                        return `${this.isLatest(item)}_${value}`;
-                    },
-                },
-                {
-                    key: "owner",
-                    sortable: true,
-                },
-            ],
             loading: true,
             message: null,
             messageVariant: null,
@@ -105,10 +96,39 @@ export default {
         showMessage() {
             return !!this.message;
         },
+        numToolsheds() {
+            const toolsheds = new Set();
+            this.repositories.forEach((x) => {
+                toolsheds.add(x.tool_shed);
+            });
+            return toolsheds.size;
+        },
+        fields() {
+            const fields = [
+                {
+                    key: "name",
+                    sortable: true,
+                    sortByFormatted: (value, key, item) => {
+                        return `${this.isLatest(item)}_${value}`;
+                    },
+                },
+                {
+                    key: "owner",
+                    sortable: true,
+                },
+            ];
+            if (this.numToolsheds > 1) {
+                fields.push({
+                    key: "tool_shed",
+                    sortable: true,
+                });
+            }
+            return fields;
+        },
     },
     created() {
         this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
+        this.services = new Services();
         this.load();
     },
     methods: {

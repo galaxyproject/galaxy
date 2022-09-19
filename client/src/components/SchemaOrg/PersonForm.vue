@@ -1,20 +1,18 @@
 <!-- https://schema.org/Person -->
 <template>
     <b-form @submit="onSave" @reset="onReset">
-        <div role="group" class="form-group" v-for="attribute in displayedAttributes" :key="attribute.key">
+        <div v-for="attribute in displayedAttributes" :key="attribute.key" role="group" class="form-group">
             <label :for="attribute.key">{{ attribute.label }}</label>
             <font-awesome-icon
                 v-b-tooltip.hover
                 title="Hide Attribute"
                 icon="eye-slash"
-                @click="onHide(attribute.key)"
-            />
+                @click="onHide(attribute.key)" />
             <b-form-input
                 :id="attribute.key"
                 v-model="currentValues[attribute.key]"
                 :placeholder="'Enter ' + attribute.placeholder + '.'"
-                :type="attribute.type"
-            >
+                :type="attribute.type">
             </b-form-input>
         </div>
         <div role="group" class="form-group">
@@ -52,10 +50,10 @@ import { faEyeSlash, faLink } from "@fortawesome/free-solid-svg-icons";
 library.add(faEyeSlash, faLink);
 
 export default {
-    mixins: [ThingFormMixin],
     components: {
         FontAwesomeIcon,
     },
+    mixins: [ThingFormMixin],
     props: {
         person: {
             type: Object,

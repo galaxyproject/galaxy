@@ -1,9 +1,9 @@
-<tool id="exit_code_from_env" name="exit_code_from_env">
+<tool id="exit_code_from_env" name="exit_code_from_env" version="1.0.0">
     <!-- tool errors out with identified OOM error if less than 10MB are allocated. -->
     <command detect_errors="exit_code" oom_exit_code="42"><![CDATA[
-        echo 'Hello' > '$out_file1';
-        : \${GX_TARGET_EXIT_CODE:-0};
-        exit \${GX_TARGET_EXIT_CODE};
+echo 'Hello' > '$out_file1' &&
+: \${GX_TARGET_EXIT_CODE:-0} &&
+exit \${GX_TARGET_EXIT_CODE}
     ]]></command>
     <inputs>
         <param name="input" type="integer" label="Dummy" value="6" />
@@ -11,8 +11,6 @@
     <outputs>
         <data name="out_file1" />
     </outputs>
-    <help>
-    </help>
     <tests>
         <test>
             <param name="input" value="5" />
@@ -23,4 +21,6 @@
             </output>
         </test>
     </tests>
+    <help>
+    </help>
 </tool>

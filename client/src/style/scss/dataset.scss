@@ -132,7 +132,7 @@
     }
 
     &.state-paused {
-        background: $state-paused-bg;
+        background: $state-info-bg;
         .state-icon {
             &:before {
                 content: fa-content($fa-var-pause);
@@ -211,6 +211,12 @@
                 display: inline;
                 .value {
                     font-weight: bold;
+                }
+            }
+            .dbkey {
+                .value {
+                    white-space: normal;
+                    overflow-wrap: break-word;
                 }
             }
             .datatype .value:after {

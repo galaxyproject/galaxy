@@ -22,7 +22,7 @@ Leveraging OpenID Connect (OIDC) protocol, we enable login to Galaxy without exp
 
 2. Configure Galaxy. In the `galaxy.yml` file enable the OIDC service using the `enable_oidc` key and set the two configuration files (i.e., `oidc_config_file` and `oidc_backends_config_file`), based on the IdP information. 
 
-**This configuration is explained in details, and with screenshots, at [this page](https://galaxyproject.org/admin/authentication/config/). Also, [at this page](https://galaxyproject.org/admin/authentication/) we explain how a user can benefit from this feature.**
+The configuration is explained with provider-specific details at [User Authentication Configuration](https://galaxyproject.org/authnz/config/oidc/). How to authenticate from the user perspective we describe [here](https://galaxyproject.org/authnz/use/oidc/).
 
 ## Authentication Framework
 

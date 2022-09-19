@@ -5,12 +5,14 @@ import requests
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
+from galaxy.structured_app import BasicSharedApp
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+
 log = logging.getLogger(__name__)
 
 
 class CitationsManager:
-
-    def __init__(self, app):
+    def __init__(self, app: BasicSharedApp) -> None:
         self.app = app
         self.doi_cache = DoiCache(app.config)
 
@@ -34,19 +36,18 @@ class CitationsManager:
 
 
 class DoiCache:
-
     def __init__(self, config):
         cache_opts = {
-            'cache.type': getattr(config, 'citation_cache_type', 'file'),
-            'cache.data_dir': getattr(config, 'citation_cache_data_dir', None),
-            'cache.lock_dir': getattr(config, 'citation_cache_lock_dir', None),
+            "cache.type": getattr(config, "citation_cache_type", "file"),
+            "cache.data_dir": getattr(config, "citation_cache_data_dir", None),
+            "cache.lock_dir": getattr(config, "citation_cache_lock_dir", None),
         }
-        self._cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache('doi')
+        self._cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache("doi")
 
     def _raw_get_bibtex(self, doi):
-        doi_url = "https://doi.org/" + doi
-        headers = {'Accept': 'application/x-bibtex'}
-        req = requests.get(doi_url, headers=headers)
+        doi_url = f"https://doi.org/{doi}"
+        headers = {"Accept": "application/x-bibtex"}
+        req = requests.get(doi_url, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
         req.encoding = req.apparent_encoding
         return req.text
 
@@ -59,10 +60,10 @@ def parse_citation(elem, citation_manager):
     """
     Parse an abstract citation entry from the specified XML element.
     """
-    citation_type = elem.attrib.get('type', None)
+    citation_type = elem.attrib.get("type", None)
     citation_class = CITATION_CLASSES.get(citation_type, None)
     if not citation_class:
-        log.warning("Unknown or unspecified citation type: %s" % citation_type)
+        log.warning(f"Unknown or unspecified citation type: {citation_type}")
         return None
     try:
         citation = citation_class(elem, citation_manager)
@@ -72,7 +73,6 @@ def parse_citation(elem, citation_manager):
 
 
 class CitationCollection:
-
     def __init__(self):
         self.citations = []
 
@@ -94,7 +94,6 @@ class CitationCollection:
 
 
 class BaseCitation:
-
     def to_dict(self, citation_format):
         if citation_format == "bibtex":
             return dict(
@@ -102,7 +101,7 @@ class BaseCitation:
                 content=self.to_bibtex(),
             )
         else:
-            raise Exception("Unknown citation format %s" % citation_format)
+            raise Exception(f"Unknown citation format {citation_format}")
 
     def equals(self, other_citation):
         if self.has_doi() and other_citation.has_doi():
@@ -116,7 +115,6 @@ class BaseCitation:
 
 
 class BibtexCitation(BaseCitation):
-
     def __init__(self, elem, citation_manager):
         self.raw_bibtex = elem.text.strip()
 
@@ -149,7 +147,9 @@ class DoiCitation(BaseCitation):
             return """@MISC{{{doi},
                 DOI = {{{doi}}},
                 note = {{Failed to fetch BibTeX for DOI.}}
-            }}""".format(doi=self.__doi)
+            }}""".format(
+                doi=self.__doi
+            )
         else:
             return self.raw_bibtex
 

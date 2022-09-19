@@ -48,13 +48,14 @@ Members
 - Dave Bouvier (@davebx)
 - Martin Čech (@martenson)
 - John Chilton (@jmchilton)
-- Dave Clements (@tnabtaf)
 - Nate Coraor (@natefoo)
+- John Davis (@jdavcs)
 - Jeremy Goecks (@jgoecks)
-- Sergey Golitsynskiy (@ic4f)
+- Nuwan Goonasekera (@nuwang)
 - Björn Grüning (@bgruening)
 - Aysam Guerler (@guerler)
 - Jennifer Hillman Jackson (@jennaj)
+- David López (@davelopez)
 - Anton Nekrutenko (@nekrut)
 - Helena Rasche (@hexylena)
 - Nicola Soranzo (@nsoranzo)
@@ -76,23 +77,24 @@ to the *committers* group. Such individuals must have demonstrated:
 - Significant contributions to the project.
 - Willingness to dedicate some time to improving Galaxy.
 
-The above list of people is the canonical source used to determine
-membership to the *committers* group - as such new members may be added to
-this group by opening a pull request adding a qualified person to this list.
-Pull requests modifying the membership of this list are subject to the normal
-rules for pull requests that modify governance procedures outlined below, with
-one exception: a *committer* may not vote
-against their own removal from the group (for obvious reasons).
+The above list of people is the canonical source used to determine membership to
+the *committers* group - as such new members may be added to this group by
+opening a pull request adding a qualified person to this list. Pull requests
+modifying the membership of this list are subject to the normal rules for pull
+requests that modify governance procedures outlined below, with one exception: a
+*committer* may not vote against their own removal from the group (for obvious
+reasons).
 
 Given the responsibilities and power invested in this group, it is important
-that individuals not actively working on Galaxy anymore are removed from
-the group. If individuals in this group intend to change jobs or reallocate
-volunteer activities and will no longer be active in the Galaxy community,
-they should withdraw from membership of this group. Periodically, active
-members may review this group and request that inactive members are removed - this
-should not be interpreted as a condemnation of these inactive members but
-merely as a reflection of the desire to keep this group focused enough to remain
-effective.
+that individuals not actively working on Galaxy anymore are removed from the
+group. If individuals in this group intend to change jobs or reallocate
+volunteer activities and will no longer be active in the Galaxy community, they
+should withdraw from membership of this group. Periodically, active members may
+review this group and request that inactive members are removed - this should
+not be interpreted as a condemnation of these inactive members but merely as a
+reflection of the desire to keep this group focused enough to remain effective.
+
+
 
 Direct Commit Access
 --------------------
@@ -152,6 +154,9 @@ Pull requests changing or clarifying the *Procedure Documents* (listed above):
   contain code modifications.
 - If the pull request adds or removes *committers*, there must be a separate
   pull request for each person added or removed.
+- Members of the *committers* group may submit PRs updating their own name or
+  username in the ``members`` section of this file.  This type of change is not
+  subject to the 192 hour nor 25% rule, and can be merged by any other member.
 
 Any other pull request requires at least 1 *+1* binding vote from someone other
 than the author of the pull request. A member of the *committers* group merging
@@ -161,11 +166,11 @@ Pull requests modifying frozen and tagged release branches should be restricted
 to bug fixes. As an exception, pull requests which only add new datatypes can
 target a frozen branch or the latest tagged release branch.
 
-Pull requests marked *[WIP]* (i.e. work in progress) in the title by the
-author(s), or tagged WIP via GitHub tags, may *not* be merged without
-coordinating the removal of that tag with the pull request author(s), and
-completing the removal of that tag from wherever it is present in the open pull
-request.
+A pull request marked *[WIP]* (i.e. work in progress) in the title by its
+author(s) may *not* be merged without coordinating the removal of that mark with
+the pull request author(s). Nevertheless, pull request authors should normally
+use the `draft <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests#draft-pull-requests>`__
+state to indicate a work-in-progress pull request.
 
 Timelines
 ---------
@@ -215,19 +220,17 @@ invokes a mandatory, minimum 72 hour, review period.
 Labeling and Milestones
 -----------------------
 
-Pull request handling, labeling, and milestone usage follows the procedures
-described in ISSUES_.
+Pull request labeling and milestone usage follows the procedures described in
+:doc:`Galaxy Issue Management <issues>`.
 
 
 Issue Reporting
 ===============
 
-Issues (bugs, feature requests, etc.) should be reported at ISSUE_REPORT_, and
-handling of issues follows the procedures described in ISSUES_.
+Issues (bugs, feature requests, etc.) should be reported and handled as
+described in :doc:`Galaxy Issue Management <issues>`.
 
 
 .. _CODE_OF_CONDUCT: https://github.com/galaxyproject/galaxy/blob/dev/CODE_OF_CONDUCT.md
-.. _SECURITY_POLICY: https://github.com/galaxyproject/galaxy/blob/dev/SECURITY_POLICY.md
+.. _SECURITY_POLICY: https://github.com/galaxyproject/galaxy/blob/dev/SECURITY.md
 .. _Apache Software Foundation voting rules: https://www.apache.org/foundation/voting.html
-.. _ISSUES: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/issues.rst
-.. _ISSUE_REPORT: https://github.com/galaxyproject/galaxy/issues/

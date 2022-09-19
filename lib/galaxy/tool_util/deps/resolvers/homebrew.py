@@ -14,13 +14,13 @@ incompatible changes coming.
 
 from . import (
     DependencyResolver,
-    NullDependency
+    NullDependency,
 )
 from .resolver_mixins import UsesHomebrewMixin
 
 # TODO: Implement prefer version linked...
-PREFER_VERSION_LINKED = 'linked'
-PREFER_VERSION_LATEST = 'latest'
+PREFER_VERSION_LINKED = "linked"
+PREFER_VERSION_LATEST = "latest"
 UNKNOWN_PREFER_VERSION_MESSAGE_TEMPLATE = "HomebrewDependencyResolver prefer_version must be %s"
 UNKNOWN_PREFER_VERSION_MESSAGE = UNKNOWN_PREFER_VERSION_MESSAGE_TEMPLATE % (PREFER_VERSION_LATEST)
 DEFAULT_PREFER_VERSION = PREFER_VERSION_LATEST
@@ -30,8 +30,8 @@ class HomebrewDependencyResolver(DependencyResolver, UsesHomebrewMixin):
     resolver_type = "homebrew"
 
     def __init__(self, dependency_manager, **kwds):
-        self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
-        self.prefer_version = kwds.get('prefer_version', None)
+        self.versionless = _string_as_bool(kwds.get("versionless", "false"))
+        self.prefer_version = kwds.get("prefer_version", None)
 
         if self.prefer_version is None:
             self.prefer_version = DEFAULT_PREFER_VERSION
@@ -57,4 +57,4 @@ def _string_as_bool(value):
     return str(value).lower() == "true"
 
 
-__all__ = ('HomebrewDependencyResolver', )
+__all__ = ("HomebrewDependencyResolver",)

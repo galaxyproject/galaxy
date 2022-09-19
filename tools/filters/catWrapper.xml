@@ -1,5 +1,8 @@
 <tool id="cat1" name="Concatenate datasets" version="1.0.0">
     <description>tail-to-head</description>
+    <edam_operations>
+        <edam_operation>operation_3436</edam_operation>
+    </edam_operations>
     <command interpreter="python"><![CDATA[
 catWrapper.py
 '$out_file1'

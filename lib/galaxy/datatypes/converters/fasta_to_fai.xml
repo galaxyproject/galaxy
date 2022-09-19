@@ -14,8 +14,8 @@ samtools faidx temp.fasta
     </outputs>
     <tests>
         <test>
-            <param name="input" format="fasta" value="chr_m.fasta"/>
-            <output name="output" format="fai" value="chr_m.fai"/>
+            <param name="input" ftype="fasta" value="chr_m.fasta"/>
+            <output name="output" ftype="fai" value="chr_m.fai"/>
         </test>
     </tests>
     <help>

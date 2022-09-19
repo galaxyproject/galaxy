@@ -12,6 +12,7 @@ import os
 import shutil
 import sys
 
+from galaxy.files import ConfiguredFileSources
 from galaxy.model.store import tar_export_directory
 from galaxy.util import unicodify
 
@@ -21,10 +22,10 @@ def create_archive(export_directory, out_file, gzip=False):
     try:
         tar_export_directory(export_directory, out_file, gzip)
         # Status.
-        print('Created history archive.')
+        print("Created history archive.")
         return 0
     except Exception as e:
-        print('Error creating history archive: %s' % unicodify(e), file=sys.stderr)
+        print(f"Error creating history archive: {unicodify(e)}", file=sys.stderr)
         return 1
     finally:
         shutil.rmtree(export_directory, ignore_errors=True)
@@ -33,9 +34,11 @@ def create_archive(export_directory, out_file, gzip=False):
 def main(argv=None):
     # Parse command line.
     parser = optparse.OptionParser()
-    parser.add_option('-G', '--gzip', dest='gzip', action="store_true", help='Compress archive using gzip.')
-    parser.add_option('--galaxy-version', dest='galaxy_version', help='Galaxy version that initiated the command.', default=None)
-    parser.add_option('--file-sources', type=str, help='file sources json')
+    parser.add_option("-G", "--gzip", dest="gzip", action="store_true", help="Compress archive using gzip.")
+    parser.add_option(
+        "--galaxy-version", dest="galaxy_version", help="Galaxy version that initiated the command.", default=None
+    )
+    parser.add_option("--file-sources", type=str, help="file sources json")
     (options, args) = parser.parse_args(argv)
     galaxy_version = options.galaxy_version
     if galaxy_version is None:
@@ -60,7 +63,7 @@ def main(argv=None):
     return exit
 
 
-def _write_to_destination(file_sources_path, out_file, destination_uri):
+def _write_to_destination(file_sources_path: str, out_file: str, destination_uri: str):
     file_sources = get_file_sources(file_sources_path)
     file_source_path = file_sources.get_file_source_path(destination_uri)
     file_source = file_source_path.file_source
@@ -68,9 +71,8 @@ def _write_to_destination(file_sources_path, out_file, destination_uri):
     file_source.write_from(file_source_path.path, out_file)
 
 
-def get_file_sources(file_sources_path):
-    assert os.path.exists(file_sources_path), "file sources path [%s] does not exist" % file_sources_path
-    from galaxy.files import ConfiguredFileSources
+def get_file_sources(file_sources_path: str) -> ConfiguredFileSources:
+    assert os.path.exists(file_sources_path), f"file sources path [{file_sources_path}] does not exist"
     with open(file_sources_path) as f:
         file_sources_as_dict = json.load(f)
     file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)

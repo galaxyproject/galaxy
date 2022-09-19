@@ -13,8 +13,7 @@ execution:
       runner: pulsar_embed
       remote_metadata: true
       default_file_action: copy
-      metadata_strategy: directory
 
 tools:
-- id: upload1
+- class: local
   environment: local

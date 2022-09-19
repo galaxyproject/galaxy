@@ -1,10 +1,8 @@
 import { mount, createLocalVue } from "@vue/test-utils";
 import StatelessTags from "./StatelessTags";
-import _l from "utils/localization";
 
 describe("Tags/StatelessTags.vue", () => {
     const localVue = createLocalVue();
-    localVue.filter("localize", (value) => _l(value));
 
     const testTags = ["abc", "def", "ghi"];
     let wrapper;
@@ -12,11 +10,10 @@ describe("Tags/StatelessTags.vue", () => {
 
     beforeEach(async () => {
         wrapper = mount(StatelessTags, { localVue });
-        wrapper.setProps({
+        await wrapper.setProps({
             value: testTags,
         });
         emitted = wrapper.emitted();
-        await wrapper.vm.$nextTick();
     });
 
     it("should render a div for each tag", () => {
@@ -46,7 +43,7 @@ describe("Tags/StatelessTags.vue", () => {
     it("should change internal model representation when new tag list assigned", async () => {
         expect(wrapper.vm.tagModels.length).toBe(3);
         const newTags = ["floob", "clown", "hoohah", "doodoo"];
-        wrapper.setProps({ value: newTags });
+        await wrapper.setProps({ value: newTags });
         expect(wrapper.vm.tagModels.length).toBe(newTags.length);
     });
 });

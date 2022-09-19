@@ -26,7 +26,7 @@ if [ $? -eq 0 ] ; then
 fi
 
 if [ -z "$TOOL_SHED_CONFIG_FILE" ]; then
-    TOOL_SHED_CONFIG_FILE=$(PYTHONPATH=lib python -c "from __future__ import print_function; from galaxy.util.properties import find_config_file; print(find_config_file(['tool_shed', 'tool_shed_wsgi']) or '')")
+    TOOL_SHED_CONFIG_FILE=$(PYTHONPATH=lib python -c "from __future__ import print_function; from galaxy.util.properties import find_config_file; print(find_config_file(['tool_shed', 'tool_shed_wsgi'], include_samples=True) or '')")
     export TOOL_SHED_CONFIG_FILE
 fi
 

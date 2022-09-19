@@ -1,5 +1,7 @@
-from time import gmtime
-from time import strftime
+from time import (
+    gmtime,
+    strftime,
+)
 
 
 class ShedCounter:
@@ -57,35 +59,35 @@ class ShedCounter:
                 # repository_metadata.downloadable column.
                 for metadata_revision in repository.metadata_revisions:
                     metadata = metadata_revision.metadata
-                    if 'tools' in metadata:
-                        tool_dicts = metadata['tools']
+                    if "tools" in metadata:
+                        tool_dicts = metadata["tools"]
                         for tool_dict in tool_dicts:
-                            if 'guid' in tool_dict:
-                                guid = tool_dict['guid']
+                            if "guid" in tool_dict:
+                                guid = tool_dict["guid"]
                                 if guid not in processed_guids:
                                     self.valid_versions_of_tools += 1
                                     processed_guids.append(guid)
-                            if 'id' in tool_dict:
-                                tool_id = tool_dict['id']
+                            if "id" in tool_dict:
+                                tool_id = tool_dict["id"]
                                 if tool_id not in processed_tool_ids:
                                     self.unique_valid_tools += 1
                                     processed_tool_ids.append(tool_id)
-                    if 'invalid_tools' in metadata:
-                        invalid_tool_configs = metadata['invalid_tools']
+                    if "invalid_tools" in metadata:
+                        invalid_tool_configs = metadata["invalid_tools"]
                         for invalid_tool_config in invalid_tool_configs:
                             if invalid_tool_config not in processed_invalid_tool_configs:
                                 self.invalid_versions_of_tools += 1
                                 processed_invalid_tool_configs.append(invalid_tool_config)
-                    if 'datatypes' in metadata:
-                        datatypes = metadata['datatypes']
+                    if "datatypes" in metadata:
+                        datatypes = metadata["datatypes"]
                         for datatypes_dict in datatypes:
-                            if 'extension' in datatypes_dict:
-                                extension = datatypes_dict['extension']
+                            if "extension" in datatypes_dict:
+                                extension = datatypes_dict["extension"]
                                 if extension not in processed_datatypes:
                                     self.custom_datatypes += 1
                                     processed_datatypes.append(extension)
-                    if 'workflows' in metadata:
-                        workflows = metadata['workflows']
+                    if "workflows" in metadata:
+                        workflows = metadata["workflows"]
                         for workflow_tup in workflows:
                             relative_path, exported_workflow_dict = workflow_tup
                             if relative_path not in processed_relative_workflow_paths:

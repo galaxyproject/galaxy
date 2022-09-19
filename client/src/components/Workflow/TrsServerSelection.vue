@@ -7,20 +7,19 @@
                 data-toggle="dropdown"
                 aria-haspopup="true"
                 aria-expanded="false"
-                class="font-weight-bold"
-            >
+                class="font-weight-bold">
                 {{ selection.label }}
                 <span class="fa fa-caret-down" />
             </b-link>
             <div class="dropdown-menu" aria-labelledby="dropdownTrsServer">
                 <a
-                    v-for="selection in trsServers"
-                    :key="selection.id"
+                    v-for="serverSelection in trsServers"
+                    :key="serverSelection.id"
                     class="dropdown-item"
                     href="javascript:void(0)"
                     role="button"
-                    @click.prevent="onTrsSelection(selection)"
-                    >{{ selection.label }}</a
+                    @click.prevent="onTrsSelection(serverSelection)"
+                    >{{ serverSelection.label }}</a
                 >
             </div>
         </span>
@@ -49,10 +48,6 @@ export default {
             default: null,
         },
     },
-    created() {
-        this.services = new Services();
-        this._configureTrsServers();
-    },
     data() {
         return {
             selection: null,
@@ -65,6 +60,10 @@ export default {
         showDropdown() {
             return this.trsServers.length > 1;
         },
+    },
+    created() {
+        this.services = new Services();
+        this._configureTrsServers();
     },
     methods: {
         onTrsSelection(selection) {

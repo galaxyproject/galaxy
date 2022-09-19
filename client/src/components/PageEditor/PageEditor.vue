@@ -6,8 +6,7 @@
         :page-id="pageId"
         :public-url="publicUrl"
         :content="content"
-        :content-data="contentData"
-    />
+        :content-data="contentData" />
     <page-editor-html v-else :title="title" :page-id="pageId" :public-url="publicUrl" :content="content" />
 </template>
 
@@ -21,6 +20,11 @@ import PageEditorHtml from "./PageEditorHtml";
 import PageEditorMarkdown from "./PageEditorMarkdown";
 
 export default {
+    components: {
+        PageEditorHtml,
+        PageEditorMarkdown,
+        LoadingSpan,
+    },
     props: {
         pageId: {
             required: true,
@@ -36,11 +40,6 @@ export default {
             publicUrl: null,
             loading: true,
         };
-    },
-    components: {
-        PageEditorHtml,
-        PageEditorMarkdown,
-        LoadingSpan,
     },
     created() {
         this.getPage(this.pageId)

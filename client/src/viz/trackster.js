@@ -139,14 +139,6 @@ export class TracksterUI extends Backbone.Model {
                     },
                 },
                 {
-                    icon_class: "bookmarks",
-                    title: _l("Bookmarks"),
-                    on_click: () => {
-                        // HACK -- use style to determine if panel is hidden and hide/show accordingly.
-                        window.force_right_panel($("div#right").css("right") == "0px" ? "hide" : "show");
-                    },
-                },
-                {
                     icon_class: "globe",
                     title: _l("Circster"),
                     on_click: () => {
@@ -395,9 +387,6 @@ export class TracksterUIView extends Backbone.View {
             this.ui.view.resize_window();
         });
 
-        // hide right panel
-        window.force_right_panel("hide");
-
         // check if id is available
         if (window.galaxy_config.app.id) {
             this.view_existing();
@@ -573,7 +562,7 @@ export class TracksterUIView extends Backbone.View {
         $("#center .unified-panel-title").text(`${this.ui.view.config.get_value("name")} (${this.ui.view.dbkey})`);
 
         // add dataset
-        if (window.galaxy_config.app.add_dataset)
+        if (window.galaxy_config.app.add_dataset) {
             $.ajax({
                 url: `${getAppRoot()}api/datasets/${window.galaxy_config.app.add_dataset}`,
                 data: { hda_ldda: "hda", data_type: "track_config" },
@@ -582,6 +571,7 @@ export class TracksterUIView extends Backbone.View {
                     this.ui.view.add_drawable(tracks.object_from_template(track_data, this.ui.view, this.ui.view));
                 },
             });
+        }
 
         // initialize icons
         $("#add-bookmark-button").click(() => {

@@ -99,7 +99,6 @@ export class OutputDragging {
         var onmove = () => {
             var canvasZoom = this.app.canvasManager.canvasZoom;
             var po = $(d.proxy).offsetParent().offset();
-
             var x = d.offsetX - po.left;
             var y = d.offsetY - po.top;
             $(d.proxy).css({ left: x / canvasZoom, top: y / canvasZoom });
@@ -107,7 +106,7 @@ export class OutputDragging {
             this.app.canvasManager.updateViewportOverlay();
         };
         onmove();
-        $("#canvas-container").get(0).scroll_panel.test(e, onmove);
+        this.app.canvasManager.scrollPanel.test(e, onmove);
     }
     onDragStart(e, d = {}) {
         $(d.available).addClass("input-terminal-active");
@@ -134,6 +133,6 @@ export class OutputDragging {
         $(d.proxy).tooltip("dispose");
         $(d.proxy).remove();
         $(d.available).removeClass("input-terminal-active");
-        $("#canvas-container").get(0).scroll_panel.stop();
+        this.app.canvasManager.scrollPanel.stop();
     }
 }

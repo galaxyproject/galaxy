@@ -1,0 +1,38 @@
+th:focus {
+    outline: none !important;
+}
+
+.pagination-input-field {
+    max-width: 60px
+}
+
+.pagination-total-pages-text {
+    margin-left: .25rem;
+}
+
+.more-text-btn {
+    margin-left: .25rem;
+    font-size: 60%;
+    color: grey;
+}
+
+.description-field {
+    width: 40rem;
+}
+
+
+.empty-folder-message {
+    text-align: center;
+}
+
+.select-checkbox {
+    color: navy;
+}
+
+.deleted-item {
+    color: grey;
+}
+
+.lib-btn {
+    margin-bottom: 2%
+}

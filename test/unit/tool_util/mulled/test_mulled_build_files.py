@@ -9,8 +9,8 @@ from galaxy.tool_util.deps.mulled.mulled_build_files import (
     generate_targets,
 )
 
-
-TESTCASES = yaml.safe_load(r"""
+TESTCASES = yaml.safe_load(
+    r"""
 - test_legacy_files_package_only:
     content: samtools
     equals:
@@ -53,15 +53,18 @@ TESTCASES = yaml.safe_load(r"""
       image_build: '10'
       name_override: image_name
       targets: samtools
-""")
+"""
+)
 TEST_IDS = [next(iter(k.keys())) for k in TESTCASES]
 
 
-@pytest.mark.parametrize('content, equals', [(d[k]['content'], d[k]['equals']) for k, d in zip(TEST_IDS, TESTCASES)], ids=TEST_IDS)
+@pytest.mark.parametrize(
+    "content, equals", [(d[k]["content"], d[k]["equals"]) for k, d in zip(TEST_IDS, TESTCASES)], ids=TEST_IDS
+)
 def test_generate_targets(content, equals):
-    equals['targets'] = target_str_to_targets(equals['targets'])
+    equals["targets"] = target_str_to_targets(equals["targets"])
     equals = FALLBACK_LINE_TUPLE(**equals)
-    with tempfile.NamedTemporaryFile(mode='w') as tmpfile:
+    with tempfile.NamedTemporaryFile(mode="w") as tmpfile:
         tmpfile.write(content)
         tmpfile.flush()
         generated_target = next(generate_targets(tmpfile.name))

@@ -66,7 +66,7 @@ const PopupMenu = Backbone.View.extend({
     },
 
     template: function (id, options) {
-        return `<div id="${id}-menu" class="dropdown-menu">
+        return `<div id="${id}-menu" class="dropdown-menu ${id}-menu">
                     ${this._templateOptions(options)}
                 </div>`;
     },
@@ -84,7 +84,8 @@ const PopupMenu = Backbone.View.extend({
             const href = option.href || "javascript:void(0);";
             const target = option.target ? `target="${option.target}"` : "";
             const check = option.checked ? '<span class="fa fa-check mr-1"/>' : "";
-            return `<a class="popupmenu-option dropdown-item" href="${href}" ${target}>${check}${option.html}</a>`;
+            const title = option.title ? `title="${option.title}"` : "";
+            return `<a class="popupmenu-option dropdown-item" href="${href}" ${title} ${target}>${check}${option.html}</a>`;
         }).join("");
     },
 

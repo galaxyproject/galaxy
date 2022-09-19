@@ -1,28 +1,54 @@
 name: Mulled Unit Tests
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
+  pull_request:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-
   test:
     name: Test
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7]
+        python-version: ['3.7']
     steps:
-    - uses: actions/checkout@v2
-      with:
-        path: 'galaxy root'
-    - uses: actions/setup-python@v1
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Cache pip dir
-      uses: actions/cache@v1
-      id: pip-cache
-      with:
-        path: ~/.cache/pip
-        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
-    - name: Install tox
-      run: pip install tox
-    - name: run tests
-      run: tox -e mulled
-      working-directory: 'galaxy root'
+      - uses: actions/checkout@v3
+        with:
+          path: 'galaxy root'
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Get full Python version
+        id: full-python-version
+        shell: bash
+        run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
+      - name: Cache pip dir
+        uses: actions/cache@v3
+        id: pip-cache
+        with:
+          path: ~/.cache/pip
+          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+      - name: Cache tox env
+        uses: actions/cache@v3
+        with:
+          path: .tox
+          key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-mulled
+      - name: Install tox
+        run: pip install tox
+      - name: run tests
+        run: tox -e mulled
+        working-directory: 'galaxy root'
+      - uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: Mulled unit test results (${{ matrix.python-version }})
+          path: 'galaxy root/run_unit_tests.html'

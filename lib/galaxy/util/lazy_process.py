@@ -4,7 +4,7 @@ import time
 
 
 class LazyProcess:
-    """ Abstraction describing a command line launching a service - probably
+    """Abstraction describing a command line launching a service - probably
     as needed as functionality is accessed in Galaxy.
     """
 
@@ -30,8 +30,9 @@ class LazyProcess:
         with self.thread_lock:
             self.allow_process_request = False
         if self.running:
+            assert self.process  # tell type checker it can not be None if self.running
             self.process.terminate()
-            time.sleep(.01)
+            time.sleep(0.01)
             if self.running:
                 self.process.kill()
 
@@ -41,7 +42,7 @@ class LazyProcess:
 
 
 class NoOpLazyProcess:
-    """ LazyProcess abstraction meant to describe potentially optional
+    """LazyProcess abstraction meant to describe potentially optional
     services, in those cases where one is not configured or valid, this
     class can be used in place of LazyProcess.
     """

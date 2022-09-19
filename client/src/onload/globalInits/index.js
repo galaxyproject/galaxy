@@ -18,7 +18,6 @@ import { init_refresh_on_change } from "./init_refresh_on_change";
 import { onloadWebhooks } from "./onloadWebhooks";
 import { replace_big_select_inputs } from "./replace_big_select_inputs";
 import { make_popup_menus } from "ui/popupmenu";
-import { initTours } from "./initTours";
 import { initModals } from "./initModals";
 
 export function globalInits() {
@@ -32,7 +31,6 @@ export function globalInits() {
         init_refresh_on_change,
         () => replace_big_select_inputs(20, 1500),
         make_popup_menus,
-        initTours,
         onloadWebhooks
     );
 }

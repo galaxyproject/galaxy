@@ -3,8 +3,7 @@
         class="dataset-link"
         :history_dataset_id="args.history_dataset_id"
         :path="args.path"
-        :label="args.label"
-    />
+        :label="args.label" />
 </template>
 
 <script>

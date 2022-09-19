@@ -1,5 +1,5 @@
 <template>
-    <span v-if="this.decoded_id">({{ decoded_id }})</span>
+    <span v-if="decoded_id">({{ decoded_id }})</span>
 </template>
 <script>
 import axios from "axios";
@@ -17,9 +17,6 @@ export default {
     data() {
         return { decoded_id: null };
     },
-    created: function () {
-        this.decodeId(this.id);
-    },
     computed: {
         isAdmin() {
             // window.parent.Galaxy is needed when instance is mounted in mako
@@ -27,14 +24,19 @@ export default {
             return Galaxy?.user?.isAdmin() || false;
         },
     },
+    created: function () {
+        this.decodeId(this.id);
+    },
     methods: {
         decodeId: async function (id) {
-            const url = `${getAppRoot()}api/configuration/decode/${id}`;
-            try {
-                const response = await axios.get(url);
-                this.decoded_id = response.data.decoded_id;
-            } catch (e) {
-                rethrowSimple(e);
+            if (this.isAdmin) {
+                const url = `${getAppRoot()}api/configuration/decode/${id}`;
+                try {
+                    const response = await axios.get(url);
+                    this.decoded_id = response.data.decoded_id;
+                } catch (e) {
+                    rethrowSimple(e);
+                }
             }
         },
     },

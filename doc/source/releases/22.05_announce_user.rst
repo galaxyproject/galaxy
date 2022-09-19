@@ -1,0 +1,279 @@
+
+===========================================================
+May 2022 Galaxy Release (v 22.05)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**The New History is Here**
+
+After years of effort by the development team and community contributors, the new history is finally here. It's a big improvement over the old history interface, both technically and in terms of user experience, but it might take some getting used to. It has a lot of great new features like:
+
+- A quick switcher, letting you switch between recent histories
+- Easily find dataset inputs
+- Improved history search interface
+
+Check it out now!
+
+.. figure:: images/22.05-history.png
+   :alt: Screenshot of a history, the top most dataset is expanded and a "sitemap" icon is clicked which is showing inputs for that dataset. Each of those inputs has a small upward arrow next to the dataset number. The 'end' dataset of those inputs has a checkmark icon next to the dataset number. The history is titled the beta history and there are a lot of new buttons at the top.
+
+**Storage Dashboard** (beta)
+
+Have you ever been over your quota? 250 GB sure goes fast! Now with the new Storage Dashboard you can get a quick overview of ways to help clean up deleted datasets and recover some of that quota allocation. This is a beta version of this interface, let us know if you have any issues. In future versions, it will be expanded to help you understand how your allocation is being used, and which histories and datasets should be cleaned up first.
+
+.. raw:: html
+
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/Qbf3FcRPhhE" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video of a user activating the storage dashboard interface, and then using the dataset deletion interface to delete multiple datasets, before seeing the decreased storage usage."></iframe>
+
+**Bulk History Operations**
+
+The new history allows for improved bulk operations, selecting dozens or hundreds of datasets to retag or change database key automatically, a process that used to require using collections or doing them one by one.
+
+.. raw:: html
+
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/rSv4HgQaMkg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video of a user selecting multiple datasets and applying a tag to all of them, before selecting multiple datasets and applying a database key to all of them as well."></iframe>
+
+**Deferred dataset resolution enables running workflows and tools without importing data into Galaxy first**
+
+It is now possible to defer dataset resolution for datasets imported via URLs and the "Choose remote files" dialog.
+This means that the deferred dataset will only be downloaded as it is needed during job execution. Deferred datasets will not
+count towards your storage quota, as the data is not stored by Galaxy. To enable deferred dataset resolution click on "Settings"
+in the upload dialog.
+
+.. figure:: images/22.05-deferred-data-upload.png
+   :alt: Screenshot of the upload modal. The Settings menu is expanded and shows the "Deferred dataset resolution" checkbox.
+
+**Workflow Improvements**
+
+You can now see all invocations of a specific workflow, across all of your histories.
+
+.. figure:: images/22.05-invocation-menu.png
+   :alt: Screenshot of the drop down menu on a specific workflow, showing an invocation button. This is accessible via the workflow name in the workflow list.
+
+This is especially useful if you run a single workflow across multiple datasets, and keep them nicely separated in multiple histories. You can see all of the results in a single centralised location.
+
+.. figure:: images/22.05-invocation-list.png
+   :alt: List of workflow invocations for a specific workflow named Annotation Pipeline. A single invocation is visible along with the results and associated report in the normal workflow invocation view that appears after submitting a job.
+
+Additional workflow improvements have been made, e.g. numbering of steps in a workflow. Improvements have been made to the internal representation of the workflow that should make the saved `.ga` and `.gxwf.yml` files easier to compare across changes.
+
+Workflows can also now be zoomed in and out via scrolling, this interface should be more familiar for anyone who has used Google Maps:
+
+.. raw:: html
+
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/B-Ku-zEiNOw" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video of a user zooming in and out of a workflow by scrolling."></iframe>
+
+**Saved Rules**
+
+Do you use the Rule Based Uploader (RBU)? (If not, `learn how today! <https://training.galaxyproject.org/training-material/topics/galaxy-interface/tutorials/upload-rules/tutorial.html>`__) The RBU now has a very convenient recently used rule listing, sorted by how recently they were used. You can hover over each entry to also list a preview of what steps were done in that RBU invocation:
+
+.. figure:: images/22.05-rbu.png
+   :alt: Rule based uploader interface showing a list of recently used rules. The mouse hovers over the first one showing a short description of the rule mentioning filtering.
+
+**Scratchbook Upgraded**
+
+The scratchbook has been updated to a new implementation. Now your views of datasets can overlap, you have much more freedom in the size of each window, and you can minimize datasets like minimizing a window to the taskbar in Windows.
+
+.. raw:: html
+
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/1vd8o1m7cfc" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video of the new scratchbook, where the user opens datasets and minimizes them. They now appear at the bottom of the window"></iframe>
+
+**OpenAPI Docs**
+
+The Galaxy API is going through an upgrade to FastAPI, which allows us to generate OpenAPI documentation. If you're an API consumer, either via BioBlend or via another system, you can use this to see all of the APIs available from Galaxy and try them out live.
+
+.. figure:: images/22.05-openapi.png
+   :alt: Screenshot of the OpenAPI autogenerated documentation listing all of the available Galaxy APIs. In each collapsed section there is an interface to try out the APIs with various values, live, in Galaxy.
+
+
+New Visualizations
+===========================================================
+
+.. visualizations
+* Add gulp target for force-rebuild of viz plugins
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 13370`_
+* Properly initialize chart settings for new visualizations
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 13561`_
+* Point to GTN tutorial in visualizations readme
+  (thanks to `@beatrizserrano <https://github.com/beatrizserrano>`__).
+  `Pull Request 13616`_
+* Add 3D PCA visualization
+  (thanks to `@xtrojak <https://github.com/xtrojak>`__).
+  `Pull Request 13771`_
+* Support phylocanvas autobuild
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 14023`_
+* Fix a bug in PCA artifact staging that prevents a plugin rebuild
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 14148`_
+* Visualization fix for MSA
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 14263`_
+* Add 3D PCA visualization
+  (thanks to `@xtrojak <https://github.com/xtrojak>`__).
+  `Pull Request 13771`_
+
+.. figure:: images/22.05-pca.png
+   :alt: Screenshot of the new 3 dimensional PCA plot visualisation available in Galaxy.
+
+New Datatypes
+===========================================================
+
+.. datatypes
+* Python code formatting standard, automatic
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 11162`_
+* Add new molecule datatypes
+  (thanks to `@muon-spectroscopy-computational-project <https://github.com/muon-spectroscopy-computational-project>`__).
+  `Pull Request 12375`_
+* Upgrade syntax to Python 3.7
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 13500`_
+* Add mzqc datatype
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 13564`_
+* Update mypy to 0.942 and fix new mypy errors
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 13650`_
+* Create data_fetch and set_metadata celery tasks
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 13655`_
+* Add bigWig to Wig converter
+  (thanks to `@gallardoalba <https://github.com/gallardoalba>`__).
+  `Pull Request 13708`_
+* Replace last use of deprecated ``imp`` module
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 13817`_
+* Add support for gz-compressed gfa1 and gfa2 files
+  (thanks to `@gallardoalba <https://github.com/gallardoalba>`__).
+  `Pull Request 13927`_
+* Tighten sniffers
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 13959`_
+* Don't create a BGZF index when running the compressing converter
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 13969`_
+* Fix bug: set creation_date on dataset.metadata, not dataset
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 14039`_
+* Fix composite datatypes with ``substitute_name_with_metadata``
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 14053`_
+* Enable generating urls for WSGI routes within FastAPI routes
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 14066`_
+* Fix collection download for BAM native files
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 14162`_
+* New Datatype: QIIME 2
+  (thanks to `@ebolyen <https://github.com/ebolyen>`__).
+  `Pull Request 14216`_
+* Make Agp set_meta more lenient
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 14277`_
+* Deleted, discarded and deferred file not found tweaks
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 14296`_
+* Add scool datatype
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 14480`_
+* Fix xml deprecation warning in ``parse_requirements_from_xml``
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 14483`_
+* Add new molecule datatypes
+  (thanks to `@elichad <https://github.com/elichad>`__).
+  `Pull Request 12375`_
+* Add mzqc datatype
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 13564`_
+* Add bigWig to Wig converter
+  (thanks to `@gallardoalba <https://github.com/gallardoalba>`__).
+  `Pull Request 13708`_
+* Add support for gz-compressed gfa1 and gfa2 files
+  (thanks to `@gallardoalba <https://github.com/gallardoalba>`__).
+  `Pull Request 13927`_
+* Fix collection download for bam native files
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 14162`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* Python code formatting standard, automatic
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 11162`_
+* Add built-in converters to tool panel
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 13447`_
+* Add JupyTool, user-configurable interactive Jupyter-based tool
+  (thanks to `@blankenberg <https://github.com/blankenberg>`__).
+  `Pull Request 13606`_
+* Fix David URL
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 13666`_
+* Add and update various interactive tools
+  (thanks to `@gmauro <https://github.com/gmauro>`__).
+  `Pull Request 13811`_
+* Bump ncb-datasets-cli dependency to 13.14.0
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 13853`_
+* New Datatype: QIIME 2
+  (thanks to `@ebolyen <https://github.com/ebolyen>`__).
+  `Pull Request 14216`_
+* Fixes for JupyTool, and overlapping versions with jupyter
+  (thanks to `@blankenberg <https://github.com/blankenberg>`__).
+  `Pull Request 14309`_
+* remove debug statements from tool search
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 14386`_
+* Grep1 tool: fix keep_header option
+  (thanks to `@jancrichter <https://github.com/jancrichter>`__).
+  `Pull Request 14475`_
+* Overhaul and improve the Jupyter Interactive Tool, providing many new interface options
+  (thanks to `@blankenberg <https://github.com/blankenberg>`__).
+  `Pull Request 13606`_
+  * You can specify any number of user-defined inputs using the repeat input, providing name value, selecting the type of input, and then providing values.
+  * You can make the JupyTool reusable in a workflow, by allowing the user to specify input values for the defined input blocks.
+  * Inputs can be accessed by name from the automatically provided GALAXY_INPUTS dictionary.
+  * Outputs can be written automatically to the user's history by writing to the outputs directory for one individual file or to the outputs/collection directory for multiple files.
+  * Using collection tools, you can parse out the individual elements from the collection, as needed.
+* Add built-in converters to tool panel
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 13447`_
+* Add and update various interactive tools
+  (thanks to `@gmauro <https://github.com/gmauro>`__).
+  `Pull Request 13811`_
+* Bump ncb-datasets-cli dependency to 13.14.0
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 13853`_
+
+Release Testing Team
+===========================================================
+
+A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+
+- `Ahmed Awan <https://github.com/ahmedhamidawan>`
+- `Catherine Bromhead <https://github.com/cat-bro>`
+- `Fabio Cumbo <https://github.com/cumbof>`
+- `Jennifer Hillman-Jackson <https://github.com/jennaj>`
+- `John Davis <https://github.com/jdavcs>`
+- `Simon Bray <https://github.com/simonbray>`
+- `Tyler Collins <https://github.com/tcollins2011>`
+
+Release Notes
+===========================================================
+
+User facing release notes compiled by `Helena Rasche <https://github.com/hexylena>`_.
+
+Please see the `full release notes <22.05_announce.html>`_ for more details.
+
+.. include:: 22.05_prs.rst
+
+.. include:: _thanks.rst

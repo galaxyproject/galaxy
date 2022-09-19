@@ -8,8 +8,6 @@
     <entry_point entry_point_type="chart" src="../../heatmap_default/static/dist/script.js" load="heatmap_cluster"/>
     <expand macro="shared"/>
     <specs>
-        <tag>svg</tag>
-        <use_panels>yes</use_panels>
         <zoomable>true</zoomable>
         <confirm>True</confirm>
         <exports>

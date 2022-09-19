@@ -2,13 +2,10 @@
     <span>
         <MarkdownSelector
             v-if="labelShow"
-            :initial-value="argumentType"
             :argument-name="argumentName"
             :labels="labels"
-            :label-title="selectedLabelTitle"
             @onOk="onLabel"
-            @onCancel="onCancel"
-        />
+            @onCancel="onCancel" />
         <DataDialog v-if="dataShow" :history="history" format="id" @onOk="onData" @onCancel="onCancel" />
         <b-modal
             v-if="formShow"
@@ -17,9 +14,8 @@
             title="Configure Visualization"
             ok-title="Continue"
             @ok="onOk"
-            @cancel="onCancel"
-        >
-            <Form :inputs="formInputs" @onChange="onChange" />
+            @cancel="onCancel">
+            <FormDisplay :inputs="formInputs" @onChange="onChange" />
         </b-modal>
     </span>
 </template>
@@ -29,7 +25,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import MarkdownSelector from "./MarkdownSelector";
 import DataDialog from "components/DataDialog/DataDialog";
-import Form from "components/Form/Form";
+import FormDisplay from "components/Form/FormDisplay";
 
 Vue.use(BootstrapVue);
 
@@ -37,7 +33,7 @@ export default {
     components: {
         MarkdownSelector,
         DataDialog,
-        Form,
+        FormDisplay,
     },
     props: {
         argumentName: {
@@ -106,7 +102,7 @@ export default {
             this.formData = formDataNew;
         },
         onLabel(response) {
-            this.dataTag = `output=${response}`;
+            this.dataTag = `output="${response}"`;
             this.labelShow = false;
             if (this.formInputs) {
                 this.formShow = true;

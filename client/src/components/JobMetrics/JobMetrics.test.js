@@ -77,7 +77,7 @@ describe("JobMetrics/JobMetrics.vue", () => {
             const JOB_ID = Math.random().toString(36).substring(2);
             const propsData = {
                 jobId: JOB_ID,
-                aws_estimate: "True",
+                aws_estimate: true,
             };
             const metricsResponse = [
                 { plugin: "core", name: "galaxy_slots", raw_value: cores },
@@ -99,9 +99,11 @@ describe("JobMetrics/JobMetrics.vue", () => {
 
             const estimates = {};
 
-            if (!wrapper.find("#aws-estimate").exists()) return false;
+            if (!wrapper.find("#aws-estimate").exists()) {
+                return false;
+            }
 
-            estimates.cost = wrapper.find("#aws-estimate > b").text();
+            estimates.cost = wrapper.find("#aws-estimate b").text();
             estimates.vcpus = wrapper.find("#aws_vcpus").text();
             estimates.cpu = wrapper.find("#aws_cpu").text();
             estimates.mem = wrapper.find("#aws_mem").text();

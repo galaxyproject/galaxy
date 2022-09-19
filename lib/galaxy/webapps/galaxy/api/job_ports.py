@@ -2,12 +2,13 @@
 related to running and queued jobs.
 """
 from galaxy.job_execution.ports import JobPortsView
+from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api_anonymous_and_sessionless
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 
-class JobPortsAPIController(BaseAPIController):
-    """ This job files controller allows remote job running mechanisms to
+class JobPortsAPIController(BaseGalaxyAPIController):
+    """This job files controller allows remote job running mechanisms to
     modify the current state of ports for queued and running jobs.
     It is certainly not meant to represent part of Galaxy's stable, user
     facing API.
@@ -15,7 +16,8 @@ class JobPortsAPIController(BaseAPIController):
     See the JobFiles API for information about per-job API keys.
     """
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
+        super().__init__(app)
         self._job_ports_view = JobPortsView(app)
 
     @expose_api_anonymous_and_sessionless

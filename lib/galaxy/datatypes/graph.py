@@ -8,7 +8,7 @@ from . import (
     data,
     dataproviders,
     tabular,
-    xml
+    xml,
 )
 
 log = logging.getLogger(__name__)
@@ -20,18 +20,19 @@ class Xgmml(xml.GenericXml):
     XGMML graph format
     (http://wiki.cytoscape.org/Cytoscape_User_Manual/Network_Formats).
     """
+
     file_ext = "xgmml"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """
         Set the peek and blurb text
         """
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
-            dataset.blurb = 'XGMML data'
+            dataset.blurb = "XGMML data"
         else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
 
     def sniff(self, filename):
         """
@@ -45,12 +46,13 @@ class Xgmml(xml.GenericXml):
         Merging multiple XML files is non-trivial and must be done in subclasses.
         """
         if len(split_files) > 1:
-            raise NotImplementedError("Merging multiple XML files is non-trivial " +
-                                      "and must be implemented for each XML type")
+            raise NotImplementedError(
+                "Merging multiple XML files is non-trivial " + "and must be implemented for each XML type"
+            )
         # For one file only, use base class method (move/copy)
         data.Text.merge(split_files, output_file)
 
-    @dataproviders.decorators.dataprovider_factory('node-edge', dataproviders.hierarchy.XMLDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory("node-edge", dataproviders.hierarchy.XMLDataProvider.settings)
     def node_edge_dataprovider(self, dataset, **settings):
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
         return XGMMLGraphDataProvider(dataset_source, **settings)
@@ -66,18 +68,19 @@ class Sif(tabular.Tabular):
     Second column: relationship type
     Third to Nth column: target ids for link
     """
+
     file_ext = "sif"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """
         Set the peek and blurb text
         """
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
-            dataset.blurb = 'SIF data'
+            dataset.blurb = "SIF data"
         else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
 
     def sniff(self, filename):
         """
@@ -89,7 +92,7 @@ class Sif(tabular.Tabular):
     def merge(split_files, output_file):
         data.Text.merge(split_files, output_file)
 
-    @dataproviders.decorators.dataprovider_factory('node-edge', dataproviders.column.ColumnarDataProvider.settings)
+    @dataproviders.decorators.dataprovider_factory("node-edge", dataproviders.column.ColumnarDataProvider.settings)
     def node_edge_dataprovider(self, dataset, **settings):
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
         return SIFGraphDataProvider(dataset_source, **settings)
@@ -113,18 +116,18 @@ class XGMMLGraphDataProvider(dataproviders.hierarchy.XMLDataProvider):
 
         parent_gen = super().__iter__()
         for graph_elem in parent_gen:
-            if 'children' not in graph_elem:
+            if "children" not in graph_elem:
                 continue
-            for elem in graph_elem['children']:
+            for elem in graph_elem["children"]:
                 # use endswith to work around Elementtree namespaces
-                if elem['tag'].endswith('node'):
-                    node_id = elem['attrib']['id']
+                if elem["tag"].endswith("node"):
+                    node_id = elem["attrib"]["id"]
                     # pass the entire, parsed xml element as the data
                     graph.add_node(node_id, **elem)
 
-                elif elem['tag'].endswith('edge'):
-                    source_id = elem['attrib']['source']
-                    target_id = elem['attrib']['target']
+                elif elem["tag"].endswith("edge"):
+                    source_id = elem["attrib"]["source"]
+                    target_id = elem["attrib"]["target"]
                     graph.add_edge(source_id, target_id, **elem)
 
         yield graph.as_dict()

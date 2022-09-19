@@ -7,8 +7,7 @@
                 data-toggle="dropdown"
                 aria-haspopup="true"
                 aria-expanded="false"
-                class="font-weight-bold"
-            >
+                class="font-weight-bold">
                 {{ toolshedUrl }}
                 <span class="fa fa-caret-down" />
             </b-link>
@@ -38,7 +37,24 @@ import BootstrapVue from "bootstrap-vue";
 Vue.use(BootstrapVue);
 
 export default {
-    props: ["toolshedUrl", "toolshedUrls", "loading", "total"],
+    props: {
+        toolshedUrl: {
+            type: String,
+            required: true,
+        },
+        toolshedUrls: {
+            type: Array,
+            required: true,
+        },
+        loading: {
+            type: Boolean,
+            required: true,
+        },
+        total: {
+            type: Number,
+            required: true,
+        },
+    },
     computed: {
         showDropdown() {
             return this.toolshedUrls.length > 1;

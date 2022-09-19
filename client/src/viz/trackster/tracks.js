@@ -3228,9 +3228,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             var data_mode = _.find(CONTINUOUS_DATA_MODES, (m) => m === mode) ? "Coverage" : mode;
 
             // Map drawable object to data needed for drawing.
-            var tile_data = _.map(drawables, (
-                d // Get the track data/promise.
-            ) => d.data_manager.get_data(region, data_mode, resolution, this.data_url_extra_params));
+            var tile_data = _.map(drawables, (d) =>
+                // Get the track data/promise.
+                d.data_manager.get_data(region, data_mode, resolution, this.data_url_extra_params)
+            );
 
             // Get reference data/promise.
             if (this.view.reference_track) {

@@ -1,0 +1,5 @@
+- type: s3fs
+  id: test1
+  doc: Test anonymous access to an AWS S3 bucket.
+  bucket: genomeark
+  anon: true

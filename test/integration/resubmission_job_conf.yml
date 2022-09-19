@@ -109,6 +109,6 @@ resources:
     test: [test_name,failure_state,initial_target_environment,run_for]
 
 tools:
-  - id: upload1
+  - class: local
     environment: local
     resources: upload

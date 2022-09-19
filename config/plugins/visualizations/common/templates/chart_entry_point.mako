@@ -9,8 +9,7 @@
 </%def>
 <%def name="javascripts()">
     ${h.dist_js(
-           'libs.chunk',
-           'base.chunk',
+           'libs.bundled',
            'generic.bundled')}
     <%src_path = script_attributes.get("src") %>
     <script type="text/javascript" src="${static_url}${src_path}"></script>

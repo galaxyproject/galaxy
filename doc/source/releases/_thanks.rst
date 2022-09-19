@@ -1,4 +1,4 @@
-To stay up to date with Galaxy's progress watch our `screencasts <https://vimeo.com/galaxyproject>`__,
+To stay up to date with Galaxy's progress watch our `screencasts <https://www.youtube.com/c/galaxyproject>`__,
 visit our community `hub <https://galaxyproject.org/>`__, and follow
 `@galaxyproject <https://twitter.com/galaxyproject>`__ on Twitter.
 

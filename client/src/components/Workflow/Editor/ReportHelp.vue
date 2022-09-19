@@ -39,9 +39,7 @@ job_parameters(step="qc")
 ```
 </pre
         >
-        <p>
-            It is also possible to reference a single job parameter
-        </p>
+        <p>It is also possible to reference a single job parameter</p>
 
         <pre>
 ```galaxy

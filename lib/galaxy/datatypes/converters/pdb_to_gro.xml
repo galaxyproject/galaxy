@@ -16,8 +16,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="pdb" value="newbox.pdb"/>
-            <output name="output1" format="gro" value="newbox.gro" lines_diff="2"/>
+            <param name="input1" ftype="pdb" value="newbox.pdb"/>
+            <output name="output1" ftype="gro" value="newbox.gro" lines_diff="2"/>
         </test>
     </tests>
     <help>

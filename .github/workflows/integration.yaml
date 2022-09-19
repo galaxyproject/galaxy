@@ -1,19 +1,39 @@
 name: Integration
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
+  pull_request:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
+  schedule:
+    # Run at midnight UTC every Tuesday
+    - cron: '0 0 * * 2'
 env:
-  GALAXY_TEST_DBURI: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_AMQP_URL: 'amqp://localhost:5672//'
+  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
+  GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
+  GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT: '1'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: [3.7]
-        subset: ['upload_datatype', 'extended_metadata', 'kubernetes', 'not (upload_datatype or extended_metadata or kubernetes)']
+        python-version: ['3.7']
+        chunk: ['0', '1', '2', '3']
     services:
       postgres:
-        image: postgres:11
+        image: postgres:13
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -25,44 +45,59 @@ jobs:
         ports:
           - 5672:5672
     steps:
+      - if: github.event_name == 'schedule'
+        run: |
+          echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
+          # Skip outputs_to_working_directory: true in integration tests, doesn't work with pulsar
+          # echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
       - name: Prune unused docker image, volumes and containers
         run: docker system prune -a -f
       - name: Clean dotnet folder for space
-        if: matrix.subset == 'kubernetes'
         run: rm -Rf /usr/share/dotnet
       - name: Setup Minikube
-        if: matrix.subset == 'kubernetes'
         id: minikube
         uses: CodingNagger/minikube-setup-action@v1.0.3
         with:
           minikube-version: "1.9.0-0_amd64"
       - name: Launch Minikube
-        if: matrix.subset == 'kubernetes'
         run: eval ${{ steps.minikube.outputs.launcher }}
       - name: Check pods
-        if: matrix.subset == 'kubernetes'
         run: |
           kubectl get pods
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: 'galaxy root'
-      - uses: actions/setup-python@v1
+      - uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Get full Python version
+        id: full-python-version
+        shell: bash
+        run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
       - name: Cache pip dir
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         id: pip-cache
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+      - name: Cache galaxy venv
+        uses: actions/cache@v3
+        with:
+          path: 'galaxy root/.venv'
+          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-integration
       - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get install ffmpeg -y
-        if: matrix.subset == 'upload_datatype'
+        run: sudo apt-get update && sudo apt-get -y install ffmpeg
       - name: Run tests
-        run: './run_tests.sh -integration test/integration -- -k "${{ matrix.subset }}"'
+        run: |
+          . .ci/minikube-test-setup/start_services.sh
+          ./run_tests.sh --coverage -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v2
+      - uses: codecov/codecov-action@v2
+        with:
+          flags: integration
+          working-directory: 'galaxy root'
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
-          name: Integration test results (${{ matrix.python-version }}, ${{ matrix.subset }})
+          name: Integration test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/run_integration_tests.html'

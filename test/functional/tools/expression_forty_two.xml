@@ -11,5 +11,9 @@
     <outputs>
         <output type="integer" name="out1" from="output" />
     </outputs>
-    <help>Produces the integer 42.</help>
+    <tests>
+    </tests>
+    <help><![CDATA[
+Produces the integer 42.
+    ]]></help>
 </tool>

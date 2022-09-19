@@ -5,6 +5,9 @@
 import Vue from "vue";
 import Vuex from "vuex";
 import createCache from "vuex-cache";
+import VuexPersistence from "vuex-persist";
+import localForage from "localforage";
+
 import config from "config";
 
 import { gridSearchStore } from "./gridSearchStore";
@@ -12,62 +15,71 @@ import { tagStore } from "./tagStore";
 import { jobMetricsStore } from "./jobMetricsStore";
 import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { invocationStore } from "./invocationStore";
-import { historyStore } from "./historyStore";
-import { userStore, syncUserToGalaxy } from "./userStore";
+import { collectionElementsStore, datasetStore, historyItemsStore, historyStore } from "./historyStore";
+import { userStore, userFlagsStore } from "./userStore";
 import { configStore } from "./configStore";
 import { workflowStore } from "./workflowStore";
+import { toolStore } from "./toolStore";
 import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
-import { datasetsStore } from "./datasetsStore";
 import { jobStore } from "./jobStore";
+import { collectionAttributesStore } from "./collectionAttributesStore";
+import { dbKeyStore } from "./dbKeyStore";
+import { datatypeStore } from "./datatypeStore";
+import { panelStore } from "./panelStore";
 
-// beta features
-import { historyStore as betaHistoryStore } from "components/History/model/historyStore";
-import { syncCurrentHistoryToGalaxy } from "components/History/model/syncCurrentHistoryToGalaxy";
+// Syncs vuex to Galaxy store until Galaxy vals to not exist
+import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
 
 Vue.use(Vuex);
 
+const galaxyStorage = localForage.createInstance({});
+galaxyStorage.config({
+    driver: [localForage.INDEXEDDB, localForage.LOCALSTORAGE],
+    name: "galaxyIndexedDB",
+    version: 1.0,
+    storeName: "galaxyStore",
+});
+
+const panelsPersistence = new VuexPersistence({
+    storage: galaxyStorage,
+    asyncStorage: true,
+    modules: ["panels", "userFlags"],
+});
+
 export function createStore() {
     const storeConfig = {
-        plugins: [createCache()],
+        plugins: [createCache(), panelsPersistence.plugin],
         modules: {
-            // TODO: namespace all these modules
-            gridSearch: gridSearchStore,
-            histories: historyStore,
-            tags: tagStore,
-            jobMetrics: jobMetricsStore,
-            destinationParameters: jobDestinationParametersStore,
-            datasetPathDestination: datasetPathDestinationStore,
-            datasetExtFiles: datasetExtFilesStore,
-            invocations: invocationStore,
-            user: userStore,
+            collectionAttributesStore: collectionAttributesStore,
+            collectionElements: collectionElementsStore,
             config: configStore,
-            workflows: workflowStore,
-            datasets: datasetsStore,
+            destinationParameters: jobDestinationParametersStore,
+            dataset: datasetStore,
+            datasetExtFiles: datasetExtFilesStore,
+            datasetPathDestination: datasetPathDestinationStore,
+            datatypeStore: datatypeStore,
             informationStore: jobStore,
-            betaHistory: betaHistoryStore,
+            invocations: invocationStore,
+            jobMetrics: jobMetricsStore,
+            dbkeyStore: dbKeyStore,
+            gridSearch: gridSearchStore,
+            history: historyStore,
+            historyItems: historyItemsStore,
+            panels: panelStore,
+            tags: tagStore,
+            tools: toolStore,
+            user: userStore,
+            userFlags: userFlagsStore,
+            workflows: workflowStore,
         },
     };
 
-    // Initialize state
-
+    // Watches for changes in Galaxy and sets those values on Vuex until Galaxy is gone
+    // TODO: remove subscriptions in syncVuexToGalaxy as legacy functionality is ported to Vue
     if (!config.testBuild) {
-        storeConfig.plugins.push((store) => {
-            store.dispatch("config/$init", { store });
-            store.dispatch("user/$init", { store });
-            store.dispatch("betaHistory/$init", { store });
-        });
+        storeConfig.plugins.push(syncVuextoGalaxy);
     }
-
-    // Create watchers to monitor legacy galaxy instance for important values
-
-    syncUserToGalaxy((user) => {
-        store.commit("user/setCurrentUser", user);
-    });
-
-    syncCurrentHistoryToGalaxy((id) => {
-        store.commit("betaHistory/setCurrentHistoryId", id);
-    });
 
     return new Vuex.Store(storeConfig);
 }

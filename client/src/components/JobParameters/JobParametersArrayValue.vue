@@ -1,35 +1,25 @@
 <template>
     <div>
-        <ul style="padding-inline-start: 25px;">
-            <li v-for="(elVal, pvIndex) in parameter_value" :key="pvIndex">
-                <span v-if="elVal.src == 'hda'">
-                    <a :href="appRoot() + 'datasets/' + elVal.id + '/show_params'">
-                        {{ elVal.hid }}: {{ elVal.name }}
-                    </a>
-                </span>
-                <span v-else> {{ elVal.hid }}: {{ elVal.name }} </span>
-            </li>
-        </ul>
+        <div v-for="(elVal, pvIndex) in parameter_value" :key="pvIndex">
+            <generic-history-item
+                v-if="['hda', 'hdca'].includes(elVal.src)"
+                :item-id="elVal.id"
+                :item-src="elVal.src" />
+            <span v-else> {{ elVal.hid }}: {{ elVal.name }} </span>
+        </div>
     </div>
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-
-Vue.use(BootstrapVue);
+import GenericHistoryItem from "components/History/Content/GenericItem";
 
 export default {
+    components: {
+        GenericHistoryItem,
+    },
     props: {
         parameter_value: {
             type: Array,
-        },
-    },
-    methods: {
-        appRoot: function () {
-            return getAppRoot();
         },
     },
 };

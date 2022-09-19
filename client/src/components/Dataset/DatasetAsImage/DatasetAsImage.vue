@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="imageUrl" class="w-50 p-2 float-left">
+        <div v-if="imageUrl" class="w-100 p-2">
             <b-card nobody body-class="p-1">
                 <b-img :src="imageUrl" fluid />
             </b-card>
@@ -26,18 +26,20 @@ export default {
             default: null,
         },
     },
+    data() {
+        return {
+            imageUrl: undefined,
+        };
+    },
     created() {
         if (this.path) {
             this.fetchPathDestination({ history_dataset_id: this.history_dataset_id, path: this.path }).then(() => {
                 const pathDestination = this.$store.getters.pathDestination(this.history_dataset_id, this.path);
                 this.imageUrl = pathDestination.fileLink;
             });
-        } else this.imageUrl = `${getAppRoot()}dataset/display?dataset_id=${this.history_dataset_id}`;
-    },
-    data() {
-        return {
-            imageUrl: undefined,
-        };
+        } else {
+            this.imageUrl = `${getAppRoot()}dataset/display?dataset_id=${this.history_dataset_id}`;
+        }
     },
     methods: {
         ...mapCacheActions(["fetchPathDestination"]),

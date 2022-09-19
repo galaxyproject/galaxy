@@ -1,12 +1,26 @@
 import copy
+import os
+from typing import (
+    Any,
+    Callable,
+    cast,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 
+from typing_extensions import (
+    get_args,
+    Literal,
+)
 
 from galaxy.util import (
     asbool,
     xml_text,
 )
 from galaxy.util.oset import OrderedSet
-
 
 DEFAULT_REQUIREMENT_TYPE = "package"
 DEFAULT_REQUIREMENT_VERSION = None
@@ -35,7 +49,7 @@ class ToolRequirement:
         return copy.deepcopy(self)
 
     @staticmethod
-    def from_dict(d):
+    def from_dict(d: Dict[str, Any]) -> "ToolRequirement":
         version = d.get("version")
         name = d.get("name")
         type = d.get("type")
@@ -43,7 +57,12 @@ class ToolRequirement:
         return ToolRequirement(name=name, type=type, version=version, specs=specs)
 
     def __eq__(self, other):
-        return self.name == other.name and self.type == other.type and self.version == other.version and self.specs == other.specs
+        return (
+            self.name == other.name
+            and self.type == other.type
+            and self.version == other.version
+            and self.specs == other.specs
+        )
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -99,22 +118,24 @@ class ToolRequirements:
     def __init__(self, tool_requirements=None):
         if tool_requirements:
             if not isinstance(tool_requirements, list):
-                raise ToolRequirementsException('ToolRequirements Constructor expects a list')
-            self.tool_requirements = OrderedSet([r if isinstance(r, ToolRequirement) else ToolRequirement.from_dict(r) for r in tool_requirements])
+                raise ToolRequirementsException("ToolRequirements Constructor expects a list")
+            self.tool_requirements = OrderedSet(
+                [r if isinstance(r, ToolRequirement) else ToolRequirement.from_dict(r) for r in tool_requirements]
+            )
         else:
             self.tool_requirements = OrderedSet()
 
     @staticmethod
-    def from_list(requirements):
+    def from_list(requirements: Union[List[ToolRequirement], Dict[str, Any]]) -> "ToolRequirements":
         return ToolRequirements(requirements)
 
     @property
     def resolvable(self):
-        return ToolRequirements([r for r in self.tool_requirements if r.type in {'package', 'set_environment'}])
+        return ToolRequirements([r for r in self.tool_requirements if r.type in {"package", "set_environment"}])
 
     @property
     def packages(self):
-        return ToolRequirements([r for r in self.tool_requirements if r.type == 'package'])
+        return ToolRequirements([r for r in self.tool_requirements if r.type == "package"])
 
     def to_list(self):
         return [r.to_dict() for r in self.tool_requirements]
@@ -125,7 +146,11 @@ class ToolRequirements:
         self.tool_requirements.add(requirement)
 
     def __eq__(self, other):
-        return len(self.tool_requirements & other.tool_requirements) == len(self.tool_requirements) == len(other.tool_requirements)
+        return (
+            len(self.tool_requirements & other.tool_requirements)
+            == len(self.tool_requirements)
+            == len(other.tool_requirements)
+        )
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -140,7 +165,7 @@ class ToolRequirements:
         return len(self.tool_requirements)
 
     def __hash__(self):
-        return sum([r.__hash__() for r in self.tool_requirements])
+        return sum(r.__hash__() for r in self.tool_requirements)
 
     def to_dict(self):
         return [r.to_dict() for r in self.tool_requirements]
@@ -156,16 +181,21 @@ DEFAULT_CONTAINER_SHELL = "/bin/sh"  # Galaxy assumes bash, but containers are u
 
 
 class ContainerDescription:
-
     def __init__(
         self,
-        identifier=None,
-        type=DEFAULT_CONTAINER_TYPE,
-        resolve_dependencies=DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
-        shell=DEFAULT_CONTAINER_SHELL,
-    ):
-        # Force to lowercase because container image names must be lowercase
-        self.identifier = identifier.lower() if identifier else None
+        identifier: Optional[str] = None,
+        type: str = DEFAULT_CONTAINER_TYPE,
+        resolve_dependencies: bool = DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
+        shell: str = DEFAULT_CONTAINER_SHELL,
+    ) -> None:
+        # Force to lowercase because container image names must be lowercase.
+        # Cached singularity images include the path on disk, so only lowercase
+        # the image identifier portion.
+        self.identifier = None
+        if identifier:
+            parts = identifier.rsplit(os.sep, 1)
+            parts[-1] = parts[-1].lower()
+            self.identifier = os.sep.join(parts)
         self.type = type
         self.resolve_dependencies = resolve_dependencies
         self.shell = shell
@@ -196,20 +226,85 @@ class ContainerDescription:
         return f"ContainerDescription[identifier={self.identifier},type={self.type}]"
 
 
-def parse_requirements_from_dict(root_dict):
-    requirements = root_dict.get("requirements", [])
-    containers = root_dict.get("containers", [])
-    return ToolRequirements.from_list(requirements), [ContainerDescription.from_dict(c) for c in containers]
+ResourceType = Literal[
+    "cores_min",
+    "cores_max",
+    "ram_min",
+    "ram_max",
+    "tmpdir_min",
+    "tmpdir_max",
+]
+VALID_RESOURCE_TYPES = get_args(ResourceType)
 
 
-def parse_requirements_from_xml(xml_root):
+class ResourceRequirement:
+    def __init__(self, value_or_expression: Union[int, float, str], resource_type: ResourceType):
+        self.value_or_expression = value_or_expression
+        if not resource_type:
+            raise ValueError("Missing resource requirement type")
+        if resource_type not in VALID_RESOURCE_TYPES:
+            raise ValueError(f"Invalid resource requirement type '{resource_type}'")
+        self.resource_type = resource_type
+        try:
+            float(self.value_or_expression)
+            self.runtime_required = False
+        except ValueError:
+            self.runtime_required = True
+
+    def to_dict(self) -> Dict:
+        return {"resource_type": self.resource_type, "value_or_expression": self.value_or_expression}
+
+    def get_value(self, runtime: Optional[Dict] = None, js_evaluator: Optional[Callable] = None):
+        if self.runtime_required:
+            # TODO: hook up evaluator
+            # return js_evaluator(self.value_or_expression, runtime)
+            raise NotImplementedError(
+                f"{self.value_or_expression} is not an integer or float value, expressions currently not implemented"
+            )
+        return float(self.value_or_expression)
+
+
+def resource_requirements_from_list(requirements) -> List[ResourceRequirement]:
+    cwl_to_galaxy = {
+        "coresMin": "cores_min",
+        "coresMax": "cores_max",
+        "ramMin": "ram_min",
+        "ramMax": "ram_max",
+        "tmpdirMin": "tmpdir_min",
+        "tmpdirMax": "tmpdir_max",
+    }
+    rr = []
+    for r in requirements:
+        if r.get("class") == "ResourceRequirement":
+            valid_key_set = set(cwl_to_galaxy.keys())
+        elif r.get("type") == "resource":
+            valid_key_set = set(cwl_to_galaxy.values())
+        else:
+            continue
+        for key in valid_key_set.intersection(set(r.keys())):
+            value = r[key]
+            key = cast(ResourceType, cwl_to_galaxy.get(key, key))
+            rr.append(ResourceRequirement(value_or_expression=value, resource_type=key))
+    return rr
+
+
+def parse_requirements_from_lists(software_requirements, containers, resource_requirements) -> Tuple:
+    return (
+        ToolRequirements.from_list(software_requirements),
+        [ContainerDescription.from_dict(c) for c in containers],
+        resource_requirements_from_list(resource_requirements),
+    )
+
+
+def parse_requirements_from_xml(xml_root, parse_resources=False):
     """
+    Parses requirements, containers and optionally resource requirements from Xml tree.
 
     >>> from galaxy.util import parse_xml_string
-    >>> def load_requirements(contents):
+    >>> def load_requirements(contents, parse_resources=False):
     ...     contents_document = '''<tool><requirements>%s</requirements></tool>'''
     ...     root = parse_xml_string(contents_document % contents)
-    ...     return parse_requirements_from_xml(root)
+    ...     return parse_requirements_from_xml(root, parse_resources=parse_resources)
     >>> reqs, containers = load_requirements('''<requirement>bwa</requirement>''')
     >>> reqs[0].name
     'bwa'
@@ -229,7 +324,7 @@ def parse_requirements_from_xml(xml_root):
 
     requirement_elems = []
     if requirements_elem is not None:
-        requirement_elems = requirements_elem.findall('requirement')
+        requirement_elems = requirements_elem.findall("requirement")
 
     requirements = ToolRequirements()
     for requirement_elem in requirement_elems:
@@ -241,11 +336,21 @@ def parse_requirements_from_xml(xml_root):
 
     container_elems = []
     if requirements_elem is not None:
-        container_elems = requirements_elem.findall('container')
+        container_elems = requirements_elem.findall("container")
 
     containers = [container_from_element(c) for c in container_elems]
+    if parse_resources:
+        resource_elems = requirements_elem.findall("resource") if requirements_elem is not None else []
+        resources = [resource_from_element(r) for r in resource_elems]
+        return requirements, containers, resources
 
     return requirements, containers
+
+
+def resource_from_element(resource_elem):
+    value_or_expression = xml_text(resource_elem)
+    resource_type = resource_elem.get("type")
+    return ResourceRequirement(value_or_expression=value_or_expression, resource_type=resource_type)
 
 
 def container_from_element(container_elem):

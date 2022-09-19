@@ -15,16 +15,16 @@ assert sys.version_info[:2] >= (2, 6)
 def __main__():
     # Parse Command Line
     working_dir = sys.argv[1]
-    inputs = ' '.join(sys.argv[2:])
-    for _ in ('Roadmaps', 'Sequences'):
+    inputs = " ".join(sys.argv[2:])
+    for _ in ("Roadmaps", "Sequences"):
         os.symlink(os.path.join(working_dir, _), _)
-    cmdline = 'velvetg . %s' % (inputs)
+    cmdline = "velvetg . %s" % (inputs)
     print("Command to be executed: %s" % cmdline)
     try:
         proc = subprocess.Popen(args=cmdline, shell=True, stderr=subprocess.PIPE)
         returncode = proc.wait()
         # get stderr, allowing for case where it's very large
-        stderr = b''
+        stderr = b""
         buffsize = 1048576
         try:
             while True:
@@ -36,7 +36,7 @@ def __main__():
         if returncode != 0:
             raise Exception(stderr)
     except Exception as e:
-        sys.exit('Error running velvetg ' + str(e))
+        sys.exit("Error running velvetg " + str(e))
 
 
 if __name__ == "__main__":

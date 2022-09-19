@@ -42,7 +42,6 @@ export default Backbone.View.extend({
             .done((dataset) => {
                 this.dataset = dataset;
                 this.chart.load();
-                this.chart.trigger("redraw");
             })
             .fail((response) => {
                 const message = response.responseJSON && response.responseJSON.err_msg;

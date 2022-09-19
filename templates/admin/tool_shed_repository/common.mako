@@ -68,7 +68,7 @@
     </script>
 </%def>
 
-<%def name="render_dependencies_section( install_resolver_dependencies_check_box, repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict, revision_label=None, export=False, requirements_status=None )">
+<%def name="render_dependencies_section( install_resolver_dependencies_check_box, repository_dependencies_check_box, containers_dict, revision_label=None, export=False, requirements_status=None )">
     <style type="text/css">
         #dependency_table{ table-layout:fixed;
                            width:100%;
@@ -186,20 +186,6 @@
         %endif
     %endif
     %if tool_dependencies_root_folder or missing_tool_dependencies_root_folder:
-        %if install_tool_dependencies_check_box is not None:
-            <div class="form-row">
-                <label>When available, install Tool Shed managed tool dependencies?</label>
-                <% disabled = trans.app.tool_dependency_dir is None %>
-                ${render_checkbox(install_tool_dependencies_check_box, disabled=disabled)}
-                <div class="toolParamHelp" style="clear: both;">
-                    %if disabled:
-                        Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.
-                    %else:
-                        Select to automatically handle tool dependencies via Tool Shed.
-                    %endif
-                </div>
-            <div style="clear: both"></div>
-        %endif
         %if tool_dependencies_root_folder:
             <div class="form-row">
                 <p/>

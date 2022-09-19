@@ -15,5 +15,5 @@ execution:
       singularity_required: true
 
 tools:
-- id: upload1
+- class: local
   environment: local

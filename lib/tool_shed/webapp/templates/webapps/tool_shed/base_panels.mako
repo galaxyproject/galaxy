@@ -48,6 +48,12 @@
     %if app.config.ga_code:
         ${ galaxy_client.config_google_analytics(app.config.ga_code)}
     %endif
+    %if app.config.plausible_server and app.config.plausible_domain:
+        ${ galaxy_client.config_plausible_analytics(app.config.plausible_server, app.config.plausible_domain) }
+    %endif
+    %if app.config.matomo_server:
+        ${ galaxy_client.config_matomo_analytics(app.config.matomo_server) }
+    %endif
 
     ## start main tag
     <nav id="masthead" class="navbar navbar-expand fixed-top justify-content-center navbar-dark">
@@ -132,31 +138,25 @@
                 ## Help tab.
                 <%
                     menu_options = []
-                    qa_url = app.config.get( "qa_url", None )
-                    if qa_url:
-                        menu_options = [ [_('Galaxy Q&A'), qa_url, "_blank" ] ]
                     menu_options.extend( [
-                        [_('Tool Shed Wiki'), app.config.get( "wiki_url", "https://galaxyproject.org/toolshed" ), "_blank" ],
-                        [_('Support'), app.config.get( "support_url", "https://galaxyproject.org/support" ), "_blank" ],
-                        [_('Search'), app.config.get( "search_url", "http://galaxyproject.org/search/" ), "_blank" ],
-                        [_('Mailing Lists'), app.config.get( "mailing_lists_url", "https://galaxyproject.org/mailing-lists" ), "_blank" ],
-                        [_('Videos'), app.config.get( "screencasts_url", "https://vimeo.com/galaxyproject" ), "_blank" ],
-                        [_('Wiki'), app.config.get( "wiki_url", "http://galaxyproject.org/" ), "_blank" ],
-                        [_('How to Cite Galaxy'), app.config.get( "citation_url", "https://galaxyproject.org/citing-galaxy" ), "_blank" ]
+                        ['About Tool Shed', app.config.get( "wiki_url", "https://galaxyproject.org/toolshed" ), "_blank" ],
+                        ['Support', app.config.get( "support_url", "https://galaxyproject.org/support" ), "_blank" ],
+                        ['Videos', app.config.get( "screencasts_url", "https://vimeo.com/galaxyproject" ), "_blank" ],
+                        ['How to Cite Tool Shed', app.config.get( "citation_url", "https://galaxyproject.org/citing-galaxy" ), "_blank" ]
                     ] )
-                    tab( "help", _("Help"), None, menu_options=menu_options )
+                    tab( "help", "Help", None, menu_options=menu_options )
                 %>
 
                 ## User tabs.
                 <%
                     from markupsafe import escape
                     # Menu for user who is not logged in.
-                    menu_options = [ [ _("Login"), h.url_for( controller='/user', action='login' ), "galaxy_main" ] ]
+                    menu_options = [ [ "Login", h.url_for( controller='/user', action='login' ), "galaxy_main" ] ]
                     if app.config.allow_user_creation:
-                        menu_options.append( [ _("Register"), h.url_for( controller='/user', action='create', cntrller='user' ), "galaxy_main" ] )
+                        menu_options.append( [ "Register", h.url_for( controller='/user', action='create', cntrller='user' ), "galaxy_main" ] )
                     extra_class = "loggedout-only"
                     visible = ( trans.user == None )
-                    tab( "user", _("User"), None, visible=visible, menu_options=menu_options )
+                    tab( "user", "User", None, visible=visible, menu_options=menu_options )
                     # Menu for user who is logged in.
                     if trans.user:
                         email = escape( trans.user.email )
@@ -165,14 +165,14 @@
                     menu_options = [ [ 'Logged in as <span id="user-email">%s</span>' %  email ] ]
                     if app.config.use_remote_user:
                         if app.config.remote_user_logout_href:
-                            menu_options.append( [ _('Logout'), app.config.remote_user_logout_href, "_top" ] )
+                            menu_options.append( [ 'Logout', app.config.remote_user_logout_href, "_top" ] )
                     else:
-                        menu_options.append( [ _('Preferences'), h.url_for( controller='/user', action='index', cntrller='user' ), "galaxy_main" ] )
-                        menu_options.append( [ _('API Keys'), h.url_for( controller='/user', action='api_keys', cntrller='user' ), "galaxy_main" ] )
+                        menu_options.append( [ 'Preferences', h.url_for( controller='/user', action='index', cntrller='user' ), "galaxy_main" ] )
+                        menu_options.append( [ 'API Keys', h.url_for( controller='/user', action='api_keys', cntrller='user' ), "galaxy_main" ] )
                         logout_url = h.url_for( controller='/user', action='logout' )
                         menu_options.append( [ 'Logout', logout_url, "_top" ] )
                     if app.config.use_remote_user:
-                        menu_options.append( [ _('Public Name'), h.url_for( controller='/user', action='edit_username', cntrller='user' ), "galaxy_main" ] )
+                        menu_options.append( [ 'Public Name', h.url_for( controller='/user', action='edit_username', cntrller='user' ), "galaxy_main" ] )
 
                     extra_class = "loggedin-only"
                     visible = ( trans.user != None )

@@ -57,6 +57,16 @@ steps:
 """
 
 
+WORKFLOW_SELECT_FROM_OPTIONAL_DATASET = """
+class: GalaxyWorkflow
+steps:
+  select_from_dataset_optional:
+    tool_id: select_from_dataset_optional
+    state:
+      select_single: null
+"""
+
+
 # Throwing a bunch of broken steps in to get a really long modal and sure it
 # is scrollable.
 WORKFLOW_WITH_INVALID_STATE = """
@@ -168,6 +178,21 @@ test_data:
     d
 """
 
+WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION = """
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: data_collection_input
+    collection_type: list
+outputs:
+  wf_output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
+"""
 
 WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION = """
 class: GalaxyWorkflow
@@ -261,7 +286,7 @@ steps:
         seed: asdf
 test_data:
   input_c:
-    type: list
+    collection_type: list
     elements:
       - identifier: i1
         content: "0"
@@ -375,6 +400,49 @@ steps:
       inner_input: outer_input
 """
 
+WORKFLOW_NESTED_WITH_MULTIPLE_VERSIONS_TOOL = """
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: cat/out_file1
+steps:
+  tool_update_step:
+    tool_id: multiple_versions
+    tool_version: '0.1'
+    in:
+      input1: outer_input
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+      outputs:
+        workflow_output:
+          outputSource: random_lines/out_file1
+      steps:
+        random_lines:
+          tool_id: random_lines1
+          state:
+            num_lines: 1
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+    in:
+      inner_input: tool_update_step/out_file1
+  cat:
+    tool_id: cat1
+    in:
+      input1: nested_workflow/workflow_output
+      queries_0|input2: nested_workflow/workflow_output
+  compose_text_param:
+    tool_id: compose_text_param
+    tool_version: 0.1.0
+    label: compose_text_param
+"""
 
 WORKFLOW_WITH_OUTPUT_ACTIONS = """
 class: GalaxyWorkflow
@@ -395,6 +463,18 @@ steps:
       input1: first_cat/out_file1
 """
 
+WORKFLOW_INPUTS_AS_OUTPUTS = """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+  text_input: text
+outputs:
+  wf_output_1:
+    outputSource: input1
+  wf_output_param:
+    outputSource: text_input
+steps: []
+"""
 
 WORKFLOW_PARAMETER_INPUT_INTEGER_REQUIRED = """
 class: GalaxyWorkflow
@@ -717,16 +797,6 @@ report:
     The next two sections demonstrate the auto generated inputs and outputs sections
     in the default workflow invocation report template.
 
-        ## Workflow Inputs
-        ```galaxy
-        invocation_inputs()
-        ```
-
-        ## Workflow Outputs
-        ```galaxy
-        invocation_outputs()
-        ```
-
     ## Workflow Inputs
     ```galaxy
     invocation_inputs()
@@ -752,19 +822,11 @@ report:
 
     Once can reference an output and embed a display of it as follows:
 
-        ```galaxy
-        history_dataset_display(output=output_1)
-        ```
-
     ```galaxy
     history_dataset_display(output=output_1)
     ```
 
     Inputs can be referenced and displayed the same way:
-
-        ```galaxy
-        history_dataset_display(input=input_1)
-        ```
 
     ```galaxy
     history_dataset_display(input=input_1)
@@ -773,10 +835,6 @@ report:
     ---
 
     Images can be embedded directly into the report as follows:
-
-        ```galaxy
-        history_dataset_as_image(output=output_image)
-        ```
 
     ```galaxy
     history_dataset_as_image(output=output_image)
@@ -787,10 +845,6 @@ report:
     Dataset peek content can be displayed to quickly provided an embedded
     summary of an input or output:
 
-        ```galaxy
-        history_dataset_peek(output=output_1)
-        ```
-
     ```galaxy
     history_dataset_peek(output=output_1)
     ```
@@ -799,10 +853,6 @@ report:
 
     Dataset "info" content can be displayed as well:
 
-        ```galaxy
-        history_dataset_info(input=input_1)
-        ```
-
     ```galaxy
     history_dataset_info(input=input_1)
     ```
@@ -810,10 +860,6 @@ report:
     ---
 
     Collections can be displayed:
-
-        ```galaxy
-        history_dataset_collection_display(input=input_list)
-        ```
 
     ```galaxy
     history_dataset_collection_display(input=input_list)
@@ -824,10 +870,6 @@ report:
     The whole workflow can be embedded to provide some context and display
     annotations and steps.
 
-        ```galaxy
-        workflow_display()
-        ```
-
     ```galaxy
     workflow_display()
     ```
@@ -835,10 +877,6 @@ report:
     ---
 
     Job parameters can be summarized:
-
-        ```galaxy
-        job_parameters(step=qc_step)
-        ```
 
     ```galaxy
     job_parameters(step=qc_step)
@@ -848,10 +886,6 @@ report:
 
     Job metrics can be summarized as well:
 
-        ```galaxy
-        job_metrics(step=image_cat)
-        ```
-
     ```galaxy
     job_metrics(step=image_cat)
     ```
@@ -860,17 +894,9 @@ report:
 
     Tool standard out and error are also available for steps.
 
-        ```galaxy
-        tool_stdout(step=qc_step)
-        ```
-
     ```galaxy
     tool_stdout(step=qc_step)
     ```
-
-        ```galaxy
-        tool_stderr(step=qc_step)
-        ```
 
     ```galaxy
     tool_stderr(step=qc_step)
@@ -893,9 +919,40 @@ image_input:
   file_type: png
   name: my input image
 input_list:
-  type: list
+  collection_type: list
   elements:
     - identifier: i1
       content: "0"
   name: example list
+"""
+
+
+WORKFLOW_WITH_BAD_COLUMN_PARAMETER = """
+class: GalaxyWorkflow
+inputs:
+    bed_input: data
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: bed_input
+  column_param_list:
+    tool_id: column_param
+    in:
+      input1: cat1/out_file1
+    state:
+      col: 9
+      col_names: notacolumn
+"""
+
+
+WORKFLOW_WITH_BAD_COLUMN_PARAMETER_GOOD_TEST_DATA = """
+step_parameters:
+  '2':
+    'col': 1
+    'col_names': 'c1: chr1'
+bed_input:
+  value: 1.bed
+  file_type: bed
+  type: File
 """

@@ -32,8 +32,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="interval" value="2.interval" dbkey="hg17"/>
-            <output name="output" format="bigwig" value="2.bigwig" compare="sim_size"/>
+            <param name="input1" ftype="interval" value="2.interval" dbkey="hg17"/>
+            <output name="output" ftype="bigwig" value="2.bigwig" compare="sim_size"/>
         </test>
     </tests>
     <help>

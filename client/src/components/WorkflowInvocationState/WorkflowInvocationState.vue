@@ -1,70 +1,50 @@
 <template>
-    <div class="mb-3">
-        <div v-if="invocationAndJobTerminal">
-            <span>
-                <a :href="invocationLink"
-                    ><b>View Report {{ index + 1 }}</b></a
-                >
-                <a class="fa fa-print ml-1" :href="invocationPdfLink" v-b-tooltip title="Download PDF" />
-            </span>
-        </div>
-        <div v-else>
-            <span class="fa fa-spinner fa-spin" />
-            <span>Invocation {{ index + 1 }}...</span>
-            <span
-                v-if="stepCount && !invocationSchedulingTerminal"
-                v-b-tooltip.hover
-                title="Cancel scheduling of workflow invocation"
-                class="fa fa-times"
-                @click="cancelWorkflowScheduling"
-            ></span>
-        </div>
-        <progress-bar v-if="!stepCount" note="Loading step state summary..." :loading="true" />
-        <progress-bar
-            v-else-if="invocationState == 'cancelled'"
-            note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
-            :error-count="1"
-        />
-        <progress-bar
-            v-else-if="invocationState == 'failed'"
-            note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
-            :error-count="1"
-        />
-        <progress-bar v-else :note="stepStatesStr" :total="stepCount" :ok-count="stepStates.scheduled" />
-        <progress-bar
-            v-if="jobCount"
-            :note="jobStatesStr"
-            :total="jobCount"
-            :ok-count="okCount"
-            :running-count="runningCount"
-            :new-count="newCount"
-            :error-count="errorCount"
-        />
-        <progress-bar v-else note="Loading job summary..." :loading="true" />
-        <span v-if="invocationAndJobTerminal">
-            <a :href="bcoJSON"><b>Download BioCompute Object</b></a>
-        </span>
+    <b-tabs v-if="invocation">
+        <b-tab title="Summary" active>
+            <workflow-invocation-summary
+                :invocation="invocation"
+                :index="index"
+                :invocation-and-job-terminal="invocationAndJobTerminal"
+                :invocation-scheduling-terminal="invocationSchedulingTerminal"
+                :job-states-summary="jobStatesSummary"
+                @invocation-cancelled="cancelWorkflowScheduling" />
+        </b-tab>
+        <b-tab title="Details">
+            <workflow-invocation-details
+                :invocation="invocation"
+                :invocation-and-job-terminal="invocationAndJobTerminal" />
+        </b-tab>
+        <!-- <b-tab title="Workflow Overview">
+            <p>TODO: Insert readonly version of workflow editor here</p>
+        </b-tab> -->
+        <b-tab title="Export">
+            <div v-if="invocationAndJobTerminal">
+                <workflow-invocation-export-options :invocation-id="invocation.id" />
+            </div>
+            <div v-else>
+                <p v-localize>Waiting for invocation to complete...</p>
+            </div>
+        </b-tab>
+    </b-tabs>
+    <div v-else>
+        <p v-localize>Loading invocation...</p>
     </div>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
 import { cancelWorkflowScheduling } from "./services";
-import { getRootFromIndexLink } from "onload";
+import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
+import WorkflowInvocationDetails from "./WorkflowInvocationDetails.vue";
+import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
+
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import mixin from "components/JobStates/mixin";
-import ProgressBar from "components/ProgressBar";
-
 import { mapGetters, mapActions } from "vuex";
-
-const getUrl = (path) => getRootFromIndexLink() + path;
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {
-        ProgressBar,
+        WorkflowInvocationSummary,
+        WorkflowInvocationDetails,
+        WorkflowInvocationExportOptions,
     },
     mixins: [mixin],
     props: {
@@ -74,7 +54,8 @@ export default {
         },
         index: {
             type: Number,
-            default: 0,
+            required: false,
+            default: null,
         },
     },
     data() {
@@ -83,55 +64,16 @@ export default {
             jobStatesInterval: null,
         };
     },
-    created: function () {
-        this.pollStepStatesUntilTerminal();
-        this.pollJobStatesUntilTerminal();
-    },
     computed: {
         ...mapGetters(["getInvocationById", "getInvocationJobsSummaryById"]),
+        invocation: function () {
+            return this.getInvocationById(this.invocationId);
+        },
         invocationState: function () {
-            const invocation = this.getInvocationById(this.invocationId);
-            const state = invocation ? invocation.state : "new";
-            return state;
-        },
-        createdTime: function () {
-            const invocation = this.getInvocationById(this.invocationId);
-            return invocation ? this.getInvocationById(this.invocationId).create_time : null;
-        },
-        stepCount: function () {
-            const invocation = this.getInvocationById(this.invocationId);
-            if (invocation) {
-                return invocation.steps.length;
-            } else {
-                return null;
-            }
-        },
-        stepStates: function () {
-            const stepStates = {};
-            const invocation = this.getInvocationById(this.invocationId);
-            if (!invocation) {
-                return {};
-            }
-            for (const step of invocation.steps) {
-                if (!stepStates[step.state]) {
-                    stepStates[step.state] = 1;
-                } else {
-                    stepStates[step.state] += 1;
-                }
-            }
-            return stepStates;
+            return this.invocation?.state || "new";
         },
         invocationAndJobTerminal: function () {
-            return this.invocationSchedulingTerminal && this.jobStatesTerminal;
-        },
-        invocationLink: function () {
-            return getUrl(`workflows/invocations/report?id=${this.invocationId}`);
-        },
-        bcoJSON: function () {
-            return getUrl(`api/invocations/${this.invocationId}/biocompute/download`);
-        },
-        invocationPdfLink: function () {
-            return getUrl(`api/invocations/${this.invocationId}/report.pdf`);
+            return !!(this.invocationSchedulingTerminal && this.jobStatesTerminal);
         },
         invocationSchedulingTerminal: function () {
             return (
@@ -141,49 +83,50 @@ export default {
             );
         },
         jobStatesTerminal: function () {
-            return this.jobStatesSummary && this.jobStatesSummary.terminal();
-        },
-        stepStatesStr: function () {
-            return `${this.stepStates.scheduled || 0} of ${this.stepCount} steps successfully scheduled.`;
-        },
-        jobStatesStr: function () {
-            let jobStr = `${this.jobStatesSummary.numTerminal()} of ${this.jobCount} jobs complete`;
-            if (!this.invocationSchedulingTerminal) {
-                jobStr += " (total number of jobs will change until all steps fully scheduled)";
+            if (this.invocationSchedulingTerminal && this.JobStatesSummary?.jobCount === 0) {
+                // no jobs for this invocation (think subworkflow or just inputs)
+                return true;
             }
-            return `${jobStr}.`;
+            return this.jobStatesSummary && this.jobStatesSummary.terminal();
         },
         jobStatesSummary() {
             const jobsSummary = this.getInvocationJobsSummaryById(this.invocationId);
             return !jobsSummary ? null : new JOB_STATES_MODEL.JobStatesSummary(jobsSummary);
         },
     },
-    methods: {
-        ...mapActions(["fetchInvocationForId", "fetchInvocationJobsSummaryForId"]),
-        pollStepStatesUntilTerminal: function () {
-            this.fetchInvocationForId(this.invocationId).then((response) => {
-                if (!this.invocationSchedulingTerminal) {
-                    this.stepStatesInterval = setTimeout(this.pollStepStatesUntilTerminal, 3000);
-                }
-            });
-        },
-        pollJobStatesUntilTerminal: function () {
-            this.fetchInvocationJobsSummaryForId(this.invocationId).then((response) => {
-                if (!this.jobStatesTerminal) {
-                    this.jobStatesInterval = setTimeout(this.pollJobStatesUntilTerminal, 3000);
-                }
-            });
-        },
-        onError: function (e) {
-            console.error(e);
-        },
-        cancelWorkflowScheduling: function () {
-            cancelWorkflowScheduling(this.invocationId).catch(this.onError);
-        },
+    created: function () {
+        this.pollStepStatesUntilTerminal();
+        this.pollJobStatesUntilTerminal();
     },
     beforeDestroy: function () {
         clearTimeout(this.jobStatesInterval);
         clearTimeout(this.stepStatesInterval);
+    },
+    methods: {
+        ...mapActions(["fetchInvocationForId", "fetchInvocationJobsSummaryForId"]),
+        pollStepStatesUntilTerminal: function () {
+            if (!this.invocation || !this.invocationSchedulingTerminal) {
+                this.fetchInvocationForId(this.invocationId).then((response) => {
+                    this.stepStatesInterval = setTimeout(this.pollStepStatesUntilTerminal, 3000);
+                });
+            }
+        },
+        pollJobStatesUntilTerminal: function () {
+            if (!this.jobStatesTerminal) {
+                this.fetchInvocationJobsSummaryForId(this.invocationId).then((response) => {
+                    this.jobStatesInterval = setTimeout(this.pollJobStatesUntilTerminal, 3000);
+                });
+            }
+        },
+        onError: function (e) {
+            console.error(e);
+        },
+        onCancel() {
+            this.$emit("invocation-cancelled");
+        },
+        cancelWorkflowScheduling: function () {
+            cancelWorkflowScheduling(this.invocationId).then(this.onCancel).catch(this.onError);
+        },
     },
 };
 </script>

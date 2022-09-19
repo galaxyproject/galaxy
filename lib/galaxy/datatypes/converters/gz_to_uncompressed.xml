@@ -16,12 +16,12 @@ gzip -dcf '$input1' > '$output1'
         <!-- auto doesn't sniff - it defers to galaxy.json in this context. -->
         <data name="output1" format="auto"/>
     </outputs>
-    <help>
-    </help>
     <tests>
         <test>
             <param name="input1" value="test.vcf.gz" ftype="vcf_bgzip"/>
             <output name="output1" file="test.vcf" ftype="vcf"/>
         </test>
     </tests>
+    <help>
+    </help>
 </tool>

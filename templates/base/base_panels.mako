@@ -33,9 +33,8 @@
 ## TODO: remove when all libs are required directly in modules
 <%def name="javascripts()">
     <!--- base/base_panels.mako javascripts() -->
-    ${h.dist_js(
-        'libs.chunk',
-        'base.chunk',
+    ${ h.dist_js(
+        'libs.bundled',
         'generic.bundled'
     )}
 </%def>
@@ -49,25 +48,14 @@
 <%def name="late_javascripts()">
     <!--- base/base_panels.mako late_javascripts() -->
 
-    <script type="text/javascript">
-
-        var panelConfig = {
-            left_panel: ${h.to_js_bool(self.has_left_panel)},
-            right_panel: ${h.to_js_bool(self.has_right_panel)},
-            rightPanelSelector: '#right',
-            leftPanelSelector: '#left'
-        };
-
-        // "late javascripts"
-        config.addInitialization(function() {
-            console.log("base/base_panels.mako, panel init");
-            window.bundleEntries.panelManagement(panelConfig);
-        });
-
-    </script>
-
     %if t.webapp.name == 'galaxy' and app.config.ga_code:
         ${galaxy_client.config_google_analytics(app.config.ga_code)}
+    %endif
+    %if t.webapp.name == 'galaxy' and app.config.plausible_server and app.config.plausible_domain:
+        ${ galaxy_client.config_plausible_analytics(app.config.plausible_server, app.config.plausible_domain) }
+    %endif
+    %if t.webapp.name == 'galaxy' and app.config.matomo_server and app.config.matomo_site_id:
+        ${ galaxy_client.config_matomo_analytics(app.config.matomo_server, app.config.matomo_site_id) }
     %endif
 
 </%def>
@@ -115,10 +103,6 @@
     ${self.init()}
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        ## For mobile browsers, don't scale up
-        <meta name = "viewport" content = "maximum-scale=1.0">
-        ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
-        <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 
         <title>
             Galaxy

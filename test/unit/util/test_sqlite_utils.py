@@ -1,3 +1,5 @@
+import pytest
+
 from galaxy.util import sqlite
 
 
@@ -37,19 +39,14 @@ def test_sqlite_exploits():
 
 def __assert_has_n_rows(connection, query, n):
     count = 0
-    for row in connection.cursor().execute(query):
+    for _ in connection.cursor().execute(query):
         count += 1
     assert count == n
 
 
 def __assert_query_errors(connection, query):
-    exception = False
-    try:
-        for row in connection.cursor().execute(query):
-            pass
-    except Exception:
-        exception = True
-    assert exception
+    with pytest.raises(Exception):
+        connection.cursor().execute(query)
 
 
 def __assert_allowed(query):

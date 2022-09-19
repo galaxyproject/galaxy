@@ -59,7 +59,20 @@ def stop_err(msg):
 
 
 def reverse_complement(s):
-    complement_dna = {"A": "T", "T": "A", "C": "G", "G": "C", "a": "t", "t": "a", "c": "g", "g": "c", "N": "N", "n": "n", ".": ".", "-": "-"}
+    complement_dna = {
+        "A": "T",
+        "T": "A",
+        "C": "G",
+        "G": "C",
+        "a": "t",
+        "t": "a",
+        "c": "g",
+        "g": "c",
+        "N": "N",
+        "n": "n",
+        ".": ".",
+        "-": "-",
+    }
     reversed_s = []
     for i in s:
         reversed_s.append(complement_dna[i])
@@ -69,35 +82,35 @@ def reverse_complement(s):
 
 def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_per_read, insertion_size):
     invalid_editstring_char = 0
-    all_score_file = score_files.split(',')
+    all_score_file = score_files.split(",")
 
     if len(all_score_file) != hit_per_read:
-        stop_err('One or more query files is missing. Please check your dataset.')
+        stop_err("One or more query files is missing. Please check your dataset.")
 
     temp_table_name = tempfile.NamedTemporaryFile().name
-    temp_table = open(temp_table_name, 'w')
+    temp_table = open(temp_table_name, "w")
 
-    outfile = open(table_outfile, 'w')
+    outfile = open(table_outfile, "w")
 
     # reference seq: not a single fasta seq
     refseq = {}
     chrom_cov = {}
-    seq = ''
+    seq = ""
     title = None
 
-    for i, line in enumerate(open(ref_file)):
+    for line in open(ref_file):
         line = line.rstrip()
-        if not line or line.startswith('#'):
+        if not line or line.startswith("#"):
             continue
 
-        if line.startswith('>'):
+        if line.startswith(">"):
             if seq:
                 if title in refseq:
                     pass
                 else:
                     refseq[title] = seq
                     chrom_cov[title] = {}
-                seq = ''
+                seq = ""
             title = line[1:]
         else:
             seq += line
@@ -108,13 +121,13 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
 
     # find hits: one end and/or the other
     hits = {}
-    for i, line in enumerate(open(result_file)):
+    for line in open(result_file):
         line = line.rstrip()
-        if not line or line.startswith('#'):
+        if not line or line.startswith("#"):
             continue
 
         # FORMAT: readname contigname strand contigstart contigend readstart readend readlength score editstring
-        fields = line.split('\t')
+        fields = line.split("\t")
         readname = fields[0][1:]
         chrom = fields[1]
         strand = fields[2]
@@ -125,9 +138,9 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
         editstring = fields[9]
 
         if hit_per_read == 1:
-            endindex = '1'
+            endindex = "1"
         else:
-            readname, endindex = readname.split('/')
+            readname, endindex = readname.split("/")
 
         if readname in hits:
             if endindex in hits[readname]:
@@ -140,16 +153,16 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
 
     # find score: one end and the other end
     hits_score = {}
-    readname = ''
-    score = ''
+    readname = ""
+    score = ""
     for num_score_file in range(len(all_score_file)):
         score_file = all_score_file[num_score_file]
-        for i, line in enumerate(open(score_file)):
+        for line in open(score_file):
             line = line.rstrip()
-            if not line or line.startswith('#'):
+            if not line or line.startswith("#"):
                 continue
 
-            if line.startswith('>'):
+            if line.startswith(">"):
                 if score:
                     if readname in hits:
                         if len(hits[readname]) == hit_per_read:
@@ -161,12 +174,12 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
                             else:
                                 hits_score[readname] = {}
                                 hits_score[readname][endindex] = score
-                    score = ''
+                    score = ""
                 if hit_per_read == 1:
                     readname = line[1:]
-                    endindex = '1'
+                    endindex = "1"
                 else:
-                    readname, endindex = line[1:].split('/')
+                    readname, endindex = line[1:].split("/")
             else:
                 score = line
 
@@ -191,29 +204,29 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
         match_count = 0
 
         if hit_per_read == 1:
-            if len(hits[readkey]['1']) == 1:
-                matches = [hits[readkey]['1']]
+            if len(hits[readkey]["1"]) == 1:
+                matches = [hits[readkey]["1"]]
                 match_count = 1
         else:
-            end1_data = hits[readkey]['1']
-            end2_data = hits[readkey]['2']
+            end1_data = hits[readkey]["1"]
+            end2_data = hits[readkey]["2"]
 
-            for i, end1_hit in enumerate(end1_data):
-                crin_strand = {'+': False, '-': False}
-                crin_insertSize = {'+': False, '-': False}
+            for end1_hit in end1_data:
+                crin_strand = {"+": False, "-": False}
+                crin_insertSize = {"+": False, "-": False}
 
                 crin_strand[end1_hit[0]] = True
                 crin_insertSize[end1_hit[0]] = int(end1_hit[2])
 
-                for j, end2_hit in enumerate(end2_data):
+                for end2_hit in end2_data:
                     crin_strand[end2_hit[0]] = True
                     crin_insertSize[end2_hit[0]] = int(end2_hit[2])
 
                     if end1_hit[-1] != end2_hit[-1]:
                         continue
 
-                    if crin_strand['+'] and crin_strand['-']:
-                        if (crin_insertSize['-'] - crin_insertSize['+']) <= insertion_size:
+                    if crin_strand["+"] and crin_strand["-"]:
+                        if (crin_insertSize["-"] - crin_insertSize["+"]) <= insertion_size:
                             matches.append([end1_hit, end2_hit])
                             match_count += 1
 
@@ -222,7 +235,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
                 end_strand, end_editstring, end_chr_start, end_chr_end, end_read_start, end_chrom = end_data
                 end_read_start = int(end_read_start) - 1
 
-                if end_strand == '-':
+                if end_strand == "-":
                     refsegment = reverse_complement(refseq[end_chrom][end_chr_start:end_chr_end])
                 else:
                     refsegment = refseq[end_chrom][end_chr_start:end_chr_end]
@@ -233,11 +246,11 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
 
                 while editindex < len(end_editstring):
                     editchr = end_editstring[editindex]
-                    chrA = ''
-                    chrB = ''
+                    chrA = ""
+                    chrB = ""
 
                     if editchr.isdigit():
-                        editcode = ''
+                        editcode = ""
 
                         while editchr.isdigit() and editindex < len(end_editstring):
                             editcode += editchr
@@ -251,7 +264,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
 
                         match_len += int(editcode)
 
-                    elif editchr == 'x':
+                    elif editchr == "x":
                         # crossover: inserted between the appropriate two bases
                         # Two sequencing errors: 4x15x6 (25 matches with 2 crossovers)
                         # Treated as errors in the reads; Do nothing.
@@ -264,7 +277,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
                         chrB = editcode
                         match_len += len(editcode)
 
-                    elif editchr == '-':
+                    elif editchr == "-":
                         editcode = editchr
                         editindex += 1
                         chrA = refsegment[match_len]
@@ -272,28 +285,28 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
                         match_len += len(editcode)
                         gap_read += 1
 
-                    elif editchr == '(':
-                        editcode = ''
+                    elif editchr == "(":
+                        editcode = ""
 
-                        while editchr != ')' and editindex < len(end_editstring):
+                        while editchr != ")" and editindex < len(end_editstring):
                             if editindex < len(end_editstring):
                                 editchr = end_editstring[editindex]
                             editcode += editchr
                             editindex += 1
 
                         editcode = editcode[1:-1]
-                        chrA = '-' * len(editcode)
+                        chrA = "-" * len(editcode)
                         chrB = editcode
 
                     else:
                         invalid_editstring_char += 1
 
-                    if end_strand == '-':
+                    if end_strand == "-":
                         chrA = reverse_complement(chrA)
                         chrB = reverse_complement(chrB)
 
-                    pos_line = ''
-                    rev_line = ''
+                    pos_line = ""
+                    rev_line = ""
 
                     for mappingIndex in range(len(chrA)):
                         # reference
@@ -301,36 +314,64 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
                         # read
                         chrBx = chrB[mappingIndex]
 
-                        if chrAx and chrBx and chrBx.upper() != 'N':
-                            if end_strand == '+':
+                        if chrAx and chrBx and chrBx.upper() != "N":
+                            if end_strand == "+":
                                 chrom_loc = end_chr_start + match_len - len(chrA) + mappingIndex
                                 read_loc = end_read_start + match_len - len(chrA) + mappingIndex - gap_read
 
-                                if chrAx == '-':
+                                if chrAx == "-":
                                     chrom_loc -= 1
 
-                                if chrBx == '-':
-                                    scoreBx = '-1'
+                                if chrBx == "-":
+                                    scoreBx = "-1"
                                 else:
                                     scoreBx = hits_score[readkey][str(x + 1)].split()[read_loc]
 
                                 # 1-based on chrom_loc and read_loc
-                                pos_line = pos_line + '\t'.join((end_chrom, str(chrom_loc + 1), readkey + '/' + str(x + 1), str(read_loc + 1), chrAx, chrBx, scoreBx)) + '\n'
+                                pos_line = (
+                                    pos_line
+                                    + "\t".join(
+                                        (
+                                            end_chrom,
+                                            str(chrom_loc + 1),
+                                            readkey + "/" + str(x + 1),
+                                            str(read_loc + 1),
+                                            chrAx,
+                                            chrBx,
+                                            scoreBx,
+                                        )
+                                    )
+                                    + "\n"
+                                )
 
                             else:
                                 chrom_loc = end_chr_end - match_len + mappingIndex
                                 read_loc = end_read_start + match_len - 1 - mappingIndex - gap_read
 
-                                if chrAx == '-':
+                                if chrAx == "-":
                                     chrom_loc -= 1
 
-                                if chrBx == '-':
-                                    scoreBx = '-1'
+                                if chrBx == "-":
+                                    scoreBx = "-1"
                                 else:
                                     scoreBx = hits_score[readkey][str(x + 1)].split()[read_loc]
 
                                 # 1-based on chrom_loc and read_loc
-                                rev_line = '\t'.join((end_chrom, str(chrom_loc + 1), readkey + '/' + str(x + 1), str(read_loc + 1), chrAx, chrBx, scoreBx)) + '\n' + rev_line
+                                rev_line = (
+                                    "\t".join(
+                                        (
+                                            end_chrom,
+                                            str(chrom_loc + 1),
+                                            readkey + "/" + str(x + 1),
+                                            str(read_loc + 1),
+                                            chrAx,
+                                            chrBx,
+                                            scoreBx,
+                                        )
+                                    )
+                                    + "\n"
+                                    + rev_line
+                                )
 
                             if end_chrom in chrom_cov:
                                 if chrom_loc in chrom_cov[end_chrom]:
@@ -343,16 +384,16 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
                                 chrom_cov[end_chrom][chrom_loc] = 1
 
                     if pos_line:
-                        temp_table.write('%s\n' % (pos_line.rstrip('\r\n')))
+                        temp_table.write("%s\n" % (pos_line.rstrip("\r\n")))
                     if rev_line:
-                        temp_table.write('%s\n' % (rev_line.rstrip('\r\n')))
+                        temp_table.write("%s\n" % (rev_line.rstrip("\r\n")))
 
     temp_table.close()
 
     # chrom-wide coverage
-    for i, line in enumerate(open(temp_table_name)):
+    for line in open(temp_table_name):
         line = line.rstrip()
-        if not line or line.startswith('#'):
+        if not line or line.startswith("#"):
             continue
 
         fields = line.split()
@@ -361,12 +402,12 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
         readname = fields[2]
 
         if hit_per_read == 1:
-            fields[2] = readname.split('/')[0]
+            fields[2] = readname.split("/")[0]
 
         if eachBp in chrom_cov[chrom]:
-            outfile.write('%s\t%d\n' % ('\t'.join(fields), chrom_cov[chrom][eachBp]))
+            outfile.write("%s\t%d\n" % ("\t".join(fields), chrom_cov[chrom][eachBp]))
         else:
-            outfile.write('%s\t%d\n' % ('\t'.join(fields), 0))
+            outfile.write("%s\t%d\n" % ("\t".join(fields), 0))
 
     outfile.close()
 
@@ -374,24 +415,24 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
         os.remove(temp_table_name)
 
     if invalid_editstring_char:
-        print('Skip ', invalid_editstring_char, ' invalid characters in editstrings')
+        print("Skip ", invalid_editstring_char, " invalid characters in editstrings")
 
     return True
 
 
 def convert_fastqsolexa_to_fasta_qual(infile_name, query_fasta, query_qual):
-    outfile_seq = open(query_fasta, 'w')
-    outfile_score = open(query_qual, 'w')
+    outfile_seq = open(query_fasta, "w")
+    outfile_score = open(query_qual, "w")
 
-    seq_title_startswith = ''
-    qual_title_startswith = ''
+    seq_title_startswith = ""
+    qual_title_startswith = ""
 
     default_coding_value = 64  # Solexa ascii-code
     fastq_block_lines = 0
 
     for i, line in enumerate(open(infile_name)):
         line = line.rstrip()
-        if not line or line.startswith('#'):
+        if not line or line.startswith("#"):
             continue
 
         fastq_block_lines = (fastq_block_lines + 1) % 4
@@ -405,15 +446,15 @@ def convert_fastqsolexa_to_fasta_qual(infile_name, query_fasta, query_qual):
             if line_startswith != seq_title_startswith:
                 outfile_seq.close()
                 outfile_score.close()
-                stop_err('Invalid fastqsolexa format at line %d: %s.' % (i + 1, line))
+                stop_err("Invalid fastqsolexa format at line %d: %s." % (i + 1, line))
 
             read_title = line[1:]
-            outfile_seq.write('>%s\n' % line[1:])
+            outfile_seq.write(">%s\n" % line[1:])
 
         elif fastq_block_lines == 2:
             # second line is nucleotides
             read_length = len(line)
-            outfile_seq.write('%s\n' % line)
+            outfile_seq.write("%s\n" % line)
 
         elif fastq_block_lines == 3:
             # third line is +title_of_qualityscore ( might be skipped )
@@ -423,22 +464,25 @@ def convert_fastqsolexa_to_fasta_qual(infile_name, query_fasta, query_qual):
             if line_startswith != qual_title_startswith:
                 outfile_seq.close()
                 outfile_score.close()
-                stop_err('Invalid fastqsolexa format at line %d: %s.' % (i + 1, line))
+                stop_err("Invalid fastqsolexa format at line %d: %s." % (i + 1, line))
 
             quality_title = line[1:]
             if quality_title and read_title != quality_title:
                 outfile_seq.close()
                 outfile_score.close()
-                stop_err('Invalid fastqsolexa format at line %d: sequence title "%s" differes from score title "%s".' % (i + 1, read_title, quality_title))
+                stop_err(
+                    'Invalid fastqsolexa format at line %d: sequence title "%s" differes from score title "%s".'
+                    % (i + 1, read_title, quality_title)
+                )
 
             if not quality_title:
-                outfile_score.write('>%s\n' % read_title)
+                outfile_score.write(">%s\n" % read_title)
             else:
-                outfile_score.write('>%s\n' % line[1:])
+                outfile_score.write(">%s\n" % line[1:])
 
         else:
             # fourth line is quality scores
-            qual = ''
+            qual = ""
             fastq_integer = True
             # peek: ascii or digits?
             val = line.split()[0]
@@ -461,13 +505,16 @@ def convert_fastqsolexa_to_fasta_qual(infile_name, query_fasta, query_qual):
                 elif quality_score_length == read_length:
                     qual_score_startswith = default_coding_value
                 else:
-                    stop_err('Invalid fastqsolexa format at line %d: the number of quality scores ( %d ) is not the same as bases ( %d ).' % (i + 1, quality_score_length, read_length))
+                    stop_err(
+                        "Invalid fastqsolexa format at line %d: the number of quality scores ( %d ) is not the same as bases ( %d )."
+                        % (i + 1, quality_score_length, read_length)
+                    )
 
-                for j, char in enumerate(line):
-                    score = ord(char) - qual_score_startswith    # 64
+                for char in line:
+                    score = ord(char) - qual_score_startswith  # 64
                     qual = "%s%s " % (qual, str(score))
 
-            outfile_score.write('%s\n' % qual)
+            outfile_score.write("%s\n" % qual)
 
     outfile_seq.close()
     outfile_score.close()
@@ -477,25 +524,25 @@ def convert_fastqsolexa_to_fasta_qual(infile_name, query_fasta, query_qual):
 
 def __main__():
     # SHRiMP path
-    shrimp = 'rmapper-ls'
+    shrimp = "rmapper-ls"
 
     # I/O
     input_target_file = sys.argv[1]  # fasta
     shrimp_outfile = sys.argv[2]  # shrimp output
     table_outfile = sys.argv[3]  # table output
-    single_or_paired = sys.argv[4].split(',')
+    single_or_paired = sys.argv[4].split(",")
 
     insertion_size = 600
 
-    if len(single_or_paired) == 1:                  # single or paired
-        type_of_reads = 'single'
+    if len(single_or_paired) == 1:  # single or paired
+        type_of_reads = "single"
         hit_per_read = 1
         input_query = single_or_paired[0]
         query_fasta = tempfile.NamedTemporaryFile().name
         query_qual = tempfile.NamedTemporaryFile().name
 
-    else:                                           # paired-end
-        type_of_reads = 'paired'
+    else:  # paired-end
+        type_of_reads = "paired"
         hit_per_read = 2
         input_query_end1 = single_or_paired[0]
         input_query_end2 = single_or_paired[1]
@@ -506,21 +553,21 @@ def __main__():
         query_qual_end2 = tempfile.NamedTemporaryFile().name
 
     # SHRiMP parameters: total = 15, default values
-    spaced_seed = '111111011111'
-    seed_matches_per_window = '2'
-    seed_hit_taboo_length = '4'
-    seed_generation_taboo_length = '0'
-    seed_window_length = '115.0'
-    max_hits_per_read = '100'
-    max_read_length = '1000'
-    kmer = '-1'
-    sw_match_value = '100'
-    sw_mismatch_value = '-150'
-    sw_gap_open_ref = '-400'
-    sw_gap_open_query = '-400'
-    sw_gap_ext_ref = '-70'
-    sw_gap_ext_query = '-70'
-    sw_hit_threshold = '68.0'
+    spaced_seed = "111111011111"
+    seed_matches_per_window = "2"
+    seed_hit_taboo_length = "4"
+    seed_generation_taboo_length = "0"
+    seed_window_length = "115.0"
+    max_hits_per_read = "100"
+    max_read_length = "1000"
+    kmer = "-1"
+    sw_match_value = "100"
+    sw_mismatch_value = "-150"
+    sw_gap_open_ref = "-400"
+    sw_gap_open_query = "-400"
+    sw_gap_ext_ref = "-70"
+    sw_gap_ext_query = "-70"
+    sw_hit_threshold = "68.0"
 
     # TODO: put the threshold on each of these parameters
     if len(sys.argv) > 5:
@@ -528,9 +575,9 @@ def __main__():
             if sys.argv[5].isdigit():
                 spaced_seed = sys.argv[5]
             else:
-                stop_err('Error in assigning parameter: Spaced seed.')
+                stop_err("Error in assigning parameter: Spaced seed.")
         except Exception:
-            stop_err('Spaced seed must be a combination of 1s and 0s.')
+            stop_err("Spaced seed must be a combination of 1s and 0s.")
 
         seed_matches_per_window = sys.argv[6]
         seed_hit_taboo_length = sys.argv[7]
@@ -551,15 +598,55 @@ def __main__():
     shrimp_log = tempfile.NamedTemporaryFile().name
 
     # convert fastq to fasta and quality score files
-    if type_of_reads == 'single':
+    if type_of_reads == "single":
         convert_fastqsolexa_to_fasta_qual(input_query, query_fasta, query_qual)
     else:
         convert_fastqsolexa_to_fasta_qual(input_query_end1, query_fasta_end1, query_qual_end1)
         convert_fastqsolexa_to_fasta_qual(input_query_end2, query_fasta_end2, query_qual_end2)
 
     # SHRiMP command
-    if type_of_reads == 'single':
-        command = ' '.join((shrimp, '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-h', sw_hit_threshold, query_fasta, input_target_file, '>', shrimp_outfile, '2>', shrimp_log))
+    if type_of_reads == "single":
+        command = " ".join(
+            (
+                shrimp,
+                "-s",
+                spaced_seed,
+                "-n",
+                seed_matches_per_window,
+                "-t",
+                seed_hit_taboo_length,
+                "-9",
+                seed_generation_taboo_length,
+                "-w",
+                seed_window_length,
+                "-o",
+                max_hits_per_read,
+                "-r",
+                max_read_length,
+                "-d",
+                kmer,
+                "-m",
+                sw_match_value,
+                "-i",
+                sw_mismatch_value,
+                "-g",
+                sw_gap_open_ref,
+                "-q",
+                sw_gap_open_query,
+                "-e",
+                sw_gap_ext_ref,
+                "-f",
+                sw_gap_ext_query,
+                "-h",
+                sw_hit_threshold,
+                query_fasta,
+                input_target_file,
+                ">",
+                shrimp_outfile,
+                "2>",
+                shrimp_log,
+            )
+        )
 
         try:
             os.system(command)
@@ -571,8 +658,88 @@ def __main__():
             stop_err(str(e))
 
     else:  # paired
-        command_end1 = ' '.join((shrimp, '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-h', sw_hit_threshold, query_fasta_end1, input_target_file, '>', shrimp_outfile, '2>', shrimp_log))
-        command_end2 = ' '.join((shrimp, '-s', spaced_seed, '-n', seed_matches_per_window, '-t', seed_hit_taboo_length, '-9', seed_generation_taboo_length, '-w', seed_window_length, '-o', max_hits_per_read, '-r', max_read_length, '-d', kmer, '-m', sw_match_value, '-i', sw_mismatch_value, '-g', sw_gap_open_ref, '-q', sw_gap_open_query, '-e', sw_gap_ext_ref, '-f', sw_gap_ext_query, '-h', sw_hit_threshold, query_fasta_end2, input_target_file, '>>', shrimp_outfile, '2>>', shrimp_log))
+        command_end1 = " ".join(
+            (
+                shrimp,
+                "-s",
+                spaced_seed,
+                "-n",
+                seed_matches_per_window,
+                "-t",
+                seed_hit_taboo_length,
+                "-9",
+                seed_generation_taboo_length,
+                "-w",
+                seed_window_length,
+                "-o",
+                max_hits_per_read,
+                "-r",
+                max_read_length,
+                "-d",
+                kmer,
+                "-m",
+                sw_match_value,
+                "-i",
+                sw_mismatch_value,
+                "-g",
+                sw_gap_open_ref,
+                "-q",
+                sw_gap_open_query,
+                "-e",
+                sw_gap_ext_ref,
+                "-f",
+                sw_gap_ext_query,
+                "-h",
+                sw_hit_threshold,
+                query_fasta_end1,
+                input_target_file,
+                ">",
+                shrimp_outfile,
+                "2>",
+                shrimp_log,
+            )
+        )
+        command_end2 = " ".join(
+            (
+                shrimp,
+                "-s",
+                spaced_seed,
+                "-n",
+                seed_matches_per_window,
+                "-t",
+                seed_hit_taboo_length,
+                "-9",
+                seed_generation_taboo_length,
+                "-w",
+                seed_window_length,
+                "-o",
+                max_hits_per_read,
+                "-r",
+                max_read_length,
+                "-d",
+                kmer,
+                "-m",
+                sw_match_value,
+                "-i",
+                sw_mismatch_value,
+                "-g",
+                sw_gap_open_ref,
+                "-q",
+                sw_gap_open_query,
+                "-e",
+                sw_gap_ext_ref,
+                "-f",
+                sw_gap_ext_query,
+                "-h",
+                sw_hit_threshold,
+                query_fasta_end2,
+                input_target_file,
+                ">>",
+                shrimp_outfile,
+                "2>>",
+                shrimp_log,
+            )
+        )
 
         try:
             os.system(command_end1)
@@ -591,9 +758,9 @@ def __main__():
     # check SHRiMP output: count number of lines
     num_hits = 0
     if shrimp_outfile:
-        for i, line in enumerate(open(shrimp_outfile)):
-            line = line.rstrip('\r\n')
-            if not line or line.startswith('#'):
+        for line in open(shrimp_outfile):
+            line = line.rstrip("\r\n")
+            if not line or line.startswith("#"):
                 continue
             try:
                 line.split()
@@ -601,25 +768,32 @@ def __main__():
             except Exception as e:
                 stop_err(str(e))
 
-    if num_hits == 0:   # no hits generated
-        err_msg = ''
+    if num_hits == 0:  # no hits generated
+        err_msg = ""
         if shrimp_log:
-            for i, line in enumerate(open(shrimp_log)):
-                if line.startswith('error'):            # deal with memory error:
-                    err_msg += line                     # error: realloc failed: Cannot allocate memory
-                if re.search('Reads Matched', line):    # deal with zero hits
+            for line in open(shrimp_log):
+                if line.startswith("error"):  # deal with memory error:
+                    err_msg += line  # error: realloc failed: Cannot allocate memory
+                if re.search("Reads Matched", line):  # deal with zero hits
                     if int(line[8:].split()[2]) == 0:
-                        err_msg = 'Zero hits found.\n'
-        stop_err('SHRiMP Failed due to:\n' + err_msg)
+                        err_msg = "Zero hits found.\n"
+        stop_err("SHRiMP Failed due to:\n" + err_msg)
 
     # convert to table
-    if type_of_reads == 'single':
+    if type_of_reads == "single":
         generate_sub_table(shrimp_outfile, input_target_file, query_qual, table_outfile, hit_per_read, insertion_size)
     else:
-        generate_sub_table(shrimp_outfile, input_target_file, query_qual_end1 + ',' + query_qual_end2, table_outfile, hit_per_read, insertion_size)
+        generate_sub_table(
+            shrimp_outfile,
+            input_target_file,
+            query_qual_end1 + "," + query_qual_end2,
+            table_outfile,
+            hit_per_read,
+            insertion_size,
+        )
 
     # remove temp. files
-    if type_of_reads == 'single':
+    if type_of_reads == "single":
         if os.path.exists(query_fasta):
             os.remove(query_fasta)
         if os.path.exists(query_qual):
@@ -638,5 +812,5 @@ def __main__():
         os.remove(shrimp_log)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     __main__()

@@ -878,7 +878,7 @@ $(document).ready(function() {
                             target = 'galaxy_main';
                             break;
                         case "data library":
-                            link = Galaxy.root + "library/list#folders/" + item.root_folder_id;
+                            link = Galaxy.root + "libraries/folders/" + item.root_folder_id;
                             break;
                         case "workflow":
                             link = Galaxy.root + "workflow/editor?id=" + item.id;

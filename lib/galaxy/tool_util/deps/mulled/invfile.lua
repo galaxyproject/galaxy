@@ -60,7 +60,7 @@ end
 
 local destination_base_image = VAR.DEST_BASE_IMAGE
 if destination_base_image == '' then
-    destination_base_image = 'bgruening/busybox-bash:0.1'
+    destination_base_image = 'quay.io/bioconda/base-glibc-busybox-bash:latest'
 end
 
 local verbose = VAR.VERBOSE
@@ -90,7 +90,7 @@ inv.task('build')
             .. 'conda install '
             .. channel_args .. ' '
             .. target_args
-            .. ' -p /usr/local --copy --yes '
+            .. ' --strict-channel-priority -p /usr/local --copy --yes '
             .. verbose
             .. postinstall)
     .wrap('build/dist')
@@ -101,11 +101,11 @@ inv.task('build')
 if VAR.SINGULARITY ~= '' then
     inv.task('singularity')
         .using(singularity_image)
-        .withHostConfig({binds = {"build:/data", "'" .. singularity_image_dir .. "':/import"}, privileged = true})
+        .withHostConfig({binds = {"build:/data", singularity_image_dir .. ":/import"}, privileged = true})
         .withConfig({entrypoint = {'/bin/sh', '-c'}})
-        .run('mkdir', '-p', '/usr/local/var/singularity/mnt/container')
-        .run('singularity', 'build', '/import/' .. VAR.SINGULARITY_IMAGE_NAME, '/import/Singularity.def')
-        .run('chown', VAR.USER_ID, '/import/' .. VAR.SINGULARITY_IMAGE_NAME)
+        .run('mkdir -p /usr/local/var/singularity/mnt/container && '
+            .. 'singularity build /import/' .. VAR.SINGULARITY_IMAGE_NAME .. ' /import/Singularity.def && '
+            .. 'chown ' .. VAR.USER_ID .. ' /import/' .. VAR.SINGULARITY_IMAGE_NAME)
 end
 
 inv.task('cleanup')

@@ -14,13 +14,15 @@ from common import submit
 
 
 def main(options):
-    base_galaxy_url = options.galaxy_url.rstrip('/')
-    url = '%s/api/tool_shed_repositories/reset_metadata_on_installed_repositories' % base_galaxy_url
+    base_galaxy_url = options.galaxy_url.rstrip("/")
+    url = "%s/api/tool_shed_repositories/reset_metadata_on_installed_repositories" % base_galaxy_url
     submit(options.api, url, {})
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Reset metadata on all Tool Shed repositories installed into Galaxy via the Galaxy API.')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Reset metadata on all Tool Shed repositories installed into Galaxy via the Galaxy API."
+    )
     parser.add_argument("-a", "--api", dest="api", required=True, help="API Key")
     parser.add_argument("-u", "--url", dest="galaxy_url", required=True, help="Galaxy URL")
     options = parser.parse_args()

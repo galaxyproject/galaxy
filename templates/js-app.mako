@@ -1,13 +1,9 @@
 <%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
 <!DOCTYPE HTML>
-<html>
+<html lang="en">
     <!--js-app.mako-->
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        ## For mobile browsers, don't scale up
-        <meta name="viewport" content="maximum-scale=1.0">
-        ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
-        <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 
         <title>
             Galaxy
@@ -27,10 +23,14 @@
             'jquery-ui/smoothness/jquery-ui',
             'bootstrap-tour',
         )}
-
     </head>
 
     <body scroll="no" class="full-content">
+        <!-- Provide mount point for application -->
+        <main>
+            <div id="app"></div>
+        </main>
+
         ${ js_disabled_warning() }
         ${ javascripts() }
         ${ javascript_app() }
@@ -39,10 +39,9 @@
 
 <%def name="javascripts()">
     ${ h.dist_js(
-        'libs.chunk',
-        'base.chunk'
+        'libs.bundled',
+        '%s.bundled' % js_app_name
     )}
-    ${ h.dist_js('%s.bundled' % js_app_name)}
 </%def>
 
 <%def name="javascript_app()">
@@ -76,7 +75,12 @@
     %if app.config.ga_code:
         ${ galaxy_client.config_google_analytics(app.config.ga_code) }
     %endif
-
+    %if app.config.plausible_server and app.config.plausible_domain:
+            ${ galaxy_client.config_plausible_analytics(app.config.plausible_server, app.config.plausible_domain) }
+    %endif
+    %if app.config.matomo_server and app.config.matomo_site_id:
+            ${ galaxy_client.config_matomo_analytics(app.config.matomo_server, app.config.matomo_site_id) }
+    %endif
 </%def>
 
 <%def name="js_disabled_warning()">

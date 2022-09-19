@@ -1,5 +1,8 @@
 <tool id="addValue" name="Add column" version="1.0.0">
   <description>to an existing dataset</description>
+  <edam_operations>
+    <edam_operation>operation_3096</edam_operation>
+  </edam_operations>
   <command>
 perl '$__tool_directory__/fixedValueColumn.pl' '$input' '$out_file1' '$exp' $iterate
   </command>
@@ -9,7 +12,7 @@ perl '$__tool_directory__/fixedValueColumn.pl' '$input' '$out_file1' '$exp' $ite
     <param name="iterate" type="select" label="Iterate?">
       <option value="no">NO</option>
       <option value="yes">YES</option>
-    </param>    
+    </param>
   </inputs>
   <outputs>
     <data name="out_file1" format="input" metadata_source="input"/>
@@ -48,7 +51,7 @@ Typing **+** in the text box will generate::
     chr1 10  100 geneA +
     chr2 200 300 geneB +
     chr2 400 500 geneC +
-     
+
 
 You can also add line numbers by selecting **Iterate: YES**. In this case if you enter **1** in the text box you will get::
 

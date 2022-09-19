@@ -13,7 +13,7 @@ describe("Options", () => {
         await wrapper.vm.$nextTick();
         expect(wrapper.find(".editor-button-save").attributes("role")).toBe("button");
         expect(wrapper.find(".editor-button-save").attributes("disabled")).toBeFalsy();
-        expect(wrapper.find(".editor-button-save").attributes("title")).toBe("Save Workflow");
+        expect(wrapper.find(".editor-button-save-group").attributes("title")).toBe("Save Workflow");
 
         // requires a non-shallow mount
         // wrapper.find('.editor-button-attributes').trigger('click');

@@ -1,0 +1,351 @@
+
+===========================================================
+September 2021 Galaxy Release (v 21.09)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Tool Panel Views**
+
+  With many thousands of Tools available on public Galaxy instances it is often
+  difficult to organize and find Tools in the Tool Panel. To address this
+  problem we are introducing Tool Panel Views. Administrators can configure an
+  arbitrary number of Tool Panel Views. These views can be constructed
+  automatically for Tools annotated with `EDAM <https://edamontology.github.io/edam-browser>`_ terms,
+  or they can be constructed manually by referring to existing Sections, Tools
+  or Workflows. Users can then select the Tool Panel View most appropriate to
+  their current activity. The default Tool Panel View corresponds uses the
+  sections as they are traditionally configured. It is also possible to
+  configure the default Tool Panel View using the domain name of the server, so
+  "flavors" of Galaxy can be created based on the URL that users use to interact
+  with a server, while behind the scenes these flavors are served by the same
+  Galaxy process. For more details see the `21.09 user release notes <21.09_announce_user.html>`__
+  and `<Pull Request 12327>`_.
+  (`Pull Request 12327`_, `Pull Request 12677`_, `Pull Request 12328`_, `Pull Request 12379`_).
+
+**Enhancements for Working with Remote Data and Distributed Computing Resources**
+
+  Many fixes and enhancements were made to improve how Galaxy can import and
+  write to remote data locations using the configured file source plugins. In addition to
+  the History Export functionality, which can write to remote locations we have
+  added an ``Export datasets`` Tool for exporting individual Datasets and Dataset
+  collections to configured remote locations. The Tool will automatically
+  maintain the name and structure of Datasets and Dataset Collections. We have
+  added the possibility to import entire folders of remote data and made the
+  data selection dialog more intuitive. We also added numerous improvements and
+  fixes to the extended metadata collection strategy and `Pulsar <https://github.com/galaxyproject/pulsar>`_,
+  so that many more Tools are able to run in `Pulsar <https://github.com/galaxyproject/pulsar>`_
+  and write data back to storage without passing through Galaxy first.
+  (`Pull Request 12785`_,
+  `Pull Request 11613`_, `Pull Request 12250`_, `Pull Request 12372`_, `Pull Request 12760`_,
+  `Pull Request 12267`_, `Pull Request 11949`_, `Pull Request 12310`_,
+  `Pull Request 12388`_, `Pull Request 12641`_).
+
+**Migration to FastAPI and Extended Documentation of API Routes**
+  We have modernized and migrated many more API routes to FastAPI and have
+  extended the documentation and validation of these routes.
+  (`Pull Request 11315`_, `Pull Request 11827`_, `Pull Request 11983`_,
+  `Pull Request 12131`_, `Pull Request 12337`_, `Pull Request 12195`_,
+  `Pull Request 12370`_, `Pull Request 12391`_, `Pull Request 12417`_, `Pull Request 12505`_).
+
+**Migration to SQLAlchemy 1.4 and Declarative Mapping**
+  Galaxy is now using `SQLAlchemy <https://www.sqlalchemy.org/>`_ version 1.4,
+  which is a prerequisite for asynchronously interacting with the database. We
+  also modernized the way our database models are defined to the more commonly
+  used declarative mapping approach, which is more concise and better
+  documented.
+  (`Pull Request 12042`_, `Pull Request 12045`_, `Pull Request 12064`_,
+  `Pull Request 12438`_, `Pull Request 12060`_, `Pull Request 12424`_,
+  `Pull Request 12461`_).
+
+**Modernization of Tool Form Interface**
+  The Tool Form interface has been almost completed migrated from
+  `Backbone <https://backbonejs.org/>`_ to `Vue <https://vuejs.org/>`_.
+  This improves the reactivity of parameter validation and enables the migration of
+  Tool parameters to Vue, which will also allows us to add many more types of
+  Tool parameters. We further migrated the Tool Form variant for the Workflow
+  Editor, the Workflow Run Form and the Show Dataset Parameter page to Vue.
+  (`Pull Request 12300`_, `Pull Request 12031`_, `Pull Request 12227`_, `Pull
+  Request 12296`_, `Pull Request 12323`_, `Pull Request 12329`_, `Pull Request
+  12374`_, `Pull Request 12432`_, `Pull Request 12702`_, `Pull Request 12261`_).
+
+**New User Welcome Page**
+  We have added a page that new users will be directed to after creating a new Galaxy account.
+  (`Pull Request 11085`_, `Pull Request 12639`_)
+
+
+Also check out the `21.09 user release notes <21.09_announce_user.html>`__
+
+Deprecation Notices
+===========================================================
+Galaxy Interactive Environments (GIEs) are not visible anymore in the User Interface and will be completely removed in the next Galaxy release (22.01).
+All GIEs have been ported to Interactive Tools, which are much easier to develop, run and configure.
+
+Upcoming Deprecation Notices
+===========================================================
+
+We have postponed the following deprecations to the next Galaxy release in order
+to prepare a smoother experience for our users and administrators.
+
+**Deprecation of support for Python 3.6 in Galaxy release 22.01**
+  This Galaxy release (21.09) will be the last release that supports Python 3.6 or newer.
+  We encourage updating to a newer Python if possible.
+
+**Deprecation of uwsgi and paste**
+  This Galaxy release (21.09) will be the last release that supports the WSGI standard,
+  and with it uwsgi and paste. From release 22.01 Galaxy will be an ASGI application.
+  We will update documentation and playbooks during the upcoming development cycle to
+  enable a smooth transition.
+
+Configuration Changes
+=====================
+
+Added
+-----
+
+The following configuration options are new
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  biotools_content_directory
+-  biotools_service_cache_data_dir
+-  biotools_service_cache_lock_dir
+-  biotools_service_cache_type
+-  biotools_use_api
+-  container_resolvers
+-  default_panel_view
+-  edam_panel_views
+-  edam_toolbox_ontology_path
+-  enable_account_interface
+-  job_handler_monitor_sleep
+-  job_runner_monitor_sleep
+-  mailing_join_body
+-  mailing_join_subject
+-  mailing_lists_url
+-  panel_views
+-  panel_views_dir
+-  sentry_event_level
+
+
+Changed
+-------
+
+The following configuration options have been changed
+
+config/error_report.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   has changed from
+
+   ::
+
+    {'type': 'email', 'verbose': True, 'user_submission': True}
+    {'type': 'sentry', 'user_submission': False}
+
+   to
+
+   ::
+
+    {'type': 'email', 'verbose': True, 'user_submission': True}
+
+
+
+config/file_sources_conf.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   has changed from
+
+   ::
+
+    {'type': 'dropbox', 'id': 'dropbox1', 'label': 'Dropbox files (configure access in user preferences)', 'doc': 'Your Dropbox files - configure an access token via the user preferences', 'accessToken': "${user.preferences['dropbox|access_token']}"}
+    {'type': 'webdav', 'id': 'owncloud1', 'label': 'OwnCloud', 'doc': 'External OwnCloud files (configure access in user preferences)', 'url': "${user.preferences['owncloud|url']}", 'root': "${user.preferences['owncloud|root']}", 'login': "${user.preferences['owncloud|username']}", 'password': "${user.preferences['owncloud|password']}"}
+    {'type': 'posix', 'id': 'posix1', 'label': 'Posix', 'doc': 'Files from local path', 'root': '/some/path/'}
+    {'type': 's3fs', 'label': 'My MinIO storage', 'endpoint_url': 'https://minio.usegalaxy.eu', 'id': 'galaxy-minio-storage', 'doc': 'Galaxy MinIO S3 storage', 'anon': False, 'secret': 'UHAJ6asd6asdhasd', 'key': 'MCJU76agdt98GGFAROIP7'}
+    {'type': 's3fs', 'label': 'CMIP6 GCMs downscaled using WRF', 'id': 'wrf-cmip6-noversioning', 'doc': 'High-resolution historical and future climate simulations from 1980-2100', 'bucket': 'wrf-cmip6-noversioning', 'anon': True}
+
+   to
+
+   ::
+
+    {'type': 'dropbox', 'id': 'dropbox1', 'label': 'Dropbox files (configure access in user preferences)', 'doc': 'Your Dropbox files - configure an access token via the user preferences', 'accessToken': "${user.preferences['dropbox|access_token']}"}
+    {'type': 'webdav', 'id': 'owncloud1', 'label': 'OwnCloud', 'doc': 'External OwnCloud files (configure access in user preferences)', 'url': "${user.preferences['owncloud|url']}", 'root': "${user.preferences['owncloud|root']}", 'login': "${user.preferences['owncloud|username']}", 'password': "${user.preferences['owncloud|password']}"}
+    {'type': 'posix', 'root': '/data/5/galaxy_import/galaxy_user_data/covid-19/data/sequences/', 'id': 'covid19-raw-sequences', 'label': 'COVID-19 FASTQ', 'doc': 'COVID-19 RAW sequences in FASTQ format'}
+    {'type': 'posix', 'root': '/data/db/databases/pdb/pdb/', 'id': 'pdb-gzip', 'doc': 'Protein Data Bank (PDB)', 'label': 'PDB'}
+    {'type': 'ftp', 'id': 'ebi-ftp', 'label': 'EBI FTP server', 'doc': 'European Bioinformatic Institute FTP server', 'host': 'ftp.ebi.ac.uk', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ncbi-ftp', 'label': 'NCBI FTP server', 'doc': 'NCBI FTP server', 'host': 'ftp.ncbi.nlm.nih.gov', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ftp', 'id': 'ensembl-ftp', 'label': 'ENSEMBL FTP server', 'doc': 'ENSEMBL FTP server', 'host': 'ftp.ensemblgenomes.org/vol1/pub/', 'user': 'anonymous', 'passwd': '', 'timeout': 10, 'port': 21}
+    {'type': 'ssh', 'id': 'writeable-ssh-dir', 'requires_roles': 'writeable-galaxy-role', 'writable': True, 'label': 'Push your files to me', 'doc': 'This is an example of a writeable SSH dir', 'host': 'coolhost', 'user': 'user', 'passwd': 'passwd', 'timeout': 10, 'path': '/home/cooluser/', 'config_path': '', 'port': 2222}
+    {'type': 's3fs', 'label': 'My MinIO storage', 'endpoint_url': 'https://minio.usegalaxy.eu', 'id': 'galaxy-minio-storage', 'doc': 'Galaxy MinIO S3 storage', 'anon': False, 'secret': 'UHAJ6asd6asdhasd', 'key': 'MCJU76agdt98GGFAROIP7'}
+    {'type': 's3fs', 'label': 'Genome Ark', 'id': 'genomeark', 'doc': 'Access to Genome Ark open data on AWS.', 'bucket': 'genomeark', 'anon': True}
+    {'type': 's3fs', 'label': '1000 Genomes', 'id': '1000genomes', 'doc': 'Access to the 1000 Genomes Project with human genetic variation, including SNPs, structural variants, and their haplotype context.', 'bucket': '1000genomes', 'anon': True}
+    {'type': 's3fs', 'label': 'The Cancer Genome Atlas', 'id': 'tcga-2-open', 'doc': 'Access to the Cancer Genome Atlas (TCGA)', 'bucket': 'tcga-2-open', 'anon': True}
+    {'type': 's3fs', 'label': 'COVID-19 Data Lake', 'id': 'covid19-lake', 'doc': 'A centralized repository of up-to-date and curated datasets on or related to the spread and characteristics of the novel corona virus (SARS-CoV-2) and its associated illness, COVID-19', 'bucket': 'covid19-lake', 'anon': True}
+    {'type': 's3fs', 'label': 'Encyclopedia of DNA Elements (ENCODE)', 'id': 'encode-public', 'doc': 'The Encyclopedia of DNA Elements (ENCODE) Consortium is an international collaboration of research groups funded by the National Human Genome Research Institute (NHGRI)', 'bucket': 'encode-public', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-3', 'id': 'meeo-s3-nrt', 'doc': 'European Commission’s Copernicus Earth Observation Programme. Sentinel-3 is a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s3/NRT/', 'anon': True}
+    {'type': 's3fs', 'label': 'Sentinel-5P Level 2', 'id': 'meeo-s5p-nrti', 'doc': 'Observations from the Sentinel-5 Precursor satellite of the Copernicus Earth Observation Programme. It contains a polar orbiting satellite that completes 14 orbits of the Earth a day.', 'bucket': 'meeo-s5p/RPRO/', 'anon': True}
+    {'type': 's3fs', 'label': 'Coupled Model Intercomparison Project 6', 'id': 'esgf-world', 'doc': 'The sixth phase of global coupled ocean-atmosphere general circulation model ensemble', 'bucket': 'esgf-world', 'anon': True}
+    {'type': 's3fs', 'label': 'CMIP6 GCMs downscaled using WRF', 'id': 'wrf-cmip6-noversioning', 'doc': 'High-resolution historical and future climate simulations from 1980-2100', 'bucket': 'wrf-cmip6-noversioning', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Global Forecast System (GFS)', 'id': 'noaa-gfs-bdp-pds', 'doc': 'The Global Forecast System (GFS) is a weather forecast model produced by the National Centers for Environmental Prediction (NCEP).', 'bucket': 'noaa-gfs-bdp-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'NOAA Unified Forecast System Subseasonal to Seasonal Prototype 5', 'id': 'noaa-ufs-prototype5-pds', 'doc': 'The Unified Forecast System Subseasonal to Seasonal prototype 5 (UFS S2Sp5) dataset is reforecast data from the UFS atmosphere-ocean.', 'bucket': 'noaa-ufs-prototype5-pds', 'anon': True}
+    {'type': 's3fs', 'label': 'Copernicus Digital Elevation Model (DEM)', 'id': 'copernicus-dem-30m', 'doc': 'The Copernicus DEM is a Digital Surface Model (DSM) which represents the surface of the Earth including buildings, infrastructure and vegetation.', 'bucket': 'copernicus-dem-30m', 'anon': True}
+
+
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  dependency_resolvers description has changed from
+
+   ::
+
+    Rather than specifying a dependency_resolvers_config_file, the definition of the
+    resolvers to enable can be embedded into Galaxy's config with this option.
+    This has no effect if a dependency_resolvers_config_file is used.
+
+   to
+
+   ::
+
+    Rather than specifying a dependency_resolvers_config_file, the definition of the
+    resolvers to enable can be embedded into Galaxy's config with this option.
+    This has no effect if a dependency_resolvers_config_file is used.
+
+    The syntax, available resolvers, and documentation of their options is explained in detail in the
+    documentation:
+
+    https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
+
+
+-  dependency_resolvers_config_file description has changed from
+
+   ::
+
+    The dependency resolvers config file specifies an ordering and options for how
+    Galaxy resolves tool dependencies (requirement tags in Tool XML). The default
+    ordering is to the use the Tool Shed for tools installed that way, use local
+    Galaxy packages, and then use Conda if available.
+    See https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
+    for more information on these options.
+
+   to
+
+   ::
+
+    Specifies the path to the standalone dependency resolvers configuration file. This
+    configuration can now be specified directly in the Galaxy configuration, see the
+    description of the 'dependency_resolvers' option for details.
+
+
+-  ftp_upload_dir description has changed from
+
+   ::
+
+    Enable Galaxy's "Upload via FTP" interface.  You'll need to install and
+    configure an FTP server (we've used ProFTPd since it can use Galaxy's
+    database for authentication) and set the following two options.
+    This should point to a directory containing subdirectories matching users'
+    identifier (defaults to e-mail), where Galaxy will look for files.
+
+   to
+
+   ::
+
+    This should point to a directory containing subdirectories matching users'
+    identifier (defaults to e-mail), where Galaxy will look for files.
+
+
+-  ftp_upload_site description has changed from
+
+   ::
+
+    This should be the hostname of your FTP server, which will be provided to
+    users in the help text.
+
+   to
+
+   ::
+
+    Enable Galaxy's "Upload via FTP" interface.  You'll need to install and
+    configure an FTP server (we've used ProFTPd since it can use Galaxy's
+    database for authentication) and set the following two options.
+    This will be provided to users in the help text as 'log in to the FTP
+    server at '. Thus, it should be the hostname of your FTP server.
+
+
+-  mailing_join_addr description has changed from
+
+   ::
+
+    On the user registration form, users may choose to join a mailing list. This
+    is the address used to subscribe to the list. Uncomment and leave empty if you
+    want to remove this option from the user registration form.
+
+    Example value 'galaxy-announce-join@bx.psu.edu'
+
+   to
+
+   ::
+
+    On the user registration form, users may choose to join a mailing list. This
+    is the address used to subscribe to the list. Uncomment and leave empty if you
+    want to remove this option from the user registration form.
+
+    Example value 'galaxy-announce-join@lists.galaxyproject.org'
+
+
+-  toolbox_filter_base_modules default has changed from
+
+   ::
+
+    galaxy.tools.filters,galaxy.tools.toolbox.filters
+
+   to
+
+   ::
+
+    galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters
+
+
+Removed
+-------
+
+The following configuration options have been completely removed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  beta_edam_toolbox_ontology_path
+-  containers_resolvers_config_file
+-  enable_beta_edam_toolbox
+-  enable_job_recovery
+-  sentry_sloreq_threshold
+
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_21.09 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_21.09 && git pull --ff-only origin release_21.09
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
+
+Release Notes
+===========================================================
+
+.. include:: 21.09.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

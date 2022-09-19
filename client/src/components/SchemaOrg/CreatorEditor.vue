@@ -15,8 +15,7 @@
                             v-b-tooltip.hover
                             title="Remove Creator"
                             icon="times"
-                            @click="onRemove(index)"
-                        />
+                            @click="onRemove(index)" />
                     </template>
                 </CreatorViewer>
             </div>

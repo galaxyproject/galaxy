@@ -5,7 +5,6 @@ import sinon from "sinon";
 import Ui from "mvc/ui/ui-misc";
 import SelectContent from "mvc/ui/ui-select-content";
 import Drilldown from "mvc/ui/ui-drilldown";
-import Slider from "mvc/ui/ui-slider";
 import Tabs from "mvc/ui/ui-tabs";
 
 QUnit.module("Ui test", {
@@ -622,22 +621,6 @@ QUnit.test("select-default", function (assert) {
     });
 });
 
-QUnit.test("slider", function (assert) {
-    var input = new Slider.View({ min: 1, max: 100, value: 10 });
-    $("body").prepend(input.$el);
-    assert.ok(input.$slider.slider("value") == 10, "Correct value.");
-    assert.ok(input.value(1000) == 100, "Correct upper limit.");
-    assert.ok(input.$slider.slider("value") == 100, "Correct slider value.");
-    assert.ok(input.$slider.slider("option", "step") == 1, "Correct default step size.");
-    var input1 = new Slider.View({ value: 10 });
-    $("body").prepend(input1.$el);
-    assert.ok(input1.$slider.css("display") == "none", "Slider hidden.");
-    var input2 = new Slider.View({ min: 0, max: 100, value: 10.1, precise: true });
-    $("body").prepend(input2.$el);
-    assert.ok(input2.$slider.slider("option", "step") == 0.01, "Correct float step size.");
-    assert.ok(input2.$slider.slider("value") == 10.1, "Correct float slider value.");
-});
-
 QUnit.test("input", function (assert) {
     var input = new Ui.Input();
     $("body").prepend(input.$el);
@@ -673,6 +656,30 @@ QUnit.test("textarea", function (assert) {
     assert.ok(input.$el.hasClass("_cls"), "Has custom class.");
 });
 
+QUnit.test("nullableText", function (assert) {
+    // Start with null value, optional button should be off
+    var input = new Ui.NullableText({ area: false, value: null });
+    $("body").prepend(input.$el);
+    assert.ok(input.text_input.tagName === "input", "input tag");
+    assert.ok(input.value() === null, "null value");
+    assert.ok(input.optional_button.model.get("value") === "false");
+    // toggle button, will set value to `""`
+    input.optional_button.model.set("value", "true");
+    assert.ok(input.value() === "", "Correct new value.");
+    // set value
+    input.text_input.model.set("value", "_value");
+    assert.ok(input.value() === "_value", "Correct new value.");
+    assert.ok(input.optional_button.model.get("value") === "true");
+    // toggle button to false, will reset value to null
+    input.optional_button.model.set("value", "false");
+    assert.ok(input.value() === null, "Correct new value.");
+    assert.ok(input.optional_button.model.get("value") === "false");
+    // New input, start with value, optional button should be on
+    var definedInput = new Ui.NullableText({ area: false, value: "123" });
+    assert.ok(definedInput.value() === "123");
+    assert.ok(definedInput.optional_button.model.get("value") === "true");
+});
+
 QUnit.test("message", function (assert) {
     var message = new Ui.Message({
         persistent: true,
@@ -687,18 +694,6 @@ QUnit.test("message", function (assert) {
     assert.ok(message.$el.html() === "_message", "Correct message.");
     message.model.set("message", "_new_message");
     assert.ok(message.$el.html() === "_new_message", "Correct new message.");
-});
-
-QUnit.test("hidden", function (assert) {
-    var hidden = new Ui.Hidden();
-    $("body").prepend(hidden.$el);
-    hidden.model.set("info", "_info");
-    assert.ok(hidden.$info.css("display", "block"), "Info shown.");
-    assert.ok(hidden.$info.html() === "_info", "Info text correct.");
-    hidden.model.set("info", "");
-    assert.ok(hidden.$info.css("display", "none"), "Info hidden.");
-    hidden.model.set("value", "_value");
-    assert.ok(hidden.$hidden.val() === "_value", "Correct value");
 });
 
 QUnit.test("select-content", function (assert) {

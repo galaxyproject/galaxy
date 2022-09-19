@@ -15,5 +15,6 @@ lib/galaxy/util/jstree.py
 lib/galaxy/web/proxy/js/node_modules
 static/maps
 static/scripts
+test/functional/tools/cwl_tools/v1.?/
 build
 dist

@@ -29,7 +29,7 @@ def getbuilds(url):
     print("#Harvested from " + url)
     print("?\tunspecified (?)")
     for dsn in tree:
-        build = dsn.find("SOURCE").attrib['id']
+        build = dsn.find("SOURCE").attrib["id"]
         description = dsn.find("DESCRIPTION").text.replace(" - Genome at UCSC", "").replace(" Genome at UCSC", "")
 
         fields = description.split(" ")

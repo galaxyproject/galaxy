@@ -39,7 +39,7 @@ def validate_parameters():
 
 def main():
     path, galaxy_user_name, gid = validate_parameters()
-    for cmd in [['chown', '-Rh', galaxy_user_name, path], ['chgrp', '-Rh', gid, path]]:
+    for cmd in [["chown", "-Rh", galaxy_user_name, path], ["chgrp", "-Rh", gid, path]]:
         p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdoutdata, stderrdata) = p.communicate()
         exitcode = p.returncode

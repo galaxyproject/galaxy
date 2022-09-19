@@ -1,132 +1,113 @@
-import os
+from fastapi import Path
+from fastapi.responses import FileResponse
 
-from galaxy import (
-    exceptions,
-    web
+from galaxy.managers.tool_data import ToolDataManager
+from galaxy.tools.data._schema import (
+    ToolDataDetails,
+    ToolDataEntryList,
+    ToolDataField,
+    ToolDataItem,
 )
-from galaxy.web import (
-    expose_api,
-    expose_api_raw
+from . import (
+    depends,
+    Router,
 )
-from galaxy.webapps.base.controller import BaseAPIController
+
+router = Router(tags=["tool data tables"])
+
+ToolDataTableName = Path(
+    ...,  # Mark this field as required
+    title="Data table name",
+    description="The name of the tool data table",
+    example="all_fasta",
+)
+
+ToolDataTableFieldName = Path(
+    ...,  # Mark this field as required
+    title="Field name",
+    description="The name of the tool data table field",
+)
 
 
-class ToolData(BaseAPIController):
-    """
-    RESTful controller for interactions with tool data
-    """
+@router.cbv
+class FastAPIToolData:
+    tool_data_manager: ToolDataManager = depends(ToolDataManager)
 
-    @web.require_admin
-    @expose_api
-    def index(self, trans, **kwds):
-        """
-        GET /api/tool_data: returns a list tool_data tables::
+    @router.get(
+        "/api/tool_data",
+        summary="Lists all available data tables",
+        response_description="A list with details on individual data tables.",
+        require_admin=True,
+    )
+    async def index(self) -> ToolDataEntryList:
+        """Get the list of all available data tables."""
+        return self.tool_data_manager.index()
 
-        """
-        return list(a.to_dict() for a in self._data_tables.values())
+    @router.get(
+        "/api/tool_data/{table_name}",
+        summary="Get details of a given data table",
+        response_description="A description of the given data table and its content",
+        require_admin=True,
+    )
+    async def show(self, table_name: str = ToolDataTableName) -> ToolDataDetails:
+        """Get details of a given tool data table."""
+        return self.tool_data_manager.show(table_name)
 
-    @web.require_admin
-    @expose_api
-    def show(self, trans, id, **kwds):
-        return self._data_table(id).to_dict(view='element')
+    @router.get(
+        "/api/tool_data/{table_name}/reload",
+        summary="Reloads a tool data table",
+        response_description="A description of the reloaded data table and its content",
+        require_admin=True,
+    )
+    async def reload(self, table_name: str = ToolDataTableName) -> ToolDataDetails:
+        """Reloads a data table and return its details."""
+        return self.tool_data_manager.reload(table_name)
 
-    @web.require_admin
-    @expose_api
-    def reload(self, trans, id, **kwd):
-        """
-        GET /api/tool_data/{id}/reload
+    @router.get(
+        "/api/tool_data/{table_name}/fields/{field_name}",
+        summary="Get information about a particular field in a tool data table",
+        response_description="Information about a data table field",
+        require_admin=True,
+    )
+    async def show_field(
+        self,
+        table_name: str = ToolDataTableName,
+        field_name: str = ToolDataTableFieldName,
+    ) -> ToolDataField:
+        """Reloads a data table and return its details."""
+        return self.tool_data_manager.show_field(table_name, field_name)
 
-        Reloads a tool_data table.
-        """
-        decoded_tool_data_id = id
-        data_table = trans.app.tool_data_tables.data_tables.get(decoded_tool_data_id)
-        data_table.reload_from_files()
-        trans.app.queue_worker.send_control_task(
-            'reload_tool_data_tables',
-            noop_self=True,
-            kwargs={'table_name': decoded_tool_data_id}
-        )
-        return self._data_table(decoded_tool_data_id).to_dict(view='element')
+    @router.get(
+        "/api/tool_data/{table_name}/fields/{field_name}/files/{file_name}",
+        summary="Get information about a particular field in a tool data table",
+        response_description="Information about a data table field",
+        response_class=FileResponse,
+        require_admin=True,
+    )
+    async def download_field_file(
+        self,
+        table_name: str = ToolDataTableName,
+        field_name: str = ToolDataTableFieldName,
+        file_name: str = Path(
+            ...,  # Mark this field as required
+            title="File name",
+            description="The name of a file associated with this data table field",
+        ),
+    ):
+        """Download a file associated with the data table field."""
+        path = self.tool_data_manager.get_field_file_path(table_name, field_name, file_name)
+        return FileResponse(str(path))
 
-    @web.require_admin
-    @expose_api
-    def delete(self, trans, id, **kwd):
-        """
-        DELETE /api/tool_data/{id}
-        Removes an item from a data table
-
-        :type   id:     str
-        :param  id:     the id of the data table containing the item to delete
-        :type   kwd:    dict
-        :param  kwd:    (required) dictionary structure containing:
-
-            * payload:     a dictionary itself containing:
-                * values:   <TAB> separated list of column contents, there must be a value for all the columns of the data table
-        """
-        decoded_tool_data_id = id
-
-        try:
-            data_table = trans.app.tool_data_tables.data_tables.get(decoded_tool_data_id)
-        except Exception:
-            data_table = None
-        if not data_table:
-            trans.response.status = 400
-            return "Invalid data table id ( %s ) specified." % str(decoded_tool_data_id)
-
-        values = None
-        if kwd.get('payload', None):
-            values = kwd['payload'].get('values', '')
-
-        if not values:
-            trans.response.status = 400
-            return "Invalid data table item ( %s ) specified." % str(values)
-
-        split_values = values.split("\t")
-
-        if len(split_values) != len(data_table.get_column_name_list()):
-            trans.response.status = 400
-            return "Invalid data table item ( {} ) specified. Wrong number of columns ({} given, {} required).".format(str(values), str(len(split_values)), str(len(data_table.get_column_name_list())))
-
-        data_table.remove_entry(split_values)
-        trans.app.queue_worker.send_control_task(
-            'reload_tool_data_tables',
-            noop_self=True,
-            kwargs={'table_name': decoded_tool_data_id}
-        )
-        return self._data_table(decoded_tool_data_id).to_dict(view='element')
-
-    @web.require_admin
-    @expose_api
-    def show_field(self, trans, id, value, **kwds):
-        """
-        GET /api/tool_data/<id>/fields/<value>
-
-        Get information about a partiular field in a tool_data table
-        """
-        return self._data_table_field(id, value).to_dict()
-
-    @web.require_admin
-    @expose_api_raw
-    def download_field_file(self, trans, id, value, path, **kwds):
-        field_value = self._data_table_field(id, value)
-        base_dir = field_value.get_base_dir()
-        full_path = os.path.join(base_dir, path)
-        if full_path not in field_value.get_files():
-            raise exceptions.ObjectNotFound("No such path in data table field.")
-        return open(full_path, "rb")
-
-    def _data_table_field(self, id, value):
-        out = self._data_table(id).get_field(value)
-        if out is None:
-            raise exceptions.ObjectNotFound(f"No such field {value} in data table {id}.")
-        return out
-
-    def _data_table(self, id):
-        try:
-            return self._data_tables[id]
-        except IndexError:
-            raise exceptions.ObjectNotFound("No such data table %s" % id)
-
-    @property
-    def _data_tables(self):
-        return self.app.tool_data_tables.data_tables
+    @router.delete(
+        "/api/tool_data/{table_name}",
+        summary="Removes an item from a data table",
+        response_description="A description of the affected data table and its content",
+        require_admin=True,
+    )
+    async def delete(
+        self,
+        payload: ToolDataItem,
+        table_name: str = ToolDataTableName,
+    ) -> ToolDataDetails:
+        """Removes an item from a data table and reloads it to return its updated details."""
+        return self.tool_data_manager.delete(table_name, payload.values)

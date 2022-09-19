@@ -13,8 +13,6 @@
         </params>
     </xml>
     <xml name="specs">
-        <tag>svg</tag>
-        <use_panels>optional</use_panels>
         <exports>
             <exports>png</exports>
             <exports>svg</exports>
@@ -26,6 +24,7 @@
             <label>Pick a series color</label>
             <name>color</name>
             <type>color</type>
+            <optional>true</optional>
         </input>
         <input>
             <label>Column of data point labels</label>
@@ -418,6 +417,13 @@
             <help>Would you like to add a legend?</help>
             <type>boolean</type>
             <value>true</value>
+        </input>
+        <input>
+            <name>__use_panels</name>
+            <label>Use multi-panels</label>
+            <help>Would you like to separate your data into individual panels?</help>
+            <type>boolean</type>
+            <value>false</value>
         </input>
     </xml>
 </macros>

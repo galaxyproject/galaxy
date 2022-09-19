@@ -362,6 +362,28 @@ export function hashFnv32a(str) {
     return hval >>> 0;
 }
 
+/**
+ * Return a promise, resolve it when element appears
+ * @param selector
+ * @returns {Promise<*>}
+ */
+export async function waitForElementToBePresent(selector) {
+    while (document.querySelector(selector) === null) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+    }
+    return document.querySelector(selector);
+}
+
+/**
+ * Delays the next operation the specified amount of time.
+ * @param {Number} delayInMilliseconds The amount of time to wait in milliseconds
+ */
+export async function delay(delayInMilliseconds) {
+    if (delayInMilliseconds > 0) {
+        await new Promise((r) => setTimeout(r, delayInMilliseconds));
+    }
+}
+
 export default {
     cssLoadFile: cssLoadFile,
     cssGetAttribute: cssGetAttribute,
@@ -382,4 +404,6 @@ export default {
     appendScriptStyle: appendScriptStyle,
     getQueryString: getQueryString,
     setWindowTitle: setWindowTitle,
+    waitForElementToBePresent: waitForElementToBePresent,
+    delay: delay,
 };

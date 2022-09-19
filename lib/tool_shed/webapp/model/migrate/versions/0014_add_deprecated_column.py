@@ -5,7 +5,12 @@ Migration script to add the deprecated column to the repository table.
 import logging
 import sys
 
-from sqlalchemy import Boolean, Column, MetaData, Table
+from sqlalchemy import (
+    Boolean,
+    Column,
+    MetaData,
+    Table,
+)
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -30,11 +35,11 @@ def upgrade(migrate_engine):
         c.create(Repository_table)
         assert c is Repository_table.c.deprecated
         # Initialize.
-        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+        if migrate_engine.name == "mysql" or migrate_engine.name == "sqlite":
             default_false = "0"
-        elif migrate_engine.name in ['postgresql', 'postgres']:
+        elif migrate_engine.name in ["postgresql", "postgres"]:
             default_false = "false"
-        migrate_engine.execute("UPDATE repository SET deprecated=%s" % default_false)
+        migrate_engine.execute(f"UPDATE repository SET deprecated={default_false}")
     except Exception:
         log.exception("Adding deprecated column to the repository table failed.")
 

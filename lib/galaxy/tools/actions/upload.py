@@ -26,7 +26,7 @@ class BaseUploadToolAction(ToolAction):
 
         persisting_uploads_timer = ExecutionTimer()
         incoming = upload_common.persist_uploads(incoming, trans)
-        log.debug("Persisted uploads %s" % persisting_uploads_timer)
+        log.debug(f"Persisted uploads {persisting_uploads_timer}")
         rval = self._setup_job(tool, trans, incoming, dataset_upload_inputs, history)
         return rval
 
@@ -37,29 +37,27 @@ class BaseUploadToolAction(ToolAction):
         """Wrapper around upload_common.create_job with a timer."""
         create_job_timer = ExecutionTimer()
         rval = upload_common.create_job(*args, **kwds)
-        log.debug("Created upload job %s" % create_job_timer)
+        log.debug(f"Created upload job {create_job_timer}")
         return rval
 
 
 class UploadToolAction(BaseUploadToolAction):
-
     def _setup_job(self, tool, trans, incoming, dataset_upload_inputs, history):
         check_timer = ExecutionTimer()
-        uploaded_datasets = upload_common.get_uploaded_datasets(trans, '', incoming, dataset_upload_inputs, history=history)
+        uploaded_datasets = upload_common.get_uploaded_datasets(
+            trans, "", incoming, dataset_upload_inputs, history=history
+        )
 
         if not uploaded_datasets:
-            return None, 'No data was entered in the upload form, please go back and choose data to upload.'
+            return None, "No data was entered in the upload form, please go back and choose data to upload."
 
         json_file_path = upload_common.create_paramfile(trans, uploaded_datasets)
         data_list = [ud.data for ud in uploaded_datasets]
-        log.debug("Checked uploads %s" % check_timer)
-        return self._create_job(
-            trans, incoming, tool, json_file_path, data_list, history=history
-        )
+        log.debug(f"Checked uploads {check_timer}")
+        return self._create_job(trans, incoming, tool, json_file_path, data_list, history=history)
 
 
 class FetchUploadToolAction(BaseUploadToolAction):
-
     def _setup_job(self, tool, trans, incoming, dataset_upload_inputs, history):
         # Now replace references in requests with these.
         files = incoming.get("files", [])
@@ -74,7 +72,9 @@ class FetchUploadToolAction(BaseUploadToolAction):
                     except StopIteration:
                         path_def = None
                     if path_def is None or path_def["file_data"] is None:
-                        raise RequestParameterMissingException("Failed to find uploaded file matching target with src='files'")
+                        raise RequestParameterMissingException(
+                            "Failed to find uploaded file matching target with src='files'"
+                        )
                     request_part["path"] = path_def["file_data"]["local_filename"]
                     if "name" not in request_part:
                         request_part["name"] = path_def["file_data"]["filename"]
@@ -103,9 +103,7 @@ class FetchUploadToolAction(BaseUploadToolAction):
                 _precreate_fetched_collection_instance(trans, history, target, outputs)
 
         incoming["request_json"] = json.dumps(request)
-        return self._create_job(
-            trans, incoming, tool, None, outputs, history=history
-        )
+        return self._create_job(trans, incoming, tool, None, outputs, history=history)
 
 
 def _precreate_fetched_hdas(trans, history, target, outputs):
@@ -124,11 +122,11 @@ def _precreate_fetched_hdas(trans, history, target, outputs):
 
         file_type = item.get("ext", "auto")
         dbkey = item.get("dbkey", "?")
-        uploaded_dataset = Bunch(
-            type='file', name=name, file_type=file_type, dbkey=dbkey
-        )
+        uploaded_dataset = Bunch(type="file", name=name, file_type=file_type, dbkey=dbkey)
         tag_list = item.get("tags", [])
-        data = upload_common.new_upload(trans, '', uploaded_dataset, library_bunch=None, history=history, tag_list=tag_list)
+        data = upload_common.new_upload(
+            trans, "", uploaded_dataset, library_bunch=None, history=history, tag_list=tag_list
+        )
         outputs.append(data)
         item["object_id"] = data.id
 
@@ -144,10 +142,10 @@ def _precreate_fetched_collection_instance(trans, history, target, outputs):
         return
 
     tags = target.get("tags", [])
-    collections_service = trans.app.dataset_collections_service
-    collection_type_description = collections_service.collection_type_descriptions.for_collection_type(collection_type)
+    collections_manager = trans.app.dataset_collection_manager
+    collection_type_description = collections_manager.collection_type_descriptions.for_collection_type(collection_type)
     structure = UninitializedTree(collection_type_description)
-    hdca = collections_service.precreate_dataset_collection_instance(
+    hdca = collections_manager.precreate_dataset_collection_instance(
         trans, history, name, structure=structure, tags=tags
     )
     outputs.append(hdca)

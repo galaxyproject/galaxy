@@ -8,8 +8,7 @@
                     :query-trs-server="queryTrsServer"
                     :query-trs-id="queryTrsId"
                     @onTrsSelection="onTrsSelection"
-                    @onError="onTrsSelectionError"
-                />
+                    @onError="onTrsSelectionError" />
             </div>
             <div v-if="isAutoImport && !hasErrorMessage" class="text-center my-2">
                 <b-spinner class="align-middle"></b-spinner>
@@ -18,9 +17,9 @@
             <div v-else>
                 <div>
                     <b>TRS ID:</b>
-                    <b-form-input v-model="toolId" />
+                    <b-form-input id="trs-id-input" v-model="debouncedToolId" />
                 </div>
-                <trs-tool :trs-tool="trsTool" v-if="trsTool" @onImport="importVersion(trsTool.id, $event)" />
+                <trs-tool v-if="trsTool" :trs-tool="trsTool" @onImport="importVersion(trsTool.id, $event)" />
             </div>
         </b-card>
         <b-alert v-else show variant="danger" class="text-center my-2"
@@ -59,17 +58,14 @@ export default {
             default: false,
         },
     },
-    created() {
-        this.services = new Services();
-        this.toolId = this.queryTrsId;
-    },
     data() {
         return {
             trsSelection: null,
-            toolId: null,
             trsTool: null,
             errorMessage: null,
             isAutoImport: this.queryTrsVersionId && this.queryTrsServer && this.queryTrsId,
+            timeout: null,
+            toolId: null,
         };
     },
     computed: {
@@ -79,11 +75,28 @@ export default {
         isAnonymous() {
             return getGalaxyInstance().user.isAnonymous();
         },
+        debouncedToolId: {
+            get() {
+                return this.toolId;
+            },
+            set(val) {
+                if (this.timeout) {
+                    clearTimeout(this.timeout);
+                }
+                this.timeout = setTimeout(() => {
+                    this.toolId = val.trim();
+                }, 300);
+            },
+        },
     },
     watch: {
         toolId: function () {
             this.onToolId();
         },
+    },
+    created() {
+        this.services = new Services();
+        this.toolId = this.queryTrsId;
     },
     methods: {
         onTrsSelection(selection) {
@@ -105,9 +118,20 @@ export default {
                     this.trsTool = tool;
                     this.errorMessage = null;
                     if (this.isAutoImport) {
-                        const version = this.trsTool.versions.find((version) => version.id === this.queryTrsVersionId);
+                        /* Resolve discrepancy between workflowhub, which sends an id as query parameter,
+                           and dockstore, which uses the version name as the query parameter.
+                           Should just be one of them eventually. */
+                        let versionField = "name";
+                        const version = this.trsTool.versions.find((version) => {
+                            if (version.name === this.queryTrsVersionId) {
+                                return true;
+                            } else if (version.id === this.queryTrsVersionId) {
+                                versionField = "id";
+                                return true;
+                            }
+                        });
                         if (version) {
-                            this.importVersion(this.trsTool.id, version, this.isRun);
+                            this.importVersion(this.trsTool.id, version[versionField], this.isRun);
                         } else {
                             Toast.warning(`Specified version: ${this.queryTrsVersionId} doesn't exist`);
                             this.isAutoImport = false;

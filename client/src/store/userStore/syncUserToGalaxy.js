@@ -1,26 +1,19 @@
 // Sync Galaxy store to legacy galaxy current user
 
-import { getGalaxyInstance } from "app";
-import { switchMap } from "rxjs/operators";
-import { monitorChange } from "utils/observable/monitorChange";
-import { monitorBackboneModel } from "utils/observable/monitorBackboneModel";
+import { pluck, switchMap } from "rxjs/operators";
+import { monitorBackboneModel } from "utils/observable";
 
-// prettier-ignore
-export function syncUserToGalaxy(handler) {
-
-    // wait for galaxy.user to appear
-    const user$ = monitorChange(() => {
-        return getGalaxyInstance()?.user;
-    });
-
-    // then every time the id changes, emit
-    const result$ = user$.pipe(
-        switchMap(model => monitorBackboneModel(model, "id"))
+export function syncUserToGalaxy(galaxy$, store) {
+    const result$ = galaxy$.pipe(
+        // Galaxy.user
+        pluck("user"),
+        // use backbone change event to monitor current user
+        switchMap((model) => monitorBackboneModel(model))
     );
 
     return result$.subscribe(
-        val => handler(val),
-        err => console.log("syncUserToGalaxy error", err),
+        (user) => store.commit("user/setCurrentUser", user),
+        (err) => console.log("syncUserToGalaxy error", err),
         () => console.log("syncUserToGalaxy complete")
     );
 }

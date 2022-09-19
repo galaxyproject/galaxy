@@ -4,6 +4,10 @@ for i in \$(seq 1 10);
 do
     echo "\$i" > \$i.txt;
 done
+## create a directory that matches the discovery pattern
+## but must not be discovered because it's a directory which
+## leads to an error https://github.com/galaxyproject/galaxy/pull/11307
+## && mkdir blah.txt
 ]]></command>
   <inputs/>
   <outputs>
@@ -22,7 +26,6 @@ done
   </outputs>
   <tests>
     <test expect_num_outputs="4">
-      <param name="input1" value="tinywga.fam" />
       <output_collection name="collection_numeric_name" type="list" count="10">
         <element name="1">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
@@ -62,6 +65,52 @@ done
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </discovered_dataset>
         <discovered_dataset designation="1">
+          <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
+        </discovered_dataset>
+      </output>
+    </test>
+    <!-- same test with wrong order should fail  -->
+    <test expect_num_outputs="4" expect_test_failure="true">
+      <param name="input1" value="tinywga.fam" />
+      <output_collection name="collection_numeric_name" type="list" count="10">
+        <element name="1">
+          <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
+        </element>
+        <element name="10">
+          <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
+        </element>
+        <element name="2">
+          <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
+        </element>
+      </output_collection>
+      <output_collection name="collection_rev_numeric_name" type="list" count="10">
+        <element name="2">
+          <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
+        </element>
+        <element name="1">
+          <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
+        </element>
+        <element name="10">
+          <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
+        </element>
+      </output_collection>
+      <output_collection name="collection_lexical_name" type="list" count="10">
+        <element name="10">
+          <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
+        </element>
+        <element name="1">
+          <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
+        </element>
+        <element name="2">
+          <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
+        </element>
+      </output_collection>
+      <output name="data_reverse_lexical_name">
+        <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
+        <discovered_dataset designation="1">
+          <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="10">
           <assert_contents><has_text_matching expression="^.*$"/></assert_contents>
         </discovered_dataset>
       </output>

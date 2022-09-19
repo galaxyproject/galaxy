@@ -1,0 +1,8 @@
+local_galaxy_url: http://localhost:8080
+login_email: test_user@example.com
+login_password: mycoolpassw0rd
+
+# Setup Galaxy's URL relative to remote running Selenium service if needed.
+#selenium_galaxy_url:
+# Setup an admin API key if needed for testing populators & fixture creation.
+#admin_api_key:

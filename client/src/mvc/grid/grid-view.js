@@ -247,7 +247,9 @@ export default Backbone.View.extend({
         });
 
         // Initialize ratings.
-        if (this.$el.find(".community_rating_star").length !== 0) this.$el.find(".community_rating_star").rating({});
+        if (this.$el.find(".community_rating_star").length !== 0) {
+            this.$el.find(".community_rating_star").rating({});
+        }
 
         // get options
         var options = this.grid.attributes;
@@ -578,8 +580,11 @@ export default Backbone.View.extend({
                 confirmation_text !== "" &&
                 confirmation_text != "None" &&
                 confirmation_text != "null"
-            )
-                if (!window.confirm(confirmation_text)) return false;
+            ) {
+                if (!window.confirm(confirmation_text)) {
+                    return false;
+                }
+            }
 
             // use small characters for operation?!
             operation = operation.toLowerCase();

@@ -43,6 +43,11 @@ export class ActiveOutputs {
 
     /** Change label for an output */
     labelOutput(outputName, newLabel) {
+        const activeOutput = this.get(outputName);
+        const oldLabel = activeOutput && activeOutput.label;
+        if (newLabel == oldLabel) {
+            return true;
+        }
         if (this.outputsIndex[outputName] && !allLabels[newLabel]) {
             const oldLabel = this.update(outputName, newLabel);
             if (oldLabel && allLabels[oldLabel]) {
@@ -51,11 +56,9 @@ export class ActiveOutputs {
             if (newLabel) {
                 allLabels[newLabel] = true;
             }
-            return null;
-        } else {
-            const activeOutput = this.get(outputName);
-            return activeOutput && activeOutput.label;
+            return true;
         }
+        return false;
     }
 
     /** Returns the number of added records **/
@@ -104,7 +107,7 @@ export class ActiveOutputs {
     /** Removes all entries which are not in the parsed dictionary of names */
     filterOutputs(names) {
         this.getAll().forEach((wf_output) => {
-            if (!names[wf_output.output_name]) {
+            if (!names.includes(wf_output.output_name)) {
                 this.remove(wf_output.output_name);
             }
         });
@@ -127,6 +130,7 @@ export class ActiveOutputs {
         this.outputs &&
             this.outputs.forEach((o) => {
                 this.outputsIndex[o.name] = o;
+                this._updateOutput(o.name);
             });
     }
 }

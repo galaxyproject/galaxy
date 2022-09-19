@@ -17,20 +17,20 @@ import subprocess
 from galaxy import model
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
-    AsynchronousJobState
+    AsynchronousJobState,
 )
 from galaxy.jobs.runners.util.condor import (
     build_submit_description,
     condor_stop,
     condor_submit,
     submission_params,
-    summarize_condor_log
+    summarize_condor_log,
 )
 from galaxy.util import asbool
 
 log = logging.getLogger(__name__)
 
-__all__ = ('CondorJobRunner', )
+__all__ = ("CondorJobRunner",)
 
 
 class CondorJobState(AsynchronousJobState):
@@ -49,13 +49,8 @@ class CondorJobRunner(AsynchronousJobRunner):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
-    runner_name = "CondorRunner"
 
-    def __init__(self, app, nworkers):
-        """Initialize this job runner and start the monitor thread"""
-        super().__init__(app, nworkers)
-        self._init_monitor_thread()
-        self._init_worker_threads()
+    runner_name = "CondorRunner"
 
     def queue_job(self, job_wrapper):
         """Create job script and submit it to the DRM"""
@@ -74,28 +69,25 @@ class CondorJobRunner(AsynchronousJobRunner):
         # get destination params
         query_params = submission_params(prefix="", **job_destination.params)
         container = None
-        universe = query_params.get('universe', None)
-        if universe and universe.strip().lower() == 'docker':
+        universe = query_params.get("universe", None)
+        if universe and universe.strip().lower() == "docker":
             container = self._find_container(job_wrapper)
             if container:
                 # HTCondor needs the image as 'docker_image'
-                query_params.update({'docker_image': container.container_id})
+                query_params.update({"docker_image": container.container_id})
 
-        galaxy_slots = query_params.get('request_cpus', None)
+        galaxy_slots = query_params.get("request_cpus", None)
         if galaxy_slots:
-            galaxy_slots_statement = 'GALAXY_SLOTS="%s"; export GALAXY_SLOTS_CONFIGURED="1"' % galaxy_slots
+            galaxy_slots_statement = f'GALAXY_SLOTS="{galaxy_slots}"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;'
         else:
-            galaxy_slots_statement = 'GALAXY_SLOTS="1"'
+            galaxy_slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'
 
         # define job attributes
-        cjs = CondorJobState(
-            files_dir=job_wrapper.working_directory,
-            job_wrapper=job_wrapper
-        )
+        cjs = CondorJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
 
-        cjs.user_log = os.path.join(job_wrapper.working_directory, 'galaxy_%s.condor.log' % galaxy_id_tag)
-        cjs.register_cleanup_file_attribute('user_log')
-        submit_file = os.path.join(job_wrapper.working_directory, 'galaxy_%s.condor.desc' % galaxy_id_tag)
+        cjs.user_log = os.path.join(job_wrapper.working_directory, f"galaxy_{galaxy_id_tag}.condor.log")
+        cjs.register_cleanup_file_attribute("user_log")
+        submit_file = os.path.join(job_wrapper.working_directory, f"galaxy_{galaxy_id_tag}.condor.desc")
         executable = cjs.job_file
 
         build_submit_params = dict(
@@ -114,10 +106,10 @@ class CondorJobRunner(AsynchronousJobRunner):
             shell=job_wrapper.shell,
         )
         try:
-            self.write_executable_script(executable, script)
+            self.write_executable_script(executable, script, job_io=job_wrapper.job_io)
         except Exception:
             job_wrapper.fail("failure preparing job script", exception=True)
-            log.exception("(%s) failure preparing job script" % galaxy_id_tag)
+            log.exception(f"({galaxy_id_tag}) failure preparing job script")
             return
 
         cleanup_job = job_wrapper.cleanup_job
@@ -128,7 +120,7 @@ class CondorJobRunner(AsynchronousJobRunner):
                 cjs.cleanup()
                 # job_wrapper.fail() calls job_wrapper.cleanup()
             job_wrapper.fail("failure preparing submit file", exception=True)
-            log.exception("(%s) failure preparing submit file" % galaxy_id_tag)
+            log.exception(f"({galaxy_id_tag}) failure preparing submit file")
             return
 
         # job was deleted while we were preparing it
@@ -175,7 +167,10 @@ class CondorJobRunner(AsynchronousJobRunner):
             job_id = cjs.job_id
             galaxy_id_tag = cjs.job_wrapper.get_id_tag()
             try:
-                if cjs.job_wrapper.tool.tool_type != 'interactive' and os.stat(cjs.user_log).st_size == cjs.user_log_size:
+                if (
+                    cjs.job_wrapper.tool.tool_type != "interactive"
+                    and os.stat(cjs.user_log).st_size == cjs.user_log_size
+                ):
                     new_watched.append(cjs)
                     continue
                 s1, s4, s7, s5, s9, log_size = summarize_condor_log(cjs.user_log, job_id)
@@ -205,7 +200,9 @@ class CondorJobRunner(AsynchronousJobRunner):
             job_state = cjs.job_wrapper.get_state()
             if job_complete or job_state == model.Job.states.STOPPED:
                 if job_state != model.Job.states.DELETED:
-                    external_metadata = not asbool(cjs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
+                    external_metadata = not asbool(
+                        cjs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True)
+                    )
                     if external_metadata:
                         self._handle_metadata_externally(cjs.job_wrapper, resolve_requirements=True)
                     log.debug(f"({galaxy_id_tag}/{job_id}) job has completed")
@@ -242,7 +239,9 @@ class CondorJobRunner(AsynchronousJobRunner):
                 self._stop_container(job_wrapper)
                 # self.watched.append(cjs)
                 if cjs.job_wrapper.get_state() != model.Job.states.DELETED:
-                    external_metadata = not asbool(cjs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
+                    external_metadata = not asbool(
+                        cjs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True)
+                    )
                     if external_metadata:
                         self._handle_metadata_externally(cjs.job_wrapper, resolve_requirements=True)
                     log.debug(f"({galaxy_id_tag}/{external_id}) job has completed")
@@ -274,10 +273,12 @@ class CondorJobRunner(AsynchronousJobRunner):
         cjs.command_line = job.get_command_line()
         cjs.job_wrapper = job_wrapper
         cjs.job_destination = job_wrapper.job_destination
-        cjs.user_log = os.path.join(job_wrapper.working_directory, 'galaxy_%s.condor.log' % galaxy_id_tag)
-        cjs.register_cleanup_file_attribute('user_log')
+        cjs.user_log = os.path.join(job_wrapper.working_directory, f"galaxy_{galaxy_id_tag}.condor.log")
+        cjs.register_cleanup_file_attribute("user_log")
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
-            log.debug(f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the DRM queue")
+            log.debug(
+                f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the DRM queue"
+            )
             cjs.running = True
             self.monitor_queue.put(cjs)
         elif job.state == model.Job.states.QUEUED:
@@ -286,10 +287,10 @@ class CondorJobRunner(AsynchronousJobRunner):
             self.monitor_queue.put(cjs)
 
     def _stop_container(self, job_wrapper):
-        return self._run_container_command(job_wrapper, 'stop')
+        return self._run_container_command(job_wrapper, "stop")
 
     def _kill_container(self, job_wrapper):
-        return self._run_container_command(job_wrapper, 'kill')
+        return self._run_container_command(job_wrapper, "kill")
 
     def _run_container_command(self, job_wrapper, command):
         job = job_wrapper.get_job()
@@ -297,13 +298,15 @@ class CondorJobRunner(AsynchronousJobRunner):
         if job:
             cont = job.container
             if cont:
-                if cont.container_type == 'docker':
-                    return self._run_command(cont.container_info['commands'][command], external_id)[0]
+                if cont.container_type == "docker":
+                    return self._run_command(cont.container_info["commands"][command], external_id)[0]
 
     def _run_command(self, command, external_job_id):
-        command = f'condor_ssh_to_job {external_job_id} {command}'
+        command = f"condor_ssh_to_job {external_job_id} {command}"
 
-        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, close_fds=True, preexec_fn=os.setpgrp)
+        p = subprocess.Popen(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, close_fds=True, preexec_fn=os.setpgrp
+        )
         stdout, stderr = p.communicate()
         exit_code = p.returncode
         ret = None
@@ -314,5 +317,5 @@ class CondorJobRunner(AsynchronousJobRunner):
         # exit_code = subprocess.call(command,
         #                            shell=True,
         #                            preexec_fn=os.setpgrp)
-        log.debug('_run_command(%s) exit code (%s) and failure: %s', command, exit_code, stderr)
+        log.debug("_run_command(%s) exit code (%s) and failure: %s", command, exit_code, stderr)
         return (exit_code, ret)

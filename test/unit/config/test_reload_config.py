@@ -1,29 +1,30 @@
 import pytest
 
 from galaxy import config
-from galaxy.config import BaseAppConfiguration
-from galaxy.config import reload_config_options
+from galaxy.config import (
+    BaseAppConfiguration,
+    reload_config_options,
+)
 from galaxy.config.schema import AppSchema
 
-
-R1, R2, N1, N2 = 'reloadable1', 'reloadable2', 'nonrelodable1', 'nonreloadable2'  # config options
+R1, R2, N1, N2 = "reloadable1", "reloadable2", "nonrelodable1", "nonreloadable2"  # config options
 
 MOCK_SCHEMA = {
-    R1: {'reloadable': True, 'default': 1},
-    R2: {'reloadable': True, 'default': 2},
-    N1: {'default': 3},
-    N2: {'default': 4},
+    R1: {"reloadable": True, "default": 1},
+    R2: {"reloadable": True, "default": 2},
+    N1: {"default": 3},
+    N2: {"default": 4},
 }
 
 
 def get_schema(app_mapping):
-    return {'mapping': {'_': {'mapping': app_mapping}}}
+    return {"mapping": {"_": {"mapping": app_mapping}}}
 
 
 @pytest.fixture
 def mock_init(monkeypatch):
-    monkeypatch.setattr(BaseAppConfiguration, '_load_schema', lambda a: AppSchema(None, '_'))
-    monkeypatch.setattr(AppSchema, '_read_schema', lambda a, b: get_schema(MOCK_SCHEMA))
+    monkeypatch.setattr(BaseAppConfiguration, "_load_schema", lambda a: AppSchema(None, "_"))
+    monkeypatch.setattr(AppSchema, "_read_schema", lambda a, b: get_schema(MOCK_SCHEMA))
 
 
 def test_update_property(mock_init, monkeypatch):
@@ -32,7 +33,7 @@ def test_update_property(mock_init, monkeypatch):
     # to the config file, it's the same as modifying that property's value.
 
     # edits to config file: R2, N1 modified
-    monkeypatch.setattr(config, 'read_properties_from_file', lambda _: {R1: 1, R2: 42, N1: 99})
+    monkeypatch.setattr(config, "read_properties_from_file", lambda _: {R1: 1, R2: 42, N1: 99})
 
     appconfig = BaseAppConfiguration()
 
@@ -57,7 +58,7 @@ def test_overwrite_reloadable_attribute(mock_init, monkeypatch):
     # to the `_raw_config` dict. This test ensures this works correctly.
 
     # edits to config file: R2 modified
-    monkeypatch.setattr(config, 'read_properties_from_file', lambda _: {R1: 1, R2: 42})
+    monkeypatch.setattr(config, "read_properties_from_file", lambda _: {R1: 1, R2: 42})
 
     appconfig = BaseAppConfiguration()
 
@@ -79,7 +80,7 @@ def test_cant_delete_property(mock_init, monkeypatch):
     # is removed from the config file, it will not be modified or deleted.
 
     # edits to config file: R2, N2 deleted
-    monkeypatch.setattr(config, 'read_properties_from_file', lambda _: {R1: 1, N1: 3})
+    monkeypatch.setattr(config, "read_properties_from_file", lambda _: {R1: 1, N1: 3})
 
     appconfig = BaseAppConfiguration()
 

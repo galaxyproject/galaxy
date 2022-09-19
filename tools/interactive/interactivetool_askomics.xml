@@ -1,7 +1,7 @@
-<tool id="interactive_tool_askomics" tool_type="interactive" name="AskOmics" version="4.1.1">
+<tool id="interactive_tool_askomics" tool_type="interactive" name="AskOmics" version="4.3.1">
     <description>a visual SPARQL query builder</description>
     <requirements>
-        <container type="docker">askomics/flaskomics-with-dependencies:4.1.1</container>
+        <container type="docker">askomics/flaskomics-with-dependencies:4.3.1</container>
     </requirements>
     <entry_points>
         <entry_point name="AskOmics instance" requires_domain="True">

@@ -12,7 +12,7 @@ def main():
         sample = "config/galaxy.ini.sample"
 
     for line in open(sample):
-        is_app_main = line.startswith('[app:main]')
+        is_app_main = line.startswith("[app:main]")
         if not found_app_main and not is_app_main:
             continue
         if is_app_main:
@@ -37,9 +37,10 @@ def main():
 def _dump_option(option, current_section_desc):
     def print_line(line):
         print((" " * 6) + line)
+
     if "=" not in option:
         print(option)
-    key, default = [s.strip() for s in option.split("=", 1)]
+    key, default = (s.strip() for s in option.split("=", 1))
     key = key[1:]  # strip #
     if default.strip().lower() in ["true", "false"]:
         default = default.lower()

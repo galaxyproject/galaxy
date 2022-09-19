@@ -4,9 +4,8 @@
         <b-popover
             triggers="click blur"
             :placement="hoverPlacement"
-            :target="this.$refs['button'] || 'works-lazily'"
-            title="Organization"
-        >
+            :target="$refs['button'] || 'works-lazily'"
+            title="Organization">
             <b-table striped :items="items"> </b-table>
         </b-popover>
         <span v-if="name">
@@ -16,7 +15,7 @@
                 >)
             </span>
         </span>
-        <span itemprop="email" :content="organization.email" v-else-if="email">
+        <span v-else-if="email" itemprop="email" :content="organization.email">
             {{ email }}
         </span>
         <a v-if="url" :href="url" target="_blank">
@@ -27,8 +26,7 @@
             v-for="attribute in explicitMetaAttributes"
             :key="attribute.attribute"
             :itemprop="attribute.attribute"
-            :content="attribute.value"
-        />
+            :content="attribute.value" />
         <slot name="buttons"></slot>
     </span>
 </template>
@@ -44,10 +42,10 @@ import { faExternalLinkAlt, faBuilding } from "@fortawesome/free-solid-svg-icons
 library.add(faExternalLinkAlt, faBuilding);
 
 export default {
-    mixins: [ThingViewerMixin],
     components: {
         FontAwesomeIcon,
     },
+    mixins: [ThingViewerMixin],
     props: {
         organization: {
             type: Object,

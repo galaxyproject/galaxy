@@ -5,7 +5,7 @@ ALLOWED_MAP = {x: raw_escape(x) for x in ALLOWED_ELEMENTS}
 
 
 def escape(string):
-    """ A tool shed variant of markupsafe.escape that allows a select few
+    """A tool shed variant of markupsafe.escape that allows a select few
     HTML elements that are repeatedly used in messages created deep
     in the toolshed components. Ideally abstract things would be produced
     in these components and messages in the views or client side - this is

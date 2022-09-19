@@ -192,7 +192,7 @@ var MapViewer = (function(mv) {
 
     /** Load the map GeoJson and Shapefiles*/
     mv.loadFile = (filePath, fileType, options, chart) => {
-        const target = options.targets[0];
+        const target = options.target;
         const formatType = new GeoJSON();
         const toExport = options.chart.settings.get("export_map");
         const geometryColor = options.chart.settings.get("geometry_color");
@@ -236,19 +236,18 @@ var MapViewer = (function(mv) {
     return mv;
 })(MapViewer || {});
 
-_.extend(window.bundleEntries || {}, {
-    load: options => {
-        const chart = options.chart;
-        const dataset = options.dataset;
-        $.ajax({
-            url: dataset.download_url,
-            success: content => {
-                MapViewer.loadFile(dataset.download_url, dataset.extension, options, chart);
-            },
-            error: () => {
-                chart.state("failed", "Failed to access dataset.");
-                options.process.resolve();
-            }
-        });
-    }
-});
+window.bundleEntries = window.bundleEntries || {};
+window.bundleEntries.load = function (options) {
+    const chart = options.chart;
+    const dataset = options.dataset;
+    $.ajax({
+        url: dataset.download_url,
+        success: () => {
+            MapViewer.loadFile(dataset.download_url, dataset.extension, options, chart);
+        },
+        error: () => {
+            chart.state("failed", "Failed to access dataset.");
+            options.process.resolve();
+        }
+    });
+}

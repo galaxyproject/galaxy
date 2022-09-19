@@ -9,7 +9,7 @@ def count_special_lines(word, filename, invert=False):
     """
     cmd = ["grep", "-c", "-E"]
     if invert:
-        cmd.append('-v')
+        cmd.append("-v")
     cmd.extend([word, filename])
     try:
         out = commands.execute(cmd)

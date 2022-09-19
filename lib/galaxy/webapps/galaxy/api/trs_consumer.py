@@ -3,16 +3,17 @@
 Information on TRS can be found at https://github.com/ga4gh/tool-registry-service-schemas.
 """
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import (
-    BaseAPIController
+from galaxy.workflow.trs_proxy import TrsProxy
+from . import (
+    BaseGalaxyAPIController,
+    depends,
 )
 
 
-class TrsConsumeAPIController(BaseAPIController):
+class TrsConsumeAPIController(BaseGalaxyAPIController):
     """Controller for TRS proxying."""
 
-    def __init__(self, app):
-        self._trs_proxy = app.trs_proxy
+    _trs_proxy: TrsProxy = depends(TrsProxy)
 
     @expose_api
     def get_servers(self, trans, *args, **kwd):

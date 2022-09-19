@@ -1,0 +1,22 @@
+<tool id="multiple_versions_changes" name="multiple_versions_changes" version="0.2">
+    <command>
+        echo "Version 0.2" > $out_file1
+    </command>
+    <inputs>
+        <param name="inttest" value="1" type="integer" />
+        <param name="floattest" value="1.0" type="float" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="intest" value="1" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="Version 0.2" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

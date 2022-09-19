@@ -1,0 +1,103 @@
+<tool id="interactive_tool_ml_jupyter_notebook" tool_type="interactive" name="GPU enabled Interactive Jupyter Notebook for Machine Learning" version="0.1" profile="20.09">
+    <requirements>
+        <container type="docker">docker.io/anupkumar/docker-ml-jupyterlab:galaxy-integration-0.1</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="GPU enabled Interactive Jupyter Notebook for Machine Learning" requires_domain="True">
+            <port>8888</port>
+            <url>ipython/lab</url>
+        </entry_point>
+    </entry_points>
+    <environment_variables>
+        <environment_variable name="HISTORY_ID">$__history_id__</environment_variable>
+        <environment_variable name="REMOTE_HOST">$__galaxy_url__</environment_variable>
+        <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
+        <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
+        <environment_variable name="DISABLE_AUTH">true</environment_variable>
+        <environment_variable name="API_KEY" inject="api_key" />
+    </environment_variables>
+    <command detect_errors="aggressive"><![CDATA[
+        #import re
+        export GALAXY_WORKING_DIR=`pwd` &&
+        mkdir -p ./jupyter/outputs/ &&
+        mkdir -p ./jupyter/data &&
+        mkdir -p ./jupyter/notebooks &&
+        mkdir -p ./jupyter/elyra &&
+
+        #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
+        ln -sf '$input' './jupyter/data/${cleaned_name}' &&
+
+        ## change into the directory where the notebooks are located
+        cd ./jupyter/ &&
+        export HOME=/home/\$NB_USER/ &&
+        export PATH=/home/\$NB_USER/.local/bin:\$PATH &&
+        #if $mode.mode_select == 'scratch':
+            ## copy all notebooks, workflows and data
+            cp /home/\$NB_USER/home_page.ipynb ./ &&
+            cp /home/\$NB_USER/notebooks/*.ipynb ./notebooks/ &&
+            cp /home/\$NB_USER/elyra/*.* ./elyra/ &&
+            cp /home/\$NB_USER/data/*.tsv ./data/ &&
+            ## provide all rights to copied files
+            chown -R \$NB_USER:users `pwd` &&
+            chown \$NB_USER ./home_page.ipynb &&
+            chown \$NB_USER ./notebooks/ &&
+            chown \$NB_USER ./notebooks/*.ipynb &&
+            chown \$NB_USER ./elyra/ &&
+            chown \$NB_USER ./elyra/*.* &&
+            jupyter trust ./home_page.ipynb &&
+            jupyter trust ./notebooks/*.ipynb &&
+            jupyter trust ./elyra/*.ipynb &&
+            jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True
+        #else:
+            #set $noteboook_name = re.sub('[^\w\-\.\s]', '_', str($mode.ipynb.element_identifier))
+            cp '$mode.ipynb' './${noteboook_name}.ipynb' &&
+            jupyter trust './${noteboook_name}.ipynb' &&
+            #if $mode.run_it:
+                jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
+                #set $noteboook_name = 'ipython_galaxy_notebook'
+            #else:
+                jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
+            #end if
+            cp './${noteboook_name}.ipynb' '$jupyter_notebook'
+        #end if
+    ]]>
+    </command>
+    <inputs>
+
+        <conditional name="mode">
+            <param name="mode_select" type="select" label="Do you already have a notebook?" help="If not, no problem we will provide you with a default one.">
+                <option value="scratch">Start with a fresh notebook</option>
+                <option value="previous">Load a previous notebook</option>
+            </param>
+            <when value="scratch"/>
+            <when value="previous">
+                <param name="ipynb" type="data" format="ipynb" label="IPython Notebook"/>
+                <param name="run_it" type="boolean" truevalue="true" falsevalue="false" label="Execute notebook and return a new one."
+                    help="This option is useful in workflows when you just want to execute a notebook and not dive into the webfrontend."/>
+            </when>
+        </conditional>
+        <param name="input" type="data" optional="true" label="Include data into the environment"/>
+
+    </inputs>
+    <outputs>
+        <data name="jupyter_notebook" format="ipynb" label="Executed Notebook" />
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="mode" value="previous" />
+            <param name="ipynb" value="test.ipynb" />
+            <param name="run_it" value="true" />
+            <output name="jupyter_notebook" file="test.ipynb" ftype="ipynb"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+        JupyterLab is a next-generation web-based user interface for Project Jupyter. JupyterLab enables you to work with documents and activities such as Jupyter notebooks, text editors,
+        terminals, and custom components in a flexible, integrated, and extensible manner.
+
+        Galaxy offers you to use Jupyter Lab directly in Galaxy accessing and interacting with Galaxy datasets as you like. A very common use-case is to
+        do the heavy lifting such as performing computation on GPUs and data reduction steps in Galaxy and the plotting and more `interactive` part on smaller datasets in Jupyter Lab.
+
+        You can start with a new Jupyter Lab notebook from scratch and wait until the job starts running. Running job will provide you a link which can be opened in the same or another
+        browser tab. This link opens Jupyter Lab notebook which can be used to prototype machine learning solutions.
+    ]]></help>
+</tool>

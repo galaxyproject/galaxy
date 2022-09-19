@@ -1,7 +1,15 @@
-<containers_resolvers>
+<container_resolvers>
   <explicit />
   <!-- explicit: resolves container URI for a job through explict container
        tags in the tool XML wrapper. -->
+
+  <explicit_singularity />
+  <!-- explicit: resolves container URI for a job through explict container
+       tags in the tool XML wrapper. -->
+       
+  <cached_explicit_singularity />
+  <!-- cached_explicit_singularity: stores an explicit container on the
+       filesystem and use the stored image to run the jobs.  -->
 
   <!-- All mulled flavors below work by default unless enable_mulled_containers is
        set to false in the galaxy.yaml config file. -->
@@ -52,7 +60,7 @@
        or more package requirements listed as part of the tool's definition.
        Set auto_install to False if Galaxy should build container images
        through the admin interface or API, but not automatically when
-       a tool is run.
+       a tool is run. WARNING: requires docker to be installed.
 
   -->
 
@@ -63,4 +71,4 @@
   <!-- Specify a fallback container for tools/jobs that don't match the above
        resolvers. -->
 
-</containers_resolvers>
+</container_resolvers>

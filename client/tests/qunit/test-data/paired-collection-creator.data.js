@@ -1,21 +1,41 @@
+import STATES from "mvc/dataset/states";
 // ============================================================================
 // plain 3 step job chain
 var datasets1 = [
-    { name: "SET1-01_1.fastq" },
-    { name: "SET1-01_2.fastq" },
-    { name: "SET1-02_1.fastq" },
-    { name: "SET1-02_2.fastq" },
-    { name: "SET1-03_1.fastq" },
-    { name: "SET1-03_2.fastq" },
-    { name: "SET1-04_1.fastq" },
-    { name: "SET1-04_2.fastq" },
-    { name: "SET1-05_1.fastq" },
-    { name: "SET1-05_2.fastq" },
-    { name: "SET1-06_1.fastq" },
-    { name: "SET1-06_2.fastq" },
-    { name: "SET1-07_1.fastq" },
-    { name: "SET1-07_2.fastq" },
+    { name: "SET1-01_1.fastq", state: STATES.OK },
+    { name: "SET1-01_2.fastq", state: STATES.OK },
+    { name: "SET1-02_1.fastq", state: STATES.OK },
+    { name: "SET1-02_2.fastq", state: STATES.OK },
+    { name: "SET1-03_1.fastq", state: STATES.OK },
+    { name: "SET1-03_2.fastq", state: STATES.OK },
+    { name: "SET1-04_1.fastq", state: STATES.OK },
+    { name: "SET1-04_2.fastq", state: STATES.OK },
+    { name: "SET1-05_1.fastq", state: STATES.OK },
+    { name: "SET1-05_2.fastq", state: STATES.OK },
+    { name: "SET1-06_1.fastq", state: STATES.OK },
+    { name: "SET1-06_2.fastq", state: STATES.OK },
+    { name: "SET1-07_1.fastq", state: STATES.OK },
+    { name: "SET1-07_2.fastq", state: STATES.OK },
 ];
+
+var datasets2 = [
+    { name: "DP134_1_FS_PSII_FSB_42C_A10.1.fastq", state: STATES.OK},
+    { name: "DP134_1_FS_PSII_FSB_42C_A10.2.fastq", state: STATES.OK}
+]
+
+var datasets3 = [
+    {name: "UII_moo_1.1.fastq", state: STATES.OK},
+    {name: "UII_moo_1.2.fastq", state: STATES.OK}
+]
+
+var datasets4= [
+    { name: "SET1-01_R1.fastq", state: STATES.OK },
+    { name: "SET1-01_R2.fastq", state: STATES.OK },
+    { name: "SET1-02_R1.fastq", state: STATES.OK },
+    { name: "SET1-02_R2.fastq", state: STATES.OK },
+    { name: "SET1-03_R1.fastq", state: STATES.OK },
+    { name: "SET1-03_R2.fastq", state: STATES.OK },
+]
 
 var datasets1CreateRequestJSON = {
     type: "dataset_collection",
@@ -149,4 +169,7 @@ var datasets1CreateRequestJSON = {
 export default {
     _1: datasets1,
     _1requestJSON: datasets1CreateRequestJSON,
+    _2: datasets2,
+    _3: datasets3,
+    _4: datasets4
 };

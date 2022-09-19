@@ -31,9 +31,9 @@
                     <element name="e2" value="simple_line_alternative.txt" dbkey="hg19"/>
                 </collection>
             </param>
-            <param name="index" value="hg19" />
+            <param name="index" value="hg19_value" />
             <output name="output">
-                <assert_contents><has_text text="hg19" /></assert_contents>
+                <assert_contents><has_text text="hg19_value" /></assert_contents>
             </output>
         </test>
         <!-- can choose any dbkey if none specified in reference -->
@@ -44,10 +44,10 @@
                     <element name="e2" value="simple_line_alternative.txt"/>
                 </collection>
             </param>
-            <param name="index" value="hg18" />
+            <param name="index" value="hg18_value" />
             <output name="output">
                 <assert_contents>
-                    <has_text text="hg18" /></assert_contents>
+                    <has_text text="hg18_value" /></assert_contents>
             </output>
         </test>
         <!-- can choose any dbkey specified in reference -->
@@ -58,9 +58,9 @@
                     <element name="e2" value="simple_line_alternative.txt" dbkey="hg18"/>
                 </collection>
             </param>
-            <param name="index" value="hg18" />
+            <param name="index" value="hg18_value" />
             <output name="output">
-                <assert_contents><has_text text="hg18" /></assert_contents>
+                <assert_contents><has_text text="hg18_value" /></assert_contents>
             </output>
         </test>
         <!-- cant choose a dkkey different from reference -->
@@ -71,9 +71,9 @@
                     <element name="e2" value="simple_line_alternative.txt" dbkey="hg19"/>
                 </collection>
             </param>
-            <param name="index" value="hg18" />
+            <param name="index" value="hg18_value" />
             <output name="output">
-                <assert_contents><not_has_text text="hg18" /></assert_contents>
+                <assert_contents><not_has_text text="hg18_value" /></assert_contents>
             </output>
         </test>
     </tests>

@@ -1,1 +1,1 @@
-gzip compressed data, extra field
+Blocked GNU Zip Format (BGZF; gzip compatible)

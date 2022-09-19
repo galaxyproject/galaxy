@@ -3,6 +3,7 @@ import { shallowMount, createLocalVue } from "@vue/test-utils";
 import createCache from "vuex-cache";
 import JobDestinationParams from "./JobDestinationParams";
 import jobDestinationResponse from "./testData/jobDestinationResponse";
+import MockCurrentUser from "../providers/MockCurrentUser";
 
 const JOB_ID = "foo_job_id";
 
@@ -34,10 +35,17 @@ describe("JobDestinationParams/JobDestinationParams.vue", () => {
         const propsData = {
             jobId: JOB_ID,
         };
-        wrapper = shallowMount(JobDestinationParams, {
+        wrapper = await shallowMount(JobDestinationParams, {
             store: testStore,
             propsData,
             localVue,
+            attachTo: document.body,
+            stubs: {
+                // Need to stub all this horrible-ness because of the last 2 tests
+                // which need to dig into the first layer of the mount tree, will remove
+                // all of this shortly with a PR that completely replaces Upload
+                CurrentUser: MockCurrentUser({ is_admin: true }),
+            },
         });
         expect(responseKeys.length > 0).toBeTruthy();
     });

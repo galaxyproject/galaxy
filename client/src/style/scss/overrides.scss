@@ -35,6 +35,10 @@ pre {
 .dropdown-menu {
     .dropdown-item {
         text-decoration: none;
+        .fa {
+            @extend .fa-fw;
+            @extend .mr-2;
+        }
     }
 }
 
@@ -158,6 +162,10 @@ table.info_data_table th:nth-child(1) {
     border-color: transparent;
 }
 
+.alert-info {
+    background: $state-info-bg !important;
+}
+
 // increase visibility of dropdown menu section headers
 .dropdown-header {
     font-size: 1rem;
@@ -175,4 +183,28 @@ table.info_data_table th:nth-child(1) {
 }
 .progress-bar.bg-warning {
     background: $state-warning-bg !important;
+}
+
+// add disabled variant of bootstrap vue button link
+.btn.btn-link.disabled {
+    pointer-events: unset;
+    background-color: unset;
+    border: none;
+}
+
+// enable titles on disabled dropdown items
+.dropdown-menu {
+    .dropdown-item.disabled {
+        pointer-events: unset;
+        cursor: default;
+
+        // differentiate disabled items more
+        color: lighten($text-color, 50%);
+    }
+
+    .dropdown-item.active {
+        background-color: unset;
+        color: $brand-primary;
+        font-weight: 600;
+    }
 }

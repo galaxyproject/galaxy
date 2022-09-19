@@ -1,0 +1,5 @@
+# tool-id <tab> bio.tools-id
+abyss-pe	abyss
+allegro	allegro
+# testing tool mapping for test case
+cheetah_problem_unbound_var_input	bwa

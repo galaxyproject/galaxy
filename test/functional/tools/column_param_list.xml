@@ -1,0 +1,34 @@
+<tool id="column_param_list" name="Column Param List" version="1.0.0">
+    <command><![CDATA[
+cut -f '$col' '$input1' > '$output1' &&
+echo "col $col" > '$output2' &&
+echo "col_names $col_names" >> '$output2'
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" format="tabular" label="Input 1" />
+        <param name="col" type="data_column" multiple="true" value="1" data_ref="input1" label="Columns to use" />
+        <param name="col_names" type="data_column" multiple="true" data_ref="input1" use_header_names="true" label="Column names to use" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="tabular" />
+        <data name="output2" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="2.tabular" />
+            <param name="col" value="2" />
+            <param name="col_names" value="2" />
+            <output name="output1">
+                <assert_contents>
+                    <has_line line="68" />
+                </assert_contents>
+            </output>
+            <output name="output2">
+                <assert_contents>
+                    <has_line line="col 2" />
+                    <has_line line="col_names 2" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

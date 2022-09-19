@@ -1,10 +1,10 @@
 <tool id="version_command_tool_dir" name="version_command_tool_dir" version="1.0.0">
-    <version_command>
-        python $__tool_directory__/version_command.py
-    </version_command>
-    <command>
-        cp $input $output
-    </command>
+    <version_command><![CDATA[
+python '$__tool_directory__/version_command.py'
+    ]]></version_command>
+    <command><![CDATA[
+cp '$input' '$output'
+    ]]></command>
     <inputs>
         <param name="input" type="data" format="txt" />
     </inputs>

@@ -9,12 +9,12 @@
     ## Galaxy wants forward and reverse in pattern not _1 and _2.
     ##   There is bash magic that would be more concise then this basename
     ##   pattern but I think this is more portable.
-    for f in *_1.fq; do mv "\$f" "`basename \$f _1.fq`_forward.fq"; done && 
+    for f in *_1.fq; do mv "\$f" "`basename \$f _1.fq`_forward.fq"; done &&
     for f in *_2.fq; do mv "\$f" "`basename \$f _2.fq`_reverse.fq"; done
   ]]></command>
   <inputs>
     <param name="foo" type="text" label="Dummy Parameter" />
-    <param name="file" type="data" label="Dummy File Parameter" />
+    <param name="file" type="data" label="Dummy File Parameter" optional="true"/>
   </inputs>
   <outputs>
     <collection name="list_output" type="list:paired" label="Duplicate List">

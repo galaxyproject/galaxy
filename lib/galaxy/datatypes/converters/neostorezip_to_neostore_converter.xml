@@ -12,6 +12,17 @@
   <outputs>
     <data format="neostore" name="output1"/>
   </outputs>
+  <tests>
+    <test>
+      <!-- TODO mock test? $output1 should be the html primary file? -->
+      <param name="input1" ftype="neostore.zip" value="neostore.zip"/>
+      <output name="output1" ftype="neostore">
+        <assert_contents>
+          <has_n_lines n="2"/>
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
   <help>
   </help>
 </tool>

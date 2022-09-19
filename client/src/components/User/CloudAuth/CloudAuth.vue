@@ -6,38 +6,35 @@
             </b-alert>
 
             <hgroup class="cloud-auth-title">
-                <h1>Manage Cloud Authorization</h1>
+                <h1 v-localize>Manage Cloud Authorization</h1>
                 <nav class="operations">
                     <ul>
                         <li class="cloudKeyHelp">
                             <a
-                                :class="{ active: showHelp }"
-                                @click.prevent="showHelp = !showHelp"
                                 v-b-tooltip.hover
+                                :class="{ active: showHelp }"
                                 aria-label="Instructions"
                                 title="Instructions"
-                            >
+                                @click.prevent="showHelp = !showHelp">
                                 <span>Instructions</span>
                             </a>
                         </li>
                         <li class="cloudKeyFilter">
                             <a
-                                :class="{ active: showFilter }"
-                                @click.prevent="showFilter = !showFilter"
                                 v-b-tooltip.hover
+                                :class="{ active: showFilter }"
                                 aria-label="Filter Results"
                                 title="Filter Results"
-                            >
+                                @click.prevent="showFilter = !showFilter">
                                 <span>Filter</span>
                             </a>
                         </li>
                         <li class="createCloudKey">
                             <a
-                                @click.prevent="onCreate"
                                 v-b-tooltip.hover
                                 aria-label="Create New Key"
                                 title="Create New Key"
-                            >
+                                @click.prevent="onCreate">
                                 <span>Create New Key</span>
                             </a>
                         </li>
@@ -47,22 +44,20 @@
 
             <transition name="fade">
                 <hgroup v-if="showHelp">
-                    <p>See the online <a href="https://galaxyproject.org/cloud/authnz/">Documentation</a>.</p>
+                    <p>See the online <a href="https://galaxyproject.org/authnz/">Documentation</a>.</p>
                 </hgroup>
             </transition>
 
             <transition name="fade">
                 <hgroup v-if="showFilter">
                     <b-form-group :description="filterDescription">
-                        <b-form-input type="text" placeholder="Filter" v-model="filter" />
+                        <b-form-input v-model="filter" type="text" placeholder="Filter" />
                     </b-form-group>
                 </hgroup>
             </transition>
 
             <b-button-group class="mb-4">
-                <button name="createNewKey" @click="onCreate">
-                    Create New Authorization Key
-                </button>
+                <button name="createNewKey" @click="onCreate">Create New Authorization Key</button>
             </b-button-group>
         </header>
 
@@ -76,22 +71,20 @@
                         class="mb-1"
                         @delete="onDelete"
                         @save="onSave"
-                        @expand="expand(credential, $event)"
-                    />
+                        @expand="expand(credential, $event)" />
                 </transition-group>
             </b-list-group>
         </div>
 
         <b-modal
-            v-model="hasDoomed"
-            centered
             id="deleteCredentialModal"
             ref="deleteModal"
+            v-model="hasDoomed"
+            centered
             title="Delete Key?"
             size="sm"
             @ok="deleteKey"
-            @cancel="doomedItem = null"
-        >
+            @cancel="doomedItem = null">
         </b-modal>
     </section>
 </template>
@@ -143,6 +136,9 @@ export default {
         showDeleted(deleted) {
             this.loadCredentials({ deleted });
         },
+    },
+    created() {
+        this.loadCredentials();
     },
     methods: {
         loadCredentials(params = {}) {
@@ -205,9 +201,6 @@ export default {
                 console.warn(err);
             };
         },
-    },
-    created() {
-        this.loadCredentials();
     },
 };
 </script>

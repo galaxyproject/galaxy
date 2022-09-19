@@ -76,6 +76,16 @@ To update an existing Galaxy repository run:
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
+Release Testing Team
+===========================================================
+
+A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+
+- `Jayadev Joshi <https://github.com/jaidevjoshi83>`_
+- `Luke Sargent <https://github.com/luke-c-sargent>`_
+- `Marius van den Beek <https://github.com/mvdbeek>`_
+- `John Davis <https://github.com/jdavcs>`_
+
 Release Notes
 ===========================================================
 

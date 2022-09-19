@@ -1,13 +1,12 @@
 <template>
     <div>
         <b-table
-            thead-class="hidden_header"
             v-if="directoryContent && !errorMessage"
+            thead-class="hidden_header"
             striped
             hover
             :fields="fields"
-            :items="directoryContent"
-        >
+            :items="directoryContent">
         </b-table>
         <div v-if="errorMessage">
             <b v-if="path">{{ path }}</b> {{ errorMessage }}
@@ -28,6 +27,23 @@ export default {
             type: String,
         },
     },
+    data() {
+        return {
+            directoryContent: false,
+            fields: [
+                {
+                    key: "path",
+                    sortable: true,
+                },
+                {
+                    key: "class",
+                    label: "Type",
+                    sortable: true,
+                },
+            ],
+            errorMessage: undefined,
+        };
+    },
     created() {
         this.fetchPathDestination({ history_dataset_id: this.history_dataset_id, path: this.path }).then(() => {
             const pathDestination = this.$store.getters.pathDestination(this.history_dataset_id, this.path);
@@ -46,31 +62,11 @@ export default {
                     pathDestination.filepath
                 );
             } else if (this.path === undefined || this.path === "undefined") {
-                this.directoryContent = this.removeParentDirectory(
-                    pathDestination.datasetContent,
-                    pathDestination.datasetRootDir
-                );
+                this.directoryContent = pathDestination.datasetContent;
             } else {
                 this.errorMessage = `is not found!`;
             }
         });
-    },
-    data() {
-        return {
-            directoryContent: false,
-            fields: [
-                {
-                    key: "path",
-                    sortable: true,
-                },
-                {
-                    key: "class",
-                    label: "Type",
-                    sortable: true,
-                },
-            ],
-            errorMessage: undefined,
-        };
     },
     methods: {
         ...mapCacheActions(["fetchPathDestination"]),

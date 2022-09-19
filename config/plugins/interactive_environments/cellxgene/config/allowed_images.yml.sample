@@ -1,5 +1,0 @@
----
--
-    image: quay.io/galaxy/cellxgene-galaxy-ie:2019.05.13
-    description: |
-        An interactive data explorer for single-cell transcriptomics datasets

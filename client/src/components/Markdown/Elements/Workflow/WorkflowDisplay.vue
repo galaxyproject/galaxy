@@ -1,37 +1,44 @@
 <template>
-    <div class="w-50 p-2 float-left">
-        <b-card body-class="p-0">
-            <b-card-header v-if="!embedded">
-                <span class="float-right">
-                    <b-button
-                        :href="downloadUrl"
-                        variant="link"
-                        size="sm"
-                        role="button"
-                        title="Download Workflow"
-                        type="button"
-                        class="py-0 px-1"
-                        v-b-tooltip.hover
-                    >
-                        <span class="fa fa-download" />
-                    </b-button>
-                </span>
-                <span>
-                    <span>Workflow:</span>
-                    <span class="font-weight-light">{{ workflowName }}</span>
-                </span>
-            </b-card-header>
-            <b-card-body>
-                <LoadingSpan v-if="loading" message="Loading Workflow" />
-                <div v-else class="content-height">
-                    <div v-for="step in itemContent.steps" :key="step.order_index" class="mb-2">
-                        <div>Step {{ step.order_index + 1 }}: {{ step.label }}</div>
-                        <WorkflowTree :input="step" :skip-head="true" />
-                    </div>
+    <b-card body-class="p-0">
+        <b-card-header v-if="!embedded">
+            <span class="float-right">
+                <b-button
+                    v-b-tooltip.hover
+                    :href="downloadUrl"
+                    variant="link"
+                    size="sm"
+                    role="button"
+                    title="Download Workflow"
+                    type="button"
+                    class="py-0 px-1">
+                    <span class="fa fa-download" />
+                </b-button>
+                <b-button
+                    v-b-tooltip.hover
+                    :href="importUrl"
+                    role="button"
+                    variant="link"
+                    title="Import Workflow"
+                    type="button"
+                    class="py-0 px-1">
+                    <span class="fa fa-file-import" />
+                </b-button>
+            </span>
+            <span>
+                <span>Workflow:</span>
+                <span class="font-weight-light">{{ workflowName }}</span>
+            </span>
+        </b-card-header>
+        <b-card-body>
+            <LoadingSpan v-if="loading" message="Loading Workflow" />
+            <div v-else class="content-height">
+                <div v-for="step in itemContent.steps" :key="step.order_index" class="mb-2">
+                    <div>Step {{ step.order_index + 1 }}: {{ step.label }}</div>
+                    <WorkflowTree :input="step" :skip-head="true" />
                 </div>
-            </b-card-body>
-        </b-card>
-    </div>
+            </div>
+        </b-card-body>
+    </b-card>
 </template>
 
 <script>
@@ -64,12 +71,6 @@ export default {
             loading: true,
         };
     },
-    created() {
-        this.getContent().then((data) => {
-            this.itemContent = data;
-            this.loading = false;
-        });
-    },
     computed: {
         workflowName() {
             const workflow = this.workflows[this.args.workflow_id];
@@ -78,9 +79,18 @@ export default {
         downloadUrl() {
             return `${getAppRoot()}api/workflows/${this.args.workflow_id}/download?format=json-download`;
         },
+        importUrl() {
+            return `${getAppRoot()}workflow/imp?id=${this.args.workflow_id}`;
+        },
         itemUrl() {
             return `${getAppRoot()}api/workflows/${this.args.workflow_id}/download?style=preview`;
         },
+    },
+    created() {
+        this.getContent().then((data) => {
+            this.itemContent = data;
+            this.loading = false;
+        });
     },
     methods: {
         async getContent() {
@@ -97,5 +107,6 @@ export default {
 <style scoped>
 .content-height {
     max-height: 15rem;
+    overflow-y: auto;
 }
 </style>

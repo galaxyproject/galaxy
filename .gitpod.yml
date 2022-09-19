@@ -1,0 +1,42 @@
+github:
+  prebuilds:
+    # enable for the master/default branch (defaults to true)
+    master: true
+    # enable for all branches in this repo (defaults to false)
+    branches: true
+    # enable for pull requests coming from this repo (defaults to true)
+    pullRequests: true
+    # enable for pull requests coming from forks (defaults to false)
+    pullRequestsFromForks: true
+    # add a "Review in Gitpod" button as a comment to pull requests (defaults to true)
+    addComment: false
+    # add a "Review in Gitpod" button to pull requests (defaults to false)
+    addBadge: false
+    # add a label once the prebuild is ready to pull requests (defaults to false)
+    addLabel: false
+image: gitpod/workspace-postgres
+tasks:
+  - name: Setup Development Environment
+    init: >
+      cp .vscode/settings_gitpod.json .vscode/settings.json &&
+      cp .vscode/launch_gitpod.json .vscode/launch.json &&
+      python3 -m venv .venv &&
+      . .venv/bin/activate &&
+      pip install psycopg2 &&
+      pip install -r requirements.txt -r lib/galaxy/dependencies/dev-requirements.txt &&
+      pip install tox &&
+      gp sync-done setup
+    command: createdb galaxy
+  - name: Setup Galaxy Configuration
+    command: cp config/galaxy.yml.sample config/galaxy.yml
+  - name: Watch Client with Webpack
+    init: gp sync-await setup
+    command: make client-watch
+# Ports to expose on workspace startup (optional)
+ports:
+  - port: 8000
+vscode:
+  extensions:
+    - ms-python.python
+    # No longer seems to work.
+    # - ms-python.vscode-pylance

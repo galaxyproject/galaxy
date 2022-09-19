@@ -12,8 +12,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" format="tabular" value="vcf2pgSnp_input.vcf"/>
-            <output name="dbnsfp" format="snpsiftdbnsfp" value="vcf2pgSnp_input.vcf.snpsiftdbnsfp"/>
+            <param name="input" ftype="tabular" value="vcf2pgSnp_input.vcf"/>
+            <output name="dbnsfp" ftype="snpsiftdbnsfp" value="vcf2pgSnp_input.vcf.snpsiftdbnsfp"/>
         </test>
     </tests>
     <help>

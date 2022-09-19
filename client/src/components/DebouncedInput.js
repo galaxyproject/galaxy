@@ -2,15 +2,9 @@
  * Renderless component, used to debounce various types of form inputs
  */
 
-import Vue from "vue";
-import VueRx from "vue-rx";
 import { filter, debounceTime, distinctUntilChanged, finalize } from "rxjs/operators";
-import { vueRxShortcuts } from "./plugins";
-
-Vue.use(VueRx);
 
 export default {
-    mixins: [vueRxShortcuts],
     props: {
         value: { required: true },
         delay: { type: Number, required: false, default: 500 },
@@ -29,14 +23,23 @@ export default {
             }
         },
     },
+    watch: {
+        incomingValue(val) {
+            if (this.delay === 0) {
+                this.sendUpdate(val);
+            }
+        },
+    },
     beforeMount() {
-        const debounced$ = this.watch$("incomingValue").pipe(
-            debounceTime(this.delay),
-            distinctUntilChanged(),
-            filter((val) => val !== null && val !== this.value),
-            finalize(() => this.sendUpdate(this.incomingValue))
-        );
-        this.$subscribeTo(debounced$, (val) => this.sendUpdate(val));
+        if (this.delay !== 0) {
+            const debounced$ = this.watch$("incomingValue").pipe(
+                debounceTime(this.delay),
+                distinctUntilChanged(),
+                filter((val) => val !== null && val !== this.value),
+                finalize(() => this.sendUpdate(this.incomingValue))
+            );
+            this.$subscribeTo(debounced$, (val) => this.sendUpdate(val));
+        }
     },
     render() {
         return this.$scopedSlots.default({

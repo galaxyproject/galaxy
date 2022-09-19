@@ -1,0 +1,9 @@
+name: Merged Section Example
+type: generic
+items:
+- type: section
+  id: my-new-section
+  name: My New Section
+  items:
+  - items_from: Test Section
+  - items_from: filter

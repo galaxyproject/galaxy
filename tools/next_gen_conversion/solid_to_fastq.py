@@ -29,7 +29,7 @@ def stop_err(msg):
 def replaceNeg1(fin, fout):
     line = fin.readline()
     while line.strip():
-        fout.write(line.replace('-1', '1'))
+        fout.write(line.replace("-1", "1"))
         line = fin.readline()
     fout.seek(0)
     return fout
@@ -47,27 +47,43 @@ def __main__():
         tmpr = tempfile.NamedTemporaryFile()  # reverse reads
         # replace the -1 in the qualities file
         tmpqr = tempfile.NamedTemporaryFile()
-        tmpqr = replaceNeg1(open(options.input4, 'r'), tmpqr)
-        cmd1 = "%s/bwa_solid2fastq_modified.pl 'yes' %s %s %s %s %s %s 2>&1" % (os.path.split(sys.argv[0])[0], tmpf.name, tmpr.name, options.input1, tmpqf.name, options.input3, tmpqr.name)
+        tmpqr = replaceNeg1(open(options.input4, "r"), tmpqr)
+        cmd1 = "%s/bwa_solid2fastq_modified.pl 'yes' %s %s %s %s %s %s 2>&1" % (
+            os.path.split(sys.argv[0])[0],
+            tmpf.name,
+            tmpr.name,
+            options.input1,
+            tmpqf.name,
+            options.input3,
+            tmpqr.name,
+        )
         try:
             os.system(cmd1)
-            os.system('gunzip -c %s >> %s' % (tmpf.name, options.output1))
-            os.system('gunzip -c %s >> %s' % (tmpr.name, options.output2))
+            os.system("gunzip -c %s >> %s" % (tmpf.name, options.output1))
+            os.system("gunzip -c %s >> %s" % (tmpr.name, options.output2))
         except Exception as eq:
             stop_err("Error converting data to fastq format.\n" + str(eq))
         tmpr.close()
         tmpqr.close()
     # if single-end data
     else:
-        cmd1 = "%s/bwa_solid2fastq_modified.pl 'no' %s %s %s %s %s %s 2>&1" % (os.path.split(sys.argv[0])[0], tmpf.name, None, options.input1, tmpqf.name, None, None)
+        cmd1 = "%s/bwa_solid2fastq_modified.pl 'no' %s %s %s %s %s %s 2>&1" % (
+            os.path.split(sys.argv[0])[0],
+            tmpf.name,
+            None,
+            options.input1,
+            tmpqf.name,
+            None,
+            None,
+        )
         try:
             os.system(cmd1)
-            os.system('gunzip -c %s >> %s' % (tmpf.name, options.output1))
+            os.system("gunzip -c %s >> %s" % (tmpf.name, options.output1))
         except Exception as eq:
             stop_err("Error converting data to fastq format.\n" + str(eq))
     tmpqf.close()
     tmpf.close()
-    sys.stdout.write('converted SOLiD data')
+    sys.stdout.write("converted SOLiD data")
 
 
 if __name__ == "__main__":

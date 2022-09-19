@@ -12,5 +12,6 @@ from galaxy.util.commands import (  # noqa: F401
     which,
 )
 
-
-warnings.warn("Importing galaxy.tool_util.deps.commands is deprecated, use galaxy.util.commands instead", DeprecationWarning)
+warnings.warn(
+    "Importing galaxy.tool_util.deps.commands is deprecated, use galaxy.util.commands instead", DeprecationWarning
+)

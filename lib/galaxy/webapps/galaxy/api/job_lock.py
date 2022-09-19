@@ -1,22 +1,24 @@
-from fastapi import (
-    Body,
-    Depends,
+from fastapi import Body
+
+from galaxy.managers.jobs import (
+    JobLock,
+    JobManager,
 )
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
+from . import (
+    depends,
+    Router,
+)
 
-from galaxy.managers.jobs import JobLock
-from . import get_admin_user, get_job_manager
-
-router = APIRouter(tags=['job_lock'])
+router = Router(tags=["job_lock"])
 
 
-@router.get('/api/job_lock')
-def job_lock_status(job_manager=Depends(get_job_manager), admin_user=Depends(get_admin_user)) -> JobLock:
+@router.get("/api/job_lock", require_admin=True)
+def job_lock_status(job_manager: JobManager = depends(JobManager)) -> JobLock:
     """Get job lock status."""
     return job_manager.job_lock()
 
 
-@router.put('/api/job_lock')
-def update_job_lock(job_manager=Depends(get_job_manager), admin_user=Depends(get_admin_user), job_lock: JobLock = Body(...)) -> JobLock:
+@router.put("/api/job_lock", require_admin=True)
+def update_job_lock(job_manager: JobManager = depends(JobManager), job_lock: JobLock = Body(...)) -> JobLock:
     """Set job lock status."""
     return job_manager.update_job_lock(job_lock)

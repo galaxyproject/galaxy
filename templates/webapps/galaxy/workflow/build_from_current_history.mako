@@ -33,10 +33,12 @@
     $(function() {
         $("#checkall").click( function() {
             $("input[type=checkbox]").attr( 'checked', true );
+            $(".as-named-input").prop( 'disabled', false );
             return false;
         }).show();
         $("#uncheckall").click( function() {
             $("input[type=checkbox]").attr( 'checked', false );
+            $(".as-named-input").prop( 'disabled', true );
             return false;
         }).show();
     });
@@ -62,8 +64,9 @@
                     </div>
                     %if disabled:
                         <input type="checkbox" id="as-input-${ encoded_id }" class="as-input"
-                               name="${data.history_content_type}_ids" value="${data.hid}" checked="true" />
-                        <label for="as-input-${ encoded_id }" >${_('Treat as input dataset')}</label>
+                               name="${data.history_content_type}_ids" value="${data.hid}" checked="true"
+                               onclick="document.getElementById('as-named-input-${ encoded_id }').disabled = !document.getElementById('as-input-${ encoded_id }').checked" />
+                        <label for="as-input-${ encoded_id }" >Treat as input dataset</label>
                         <input type="text" id="as-named-input-${ encoded_id }" class="as-named-input"
                                name="${data.history_content_type}_names" value="${data.display_name() | h}" />
                     %endif
@@ -86,11 +89,11 @@ into a workflow will be shown in gray.</p>
 
 <form method="post" action="${h.url_for(controller='workflow', action='build_from_current_history')}">
 <div class='form-row'>
-    <label>${_('Workflow name')}</label>
+    <label>Workflow name</label>
     <input name="workflow_name" type="text" value="Workflow constructed from history '${ util.unicodify( history.name )}'" size="60"/>
 </div>
 <p>
-    <input type="submit" class="btn btn-primary" value="${_('Create Workflow')}" />
+    <input type="submit" class="btn btn-primary" value="Create Workflow" />
     <button id="checkall" style="display: none;">Check all</button>
     <button id="uncheckall" style="display: none;">Uncheck all</button>
 </p>
@@ -98,9 +101,9 @@ into a workflow will be shown in gray.</p>
 <table border="0" cellspacing="0">
 
     <tr>
-        <th style="width: 47.5%">${_('Tool')}</th>
+        <th style="width: 47.5%">Tool</th>
         <th style="width: 5%"></th>
-        <th style="width: 47.5%">${_('History items created')}</th>
+        <th style="width: 47.5%">History items created</th>
     </tr>
 
 %for job, datasets in jobs.items():

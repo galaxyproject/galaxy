@@ -39,8 +39,8 @@ if (scalar @gene > 400) {
    print "ERROR David only allows 400 genes submitted via a link\n";
    exit 1;
 }
- 
-my $link = 'http://david.abcc.ncifcrf.gov/api.jsp?type=TYPE&ids=GENELIST&tool=summary';
+
+my $link = 'http://david.ncifcrf.gov/api.jsp?type=TYPE&ids=GENELIST&tool=summary';
 
 my $g = join(",", @gene);
 $link =~ s/GENELIST/$g/;

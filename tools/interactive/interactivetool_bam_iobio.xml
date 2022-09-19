@@ -1,39 +1,27 @@
-<tool id="interactive_tool_bam_iobio" tool_type="interactive" name="BAM (iobio) Visualisation" version="0.1">
+<tool id="interactive_tool_bam_iobio" tool_type="interactive" name="bam.iobio visualisation" version="0.4.0">
     <requirements>
-        <container type="docker">qiaoy/iobio-bundle.bam-iobio:1.0-ondemand</container>
+        <container type="docker">quay.io/iobio/bam.iobio.io:0.4.0</container>
     </requirements>
     <entry_points>
-        <entry_point name="BAM io.bio visualisation of $infile.display_name" requires_domain="True">
-            <port>80</port>
-            <url><![CDATA[/?bam=http://localhost/tmp/bamfile.bam&region=1]]></url>
+        <entry_point name="BAM io.bio visualisation of $baminfile.element_identifier" requires_domain="True">
+            <port>9001</port>
+            <url>/</url>
         </entry_point>
     </entry_points>
     <command><![CDATA[
-    ## ToDo: websocket could not be found
-    ## WebSocket connection to 'ws://localhost/bamreaddepther/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
-
-    #set $PUB_HOSTNAME = 'localhost'
-    #set $PUB_HTTP_PORT = '80'
-
-    cd /var/www/html &&
-    sed -i "s@\"wss://services.iobio.io/samtools/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/samtools/\"@" js/bam.iobio.js/bam.iobio.js &&
-    sed -i "s@\"wss://services.iobio.io/bamreaddepther/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/bamreaddepther/\"@" js/bam.iobio.js/bam.iobio.js &&
-    sed -i "s@\"wss://services.iobio.io/bamstatsalive/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/bamstatsalive/\"@" js/bam.iobio.js/bam.iobio.js &&
-    sed -i "s@\"wss://services.iobio.io/samheader/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/samheader/\"@" js/bam.iobio.js/bam.iobio.js &&
-
-    sed -i 's/deny all;//g' /etc/nginx/nginx.conf &&
-
-        cp '${infile}' /input/bamfile.bam &&
-        cp '${infile.metadata.bam_index}' /input/bamfile.bam.bai &&
-        mkdir /var/log/supervisor/ &&
-        head -n -2  /etc/supervisor.d/app.conf > /tmp/app.conf &&
-        mv /tmp/app.conf /etc/supervisor.d/app.conf &&
-
-        /usr/bin/supervisord -c /etc/supervisord.conf
+        #import re
+        mkdir -p /bam/input_files;
+        #set $bam_cleaned_name = re.sub('[^\w\-\.]', '_', str($baminfile.element_identifier))
+        ln -sf '$baminfile' '/bam/input_files/${bam_cleaned_name}' &&
+        ln -sf '$baminfile.metadata.bam_index' '/bam/input_files/${bam_cleaned_name}.bai' &&
+        echo '{ "bam": "http://localhost:9999/${bam_cleaned_name}", "bai":"http://localhost:9999/${bam_cleaned_name}.bai"}' >> /bam/config/config.json &&
+        cd /bam/input_files &&
+        node /iobio-gru-backend/src/static_server.js 9999 > /dev/null 2>&1 &
+        node /iobio-gru-backend/src/index.js --tools-dir=/iobio-gru-backend/tool_bin --app-dir=/bam > /dev/null 2>&1;
     ]]>
     </command>
     <inputs>
-        <param name="infile" type="data" format="bam" label="BAM file"/>
+        <param name="baminfile" type="data" format="bam" label="BAM file"/>
     </inputs>
     <outputs>
         <data name="outfile" format="txt" />
@@ -41,6 +29,14 @@
     <tests>
     </tests>
     <help>
-        BAM iobio visualisation.
+        Required inputs:
+
+        1. BAM file: binary alignment map file
+
+        The `iobio project`_ is developed by the `Marth lab`_ at the `University of Utah Center for Genetic Discovery`_.
+
+        .. _iobio project: https://iobio.io
+        .. _Marth lab: https://marthlab.org/
+        .. _University of Utah Center for Genetic Discovery: https://ucgd.genetics.utah.edu/
     </help>
 </tool>

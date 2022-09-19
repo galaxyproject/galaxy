@@ -1,0 +1,72 @@
+<tool id="export_remote" name="Export datasets" version="0.1.0" profile="21.05">
+    <description>to remote files source</description>
+    <!-- TODO
+    <requirements>
+        <requirement type="package" version="21.05">galaxy-files</requirement>
+    </requirements>
+    -->
+    <command><![CDATA[
+python '$__tool_directory__/export_remote.py'
+    --file-sources '$file_sources'
+    --directory-uri '$d_uri'
+    --files-to-export '$files_to_export'
+    --export-metadata-files $include_metadata_files
+    > '$out'
+    ]]></command>
+    <configfiles>
+        <file_sources name="file_sources" />
+        <configfile name="files_to_export">#import json
+#from galaxy.util import filesystem_safe_string
+#if $export_type.export_type_selector == "datasets_auto":
+#set $fileconfig = json.dumps($export_type.infiles.serialize(invalid_chars=tuple(str($invalid_chars))))
+#else if $export_type.export_type_selector == "collection_auto":
+#set $fileconfig = json.dumps($export_type.incollection.serialize(invalid_chars=tuple(str($invalid_chars)), include_collection_name=bool($export_type.include_collection_name)))
+#else
+#set $fileconfig = [d['infile'].serialize() for d in $export_type.datasets]
+#for $i, $dataset in enumerate($export_type.datasets):
+    #silent $fileconfig[$i]['staging_path'] = filesystem_safe_string(str(dataset["name"]), 255, invalid_chars=())
+#end for
+#silent fileconfig = json.dumps($fileconfig)
+#end if
+$fileconfig
+        </configfile>
+    </configfiles>
+    <inputs>
+        <conditional name="export_type">
+            <param name="export_type_selector" type="select" label="What would you like to export?">
+                <option value="datasets_auto" selected="true">Datasets using their Galaxy name and extension</option>
+                <option value="collection_auto">Dataset Collection using their name, structure and extension</option>
+                <option value="datasets_named">Datasets specifying their names</option>
+                <!-- Allow more options - e.g. HTML, collections preserving their structure... -->
+            </param>
+            <when value="datasets_auto">
+                <param name="infiles" type="data" format="data" multiple="true" label="Choose your datasets" help="Datasets must have unique names"/>
+            </when>
+            <when value="collection_auto">
+                <param name="incollection" type="data_collection" format="data" label="Choose your dataset collection" help="Dataset collection will be exported. Collections will become folders and datasets will be files"/>
+                <param name="include_collection_name" type="boolean" label="Include the collection name as top level directory?"/>
+            </when>
+            <when value="datasets_named">
+                <repeat name="datasets" title="Dataset">
+                    <param type="data" format="data" name="infile" label="Input dataset" />
+                    <param type="text" name="name" label="Enter file name" help="To create a file named &quot;f1.txt&quot; in directory named &quot;dir1&quot; enter &quot;dir1/f1.txt&quot;">
+                        <!-- 🔥 turn off sanitizer, so unicode strings can be used. Is sanitized in configfile -->
+                        <sanitizer sanitize="false"></sanitizer>
+                        <validator type="length" min="1" max="255"/>
+                    </param>
+                </repeat>
+            </when>
+        </conditional>
+        <param type="directory_uri" name="d_uri" label="Directory URI" />
+        <param name="include_metadata_files" type="boolean" checked="true" label="Include metadata files in export?" help="Examples of metadata files are bam, cram and vcf indexes that can be regenerated from raw data" />
+        <param name="invalid_chars" type="select" label="Select which characters should be stripped from the exported paths">
+            <option value="/">Sanitize /</option>
+            <option value="">Don't sanitize values</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="out" format="txt" label="Export logs"/>
+    </outputs>
+    <tests>
+    </tests>
+</tool>

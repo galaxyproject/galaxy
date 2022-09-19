@@ -28,24 +28,36 @@
                             <span v-if="!data.value" :class="repoChecked" />
                             <span v-else :class="repoUnchecked" />
                         </template>
+                        <template v-slot:cell(status)="row">
+                            <span v-if="row.item.status">
+                                <span
+                                    v-if="!['Error', 'Installed', 'Uninstalled'].includes(row.item.status)"
+                                    class="fa fa-spinner fa-spin" />
+                                {{ row.item.status }}
+                            </span>
+                            <span v-else> - </span>
+                        </template>
                         <template v-slot:cell(actions)="row">
-                            <InstallationButton
-                                :installed="row.item.installed"
+                            <InstallationActions
                                 :status="row.item.status"
                                 @onInstall="setupRepository(row.item)"
-                                @onUninstall="uninstallRepository(row.item)"
-                            />
+                                @onUninstall="uninstallRepository(row.item)" />
                         </template>
                     </b-table>
-                    <InstallationSettings
-                        v-if="showSettings"
-                        :repo="repo"
-                        :toolshed-url="toolshedUrl"
-                        :changeset-revision="selectedChangeset"
-                        :requires-panel="selectedRequiresPanel"
-                        @hide="onHide"
-                        @ok="onOk"
-                    />
+                    <ConfigProvider v-slot="{ config }">
+                        <ToolPanelViewProvider v-slot="{ currentPanel }" :panel-view="`default`" :set-default="false">
+                            <InstallationSettings
+                                v-if="showSettings"
+                                :repo="repo"
+                                :toolshed-url="toolshedUrl"
+                                :changeset-revision="selectedChangeset"
+                                :requires-panel="selectedRequiresPanel"
+                                :current-panel="currentPanel"
+                                :tool-dynamic-configs="config.tool_dynamic_configs"
+                                @hide="onHide"
+                                @ok="onOk" />
+                        </ToolPanelViewProvider>
+                    </ConfigProvider>
                 </div>
             </div>
         </div>
@@ -55,19 +67,32 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { Services } from "../services";
+import ConfigProvider from "components/providers/ConfigProvider";
+import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
 import InstallationSettings from "./InstallationSettings.vue";
-import InstallationButton from "./InstallationButton.vue";
+import InstallationActions from "./InstallationActions.vue";
 import RepositoryTools from "./RepositoryTools.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        ConfigProvider,
+        ToolPanelViewProvider,
         InstallationSettings,
-        InstallationButton,
+        InstallationActions,
         RepositoryTools,
     },
-    props: ["repo", "toolshedUrl"],
+    props: {
+        repo: {
+            type: Object,
+            required: true,
+        },
+        toolshedUrl: {
+            type: String,
+            required: true,
+        },
+    },
     data() {
         return {
             repoChecked: "fa fa-check text-success",
@@ -80,7 +105,8 @@ export default {
                 { key: "tools", label: "Tools and Versions" },
                 { key: "profile", label: "Requires" },
                 { key: "missing_test_components", label: "Tests" },
-                { key: "actions", label: "" },
+                { key: "status" },
+                { key: "actions", label: "", class: "toolshed-repo-actions" },
             ],
             showSettings: false,
             error: null,
@@ -179,3 +205,11 @@ export default {
     },
 };
 </script>
+
+<style lang="scss">
+// make actions take up less space
+.toolshed-repo-actions {
+    width: 10%;
+    min-width: 120px;
+}
+</style>

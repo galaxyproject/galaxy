@@ -130,6 +130,7 @@ Several community members and committers (`@stevecassidy <https://github.com/ste
 Support for ``mkv``, ``mp4``, ``flv``, ``mpg`` video containers, as well as ``mp3``, ``wav``, ``TextGrid``, and ``BPF`` audio formats is included.
 
 .. datatypes
+
 * Add VCF_BGZIP to VCF converter
   (thanks to `@almahmoud <https://github.com/almahmoud>`__).
   `Pull Request 7926`_
@@ -175,6 +176,7 @@ Builtin Tool Updates
 ===========================================================
 
 .. tools
+
 * Fix and simplify built-in trim tool
   (thanks to `@wm75 <https://github.com/wm75>`__).
   `Pull Request 10145`_
@@ -188,7 +190,7 @@ Builtin Tool Updates
 Release Notes
 ===========================================================
 
-Please see the `full release notes <20.09_announce.html>`_ for more details.
+Please see the :doc:`full release notes <20.09_announce>` for more details.
 
 .. include:: 20.09_prs.rst
 

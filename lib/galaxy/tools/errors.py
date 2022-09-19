@@ -8,7 +8,7 @@ import markupsafe
 from galaxy import (
     model,
     util,
-    web
+    web,
 )
 from galaxy.security.validate_user_input import validate_email_str
 from galaxy.util import unicodify
@@ -141,7 +141,7 @@ class ErrorReporter:
                 assert hda is not None, ValueError("No HDA yet")
             except Exception:
                 hda = sa_session.query(model.HistoryDatasetAssociation).get(app.security.decode_id(hda_id))
-        assert isinstance(hda, model.HistoryDatasetAssociation), ValueError("Bad value provided for HDA (%s)." % (hda))
+        assert isinstance(hda, model.HistoryDatasetAssociation), ValueError(f"Bad value provided for HDA ({hda}).")
         self.hda = hda
         # Get the associated job
         self.job = hda.creating_job
@@ -156,14 +156,16 @@ class ErrorReporter:
             roles = []
         return self.app.security_agent.can_access_dataset(roles, self.hda.dataset)
 
-    def create_report(self, user, email='', message='', redact_user_details_in_bugreport=False, **kwd):
+    def create_report(self, user, email="", message="", redact_user_details_in_bugreport=False, **kwd):
         hda = self.hda
         job = self.job
-        host = web.url_for('/', qualified=True)
+        host = web.url_for("/", qualified=True)
         history_id_encoded = self.app.security.encode_id(hda.history_id)
         history_view_link = web.url_for("/histories/view", id=history_id_encoded, qualified=True)
         hda_id_encoded = self.app.security.encode_id(hda.id)
-        hda_show_params_link = web.url_for(controller="dataset", action="show_params", dataset_id=hda_id_encoded, qualified=True)
+        hda_show_params_link = web.url_for(
+            controller="dataset", action="details", dataset_id=hda_id_encoded, qualified=True
+        )
         # Build the email message
         if redact_user_details_in_bugreport:
             # This is sub-optimal but it is hard to solve fully. This affects
@@ -179,16 +181,16 @@ class ErrorReporter:
             # the bug reporter (and preventing information about the bug
             # reporter from leaving the EU until it hits email directly to the
             # user.)
-            email_str = 'redacted'
+            email_str = "redacted"
             if user:
-                email_str += ' (user: %s)' % user.id
+                email_str += f" (user: {user.id})"
         else:
             if user:
-                email_str = "'%s'" % user.email
+                email_str = f"'{user.email}'"
                 if email and user.email != email:
-                    email_str += " (providing preferred contact email '%s')" % email
+                    email_str += f" (providing preferred contact email '{email}')"
             else:
-                email_str = "'%s'" % (email or 'anonymous')
+                email_str = "'%s'" % (email or "anonymous")
 
         report_variables = dict(
             host=host,
@@ -213,7 +215,7 @@ class ErrorReporter:
             job_info=util.unicodify(job.info),
             job_traceback=util.unicodify(job.traceback),
             email_str=email_str,
-            message=util.unicodify(message)
+            message=util.unicodify(message),
         )
 
         self.report = string.Template(error_report_template).safe_substitute(report_variables)
@@ -244,11 +246,12 @@ class EmailErrorReporter(ErrorReporter):
         frm = self.app.config.email_from
         error_msg = validate_email_str(email)
         if not error_msg and self._can_access_dataset(user):
-            to += ', ' + email.strip()
-        subject = "Galaxy tool error report from %s" % email
+            to += f", {email.strip()}"
+        subject = f"Galaxy tool error report from {email}"
         try:
             subject = "{} ({})".format(
-                subject, self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id)
+                subject, self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id
+            )
         except Exception:
             pass
 

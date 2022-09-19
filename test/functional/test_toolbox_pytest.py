@@ -1,15 +1,15 @@
 import os
 import sys
 
-galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir + '/' + os.path.pardir))
+galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir + "/" + os.path.pardir))
 sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
 
 import pytest
 
 from galaxy_test.driver import driver_util
 
-SKIPTEST = os.path.join(os.path.dirname(__file__), 'known_broken_tools.txt')
-TEST_PREFIX = 'TestForTool_'
+SKIPTEST = os.path.join(os.path.dirname(__file__), "known_broken_tools.txt")
+TEST_PREFIX = "TestForTool_"
 
 
 class DefaultGalaxyTestDriver(driver_util.GalaxyTestDriver):
@@ -18,6 +18,7 @@ class DefaultGalaxyTestDriver(driver_util.GalaxyTestDriver):
     Just populate non-shed tool tests and run tests. Works
     for tool tests, regular twill tests, and API testing.
     """
+
     conda_auto_init = True
     conda_auto_install = True
 
@@ -28,7 +29,7 @@ class DefaultGalaxyTestDriver(driver_util.GalaxyTestDriver):
 
 def get_skiplist():
     with open(SKIPTEST) as skiptest:
-        skiplist = [l.strip() for l in skiptest if l.strip() and not l.startswith('#')]
+        skiplist = [line.strip() for line in skiptest if line.strip() and not line.startswith("#")]
         return skiplist
 
 
@@ -38,7 +39,7 @@ def galaxy_driver():
     return driver
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def driver(request):
     request.addfinalizer(DRIVER.tear_down)
     return DRIVER
@@ -54,7 +55,7 @@ def get_cases():
     cases = []
     for test_name, test_class in tests.items():
         if test_name.startswith(TEST_PREFIX):
-            test_class.runTest = lambda : None
+            test_class.runTest = lambda: None
             test_instance = test_class()
             cases.append(test_instance)
     return cases
@@ -67,7 +68,7 @@ def cases():
             test = (test_instance.tool_id + "_test_%d" % (index + 1), test_instance, index)
             marks = []
             marks.append(pytest.mark.skipif(test_instance.tool_id in skiplist, reason="tool in skiplist"))
-            if 'data_manager_' in test_instance.tool_id:
+            if "data_manager_" in test_instance.tool_id:
                 marks.append(pytest.mark.data_manager(test))
             else:
                 marks.append(pytest.mark.tool(test))

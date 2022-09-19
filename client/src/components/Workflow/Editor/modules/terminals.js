@@ -157,6 +157,7 @@ class Terminal extends EventEmitter {
         }
         if (!this.mapOver.equal(val)) {
             this.mapOver = val;
+            this.node.mapOver = output_val;
             Object.values(this.node.outputTerminals).forEach((outputTerminal) => {
                 outputTerminal.setMapOver(output_val);
             });
@@ -168,6 +169,7 @@ class Terminal extends EventEmitter {
     }
     resetMapping() {
         this.mapOver = NULL_COLLECTION_TYPE_DESCRIPTION;
+        this.node.mapOver = undefined;
         this.emit("change");
     }
     resetCollectionTypeSource() {
@@ -221,6 +223,15 @@ class BaseInputTerminal extends Terminal {
         super(attr);
         this.datatypesMapper = attr.datatypesMapper;
         this.update(attr.input); // subclasses should implement this...
+    }
+    setDefaultMapOver(connector) {
+        var other_output = connector.outputHandle;
+        if (other_output) {
+            var otherCollectionType = this._otherCollectionType(other_output);
+            if (otherCollectionType.isCollection) {
+                this.setMapOver(otherCollectionType);
+            }
+        }
     }
     canAccept(other) {
         if (this._inputFilled()) {
@@ -322,29 +333,42 @@ class BaseInputTerminal extends Terminal {
     }
     _producesAcceptableDatatype(other) {
         // other is a non-collection output...
-        for (var t in this.datatypes) {
-            var thisDatatype = this.datatypes[t];
+
+        if (other instanceof OutputParameterTerminal) {
+            return new ConnectionAcceptable(false, "Cannot connect workflow parameter to data input.");
+        }
+
+        for (const t in this.datatypes) {
+            const thisDatatype = this.datatypes[t];
             if (thisDatatype == "input") {
                 return new ConnectionAcceptable(true, null);
             }
-            var cat_outputs = [];
-            const other_datatypes = other.force_datatype ? [other.force_datatype] : other.datatypes;
-            cat_outputs = cat_outputs.concat(other_datatypes);
             // FIXME: No idea what to do about case when datatype is 'input'
-            for (var other_datatype_i in cat_outputs) {
-                var other_datatype = cat_outputs[other_datatype_i];
-                if (
+            const validMatch = other.datatypes.some(
+                (other_datatype) =>
                     other_datatype == "input" ||
                     other_datatype == "_sniff_" ||
-                    this._isSubType(cat_outputs[other_datatype_i], thisDatatype)
-                ) {
-                    return new ConnectionAcceptable(true, null);
-                }
+                    this._isSubType(other_datatype, thisDatatype)
+            );
+            if (validMatch) {
+                return new ConnectionAcceptable(true, null);
             }
+        }
+        const datatypesSet = new Set(this.datatypesMapper.datatypes);
+        const invalidDatatypes = other.datatypes.filter((datatype) => !datatypesSet.has(datatype));
+        if (invalidDatatypes.length) {
+            return new ConnectionAcceptable(
+                false,
+                `Effective output data type(s) [${invalidDatatypes.join(
+                    ", "
+                )}] unknown. This tool cannot be executed on this Galaxy Server at this moment, please contact the Administrator.`
+            );
         }
         return new ConnectionAcceptable(
             false,
-            `Effective output data type(s) [${cat_outputs}] do not appear to match input type(s) [${this.datatypes}].`
+            `Effective output data type(s) [${other.datatypes.join(
+                ", "
+            )}] do not appear to match input type(s) [${this.datatypes.join(", ")}].`
         );
     }
     _isSubType(child, parent) {
@@ -378,14 +402,7 @@ class InputTerminal extends BaseInputTerminal {
     }
     connect(connector) {
         super.connect(connector);
-        var other_output = connector.outputHandle;
-        if (!other_output) {
-            return;
-        }
-        var otherCollectionType = this._otherCollectionType(other_output);
-        if (otherCollectionType.isCollection) {
-            this.setMapOver(otherCollectionType);
-        }
+        this.setDefaultMapOver(connector);
     }
     attachable(other) {
         var otherCollectionType = this._otherCollectionType(other);
@@ -452,6 +469,10 @@ class InputParameterTerminal extends BaseInputTerminal {
     update(input) {
         this.type = input.type;
         this.optional = input.optional;
+    }
+    connect(connector) {
+        super.connect(connector);
+        this.setDefaultMapOver(connector);
     }
     effectiveType(parameterType) {
         return parameterType == "select" ? "text" : parameterType;
@@ -589,10 +610,9 @@ class BaseOutputTerminal extends Terminal {
         super(attr);
         this.datatypes = attr.datatypes;
         this.optional = attr.optional;
-    }
-    get force_datatype() {
-        const changeOutputDatatype = this.node.postJobActions["ChangeDatatypeAction" + this.name];
-        return changeOutputDatatype ? changeOutputDatatype.action_arguments["newtype"] : null;
+        if (this.node.mapOver) {
+            this.setMapOver(this.node.mapOver);
+        }
     }
     update(output) {
         this.datatypes = output.datatypes || output.extensions;

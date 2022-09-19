@@ -1,0 +1,15 @@
+{
+    "can_user_add": false,
+    "can_user_manage": false,
+    "can_user_modify": false,
+    "create_time": "2021-06-02T09:53:32.764637",
+    "create_time_pretty": "5.4 months ago",
+    "deleted": false,
+    "description": "Test library description",
+    "id": "lib_test_id",
+    "model_class": "Library",
+    "name": "Library Name",
+    "public": true,
+    "root_folder_id": "Ff2db41e1fa331b3e",
+    "synopsis": "Synopsis test"
+}

@@ -1,5 +1,5 @@
 <template>
-    <b-modal id="repo-install-settings" :static="modalStatic" v-model="modalShow" @ok="onOk" @hide="onHide">
+    <b-modal id="repo-install-settings" v-model="modalShow" :static="modalStatic" @ok="onOk" @hide="onHide">
         <template v-slot:modal-header>
             <h4 class="title m-0">
                 {{ modalTitle }}
@@ -12,11 +12,10 @@
         <b-form-group
             v-if="requiresPanel"
             label="Target Section:"
-            description="Choose an existing tool panel section or create a new section to contain the installed tools (optional)."
-        >
-            <b-form-input list="sectionSelect" v-model="toolSection" />
+            description="Choose an existing tool panel section or create a new section to contain the installed tools (optional).">
+            <b-form-input v-model="toolSection" list="sectionSelect" />
             <datalist id="sectionSelect">
-                <option v-for="section in toolSections" :key="section.name">
+                <option v-for="section in toolSections" :key="section.id">
                     {{ section.name }}
                 </option>
             </datalist>
@@ -27,10 +26,9 @@
                 <b-form-group v-if="showConfig" label="Tool Configuration:" description="Choose a tool configuration.">
                     <b-form-radio
                         v-for="filename in toolConfigs"
-                        v-model="toolConfig"
-                        :value="filename"
                         :key="filename"
-                    >
+                        v-model="toolConfig"
+                        :value="filename">
                         {{ filename }}
                     </b-form-radio>
                 </b-form-group>
@@ -41,23 +39,44 @@
                     <b-form-checkbox v-model="installRepositoryDependencies">
                         Install repository dependencies
                     </b-form-checkbox>
-                    <b-form-checkbox v-model="installToolDependencies">
-                        Install tool dependencies
-                    </b-form-checkbox>
+                    <b-form-checkbox v-model="installToolDependencies"> Install tool dependencies </b-form-checkbox>
                 </b-form-group>
             </b-card>
         </b-collapse>
     </b-modal>
 </template>
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import { getGalaxyInstance } from "app";
-
-Vue.use(BootstrapVue);
-
 export default {
-    props: ["repo", "changesetRevision", "requiresPanel", "toolshedUrl", "modalStatic"],
+    props: {
+        repo: {
+            type: Object,
+            required: true,
+        },
+        changesetRevision: {
+            type: String,
+            required: true,
+        },
+        requiresPanel: {
+            type: Boolean,
+            required: true,
+        },
+        toolshedUrl: {
+            type: String,
+            required: true,
+        },
+        currentPanel: {
+            type: Array,
+            default: null,
+        },
+        toolDynamicConfigs: {
+            type: Array,
+            default: null,
+        },
+        modalStatic: {
+            type: Boolean,
+            default: false,
+        },
+    },
     data() {
         return {
             modalShow: true,
@@ -65,9 +84,7 @@ export default {
             installToolDependencies: true,
             installRepositoryDependencies: true,
             installResolverDependencies: true,
-            toolConfigs: [],
             toolConfig: null,
-            toolSections: [],
             toolSection: null,
         };
     },
@@ -81,9 +98,22 @@ export default {
         showConfig() {
             return this.toolConfigs.length > 1;
         },
+        toolSections() {
+            const panel = this.currentPanel;
+            if (panel) {
+                return panel.filter((x) => x.elems);
+            } else {
+                return [];
+            }
+        },
+        toolConfigs() {
+            return this.toolDynamicConfigs || [];
+        },
     },
     created() {
-        this.load();
+        if (this.toolConfigs.length > 0) {
+            this.toolConfig = this.toolConfigs[0];
+        }
     },
     methods: {
         findSection: function (name) {
@@ -99,17 +129,6 @@ export default {
                 }
             }
             return result;
-        },
-        load: function () {
-            const galaxy = getGalaxyInstance();
-            const sections = galaxy.config.toolbox;
-            if (sections) {
-                this.toolSections = sections.filter((x) => x.elems);
-            }
-            this.toolConfigs = galaxy.config.tool_dynamic_configs || [];
-            if (this.toolConfigs.length > 0) {
-                this.toolConfig = this.toolConfigs[0];
-            }
         },
         onAdvanced: function () {
             this.advancedShow = !this.advancedShow;

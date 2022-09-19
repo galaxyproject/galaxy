@@ -7,7 +7,7 @@ from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
 class WebDavFilesSource(PyFilesystem2FilesSource):
-    plugin_type = 'webdav'
+    plugin_type = "webdav"
     required_module = WebDAVFS
     required_package = "fs.webdavfs"
 
@@ -17,4 +17,4 @@ class WebDavFilesSource(PyFilesystem2FilesSource):
         return handle
 
 
-__all__ = ('WebDavFilesSource',)
+__all__ = ("WebDavFilesSource",)

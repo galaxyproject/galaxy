@@ -15,36 +15,27 @@
             </div>
         </div>
         <div class="row">
-            <div class="col">
-                Requirements
-            </div>
+            <div class="col">Requirements</div>
             <div class="col-8">
                 <requirements :requirements="resolution.requirements" />
             </div>
         </div>
         <div class="row">
-            <div class="col">
-                Status Display
-            </div>
+            <div class="col">Status Display</div>
             <div class="col-8">
                 <status-display :status="resolution.status" :compact="false" />
             </div>
         </div>
         <div class="row">
-            <div class="col">
-                Container
-            </div>
+            <div class="col">Container</div>
             <div class="col-8">
                 <container-description
                     :container-description="resolution.status.container_description"
-                    :compact="false"
-                />
+                    :compact="false" />
             </div>
         </div>
         <div class="row">
-            <div class="col">
-                Container Resolver
-            </div>
+            <div class="col">Container Resolver</div>
             <div class="col-8">
                 <container-resolver :container-resolver="resolution.status.container_resolver" :compact="false" />
             </div>

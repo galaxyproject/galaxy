@@ -1,0 +1,50 @@
+name: Build Container Image
+on:
+  push:
+    branches:
+      - 'release*'
+      - dev
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    name: Build container image
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'galaxyproject'
+    steps:
+      - uses: actions/checkout@v3
+      # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
+      - name: Set outputs
+        id: commit
+        run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+      - name: Set branch name
+        id: branch
+        run: echo "::set-output name=name::$(BRANCH_NAME=${GITHUB_REF##*/}; echo ${BRANCH_NAME/release_/})"
+      - name: Build container image
+        run: docker build . --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg IMAGE_TAG=${{ steps.branch.outputs.name }} -t galaxy/galaxy-min:${{ steps.branch.outputs.name }} -t quay.io/galaxyproject/galaxy-min:${{ steps.branch.outputs.name }} -f .k8s_ci.Dockerfile
+      - name: Create auto-expiring one for per-commit auto repository
+        run: echo "FROM galaxy/galaxy-min:${{ steps.branch.outputs.name }}" | docker build --label "quay.expires-after"="90d" -t "quay.io/galaxyproject/galaxy-k8s-auto:${{ steps.commit.outputs.sha_short }}" -
+      - name: Login to quay.io
+        uses: actions-hub/docker/login@master
+        env:
+          DOCKER_USERNAME: ${{ secrets.QUAY_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
+          DOCKER_REGISTRY_URL: quay.io
+      - name: Push to quay.io with branch name
+        uses: actions-hub/docker@master
+        with:
+          args: push quay.io/galaxyproject/galaxy-min:${{ steps.branch.outputs.name }}
+      - name: Push to quay.io with commit hash
+        uses: actions-hub/docker@master
+        with:
+          args: push quay.io/galaxyproject/galaxy-k8s-auto:${{ steps.commit.outputs.sha_short }}
+      - name: Login to DockerHub
+        uses: actions-hub/docker/login@master
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Push to DockerHub with branch name
+        uses: actions-hub/docker@master
+        with:
+          args: push galaxy/galaxy-min:${{ steps.branch.outputs.name }}

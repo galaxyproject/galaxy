@@ -6,8 +6,8 @@ echo $choose_value > '$out_file'
         <param name="choose_value" type="select">
             <options from_data_table="test_fasta_indexes">
                 <!-- contains hg18 and hg19 -->
-                <filter type="remove_value" value="hg18"/>
-                <filter type="remove_value" value="hg20"/>
+                <filter type="remove_value" value="hg18_value"/>
+                <filter type="remove_value" value="hg20_value"/>
                 <!-- This doesn't work as we don't have the remaining values like name and path
                 <filter type="add_value" value="hg20"/>
                 -->
@@ -21,12 +21,12 @@ echo $choose_value > '$out_file'
         <test>
             <output name="out_file">
                 <assert_contents>
-                    <has_line line="hg19" />
+                    <has_line line="hg19_value" />
                 </assert_contents>
             </output>
         </test>
         <test expect_failure="true">
-            <param name="choose_value" value="hg18"/>
+            <param name="choose_value" value="hg18_value"/>
         </test>
     </tests>
 </tool>

@@ -2,22 +2,21 @@ import os
 from logging import getLogger
 from subprocess import (
     PIPE,
-    Popen
+    Popen,
 )
 from tempfile import TemporaryFile
 from time import sleep
-
 
 from galaxy.util.bunch import Bunch
 from . import BaseShellExec
 from ....util.process_groups import (
     check_pg,
-    kill_pg
+    kill_pg,
 )
 
 log = getLogger(__name__)
 
-TIMEOUT_ERROR_MESSAGE = 'Execution timed out'
+TIMEOUT_ERROR_MESSAGE = "Execution timed out"
 TIMEOUT_RETURN_CODE = -1
 DEFAULT_TIMEOUT = 60
 DEFAULT_TIMEOUT_CHECK_INTERVAL = 3
@@ -49,7 +48,9 @@ class LocalShell(BaseShellExec):
     def __init__(self, **kwds):
         pass
 
-    def execute(self, cmd, persist=False, timeout=DEFAULT_TIMEOUT, timeout_check_interval=DEFAULT_TIMEOUT_CHECK_INTERVAL, **kwds):
+    def execute(
+        self, cmd, persist=False, timeout=DEFAULT_TIMEOUT, timeout_check_interval=DEFAULT_TIMEOUT_CHECK_INTERVAL, **kwds
+    ):
         is_cmd_string = isinstance(cmd, str)
         outf = TemporaryFile()
         p = Popen(cmd, stdin=None, stdout=outf, stderr=PIPE, shell=is_cmd_string, preexec_fn=os.setpgrp)
@@ -62,7 +63,7 @@ class LocalShell(BaseShellExec):
             sleep(timeout_check_interval)
         else:
             kill_pg(p.pid)
-            return Bunch(stdout='', stderr=TIMEOUT_ERROR_MESSAGE, returncode=TIMEOUT_RETURN_CODE)
+            return Bunch(stdout="", stderr=TIMEOUT_ERROR_MESSAGE, returncode=TIMEOUT_RETURN_CODE)
         outf.seek(0)
         # Need to poll once to establish return code
         p.poll()
@@ -71,7 +72,7 @@ class LocalShell(BaseShellExec):
 
 def _read_str(stream):
     contents = stream.read()
-    return contents.decode('UTF-8') if isinstance(contents, bytes) else contents
+    return contents.decode("UTF-8") if isinstance(contents, bytes) else contents
 
 
-__all__ = ('LocalShell',)
+__all__ = ("LocalShell",)

@@ -7,23 +7,20 @@
                 v-model="credential.description"
                 :state="credential.fieldValid('description')"
                 placeholder="Description (optional)"
-                trim
-            />
+                trim />
         </b-form-group>
 
         <!-- google-openidconnect -->
         <b-form-group
+            v-if="identityProviders.length > 1"
             label="Identity Provider"
             label-for="identityProvider"
-            label-cols-lg="3"
-            v-if="identityProviders.length > 1"
-        >
+            label-cols-lg="3">
             <b-form-select
                 id="identityProvider"
                 v-model="credential.authn_id"
                 :state="credential.fieldValid('authn_id')"
-                :options="identityProviders"
-            />
+                :options="identityProviders" />
         </b-form-group>
 
         <!-- aws/azure, etc -->
@@ -32,22 +29,18 @@
                 id="resourceProvider"
                 v-model="credential.resourceProvider"
                 :state="credential.fieldValid('provider')"
-                :options="resourceProviderOptions"
-            />
+                :options="resourceProviderOptions" />
         </b-form-group>
 
         <credential-config v-model="credential.config" />
 
         <footer class="border-top">
-            <b-button variant="secondary" @click.prevent="$emit('delete', credential)">
-                Delete Key
-            </b-button>
+            <b-button variant="secondary" @click.prevent="$emit('delete', credential)"> Delete Key </b-button>
             <b-button
                 aria-label="Save Key"
                 :variant="saveButtonVariant"
                 :disabled="saveButtonDisabled"
-                @click.prevent="$emit('save', credential)"
-            >
+                @click.prevent="$emit('save', credential)">
                 {{ saveButtonTitle }}
             </b-button>
         </footer>

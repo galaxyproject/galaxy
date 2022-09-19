@@ -4,6 +4,6 @@ def restrict_test(context, section):
 
     This tool filter will disable the Test Section section.
     """
-    if section.name == 'Test Section':
+    if section.name == "Test Section":
         return False
     return True

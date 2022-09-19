@@ -1,127 +1,84 @@
 """
 API operations on Group objects.
 """
+
 import logging
 
-from galaxy import web
-from galaxy.util import unicodify
-from galaxy.webapps.base.controller import BaseAPIController, url_for
+from fastapi import Path
+
+from galaxy.managers.context import ProvidesAppContext
+from galaxy.managers.group_roles import GroupRolesManager
+from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.schema import (
+    GroupRoleListModel,
+    GroupRoleModel,
+)
+from galaxy.webapps.galaxy.api import (
+    depends,
+    DependsOnTrans,
+    Router,
+)
 
 log = logging.getLogger(__name__)
 
+router = Router(tags=["group_roles"])
 
-class GroupRolesAPIController(BaseAPIController):
+GroupIDParam: DecodedDatabaseIdField = Path(..., title="GroupID", description="The ID of the group")
 
-    @web.require_admin
-    @web.legacy_expose_api
-    def index(self, trans, group_id, **kwd):
-        """
-        GET /api/groups/{encoded_group_id}/roles
-        Displays a collection (list) of groups.
-        """
-        decoded_group_id = trans.security.decode_id(group_id)
-        try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-        except Exception:
-            group = None
-        if not group:
-            trans.response.status = 400
-            return "Invalid group id ( %s ) specified." % str(group_id)
-        rval = []
-        try:
-            for gra in group.roles:
-                role = gra.role
-                encoded_id = trans.security.encode_id(role.id)
-                rval.append(dict(id=encoded_id,
-                                 name=role.name,
-                                 url=url_for('group_role', group_id=group_id, id=encoded_id, )))
-        except Exception as e:
-            rval = "Error in group API at listing roles"
-            log.error(rval + ": %s", unicodify(e))
-            trans.response.status = 500
-        return rval
+RoleIDParam: DecodedDatabaseIdField = Path(..., title="RoleID", description="The ID of the role")
 
-    @web.require_admin
-    @web.legacy_expose_api
-    def show(self, trans, id, group_id, **kwd):
-        """
-        GET /api/groups/{encoded_group_id}/roles/{encoded_role_id}
-        Displays information about a group role.
-        """
-        role_id = id
-        decoded_group_id = trans.security.decode_id(group_id)
-        decoded_role_id = trans.security.decode_id(role_id)
-        item = None
-        try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-            role = trans.sa_session.query(trans.app.model.Role).get(decoded_role_id)
-            for gra in group.roles:
-                if gra.role == role:
-                    item = dict(id=role_id,
-                                name=role.name,
-                                url=url_for('group_role', group_id=group_id, id=role_id))  # TODO Fix This
-            if not item:
-                item = f"role {role.name} not in group {group.name}"
-        except Exception as e:
-            item = f"Error in group_role API group {group.name} role {role.name}"
-            log.error(item + ": %s", unicodify(e))
-        return item
 
-    @web.require_admin
-    @web.legacy_expose_api
-    def update(self, trans, id, group_id, **kwd):
-        """
-        PUT /api/groups/{encoded_group_id}/roles/{encoded_role_id}
-        Adds a role to a group
-        """
-        role_id = id
-        decoded_group_id = trans.security.decode_id(group_id)
-        decoded_role_id = trans.security.decode_id(role_id)
-        item = None
-        try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-            role = trans.sa_session.query(trans.app.model.Role).get(decoded_role_id)
-            for gra in group.roles:
-                if gra.role == role:
-                    item = dict(id=role_id,
-                                name=role.name,
-                                url=url_for('group_role', group_id=group_id, id=role_id))
-            if not item:
-                gra = trans.app.model.GroupRoleAssociation(group, role)
-                # Add GroupRoleAssociation
-                trans.sa_session.add(gra)
-                trans.sa_session.flush()
-                item = dict(id=role_id,
-                            name=role.name,
-                            url=url_for('group_role', group_id=group_id, id=role_id))
-        except Exception as e:
-            item = f"Error in group_role API Adding role {role.name} to group {group.name}"
-            log.error(item + ": %s", unicodify(e))
-        return item
+def group_role_to_model(trans, group_id: int, role) -> GroupRoleModel:
+    encoded_group_id = DecodedDatabaseIdField.encode(group_id)
+    encoded_role_id = DecodedDatabaseIdField.encode(role.id)
+    url = trans.url_builder("group_role", group_id=encoded_group_id, id=encoded_role_id)
+    return GroupRoleModel.construct(id=encoded_role_id, name=role.name, url=url)
 
-    @web.require_admin
-    @web.legacy_expose_api
-    def delete(self, trans, id, group_id, **kwd):
-        """
-        DELETE /api/groups/{encoded_group_id}/roles/{encoded_role_id}
-        Removes a role from a group
-        """
-        role_id = id
-        decoded_group_id = trans.security.decode_id(group_id)
-        decoded_role_id = trans.security.decode_id(role_id)
-        try:
-            group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-            role = trans.sa_session.query(trans.app.model.Role).get(decoded_role_id)
-            for gra in group.roles:
-                if gra.role == role:
-                    trans.sa_session.delete(gra)
-                    trans.sa_session.flush()
-                    item = dict(id=role_id,
-                                name=role.name,
-                                url=url_for('group_role', group_id=group_id, id=role_id))
-            if not item:
-                item = f"role {role.name} not in group {group.name}"
-        except Exception as e:
-            item = f"Error in group_role API Removing role {role.name} from group {group.name}"
-            log.error(item + ": %s", unicodify(e))
-        return item
+
+@router.cbv
+class FastAPIGroupRoles:
+    manager: GroupRolesManager = depends(GroupRolesManager)
+
+    @router.get("/api/groups/{group_id}/roles", require_admin=True, summary="Displays a collection (list) of groups.")
+    def index(
+        self, trans: ProvidesAppContext = DependsOnTrans, group_id: DecodedDatabaseIdField = GroupIDParam
+    ) -> GroupRoleListModel:
+        group_roles = self.manager.index(trans, group_id)
+        return GroupRoleListModel.construct(
+            __root__=[group_role_to_model(trans, group_id, gr.role) for gr in group_roles]
+        )
+
+    @router.get(
+        "/api/groups/{group_id}/roles/{id}",
+        name="group_role",
+        require_admin=True,
+        summary="Displays information about a group role.",
+    )
+    def show(
+        self,
+        trans: ProvidesAppContext = DependsOnTrans,
+        group_id: DecodedDatabaseIdField = GroupIDParam,
+        id: DecodedDatabaseIdField = RoleIDParam,
+    ) -> GroupRoleModel:
+        role = self.manager.show(trans, id, group_id)
+        return group_role_to_model(trans, group_id, role)
+
+    @router.put("/api/groups/{group_id}/roles/{role_id}", require_admin=True, summary="Adds a role to a group")
+    def update(
+        self,
+        trans: ProvidesAppContext = DependsOnTrans,
+        group_id: DecodedDatabaseIdField = GroupIDParam,
+        role_id: DecodedDatabaseIdField = RoleIDParam,
+    ) -> GroupRoleModel:
+        role = self.manager.update(trans, role_id, group_id)
+        return group_role_to_model(trans, group_id, role)
+
+    @router.delete("/api/groups/{group_id}/roles/{role_id}", require_admin=True, summary="Removes a role from a group")
+    def delete(
+        self,
+        trans: ProvidesAppContext = DependsOnTrans,
+        group_id: DecodedDatabaseIdField = GroupIDParam,
+        role_id: DecodedDatabaseIdField = RoleIDParam,
+    ) -> GroupRoleModel:
+        role = self.manager.delete(trans, role_id, group_id)
+        return group_role_to_model(trans, group_id, role)

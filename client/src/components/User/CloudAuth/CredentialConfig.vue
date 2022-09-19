@@ -7,8 +7,7 @@
             :label-for="'config-' + fieldName"
             label-cols-lg="3"
             :state="config.fieldValid(fieldName)"
-            :invalid-feedback="config.errorMessage(fieldName)"
-        >
+            :invalid-feedback="config.errorMessage(fieldName)">
             <masked-input
                 :id="'config-' + fieldName"
                 v-model="config[fieldName]"
@@ -16,8 +15,7 @@
                 :placeholder="field.placeholder"
                 :maxlength="field.maxlength || Math.Infinity"
                 :state="config.fieldValid(fieldName)"
-                trim
-            />
+                trim />
         </b-form-group>
     </div>
 </template>

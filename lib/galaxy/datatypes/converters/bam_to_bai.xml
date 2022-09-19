@@ -11,8 +11,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="bam" value="srma_out2.bam"/>
-            <output name="output1" format="bai" value="srma_out2.bai"/>
+            <param name="input1" ftype="bam" value="srma_out2.bam"/>
+            <output name="output1" ftype="bai" value="srma_out2.bai"/>
         </test>
     </tests>
     <help>

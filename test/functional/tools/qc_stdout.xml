@@ -3,11 +3,11 @@
        <regex match="Quality of sample is .*%\." source="stdout" level="qc" />
     </stdio>
     <command detect_errors="exit_code"><![CDATA[
-        cp $input $output;
-        echo "Some example stdout........";
-        echo "Quality of sample is ${int($quality) * 10}%.";
-        echo "Some more example stdout........";
-        >&2 echo "my standard error"
+cp '$input' '$output' &&
+echo "Some example stdout........" &&
+echo "Quality of sample is ${int($quality) * 10}%." &&
+echo "Some more example stdout........" &&
+>&2 echo "my standard error"
     ]]></command>
     <inputs>
         <param name="input" type="data" format="txt" label="Input data" />

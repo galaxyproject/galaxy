@@ -11,8 +11,7 @@
                     right: side === 'right',
                     hidden: !show,
                 }"
-                @click="toggle"
-            />
+                @click="toggle" />
             <div class="drag" @mousedown="dragHandler" />
         </div>
     </div>

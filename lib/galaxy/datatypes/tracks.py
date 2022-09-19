@@ -22,8 +22,8 @@ class UCSCTrackHub(Html):
     Datatype for UCSC TrackHub
     """
 
-    file_ext = 'trackhub'
-    composite_type = 'auto_primary_file'
+    file_ext = "trackhub"
+    composite_type = "auto_primary_file"
 
     def generate_primary_file(self, dataset=None):
         """
@@ -31,23 +31,24 @@ class UCSCTrackHub(Html):
         cannot rename the datasets here - they come with the default unfortunately
         """
         rval = [
-            '<html><head><title>Files for Composite Dataset (%s)</title></head><p/>\
-            This composite dataset is composed of the following files:<p/><ul>' % (
-                self.file_ext)]
+            "<html><head><title>Files for Composite Dataset (%s)</title></head><p/>\
+            This composite dataset is composed of the following files:<p/><ul>"
+            % (self.file_ext)
+        ]
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
-            opt_text = ''
+            opt_text = ""
             if composite_file.optional:
-                opt_text = ' (optional)'
+                opt_text = " (optional)"
             rval.append(f'<li><a href="{composite_name}">{composite_name}</a>{opt_text}')
-        rval.append('</ul></html>')
+        rval.append("</ul></html>")
         return "\n".join(rval)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = "Track Hub structure: Visualization in UCSC Track Hub"
         else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
 
     def display_peek(self, dataset):
         try:

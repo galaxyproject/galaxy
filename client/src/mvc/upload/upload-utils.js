@@ -9,12 +9,26 @@ const AUTO_EXTENSION = {
     description:
         "This system will try to detect the file type automatically. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be.  You can also upload compressed files, which will automatically be decompressed.",
 };
-const DEFAULT_GENOME = "?";
+const DEFAULT_DBKEY = "?";
 const DEFAULT_EXTENSION = "auto";
 
-function getUploadDatatypes(callback, datatypesDisableAuto, auto) {
+export function getUploadDatatypes(datatypesDisableAuto, auto) {
+    return loadUploadDatatypes().then((result) => {
+        const listExtensions = [...result];
+        if (!datatypesDisableAuto) {
+            listExtensions.unshift(auto);
+        }
+        return listExtensions;
+    });
+}
+
+let _cachedDatatypes;
+function loadUploadDatatypes() {
+    if (_cachedDatatypes) {
+        return Promise.resolve(_cachedDatatypes);
+    }
     const url = `${getAppRoot()}api/datatypes?extension_only=False`;
-    axios
+    return axios
         .get(url)
         .then((response) => {
             const datatypes = response.data;
@@ -33,43 +47,54 @@ function getUploadDatatypes(callback, datatypesDisableAuto, auto) {
                 var b_text = b.text && b.text.toLowerCase();
                 return a_text > b_text ? 1 : a_text < b_text ? -1 : 0;
             });
-            if (!datatypesDisableAuto) {
-                listExtensions.unshift(auto);
-            }
-            callback(listExtensions);
+            return listExtensions;
         })
-        .catch((errorMessage) => {
-            console.log(errorMessage);
+        .then((result) => {
+            _cachedDatatypes = result;
+            return result;
         });
 }
 
-function getUploadGenomes(callback, defaultGenome) {
+export function getUploadDbKeys(defaultDbKey) {
+    return loadDbKeys().then((result) => {
+        const dbKeyList = [...result];
+        dbKeyList.sort(dbKeySort(defaultDbKey));
+        return dbKeyList;
+    });
+}
+
+const dbKeySort = (defaultDbKey) => (a, b) => {
+    if (a.id == defaultDbKey) {
+        return -1;
+    }
+    if (b.id == defaultDbKey) {
+        return 1;
+    }
+    return a.text > b.text ? 1 : a.text < b.text ? -1 : 0;
+};
+
+let _cachedDbKeys;
+function loadDbKeys() {
+    if (_cachedDbKeys) {
+        return Promise.resolve(_cachedDbKeys);
+    }
     const url = `${getAppRoot()}api/genomes`;
-    axios
+    return axios
         .get(url)
         .then((response) => {
-            const genomes = response.data;
-            const listGenomes = [];
-
-            for (var key in genomes) {
-                listGenomes.push({
-                    id: genomes[key][1],
-                    text: genomes[key][0],
+            const dbKeys = response.data;
+            const dbKeyList = [];
+            for (var key in dbKeys) {
+                dbKeyList.push({
+                    id: dbKeys[key][1],
+                    text: dbKeys[key][0],
                 });
             }
-            listGenomes.sort((a, b) => {
-                if (a.id == defaultGenome) {
-                    return -1;
-                }
-                if (b.id == defaultGenome) {
-                    return 1;
-                }
-                return a.text > b.text ? 1 : a.text < b.text ? -1 : 0;
-            });
-            callback(listGenomes);
+            return dbKeyList;
         })
-        .catch((errorMessage) => {
-            console.log(errorMessage);
+        .then((result) => {
+            _cachedDbKeys = result;
+            return result;
         });
 }
 
@@ -95,10 +120,10 @@ function getRemoteFiles(success, error) {
 
 export default {
     AUTO_EXTENSION,
-    DEFAULT_GENOME,
+    DEFAULT_DBKEY,
     DEFAULT_EXTENSION,
     getRemoteFiles,
     getRemoteFilesAt,
     getUploadDatatypes,
-    getUploadGenomes,
+    getUploadDbKeys,
 };

@@ -19,34 +19,34 @@ def add_selenium_arguments(parser):
     """Add common selenium arguments for argparse driver utility."""
 
     parser.add_argument(
-        '--selenium-browser',
+        "--selenium-browser",
         default="auto",
         help=BROWSER_DESCRIPTION,
     )
     parser.add_argument(
-        '--selenium-headless',
+        "--selenium-headless",
         default=False,
         action="store_true",
         help=HEADLESS_DESCRIPTION,
     )
     parser.add_argument(
-        '--selenium-remote',
+        "--selenium-remote",
         default=False,
         action="store_true",
         help=REMOTE_DESCRIPTION,
     )
     parser.add_argument(
-        '--selenium-remote-host',
+        "--selenium-remote-host",
         default="127.0.0.1",
         help=REMOTE_HOST_DESCRIPTION,
     )
     parser.add_argument(
-        '--selenium-remote-port',
+        "--selenium-remote-port",
         default="4444",
         help=REMOTE_PORT_DESCRIPTION,
     )
     parser.add_argument(
-        '--galaxy_url',
+        "--galaxy_url",
         default="http://127.0.0.1:8080/",
         help=GALAXY_URL_DESCRIPTION,
     )

@@ -1,38 +1,62 @@
 <template>
-    <a
-        class="panel-header-button"
-        @click="onFavorites"
+    <b-button
         v-b-tooltip.hover
-        :title="tooltipText"
-        href="javascript:void(0)"
-        role="button"
+        class="panel-header-button-toolbox"
+        size="sm"
+        variant="link"
         aria-label="Show favorite tools"
-    >
-        <font-awesome-icon :icon="['far', 'star']" />
-    </a>
+        :disabled="currentUser.isAnonymous"
+        :title="tooltipText"
+        @click="onFavorites">
+        <icon v-if="toggle" :icon="['fas', 'star']" />
+        <icon v-else :icon="['far', 'star']" />
+    </b-button>
 </template>
 
 <script>
-import { VBTooltip } from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faStar } from "@fortawesome/free-regular-svg-icons";
-library.add(faStar);
+import { mapGetters } from "vuex";
 
 export default {
     name: "FavoritesButton",
-    components: { FontAwesomeIcon },
+    props: {
+        query: {
+            type: String,
+        },
+    },
     data() {
         return {
-            tooltipText: "Show favorites",
+            searchKey: "#favorites",
+            toggle: false,
         };
     },
-    directives: {
-        "v-b-tooltip": VBTooltip,
+    computed: {
+        ...mapGetters("user", ["currentUser"]),
+
+        tooltipText() {
+            if (this.currentUser.isAnonymous) {
+                return this.l("Log in to Favorite Tools");
+            } else {
+                if (this.toggle) {
+                    return this.l("Clear");
+                } else {
+                    return this.l("Show favorites");
+                }
+            }
+        },
+    },
+    watch: {
+        query() {
+            this.toggle = this.query == this.searchKey;
+        },
     },
     methods: {
         onFavorites() {
-            this.$emit("onFavorites", "#favorites");
+            this.toggle = !this.toggle;
+            if (this.toggle) {
+                this.$emit("onFavorites", this.searchKey);
+            } else {
+                this.$emit("onFavorites", null);
+            }
         },
     },
 };

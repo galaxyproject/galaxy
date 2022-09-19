@@ -6,8 +6,7 @@
         plural="metadata entries"
         success="successful"
         :getter="getter"
-        :setter="setter"
-    />
+        :setter="setter" />
 </template>
 <script>
 import BaseList from "./BaseList";

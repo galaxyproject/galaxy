@@ -1,6 +1,6 @@
-<tool id="disambiguate_repeats" name="disambiguate_repeats">
+<tool id="disambiguate_repeats" name="disambiguate_repeats" version="1.0.0">
     <command>
-        cat #for $q in $queries# ${q.input} #end for# #for $q in $more_queries# ${q.input} #end for# > $out_file1
+cat #for $q in $queries# '${q.input}' #end for# #for $q in $more_queries# '${q.input}' #end for# > '$out_file1'
     </command>
     <inputs>
         <repeat name="queries" title="Dataset">
@@ -58,6 +58,5 @@
 
             <output name="out_file1" file="simple_lines_interleaved.txt"/>
         </test>
-
     </tests>
 </tool>

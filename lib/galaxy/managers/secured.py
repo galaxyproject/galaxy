@@ -3,8 +3,20 @@ Accessible models can be read and copied but not modified or deleted.
 
 Owned models can be modified and deleted.
 """
+from typing import (
+    Any,
+    Optional,
+    Type,
+    TYPE_CHECKING,
+)
 
-from galaxy import exceptions
+from galaxy import (
+    exceptions,
+    model,
+)
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Query
 
 
 class AccessibleManagerMixin:
@@ -14,15 +26,21 @@ class AccessibleManagerMixin:
     This can also be thought of as 'read but not modify' privileges.
     """
 
+    # declare what we are using from base ModelManager
+    model_class: Type[Any]
+
+    def by_id(self, id: int):
+        ...
+
     # don't want to override by_id since consumers will also want to fetch w/o any security checks
-    def is_accessible(self, item, user, **kwargs):
+    def is_accessible(self, item: "Query", user: model.User, **kwargs: Any) -> bool:
         """
         Return True if the item accessible to user.
         """
         # override in subclasses
         raise exceptions.NotImplemented("Abstract interface Method")
 
-    def get_accessible(self, id, user, **kwargs):
+    def get_accessible(self, id: int, user: model.User, **kwargs: Any) -> "Query":
         """
         Return the item with the given id if it's accessible to user,
         otherwise raise an error.
@@ -32,7 +50,7 @@ class AccessibleManagerMixin:
         item = self.by_id(id)
         return self.error_unless_accessible(item, user, **kwargs)
 
-    def error_unless_accessible(self, item, user, **kwargs):
+    def error_unless_accessible(self, item: "Query", user, **kwargs):
         """
         Raise an error if the item is NOT accessible to user, otherwise return the item.
 
@@ -40,7 +58,7 @@ class AccessibleManagerMixin:
         """
         if self.is_accessible(item, user, **kwargs):
             return item
-        raise exceptions.ItemAccessibilityException("%s is not accessible by user" % (self.model_class.__name__))
+        raise exceptions.ItemAccessibilityException(f"{self.model_class.__name__} is not accessible by user")
 
     # TODO:?? are these even useful?
     def list_accessible(self, user, **kwargs):
@@ -75,14 +93,20 @@ class OwnableManagerMixin:
     This can also be thought of as write/edit privileges.
     """
 
-    def is_owner(self, item, user, **kwargs):
+    # declare what we are using from base ModelManager
+    model_class: Type[Any]
+
+    def by_id(self, id: int):
+        ...
+
+    def is_owner(self, item: model._HasTable, user: Optional[model.User], **kwargs: Any) -> bool:
         """
         Return True if user owns the item.
         """
         # override in subclasses
         raise exceptions.NotImplemented("Abstract interface Method")
 
-    def get_owned(self, id, user, **kwargs):
+    def get_owned(self, id: int, user: Optional[model.User], **kwargs: Any) -> Any:
         """
         Return the item with the given id if owned by the user,
         otherwise raise an error.
@@ -92,7 +116,7 @@ class OwnableManagerMixin:
         item = self.by_id(id)
         return self.error_unless_owner(item, user, **kwargs)
 
-    def error_unless_owner(self, item, user, **kwargs):
+    def error_unless_owner(self, item, user: Optional[model.User], **kwargs: Any):
         """
         Raise an error if the item is NOT owned by user, otherwise return the item.
 
@@ -100,7 +124,7 @@ class OwnableManagerMixin:
         """
         if self.is_owner(item, user, **kwargs):
             return item
-        raise exceptions.ItemOwnershipException("%s is not owned by user" % (self.model_class.__name__))
+        raise exceptions.ItemOwnershipException(f"{self.model_class.__name__} is not owned by user")
 
     def list_owned(self, user, **kwargs):
         """

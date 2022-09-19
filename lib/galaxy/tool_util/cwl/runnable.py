@@ -17,7 +17,6 @@ def get_outputs(path):
 
 
 class CwlWorkflowOutput:
-
     def __init__(self, label):
         self._label = label
 
@@ -26,7 +25,6 @@ class CwlWorkflowOutput:
 
 
 class ToolOutput:
-
     def __init__(self, tool_output):
         self._tool_output = tool_output
 

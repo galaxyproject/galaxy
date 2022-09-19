@@ -3,7 +3,11 @@ import ToolsJson from "./ToolsJson";
 import testToolsListResponse from "../testData/toolsList";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
-import { mount } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
+import flushPromises from "flush-promises";
+
+const localVue = getLocalVue();
 
 describe("ToolsView/ToolsView.vue", () => {
     let wrapper;
@@ -12,13 +16,12 @@ describe("ToolsView/ToolsView.vue", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        wrapper = mount(ToolsJson);
         axiosMock.onGet("/api/tools?tool_help=True").reply(200, testToolsListResponse);
-        await wrapper.vm.$nextTick();
+        wrapper = shallowMount(ToolsJson, { localVue });
+        await flushPromises();
     });
 
     it("schema.org script element is created", async () => {
-        await wrapper.vm.$nextTick();
         const tools = wrapper.vm.createToolsJson(testToolsListResponse);
         const schemaElement = document.getElementById("schema-json");
         const schemaText = JSON.parse(schemaElement.text);

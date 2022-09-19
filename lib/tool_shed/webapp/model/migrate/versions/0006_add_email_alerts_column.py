@@ -5,7 +5,11 @@ Migration script to add the email_alerts column to the repository table.
 import logging
 import sys
 
-from sqlalchemy import Column, MetaData, Table
+from sqlalchemy import (
+    Column,
+    MetaData,
+    Table,
+)
 
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import JSONType

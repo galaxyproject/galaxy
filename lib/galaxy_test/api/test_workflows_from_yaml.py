@@ -16,7 +16,6 @@ WORKFLOWS_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
 
 class WorkflowsFromYamlApiTestCase(BaseWorkflowsApiTestCase):
-
     def setUp(self):
         super().setUp()
 
@@ -32,31 +31,37 @@ class WorkflowsFromYamlApiTestCase(BaseWorkflowsApiTestCase):
 
         assert workflow["annotation"].startswith("Simple workflow that ")
 
-        tool_count = {'random_lines1': 0, 'cat1': 0}
+        tool_count = {"random_lines1": 0, "cat1": 0}
         input_found = False
-        for step in workflow['steps'].values():
-            step_type = step['type']
+        for step in workflow["steps"].values():
+            step_type = step["type"]
             if step_type == "data_input":
-                assert step['label'] == 'the_input'
+                assert step["label"] == "the_input"
                 input_found = True
             else:
-                tool_id = step['tool_id']
+                tool_id = step["tool_id"]
                 tool_count[tool_id] += 1
                 if tool_id == "random_lines1":
-                    assert step['label'] == "random_line_label"
+                    assert step["label"] == "random_line_label"
 
         assert input_found
-        assert tool_count['random_lines1'] == 1
-        assert tool_count['cat1'] == 2
+        assert tool_count["random_lines1"] == 1
+        assert tool_count["cat1"] == 2
 
-        workflow_as_format2 = self._upload_and_download(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES, client_convert=False, style="format2")
+        workflow_as_format2 = self._upload_and_download(
+            WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES, client_convert=False, style="format2"
+        )
         assert workflow_as_format2["doc"].startswith("Simple workflow that")
 
     def test_simple_output_actions(self):
         history_id = self.dataset_populator.new_history()
-        self._run_jobs(WORKFLOW_WITH_OUTPUT_ACTIONS, test_data="""
+        self._run_jobs(
+            WORKFLOW_WITH_OUTPUT_ACTIONS,
+            test_data="""
 input1: "hello world"
-""", history_id=history_id)
+""",
+            history_id=history_id,
+        )
 
         details1 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
         assert not details1["visible"]
@@ -66,13 +71,18 @@ input1: "hello world"
 
     def test_inputs_to_steps(self):
         history_id = self.dataset_populator.new_history()
-        self._run_jobs(WORKFLOW_SIMPLE_CAT_TWICE, test_data={"input1": "hello world"}, history_id=history_id, round_trip_format_conversion=True)
+        self._run_jobs(
+            WORKFLOW_SIMPLE_CAT_TWICE,
+            test_data={"input1": "hello world"},
+            history_id=history_id,
+            round_trip_format_conversion=True,
+        )
         contents1 = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEqual(contents1.strip(), "hello world\nhello world")
 
     def test_outputs(self):
         workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_OUTPUTS, round_trip_format_conversion=True)
-        workflow = self._get("workflows/%s/download" % workflow_id).json()
+        workflow = self._get(f"workflows/{workflow_id}/download").json()
         self.assertEqual(workflow["steps"]["1"]["workflow_outputs"][0]["output_name"], "out_file1")
         self.assertEqual(workflow["steps"]["1"]["workflow_outputs"][0]["label"], "wf_output_1")
         workflow = self.workflow_populator.download_workflow(workflow_id, style="format2")
@@ -92,7 +102,8 @@ input1: "hello world"
         self._assert_is_runtime_input(tool_state["num_lines"])
 
     def test_subworkflow_simple(self):
-        workflow_id = self._upload_yaml_workflow("""
+        workflow_id = self._upload_yaml_workflow(
+            """
 class: GalaxyWorkflow
 inputs:
   outer_input: data
@@ -117,7 +128,9 @@ steps:
               seed: asdf
     in:
       inner_input: first_cat/out_file1
-""", client_convert=False)
+""",
+            client_convert=False,
+        )
         workflow = self.workflow_populator.download_workflow(workflow_id)
         by_label = self._steps_by_label(workflow)
         if "nested_workflow" not in by_label:
@@ -135,7 +148,7 @@ steps:
         assert subworkflow_connection["input_subworkflow_step_id"] == 0
 
         workflow_reupload_id = self.import_workflow(workflow)["id"]
-        workflow_reupload = self._get("workflows/%s/download" % workflow_reupload_id).json()
+        workflow_reupload = self._get(f"workflows/{workflow_reupload_id}/download").json()
         by_label = self._steps_by_label(workflow_reupload)
         subworkflow_step = by_label["nested_workflow"]
         assert subworkflow_step["type"] == "subworkflow"
@@ -186,12 +199,18 @@ $graph:
         inner_input: nested_workflow_1/inner_output
 """
         history_id = self.dataset_populator.new_history()
-        self._run_jobs(duplicate_subworkflow_invocate_wf, test_data={"outer_input": "hello world"}, history_id=history_id, client_convert=False)
+        self._run_jobs(
+            duplicate_subworkflow_invocate_wf,
+            test_data={"outer_input": "hello world"},
+            history_id=history_id,
+            client_convert=False,
+        )
         content = self.dataset_populator.get_history_dataset_content(history_id)
         assert content == "hello world\nhello world\nhello world\nhello world\n"
 
     def test_pause(self):
-        workflow_id = self._upload_yaml_workflow("""
+        workflow_id = self._upload_yaml_workflow(
+            """
 class: GalaxyWorkflow
 steps:
   test_input:
@@ -209,11 +228,13 @@ steps:
     tool_id: cat1
     in:
       input1: the_pause
-""")
+"""
+        )
         self.workflow_populator.dump_workflow(workflow_id)
 
     def test_implicit_connections(self):
-        workflow_id = self._upload_yaml_workflow("""
+        workflow_id = self._upload_yaml_workflow(
+            """
 class: GalaxyWorkflow
 inputs:
   test_input: data
@@ -237,12 +258,14 @@ steps:
     state:
       input1:
         $link: test_input
-""")
+"""
+        )
         self.workflow_populator.dump_workflow(workflow_id)
 
     @uses_test_history()
     def test_conditional_ints(self, history_id):
-        self._run_jobs("""
+        self._run_jobs(
+            """
 class: GalaxyWorkflow
 steps:
   test_input:
@@ -252,12 +275,17 @@ steps:
         use: true
       files:
         attach_files: false
-""", test_data={}, history_id=history_id, round_trip_format_conversion=True)
+""",
+            test_data={},
+            history_id=history_id,
+            round_trip_format_conversion=True,
+        )
         content = self.dataset_populator.get_history_dataset_content(history_id)
         assert "no file specified" in content
         assert "7 7 4" in content
 
-        self._run_jobs("""
+        self._run_jobs(
+            """
 class: GalaxyWorkflow
 steps:
   test_input:
@@ -268,14 +296,19 @@ steps:
         p3v: 5
       files:
         attach_files: false
-""", test_data={}, history_id=history_id, round_trip_format_conversion=True)
+""",
+            test_data={},
+            history_id=history_id,
+            round_trip_format_conversion=True,
+        )
         content = self.dataset_populator.get_history_dataset_content(history_id)
         assert "no file specified" in content
         assert "7 7 5" in content
 
     def test_workflow_embed_tool(self):
         history_id = self.dataset_populator.new_history()
-        self._run_jobs("""
+        self._run_jobs(
+            """
 class: GalaxyWorkflow
 steps:
   - type: input
@@ -301,7 +334,9 @@ steps:
             $link: embed1/output1
 test_data:
   input1: "hello world"
-""", history_id=history_id)
+""",
+            history_id=history_id,
+        )
 
         content = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEqual(content, "hello world\nhello world 2\n")
@@ -309,15 +344,8 @@ test_data:
     def test_workflow_import_tool(self):
         history_id = self.dataset_populator.new_history()
         workflow_path = os.path.join(WORKFLOWS_DIRECTORY, "embed_test_1.gxwf.yml")
-        jobs_descriptions = {
-            "test_data": {"input1": "hello world"}
-        }
-        self._run_jobs(
-            workflow_path,
-            source_type="path",
-            jobs_descriptions=jobs_descriptions,
-            history_id=history_id
-        )
+        jobs_descriptions = {"test_data": {"input1": "hello world"}}
+        self._run_jobs(workflow_path, source_type="path", jobs_descriptions=jobs_descriptions, history_id=history_id)
         content = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEqual(content, "hello world\nhello world 2\n")
 
@@ -333,5 +361,5 @@ test_data:
         by_label = {}
         assert "steps" in workflow_as_dict, workflow_as_dict
         for step in workflow_as_dict["steps"].values():
-            by_label[step['label']] = step
+            by_label[step["label"]] = step
         return by_label

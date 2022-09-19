@@ -3,7 +3,7 @@ import * as pv from "bio-pv";
 window.bundleEntries = window.bundleEntries || {};
 window.bundleEntries.load = function (options) {
     var settings = options.chart.settings;
-    var viewer = pv.Viewer(document.getElementById(options.targets[0]), {
+    var viewer = pv.Viewer(document.getElementById(options.target), {
         quality: settings.get("quality"),
         width: "auto",
         height: "auto",

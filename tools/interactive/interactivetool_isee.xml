@@ -1,0 +1,135 @@
+<tool id="interactive_tool_isee" tool_type="interactive" name="iSEE" version="1.0.0">
+  <requirements>
+    <container type="docker">biocontainers/isee-galaxy:v3.13_cv1.0.0</container>
+  </requirements>
+
+  <entry_points>
+    <entry_point name="iSEE Single Cell Visualisation" requires_domain="True">
+      <!-- This port is exposed by the docker container -->
+      <port>8888</port>
+    </entry_point>
+  </entry_points>
+
+  <command><![CDATA[
+
+## Container wdir: /import
+
+#set INPUT_PATH = "sce"
+#set RSCRIPT = '/scripts/isee.R'
+
+ln -s '$input.extra_files_path' '$INPUT_PATH' &&
+ln -s '$isee_script' '$RSCRIPT' &&
+cp '$isee_script' '$outfile' &&
+
+## Redirect stderr - unfortunately necessary to stop R "warning" messages from
+## inferring job status as "failed"
+/scripts/run.sh '$RSCRIPT'
+
+  ]]>
+  </command>
+
+  <configfiles>
+    <configfile name="isee_script"><![CDATA[
+
+## Import render function to template R Shiny app code
+## -----------------------------------------------------------------------------
+#import os
+#import importlib.util
+#set modpath = $os.path.join($__tool_directory__, "isee/render.py")
+#set spec = $importlib.util.spec_from_file_location("render", $modpath)
+#set render = $importlib.util.module_from_spec(spec)
+#$spec.loader.exec_module(render)
+
+
+## Stop warning messages being emitted from R while still allowing genuine job failure
+## -----------------------------------------------------------------------------
+devNull <- file("/dev/null", open = "wt")
+sink(devNull, type = "message")
+
+
+## Begin R script
+## -----------------------------------------------------------------------------
+library(iSEE)
+library(HDF5Array)
+
+sce_path <- 'sce'
+sce <- loadHDF5SummarizedExperiment(sce_path)
+
+$render.app()
+
+shiny::runApp(app, host="0.0.0.0", port=8888, quiet=TRUE, launch.browser=FALSE)
+
+]]></configfile>
+  </configfiles>
+
+  <inputs>
+    <param
+      name="input"
+      type="data"
+      format="rdata.se"
+      label="HDF5SummarizedExperiment: rdata.se (composite)"
+      help="This datatype represents a HDF5SummarizedExperiment object as
+        exported from R."
+    />
+  </inputs>
+
+  <outputs>
+    <data name="outfile" format="txt"
+          label="${tool.name} on ${on_string}: Rscript" />
+  </outputs>
+
+  <tests>
+    <test expect_num_outputs="1">
+    </test>
+  </tests>
+
+  <help><![CDATA[
+
+**Overview**
+
+iSEE provides a web interface for visualising single-cell transcriptomic
+datasets encapsulated as an HDF5SummarizedExperiment object.
+
+Full documentation: https://isee.github.io/iSEE/
+
+-----
+
+**Input**
+
+The tool takes a single HDF5SummarizedExperiment object as an input,
+which can be uploaded with the composite datatype ``rdata.se``. This requires
+two input files: ``se.rds`` and ``assays.h5``. Within R, an
+``HDF5SummarizedExperiment`` object can be exported as a directory containing
+these two input files with the function ``saveHDF5SummarizedExperiment()``
+- this will create a folder containing the two files required above.
+These utilities can be installed and imported within R from the ``HDF5Array``
+package.
+
+-----
+
+**Useful links:**
+
+- Documentation on ``HDF5SummarizedExperiment`` data object:
+
+  https://rdrr.io/bioc/HDF5Array/man/saveHDF5SummarizedExperiment.html
+
+- HDF5Array manual:
+
+  https://bioc.ism.ac.jp/packages/3.7/bioc/manuals/HDF5Array/man/HDF5Array.pdf
+
+]]></help>
+
+  <citations>
+    <citation type="bibtex">
+      @article{rue2018isee,
+        title={iSEE: interactive summarizedexperiment explorer},
+        author={Rue-Albrecht, Kevin and Marini, Federico and Soneson,
+          Charlotte and Lun, Aaron TL},
+        journal={F1000Research},
+        volume={7},
+        year={2018},
+        publisher={Faculty of 1000 Ltd}
+      }
+    </citation>
+  </citations>
+</tool>

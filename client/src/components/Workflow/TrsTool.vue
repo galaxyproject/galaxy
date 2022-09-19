@@ -16,8 +16,11 @@
             <b>Versions</b>
             <ul>
                 <li v-for="version in trsTool.versions" :key="version.id">
-                    <b-link>{{ version.name }}</b-link>
-                    <b-button id="workflow-import" class="m-1" @click="importVersion(version)">
+                    <b-button
+                        class="m-1 workflow-import"
+                        :data-version-name="version.name"
+                        @click="importVersion(version)">
+                        {{ version.name }}
                         <font-awesome-icon icon="upload" />
                     </b-button>
                 </li>
@@ -48,7 +51,8 @@ export default {
     },
     methods: {
         importVersion(version) {
-            this.$emit("onImport", version);
+            const version_id = version.id.includes(`:${version.name}`) ? version.name : version.id;
+            this.$emit("onImport", version_id);
         },
     },
 };

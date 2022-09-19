@@ -2,34 +2,35 @@
  * Diagnostic/debugging utility
  * Creates a generic proxy around an arbitrary target to watch
  * access to properties and functions.
- * @param {str} label console.log prefix label
  * @param {*} target Anything you want to watch
+ * @param {str} label console.log prefix label
  */
-export function genericProxy(label, target) {
-    return new Proxy(target, {
-        has() {
-            console.log(`${label} -> has`, ...arguments);
-            return Reflect.has(...arguments);
-        },
-        get() {
-            console.log(`${label} -> get`, ...arguments);
-            return Reflect.get(...arguments);
-        },
-        set() {
-            console.log(`${label} -> set`, ...arguments);
-            return Reflect.set(...arguments);
-        },
-        deleteProperty() {
-            console.log(`${label} -> deleteProperty`, ...arguments);
-            return Reflect.deleteProperty(...arguments);
-        },
-        apply() {
-            console.log(`${label} -> apply`, ...arguments);
-            return Reflect.apply(...arguments);
-        },
-        construct() {
-            console.log(`${label} -> construct`, ...arguments);
-            return Reflect.construct(...arguments);
-        },
-    });
+export function loggingProxy(target, label = "proxy") {
+    const methods = [
+        "apply",
+        "construct",
+        "defineProperty",
+        "get",
+        "getOwnPropertyDescriptor",
+        "getPrototypeOf",
+        "has",
+        "isExtensible",
+        "ownKeys",
+        "preventExtensions",
+        "set",
+        "setPrototypeOf",
+    ];
+
+    const handlerConfig = methods.reduce((handler, method) => {
+        handler[method] = function () {
+            console.groupCollapsed(`${label}:${method}`);
+            const args = Array.from(arguments).slice(1);
+            args.forEach((arg) => console.log(arg));
+            console.groupEnd();
+            return Reflect[method](...arguments);
+        };
+        return handler;
+    }, {});
+
+    return new Proxy(target, handlerConfig);
 }

@@ -1,0 +1,516 @@
+
+===========================================================
+May 2022 Galaxy Release (v 22.05)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**The new History is the default History**
+  See the `22.05 user release notes <22.05_announce_user.html>`__ for details.
+
+**Galaxy is now exclusively a FastAPI application**
+  As announced in the release notes for Galaxy Release 22.01 we have removed support to run Galaxy as a WSGI application.
+  If you are still using uWSGI please consult the `Migrating to Gunicorn documentation <https://docs.galaxyproject.org/en/latest/admin/migrating_to_gunicorn.html>`__.
+
+**Deferred dataset resolution**
+  Optional deferred dataset resolution enables users to select that datasets fetched from URLs or remote file sources should not be fetched into Galaxy's objectstore.
+  Deferred datasets are only fetched when jobs using these datasets are run.
+
+**Enhanced Celery tasks and features**
+  Galaxy can optionally delegate the data upload job to Celery, and Galaxy can run the metadata script in Celery. This results in much shorter runtime for small jobs.
+  To enable this, set `enable_celery_tasks` to `true` and ensure that at least one celery worker is started.
+  If Celery tasks are enabled, it is also possible to change the datatype for many history items in batch.
+
+**Galaxy has a new database migrations system based on Alembic.**
+  The new migrations system is built on top of Alembic. The SQLAlchemy Migrate tool has been retired. 
+  For usage, see `Galaxy's migrations documentation <https://github.com/galaxyproject/galaxy/blob/release_22.05/lib/galaxy/model/migrations/README.md>`__.
+  For an architectural overview, see `pull request #13108 <https://github.com/galaxyproject/galaxy/pull/13108>`__.
+Also check out the `22.05 user release notes <22.05_announce_user.html>`__
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_22.05 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_22.05 && git pull --ff-only origin release_22.05
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
+
+Configuration Changes
+=====================
+
+Added
+-----
+
+The following configuration options are new
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.celery_backend
+-  mapping.galaxy.mapping.celery_broker
+-  mapping.galaxy.mapping.display_builtin_converters
+-  mapping.galaxy.mapping.file_sources
+-  mapping.galaxy.mapping.helpsite_url
+-  mapping.galaxy.mapping.log_destination
+-  mapping.galaxy.mapping.log_rotate_count
+-  mapping.galaxy.mapping.log_rotate_size
+-  mapping.galaxy.mapping.prefer_custos_login
+-  mapping.galaxy.mapping.short_term_storage_cleanup_interval
+-  mapping.galaxy.mapping.short_term_storage_default_duration
+-  mapping.galaxy.mapping.short_term_storage_dir
+-  mapping.galaxy.mapping.short_term_storage_maximum_duration
+-  mapping.galaxy.mapping.tool_help_bm25f_k1
+-  mapping.galaxy.mapping.tool_name_exact_multiplier
+-  mapping.galaxy.mapping.tool_ngram_factor
+-  mapping.galaxy.mapping.use_legacy_history
+-  mapping.galaxy.mapping.workflow_monitor_sleep
+
+
+Changed
+-------
+
+The following configuration options have been changed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.debug.desc has changed from
+
+   ::
+
+    Debug enables access to various config options useful for development
+    and debugging: use_lint, use_profile, and use_printdebug.  It also
+    causes the files used by PBS/SGE (submission script, output, and error)
+    to remain on disk after the job is complete.
+    
+    In addition, this will set uWSGI's `honour-stdin` option to `true`;
+    thus, preventing uWSGI from remapping stdin to `/dev/null` and
+    enabling debugging with tools like pdb. To keep uWSGI's default
+    setting, set `honor-stdin` to `false` in the `uwsgi` section of this
+    configuration file.
+
+   to
+
+   ::
+
+    Debug enables access to various config options useful for development
+    and debugging: use_lint, use_profile, and use_printdebug.  It also
+    causes the files used by PBS/SGE (submission script, output, and error)
+    to remain on disk after the job is complete.
+
+
+-  mapping.galaxy.mapping.logging.desc has changed from
+
+   ::
+
+    Controls where and how the server logs messages. If unset, the default is to log all messages to standard
+    output at the level defined by the `log_level` configuration option. Configuration is described in the
+    documentation at:
+    https://docs.galaxyproject.org/en/master/admin/config_logging.html
+
+   to
+
+   ::
+
+    Controls where and how the server logs messages. If set, overrides all settings in the log_* configuration
+    options. Configuration is described in the documentation at:
+    https://docs.galaxyproject.org/en/master/admin/config_logging.html
+
+
+-  mapping.galaxy.mapping.metadata_strategy.desc has changed from
+
+   ::
+
+    Determines how metadata will be set. Valid values are `directory` and `extended`.
+    In extended mode jobs will decide if a tool run failed, the object stores
+    configuration is serialized and made available to the job and is used for
+    writing output datasets to the object store as part of the job and dynamic
+    output discovery (e.g. discovered datasets <discover_datasets>, unpopulated collections,
+    etc) happens as part of the job.
+
+   to
+
+   ::
+
+    Determines how metadata will be set. Valid values are `directory`, `extended`,
+    `directory_celery` and `extended_celery`.
+    In extended mode jobs will decide if a tool run failed, the object stores
+    configuration is serialized and made available to the job and is used for
+    writing output datasets to the object store as part of the job and dynamic
+    output discovery (e.g. discovered datasets <discover_datasets>, unpopulated collections,
+    etc) happens as part of the job. In `directory_celery` and `extended_celery` metadata
+    will be set within a celery task.
+
+
+-  mapping.galaxy.mapping.screencasts_url.default has changed from
+
+   ::
+
+    https://vimeo.com/galaxyproject
+
+   to
+
+   ::
+
+    https://www.youtube.com/c/galaxyproject
+
+
+-  mapping.galaxy.mapping.simplified_workflow_run_ui_target_history.default has changed from
+
+   ::
+
+    current
+
+   to
+
+   ::
+
+    prefer_current
+
+
+-  mapping.galaxy.mapping.simplified_workflow_run_ui_target_history.desc has changed from
+
+   ::
+
+    When the simplified workflow run form is rendered, should the invocation outputs
+    be sent to the 'current' history or a 'new' history.
+
+   to
+
+   ::
+
+    When the simplified workflow run form is rendered, should the invocation outputs
+    be sent to the 'current' history or a 'new' history. If the user should be presented
+    and option between these - set this to 'prefer_current' or 'prefer_new' to display
+    a runtime setting with the corresponding default. The default is to provide the
+    user this option and default it to the current history (the traditional behavior
+    of Galaxy for years) - this corresponds to the setting 'prefer_current'.
+
+
+-  mapping.galaxy.mapping.simplified_workflow_run_ui_target_history.enum has changed from
+
+   ::
+
+    current
+    new
+
+   to
+
+   ::
+
+    current
+    new
+    prefer_current
+    prefer_new
+
+
+-  mapping.galaxy.mapping.tool_description_boost.default has changed from
+
+   ::
+
+    2.0
+
+   to
+
+   ::
+
+    8.0
+
+
+-  mapping.galaxy.mapping.tool_description_boost.desc has changed from
+
+   ::
+
+    Boosts are used to customize this instance's toolbox search.
+    The higher the boost, the more importance the scoring algorithm gives to the
+    given field.  Section refers to the tool group in the tool panel.  Rest of
+    the fields are tool's attributes.
+
+   to
+
+   ::
+
+    In tool search, a query match against a tool's description text will
+    receive this score multiplier.
+
+
+-  mapping.galaxy.mapping.tool_enable_ngram_search.desc has changed from
+
+   ::
+
+    Enable/ disable Ngram-search for tools. It makes tool
+    search results tolerant for spelling mistakes in the query
+    by dividing the query into multiple ngrams and search for
+    each ngram
+
+   to
+
+   ::
+
+    Disabling this will prevent partial matches on tool names.
+    Enable/disable Ngram-search for tools. It makes tool
+    search results tolerant for spelling mistakes in the query, and will
+    also match query substrings e.g. "genome" will match "genomics" or
+    "metagenome".
+
+
+-  mapping.galaxy.mapping.tool_help_boost.default has changed from
+
+   ::
+
+    0.5
+
+   to
+
+   ::
+
+    1.0
+
+
+-  mapping.galaxy.mapping.tool_help_boost.desc has changed from
+
+   ::
+
+    Boosts are used to customize this instance's toolbox search.
+    The higher the boost, the more importance the scoring algorithm gives to the
+    given field.  Section refers to the tool group in the tool panel.  Rest of
+    the fields are tool's attributes.
+
+   to
+
+   ::
+
+    In tool search, a query match against a tool's help text will receive
+    this score multiplier.
+
+
+-  mapping.galaxy.mapping.tool_id_boost.default has changed from
+
+   ::
+
+    9.0
+
+   to
+
+   ::
+
+    20.0
+
+
+-  mapping.galaxy.mapping.tool_id_boost.desc has changed from
+
+   ::
+
+    Boosts are used to customize this instance's toolbox search.
+    The higher the boost, the more importance the scoring algorithm gives to the
+    given field.  Section refers to the tool group in the tool panel.  Rest of
+    the fields are tool's attributes.
+
+   to
+
+   ::
+
+    In tool search, a query match against a tool's ID text will receive
+    this score multiplier. The query must be an exact match against ID
+    in order to be counted as a match.
+
+
+-  mapping.galaxy.mapping.tool_label_boost.desc has changed from
+
+   ::
+
+    Boosts are used to customize this instance's toolbox search.
+    The higher the boost, the more importance the scoring algorithm gives to the
+    given field.  Section refers to the tool group in the tool panel.  Rest of
+    the fields are tool's attributes.
+
+   to
+
+   ::
+
+    In tool search, a query match against a tool's label text will
+    receive this score multiplier.
+
+
+-  mapping.galaxy.mapping.tool_name_boost.default has changed from
+
+   ::
+
+    9.0
+
+   to
+
+   ::
+
+    20.0
+
+
+-  mapping.galaxy.mapping.tool_name_boost.desc has changed from
+
+   ::
+
+    Boosts are used to customize this instance's toolbox search.
+    The higher the boost, the more importance the scoring algorithm gives to the
+    given field.  Section refers to the tool group in the tool panel.  Rest of
+    the fields are tool's attributes.
+
+   to
+
+   ::
+
+    In tool search, a query match against a tool's name text will receive
+    this score multiplier.
+
+
+-  mapping.galaxy.mapping.tool_ngram_maxsize.desc has changed from
+
+   ::
+
+    Set maximum size of ngrams
+
+   to
+
+   ::
+
+    Set maximum character length of ngrams
+
+
+-  mapping.galaxy.mapping.tool_ngram_minsize.desc has changed from
+
+   ::
+
+    Set minimum size of ngrams
+
+   to
+
+   ::
+
+    Set minimum character length of ngrams
+
+
+-  mapping.galaxy.mapping.tool_search_limit.desc has changed from
+
+   ::
+
+    Limits the number of results in toolbox search.  Can be used to tweak how many
+    results will appear.
+
+   to
+
+   ::
+
+    Limits the number of results in toolbox search. Use to set the
+    maximum number of tool search results to display.
+
+
+-  mapping.galaxy.mapping.tool_section_boost.desc has changed from
+
+   ::
+
+    Boosts are used to customize this instance's toolbox search.
+    The higher the boost, the more importance the scoring algorithm gives to the
+    given field.  Section refers to the tool group in the tool panel.  Rest of
+    the fields are tool's attributes.
+
+   to
+
+   ::
+
+    In tool search, a query match against a tool's section text will
+    receive this score multiplier.
+
+
+-  mapping.galaxy.mapping.tool_stub_boost.default has changed from
+
+   ::
+
+    5.0
+
+   to
+
+   ::
+
+    2.0
+
+
+-  mapping.galaxy.mapping.tool_stub_boost.desc has changed from
+
+   ::
+
+    Boosts are used to customize this instance's toolbox search.
+    The higher the boost, the more importance the scoring algorithm gives to the
+    given field.  Section refers to the tool group in the tool panel.  Rest of
+    the fields are tool's attributes.
+
+   to
+
+   ::
+
+    A stub is parsed from the GUID as "owner/repo/tool_id".
+    In tool search, a query match against a tool's stub text will receive
+    this score multiplier.
+
+
+-  mapping.galaxy.mapping.wiki_url.desc has changed from
+
+   ::
+
+    The URL linked by the "Wiki" link in the "Help" menu.
+
+   to
+
+   ::
+
+    The URL linked by the "Community Hub" link in the "Help" menu.
+
+
+Removed
+-------
+
+The following configuration options have been completely removed
+
+config/tool_shed.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  uwsgi
+
+config/galaxy.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  uwsgi
+
+config/reports.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  uwsgi
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.containers_config_file
+-  mapping.galaxy.mapping.enable_beta_containers_interface
+-  mapping.galaxy.mapping.interactive_environment_plugins_directory
+-  mapping.galaxy.mapping.mailing_lists_url
+-  mapping.galaxy.mapping.qa_url
+-  mapping.galaxy.mapping.search_url
+
+
+Release Notes
+===========================================================
+
+.. include:: 22.05.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

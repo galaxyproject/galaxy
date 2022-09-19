@@ -62,11 +62,16 @@ var CollectionView = _super.extend(
         },
 
         handleWarning: function ($newRender) {
+            var $warns = $newRender.find(".elements-warning");
+            if (this.model.get("populated_state") === "failed") {
+                var error = _l(`${this.model.get("populated_state_message")}`);
+                $warns.html(`<div class="errormessagesmall">${error}</div>`);
+                return;
+            }
             var viewLength = this.views.length;
             var elementCount = this.model.get("element_count");
             if (elementCount && elementCount !== viewLength) {
                 var warning = _l(`displaying only ${viewLength} of ${elementCount} items`);
-                var $warns = $newRender.find(".elements-warning");
                 $warns.html(`<div class="warningmessagesmall">${warning}</div>`);
             }
         },

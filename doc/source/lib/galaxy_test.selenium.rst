@@ -6,13 +6,37 @@ galaxy\_test.selenium package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   galaxy_test.selenium.jupyter
+
 Submodules
 ----------
+
+galaxy\_test.selenium.conftest module
+-------------------------------------
+
+.. automodule:: galaxy_test.selenium.conftest
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 galaxy\_test.selenium.framework module
 --------------------------------------
 
 .. automodule:: galaxy_test.selenium.framework
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy\_test.selenium.jupyter\_context module
+---------------------------------------------
+
+.. automodule:: galaxy_test.selenium.jupyter_context
    :members:
    :undoc-members:
    :show-inheritance:
@@ -49,10 +73,34 @@ galaxy\_test.selenium.test\_collection\_builders module
    :undoc-members:
    :show-inheritance:
 
+galaxy\_test.selenium.test\_collection\_edit module
+---------------------------------------------------
+
+.. automodule:: galaxy_test.selenium.test_collection_edit
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy\_test.selenium.test\_custom\_builds module
 -------------------------------------------------
 
 .. automodule:: galaxy_test.selenium.test_custom_builds
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy\_test.selenium.test\_data\_source\_tools module
+------------------------------------------------------
+
+.. automodule:: galaxy_test.selenium.test_data_source_tools
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy\_test.selenium.test\_dataset\_metadata\_download module
+--------------------------------------------------------------
+
+.. automodule:: galaxy_test.selenium.test_dataset_metadata_download
    :members:
    :undoc-members:
    :show-inheritance:
@@ -77,6 +125,14 @@ galaxy\_test.selenium.test\_history\_dataset\_state module
 ----------------------------------------------------------
 
 .. automodule:: galaxy_test.selenium.test_history_dataset_state
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy\_test.selenium.test\_history\_export module
+--------------------------------------------------
+
+.. automodule:: galaxy_test.selenium.test_history_export
    :members:
    :undoc-members:
    :show-inheritance:
@@ -133,6 +189,14 @@ galaxy\_test.selenium.test\_history\_structure module
 -----------------------------------------------------
 
 .. automodule:: galaxy_test.selenium.test_history_structure
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy\_test.selenium.test\_invocation\_grid module
+---------------------------------------------------
+
+.. automodule:: galaxy_test.selenium.test_invocation_grid
    :members:
    :undoc-members:
    :show-inheritance:
@@ -273,6 +337,14 @@ galaxy\_test.selenium.test\_workflow\_editor module
    :undoc-members:
    :show-inheritance:
 
+galaxy\_test.selenium.test\_workflow\_invocation\_details module
+----------------------------------------------------------------
+
+.. automodule:: galaxy_test.selenium.test_workflow_invocation_details
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy\_test.selenium.test\_workflow\_management module
 -------------------------------------------------------
 
@@ -285,6 +357,14 @@ galaxy\_test.selenium.test\_workflow\_run module
 ------------------------------------------------
 
 .. automodule:: galaxy_test.selenium.test_workflow_run
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy\_test.selenium.test\_workflow\_sharing module
+----------------------------------------------------
+
+.. automodule:: galaxy_test.selenium.test_workflow_sharing
    :members:
    :undoc-members:
    :show-inheritance:
