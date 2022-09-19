@@ -138,56 +138,6 @@ def get_repository_role_association(repository_id, role_id):
     return rra
 
 
-def get_repository_reviews(repository_id, reviewer_user_id=None, changeset_revision=None):
-    if reviewer_user_id and changeset_revision:
-        reviews = (
-            sa_session.query(model.RepositoryReview)
-            .filter(
-                and_(
-                    model.RepositoryReview.table.c.repository_id == repository_id,
-                    model.RepositoryReview.table.c.deleted == false(),
-                    model.RepositoryReview.table.c.changeset_revision == changeset_revision,
-                    model.RepositoryReview.table.c.user_id == reviewer_user_id,
-                )
-            )
-            .all()
-        )
-    elif reviewer_user_id:
-        reviews = (
-            sa_session.query(model.RepositoryReview)
-            .filter(
-                and_(
-                    model.RepositoryReview.table.c.repository_id == repository_id,
-                    model.RepositoryReview.table.c.deleted == false(),
-                    model.RepositoryReview.table.c.user_id == reviewer_user_id,
-                )
-            )
-            .all()
-        )
-    else:
-        reviews = (
-            sa_session.query(model.RepositoryReview)
-            .filter(
-                and_(
-                    model.RepositoryReview.table.c.repository_id == repository_id,
-                    model.RepositoryReview.table.c.deleted == false(),
-                )
-            )
-            .all()
-        )
-    return reviews
-
-
-def get_reviews_ordered_by_changeset_revision(repository_id, changelog_tuples, reviewer_user_id=None):
-    reviews = get_repository_reviews(repository_id, reviewer_user_id=reviewer_user_id)
-    ordered_reviews = []
-    for _ctx_rev, changeset_hash in changelog_tuples:
-        for review in reviews:
-            if str(review.changeset_revision) == str(changeset_hash):
-                ordered_reviews.append(review)
-    return ordered_reviews
-
-
 def get_repository_by_id(repository_id):
     return sa_session.query(model.Repository).filter(model.Repository.table.c.id == repository_id).first()
 
@@ -218,21 +168,6 @@ def get_repository_metadata_for_changeset_revision(repository_id, changeset_revi
         .first()
     )
     return repository_metadata
-
-
-def get_repository_review_by_user_id_changeset_revision(user_id, repository_id, changeset_revision):
-    review = (
-        sa_session.query(model.RepositoryReview)
-        .filter(
-            and_(
-                model.RepositoryReview.table.c.user_id == user_id,
-                model.RepositoryReview.table.c.repository_id == repository_id,
-                model.RepositoryReview.table.c.changeset_revision == changeset_revision,
-            )
-        )
-        .first()
-    )
-    return review
 
 
 def get_role_by_name(role_name):

@@ -31,7 +31,6 @@
 </%def>
 
 <%def name="left_panel()">
-    <% can_review_repositories = trans.app.security_agent.user_can_review_repositories( trans.user ) %>
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>Administration</div>
     </div>
