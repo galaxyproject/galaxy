@@ -2,6 +2,7 @@
 import { ref, reactive, inject } from "vue";
 import { BModal } from "bootstrap-vue";
 import axios from "axios";
+import { Toast } from "ui/toast";
 
 const sendBCOModal = ref(null);
 
@@ -13,8 +14,6 @@ const form = reactive({
 });
 
 const invocationId = inject("invocationId");
-
-const emit = defineEmits(["onError"]);
 
 function showModal() {
     resetForm();
@@ -32,6 +31,10 @@ function resetForm() {
     form.owner_group = "";
 }
 
+function handleError(err) {
+    Toast.error(`Failed to send BCO. ${err}`);
+}
+
 /**
  * TODO: replace with `prepare_download` endpoint when https://github.com/galaxyproject/galaxy/pull/14620 is ready
  */
@@ -40,7 +43,7 @@ async function generateBcoContent() {
         const resp = await axios.get(`/api/invocations/${invocationId}/biocompute/`);
         return resp.data;
     } catch (err) {
-        emit("onError", err);
+        handleError(err);
     }
 }
 
@@ -62,8 +65,9 @@ async function sendBco(bcoContent) {
     };
     try {
         await axios.post(`${form.fetch}/api/objects/drafts/create/`, bcoData, { headers: headers });
+        Toast.success(`Invocation successfully sent to: ${form.fetch}`);
     } catch (err) {
-        emit("onError", err);
+        handleError(err);
     }
 }
 

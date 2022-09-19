@@ -11,7 +11,7 @@ const props = defineProps({
     taskId: { type: String, default: null },
 });
 
-const emit = defineEmits(["onClick"]);
+const emit = defineEmits(["onClick", "onSuccess", "onFailure"]);
 
 watch(
     () => props.taskId,
@@ -21,6 +21,15 @@ watch(
         }
     }
 );
+
+watch([isCompleted, hasFailed, requestHasFailed], ([newIsCompleted, newHasFailed, newRequestHasFailed]) => {
+    if (newIsCompleted) {
+        emit("onSuccess");
+    }
+    if (newHasFailed || newRequestHasFailed) {
+        emit("onFailure");
+    }
+});
 </script>
 
 <script>

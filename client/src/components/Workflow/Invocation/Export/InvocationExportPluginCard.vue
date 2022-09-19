@@ -7,6 +7,7 @@ import StsDownloadButton from "components/StsDownloadButton.vue";
 import ExportToRemoteButton from "components/Workflow/Invocation/Export/ExportToRemoteButton.vue";
 import ExportToRemoteModal from "components/Workflow/Invocation/Export/ExportToRemoteModal.vue";
 import { useMarkdown } from "composables/useMarkdown";
+import { Toast } from "ui/toast";
 import axios from "axios";
 
 const md = useMarkdown({ openLinksInNewPage: true });
@@ -48,8 +49,18 @@ function exportToFileSource(exportDirectory, fileName) {
         .then((response) => {
             exportToRemoteTaskId.value = response.data.id;
         })
-        .catch((error) => {});
+        .catch((err) => {
+            Toast.error(`Failed to export to remote source. ${err}`);
+        });
     exportRemoteModal.value.hideModal();
+}
+
+function onExportToFileSourceSuccess() {
+    Toast.success(`Invocation successfully exported to remote source`);
+}
+
+function onExportToFileSourceFailure() {
+    Toast.error(`Failed to export to remote source`);
 }
 </script>
 
@@ -67,7 +78,9 @@ function exportToFileSource(exportDirectory, fileName) {
                         <export-to-remote-button
                             :title="'Export Invocation as ' + exportPlugin.title + ' and upload to remote source'"
                             :task-id="exportToRemoteTaskId"
-                            @onClick="openRemoteExportDialog" />
+                            @onClick="openRemoteExportDialog"
+                            @onSuccess="onExportToFileSourceSuccess"
+                            @onFailure="onExportToFileSourceFailure" />
                         <action-button
                             v-for="action in exportPlugin.additionalActions"
                             :key="action.id"
