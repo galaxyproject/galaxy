@@ -14,6 +14,7 @@ from galaxy.util import (
     parse_xml,
     string_as_bool,
 )
+from galaxy.util.path import StrPath
 
 DEFAULT_MONITOR = False
 
@@ -39,7 +40,7 @@ class ToolConfSource(metaclass=ABCMeta):
 
 
 class XmlToolConfSource(ToolConfSource):
-    def __init__(self, config_filename):
+    def __init__(self, config_filename: StrPath):
         tree = parse_xml(config_filename)
         self.root = tree.getroot()
 
@@ -62,7 +63,7 @@ class XmlToolConfSource(ToolConfSource):
 
 
 class YamlToolConfSource(ToolConfSource):
-    def __init__(self, config_filename):
+    def __init__(self, config_filename: StrPath):
         with open(config_filename) as f:
             as_dict = yaml.safe_load(f)
         self.as_dict = as_dict
@@ -157,8 +158,8 @@ def ensure_tool_conf_item(xml_or_item):
             return ToolConfSection(attributes, items, elem=elem)
 
 
-def get_toolbox_parser(config_filename):
-    is_yaml = any(config_filename.endswith(e) for e in [".yml", ".yaml", ".json"])
+def get_toolbox_parser(config_filename: StrPath):
+    is_yaml = any(str(config_filename).endswith(e) for e in [".yml", ".yaml", ".json"])
     if is_yaml:
         return YamlToolConfSource(config_filename)
     else:
