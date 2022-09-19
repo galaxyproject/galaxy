@@ -139,6 +139,7 @@ class ToolsService(ServiceBase):
 
         # Set up inputs.
         inputs = payload.get("inputs", {})
+        log.error(f"_create inputs {inputs}")
         if not isinstance(inputs, dict):
             raise exceptions.RequestParameterInvalidException(f"inputs invalid {inputs}")
 
@@ -154,7 +155,7 @@ class ToolsService(ServiceBase):
         # TODO: handle dbkeys
         params = util.Params(inputs, sanitize=False)
         incoming = params.__dict__
-
+        log.error(f"_create inputs {incoming}")
         # use_cached_job can be passed in via the top-level payload or among the tool inputs.
         # I think it should be a top-level parameter, but because the selector is implemented
         # as a regular tool parameter we accept both.
