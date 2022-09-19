@@ -80,58 +80,65 @@ export default {
     },
     data() {
         return {
+            runData: null,
             error: null,
             loading: true,
-            hasUpgradeMessages: false,
-            hasStepVersionChanges: false,
-            workflowName: "",
             invocations: null,
-            simpleForm: null,
             submissionError: null,
-            model: null,
         };
     },
     created() {
         getRunData(this.workflowId)
             .then((runData) => {
+                this.runData = runData;
                 this.loading = false;
-                const model = new WorkflowRunModel(runData);
-                let simpleForm = this.preferSimpleForm;
-                if (simpleForm) {
-                    // These only work with PJA - the API doesn't evaluate them at
-                    // all outside that context currently. The main workflow form renders
-                    // these dynamically and takes care of all the validation and setup details
-                    // on the frontend. If these are implemented on the backend at some
-                    // point this restriction can be lifted.
-                    if (model.hasReplacementParametersInToolForm) {
-                        console.log("cannot render simple workflow form - has ${} values in tool steps");
-                        simpleForm = false;
-                    }
-                    // If there are required parameters in a tool form (a disconnected runtime
-                    // input), we have to render the tool form steps and cannot use the
-                    // simplified tool form.
-                    if (model.hasOpenToolSteps) {
-                        console.log(
-                            "cannot render simple workflow form - one or more tools have disconnected runtime inputs"
-                        );
-                        simpleForm = false;
-                    }
-                    // Just render the whole form for resource request parameters (kind of
-                    // niche - I'm not sure anyone is using these currently anyway).
-                    if (model.hasWorkflowResourceParameters) {
-                        console.log(`Cannot render simple workflow form - workflow resource parameters are configured`);
-                        simpleForm = false;
-                    }
-                }
-                this.simpleForm = simpleForm;
-                this.model = model;
-                this.hasUpgradeMessages = model.hasUpgradeMessages;
-                this.hasStepVersionChanges = model.hasStepVersionChanges;
-                this.workflowName = this.model.name;
             })
             .catch((response) => {
                 this.error = errorMessageAsString(response);
             });
+    },
+    computed: {
+        model() {
+            return new WorkflowRunModel(this.runData);
+        },
+        simpleForm() {
+            if (this.preferSimpleForm) {
+                // These only work with PJA - the API doesn't evaluate them at
+                // all outside that context currently. The main workflow form renders
+                // these dynamically and takes care of all the validation and setup details
+                // on the frontend. If these are implemented on the backend at some
+                // point this restriction can be lifted.
+                if (this.hasReplacementParametersInToolForm) {
+                    console.debug("cannot render simple workflow form - has ${} values in tool steps");
+                    return false;
+                }
+                // If there are required parameters in a tool form (a disconnected runtime
+                // input), we have to render the tool form steps and cannot use the
+                // simplified tool form.
+                if (this.model.hasOpenToolSteps) {
+                    console.debug(
+                        "cannot render simple workflow form - one or more tools have disconnected runtime inputs"
+                    );
+                    return false;
+                }
+                // Just render the whole form for resource request parameters (kind of
+                // niche - I'm not sure anyone is using these currently anyway).
+                if (this.model.hasWorkflowResourceParameters) {
+                    console.debug(`Cannot render simple workflow form - workflow resource parameters are configured`);
+                    return false;
+                }
+            }
+            return this.simpleForm;
+        },
+        hasUpgradeMessages() {
+            return this.model.hasUpgradeMessages;
+        },
+        hasStepVersionChanges() {
+            return this.model.hasStepVersionChanges;
+        },
+        workflowName() {
+            return this.model.workflowName;
+        },
     },
     methods: {
         handleInvocations(invocations) {
