@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, provide } from "vue";
 import { BCard, BCardTitle, BButtonToolbar, BButtonGroup } from "bootstrap-vue";
 import { InvocationExportPlugin } from "./model";
 import ActionButton from "./ActionButton.vue";
@@ -18,6 +18,9 @@ const props = defineProps({
     exportPlugin: { type: InvocationExportPlugin, required: true },
     invocationId: { type: String, required: true },
 });
+
+// Make `invocationId` available to child components via `inject`
+provide("invocationId", props.invocationId);
 
 const descriptionRendered = computed(() => md.render(props.exportPlugin.markdownDescription));
 const invocationDownloadUrl = computed(() => `/api/invocations/${props.invocationId}/prepare_store_download`);
