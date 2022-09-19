@@ -49,6 +49,7 @@ describe("WorkflowRun.vue", () => {
 
         expect(wrapper.vm.error).toBeNull();
         expect(wrapper.vm.loading).toBe(false);
+        expect(wrapper.vm.simpleForm).toBe(false);
         const model = wrapper.vm.model;
         expect(model).not.toBeNull();
         expect(model.workflowId).toBe(run1WorkflowId);
