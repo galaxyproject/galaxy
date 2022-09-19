@@ -56,22 +56,6 @@ def get_all_installed_repositories(actually_installed=False):
         return install_session.query(galaxy.model.tool_shed_install.ToolShedRepository).all()
 
 
-def get_default_user_permissions_by_role(role):
-    return (
-        sa_session.query(model.DefaultUserPermissions)
-        .filter(model.DefaultUserPermissions.table.c.role_id == role.id)
-        .all()
-    )
-
-
-def get_default_user_permissions_by_user(user):
-    return (
-        sa_session.query(model.DefaultUserPermissions)
-        .filter(model.DefaultUserPermissions.table.c.user_id == user.id)
-        .all()
-    )
-
-
 def get_galaxy_repository_by_name_owner_changeset_revision(repository_name, owner, changeset_revision):
     return (
         install_session.query(galaxy.model.tool_shed_install.ToolShedRepository)
