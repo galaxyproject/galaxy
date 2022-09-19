@@ -863,13 +863,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
             changelog_tuples.append((ctx.rev(), ctx))
         return changelog_tuples
 
-    def get_repository_datatypes_count(self, repository):
-        metadata = self.get_repository_metadata(repository)[0].metadata
-        if "datatypes" not in metadata:
-            return 0
-        else:
-            return len(metadata["datatypes"])
-
     def get_repository_file_list(self, repository, base_path, current_path=None):
         """Recursively load repository folder contents and append them to a list. Similar to os.walk but via /repository/open_folder."""
         if current_path is None:
