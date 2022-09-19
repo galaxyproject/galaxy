@@ -18,6 +18,13 @@ const emit = defineEmits(["onChangeVersion"]);
 const availableVersions = computed(() => [...props.versions].reverse());
 </script>
 
+<script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCheck, faCubes, faCube } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCheck, faCubes, faCube);
+</script>
+
 <template>
     <b-dropdown
         v-b-tooltip.hover
@@ -30,7 +37,7 @@ const availableVersions = computed(() => [...props.versions].reverse());
         class="tool-versions"
         size="sm">
         <template v-slot:button-content>
-            <span class="fa fa-cubes" />
+            <FontAwesomeIcon icon="fas fa-cubes" />
         </template>
         <b-dropdown-item
             v-for="v of availableVersions"
@@ -38,7 +45,7 @@ const availableVersions = computed(() => [...props.versions].reverse());
             :active="v === props.version"
             @click="() => emit('onChangeVersion', v)">
             <span v-if="v !== props.version">
-                <span class="fa fa-cube" /> <span v-localize>Switch to</span> {{ v }}
+                <FontAwesomeIcon icon="fas fa-cube" /> <span v-localize>Switch to</span> {{ v }}
             </span>
             <span v-else> <FontAwesomeIcon icon="fas fa-check" /> <span v-localize>Selected</span> {{ v }} </span>
         </b-dropdown-item>

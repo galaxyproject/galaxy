@@ -79,9 +79,17 @@ function updateFavorites(objectType, newFavorites) {
 }
 </script>
 
+<script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faStar as fasStar } from "@fortawesome/free-solid-svg-icons";
+import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
+
+library.add(fasStar, farStar);
+</script>
+
 <template>
     <b-button v-b-tooltip.hover role="button" variant="link" size="sm" :title="title" @click="onToggleFavorite">
-        <icon v-if="showAddFavorite" icon="fa-regular fa-star" />
-        <icon v-if="showRemoveFavorite" icon="fa-solid fa-star" />
+        <icon v-if="showAddFavorite" icon="far fa-star" />
+        <icon v-if="showRemoveFavorite" icon="fas fa-star" />
     </b-button>
 </template>

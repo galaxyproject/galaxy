@@ -4,6 +4,7 @@ import { copyLink, copyId, downloadTool, openLink } from "../utilities";
 import { useCurrentUser } from "composables/user";
 import Webhooks from "mvc/webhooks";
 import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const { currentUser: user } = useCurrentUser();
 
@@ -60,6 +61,14 @@ function onLink() {
 }
 </script>
 
+<script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown, faLink, faDownload, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCopy } from "@fortawesome/free-regular-svg-icons";
+
+library.add(faCaretDown, faLink, faDownload, faExternalLinkAlt, faCopy);
+</script>
+
 <template>
     <b-dropdown
         v-b-tooltip.hover
@@ -72,23 +81,25 @@ function onLink() {
         class="tool-dropdown"
         size="sm">
         <template v-slot:button-content>
-            <icon icon="caret-down" />
+            <FontAwesomeIcon icon="fa-caret-down" />
         </template>
 
-        <b-dropdown-item @click="onCopyLink"> <icon icon="link" /><span v-localize>Copy Link</span> </b-dropdown-item>
+        <b-dropdown-item @click="onCopyLink">
+            <FontAwesomeIcon icon="fa-link" /><span v-localize>Copy Link</span>
+        </b-dropdown-item>
 
         <b-dropdown-item @click="onCopyId">
-            <icon icon="far fa-copy" /><span v-localize>Copy Tool ID</span>
+            <FontAwesomeIcon icon="far fa-copy" /><span v-localize>Copy Tool ID</span>
         </b-dropdown-item>
 
         <b-dropdown-item v-if="showDownload" @click="onDownload">
-            <icon icon="download" /><span v-localize>Download</span>
+            <FontAwesomeIcon icon="fa-download" /><span v-localize>Download</span>
         </b-dropdown-item>
 
         <ToolSourceMenuItem :tool-id="id" />
 
         <b-dropdown-item v-if="showLink" @click="onLink">
-            <icon icon="external-link-alt" /><span v-localize>See in Tool Shed</span>
+            <FontAwesomeIcon icon="fa-external-link-alt" /><span v-localize>See in Tool Shed</span>
         </b-dropdown-item>
 
         <b-dropdown-item v-for="w of webhookDetails" :key="w.title" @click="w.onclick">
