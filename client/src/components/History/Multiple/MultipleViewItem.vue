@@ -1,5 +1,5 @@
 <template>
-    <div id="list-item" class="d-flex flex-column align-items-center">
+    <div id="list-item" class="d-flex flex-column align-items-center w-100">
         <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0].history_id === source.id"
             :history="getHistory"
