@@ -7050,6 +7050,10 @@ class WorkflowStep(Base, RepresentById):
         self.uuid = uuid4()
         self._input_connections_by_name = None
 
+    @reconstructor
+    def init_on_load(self):
+        self._input_connections_by_name = None
+
     @property
     def tool_uuid(self):
         return self.dynamic_tool and self.dynamic_tool.uuid

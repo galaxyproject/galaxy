@@ -466,9 +466,9 @@ class WorkflowProgress:
         subworkflow_inputs = {}
         for input_subworkflow_step in subworkflow.input_steps:
             connection_found = False
+            subworkflow_step_id = input_subworkflow_step.id
             for input_connection in step.input_connections:
-                if input_connection.input_subworkflow_step == input_subworkflow_step:
-                    subworkflow_step_id = input_subworkflow_step.id
+                if input_connection.input_subworkflow_step_id == subworkflow_step_id:
                     is_data = input_connection.output_step.type != "parameter_input"
                     replacement = self.replacement_for_connection(
                         input_connection,
@@ -478,7 +478,7 @@ class WorkflowProgress:
                     connection_found = True
                     break
 
-            if not connection_found:
+            if not connection_found and not input_subworkflow_step.input_optional:
                 raise Exception("Could not find connections for all subworkflow inputs.")
 
         return WorkflowProgress(subworkflow_invocation, subworkflow_inputs, self.module_injector, param_map=param_map)
