@@ -1,22 +1,52 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import ToolCard from "./ToolCard";
+import Vuex from "vuex";
+import { userStore } from "store/userStore";
+import { configStore } from "store/configStore";
 
 const localVue = getLocalVue();
+
+const createStore = (currentUser) => {
+    return new Vuex.Store({
+        modules: {
+            user: {
+                state: {
+                    currentUser,
+                },
+                getters: userStore.getters,
+                actions: {
+                    loadUser: jest.fn(),
+                },
+                namespaced: true,
+            },
+            config: {
+                state: {
+                    config: {},
+                },
+                getters: configStore.getters,
+                actions: {
+                    loadConfigs: jest.fn(),
+                },
+                namespaced: true,
+            },
+        },
+    });
+};
 
 describe("ToolCard", () => {
     let wrapper;
 
     beforeEach(() => {
+        const store = createStore({
+            id: "user.id",
+            email: "user.email",
+            preferences: {},
+        });
+
         wrapper = mount(ToolCard, {
             propsData: {
                 id: "identifier",
-                user: {
-                    id: "user.id",
-                    email: "user.email",
-                    is_admin: true,
-                    preferences: {},
-                },
                 version: "version",
                 title: "title",
                 description: "description",
@@ -27,6 +57,7 @@ describe("ToolCard", () => {
                     sharable_url: "options.sharable_url",
                     help: "options.help",
                     citations: null,
+                    hasCitations: false,
                 },
                 messageText: "messageText",
                 messageVariant: "warning",
@@ -36,6 +67,8 @@ describe("ToolCard", () => {
                 ToolSourceMenuItem: { template: "<div></div>" },
             },
             localVue,
+            store,
+            provide: { store },
         });
     });
 

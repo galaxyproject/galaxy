@@ -114,7 +114,7 @@ const showVersions = computed(() => props.options.versions?.length > 1);
 
             <ToolFooter
                 :id="props.id"
-                :has-citations="props.options.hasCitations"
+                :hasCitations="props.options.hasCitations"
                 :xrefs="props.options.xrefs"
                 :license="props.options.license"
                 :creators="props.options.creators"
