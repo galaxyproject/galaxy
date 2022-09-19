@@ -26,8 +26,6 @@ Galaxy side:
 1a) Check for appropriate strings in the installed blastxml_to_top_descr_0120 and blast_datatypes_0120 repositories.
 """
 
-base_datatypes_count = 0
-repository_datatypes_count = 0
 running_standalone = False
 
 
@@ -92,7 +90,6 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         Check for appropriate strings, most importantly BlastXml, BlastNucDb, and BlastProtDb,
         the datatypes that are defined in datatypes_conf.xml.
         """
-        global repository_datatypes_count
         repository = self.test_db_util.get_repository_by_name_and_owner(
             datatypes_repository_name, common.test_user_2_name
         )
@@ -107,7 +104,6 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
             "blastdbp",
         ]
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
-        repository_datatypes_count = int(self.get_repository_datatypes_count(repository))
 
     def test_0015_create_tool_repository(self):
         """Create and populate the blastxml_to_top_descr_0120 repository
@@ -218,23 +214,11 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         are now new datatypes in the registry matching the ones defined in blast_datatypes_0120. Also check that
         blast_datatypes_0120 is labeled as an installed repository dependency of blastxml_to_top_descr_0120.
         """
-        global repository_datatypes_count
-        global base_datatypes_count
         tool_repository = self.test_db_util.get_installed_repository_by_name_owner(
             tool_repository_name, common.test_user_1_name
         )
         datatypes_repository = self.test_db_util.get_installed_repository_by_name_owner(
             datatypes_repository_name, common.test_user_2_name
-        )
-        current_datatypes = int(self.get_datatypes_count())
-        expected_count = base_datatypes_count + repository_datatypes_count
-        # Once the BLAST datatypes have been included in Galaxy itself, the count won't change
-        assert (
-            current_datatypes == base_datatypes_count or current_datatypes == expected_count
-        ), "Installing %s did not add new datatypes. Expected: %d. Found: %d" % (
-            "blastxml_to_top_descr_0120",
-            expected_count,
-            current_datatypes,
         )
         strings_displayed = ["Installed repository dependencies", "user1", "blast_datatypes_0120"]
         strings_displayed.extend(

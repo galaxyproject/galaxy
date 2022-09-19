@@ -22,9 +22,6 @@ Tool shed side:
 3a) Check for appropriate strings.
 """
 
-base_datatypes_count = 0
-repository_datatypes_count = 0
-
 
 class TestRepositoryMultipleOwners(ShedTwillTestCase):
     def test_0000_initiate_users(self):
@@ -86,7 +83,6 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
         Check for appropriate strings, most importantly BlastXml, BlastNucDb, and BlastProtDb,
         the datatypes that are defined in datatypes_conf.xml.
         """
-        global repository_datatypes_count
         repository = self.test_db_util.get_repository_by_name_and_owner(
             datatypes_repository_name, common.test_user_2_name
         )
@@ -101,7 +97,6 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
             "blastdbp",
         ]
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
-        repository_datatypes_count = int(self.get_repository_datatypes_count(repository))
 
     def test_0015_create_tool_repository(self):
         """Create and populate the blastxml_to_top_descr_0120 repository
