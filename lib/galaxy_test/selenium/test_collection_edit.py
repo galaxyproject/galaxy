@@ -1,8 +1,9 @@
+import time
+
 from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
-import time
 
 
 class CollectionEditTestCase(SeleniumTestCase):
