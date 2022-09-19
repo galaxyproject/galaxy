@@ -7212,7 +7212,9 @@ class WorkflowStep(Base, RepresentById):
         copied_step.workflow_outputs = copy_list(self.workflow_outputs, copied_step)
 
     def log_str(self):
-        return "WorkflowStep[index=%d,type=%s]" % (self.order_index, self.type)
+        return (
+            f"WorkflowStep[index={self.order_index},type={self.type},label={self.label},uuid={self.uuid},id={self.id}]"
+        )
 
     def clear_module_extras(self):
         # the module code adds random dynamic state to the step, this

@@ -391,9 +391,7 @@ class WorkflowProgress:
                 if default_value:
                     outputs["output"] = default_value
                 else:
-                    template = "Step with id %s not found in inputs_step_id (%s)"
-                    message = template % (step.log_str(), self.inputs_by_step_id)
-                    raise ValueError(message)
+                    raise ValueError(f"{step.log_str()} not found in inputs_step_id {self.inputs_by_step_id}")
             elif step_id in self.inputs_by_step_id:
                 outputs["output"] = self.inputs_by_step_id[step_id]
 
