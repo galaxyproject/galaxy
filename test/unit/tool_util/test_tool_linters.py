@@ -195,7 +195,19 @@ INPUTS_DATA_PARAM_OPTIONS = """
     <inputs>
         <param name="valid_name" type="data" format="txt">
             <options>
-                <filter type="data_meta" key="dbkey"/>
+                <filter type="data_meta" key="dbkey" ref="input"/>
+            </options>
+        </param>
+    </inputs>
+</tool>
+"""
+
+INPUTS_DATA_PARAM_OPTIONS_FILTER_ATTRIBUTE = """
+<tool>
+    <inputs>
+        <param name="valid_name" type="data" format="txt">
+            <options options_filter_attribute="metadata.foo">
+                <filter type="data_meta" key="foo" ref="input"/>
             </options>
         </param>
     </inputs>
@@ -1047,6 +1059,16 @@ def test_inputs_data_param_options(lint_ctx):
     assert not lint_ctx.error_messages
 
 
+def test_inputs_data_param_options_filter_attribute(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_DATA_PARAM_OPTIONS_FILTER_ATTRIBUTE)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    assert not lint_ctx.valid_messages
+    assert "Found 1 input parameters." in lint_ctx.info_messages
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
 def test_inputs_data_param_invalidoptions(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_DATA_PARAM_INVALIDOPTIONS)
     run_lint(lint_ctx, inputs.lint_inputs, tool_source)
@@ -1055,11 +1077,12 @@ def test_inputs_data_param_invalidoptions(lint_ctx):
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.warn_messages
     assert "Data parameter [valid_name] contains multiple options elements." in lint_ctx.error_messages
+    assert "Data parameter [valid_name] filter needs to define a ref attribute" in lint_ctx.error_messages
     assert (
         'Data parameter [valid_name] for filters only type="data_meta" and key="dbkey" are allowed, found type="expression" and key="None"'
         in lint_ctx.error_messages
     )
-    assert len(lint_ctx.error_messages) == 2
+    assert len(lint_ctx.error_messages) == 3
 
 
 def test_inputs_conditional(lint_ctx):

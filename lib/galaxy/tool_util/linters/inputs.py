@@ -168,21 +168,35 @@ def lint_inputs(tool_xml, lint_ctx):
                     f"Param input [{param_name}] with no format specified - 'data' format will be assumed.", node=param
                 )
             options = param.findall("./options")
+            has_options_filter_attribute = False
             if len(options) == 1:
-                if len(options[0].attrib) > 0:
-                    lint_ctx.error(
-                        f"Data parameter [{param_name}] uses invalid attributes: {options[0].attrib}", node=param
-                    )
+                for oa in options[0].attrib:
+                    if oa == "options_filter_attribute":
+                        has_options_filter_attribute = True
+                    else:
+                        lint_ctx.error(f"Data parameter [{param_name}] uses invalid attribute: {oa}", node=param)
             elif len(options) > 1:
                 lint_ctx.error(f"Data parameter [{param_name}] contains multiple options elements.", node=options[1])
             # for data params only filters with key='build' of type='data_meta' are allowed
             filters = param.findall("./options/filter")
             for f in filters:
-                if f.get("key") != "dbkey" or f.get("type") != "data_meta":
+                if not f.get("ref"):
                     lint_ctx.error(
-                        f'Data parameter [{param_name}] for filters only type="data_meta" and key="dbkey" are allowed, found type="{f.get("type")}" and key="{f.get("key")}"',
+                        f"Data parameter [{param_name}] filter needs to define a ref attribute",
                         node=f,
                     )
+                if has_options_filter_attribute:
+                    if f.get("type") != "data_meta":
+                        lint_ctx.error(
+                            f'Data parameter [{param_name}] for filters only type="data_meta" is allowed, found type="{f.get("type")}"',
+                            node=f,
+                        )
+                else:
+                    if f.get("key") != "dbkey" or f.get("type") != "data_meta":
+                        lint_ctx.error(
+                            f'Data parameter [{param_name}] for filters only type="data_meta" and key="dbkey" are allowed, found type="{f.get("type")}" and key="{f.get("key")}"',
+                            node=f,
+                        )
 
         elif param_type == "select":
             # get dynamic/statically defined options
