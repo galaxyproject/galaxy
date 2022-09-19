@@ -2,10 +2,7 @@
 import { watch } from "vue";
 import { BButton } from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCloudUploadAlt, faSpinner, faCheckCircle, faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { useTaskMonitor } from "composables/useTaskMonitor";
-library.add(faCloudUploadAlt, faSpinner, faCheckCircle, faExclamationCircle);
 
 const { isRunning, isCompleted, hasFailed, requestHasFailed, waitForTask } = useTaskMonitor();
 
@@ -24,6 +21,13 @@ watch(
         }
     }
 );
+</script>
+
+<script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCloudUploadAlt, faSpinner, faCheckCircle, faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCloudUploadAlt, faSpinner, faCheckCircle, faExclamationCircle);
 </script>
 
 <template>
