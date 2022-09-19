@@ -30,18 +30,20 @@ from galaxy.structured_app import BasicSharedApp
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web_stack import application_stack_instance
 from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
+from tool_shed.structured_app import ToolShedApp
 from tool_shed.util.hgweb_config import hgweb_config_manager
 from . import config
 
 log = logging.getLogger(__name__)
 
 
-class UniverseApplication(BasicSharedApp, SentryClientMixin, HaltableContainer):
+class UniverseApplication(ToolShedApp, SentryClientMixin, HaltableContainer):
     """Encapsulates the state of a Universe application"""
 
     def __init__(self, **kwd) -> None:
         super().__init__()
         self[BasicSharedApp] = self
+        self[ToolShedApp] = self
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = "tool_shed"
         # will be overwritten when building WSGI app
