@@ -1,39 +1,34 @@
-<template>
-    <CurrentUser v-slot="{ user }">
-        <ConfigProvider v-slot="{ config }">
-            <div v-if="config.enable_tool_source_display || (user && user.is_admin)">
-                <b-dropdown-item v-b-modal.tool-source-viewer
-                    ><span class="fa fa-eye" /><span v-localize>View Tool source</span>
-                </b-dropdown-item>
-                <b-modal
-                    id="tool-source-viewer"
-                    :title="`Tool Source for ${toolId}`"
-                    size="lg"
-                    ok-only
-                    ok-title="Close">
-                    <ToolSource :tool-id="toolId" />
-                </b-modal>
-            </div>
-        </ConfigProvider>
-    </CurrentUser>
-</template>
-<script>
-import ConfigProvider from "components/providers/ConfigProvider";
-import CurrentUser from "components/providers/CurrentUser";
+<script setup>
 import ToolSource from "./ToolSource.vue";
+import { useConfig } from "composables/useConfig";
+import { useCurrentUser } from "composables/user";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-export default {
-    components: {
-        ConfigProvider,
-        CurrentUser,
-        // dynamically import toolsource component
-        ToolSource,
+const { config } = useConfig();
+const { currentUser } = useCurrentUser();
+
+const props = defineProps({
+    toolId: {
+        type: String,
+        required: true,
     },
-    props: {
-        toolId: {
-            type: String,
-            required: true,
-        },
-    },
-};
+});
 </script>
+
+<script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEye } from "@fortawesome/free-regular-svg-icons";
+
+library.add(faEye);
+</script>
+
+<template>
+    <div v-if="config.enable_tool_source_display || (currentUser && currentUser.is_admin)">
+        <b-dropdown-item v-b-modal.tool-source-viewer>
+            <FontAwesomeIcon icon="far fa-eye" /><span v-localize>View Tool source</span>
+        </b-dropdown-item>
+        <b-modal id="tool-source-viewer" :title="`Tool Source for ${props.toolId}`" size="lg" ok-only ok-title="Close">
+            <ToolSource :tool-id="props.toolId" />
+        </b-modal>
+    </div>
+</template>
