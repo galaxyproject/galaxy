@@ -36,13 +36,13 @@ class TestFreebayesRepository(ShedTwillTestCase):
         """Create freebayes repository and upload only freebayes.xml. This should result in an error message and invalid tool."""
         self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=repository_name,
             description=repository_description,
             long_description=repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
@@ -73,7 +73,7 @@ class TestFreebayesRepository(ShedTwillTestCase):
         """Browse the available tool sheds in this Galaxy instance and preview the bismark repository."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.browse_tool_shed(url=self.url, strings_displayed=[category_name])
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         self.browse_category(category, strings_displayed=[repository_name])
         self.preview_repository_in_tool_shed(
             repository_name, common.test_user_1_name, strings_displayed=[repository_name]

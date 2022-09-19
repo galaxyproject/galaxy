@@ -91,13 +91,13 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
 
         This is step 2 - Create and populate package_bwa_0_5_9_0460.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=bwa_repository_name,
             description=bwa_repository_description,
             long_description=bwa_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -125,7 +125,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         - Upload via url, with the tool_dependencies.xml in the root of another repository.
         - Upload via url, with the tool_dependencies.xml in a subfolder within another repository.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository_base_name = "complex_dependency_test_%d_0460"
         repository_base_description = "Test #%d for complex repository dependency definitions."
         repository_base_long_description = "Test #%d for complex repository dependency definitions."
@@ -135,7 +135,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
                 description=repository_base_description % number,
                 long_description=repository_base_long_description % number,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
 
@@ -234,13 +234,13 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
 
         This is step 7 - Create hg_tool_dependency_0460 and hg_subfolder_tool_dependency_0460 and populate with tool dependencies.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name="hg_tool_dependency_0460",
             description=bwa_repository_description,
             long_description=bwa_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -259,7 +259,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             description=bwa_repository_description,
             long_description=bwa_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -347,7 +347,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         - Upload via url, with the repository_dependencies.xml in the root of another repository.
         - Upload via url, with the repository_dependencies.xml in a subfolder within another repository.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository_base_name = "repository_dependency_test_%d_0460"
         repository_base_description = "Test #%d for repository dependency definitions."
         repository_base_long_description = "Test #%d for repository dependency definitions."
@@ -357,7 +357,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
                 description=repository_base_description % number,
                 long_description=repository_base_long_description % number,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
 
@@ -459,13 +459,13 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         This is step 14 - Create hg_repository_dependency_0460 and hg_subfolder_repository_dependency_0460 and populate
         with repository dependencies.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name="hg_repository_dependency_0460",
             description=bwa_repository_description,
             long_description=bwa_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -484,7 +484,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             description=bwa_repository_description,
             long_description=bwa_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(

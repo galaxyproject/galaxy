@@ -31,6 +31,11 @@ class Category(BaseModel):
     name: str
 
 
+class CreateCategoryRequest(BaseModel):
+    name: str
+    description: str
+
+
 class ValidRepostiroyUpdateMessage(BaseModel):
     message: str
 

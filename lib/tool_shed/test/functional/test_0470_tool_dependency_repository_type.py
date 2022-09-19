@@ -93,13 +93,13 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         Create and populate a repository named package_x11_client_1_5_proto_7_0 that contains only a single file named tool_dependencies.xml.
         Keep the repository type as the default "Unrestricted".
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=package_libx11_repository_name,
             description=package_libx11_repository_description,
             long_description=package_libx11_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         # Upload the tool dependency definition to the package_x11_client_1_5_proto_7_0_0470 repository.
@@ -124,13 +124,13 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         above package_x11_client_1_5_proto_7_0 repository. Upload the tool_dependencues.xml file such that it does not have a changeset_revision
         defined so it will get automatically populated.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=package_emboss_repository_name,
             description=package_emboss_repository_description,
             long_description=package_emboss_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         # Upload the edited tool dependency definition to the package_emboss_5_0_0 repository.
@@ -155,13 +155,13 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         on the package_emboss_5_0_0 repository above. Upload the tool_dependencies.xml file such that it does not have a change set_revision defined
         so it will get automatically populated.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=emboss_repository_name,
             description=emboss_repository_description,
             long_description=emboss_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         # Populate emboss_5 with tool and dependency definitions.

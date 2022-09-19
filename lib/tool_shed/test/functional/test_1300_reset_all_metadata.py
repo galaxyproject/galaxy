@@ -83,7 +83,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             description="Galaxy's filtering tool",
             long_description="Long description of Galaxy's filtering tool",
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
         )
         if self.repository_is_new(repository):
             running_standalone = True
@@ -118,7 +118,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             description="Galaxy's freebayes tool",
             long_description="Long description of Galaxy's freebayes tool",
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
@@ -175,7 +175,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             description=column_maker_repository_description,
             long_description=column_maker_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(column_maker_repository):
@@ -195,7 +195,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 description="Galaxy wrappers for Emboss version 5.0.0 tools",
                 long_description="Galaxy wrappers for Emboss version 5.0.0 tools",
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -219,7 +219,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             description=column_repository_description,
             long_description=column_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(column_maker_repository):
@@ -239,7 +239,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -270,7 +270,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -301,7 +301,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -347,7 +347,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             description="Galaxy's freebayes tool",
             long_description="Long description of Galaxy's freebayes tool",
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
@@ -367,7 +367,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 description=filtering_repository_description,
                 long_description=filtering_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -422,7 +422,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             description="Galaxy's emboss tool",
             long_description="Long description of Galaxy's emboss tool",
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(emboss_repository):
@@ -431,7 +431,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 description="Galaxy's filtering tool",
                 long_description="Long description of Galaxy's filtering tool",
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             freebayes_repository = self.get_or_create_repository(
@@ -439,7 +439,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 description="Galaxy's freebayes tool",
                 long_description="Long description of Galaxy's freebayes tool",
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(

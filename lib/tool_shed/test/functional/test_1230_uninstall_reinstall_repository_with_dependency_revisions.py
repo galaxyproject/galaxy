@@ -49,7 +49,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             description=column_maker_repository_description,
             long_description=column_maker_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(column_maker_repository):
@@ -59,7 +59,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -90,7 +90,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -121,7 +121,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(

@@ -44,7 +44,7 @@ class ToolWithToolDependencies(ShedTwillTestCase):
             description=repository_description,
             long_description=repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
         )
         if self.repository_is_new(repository):
             self.upload_file(
@@ -124,7 +124,7 @@ class ToolWithToolDependencies(ShedTwillTestCase):
         """Browse the available tool sheds in this Galaxy instance and preview the freebayes tool."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.browse_tool_shed(url=self.url, strings_displayed=[category_name])
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         self.browse_category(category, strings_displayed=[repository_name])
         strings_displayed = [repository_name, "Valid tools", "Tool dependencies"]
         self.preview_repository_in_tool_shed(

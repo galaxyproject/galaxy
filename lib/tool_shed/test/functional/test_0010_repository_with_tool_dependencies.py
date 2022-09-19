@@ -51,13 +51,13 @@ class TestFreebayesRepository(ShedTwillTestCase):
         upload, as well as on the manage repository page.
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        category = self.test_db_util.get_category_by_name("Test 0010 Repository With Tool Dependencies")
+        category = self.populator.get_category_with_name("Test 0010 Repository With Tool Dependencies")
         repository = self.get_or_create_repository(
             name=repository_name,
             description=repository_description,
             long_description=repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(

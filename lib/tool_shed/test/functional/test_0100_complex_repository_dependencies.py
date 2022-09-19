@@ -48,7 +48,7 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
             description=bwa_package_repository_description,
             long_description=bwa_package_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -77,7 +77,7 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
             description=bwa_base_repository_description,
             long_description=bwa_base_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         # Populate the repository named bwa_base_repository_0100 with a bwa_base tool archive.

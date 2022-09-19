@@ -45,7 +45,7 @@ class ToolWithRepositoryDependencies(ShedTwillTestCase):
             description=column_maker_repository_description,
             long_description=column_maker_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(column_maker_repository):
@@ -65,7 +65,7 @@ class ToolWithRepositoryDependencies(ShedTwillTestCase):
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -96,7 +96,7 @@ class ToolWithRepositoryDependencies(ShedTwillTestCase):
         """Browse the available tool sheds in this Galaxy instance and preview the emboss tool."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.browse_tool_shed(url=self.url, strings_displayed=["Test 0020 Basic Repository Dependencies"])
-        category = self.test_db_util.get_category_by_name("Test 0020 Basic Repository Dependencies")
+        category = self.populator.get_category_with_name("Test 0020 Basic Repository Dependencies")
         self.browse_category(category, strings_displayed=["emboss_0020"])
         self.preview_repository_in_tool_shed(
             "emboss_0020", common.test_user_1_name, strings_displayed=["emboss_0020", "Valid tools"]

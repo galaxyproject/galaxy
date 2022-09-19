@@ -64,13 +64,13 @@ class TestRepairRepository(ShedTwillTestCase):
 
         This repository will be depended on by the column_1430 repository.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=filter_repository_name,
             description=filter_repository_description,
             long_description=filter_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -92,13 +92,13 @@ class TestRepairRepository(ShedTwillTestCase):
 
         This repository will depend on the filter_1430 repository.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=column_repository_name,
             description=column_repository_description,
             long_description=column_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
