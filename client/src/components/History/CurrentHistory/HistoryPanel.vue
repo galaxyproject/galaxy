@@ -140,7 +140,6 @@
 import Vue from "vue";
 import { Toast } from "ui/toast";
 import { mapActions } from "vuex";
-import { getAppRoot } from "onload/loadConfig";
 import { HistoryItemsProvider } from "components/providers/storeProviders";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
@@ -247,8 +246,7 @@ export default {
         },
     },
     created() {
-        this.root = getAppRoot();
-        this.datasetServices = new DatasetServices({ root: this.root });
+        this.datasetServices = new DatasetServices();
     },
     methods: {
         ...mapActions("history", ["loadHistoryById"]),
@@ -319,23 +317,22 @@ export default {
         },
         onDrop(evt) {
             const data = JSON.parse(evt.dataTransfer.getData("text"))[0];
-            const dataSources = data.history_content_type === "dataset" ? "hda" : "hdca";
-            if (data.history_id === this.historyId) {
-                return;
+            const dataSource = data.history_content_type === "dataset" ? "hda" : "hdca";
+            if (data.history_id != this.historyId) {
+                this.datasetServices
+                    .copyDataset(data.id, this.historyId, data.history_content_type, dataSource)
+                    .then(() => {
+                        if (data.history_content_type === "dataset") {
+                            Toast.info("Dataset copied to history");
+                        } else {
+                            Toast.info("Collection copied to history");
+                        }
+                        this.loadHistoryById(this.historyId);
+                    })
+                    .catch((error) => {
+                        this.onError(error);
+                    });
             }
-            this.datasetServices
-                .copyDataset(data.id, this.historyId, data.history_content_type, dataSources)
-                .then(() => {
-                    if (data.history_content_type === "dataset") {
-                        Toast.info("Dataset copied to history");
-                    } else {
-                        Toast.info("Collection copied to history");
-                    }
-                    this.loadHistoryById(this.historyId);
-                })
-                .catch((error) => {
-                    this.onError(error);
-                });
         },
         onError(error) {
             Toast.error(error);

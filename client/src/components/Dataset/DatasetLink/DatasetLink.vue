@@ -5,7 +5,6 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import { Services } from "components/Dataset/services";
 import { mapCacheActions } from "vuex-cache";
 
@@ -50,7 +49,7 @@ export default {
         },
     },
     created() {
-        this.services = new Services({ root: getAppRoot() });
+        this.services = new Services();
         this.pathDestination = {};
         if (this.path && this.path !== "undefined") {
             // download individual file from composite dataset
