@@ -25,9 +25,9 @@
             </param>
             <param name="select_in" value="B" />
             <output name="output" value="blastdbp/blastdbp.db" ftype="blastdbp">
-                <composite_data type="file" name="blastdb.psq" value="blastdbp/prefix_blastdb.psq"/>
-                <composite_data type="file" name="blastdb.phr" value="blastdbp/prefix_blastdb.phr"/>
-                <composite_data type="file" name="blastdb.pin" value="blastdbp/prefix_blastdb.pin"/>
+                <extra_files type="file" name="blastdb.psq" value="blastdbp/prefix_blastdb.psq"/>
+                <extra_files type="file" name="blastdb.phr" value="blastdbp/prefix_blastdb.phr"/>
+                <extra_files type="file" name="blastdb.pin" value="blastdbp/prefix_blastdb.pin"/>
             </output>
             <assert_stdout>
                 <has_text text="select_in: B"/>

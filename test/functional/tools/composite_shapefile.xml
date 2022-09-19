@@ -22,10 +22,10 @@
     <tests>
         <test>
             <param name="input" value="__MOCKENTRY__" ftype="shp" >
-                <composite_data value="shapefile/shapefile.shp"/>
-                <composite_data value="shapefile/shapefile.shx"/>
-                <composite_data value="shapefile/shapefile.dbf"/>
-                <composite_data value="shapefile/shapefile.prj"/>
+                <composite_data name="shapefile.shp" value="shapefile/shapefile.shp"/>
+                <composite_data name="shapefile.shx" value="shapefile/shapefile.shx"/>
+                <composite_data name="shapefile.dbf" value="shapefile/shapefile.dbf"/>
+                <composite_data name="shapefile.prj" value="shapefile/shapefile.prj"/>
             </param>
             <param name="select_in" value=""/>
             <output name="output">
