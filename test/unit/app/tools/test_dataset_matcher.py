@@ -91,6 +91,37 @@ class TestDatasetMatcher(TestCase, UsesApp):
         hda_match = self.test_context.hda_match(self.mock_hda)
         assert not hda_match
 
+    def test_filtered_hda_unset_key(self):
+        """
+        test (for the default profile 16.04) that hda is filtered
+        if the referred dataset does not set a dbkey
+        """
+        self.filtered_param = True
+        data1_val = model.HistoryDatasetAssociation()
+        data1_val.dbkey = "?"
+        self.other_values = {"data1": data1_val}
+        assert self.test_context.filter_values == set()
+
+        # mock_hda is hg19, other is ? so should not be "valid hda"
+        hda_match = self.test_context.hda_match(self.mock_hda)
+        assert not hda_match
+
+    def test_filtered_hda_unset_key_profile(self):
+        """
+        test (for the profile version 22.09 that the hda is NOT
+        filtered if the referred data set does not set a dbkey
+        """
+        self.tool.profile = 22.09
+        self.filtered_param = True
+        data1_val = model.HistoryDatasetAssociation()
+        data1_val.dbkey = "?"
+        self.other_values = {"data1": data1_val}
+        assert self.test_context.filter_values == set()
+
+        # mock_hda is hg19, other is hg18 so should not be "valid hda"
+        hda_match = self.test_context.hda_match(self.mock_hda)
+        assert hda_match
+
     def test_filtered_hda_unmatched_key(self):
         self.filtered_param = True
         data1_val = model.HistoryDatasetAssociation()
