@@ -41,6 +41,7 @@ describe("ToolCard", () => {
         const store = createStore({
             id: "user.id",
             email: "user.email",
+            is_admin: true,
             preferences: {},
         });
 
@@ -72,19 +73,22 @@ describe("ToolCard", () => {
         });
     });
 
-    it("check props", async () => {
-        const title = wrapper.find(".portlet-title-text > b");
+    it("shows props", async () => {
+        const title = wrapper.find("h1");
         expect(title.text()).toBe("title");
-        const description = wrapper.find(".portlet-title-text > span");
+
+        const description = wrapper.find("span[itemprop='description']");
         expect(description.text()).toBe("description");
-        const icon = wrapper.find(".portlet-title-icon");
-        expect(icon.classes()).toContain("fa-wrench");
+
         const dropdownHeader = wrapper.find(".tool-dropdown");
         expect(dropdownHeader.attributes("title")).toBe("Options");
+
         const dropdownItems = wrapper.findAll(".dropdown-item");
-        expect(dropdownItems.length).toBe(4);
+        expect(dropdownItems.length).toBe(5);
+
         const backdrop = wrapper.findAll(".portlet-backdrop");
         expect(backdrop.length).toBe(0);
+
         await wrapper.setProps({ disabled: true });
         const backdropActive = wrapper.findAll(".portlet-backdrop");
         expect(backdropActive.length).toBe(1);
