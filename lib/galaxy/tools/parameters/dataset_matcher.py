@@ -169,8 +169,7 @@ class DatasetMatcher:
         for select parameters).
         """
         param = self.param
-
-        if param.tool.profile < 22.09:
+        if param.tool and param.tool.profile < 22.09:
             return param.options and param.get_options_filter_attribute(hda) not in self.filter_values
         else:
             return (
