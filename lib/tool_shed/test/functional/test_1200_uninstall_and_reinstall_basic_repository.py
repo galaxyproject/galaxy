@@ -20,11 +20,6 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
         assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
         self.test_db_util.get_private_role(admin_user)
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        galaxy_admin_user = self.test_db_util.get_galaxy_user(common.admin_email)
-        assert (
-            galaxy_admin_user is not None
-        ), f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_galaxy_private_role(galaxy_admin_user)
 
     def test_0005_ensure_repositories_and_categories_exist(self):
         """Create the 0000 category and upload the filtering repository to the tool shed, if necessary."""

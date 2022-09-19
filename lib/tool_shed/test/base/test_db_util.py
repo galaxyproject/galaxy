@@ -217,17 +217,6 @@ def ga_refresh(obj):
     install_session().refresh(obj)
 
 
-def get_galaxy_private_role(user):
-    for role in user.all_roles():
-        if role.name == user.email and role.description == f"Private Role for {user.email}":
-            return role
-    raise AssertionError(f"Private role not found for user '{user.email}'")
-
-
-def get_galaxy_user(email):
-    return ga_session().query(galaxy.model.User).filter(galaxy.model.User.table.c.email == email).first()
-
-
 def get_repository_by_name_and_owner(name, owner_username, return_multiple=False):
     owner = get_user_by_name(owner_username)
     repository = (
