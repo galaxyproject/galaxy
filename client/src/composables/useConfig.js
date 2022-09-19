@@ -1,8 +1,9 @@
-import { computed, onMounted } from "vue";
-import store from "store";
+import { computed, onMounted, inject } from "vue";
 
 /* composable config wrapper */
 export function useConfig() {
+    const store = inject("store");
+
     const config = computed(() => store.getters["config/config"]);
     const isLoaded = computed(() => store.getters["config/configIsLoaded"]);
 

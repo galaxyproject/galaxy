@@ -1,6 +1,6 @@
 import { standardInit, addInitialization } from "onload";
 
-import Vue from "vue";
+import Vue, { provide } from "vue";
 import App from "./App.vue";
 import store from "store";
 import { getRouter } from "./router";
@@ -11,6 +11,9 @@ addInitialization((Galaxy) => {
     new Vue({
         el: "#app",
         render: (h) => h(App),
+        setup() {
+            provide("store", store);
+        },
         router: router,
         store: store,
     });
