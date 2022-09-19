@@ -153,8 +153,9 @@ export class WorkflowRunModel {
                             (data_ref.step_linked && !isDataStep(data_ref.step_linked)) || input.wp_linked;
                     }
                     if (
-                        is_data_input ||
-                        (input.value && input.value.__class__ == "RuntimeValue" && !input.step_linked)
+                        !input.optional &&
+                        (is_data_input ||
+                            (input.value && input.value.__class__ == "RuntimeValue" && !input.step_linked))
                     ) {
                         step.expanded = true;
                         hasOpenToolSteps = true;
