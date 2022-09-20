@@ -21,10 +21,6 @@ export function useTaskMonitor() {
     const hasFailed = computed(() => status.value === FAILURE_STATE);
     const queryStateUrl = computed(() => `/api/tasks/${currentTaskId.value}/state`);
 
-    /**
-     * Waits for a particular task ID to be completed.
-     * @param {string} taskId The task ID
-     */
     function waitForTask(taskId) {
         resetState();
         currentTaskId.value = taskId;
@@ -72,6 +68,12 @@ export function useTaskMonitor() {
 
     return {
         /**
+         * Waits for a particular task ID to be completed.
+         * While the task is pending, the state will be updated every second by polling the server.
+         * @param {string} taskId The task ID
+         */
+        waitForTask,
+        /**
          * Whether the task is currently running.
          */
         isRunning: readonly(isRunning),
@@ -87,6 +89,5 @@ export function useTaskMonitor() {
          * If true, the status of the task cannot be determined because of a request error.
          */
         requestHasFailed: readonly(requestHasFailed),
-        waitForTask,
     };
 }
