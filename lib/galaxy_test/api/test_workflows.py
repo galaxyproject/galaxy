@@ -16,6 +16,7 @@ from typing import (
 from uuid import uuid4
 
 import pytest
+import yaml
 from requests import (
     delete,
     get,
@@ -41,6 +42,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_ONE_STEP_DEFAULT,
     WORKFLOW_OPTIONAL_FALSE_INPUT_COLLECTION,
     WORKFLOW_OPTIONAL_FALSE_INPUT_DATA,
+    WORKFLOW_OPTIONAL_INPUT_DELAYED_SCHEDULING,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
     WORKFLOW_OPTIONAL_TRUE_INPUT_DATA,
     WORKFLOW_PARAMETER_INPUT_INTEGER_DEFAULT,
@@ -3175,42 +3177,32 @@ input1:
     def test_run_with_optional_data_unspecified_survives_delayed_step(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_workflow(
+                WORKFLOW_OPTIONAL_INPUT_DELAYED_SCHEDULING,
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+
+    def test_run_subworkflow_with_optional_data_unspecified(self):
+        with self.dataset_populator.test_history() as history_id:
+            subworkflow = yaml.safe_load(
                 """
 class: GalaxyWorkflow
 inputs:
-  required:
-    type: data
-  optional:
-    type: data
-    optional: true
-outputs:
-  out1:
-    outputSource: count_multi_file/out_file1
+  required: data
 steps:
-  expression:
-    tool_id: expression_parse_int
-    state:
-      input1: 1
-  head:
-    tool_id: head
+  nested_workflow:
     in:
-      input: required
-    state:
-      lineNum:
-        $link:  expression/out1
-  count_multi_file:
-    tool_id: count_multi_file
-    in:
-      input1:
-      - optional
-      - head/out_file1
-    out:
-      out_file1: out_file1
+      required: required
 test_data:
   required:
     value: 1.bed
     type: File
-""",
+"""
+            )
+            subworkflow["steps"]["nested_workflow"]["run"] = yaml.safe_load(WORKFLOW_OPTIONAL_INPUT_DELAYED_SCHEDULING)
+            self._run_workflow(
+                subworkflow,
                 history_id=history_id,
                 wait=True,
                 assert_ok=True,

@@ -1656,7 +1656,10 @@ class BaseWorkflowPopulator(BasePopulator):
         if test_data is None:
             if jobs_descriptions is None:
                 assert source_type != "path"
-                jobs_descriptions = yaml.safe_load(has_workflow)
+                if isinstance(has_workflow, dict):
+                    jobs_descriptions = has_workflow
+                else:
+                    jobs_descriptions = yaml.safe_load(has_workflow)
 
             test_data = jobs_descriptions.get("test_data", {})
 
