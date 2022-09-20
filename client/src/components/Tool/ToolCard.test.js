@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue, mockModule } from "jest/helpers";
 import ToolCard from "./ToolCard";
 import Vuex from "vuex";
 import { userStore } from "store/userStore";
@@ -10,26 +10,8 @@ const localVue = getLocalVue();
 const createStore = (currentUser) => {
     return new Vuex.Store({
         modules: {
-            user: {
-                state: {
-                    currentUser,
-                },
-                getters: userStore.getters,
-                actions: {
-                    loadUser: jest.fn(),
-                },
-                namespaced: true,
-            },
-            config: {
-                state: {
-                    config: {},
-                },
-                getters: configStore.getters,
-                actions: {
-                    loadConfigs: jest.fn(),
-                },
-                namespaced: true,
-            },
+            user: mockModule(userStore, { currentUser }),
+            config: mockModule(configStore, { config: {} }),
         },
     });
 };
