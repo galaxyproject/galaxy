@@ -3172,6 +3172,50 @@ input1:
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert "No input selected" in content
 
+    def test_run_with_optional_data_unspecified_survives_delayed_step(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  required:
+    type: data
+  optional:
+    type: data
+    optional: true
+outputs:
+  out1:
+    outputSource: count_multi_file/out_file1
+steps:
+  expression:
+    tool_id: expression_parse_int
+    state:
+      input1: 1
+  head:
+    tool_id: head
+    in:
+      input: required
+    state:
+      lineNum:
+        $link:  expression/out1
+  count_multi_file:
+    tool_id: count_multi_file
+    in:
+      input1:
+      - optional
+      - head/out_file1
+    out:
+      out_file1: out_file1
+test_data:
+  required:
+    value: 1.bed
+    type: File
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+
     def test_run_with_non_optional_data_unspecified_fails_invocation(self):
         with self.dataset_populator.test_history() as history_id:
             error = self._run_jobs(
