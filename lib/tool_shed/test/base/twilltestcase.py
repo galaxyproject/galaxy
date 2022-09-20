@@ -259,11 +259,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
         self.visit_url("/repository/browse_valid_categories", params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def browse_custom_datatypes(self, strings_displayed=None, strings_not_displayed=None):
-        url = "/repository/browse_datatypes"
-        self.visit_url(url)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
     def browse_repository(self, repository, strings_displayed=None, strings_not_displayed=None):
         params = {"id": self.security.encode_id(repository.id)}
         self.visit_url("/repository/browse_repository", params=params)
@@ -1171,11 +1166,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
             "changeset_revision": changeset_revision,
         }
         self.visit_url("/repository/load_invalid_tool", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def load_page_for_installed_tool(self, tool_guid, strings_displayed=None, strings_not_displayed=None):
-        params = {"tool_id": tool_guid}
-        self.visit_galaxy_url("/tool_runner", params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def preview_repository_in_tool_shed(
