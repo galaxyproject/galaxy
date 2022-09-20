@@ -8,51 +8,22 @@ describe("ToolSearch", () => {
             "model_class": "ToolSection",
             "id": "group_1",
             "name": "Group 1",
-            "version": "",
-            "description": null,
-            "links": null,
             "elems": [
               {
                 "model_class": "Tool1",
                 "id": "tool1",
                 "name": "Tool 1",
-                "version": "1.0.0",
-                "description": "",
-                "labels": [],
-                "edam_operations": [
-                  "operation_3359"
-                ],
-                "edam_topics": [],
-                "hidden": "",
-                "is_workflow_compatible": true,
-                "xrefs": [],
                 "link": "/tool_runner?tool_id=tool1",
-                "min_width": -1,
-                "target": "galaxy_main",
                 "panel_section_id": "group_1",
-                "panel_section_name": "Group 1",
-                "form_style": "regular"
+                "panel_section_name": "Group 1"
               },
               {
                 "model_class": "Tool2",
                 "id": "tool2",
                 "name": "Tool 2",
-                "version": "1.0.0",
-                "description": "",
-                "labels": [],
-                "edam_operations": [
-                  "operation_3436"
-                ],
-                "edam_topics": [],
-                "hidden": "",
-                "is_workflow_compatible": true,
-                "xrefs": [],
                 "link": "/tool_runner?tool_id=tool2",
-                "min_width": -1,
-                "target": "galaxy_main",
                 "panel_section_id": "group_1",
-                "panel_section_name": "Group 1",
-                "form_style": "regular"
+                "panel_section_name": "Group 1"
               }
             ]
           },
@@ -60,28 +31,14 @@ describe("ToolSearch", () => {
             "model_class": "ToolSection",
             "id": "group_2",
             "name": "Group 2",
-            "version": "",
-            "description": null,
-            "links": null,
             "elems": [
               {
                 "model_class": "Tool3",
                 "id": "tool3",
                 "name": "Tool 3",
-                "version": "0.1.0",
-                "description": "from dataset",
-                "labels": [],
-                "edam_operations": [],
-                "edam_topics": [],
-                "hidden": "",
-                "is_workflow_compatible": true,
-                "xrefs": [],
                 "link": "/tool_runner?tool_id=tool3",
-                "min_width": -1,
-                "target": "galaxy_main",
                 "panel_section_id": "group_2",
-                "panel_section_name": "Group 2",
-                "form_style": "special"
+                "panel_section_name": "Group 2"
               }
             ]
         }
