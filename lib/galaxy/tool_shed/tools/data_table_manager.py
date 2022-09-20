@@ -14,11 +14,13 @@ from galaxy.util.tool_shed import xml_util
 
 log = logging.getLogger(__name__)
 
+RequiredAppT = Union[BasicSharedApp, InstallationTarget]
+
 
 class ShedToolDataTableManager:
-    app: Union[BasicSharedApp, InstallationTarget]
+    app: RequiredAppT
 
-    def __init__(self, app: Union[BasicSharedApp, InstallationTarget]):
+    def __init__(self, app: RequiredAppT):
         self.app = app
 
     def generate_repository_info_elem(
