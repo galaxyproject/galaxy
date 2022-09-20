@@ -1,15 +1,13 @@
 <template>
-    <div
-        class="dropzone d-flex align-items-center justify-content-center w-100 h-100 p-2 text-center text-secondary position-absolute rounded">
-        Drop here to copy to history
-    </div>
+    <div class="drop-zone d-flex align-items-center justify-content-center w-100 h-100 p-2 position-absolute rounded" />
 </template>
 
-<style scoped>
-.dropzone {
+<style scoped lang="scss">
+@import "scss/theme/blue.scss";
+.drop-zone {
     pointer-events: none;
     z-index: 100;
-    border: dashed;
-    background-color: rgba(0, 0, 0, 0.4);
+    opacity: 0.2;
+    background-color: $brand-info;
 }
 </style>
