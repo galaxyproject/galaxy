@@ -11,7 +11,13 @@ import urllib.parse
 import zipfile
 from json import dumps
 from logging import getLogger
-from typing import Optional
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+)
 
 import requests
 from packaging.version import (
@@ -19,6 +25,7 @@ from packaging.version import (
     Version,
 )
 from requests.cookies import RequestsCookieJar
+from typing_extensions import Protocol
 
 try:
     from nose.tools import nottest
@@ -71,9 +78,15 @@ class OutputsDict(dict):
             return super().__getitem__(item)
 
 
+JobDataT = Dict[str, Any]
+JobDataCallbackT = Callable[[JobDataT], None]
+ToolTestDictT = Dict[str, Any]
+ToolTestDictsT = List[ToolTestDictT]
+
+
 def stage_data_in_history(
-    galaxy_interactor,
-    tool_id,
+    galaxy_interactor: "GalaxyInteractorApi",
+    tool_id: str,
     all_test_data,
     history=None,
     force_path_paste=False,
@@ -113,6 +126,8 @@ def stage_data_in_history(
 
 
 class GalaxyInteractorApi:
+    api_key: Optional[str]
+
     def __init__(self, **kwds):
         self.api_url = f"{kwds['galaxy_url'].rstrip('/')}/api"
         self.cookies = None
@@ -157,7 +172,7 @@ class GalaxyInteractorApi:
         assert response.status_code == 200, f"Non 200 response from tool tests available API. [{response.content}]"
         return response.json()
 
-    def get_tool_tests(self, tool_id, tool_version=None):
+    def get_tool_tests(self, tool_id: str, tool_version: Optional[str] = None) -> ToolTestDictsT:
         url = f"tools/{tool_id}/test_data"
         params = {"tool_version": tool_version} if tool_version else None
         response = self._get(url, data=params)
@@ -430,13 +445,13 @@ class GalaxyInteractorApi:
 
     def stage_data_async(
         self,
-        test_data,
-        history_id,
-        tool_id,
-        force_path_paste=False,
-        maxseconds=DEFAULT_TOOL_TEST_WAIT,
-        tool_version=None,
-    ):
+        test_data: Dict[str, Any],
+        history_id: str,
+        tool_id: str,
+        force_path_paste: bool = False,
+        maxseconds: int = DEFAULT_TOOL_TEST_WAIT,
+        tool_version: Optional[str] = None,
+    ) -> Callable[[], None]:
         fname = test_data["fname"]
         tool_input = {
             "file_type": test_data["ftype"],
@@ -761,6 +776,7 @@ class GalaxyInteractorApi:
                 else:
                     break
 
+            assert response
             response.raise_for_status()
             return response.content
 
@@ -1097,12 +1113,17 @@ def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_
             shutil.rmtree(path)
 
 
-class NullClientTestConfig:
+class TestConfig(Protocol):
+    def get_test_config(self, job_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        ...
+
+
+class NullClientTestConfig(TestConfig):
     def get_test_config(self, job_data):
         return None
 
 
-class DictClientTestConfig:
+class DictClientTestConfig(TestConfig):
     def __init__(self, tools):
         self._tools = tools or {}
 
@@ -1140,22 +1161,22 @@ class DictClientTestConfig:
 
 
 def verify_tool(
-    tool_id,
-    galaxy_interactor,
-    resource_parameters=None,
-    register_job_data=None,
-    test_index=0,
-    tool_version=None,
-    quiet=False,
-    test_history=None,
-    no_history_cleanup=False,
-    publish_history=False,
-    force_path_paste=False,
-    maxseconds=DEFAULT_TOOL_TEST_WAIT,
-    tool_test_dicts=None,
-    client_test_config=None,
-    skip_with_reference_data=False,
-    skip_on_dynamic_param_errors=False,
+    tool_id: str,
+    galaxy_interactor: "GalaxyInteractorApi",
+    resource_parameters: Optional[Dict[str, Any]] = None,
+    register_job_data: Optional[JobDataCallbackT] = None,
+    test_index: int = 0,
+    tool_version: Optional[str] = None,
+    quiet: bool = False,
+    test_history: Optional[str] = None,
+    no_history_cleanup: bool = False,
+    publish_history: bool = False,
+    force_path_paste: bool = False,
+    maxseconds: int = DEFAULT_TOOL_TEST_WAIT,
+    tool_test_dicts: Optional[ToolTestDictsT] = None,
+    client_test_config: Optional[TestConfig] = None,
+    skip_with_reference_data: bool = False,
+    skip_on_dynamic_param_errors: bool = False,
 ):
     if resource_parameters is None:
         resource_parameters = {}
@@ -1170,7 +1191,7 @@ def verify_tool(
     if tool_version is None and "tool_version" in tool_test_dict:
         tool_version = tool_test_dict.get("tool_version")
 
-    job_data = {
+    job_data: JobDataT = {
         "tool_id": tool_id,
         "tool_version": tool_version,
         "test_index": test_index,
@@ -1190,7 +1211,7 @@ def verify_tool(
         if required_loc_files:
             skip_message = f"Skipping test because of required loc files ({required_loc_files})"
 
-    if skip_message:
+    if skip_message and register_job_data:
         job_data["status"] = "skip"
         register_job_data(job_data)
         return
@@ -1212,7 +1233,7 @@ def verify_tool(
     tool_inputs = None
     job_stdio = None
     job_output_exceptions = None
-    tool_execution_exception = None
+    tool_execution_exception: Optional[Exception] = None
     input_staging_exception = None
     expected_failure_occurred = False
     begin_time = time.time()
@@ -1302,9 +1323,9 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
     assert len(jobs) == 1, "Test framework logic error, somehow tool test resulted in more than one job."
     job = jobs[0]
 
-    found_exceptions = []
+    found_exceptions: List[Exception] = []
 
-    def register_exception(e):
+    def register_exception(e: Exception):
         if not found_exceptions and not quiet:
             # Only print this stuff out once.
             for stream in ["stdout", "stderr"]:
