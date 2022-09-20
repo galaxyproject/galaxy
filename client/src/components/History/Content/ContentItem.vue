@@ -186,7 +186,7 @@ export default {
                 };
             }
             return {
-                display: `/datasets/${id}/display/?preview=True`,
+                display: `/datasets/${id}/preview`,
                 edit: `/datasets/edit/${id}`,
                 showDetails: `/datasets/${id}/details`,
                 reportError: `/datasets/${id}/error`,
@@ -204,7 +204,7 @@ export default {
             }
         },
         onDisplay() {
-            iframeAdd({ path: this.itemUrls.display, title: this.name });
+            iframeAdd({ path: this.itemUrls.display, title: this.name, $router: this.$router });
         },
         onDragStart(evt) {
             evt.dataTransfer.dropEffect = "move";
