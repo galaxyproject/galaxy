@@ -33,7 +33,7 @@
                     <span class="fa fa-info-circle" />
                 </b-button>
                 <b-button
-                    v-if="showRerun"
+                    v-if="writable && showRerun"
                     class="rerun-btn px-1"
                     title="Run Job Again"
                     size="sm"
@@ -83,6 +83,7 @@ export default {
     mixins: [downloadUrlMixin],
     props: {
         item: { type: Object, required: true },
+        writable: { type: Boolean, default: true },
         showHighlight: { type: Boolean, default: false },
         itemUrls: { type: Object, required: true },
     },

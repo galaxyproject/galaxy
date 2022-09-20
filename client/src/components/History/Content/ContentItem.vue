@@ -52,6 +52,7 @@
                 </span>
                 <ContentOptions
                     v-else
+                    :writable="writable"
                     :is-dataset="isDataset"
                     :is-deleted="item.deleted"
                     :is-history-item="isHistoryItem"
@@ -85,6 +86,7 @@
             <DatasetDetails
                 v-if="expandDataset"
                 :dataset="item"
+                :writable="writable"
                 :show-highlight="isHistoryItem"
                 :item-urls="itemUrls"
                 @edit="onEdit"
@@ -117,6 +119,7 @@ export default {
         FontAwesomeIcon,
     },
     props: {
+        writable: { type: Boolean, default: true },
         expandDataset: { type: Boolean, required: true },
         highlight: { type: String, default: null },
         id: { type: Number, required: true },
@@ -169,7 +172,7 @@ export default {
             return this.item.tags;
         },
         tagsDisabled() {
-            return !this.expandDataset || !this.isHistoryItem;
+            return !this.writable || !this.expandDataset || !this.isHistoryItem;
         },
         isCollection() {
             return "collection_type" in this.item;

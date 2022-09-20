@@ -31,6 +31,7 @@
                     v-else
                     v-on="handlers"
                     :history="history"
+                    :writable="user.id == history.user_id"
                     :show-controls="false"
                     @view-collection="onViewCollection" />
                 <CopyModal id="copy-history-modal" :history="history" />
