@@ -1389,7 +1389,7 @@ class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
 
 
 # Things gxformat2 knows how to upload as workflows
-HasYamlT = Union[str, os.PathLike, dict]
+YamlContentT = Union[str, os.PathLike, dict]
 
 
 class BaseWorkflowPopulator(BasePopulator):
@@ -1444,11 +1444,11 @@ class BaseWorkflowPopulator(BasePopulator):
         upload_response = self._post("workflows/upload", data=data)
         return upload_response
 
-    def upload_yaml_workflow(self, has_yaml: HasYamlT, **kwds) -> str:
+    def upload_yaml_workflow(self, yaml_content: YamlContentT, **kwds) -> str:
         round_trip_conversion = kwds.get("round_trip_format_conversion", False)
         client_convert = kwds.pop("client_convert", not round_trip_conversion)
         kwds["convert"] = client_convert
-        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
+        workflow = convert_and_import_workflow(yaml_content, galaxy_interface=self, **kwds)
         workflow_id = workflow["id"]
         if round_trip_conversion:
             workflow_yaml_wrapped = self.download_workflow(workflow_id, style="format2_wrapped_yaml")
@@ -1717,7 +1717,7 @@ class BaseWorkflowPopulator(BasePopulator):
 
     def run_workflow(
         self,
-        has_workflow: HasYamlT,
+        has_workflow: YamlContentT,
         test_data: Optional[Union[str, dict]] = None,
         history_id: Optional[str] = None,
         wait: bool = True,
