@@ -19,7 +19,6 @@ const state = {
     // histories for current user
     histories: {},
     historiesLoading: false,
-    draggingHistoryItem: null,
 };
 
 const mutations = {
@@ -55,9 +54,6 @@ const mutations = {
     setHistoriesLoading(state, isLoading) {
         state.historiesLoading = isLoading;
     },
-    setDraggingHistoryItem(state, item) {
-        state.draggingHistoryItem = item;
-    },
 };
 
 const getters = {
@@ -92,9 +88,6 @@ const getters = {
     },
     historiesLoading: (state) => {
         return state.historiesLoading;
-    },
-    getDraggingHistoryItem: (state) => {
-        return state.draggingHistoryItem;
     },
 };
 
@@ -179,9 +172,6 @@ const actions = {
         // properties that are to be updated on the server. A full history object is not required
         const saveResult = await updateHistoryFields(id, updateFields);
         commit("setHistory", saveResult);
-    },
-    setDraggingHistoryItem({ commit }, item) {
-        commit("setDraggingHistoryItem", item);
     },
 };
 

@@ -24,7 +24,6 @@
                             <template v-slot:item="{ item }">
                                 <ContentItem
                                     :id="item.element_index + 1"
-                                    :draggable="false"
                                     :item="item.object"
                                     :name="item.element_identifier"
                                     :expand-dataset="isExpanded(item)"
