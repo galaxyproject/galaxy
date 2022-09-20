@@ -10,7 +10,7 @@ import { useMarkdown } from "composables/useMarkdown";
 import { Toast } from "ui/toast";
 import axios from "axios";
 
-const md = useMarkdown({ openLinksInNewPage: true });
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 const exportRemoteModal = ref(null);
 const exportToRemoteTaskId = ref(null);
@@ -23,7 +23,7 @@ const props = defineProps({
 // Make `invocationId` available to child components via `inject`
 provide("invocationId", props.invocationId);
 
-const descriptionRendered = computed(() => md.render(props.exportPlugin.markdownDescription));
+const descriptionRendered = computed(() => renderMarkdown(props.exportPlugin.markdownDescription));
 const invocationDownloadUrl = computed(() => `/api/invocations/${props.invocationId}/prepare_store_download`);
 const downloadParams = computed(() => {
     return {
