@@ -35,9 +35,6 @@
                     @view-collection="onViewCollection" />
                 <CopyModal id="copy-history-modal" :history="history" />
             </div>
-            <b-alert v-else class="m-2" variant="info" show>
-                <LoadingSpan message="Loading History" />
-            </b-alert>
         </UserHistories>
     </CurrentUser>
 </template>

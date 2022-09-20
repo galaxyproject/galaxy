@@ -32,13 +32,23 @@ const mutations = {
         Vue.delete(state.histories, doomed.id);
     },
     setHistories(state, newHistories = []) {
-        // The incoming history list contains less information than the current history
-        // so we ensure that already available details are not getting lost
+        // The incoming history list may contain less information than the already stored
+        // histories, so we ensure that already available details are not getting lost.
         const enrichedHistories = newHistories.map((history) => {
             const historyState = state.histories[history.id] || {};
             return Object.assign({}, history, historyState);
         });
+        // Histories are provided as list but stored as map.
         const newMap = enrichedHistories.reduce((acc, h) => ({ ...acc, [h.id]: h }), {});
+        // Ensure that already stored histories, which are not available in the incoming array,
+        // are not lost. This happens e.g. with shared histories since they have different owners.
+        state.histories.forEach((history) => {
+            const historyId = history.id;
+            if (!newMap[historyId]) {
+                newMap[historyId] = history;
+            }
+        });
+        // Update stored histories
         Vue.set(state, "histories", newMap);
     },
     setHistoriesLoading(state, isLoading) {
@@ -82,7 +92,7 @@ const getters = {
 };
 
 // flags to keep track of loading states
-const isLoadingHistory = new Map();
+const isLoadingHistory = new Set();
 let isLoadingHistories = false;
 
 const actions = {
@@ -125,7 +135,7 @@ const actions = {
     },
     loadHistoryById({ dispatch }, id) {
         if (!isLoadingHistory.has(id)) {
-            const p = getHistoryById(id)
+            getHistoryById(id)
                 .then((history) => {
                     dispatch("setHistory", history);
                 })
@@ -135,7 +145,7 @@ const actions = {
                 .finally(() => {
                     isLoadingHistory.delete(id);
                 });
-            //isLoadingHistory.set(id, p);
+            isLoadingHistory.add(id);
         }
     },
     resetHistory({ commit }) {
@@ -150,7 +160,7 @@ const actions = {
         commit("setHistory", history);
         commit("setCurrentHistoryId", history.id);
     },
-    async setCurrentHistory({ dispatch, getters }, id) {
+    async setCurrentHistory({ dispatch }, id) {
         const changedHistory = await setCurrentHistoryOnServer(id);
         return dispatch("selectHistory", changedHistory);
     },
