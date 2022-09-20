@@ -100,6 +100,7 @@ def verify(
     if attributes is None:
         attributes = {}
 
+    compare = attributes.get("compare", "diff")
     # expected object might be None, so don't pull unless available
     has_expected_object = "object" in attributes
     if has_expected_object:
@@ -129,7 +130,7 @@ def verify(
         # may raise an exception if `filename` does not exist (e.g. when
         # generating a tool output file from scratch with
         # `planemo test --update_test_data`).
-        if keep_outputs_dir:
+        if keep_outputs_dir and compare in ["diff", "sim_size"]:
             ofn = os.path.join(keep_outputs_dir, filename)
             out_dir = os.path.dirname(ofn)
             if not os.path.exists(out_dir):
@@ -151,7 +152,6 @@ def verify(
             assert filename_, f"Failed to find output target for test {filename_}"
             local_name = filename_
 
-        compare = attributes.get("compare", "diff")
         try:
             if attributes.get("ftype", None) in [
                 "bam",
