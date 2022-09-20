@@ -127,6 +127,7 @@ def stage_data_in_history(
 
 class GalaxyInteractorApi:
     api_key: Optional[str]
+    keep_outputs_dir: Optional[str]
 
     def __init__(self, **kwds):
         self.api_url = f"{kwds['galaxy_url'].rstrip('/')}/api"
@@ -950,7 +951,12 @@ class RunToolException(Exception):
 
 # Galaxy specific methods - rest of this can be used with arbitrary files and such.
 def verify_hid(
-    filename, hda_id, attributes, test_data_downloader, hid="", dataset_fetcher=None, keep_outputs_dir=False
+    filename: Optional[str],
+    hda_id: str,
+    attributes: Dict[str, Any],
+    test_data_downloader,
+    dataset_fetcher=None,
+    keep_outputs_dir: Optional[str] = None,
 ):
     assert dataset_fetcher is not None
 
@@ -1050,7 +1056,7 @@ def _verify_composite_datatype_file_content(
     attributes=None,
     dataset_fetcher=None,
     test_data_downloader=None,
-    keep_outputs_dir=False,
+    keep_outputs_dir: Optional[str] = None,
     mode="file",
 ):
     assert dataset_fetcher is not None
@@ -1073,7 +1079,9 @@ def _verify_composite_datatype_file_content(
         raise AssertionError(errmsg)
 
 
-def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_downloader, keep_outputs_dir):
+def _verify_extra_files_content(
+    extra_files: List[Dict[str, Any]], hda_id: str, dataset_fetcher, test_data_downloader, keep_outputs_dir
+):
     files_list = []
     cleanup_directories = []
     for extra_file_dict in extra_files:

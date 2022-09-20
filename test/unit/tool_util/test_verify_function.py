@@ -1,3 +1,4 @@
+from galaxy.tool_util.unittest_utils import t_data_downloader_for
 from galaxy.tool_util.verify import verify
 
 
@@ -6,9 +7,6 @@ def test_writes_output_to_target_directory(tmp_path):
     output_content = b"expected"
     filename = "my_output.txt"
 
-    def get_filecontent(fname) -> bytes:
-        return output_content
-
     assert not (tmp_path / filename).exists()
     verify(
         item_label,
@@ -16,7 +14,7 @@ def test_writes_output_to_target_directory(tmp_path):
         attributes={},
         filename=filename,
         keep_outputs_dir=str(tmp_path),
-        get_filecontent=get_filecontent,
+        get_filecontent=t_data_downloader_for(output_content),
     )
     assert (tmp_path / filename).exists()
     assert (tmp_path / filename).open("rb").read() == output_content
@@ -30,9 +28,7 @@ def test_no_writes_output_to_target_directory_on_contains(tmp_path):
     }
     filename = "my_output.txt"
 
-    def get_filecontent(fname) -> bytes:
-        return b"xpecte"
-
+    get_filecontent = t_data_downloader_for(b"xpecte")
     assert not (tmp_path / filename).exists()
     verify(
         item_label,
@@ -54,9 +50,7 @@ def test_sim_size(tmp_path):
     }
     filename = "my_output.txt"
 
-    def get_filecontent(fname) -> bytes:
-        return b"xpected"
-
+    get_filecontent = t_data_downloader_for(b"xpected")
     assert not (tmp_path / filename).exists()
     verify(
         item_label,
@@ -79,9 +73,7 @@ def test_sim_size_failure_still_updates(tmp_path):
     }
     filename = "my_output.txt"
 
-    def get_filecontent(fname) -> bytes:
-        return b"ected"
-
+    get_filecontent = t_data_downloader_for(b"ected")
     assert not (tmp_path / filename).exists()
     assertion_error = None
     try:
