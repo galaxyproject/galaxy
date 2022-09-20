@@ -258,7 +258,6 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/workflows/trs_import")
     webapp.add_client_route("/workflows/trs_search")
     webapp.add_client_route("/workflows/invocations")
-    webapp.add_client_route("/workflows/invocations/{invocation_id}/export")
     webapp.add_client_route("/workflows/sharing")
     webapp.add_client_route("/workflows/{stored_workflow_id}/invocations")
     webapp.add_client_route("/workflows/invocations/report")
