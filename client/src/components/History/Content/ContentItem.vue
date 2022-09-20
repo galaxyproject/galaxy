@@ -96,6 +96,7 @@
 </template>
 
 <script>
+import { mapActions } from "vuex";
 import { StatelessTags } from "components/Tags";
 import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./model/states";
 import CollectionDescription from "./Collection/CollectionDescription";
@@ -195,6 +196,7 @@ export default {
         },
     },
     methods: {
+        ...mapActions("history", ["setDraggingHistoryItem"]),
         onClick() {
             if (this.isDataset) {
                 this.$emit("update:expand-dataset", !this.expandDataset);
@@ -206,9 +208,13 @@ export default {
             this.$router.push(this.itemUrls.display, this.name);
         },
         onDragStart(evt) {
+            this.setDraggingHistoryItem(this.item);
             evt.dataTransfer.dropEffect = "move";
             evt.dataTransfer.effectAllowed = "move";
             evt.dataTransfer.setData("text", JSON.stringify([this.item]));
+        },
+        onDragEnd() {
+            this.setDraggingHistoryItem(null);
         },
         onEdit() {
             this.$router.push(this.itemUrls.edit);
