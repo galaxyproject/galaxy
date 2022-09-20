@@ -33,7 +33,7 @@
                     :errors="errors"
                     text-enable="Set in Advance"
                     text-disable="Set at Runtime"
-                    workflow-building-mode="true"
+                    :workflow-building-mode="true"
                     @onChange="onChange" />
                 <FormSection
                     :id="nodeId"
