@@ -30,7 +30,8 @@
                 <section
                     class="history-layout d-flex flex-column w-100"
                     @drop.prevent="onDrop"
-                    @dragover.prevent="onDragOver"
+                    @dragenter.prevent="onDragEnter"
+                    @dragover.prevent
                     @dragleave.prevent="onDragLeave">
                     <slot name="navigation" :history="history" />
                     <HistoryFilters
@@ -323,11 +324,14 @@ export default {
             this.highlights = {};
             this.highlightsKey = null;
         },
-        onDragLeave() {
-            this.showDropZone = false;
-        },
-        onDragOver() {
+        onDragEnter(e) {
+            this.dragTarget = e.target;
             this.showDropZone = true;
+        },
+        onDragLeave(e) {
+            if (this.dragTarget == e.target) {
+                this.showDropZone = false;
+            }
         },
         onDrop(evt) {
             this.showDropZone = false;
