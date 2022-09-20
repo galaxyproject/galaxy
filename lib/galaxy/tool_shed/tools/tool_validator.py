@@ -1,6 +1,9 @@
 import logging
 
-from galaxy.tool_shed.tools.data_table_manager import ShedToolDataTableManager
+from galaxy.tool_shed.tools.data_table_manager import (
+    RequiredAppT,
+    ShedToolDataTableManager,
+)
 from galaxy.tool_shed.util import (
     basic_util,
     hg_util,
@@ -17,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 class ToolValidator:
-    def __init__(self, app):
+    def __init__(self, app: RequiredAppT):
         self.app = app
         self.stdtm = ShedToolDataTableManager(self.app)
 
