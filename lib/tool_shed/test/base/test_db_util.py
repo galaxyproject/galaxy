@@ -110,13 +110,6 @@ def get_installed_repository_by_name_owner(repository_name, owner, return_multip
     return query.first()
 
 
-def get_private_role(user):
-    for role in user.all_roles():
-        if role.name == user.email and role.description == f"Private Role for {user.email}":
-            return role
-    raise AssertionError(f"Private role not found for user '{user.email}'")
-
-
 def get_role(user, role_name):
     for role in user.all_roles():
         if role.name == role_name:
