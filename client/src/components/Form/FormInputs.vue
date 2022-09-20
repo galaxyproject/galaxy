@@ -138,6 +138,10 @@ export default {
             type: Function,
             required: true,
         },
+        workflowBuildingMode: {
+            type: Boolean,
+            default: false,
+        },
     },
     methods: {
         getPrefix(name, index) {

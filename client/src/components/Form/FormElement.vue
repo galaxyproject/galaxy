@@ -29,7 +29,8 @@
                 v-model="currentValue"
                 :max="attrs.max"
                 :min="attrs.min"
-                :type="type" />
+                :type="type"
+                :workflow-building-mode="workflowBuildingMode" />
             <FormColor v-else-if="type == 'color'" :id="id" v-model="currentValue" />
             <FormDirectory v-else-if="type == 'directory_uri'" v-model="currentValue" />
             <FormParameter
@@ -138,6 +139,10 @@ export default {
         connectedDisableIcon: {
             type: String,
             default: "fa fa-arrows-h",
+        },
+        workflowBuildingMode: {
+            type: Boolean,
+            default: false,
         },
     },
     data() {

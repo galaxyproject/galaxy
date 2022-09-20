@@ -10,7 +10,7 @@
                     v-model="currentValue"
                     :step="step"
                     size="sm"
-                    type="number"
+                    :type="fieldType"
                     @change="onInputChange"
                     @keydown.190.capture="onFloatInput"
                     @keydown.110.capture="onFloatInput" />
@@ -43,6 +43,10 @@ export default {
             required: false,
             default: undefined,
         },
+        workflowBuildingMode: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -64,6 +68,9 @@ export default {
                     this.$emit("input", newVal);
                 }
             },
+        },
+        fieldType() {
+            return this.workflowBuildingMode ? "text" : "number";
         },
         isRangeValid() {
             return !isNaN(this.min) && !isNaN(this.max) && this.max > this.min;
