@@ -2034,7 +2034,8 @@ test_data:
         """
                 summary = self._run_workflow(workflow_text, test_data=test_data, history_id=history_id)
                 jobs = summary.jobs
-                assert len(jobs) == 2, "2 jobs expected, got %d jobs" % len(jobs)
+                num_jobs = len(jobs)
+                assert num_jobs == 2, f"2 jobs expected, got {num_jobs} jobs"
 
                 content = self.dataset_populator.get_history_dataset_content(history_id)
                 self.assertEqual(
