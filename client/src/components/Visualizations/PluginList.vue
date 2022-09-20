@@ -136,8 +136,8 @@ export default {
             if (plugin.target == "_top") {
                 window.location.href = href;
             } else {
-                var galaxy_main_el = document.getElementById("galaxy_main");
-                galaxy_main_el.setAttribute("src", href);
+                const galaxyMainElement = document.getElementById("galaxy_main");
+                galaxyMainElement.setAttribute("src", href);
             }
         },
         match(plugin) {
