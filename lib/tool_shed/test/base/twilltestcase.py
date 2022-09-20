@@ -914,13 +914,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
         repo = self.get_hg_repo(self.get_repo_path(repository))
         return str(repo[repo.changelog.tip()])
 
-    def get_sniffers_count(self):
-        url = "/api/datatypes/sniffers"
-        self.visit_galaxy_url(url)
-        html = self.last_page()
-        sniffers = loads(html)
-        return len(sniffers)
-
     def get_tools_from_repository_metadata(self, repository, include_invalid=False):
         """Get a list of valid and (optionally) invalid tool dicts from the repository metadata."""
         valid_tools = []
