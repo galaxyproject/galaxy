@@ -82,8 +82,13 @@
                             :operation-error="operationError"
                             @hide="operationError = null" />
                     </section>
-                    <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
-                        <div @drop.prevent="onDrop" @dragover.prevent>
+                    <section
+                        v-if="!showAdvanced"
+                        class="position-relative flex-grow-1 scroller"
+                        @drop.prevent="onDrop"
+                        @dragover.prevent>
+                        <history-drop-zone v-if="showDropZone" />
+                        <div>
                             <div v-if="loading && itemsLoaded && itemsLoaded.length === 0">
                                 <b-alert class="m-2" variant="info" show>
                                     <LoadingSpan message="Loading History" />
@@ -139,7 +144,7 @@
 <script>
 import Vue from "vue";
 import { Toast } from "ui/toast";
-import { mapActions } from "vuex";
+import { mapActions, mapGetters } from "vuex";
 import { HistoryItemsProvider } from "components/providers/storeProviders";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
@@ -154,6 +159,7 @@ import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
 import HistoryFilters from "./HistoryFilters/HistoryFilters";
 import HistoryMessages from "./HistoryMessages";
+import HistoryDropZone from "./HistoryDropZone";
 import HistorySelectionOperations from "./HistoryOperations/SelectionOperations";
 import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
 import SelectionChangeWarning from "./HistoryOperations/SelectionChangeWarning";
@@ -163,6 +169,7 @@ import { Services as DatasetServices } from "components/Dataset/services";
 
 export default {
     components: {
+        HistoryDropZone,
         ContentItem,
         ExpandedItems,
         HistoryCounter,
@@ -228,6 +235,9 @@ export default {
         isWatching() {
             return this.$store.getters.getWatchingVisibility();
         },
+        showDropZone() {
+            return this.getDraggingHistoryItem() && this.getDraggingHistoryItem().history_id !== this.historyId;
+        },
     },
     watch: {
         queryKey() {
@@ -250,6 +260,7 @@ export default {
     },
     methods: {
         ...mapActions("history", ["loadHistoryById"]),
+        ...mapGetters("history", ["getDraggingHistoryItem"]),
         getHighlight(item) {
             return this.highlights[this.getItemKey(item)];
         },
