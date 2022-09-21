@@ -210,7 +210,6 @@ class GalaxyInteractorApi:
         attributes = output_testdef.attributes
         name = output_testdef.name
         expected_count = attributes.get("count")
-        self.wait_for_jobs(history_id, jobs, maxseconds)
         hid = self.__output_id(output_data)
         # TODO: Twill version verifies dataset is 'ok' in here.
         try:
