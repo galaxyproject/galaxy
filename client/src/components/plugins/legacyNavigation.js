@@ -19,8 +19,6 @@ export function iframeAdd({ path, title = "Galaxy", $router = null }) {
     } else if ($router) {
         $router.push(path);
         return true;
-    } else {
-        return iframeRedirect(path);
     }
 }
 
