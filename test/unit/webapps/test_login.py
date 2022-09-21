@@ -33,38 +33,38 @@ class LoginControllerTestCase(TestCase):
     def test_login(self):
         user2 = self.user_manager.create(**user2_data)
         self.app.security.encode_id(user2.id)
-        self.assertIsInstance(user2, model.User)
-        self.assertIsNotNone(user2.id)
-        self.assertEqual(user2.email, user2_data["email"])
-        self.assertTrue(check_password(default_password, user2.password))
+        assert isinstance(user2, model.User)
+        assert user2.id is not None
+        assert user2.email == user2_data["email"]
+        assert check_password(default_password, user2.password)
 
         controller = User(self.app)
         response = json.loads(controller.login(self.trans))
-        self.assertEqual(response["err_msg"], "Please specify a username and password.")
+        assert response["err_msg"] == "Please specify a username and password."
         response = json.loads(
             controller.login(self.trans, payload={"login": user2.email, "password": changed_password})
         )
-        self.assertEqual(response["err_msg"], "Invalid password.")
+        assert response["err_msg"] == "Invalid password."
         response = json.loads(
             controller.login(self.trans, payload={"login": user2.username, "password": changed_password})
         )
-        self.assertEqual(response["err_msg"], "Invalid password.")
+        assert response["err_msg"] == "Invalid password."
         user2.deleted = True
         response = json.loads(
             controller.login(self.trans, payload={"login": user2.username, "password": default_password})
         )
-        self.assertEqual(
-            response["err_msg"],
-            "This account has been marked deleted, contact your local Galaxy administrator to restore the account. Contact: admin@email.to.",
+        assert (
+            response["err_msg"]
+            == "This account has been marked deleted, contact your local Galaxy administrator to restore the account. Contact: admin@email.to."
         )
         user2.deleted = False
         user2.external = True
         response = json.loads(
             controller.login(self.trans, payload={"login": user2.username, "password": default_password})
         )
-        self.assertEqual(
-            response["err_msg"],
-            "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it. Contact: admin@email.to.",
+        assert (
+            response["err_msg"]
+            == "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it. Contact: admin@email.to."
         )
         user2.external = False
         self.trans.app.config.password_expiration_period = timedelta(days=1)
@@ -72,15 +72,15 @@ class LoginControllerTestCase(TestCase):
         response = json.loads(
             controller.login(self.trans, payload={"login": user2.username, "password": default_password})
         )
-        self.assertEqual(response["message"], "Your password has expired. Please reset or change it to access Galaxy.")
-        self.assertEqual(response["expired_user"], self.trans.security.encode_id(user2.id))
+        assert response["message"] == "Your password has expired. Please reset or change it to access Galaxy."
+        assert response["expired_user"] == self.trans.security.encode_id(user2.id)
         self.trans.app.config.password_expiration_period = timedelta(days=10)
         response = json.loads(
             controller.login(self.trans, payload={"login": user2.username, "password": default_password})
         )
-        self.assertEqual(response["message"], "Your password will expire in 11 day(s).")
+        assert response["message"] == "Your password will expire in 11 day(s)."
         self.trans.app.config.password_expiration_period = timedelta(days=100)
         response = json.loads(
             controller.login(self.trans, payload={"login": user2.username, "password": default_password})
         )
-        self.assertEqual(response["message"], "Success.")
+        assert response["message"] == "Success."

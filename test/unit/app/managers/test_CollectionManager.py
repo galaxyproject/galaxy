@@ -42,43 +42,43 @@ class DatasetCollectionManagerTestCase(BaseTestCase, CreatesCollectionsMixin):
         hdca = self.collection_manager.create(
             self.trans, history, "test collection", "list", element_identifiers=element_identifiers
         )
-        self.assertIsInstance(hdca, model.HistoryDatasetCollectionAssociation)
-        self.assertEqual(hdca.name, "test collection")
-        self.assertEqual(hdca.hid, 4)
-        self.assertFalse(hdca.deleted)
-        self.assertTrue(hdca.visible)
+        assert isinstance(hdca, model.HistoryDatasetCollectionAssociation)
+        assert hdca.name == "test collection"
+        assert hdca.hid == 4
+        assert not hdca.deleted
+        assert hdca.visible
 
         self.log("should contain an underlying, well-formed DatasetCollection")
-        self.assertIsInstance(hdca.collection, model.DatasetCollection)
+        assert isinstance(hdca.collection, model.DatasetCollection)
         collection = hdca.collection
-        self.assertEqual(collection.collection_type, "list")
-        self.assertEqual(collection.state, "ok")
-        self.assertEqual(len(collection.dataset_instances), 3)
-        self.assertEqual(len(collection.elements), 3)
+        assert collection.collection_type == "list"
+        assert collection.state == "ok"
+        assert len(collection.dataset_instances) == 3
+        assert len(collection.elements) == 3
 
         self.log("and that collection should have three well-formed Elements")
-        self.assertIsInstance(collection.elements[0], model.DatasetCollectionElement)
-        self.assertEqual(collection.elements[0].element_identifier, "one")
-        self.assertEqual(collection.elements[0].element_index, 0)
-        self.assertEqual(collection.elements[0].element_type, "hda")
-        self.assertEqual(collection.elements[0].element_object, hda1)
+        assert isinstance(collection.elements[0], model.DatasetCollectionElement)
+        assert collection.elements[0].element_identifier == "one"
+        assert collection.elements[0].element_index == 0
+        assert collection.elements[0].element_type == "hda"
+        assert collection.elements[0].element_object == hda1
 
-        self.assertIsInstance(collection.elements[1], model.DatasetCollectionElement)
-        self.assertEqual(collection.elements[1].element_identifier, "two")
-        self.assertEqual(collection.elements[1].element_index, 1)
-        self.assertEqual(collection.elements[1].element_type, "hda")
-        self.assertEqual(collection.elements[1].element_object, hda2)
+        assert isinstance(collection.elements[1], model.DatasetCollectionElement)
+        assert collection.elements[1].element_identifier == "two"
+        assert collection.elements[1].element_index == 1
+        assert collection.elements[1].element_type == "hda"
+        assert collection.elements[1].element_object == hda2
 
-        self.assertIsInstance(collection.elements[2], model.DatasetCollectionElement)
-        self.assertEqual(collection.elements[2].element_identifier, "three")
-        self.assertEqual(collection.elements[2].element_index, 2)
-        self.assertEqual(collection.elements[2].element_type, "hda")
-        self.assertEqual(collection.elements[2].element_object, hda3)
+        assert isinstance(collection.elements[2], model.DatasetCollectionElement)
+        assert collection.elements[2].element_identifier == "three"
+        assert collection.elements[2].element_index == 2
+        assert collection.elements[2].element_type == "hda"
+        assert collection.elements[2].element_object == hda3
 
         self.log("should be able to create a new Collection via objects")
         elements = dict(one=hda1, two=hda2, three=hda3)
         hdca2 = self.collection_manager.create(self.trans, history, "test collection 2", "list", elements=elements)
-        self.assertIsInstance(hdca2, model.HistoryDatasetCollectionAssociation)
+        assert isinstance(hdca2, model.HistoryDatasetCollectionAssociation)
 
     def test_update_from_dict(self):
         owner = self.user_manager.create(**user2_data)
@@ -105,19 +105,19 @@ class DatasetCollectionManagerTestCase(BaseTestCase, CreatesCollectionsMixin):
                 # 'annotations'      : [?]
             },
         )
-        self.assertEqual(hdca.name, "New Name")
-        self.assertTrue(hdca.deleted)
-        self.assertFalse(hdca.visible)
+        assert hdca.name == "New Name"
+        assert hdca.deleted
+        assert not hdca.visible
 
         tag_names = hdca.make_tag_string_list()
-        self.assertEqual(tag_names, ["name:one", "group:two", "three"])
-        # self.assertEqual( hdca.annotations, [ 'one', 'two', 'three' ] )
+        assert tag_names == ["name:one", "group:two", "three"]
+        # assert hdca.annotations == ["one", "two", "three"]
 
     # def test_validation( self ):
-    #    self.log( "should be able to change the name" )
-    #    self.log( "should be able to set deleted" )
-    #    self.log( "should be able to set visible" )
-    #    self.log( "should be able to set tags" )
+    #    self.log("should be able to change the name")
+    #    self.log("should be able to set deleted")
+    #    self.log("should be able to set visible")
+    #    self.log("should be able to set tags")
 
 
 # =============================================================================

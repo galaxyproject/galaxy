@@ -88,8 +88,6 @@ class HDCASerializerTestCase(HDCATestCase):
                 or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))
             ):
                 self.fail(f"no serializer for: {key} ({instantiated_attribute})")
-        else:
-            self.assertTrue(True, "all serializable keys have a serializer")
 
     def test_views_and_keys(self):
         serializer = self.hdca_serializer

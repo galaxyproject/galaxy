@@ -38,30 +38,30 @@ class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
         return trans
 
     def assert_cors_header_equals(self, headers, should_be):
-        self.assertEqual(headers.get("access-control-allow-origin", None), should_be)
+        assert headers.get("access-control-allow-origin", None) == should_be
 
     def assert_cors_header_missing(self, headers):
-        self.assertFalse("access-control-allow-origin" in headers)
+        assert not ("access-control-allow-origin" in headers)
 
     def test_parse_allowed_origin_hostnames(self):
         """Should return a list of (possibly) mixed strings and regexps"""
         config = CORSParsingMockConfig()
 
         # falsy listify value should return None
-        self.assertEqual(config._parse_allowed_origin_hostnames({"allowed_origin_hostnames": ""}), None)
+        assert config._parse_allowed_origin_hostnames({"allowed_origin_hostnames": ""}) is None
 
         # should parse regex if using fwd slashes, string otherwise
         hostnames = config._parse_allowed_origin_hostnames(
             {"allowed_origin_hostnames": r"/host\d{2}/,geocities.com,miskatonic.edu"}
         )
-        self.assertTrue(isinstance(hostnames[0], re.Pattern))
-        self.assertTrue(isinstance(hostnames[1], str))
-        self.assertTrue(isinstance(hostnames[2], str))
+        assert isinstance(hostnames[0], re.Pattern)
+        assert isinstance(hostnames[1], str)
+        assert isinstance(hostnames[2], str)
 
     def test_default_set_cors_headers(self):
         """No CORS headers should be set (or even checked) by default"""
         trans = self._new_trans(allowed_origin_hostnames=None)
-        self.assertTrue(isinstance(trans, Webapp.GalaxyWebTransaction))
+        assert isinstance(trans, Webapp.GalaxyWebTransaction)
 
         trans.request.headers["Origin"] = "http://lisaskelprecipes.pinterest.com?id=kelpcake"
         trans.set_cors_headers()
@@ -103,7 +103,7 @@ class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
         trans = self._new_trans(allowed_origin_hostnames=r"/öbb\.at/")
         trans.request.headers["Origin"] = "http://öbb.at"
         trans.set_cors_headers()
-        self.assertEqual(trans.response.headers["access-control-allow-origin"], "http://öbb.at")
+        assert trans.response.headers["access-control-allow-origin"] == "http://öbb.at"
 
 
 if __name__ == "__main__":

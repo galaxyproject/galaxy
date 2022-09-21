@@ -32,8 +32,8 @@ class DatasetManagerTestCase(BaseTestCase):
     def test_create(self):
         self.log("should be able to create a new Dataset")
         dataset1 = self.dataset_manager.create()
-        self.assertIsInstance(dataset1, model.Dataset)
-        self.assertEqual(dataset1, self.trans.sa_session.query(model.Dataset).get(dataset1.id))
+        assert isinstance(dataset1, model.Dataset)
+        assert dataset1 == self.trans.sa_session.query(model.Dataset).get(dataset1.id)
 
     def test_base(self):
         dataset1 = self.dataset_manager.create()
@@ -41,81 +41,79 @@ class DatasetManagerTestCase(BaseTestCase):
 
         self.log("should be able to query")
         datasets = self.trans.sa_session.query(model.Dataset).all()
-        self.assertEqual(self.dataset_manager.list(), datasets)
-        self.assertEqual(self.dataset_manager.one(filters=(model.Dataset.id == dataset1.id)), dataset1)
-        self.assertEqual(self.dataset_manager.by_id(dataset1.id), dataset1)
-        self.assertEqual(self.dataset_manager.by_ids([dataset2.id, dataset1.id]), [dataset2, dataset1])
+        assert self.dataset_manager.list() == datasets
+        assert self.dataset_manager.one(filters=(model.Dataset.id == dataset1.id)) == dataset1
+        assert self.dataset_manager.by_id(dataset1.id) == dataset1
+        assert self.dataset_manager.by_ids([dataset2.id, dataset1.id]) == [dataset2, dataset1]
 
         self.log("should be able to limit and offset")
-        self.assertEqual(self.dataset_manager.list(limit=1), datasets[0:1])
-        self.assertEqual(self.dataset_manager.list(offset=1), datasets[1:])
-        self.assertEqual(self.dataset_manager.list(limit=1, offset=1), datasets[1:2])
+        assert self.dataset_manager.list(limit=1) == datasets[0:1]
+        assert self.dataset_manager.list(offset=1) == datasets[1:]
+        assert self.dataset_manager.list(limit=1, offset=1) == datasets[1:2]
 
-        self.assertEqual(self.dataset_manager.list(limit=0), [])
-        self.assertEqual(self.dataset_manager.list(offset=3), [])
+        assert self.dataset_manager.list(limit=0) == []
+        assert self.dataset_manager.list(offset=3) == []
 
         self.log("should be able to order")
-        self.assertEqual(
-            self.dataset_manager.list(order_by=sqlalchemy.desc(model.Dataset.create_time)), [dataset2, dataset1]
-        )
+        assert self.dataset_manager.list(order_by=sqlalchemy.desc(model.Dataset.create_time)) == [dataset2, dataset1]
 
     def test_delete(self):
         item1 = self.dataset_manager.create()
 
         self.log("should be able to delete and undelete a dataset")
-        self.assertFalse(item1.deleted)
-        self.assertEqual(self.dataset_manager.delete(item1), item1)
-        self.assertTrue(item1.deleted)
-        self.assertEqual(self.dataset_manager.undelete(item1), item1)
-        self.assertFalse(item1.deleted)
+        assert not item1.deleted
+        assert self.dataset_manager.delete(item1) == item1
+        assert item1.deleted
+        assert self.dataset_manager.undelete(item1) == item1
+        assert not item1.deleted
 
     def test_purge_allowed(self):
         self.trans.app.config.allow_user_dataset_purge = True
         item1 = self.dataset_manager.create()
 
         self.log("should purge a dataset if config does allow")
-        self.assertFalse(item1.purged)
-        self.assertEqual(self.dataset_manager.purge(item1), item1)
-        self.assertTrue(item1.purged)
+        assert not item1.purged
+        assert self.dataset_manager.purge(item1) == item1
+        assert item1.purged
 
         self.log("should delete a dataset when purging")
-        self.assertTrue(item1.deleted)
+        assert item1.deleted
 
     def test_purge_not_allowed(self):
         self.trans.app.config.allow_user_dataset_purge = False
         item1 = self.dataset_manager.create()
 
         self.log("should raise an error when purging a dataset if config does not allow")
-        self.assertFalse(item1.purged)
+        assert not item1.purged
         self.assertRaises(exceptions.ConfigDoesNotAllowException, self.dataset_manager.purge, item1)
-        self.assertFalse(item1.purged)
+        assert not item1.purged
 
     def test_create_with_no_permissions(self):
         self.log("should be able to create a new Dataset without any permissions")
         dataset = self.dataset_manager.create()
 
         permissions = self.dataset_manager.permissions.get(dataset)
-        self.assertIsInstance(permissions, tuple)
-        self.assertEqual(len(permissions), 2)
+        assert isinstance(permissions, tuple)
+        assert len(permissions) == 2
         manage_permissions, access_permissions = permissions
-        self.assertEqual(manage_permissions, [])
-        self.assertEqual(access_permissions, [])
+        assert manage_permissions == []
+        assert access_permissions == []
 
         user3 = self.user_manager.create(**user3_data)
         self.log("a dataset without permissions shouldn't be manageable to just anyone")
-        self.assertFalse(self.dataset_manager.permissions.manage.is_permitted(dataset, user3))
+        assert not self.dataset_manager.permissions.manage.is_permitted(dataset, user3)
         self.log("a dataset without permissions should be accessible")
-        self.assertTrue(self.dataset_manager.permissions.access.is_permitted(dataset, user3))
+        assert self.dataset_manager.permissions.access.is_permitted(dataset, user3)
 
         self.log("a dataset without permissions should be manageable by an admin")
-        self.assertTrue(self.dataset_manager.permissions.manage.is_permitted(dataset, self.admin_user))
+        assert self.dataset_manager.permissions.manage.is_permitted(dataset, self.admin_user)
         self.log("a dataset without permissions should be accessible by an admin")
-        self.assertTrue(self.dataset_manager.permissions.access.is_permitted(dataset, self.admin_user))
+        assert self.dataset_manager.permissions.access.is_permitted(dataset, self.admin_user)
 
         self.log("a dataset without permissions shouldn't be manageable by an anonymous user")
-        self.assertFalse(self.dataset_manager.permissions.manage.is_permitted(dataset, None))
+        assert not self.dataset_manager.permissions.manage.is_permitted(dataset, None)
         self.log("a dataset without permissions should be accessible by an anonymous user")
-        self.assertTrue(self.dataset_manager.permissions.access.is_permitted(dataset, None))
+        assert self.dataset_manager.permissions.access.is_permitted(dataset, None)
 
     def test_create_public_dataset(self):
         self.log(
@@ -127,30 +125,30 @@ class DatasetManagerTestCase(BaseTestCase):
         dataset = self.dataset_manager.create(manage_roles=[owner_private_role])
 
         permissions = self.dataset_manager.permissions.get(dataset)
-        self.assertIsInstance(permissions, tuple)
-        self.assertEqual(len(permissions), 2)
+        assert isinstance(permissions, tuple)
+        assert len(permissions) == 2
         manage_permissions, access_permissions = permissions
-        self.assertIsInstance(manage_permissions, list)
-        self.assertIsInstance(manage_permissions[0], model.DatasetPermissions)
-        self.assertEqual(access_permissions, [])
+        assert isinstance(manage_permissions, list)
+        assert isinstance(manage_permissions[0], model.DatasetPermissions)
+        assert access_permissions == []
 
         user3 = self.user_manager.create(**user3_data)
         self.log("a public dataset should be manageable to it's owner")
-        self.assertTrue(self.dataset_manager.permissions.manage.is_permitted(dataset, owner))
+        assert self.dataset_manager.permissions.manage.is_permitted(dataset, owner)
         self.log("a public dataset shouldn't be manageable to just anyone")
-        self.assertFalse(self.dataset_manager.permissions.manage.is_permitted(dataset, user3))
+        assert not self.dataset_manager.permissions.manage.is_permitted(dataset, user3)
         self.log("a public dataset should be accessible")
-        self.assertTrue(self.dataset_manager.permissions.access.is_permitted(dataset, user3))
+        assert self.dataset_manager.permissions.access.is_permitted(dataset, user3)
 
         self.log("a public dataset should be manageable by an admin")
-        self.assertTrue(self.dataset_manager.permissions.manage.is_permitted(dataset, self.admin_user))
+        assert self.dataset_manager.permissions.manage.is_permitted(dataset, self.admin_user)
         self.log("a public dataset should be accessible by an admin")
-        self.assertTrue(self.dataset_manager.permissions.access.is_permitted(dataset, self.admin_user))
+        assert self.dataset_manager.permissions.access.is_permitted(dataset, self.admin_user)
 
         self.log("a public dataset shouldn't be manageable by an anonymous user")
-        self.assertFalse(self.dataset_manager.permissions.manage.is_permitted(dataset, None))
+        assert not self.dataset_manager.permissions.manage.is_permitted(dataset, None)
         self.log("a public dataset should be accessible by an anonymous user")
-        self.assertTrue(self.dataset_manager.permissions.access.is_permitted(dataset, None))
+        assert self.dataset_manager.permissions.access.is_permitted(dataset, None)
 
     def test_create_private_dataset(self):
         self.log("should be able to create a new Dataset and give it private permissions")
@@ -159,34 +157,34 @@ class DatasetManagerTestCase(BaseTestCase):
         dataset = self.dataset_manager.create(manage_roles=[owner_private_role], access_roles=[owner_private_role])
 
         permissions = self.dataset_manager.permissions.get(dataset)
-        self.assertIsInstance(permissions, tuple)
-        self.assertEqual(len(permissions), 2)
+        assert isinstance(permissions, tuple)
+        assert len(permissions) == 2
         manage_permissions, access_permissions = permissions
-        self.assertIsInstance(manage_permissions, list)
-        self.assertIsInstance(manage_permissions[0], model.DatasetPermissions)
-        self.assertIsInstance(access_permissions, list)
-        self.assertIsInstance(access_permissions[0], model.DatasetPermissions)
+        assert isinstance(manage_permissions, list)
+        assert isinstance(manage_permissions[0], model.DatasetPermissions)
+        assert isinstance(access_permissions, list)
+        assert isinstance(access_permissions[0], model.DatasetPermissions)
 
         self.log("a private dataset should be manageable by it's owner")
-        self.assertTrue(self.dataset_manager.permissions.manage.is_permitted(dataset, owner))
+        assert self.dataset_manager.permissions.manage.is_permitted(dataset, owner)
         self.log("a private dataset should be accessible to it's owner")
-        self.assertTrue(self.dataset_manager.permissions.access.is_permitted(dataset, owner))
+        assert self.dataset_manager.permissions.access.is_permitted(dataset, owner)
 
         user3 = self.user_manager.create(**user3_data)
         self.log("a private dataset shouldn't be manageable to just anyone")
-        self.assertFalse(self.dataset_manager.permissions.manage.is_permitted(dataset, user3))
+        assert not self.dataset_manager.permissions.manage.is_permitted(dataset, user3)
         self.log("a private dataset shouldn't be accessible to just anyone")
-        self.assertFalse(self.dataset_manager.permissions.access.is_permitted(dataset, user3))
+        assert not self.dataset_manager.permissions.access.is_permitted(dataset, user3)
 
         self.log("a private dataset should be manageable by an admin")
-        self.assertTrue(self.dataset_manager.permissions.manage.is_permitted(dataset, self.admin_user))
+        assert self.dataset_manager.permissions.manage.is_permitted(dataset, self.admin_user)
         self.log("a private dataset should be accessible by an admin")
-        self.assertTrue(self.dataset_manager.permissions.access.is_permitted(dataset, self.admin_user))
+        assert self.dataset_manager.permissions.access.is_permitted(dataset, self.admin_user)
 
         self.log("a private dataset shouldn't be manageable by an anonymous user")
-        self.assertFalse(self.dataset_manager.permissions.manage.is_permitted(dataset, None))
+        assert not self.dataset_manager.permissions.manage.is_permitted(dataset, None)
         self.log("a private dataset shouldn't be accessible by an anonymous user")
-        self.assertFalse(self.dataset_manager.permissions.access.is_permitted(dataset, None))
+        assert not self.dataset_manager.permissions.access.is_permitted(dataset, None)
 
 
 # =============================================================================
@@ -196,10 +194,10 @@ class DatasetRBACPermissionsTestCase(BaseTestCase):
         self.dataset_manager = DatasetManager(self.app)
 
     # def test_manage( self ):
-    #     self.log( "should be able to create a new Dataset" )
+    #     self.log("should be able to create a new Dataset")
     #     dataset1 = self.dataset_manager.create()
-    #     self.assertIsInstance( dataset1, model.Dataset )
-    #     self.assertEqual( dataset1, self.app.model.context.query( model.Dataset ).get( dataset1.id ) )
+    #     assert isinstance(dataset1, model.Dataset)
+    #     assert dataset1 == self.app.model.context.query(model.Dataset).get(dataset1.id)
     #
 
 
@@ -236,8 +234,6 @@ class DatasetSerializerTestCase(BaseTestCase):
                 or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))
             ):
                 self.fail(f"no serializer for: {key} ({instantiated_attribute})")
-        else:
-            self.assertTrue(True, "all serializable keys have a serializer")
 
     def test_views_and_keys(self):
         dataset = self.dataset_manager.create()
@@ -262,18 +258,18 @@ class DatasetSerializerTestCase(BaseTestCase):
 
         self.log("serialized permissions should be returned for the user who can manage and be well formed")
         permissions = self.dataset_serializer.serialize_permissions(dataset, "perms", user=who_manages)
-        self.assertIsInstance(permissions, dict)
+        assert isinstance(permissions, dict)
         self.assertKeys(permissions, ["manage", "access"])
-        self.assertIsInstance(permissions["manage"], list)
-        self.assertIsInstance(permissions["access"], list)
+        assert isinstance(permissions["manage"], list)
+        assert isinstance(permissions["access"], list)
 
         manage_perms = permissions["manage"]
-        self.assertTrue(len(manage_perms) == 1)
+        assert len(manage_perms) == 1
         role_id = manage_perms[0]
         self.assertEncodedId(role_id)
         role_id = self.app.security.decode_id(role_id)
         role = self.role_manager.get(self.trans, role_id)
-        self.assertTrue(who_manages in [user_role.user for user_role in role.users])
+        assert who_manages in [user_role.user for user_role in role.users]
 
         self.log("permissions should be not returned for non-managing users")
         not_my_supervisor = self.user_manager.create(**user3_data)
@@ -286,7 +282,7 @@ class DatasetSerializerTestCase(BaseTestCase):
 
         self.log("permissions should be returned for admin users")
         permissions = self.dataset_serializer.serialize_permissions(dataset, "perms", user=self.admin_user)
-        self.assertIsInstance(permissions, dict)
+        assert isinstance(permissions, dict)
         self.assertKeys(permissions, ["manage", "access"])
 
     def test_serializers(self):
@@ -301,14 +297,14 @@ class DatasetSerializerTestCase(BaseTestCase):
         self.assertDate(serialized["update_time"])
 
         self.assertUUID(serialized["uuid"])
-        self.assertIsInstance(serialized["state"], str)
-        self.assertIsInstance(serialized["deleted"], bool)
-        self.assertIsInstance(serialized["purged"], bool)
-        self.assertIsInstance(serialized["purgable"], bool)
+        assert isinstance(serialized["state"], str)
+        assert isinstance(serialized["deleted"], bool)
+        assert isinstance(serialized["purged"], bool)
+        assert isinstance(serialized["purgable"], bool)
 
         # # TODO: no great way to do these with mocked dataset
-        # self.assertIsInstance( serialized[ 'file_size' ], int )
-        # self.assertIsInstance( serialized[ 'total_size' ], int )
+        # assert isinstance(serialized["file_size"], int)
+        # assert isinstance(serialized["total_size"], int)
 
         self.log("serialized should jsonify well")
         self.assertIsJsonifyable(serialized)

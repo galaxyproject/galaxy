@@ -92,9 +92,7 @@ steps:
             }
             self.workflow_populator.invoke_workflow_and_wait(history_id, workflow_id, inputs)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-            self.assertEqual(
-                "a\nc\nb\nd\ne\ng\nf\nh\n", self.dataset_populator.get_history_dataset_content(history_id, hid=0)
-            )
+            assert "a\nc\nb\nd\ne\ng\nf\nh\n" == self.dataset_populator.get_history_dataset_content(history_id, hid=0)
 
     def test_scheduling_rounds(self):
         with self.dataset_populator.test_history() as history_id:

@@ -87,7 +87,7 @@ class WorkflowProgressTestCase(unittest.TestCase):
                 workflow_invocation_step.workflow_step_id = step_id
                 workflow_invocation_step.state = "scheduled"
                 workflow_invocation_step.workflow_step = self._step(i)
-                self.assertEqual(step_id, self._step(i).id)
+                assert step_id == self._step(i).id
                 # workflow_invocation_step.workflow_invocation = self.invocation
                 self.invocation.steps.append(workflow_invocation_step)
 

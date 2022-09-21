@@ -21,12 +21,12 @@ class VaultTestBase:
 
     def test_read_write_secret(self):
         self.vault.write_secret("my/test/secret", "hello world")
-        self.assertEqual(self.vault.read_secret("my/test/secret"), "hello world")  # type: ignore
+        assert self.vault.read_secret("my/test/secret") == "hello world"  # type: ignore
 
     def test_overwrite_secret(self):
         self.vault.write_secret("my/new/secret", "hello world")
         self.vault.write_secret("my/new/secret", "hello overwritten")
-        self.assertEqual(self.vault.read_secret("my/new/secret"), "hello overwritten")  # type: ignore
+        assert self.vault.read_secret("my/new/secret") == "hello overwritten"  # type: ignore
 
     def test_valid_paths(self):
         with self.assertRaises(InvalidVaultKeyException):  # type: ignore
@@ -37,7 +37,7 @@ class VaultTestBase:
             self.vault.write_secret("my/ /new/secret", "hello world")
         # leading and trailing slashes should be ignored
         self.vault.write_secret("/my/new/secret with space/", "hello overwritten")
-        self.assertEqual(self.vault.read_secret("my/new/secret with space"), "hello overwritten")  # type: ignore
+        assert self.vault.read_secret("my/new/secret with space") == "hello overwritten"  # type: ignore
 
 
 VAULT_CONF_HASHICORP = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_hashicorp.yml")
@@ -85,7 +85,7 @@ class TestDatabaseVault(VaultTestBase, unittest.TestCase):
         # should succeed after rotation
         app.config.vault_config_file = VAULT_CONF_DATABASE_ROTATED  # type: ignore
         vault = VaultFactory.from_app(app)
-        self.assertEqual(vault.read_secret("my/rotated/secret"), "hello rotated")
+        assert vault.read_secret("my/rotated/secret") == "hello rotated"
 
     def test_wrong_keys(self):
         config = GalaxyDataTestConfig(vault_config_file=VAULT_CONF_DATABASE)
