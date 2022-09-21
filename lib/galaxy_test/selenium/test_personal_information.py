@@ -13,25 +13,25 @@ class ManageInformationTestCase(SeleniumTestCase):
         'Not available.'
         """
         self.login()
-        self.assertEqual(self.get_api_key(), "Not available.")
+        assert self.get_api_key() == "Not available."
         api_key = self.get_api_key()
         self.navigate_to_user_preferences()
         self.components.preferences.manage_api_key.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         api_key_input = self.components.preferences.api_key_input.wait_for_visible()
         # Assert that what's rendered on screen is what the API is returning
-        self.assertEqual(api_key_input.get_property("value"), api_key)
+        assert api_key_input.get_property("value") == api_key
         self.components.preferences.get_new_key.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         new_api_key = self.get_api_key()
         api_key_input = self.components.preferences.api_key_input.wait_for_visible()
         # And assert that this has now changed, and still renders correctly
-        self.assertEqual(new_api_key, api_key_input.get_property("value"))
+        assert new_api_key == api_key_input.get_property("value")
 
     @selenium_test
     def test_change_email(self):
         def assert_email(email_to_check):
-            self.assertTrue(email_to_check == self.components.preferences.current_email.wait_for_text())
+            assert email_to_check == self.components.preferences.current_email.wait_for_text()
 
         email = self._get_random_email()
         self.register(email)
@@ -46,7 +46,7 @@ class ManageInformationTestCase(SeleniumTestCase):
 
         new_email = self._get_random_email()
         # new email should be different from initially registered
-        self.assertTrue(email != new_email)
+        assert email != new_email
         email_input_field = self.components.preferences.email_input.wait_for_visible()
 
         self.clear_input_field_and_write(email_input_field, new_email)
@@ -64,7 +64,7 @@ class ManageInformationTestCase(SeleniumTestCase):
             return self.components.preferences.username_input.wait_for_visible()
 
         def assert_public_name(expected_name):
-            self.assertTrue(expected_name == get_name_input_field().get_attribute("value"))
+            assert expected_name == get_name_input_field().get_attribute("value")
 
         public_name = "user-public-name"
         self.register(username=public_name)
@@ -123,7 +123,7 @@ class ManageInformationTestCase(SeleniumTestCase):
         # check if address was saved correctly
         for input_field_label in address_fields.keys():
             input_field = self.get_address_input_field(get_address_form(), input_field_label)
-            self.assertTrue(input_field.get_attribute("value") == address_fields[input_field_label])
+            assert input_field.get_attribute("value") == address_fields[input_field_label]
 
     def navigate_to_manage_information(self):
         self.navigate_to_user_preferences()

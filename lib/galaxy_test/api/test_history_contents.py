@@ -897,7 +897,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
         )
         self._assert_status_code_is(contents_response, 200)
         collection = contents_response.json()[0]
-        self.assertCountEqual(collection["elements_datatypes"], expected_datatypes)
+        assert sorted(collection["elements_datatypes"]) == sorted(expected_datatypes)
 
 
 class HistoryContentsApiNearTestCase(ApiTestCase):

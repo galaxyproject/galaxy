@@ -138,13 +138,13 @@ class AdminAppTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # Make sure the job lock has been toggled.
         new_label = lock_label.wait_for_text()
-        self.assertNotEqual(new_label, original_label)
+        assert new_label != original_label
         self.screenshot("admin_jobs_locked")
         lock_label.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.screenshot("admin_jobs_unlocked")
         # And confirm that it has toggled back to what it was.
-        self.assertEqual(lock_label.wait_for_text(), original_label)
+        assert lock_label.wait_for_text() == original_label
 
     @selenium_test
     def test_admin_server_display(self):

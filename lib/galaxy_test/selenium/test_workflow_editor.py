@@ -724,7 +724,7 @@ steps:
         def assert_workflow_bookmarked_status(target_status):
             name_matches = [c.text == new_workflow_name for c in self.components.tool_panel.workflow_names.all()]
             status = any(name_matches)
-            self.assertTrue(status == target_status)
+            assert status == target_status
 
         new_workflow_name = self.workflow_create_new(clear_placeholder=True)
 

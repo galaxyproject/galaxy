@@ -32,7 +32,7 @@ class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
             dataset_ids=input_hids,
             job_ids=[cat1_job_id],
         )
-        self.assertEqual(downloaded_workflow["name"], "test import from history")
+        assert downloaded_workflow["name"] == "test import from history"
         self.__assert_looks_like_cat1_example_workflow(downloaded_workflow)
 
     @summarize_instance_history_on_error
@@ -222,7 +222,7 @@ test_data:
 
         collection_step = self._get_steps_of_type(downloaded_workflow, "data_collection_input", expected_len=1)[0]
         collection_step_state = loads(collection_step["tool_state"])
-        self.assertEqual(collection_step_state["collection_type"], "paired")
+        assert collection_step_state["collection_type"] == "paired"
 
     @skip_without_tool("cat_collection")
     def test_subcollection_mapping(self):
@@ -264,7 +264,7 @@ test_data:
 
         collection_step = self._get_steps_of_type(downloaded_workflow, "data_collection_input", expected_len=1)[0]
         collection_step_state = loads(collection_step["tool_state"])
-        self.assertEqual(collection_step_state["collection_type"], "list:paired")
+        assert collection_step_state["collection_type"] == "list:paired"
 
     @skip_without_tool("cat_list")
     @skip_without_tool("collection_creates_dynamic_nested")
@@ -450,8 +450,8 @@ test_data:
         input1 = tool_step["input_connections"]["input1"]
         input2 = tool_step["input_connections"]["queries_0|input2"]
 
-        self.assertEqual(input_steps[0]["id"], input1["id"])
-        self.assertEqual(input_steps[1]["id"], input2["id"])
+        assert input_steps[0]["id"] == input1["id"]
+        assert input_steps[1]["id"] == input2["id"]
 
     def _history_contents(self, history_id=None):
         if history_id is None:
@@ -484,7 +484,7 @@ test_data:
         collection_steps = self._get_steps_of_type(downloaded_workflow, "data_collection_input", expected_len=1)
         collection_step = collection_steps[0]
         collection_step_state = loads(collection_step["tool_state"])
-        self.assertEqual(collection_step_state["collection_type"], "paired")
+        assert collection_step_state["collection_type"] == "paired"
         collect_step_idx = collection_step["id"]
         return collect_step_idx
 

@@ -32,7 +32,7 @@ class BaseHistories:
         post_data = dict(name=name)
         create_response = self._post("histories", data=post_data).json()
         self._assert_has_keys(create_response, "name", "id")
-        self.assertEqual(create_response["name"], name)
+        assert create_response["name"] == name
         return create_response
 
     def _assert_history_length(self, history_id, n):
@@ -56,14 +56,14 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         # Make sure new history appears in index of user's histories.
         index_response = self._get("histories").json()
         indexed_history = [h for h in index_response if h["id"] == created_id][0]
-        self.assertEqual(indexed_history["name"], "TestHistory1")
+        assert indexed_history["name"] == "TestHistory1"
 
     def test_create_history_json(self):
         name = "TestHistoryJson"
         post_data = dict(name=name)
         create_response = self._post("histories", data=post_data, json=True).json()
         self._assert_has_keys(create_response, "name", "id")
-        self.assertEqual(create_response["name"], name)
+        assert create_response["name"] == name
         return create_response
 
     def test_show_history(self):

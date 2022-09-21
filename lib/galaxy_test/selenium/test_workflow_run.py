@@ -189,7 +189,7 @@ steps:
         )
         self.workflow_run_wait_for_ok(hid=7)
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
-        self.assertEqual("10.0\n30.0\n20.0\n40.0\n", content)
+        assert "10.0\n30.0\n20.0\n40.0\n" == content
 
     @selenium_test
     @managed_history
