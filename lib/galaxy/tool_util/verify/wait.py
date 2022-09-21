@@ -1,12 +1,12 @@
 """Abstraction for waiting on API conditions to become true."""
-
-import time
+from time import (
+    sleep,
+    time,
+)
 from typing import (
     Callable,
-    Optional,
     Union,
 )
-
 DEFAULT_POLLING_BACKOFF = 0
 DEFAULT_POLLING_DELTA = 0.25
 
@@ -20,7 +20,6 @@ def wait_on(
     timeout: timeout_type,
     delta: timeout_type = DEFAULT_POLLING_DELTA,
     polling_backoff: timeout_type = DEFAULT_POLLING_BACKOFF,
-    sleep_: Optional[Callable] = None,
 ):
     """Wait for function to return non-None value.
 
@@ -30,15 +29,14 @@ def wait_on(
     Throw a TimeoutAssertionError if the supplied timeout is reached without
     supplied function ever returning a non-None value.
     """
-    sleep = sleep_ or time.sleep
-    total_wait = 0.0
+    start = time()
     while True:
+        total_wait = time() - start
         if total_wait > timeout:
-            raise TimeoutAssertionError(TIMEOUT_MESSAGE_TEMPLATE.format(total_wait, desc))
+            raise TimeoutAssertionError(TIMEOUT_MESSAGE_TEMPLATE.format(int(total_wait), desc))
         value = function()
         if value is not None:
             return value
-        total_wait += delta
         sleep(delta)
         delta += polling_backoff
 
