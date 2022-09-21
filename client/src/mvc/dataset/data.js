@@ -317,6 +317,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         var data_table = this.$el.find("table");
         const parsedChunk = parse(chunk.ck_data, {
             delimiter: this.delimiter,
+            comment: "#",
         });
         _.each(
             parsedChunk,
