@@ -87,7 +87,7 @@ def copy_sample_files(
             if tool_path:
                 filename = os.path.join(tool_path, filename)
             # Attempt to ensure we're copying an appropriate file.
-            if is_data_index_sample_file(filename):
+            if _is_data_index_sample_file(filename):
                 copy_sample_file(tool_data_path, filename, dest_path=dest_path)
 
 
@@ -171,7 +171,7 @@ def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tup
     return repository_tools_tups, sample_files_copied
 
 
-def is_data_index_sample_file(file_path):
+def _is_data_index_sample_file(file_path):
     """
     Attempt to determine if a .sample file is appropriate for copying to ~/tool-data when
     a tool shed repository is being installed into a Galaxy instance.
@@ -251,7 +251,6 @@ __all__ = (
     "copy_sample_files",
     "generate_message_for_invalid_tools",
     "handle_missing_index_file",
-    "is_data_index_sample_file",
     "new_state",
     "panel_entry_per_tool",
 )
