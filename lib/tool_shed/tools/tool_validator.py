@@ -65,7 +65,7 @@ class ToolValidator(GalaxyToolValidator):
                 for name in files:
                     if name.endswith(".sample"):
                         relative_path = os.path.join(root, name)
-                        tool_util.copy_sample_file(self.app, relative_path, dest_path=dest_path)
+                        tool_util.copy_sample_file(self.app.config.tool_data_path, relative_path, dest_path=dest_path)
                         sample_files.append(name)
         return sample_files
 

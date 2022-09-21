@@ -1,6 +1,7 @@
 import logging
 import os
 import shutil
+from typing import Optional
 
 import galaxy.tools
 from galaxy import util
@@ -39,14 +40,15 @@ def build_tool_panel_section_select_field(app):
     return select_field
 
 
-def copy_sample_file(app, filename, dest_path=None):
+def copy_sample_file(tool_data_path: str, filename: str, dest_path: Optional[str] = None) -> str:
     """
     Copies a sample file at `filename` to `the dest_path`
     directory and strips the '.sample' extensions from `filename`.
     Returns the path to the copied file (with the .sample extension).
     """
     if dest_path is None:
-        dest_path = os.path.abspath(app.config.tool_data_path)
+        dest_path = tool_data_path
+    assert dest_path
     sample_file_name = basic_util.strip_path(filename)
     copied_file = sample_file_name.rsplit(".sample", 1)[0]
     full_source_path = os.path.abspath(filename)
@@ -63,7 +65,13 @@ def copy_sample_file(app, filename, dest_path=None):
     return non_sample_path
 
 
-def copy_sample_files(app, sample_files, tool_path=None, sample_files_copied=None, dest_path=None):
+def copy_sample_files(
+    tool_data_path: str,
+    sample_files,
+    tool_path: Optional[str] = None,
+    sample_files_copied=None,
+    dest_path: Optional[str] = None,
+) -> None:
     """
     Copy all appropriate files to dest_path in the local Galaxy environment that have not
     already been copied.  Those that have been copied are contained in sample_files_copied.
@@ -80,7 +88,7 @@ def copy_sample_files(app, sample_files, tool_path=None, sample_files_copied=Non
                 filename = os.path.join(tool_path, filename)
             # Attempt to ensure we're copying an appropriate file.
             if is_data_index_sample_file(filename):
-                copy_sample_file(app, filename, dest_path=dest_path)
+                copy_sample_file(tool_data_path, filename, dest_path=dest_path)
 
 
 def generate_message_for_invalid_tools(
