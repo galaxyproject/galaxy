@@ -244,7 +244,6 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     _renderRow: function (rowData) {
         var row = $("<tr>");
         var num_columns = this.model.get_metadata("columns");
-
         if (this.row_count % 2 !== 0) {
             row.addClass("dark_row");
         }
@@ -315,10 +314,28 @@ var TabularDatasetChunkedView = Backbone.View.extend({
 
     _renderChunk: function (chunk) {
         var data_table = this.$el.find("table");
-        const parsedChunk = parse(chunk.ck_data, {
-            delimiter: this.delimiter,
-            comment: "#",
-        });
+        let parsedChunk = [];
+        try {
+            parsedChunk = parse(chunk.ck_data, {
+                delimiter: this.delimiter,
+            });
+        } catch (error) {
+            // If this blows up it's likely data in a comment or header line
+            // (e.g. VCF files) so just split it by newline first then parse
+            // each line individually.
+            parsedChunk = chunk.ck_data.trim().split("\n");
+            parsedChunk = parsedChunk.map((line) => {
+                try {
+                    return parse(line, {
+                        delimiter: this.delimiter,
+                    })[0];
+                } catch (error) {
+                    // Failing lines get passed through intact for row-level
+                    // rendering/parsing.
+                    return [line];
+                }
+            });
+        }
         _.each(
             parsedChunk,
             (rowData, index) => {
