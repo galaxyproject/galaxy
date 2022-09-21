@@ -178,7 +178,7 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
         )
 
     def _verify_tool_confs(self):
-        self._assert_valid_xml(self.integerated_tool_panel_path)
+        self._assert_valid_xml(self.integrated_tool_panel_path)
         self._assert_valid_xml(os.path.join(self.test_directory, "tool_conf.xml"))
 
     def _assert_valid_xml(self, filename):
