@@ -261,7 +261,7 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             )
             self.create_repository_dependency(
                 repository=freebayes_repository,
-                repository_tuples=[freebayes_tuple, bismark_tuple, emboss_tuple, column_tuple],
+                repository_tuples=[freebayes_tuple, emboss_tuple, column_tuple],
                 filepath=dependency_xml_path,
             )
             self.create_repository_dependency(
