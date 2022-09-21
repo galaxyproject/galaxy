@@ -22,21 +22,8 @@ class RepositoryWithDependencyRevisions(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        galaxy_admin_user = self.test_db_util.get_galaxy_user(common.admin_email)
-        assert (
-            galaxy_admin_user is not None
-        ), f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_galaxy_private_role(galaxy_admin_user)
 
     def test_0005_ensure_repositories_and_categories_exist(self):
         """Create the 0030 category and add repositories to it, if necessary."""
@@ -50,7 +37,7 @@ class RepositoryWithDependencyRevisions(ShedTwillTestCase):
             description=column_maker_repository_description,
             long_description=column_maker_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(column_maker_repository):
@@ -71,7 +58,7 @@ class RepositoryWithDependencyRevisions(ShedTwillTestCase):
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -102,7 +89,7 @@ class RepositoryWithDependencyRevisions(ShedTwillTestCase):
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -133,7 +120,7 @@ class RepositoryWithDependencyRevisions(ShedTwillTestCase):
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -175,7 +162,7 @@ class RepositoryWithDependencyRevisions(ShedTwillTestCase):
         """Browse the available tool sheds in this Galaxy instance and preview the emboss tool."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.browse_tool_shed(url=self.url, strings_displayed=["Test 0030 Repository Dependency Revisions"])
-        category = self.test_db_util.get_category_by_name("Test 0030 Repository Dependency Revisions")
+        category = self.populator.get_category_with_name("Test 0030 Repository Dependency Revisions")
         self.browse_category(category, strings_displayed=["emboss_0030"])
         self.preview_repository_in_tool_shed(
             "emboss_0030", common.test_user_1_name, strings_displayed=["emboss_0030", "Valid tools"]

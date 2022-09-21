@@ -26,15 +26,7 @@ class TestFreebayesRepository(ShedTwillTestCase):
     def test_0000_create_or_login_admin_user(self):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_category(self):
         """Create a category for this test suite"""
@@ -51,13 +43,13 @@ class TestFreebayesRepository(ShedTwillTestCase):
         upload, as well as on the manage repository page.
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        category = self.test_db_util.get_category_by_name("Test 0010 Repository With Tool Dependencies")
+        category = self.populator.get_category_with_name("Test 0010 Repository With Tool Dependencies")
         repository = self.get_or_create_repository(
             name=repository_name,
             description=repository_description,
             long_description=repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(

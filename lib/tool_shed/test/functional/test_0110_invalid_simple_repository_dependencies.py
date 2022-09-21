@@ -21,15 +21,7 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_category(self):
         """Create a category for this test suite"""
@@ -38,13 +30,13 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
     def test_0010_create_emboss_datatypes_repository_and_upload_tarball(self):
         """Create and populate the emboss_datatypes repository."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         column_maker_repository = self.get_or_create_repository(
             name=column_maker_repository_name,
             description=column_maker_repository_description,
             long_description=column_maker_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -61,13 +53,13 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
 
     def test_0020_create_emboss_5_repository_and_upload_files(self):
         """Create and populate the emboss_5_0110 repository."""
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=emboss_repository_name,
             description=emboss_repository_description,
             long_description=emboss_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(

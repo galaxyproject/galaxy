@@ -5,6 +5,7 @@ import string
 import tempfile
 import time
 from json import loads
+from typing import List
 from urllib.parse import (
     quote_plus,
     urlencode,
@@ -34,6 +35,7 @@ from tool_shed.util import (
     hgweb_config,
     xml_util,
 )
+from tool_shed_client.schema import Category
 from . import (
     common,
     test_db_util,
@@ -248,18 +250,13 @@ class ShedTwillTestCase(ShedBaseTestCase):
         self.visit_url("/repository/manage_repository_admins", params=params)
         self.check_for_strings(strings_displayed=["Role", "has been associated"])
 
-    def browse_category(self, category, strings_displayed=None, strings_not_displayed=None):
+    def browse_category(self, category: Category, strings_displayed=None, strings_not_displayed=None):
         params = {
             "sort": "name",
             "operation": "valid_repositories_by_category",
-            "id": self.security.encode_id(category.id),
+            "id": category.id,
         }
         self.visit_url("/repository/browse_valid_categories", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def browse_custom_datatypes(self, strings_displayed=None, strings_not_displayed=None):
-        url = "/repository/browse_datatypes"
-        self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def browse_repository(self, repository, strings_displayed=None, strings_not_displayed=None):
@@ -451,13 +448,14 @@ class ShedTwillTestCase(ShedBaseTestCase):
                 return True
         raise
 
-    def create_category(self, **kwd):
-        category = test_db_util.get_category_by_name(kwd["name"])
+    def create_category(self, **kwd) -> Category:
+        category = self.populator.get_category_with_name(kwd["name"])
         if category is None:
             params = {"operation": "create"}
             self.visit_url("/admin/manage_categories", params=params)
             self.submit_form(button="create_category_button", **kwd)
-            category = test_db_util.get_category_by_name(kwd["name"])
+            category = self.populator.get_category_with_name(kwd["name"])
+            assert category
         return category
 
     def create_repository_dependency(
@@ -815,13 +813,17 @@ class ShedTwillTestCase(ShedBaseTestCase):
     def get_hg_repo(self, path):
         return hg.repository(ui.ui(), path.encode("utf-8"))
 
-    def get_repositories_category_api(self, categories, strings_displayed=None, strings_not_displayed=None):
+    def get_repositories_category_api(
+        self, categories: List[Category], strings_displayed=None, strings_not_displayed=None
+    ):
         for category in categories:
-            url = f"/api/categories/{self.security.encode_id(category.id)}/repositories"
+            url = f"/api/categories/{category.id}/repositories"
             self.visit_url(url)
             self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def get_or_create_repository(self, owner=None, strings_displayed=None, strings_not_displayed=None, **kwd):
+    def get_or_create_repository(
+        self, category: Category, owner=None, strings_displayed=None, strings_not_displayed=None, **kwd
+    ):
         # If not checking for a specific string, it should be safe to assume that
         # we expect repository creation to be successful.
         if strings_displayed is None:
@@ -829,9 +831,11 @@ class ShedTwillTestCase(ShedBaseTestCase):
         if strings_not_displayed is None:
             strings_not_displayed = []
         repository = test_db_util.get_repository_by_name_and_owner(kwd["name"], owner)
+        category_id = category.id
+        assert category_id
         if repository is None:
             self.visit_url("/repository/create_repository")
-            self.submit_form(button="create_repository_button", **kwd)
+            self.submit_form(button="create_repository_button", category_id=category_id, **kwd)
             self.check_for_strings(strings_displayed, strings_not_displayed)
             repository = test_db_util.get_repository_by_name_and_owner(kwd["name"], owner)
         return repository
@@ -853,13 +857,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
             ctx = repo[changeset]
             changelog_tuples.append((ctx.rev(), ctx))
         return changelog_tuples
-
-    def get_repository_datatypes_count(self, repository):
-        metadata = self.get_repository_metadata(repository)[0].metadata
-        if "datatypes" not in metadata:
-            return 0
-        else:
-            return len(metadata["datatypes"])
 
     def get_repository_file_list(self, repository, base_path, current_path=None):
         """Recursively load repository folder contents and append them to a list. Similar to os.walk but via /repository/open_folder."""
@@ -911,13 +908,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
     def get_repository_tip(self, repository):
         repo = self.get_hg_repo(self.get_repo_path(repository))
         return str(repo[repo.changelog.tip()])
-
-    def get_sniffers_count(self):
-        url = "/api/datatypes/sniffers"
-        self.visit_galaxy_url(url)
-        html = self.last_page()
-        sniffers = loads(html)
-        return len(sniffers)
 
     def get_tools_from_repository_metadata(self, repository, include_invalid=False):
         """Get a list of valid and (optionally) invalid tool dicts from the repository metadata."""
@@ -1051,7 +1041,7 @@ class ShedTwillTestCase(ShedBaseTestCase):
         **kwd,
     ):
         self.browse_tool_shed(url=self.url)
-        self.browse_category(test_db_util.get_category_by_name(category_name))
+        self.browse_category(self.populator.get_category_with_name(category_name))
         self.preview_repository_in_tool_shed(name, owner, strings_displayed=preview_strings_displayed)
         repository = test_db_util.get_repository_by_name_and_owner(name, owner)
         repository_id = self.security.encode_id(repository.id)
@@ -1176,11 +1166,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
             "changeset_revision": changeset_revision,
         }
         self.visit_url("/repository/load_invalid_tool", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def load_page_for_installed_tool(self, tool_guid, strings_displayed=None, strings_not_displayed=None):
-        params = {"tool_id": tool_guid}
-        self.visit_galaxy_url("/tool_runner", params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def preview_repository_in_tool_shed(

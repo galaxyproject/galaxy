@@ -10,21 +10,8 @@ class BasicToolShedFeatures(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        galaxy_admin_user = self.test_db_util.get_galaxy_user(common.admin_email)
-        assert (
-            galaxy_admin_user is not None
-        ), f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_galaxy_private_role(galaxy_admin_user)
 
     def test_0005_ensure_repositories_and_categories_exist(self):
         """Create the 0000 category and upload the filtering repository to it, if necessary."""
@@ -43,7 +30,7 @@ class BasicToolShedFeatures(ShedTwillTestCase):
             description="Galaxy's filtering tool",
             long_description="Long description of Galaxy's filtering tool",
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
         )
         if self.repository_is_new(repository):
             self.upload_file(
@@ -101,7 +88,7 @@ class BasicToolShedFeatures(ShedTwillTestCase):
 
     def test_0015_browse_test_0000_category(self):
         """Browse the category created in test 0000. It should contain the filtering_0000 repository also created in that test."""
-        category = self.test_db_util.get_category_by_name("Test 0000 Basic Repository Features 1")
+        category = self.populator.get_category_with_name("Test 0000 Basic Repository Features 1")
         self.browse_category(category, strings_displayed=["filtering_0000"])
 
     def test_0020_preview_filtering_repository(self):

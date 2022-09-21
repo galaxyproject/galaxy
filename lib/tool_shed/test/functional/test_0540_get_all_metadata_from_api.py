@@ -47,15 +47,7 @@ class TestGetAllMetadata(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_bwa_package_repository(self):
         """Create and populate package_bwa_0_5_9_0540."""
@@ -67,7 +59,7 @@ class TestGetAllMetadata(ShedTwillTestCase):
             description=repositories["bwa"]["description"],
             long_description=repositories["bwa"]["long_description"],
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         assert repository is not None, f"Error creating repository {repositories['bwa']['name']}"
@@ -95,7 +87,7 @@ class TestGetAllMetadata(ShedTwillTestCase):
             description=repositories["convert"]["description"],
             long_description=repositories["convert"]["long_description"],
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         assert repository is not None, f"Error creating repository {repositories['convert']['name']}"
@@ -133,7 +125,7 @@ class TestGetAllMetadata(ShedTwillTestCase):
             description=repositories["column"]["description"],
             long_description=repositories["column"]["long_description"],
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         assert repository is not None, f"Error creating repository {repositories['column']['name']}"

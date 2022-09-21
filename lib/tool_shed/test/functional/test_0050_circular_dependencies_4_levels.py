@@ -37,15 +37,7 @@ class TestRepositoryCircularDependenciesToNLevels(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_convert_repository(self):
         """Create and populate convert_chars_0050."""
@@ -56,7 +48,7 @@ class TestRepositoryCircularDependenciesToNLevels(ShedTwillTestCase):
             description=convert_repository_description,
             long_description=convert_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -79,7 +71,7 @@ class TestRepositoryCircularDependenciesToNLevels(ShedTwillTestCase):
             description=column_repository_description,
             long_description=column_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -106,7 +98,7 @@ class TestRepositoryCircularDependenciesToNLevels(ShedTwillTestCase):
             description=emboss_repository_description,
             long_description=emboss_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -129,7 +121,7 @@ class TestRepositoryCircularDependenciesToNLevels(ShedTwillTestCase):
             description=filtering_repository_description,
             long_description=filtering_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -152,7 +144,7 @@ class TestRepositoryCircularDependenciesToNLevels(ShedTwillTestCase):
             description=freebayes_repository_description,
             long_description=freebayes_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -175,7 +167,7 @@ class TestRepositoryCircularDependenciesToNLevels(ShedTwillTestCase):
             description=bismark_repository_description,
             long_description=bismark_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(

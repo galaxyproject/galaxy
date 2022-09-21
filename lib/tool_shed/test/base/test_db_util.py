@@ -10,7 +10,6 @@ import galaxy.model
 import galaxy.model.tool_shed_install
 import tool_shed.webapp.model as model
 from galaxy_test.driver.driver_util import (
-    galaxy_context as ga_session,
     install_context as install_session,
     tool_shed_context as sa_session,
 )
@@ -56,26 +55,6 @@ def get_all_installed_repositories(actually_installed=False):
         return install_session.query(galaxy.model.tool_shed_install.ToolShedRepository).all()
 
 
-def get_category_by_name(name):
-    return sa_session.query(model.Category).filter(model.Category.table.c.name == name).first()
-
-
-def get_default_user_permissions_by_role(role):
-    return (
-        sa_session.query(model.DefaultUserPermissions)
-        .filter(model.DefaultUserPermissions.table.c.role_id == role.id)
-        .all()
-    )
-
-
-def get_default_user_permissions_by_user(user):
-    return (
-        sa_session.query(model.DefaultUserPermissions)
-        .filter(model.DefaultUserPermissions.table.c.user_id == user.id)
-        .all()
-    )
-
-
 def get_galaxy_repository_by_name_owner_changeset_revision(repository_name, owner, changeset_revision):
     return (
         install_session.query(galaxy.model.tool_shed_install.ToolShedRepository)
@@ -108,13 +87,6 @@ def get_installed_repository_by_name_owner(repository_name, owner, return_multip
     if return_multiple:
         return query.all()
     return query.first()
-
-
-def get_private_role(user):
-    for role in user.all_roles():
-        if role.name == user.email and role.description == f"Private Role for {user.email}":
-            return role
-    raise AssertionError(f"Private role not found for user '{user.email}'")
 
 
 def get_role(user, role_name):
@@ -194,17 +166,6 @@ def refresh(obj):
 
 def ga_refresh(obj):
     install_session.refresh(obj)
-
-
-def get_galaxy_private_role(user):
-    for role in user.all_roles():
-        if role.name == user.email and role.description == f"Private Role for {user.email}":
-            return role
-    raise AssertionError(f"Private role not found for user '{user.email}'")
-
-
-def get_galaxy_user(email):
-    return ga_session.query(galaxy.model.User).filter(galaxy.model.User.table.c.email == email).first()
 
 
 def get_repository_by_name_and_owner(name, owner_username, return_multiple=False):

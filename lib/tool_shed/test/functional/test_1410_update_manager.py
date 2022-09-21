@@ -33,21 +33,8 @@ class TestUpdateManager(ShedTwillTestCase):
         Previously created accounts will not be re-created.
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        galaxy_admin_user = self.test_db_util.get_galaxy_user(common.admin_email)
-        assert (
-            galaxy_admin_user is not None
-        ), f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_galaxy_private_role(galaxy_admin_user)
 
     def test_0005_create_filtering_repository(self):
         """Create and populate the filtering_1410 repository.
@@ -63,7 +50,7 @@ class TestUpdateManager(ShedTwillTestCase):
             description=repository_description,
             long_description=repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
         )
         self.upload_file(
             repository,
