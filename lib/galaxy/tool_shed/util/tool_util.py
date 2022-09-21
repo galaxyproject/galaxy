@@ -146,23 +146,6 @@ def generate_message_for_invalid_tools(
     return message
 
 
-def get_tool_path_install_dir(partial_install_dir, shed_tool_conf_dict, tool_dict, config_elems):
-    for elem in config_elems:
-        if elem.tag == "tool":
-            if elem.get("guid") == tool_dict["guid"]:
-                tool_path = shed_tool_conf_dict["tool_path"]
-                relative_install_dir = os.path.join(tool_path, partial_install_dir)
-                return tool_path, relative_install_dir
-        elif elem.tag == "section":
-            for section_elem in elem:
-                if section_elem.tag == "tool":
-                    if section_elem.get("guid") == tool_dict["guid"]:
-                        tool_path = shed_tool_conf_dict["tool_path"]
-                        relative_install_dir = os.path.join(tool_path, partial_install_dir)
-                        return tool_path, relative_install_dir
-    return None, None
-
-
 def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tups, sample_files_copied):
     """
     Inspect each tool to see if it has any input parameters that are dynamically
@@ -267,7 +250,6 @@ __all__ = (
     "copy_sample_file",
     "copy_sample_files",
     "generate_message_for_invalid_tools",
-    "get_tool_path_install_dir",
     "handle_missing_index_file",
     "is_data_index_sample_file",
     "new_state",
