@@ -136,7 +136,6 @@ def create_or_update_tool_shed_repository(
         tool_shed_repository.changeset_revision = current_changeset_revision
         tool_shed_repository.ctx_rev = ctx_rev
         tool_shed_repository.metadata_ = metadata_dict
-        tool_shed_repository.includes_datatypes = False
         tool_shed_repository.deleted = deleted
         tool_shed_repository.uninstalled = uninstalled
         tool_shed_repository.status = status
@@ -153,7 +152,6 @@ def create_or_update_tool_shed_repository(
             changeset_revision=current_changeset_revision,
             ctx_rev=ctx_rev,
             metadata_=metadata_dict,
-            includes_datatypes=False,
             dist_to_shed=dist_to_shed,
             deleted=deleted,
             uninstalled=uninstalled,
