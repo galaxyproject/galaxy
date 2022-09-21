@@ -17,6 +17,10 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    options: {
+        type: Object,
+        required: true,
+    },
 });
 
 const webhookDetails = ref([]);
@@ -28,14 +32,14 @@ Webhooks.load({
             const webhook = model.toJSON();
 
             if (webhook.activate && webhook.config.function) {
-                webhookDetails.value = {
+                webhookDetails.value.push({
                     icon: `fa ${webhook.config.icon}`,
                     title: webhook.config.title,
                     onclick: () => {
                         const func = new Function("options", webhook.config.function);
                         func(props.options);
                     },
-                };
+                });
             }
         });
     },

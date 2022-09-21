@@ -20,6 +20,7 @@ const props = defineProps({
     version: {
         type: String,
         required: false,
+        default: "1.0",
     },
     title: {
         type: String,
@@ -28,6 +29,7 @@ const props = defineProps({
     description: {
         type: String,
         required: false,
+        default: "",
     },
     options: {
         type: Object,
@@ -81,10 +83,10 @@ const showVersions = computed(() => props.options.versions?.length > 1);
                 <div class="py-1 d-flex flex-wrap flex-gapx-1">
                     <span>
                         <icon icon="wrench" class="fa-fw" />
-                        <h1 itemprop="name">{{ title }}</h1>
+                        <h1 itemprop="name">{{ props.title }}</h1>
                     </span>
-                    <span itemprop="description">{{ description }}</span>
-                    <span>(Galaxy Version {{ version }})</span>
+                    <span itemprop="description">{{ props.description }}</span>
+                    <span>(Galaxy Version {{ props.version }})</span>
                 </div>
                 <div class="d-flex flex-nowrap align-items-start flex-gapx-1">
                     <b-button-group class="tool-card-buttons">
@@ -94,7 +96,10 @@ const showVersions = computed(() => props.options.versions?.length > 1);
                             :version="props.version"
                             :versions="versions"
                             @onChangeVersion="onChangeVersion" />
-                        <ToolOptionsButton :id="props.id" :sharableUrl="props.options.sharable_url" />
+                        <ToolOptionsButton
+                            :id="props.id"
+                            :sharable-url="props.options.sharable_url"
+                            :options="props.options" />
                     </b-button-group>
                     <slot name="header-buttons" />
                 </div>
@@ -114,7 +119,7 @@ const showVersions = computed(() => props.options.versions?.length > 1);
 
             <ToolFooter
                 :id="props.id"
-                :hasCitations="props.options.hasCitations"
+                :has-citations="props.options.hasCitations"
                 :xrefs="props.options.xrefs"
                 :license="props.options.license"
                 :creators="props.options.creators"
