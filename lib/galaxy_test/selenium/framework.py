@@ -50,6 +50,7 @@ from galaxy_test.base.env import (
 from galaxy_test.base.populators import (
     load_data_dict,
     skip_if_github_down,
+    YamlContentT,
 )
 from galaxy_test.base.testcase import FunctionalTestCase
 
@@ -785,8 +786,8 @@ class SeleniumSessionWorkflowPopulator(
         upload_response.raise_for_status()
         return upload_response.json()
 
-    def upload_yaml_workflow(self, has_yaml, **kwds) -> str:
-        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
+    def upload_yaml_workflow(self, yaml_content: YamlContentT, **kwds) -> str:
+        workflow = convert_and_import_workflow(yaml_content, galaxy_interface=self, **kwds)
         return workflow["id"]
 
 
