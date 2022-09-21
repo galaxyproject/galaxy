@@ -7,8 +7,6 @@ import _l from "utils/localization";
 import AjaxQueue from "utils/ajax-queue";
 import Utils from "utils/utils";
 import GridView from "mvc/grid/grid-view";
-import { History } from "mvc/history/history-model";
-import historyCopyDialog from "mvc/history/copy-dialog";
 import LoadingIndicator from "ui/loading-indicator";
 
 var HistoryGridView = GridView.extend({
@@ -56,32 +54,6 @@ var HistoryGridView = GridView.extend({
         );
         fetchDetails.forEach((fn) => ajaxQueue.add(fn));
         ajaxQueue.start();
-    },
-    _showCopyDialog: function (id) {
-        var history = new History({ id: id });
-        history
-            .fetch()
-            .fail(() => {
-                alert("History could not be fetched. Please contact an administrator");
-            })
-            .done(() => {
-                historyCopyDialog(history, {}).done(() => {
-                    const Galaxy = getGalaxyInstance();
-                    if (Galaxy && Galaxy.currHistoryPanel) {
-                        Galaxy.currHistoryPanel.loadCurrentHistory();
-                    }
-                    window.location.reload(true);
-                });
-            });
-    },
-    /** Add an operation to the items menu */
-    add_operation: function (popup, operation, item) {
-        if (operation.label == "Copy") {
-            operation.onclick = (id) => {
-                this._showCopyDialog(id);
-            };
-        }
-        GridView.prototype.add_operation.call(this, popup, operation, item);
     },
 });
 

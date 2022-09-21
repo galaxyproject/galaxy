@@ -15,13 +15,7 @@ import LIST_OF_PAIRS_COLLECTION_CREATOR from "components/Collections/PairedListC
 import RULE_BASED_COLLECTION_CREATOR from "components/Collections/RuleBasedCollectionCreatorModal";
 
 // stand-in for buildCollection from history-view-edit.js
-export async function buildCollectionModal(
-    collectionType,
-    history_id,
-    selectedContent,
-    hideSourceItems = true,
-    fromRulesInput = false
-) {
+export async function buildCollectionModal(collectionType, selectedContent, historyId, fromRulesInput = false) {
     // select legacy function
     let createFunc;
     if (collectionType == "list") {
@@ -37,10 +31,10 @@ export async function buildCollectionModal(
     }
     // pull up cached content by type_ids;
     if (fromRulesInput) {
-        return await createFunc(selectedContent, hideSourceItems);
+        return await createFunc(selectedContent);
     } else {
-        const fakeBackboneContent = createBackboneContent(history_id, selectedContent);
-        return await createFunc(fakeBackboneContent, hideSourceItems);
+        const fakeBackboneContent = createBackboneContent(historyId, selectedContent);
+        return await createFunc(fakeBackboneContent);
     }
 }
 

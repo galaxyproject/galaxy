@@ -273,7 +273,7 @@ export default {
                 models: Object.values(models),
                 historyId: Galaxy.currHistoryPanel.model.id,
             };
-            Galaxy.currHistoryPanel.buildCollection(this.collectionType, selection, true);
+            Galaxy.currHistoryPanel.buildCollection(this.collectionType, selection);
             this.counterRunning = 0;
             this._updateStateForCounters();
             this._eventReset();

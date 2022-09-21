@@ -32,14 +32,13 @@ const mutations = {
         Vue.delete(state.histories, doomed.id);
     },
     setHistories(state, newHistories = []) {
-        const currentHistoryId = state.currentHistoryId;
-        const currentHistory = state.histories[currentHistoryId];
-        const newMap = newHistories.reduce((acc, h) => ({ ...acc, [h.id]: h }), {});
-        if (currentHistory) {
-            // The incoming history list contains less information than the current history
-            // so we restore the existing current history since it gets updated regularly anyway
-            newMap[currentHistoryId] = currentHistory;
-        }
+        // The incoming history list contains less information than the current history
+        // so we ensure that already available details are not getting lost
+        const enrichedHistories = newHistories.map((history) => {
+            const historyState = state.histories[history.id] || {};
+            return Object.assign({}, history, historyState);
+        });
+        const newMap = enrichedHistories.reduce((acc, h) => ({ ...acc, [h.id]: h }), {});
         Vue.set(state, "histories", newMap);
     },
     setHistoriesLoading(state, isLoading) {

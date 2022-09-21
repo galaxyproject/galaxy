@@ -31,7 +31,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
         self.click_grid_popup_option(self.history2_name, "View")
-        history_name = self.wait_for_selector(".name.editable-text")
+        history_name = self.wait_for_selector("[data-description='name display']")
         self.assertEqual(history_name.text, self.history2_name)
 
     @selenium_test
