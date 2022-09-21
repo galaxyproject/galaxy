@@ -92,8 +92,13 @@ def copy_sample_files(
 
 
 def generate_message_for_invalid_tools(
-    app, invalid_file_tups, repository, metadata_dict, as_html=True, displaying_invalid_tool=False
-):
+    app,
+    invalid_file_tups: list,
+    repository,
+    metadata_dict: Optional[dict],
+    as_html: bool = True,
+    displaying_invalid_tool: bool = False,
+) -> str:
     if as_html:
         new_line = "<br/>"
         bold_start = "<b>"
