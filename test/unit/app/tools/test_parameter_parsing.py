@@ -144,7 +144,8 @@ class ParameterParsingTestCase(BaseParameterTestCase):
         assert param.value == "9"
         assert param.type == "integer"
         param.validate(8)
-        self.assertRaises(Exception, lambda: param.validate(10))
+        with self.assertRaises(ValueError):
+            param.validate(10)
 
     def test_float_params(self):
         param = self._parameter_for(
@@ -156,7 +157,8 @@ class ParameterParsingTestCase(BaseParameterTestCase):
         assert param.value == "9"
         assert param.type == "float"
         param.validate(8.1)
-        self.assertRaises(Exception, lambda: param.validate(10.0))
+        with self.assertRaises(ValueError):
+            param.validate(10.0)
 
     def test_boolean_params(self):
         param = self._parameter_for(

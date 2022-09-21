@@ -104,8 +104,10 @@ class Test_BaseDataProvider(BaseTestCase):
             return self.provider_class(source)
 
         # two objects without __iter__ method: build in function and int
-        self.assertRaises(exceptions.InvalidDataProviderSource, non_iterator_dprov, sum)
-        self.assertRaises(exceptions.InvalidDataProviderSource, non_iterator_dprov, 40)
+        with self.assertRaises(exceptions.InvalidDataProviderSource):
+            non_iterator_dprov(sum)
+        with self.assertRaises(exceptions.InvalidDataProviderSource):
+            non_iterator_dprov(40)
 
     def test_writemethods(self):
         """should throw an error if any write methods are called"""
@@ -117,9 +119,12 @@ class Test_BaseDataProvider(BaseTestCase):
             method = getattr(provider, method_name)
             return method(*args)
 
-        self.assertRaises(NotImplementedError, call_method, provider, "truncate", 20)
-        self.assertRaises(NotImplementedError, call_method, provider, "write", "bler")
-        self.assertRaises(NotImplementedError, call_method, provider, "writelines", ["one", "two"])
+        with self.assertRaises(NotImplementedError):
+            call_method(provider, "truncate", 20)
+        with self.assertRaises(NotImplementedError):
+            call_method(provider, "write", "bler")
+        with self.assertRaises(NotImplementedError):
+            call_method(provider, "writelines", ["one", "two"])
 
     def test_readlines(self):
         """readlines should return all the data in list form"""

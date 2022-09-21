@@ -127,8 +127,10 @@ class HistoryManagerTestCase(BaseTestCase):
         assert not self.history_manager.is_owner(item1, non_owner)
 
         self.log("should raise an error when checking ownership with non-owner")
-        self.assertRaises(exceptions.ItemOwnershipException, self.history_manager.error_unless_owner, item1, non_owner)
-        self.assertRaises(exceptions.ItemOwnershipException, self.history_manager.get_owned, item1.id, non_owner)
+        with self.assertRaises(exceptions.ItemOwnershipException):
+            self.history_manager.error_unless_owner(item1, non_owner)
+        with self.assertRaises(exceptions.ItemOwnershipException):
+            self.history_manager.get_owned(item1.id, non_owner)
 
         self.log("should not raise an error when checking ownership with owner")
         assert self.history_manager.error_unless_owner(item1, owner) == item1
@@ -151,12 +153,10 @@ class HistoryManagerTestCase(BaseTestCase):
         assert not self.history_manager.is_accessible(item1, non_owner)
 
         self.log("should raise an error when checking accessibility with non-owner")
-        self.assertRaises(
-            exceptions.ItemAccessibilityException, self.history_manager.error_unless_accessible, item1, non_owner
-        )
-        self.assertRaises(
-            exceptions.ItemAccessibilityException, self.history_manager.get_accessible, item1.id, non_owner
-        )
+        with self.assertRaises(exceptions.ItemAccessibilityException):
+            self.history_manager.error_unless_accessible(item1, non_owner)
+        with self.assertRaises(exceptions.ItemAccessibilityException):
+            self.history_manager.get_accessible(item1.id, non_owner)
 
         self.log("should not raise an error when checking ownership with owner")
         assert self.history_manager.error_unless_accessible(item1, owner) == item1
@@ -603,7 +603,8 @@ class HistorySerializerTestCase(BaseTestCase):
         self.assertIsJsonifyable(serialized)
 
         self.log("serialization of user_rating without user should error")
-        self.assertRaises(base.ModelSerializingError, serializer.serialize, item, ["user_rating"])
+        with self.assertRaises(base.ModelSerializingError):
+            serializer.serialize(item, ["user_rating"])
 
 
 # =============================================================================
@@ -657,9 +658,8 @@ class HistoryDeserializerTestCase(BaseTestCase):
         assert len(user_shares) == 0
 
         self.log("adding a bad user id should error")
-        self.assertRaises(
-            exceptions.MalformedId, deserializer.deserialize, item, {"users_shared_with": [None]}, user=user2
-        )
+        with self.assertRaises(exceptions.MalformedId):
+            deserializer.deserialize(item, {"users_shared_with": [None]}, user=user2)
 
         self.log("adding a non-existing user id should do nothing")
         non_user_id = self.app.security.encode_id(99)
@@ -688,45 +688,40 @@ class HistoryFiltersTestCase(BaseTestCase):
 
     def test_parse_filters_invalid_filters(self):
         self.log("should error on non-column attr")
-        self.assertRaises(
-            exceptions.RequestParameterInvalidException,
-            self.filter_parser.parse_filters,
-            [
-                ("merp", "eq", "wot"),
-            ],
-        )
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.filter_parser.parse_filters(
+                [
+                    ("merp", "eq", "wot"),
+                ],
+            )
         self.log("should error on non-allowlisted attr")
-        self.assertRaises(
-            exceptions.RequestParameterInvalidException,
-            self.filter_parser.parse_filters,
-            [
-                ("user_id", "eq", "wot"),
-            ],
-        )
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.filter_parser.parse_filters(
+                [
+                    ("user_id", "eq", "wot"),
+                ],
+            )
         self.log("should error on non-allowlisted op")
-        self.assertRaises(
-            exceptions.RequestParameterInvalidException,
-            self.filter_parser.parse_filters,
-            [
-                ("name", "lt", "wot"),
-            ],
-        )
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.filter_parser.parse_filters(
+                [
+                    ("name", "lt", "wot"),
+                ],
+            )
         self.log("should error on non-listed fn op")
-        self.assertRaises(
-            exceptions.RequestParameterInvalidException,
-            self.filter_parser.parse_filters,
-            [
-                ("annotation", "like", "wot"),
-            ],
-        )
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.filter_parser.parse_filters(
+                [
+                    ("annotation", "like", "wot"),
+                ],
+            )
         self.log("should error on val parsing error")
-        self.assertRaises(
-            exceptions.RequestParameterInvalidException,
-            self.filter_parser.parse_filters,
-            [
-                ("deleted", "eq", "wot"),
-            ],
-        )
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.filter_parser.parse_filters(
+                [
+                    ("deleted", "eq", "wot"),
+                ],
+            )
 
     def test_orm_filter_parsing(self):
         user2 = self.user_manager.create(**user2_data)

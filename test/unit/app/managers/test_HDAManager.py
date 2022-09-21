@@ -189,7 +189,8 @@ class HDAManagerTestCase(HDATestCase):
 
         self.log("should raise an error when purging an hda if config does not allow")
         assert not item1.purged
-        self.assertRaises(exceptions.ConfigDoesNotAllowException, self.hda_manager.purge, item1)
+        with self.assertRaises(exceptions.ConfigDoesNotAllowException):
+            self.hda_manager.purge(item1)
         assert not item1.deleted
         assert not item1.purged
 
@@ -206,10 +207,12 @@ class HDAManagerTestCase(HDATestCase):
         assert not self.hda_manager.is_owner(item1, non_owner)
 
         self.log("should raise an error when checking ownership with non-owner")
-        self.assertRaises(exceptions.ItemOwnershipException, self.hda_manager.error_unless_owner, item1, non_owner)
+        with self.assertRaises(exceptions.ItemOwnershipException):
+            self.hda_manager.error_unless_owner(item1, non_owner)
 
         self.log("should raise an error when checking ownership with anonymous")
-        self.assertRaises(exceptions.ItemOwnershipException, self.hda_manager.error_unless_owner, item1, None)
+        with self.assertRaises(exceptions.ItemOwnershipException):
+            self.hda_manager.error_unless_owner(item1, None)
 
         self.log("should not raise an error when checking ownership with owner")
         assert self.hda_manager.error_unless_owner(item1, owner) == item1
@@ -240,13 +243,12 @@ class HDAManagerTestCase(HDATestCase):
             "after setting a dataset to private (one user) permissions, "
             + "access should be not allowed for other users"
         )
-        self.assertRaises(
-            exceptions.ItemAccessibilityException,
-            self.hda_manager.get_accessible,
-            item1.id,
-            non_owner,
-            current_history=self.trans.history,
-        )
+        with self.assertRaises(exceptions.ItemAccessibilityException):
+            self.hda_manager.get_accessible(
+                item1.id,
+                non_owner,
+                current_history=self.trans.history,
+            )
 
         self.log(
             "a copy of a restricted dataset in another users history should be inaccessible even to "
@@ -256,26 +258,24 @@ class HDAManagerTestCase(HDATestCase):
         self.trans.set_history(history2)
         item2 = self.hda_manager.copy(item1, history=history2)
         assert isinstance(item2, model.HistoryDatasetAssociation)
-        self.assertRaises(
-            exceptions.ItemAccessibilityException,
-            self.hda_manager.get_accessible,
-            item2.id,
-            non_owner,
-            current_history=self.trans.history,
-        )
+        with self.assertRaises(exceptions.ItemAccessibilityException):
+            self.hda_manager.get_accessible(
+                item2.id,
+                non_owner,
+                current_history=self.trans.history,
+            )
 
         self.log("a restricted dataset cannot be accessed by anonymous users")
         anon_user = None
         self.trans.set_user(anon_user)
         history3 = self.history_manager.create(name="anon_history", user=anon_user)
         self.trans.set_history(history3)
-        self.assertRaises(
-            exceptions.ItemAccessibilityException,
-            self.hda_manager.get_accessible,
-            item1.id,
-            anon_user,
-            current_history=self.trans.history,
-        )
+        with self.assertRaises(exceptions.ItemAccessibilityException):
+            self.hda_manager.get_accessible(
+                item1.id,
+                anon_user,
+                current_history=self.trans.history,
+            )
 
     def test_anon_ownership(self):
         anon_user = None
@@ -297,8 +297,10 @@ class HDAManagerTestCase(HDATestCase):
         self.log("should raise an error when checking ownership on anonymous' dataset with other user")
         non_owner = self.user_manager.create(**user3_data)
         assert not self.hda_manager.is_owner(item1, non_owner)
-        self.assertRaises(exceptions.ItemOwnershipException, self.hda_manager.error_unless_owner, item1, non_owner)
-        self.assertRaises(exceptions.ItemOwnershipException, self.hda_manager.get_owned, item1.id, non_owner)
+        with self.assertRaises(exceptions.ItemOwnershipException):
+            self.hda_manager.error_unless_owner(item1, non_owner)
+        with self.assertRaises(exceptions.ItemOwnershipException):
+            self.hda_manager.get_owned(item1.id, non_owner)
 
     def test_anon_accessibility(self):
         anon_user = None
@@ -320,9 +322,8 @@ class HDAManagerTestCase(HDATestCase):
             + "permissions do not allow"
         )
         assert not self.hda_manager.is_accessible(item1, anon_user)
-        self.assertRaises(
-            exceptions.ItemAccessibilityException, self.hda_manager.error_unless_accessible, item1, anon_user
-        )
+        with self.assertRaises(exceptions.ItemAccessibilityException):
+            self.hda_manager.error_unless_accessible(item1, anon_user)
 
         self.log(
             "those users with access permissions should still be allowed access to datasets "
@@ -339,7 +340,8 @@ class HDAManagerTestCase(HDATestCase):
 
         hda.state = model.Dataset.states.UPLOAD
         self.log("should raise an error when calling error_if_uploading and in the uploading state")
-        self.assertRaises(exceptions.Conflict, self.hda_manager.error_if_uploading, hda)
+        with self.assertRaises(exceptions.Conflict):
+            self.hda_manager.error_if_uploading(hda)
 
     def test_data_conversion_status(self):
         hda = self._create_vanilla_hda()
@@ -535,9 +537,8 @@ class HDADeserializerTestCase(HDATestCase):
 
         self.log("should raise when deserializing deleted from non-bool")
         assert not hda.deleted
-        self.assertRaises(
-            exceptions.RequestParameterInvalidException, self.hda_deserializer.deserialize, hda, {"deleted": None}
-        )
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.hda_deserializer.deserialize(hda, {"deleted": None})
         assert not hda.deleted
         self.log("should be able to deserialize deleted from True")
         self.hda_deserializer.deserialize(hda, {"deleted": True})
@@ -550,9 +551,8 @@ class HDADeserializerTestCase(HDATestCase):
         hda = self._create_vanilla_hda()
 
         self.log("should raise when deserializing purged from non-bool")
-        self.assertRaises(
-            exceptions.RequestParameterInvalidException, self.hda_deserializer.deserialize, hda, {"purged": None}
-        )
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.hda_deserializer.deserialize(hda, {"purged": None})
         assert not hda.purged
         self.log("should be able to deserialize purged from True")
         self.hda_deserializer.deserialize(hda, {"purged": True})
@@ -567,9 +567,8 @@ class HDADeserializerTestCase(HDATestCase):
 
         self.log("should raise when deserializing from non-bool")
         assert hda.visible
-        self.assertRaises(
-            exceptions.RequestParameterInvalidException, self.hda_deserializer.deserialize, hda, {"visible": "None"}
-        )
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.hda_deserializer.deserialize(hda, {"visible": "None"})
         assert hda.visible
         self.log("should be able to deserialize from False")
         self.hda_deserializer.deserialize(hda, {"visible": False})
@@ -586,9 +585,8 @@ class HDADeserializerTestCase(HDATestCase):
         self.hda_deserializer.deserialize(hda, {"genome_build": None})
         assert hda.dbkey == "?"
         self.log("should raise when deserializing from non-string")
-        self.assertRaises(
-            exceptions.RequestParameterInvalidException, self.hda_deserializer.deserialize, hda, {"genome_build": 12}
-        )
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.hda_deserializer.deserialize(hda, {"genome_build": 12})
         self.log("should be able to deserialize from unicode")
         date_palm = "نخيل التمر"
         self.hda_deserializer.deserialize(hda, {"genome_build": date_palm})
@@ -601,13 +599,11 @@ class HDADeserializerTestCase(HDATestCase):
         hda = self._create_vanilla_hda()
 
         self.log("should raise when deserializing from non-string")
-        self.assertRaises(
-            exceptions.RequestParameterInvalidException, self.hda_deserializer.deserialize, hda, {"name": True}
-        )
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.hda_deserializer.deserialize(hda, {"name": True})
         self.log("should raise when deserializing from None")
-        self.assertRaises(
-            exceptions.RequestParameterInvalidException, self.hda_deserializer.deserialize, hda, {"name": None}
-        )
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.hda_deserializer.deserialize(hda, {"name": None})
         # self.log( 'should deserialize to empty string from None' )
         # self.hda_deserializer.deserialize( hda, { 'name': None } )
         # assert hda.name == ""
@@ -623,13 +619,11 @@ class HDADeserializerTestCase(HDATestCase):
         hda = self._create_vanilla_hda()
 
         self.log("should raise when deserializing from non-string")
-        self.assertRaises(
-            exceptions.RequestParameterInvalidException, self.hda_deserializer.deserialize, hda, {"info": True}
-        )
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.hda_deserializer.deserialize(hda, {"info": True})
         self.log("should raise when deserializing from None")
-        self.assertRaises(
-            exceptions.RequestParameterInvalidException, self.hda_deserializer.deserialize, hda, {"info": None}
-        )
+        with self.assertRaises(exceptions.RequestParameterInvalidException):
+            self.hda_deserializer.deserialize(hda, {"info": None})
         self.log("should be able to deserialize from unicode")
         rice = "飯"
         self.hda_deserializer.deserialize(hda, {"info": rice})

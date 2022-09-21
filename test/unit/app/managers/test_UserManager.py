@@ -67,17 +67,15 @@ class UserManagerTestCase(BaseTestCase):
         self.user_manager.create(**user2_data)
 
         self.log("emails must be unique")
-        self.assertRaises(
-            exceptions.Conflict,
-            self.user_manager.create,
-            **dict(email="user2@user2.user2", username="user2a", password=default_password),
-        )
+        with self.assertRaises(exceptions.Conflict):
+            self.user_manager.create(
+                **dict(email="user2@user2.user2", username="user2a", password=default_password),
+            )
         self.log("usernames must be unique")
-        self.assertRaises(
-            exceptions.Conflict,
-            self.user_manager.create,
-            **dict(email="user2a@user2.user2", username="user2", password=default_password),
-        )
+        with self.assertRaises(exceptions.Conflict):
+            self.user_manager.create(
+                **dict(email="user2a@user2.user2", username="user2", password=default_password),
+            )
 
     def test_trimming(self):
         self.log("emails must be trimmed")
@@ -114,7 +112,8 @@ class UserManagerTestCase(BaseTestCase):
         assert self.user_manager.is_admin(self.admin_user)
         assert not self.user_manager.is_admin(user2)
         assert self.user_manager.admins() == [self.admin_user]
-        self.assertRaises(exceptions.AdminRequiredException, self.user_manager.error_unless_admin, user2)
+        with self.assertRaises(exceptions.AdminRequiredException):
+            self.user_manager.error_unless_admin(user2)
         assert self.user_manager.error_unless_admin(self.admin_user) == self.admin_user
 
     def test_anonymous(self):
@@ -333,23 +332,21 @@ class UserDeserializerTestCase(BaseTestCase):
             trans=self.trans,
         )
         assert "Public name cannot be empty" in str(exception)
-        self.assertRaises(
-            base_manager.ModelDeserializingError,
-            self.deserializer.deserialize,
-            user,
-            {"username": "f,d,r,"},
-            trans=self.trans,
-        )
+        with self.assertRaises(base_manager.ModelDeserializingError):
+            self.deserializer.deserialize(
+                user,
+                {"username": "f,d,r,"},
+                trans=self.trans,
+            )
 
         self.log("usernames must be unique")
         self.user_manager.create(**user3_data)
-        self.assertRaises(
-            base_manager.ModelDeserializingError,
-            self.deserializer.deserialize,
-            user,
-            {"username": "user3"},
-            trans=self.trans,
-        )
+        with self.assertRaises(base_manager.ModelDeserializingError):
+            self.deserializer.deserialize(
+                user,
+                {"username": "user3"},
+                trans=self.trans,
+            )
 
         self.log("username should be updatable")
         new_name = "double-plus-good"

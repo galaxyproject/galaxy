@@ -347,7 +347,8 @@ class HistoryContentsFilterParserTestCase(HistoryAsContainerBaseTestCase):
         ).isoformat(sep=" ")
 
         self.log("should error if bad epoch is used")
-        self.assertRaises(ValueError, self.filter_parser.parse_date, "0x000234")
+        with self.assertRaises(ValueError):
+            self.filter_parser.parse_date("0x000234")
 
         # -- datetime strings
         self.log("should allow date alone")
@@ -364,11 +365,15 @@ class HistoryContentsFilterParserTestCase(HistoryAsContainerBaseTestCase):
         assert self.filter_parser.parse_date("2009-02-13T18:13:00.123Z") == "2009-02-13 18:13:00.123"
 
         self.log("should error if timezone is added")
-        self.assertRaises(ValueError, self.filter_parser.parse_date, "2009-02-13T18:13:00.123+0700")
+        with self.assertRaises(ValueError):
+            self.filter_parser.parse_date("2009-02-13T18:13:00.123+0700")
 
         self.log("should error if locale is used")
-        self.assertRaises(ValueError, self.filter_parser.parse_date, "Fri Feb 13 18:31:30 2009")
+        with self.assertRaises(ValueError):
+            self.filter_parser.parse_date("Fri Feb 13 18:31:30 2009")
 
         self.log("should error if wrong milliseconds format is used")
-        self.assertRaises(ValueError, self.filter_parser.parse_date, "2009-02-13 18:13:00.")
-        self.assertRaises(ValueError, self.filter_parser.parse_date, "2009-02-13 18:13:00.1234567")
+        with self.assertRaises(ValueError):
+            self.filter_parser.parse_date("2009-02-13 18:13:00.")
+        with self.assertRaises(ValueError):
+            self.filter_parser.parse_date("2009-02-13 18:13:00.1234567")

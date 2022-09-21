@@ -84,7 +84,8 @@ class DatasetManagerTestCase(BaseTestCase):
 
         self.log("should raise an error when purging a dataset if config does not allow")
         assert not item1.purged
-        self.assertRaises(exceptions.ConfigDoesNotAllowException, self.dataset_manager.purge, item1)
+        with self.assertRaises(exceptions.ConfigDoesNotAllowException):
+            self.dataset_manager.purge(item1)
         assert not item1.purged
 
     def test_create_with_no_permissions(self):
@@ -272,12 +273,12 @@ class DatasetSerializerTestCase(BaseTestCase):
 
         self.log("permissions should be not returned for non-managing users")
         not_my_supervisor = self.user_manager.create(**user3_data)
-        self.assertRaises(
-            SkipAttribute, self.dataset_serializer.serialize_permissions, dataset, "perms", user=not_my_supervisor
-        )
+        with self.assertRaises(SkipAttribute):
+            self.dataset_serializer.serialize_permissions(dataset, "perms", user=not_my_supervisor)
 
         self.log("permissions should not be returned for anon users")
-        self.assertRaises(SkipAttribute, self.dataset_serializer.serialize_permissions, dataset, "perms", user=None)
+        with self.assertRaises(SkipAttribute):
+            self.dataset_serializer.serialize_permissions(dataset, "perms", user=None)
 
         self.log("permissions should be returned for admin users")
         permissions = self.dataset_serializer.serialize_permissions(dataset, "perms", user=self.admin_user)

@@ -97,17 +97,16 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_brokenDestYML(self, lc):
-        self.assertRaises(
-            JobMappingException,
-            map_tool_to_destination,
-            runJob,
-            theApp,
-            vanillaTool,
-            "user@email.com",
-            True,
-            broken_default_dest_path,
-            job_conf_path,
-        )
+        with self.assertRaises(JobMappingException):
+            map_tool_to_destination(
+                runJob,
+                theApp,
+                vanillaTool,
+                "user@email.com",
+                True,
+                broken_default_dest_path,
+                job_conf_path,
+            )
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
@@ -119,28 +118,26 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_filesize_empty(self, lc):
-        self.assertRaises(
-            JobMappingException,
-            map_tool_to_destination,
-            emptyJob,
-            theApp,
-            vanillaTool,
-            "user@email.com",
-            True,
-            path,
-            job_conf_path,
-        )
-        self.assertRaises(
-            JobMappingException,
-            map_tool_to_destination,
-            emptyJob,
-            theApp,
-            vanillaTool,
-            "user@email.com",
-            True,
-            priority_path,
-            job_conf_path,
-        )
+        with self.assertRaises(JobMappingException):
+            map_tool_to_destination(
+                emptyJob,
+                theApp,
+                vanillaTool,
+                "user@email.com",
+                True,
+                path,
+                job_conf_path,
+            )
+        with self.assertRaises(JobMappingException):
+            map_tool_to_destination(
+                emptyJob,
+                theApp,
+                vanillaTool,
+                "user@email.com",
+                True,
+                priority_path,
+                job_conf_path,
+            )
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
@@ -162,28 +159,26 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_filesize_zero(self, lc):
-        self.assertRaises(
-            JobMappingException,
-            map_tool_to_destination,
-            zeroJob,
-            theApp,
-            vanillaTool,
-            "user@email.com",
-            True,
-            path,
-            job_conf_path,
-        )
-        self.assertRaises(
-            JobMappingException,
-            map_tool_to_destination,
-            zeroJob,
-            theApp,
-            vanillaTool,
-            "user@email.com",
-            True,
-            priority_path,
-            job_conf_path,
-        )
+        with self.assertRaises(JobMappingException):
+            map_tool_to_destination(
+                zeroJob,
+                theApp,
+                vanillaTool,
+                "user@email.com",
+                True,
+                path,
+                job_conf_path,
+            )
+        with self.assertRaises(JobMappingException):
+            map_tool_to_destination(
+                zeroJob,
+                theApp,
+                vanillaTool,
+                "user@email.com",
+                True,
+                priority_path,
+                job_conf_path,
+            )
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
@@ -203,28 +198,26 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_filesize_fail(self, lc):
-        self.assertRaises(
-            JobMappingException,
-            map_tool_to_destination,
-            failJob,
-            theApp,
-            vanillaTool,
-            "user@email.com",
-            True,
-            path,
-            job_conf_path,
-        )
-        self.assertRaises(
-            JobMappingException,
-            map_tool_to_destination,
-            failJob,
-            theApp,
-            vanillaTool,
-            "user@email.com",
-            True,
-            priority_path,
-            job_conf_path,
-        )
+        with self.assertRaises(JobMappingException):
+            map_tool_to_destination(
+                failJob,
+                theApp,
+                vanillaTool,
+                "user@email.com",
+                True,
+                path,
+                job_conf_path,
+            )
+        with self.assertRaises(JobMappingException):
+            map_tool_to_destination(
+                failJob,
+                theApp,
+                vanillaTool,
+                "user@email.com",
+                True,
+                priority_path,
+                job_conf_path,
+            )
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
@@ -473,7 +466,8 @@ class TestDynamicToolDestination(unittest.TestCase):
     # ================================Invalid yaml files==============================
     @log_capture()
     def test_no_file(self, lc):
-        self.assertRaises(IOError, dt.parse_yaml, path="")
+        with self.assertRaises(IOError):
+            dt.parse_yaml(path="")
         lc.check_present()
 
     @log_capture()
@@ -1360,8 +1354,10 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     # ================================Testing str_to_bytes==========================
     def test_str_to_bytes_invalid(self):
-        self.assertRaises(dt.MalformedYMLException, dt.str_to_bytes, "1d")
-        self.assertRaises(dt.MalformedYMLException, dt.str_to_bytes, "1 d")
+        with self.assertRaises(dt.MalformedYMLException):
+            dt.str_to_bytes("1d")
+        with self.assertRaises(dt.MalformedYMLException):
+            dt.str_to_bytes("1 d")
 
     def test_str_to_bytes_valid(self):
         assert dt.str_to_bytes("-1") == -1
@@ -1380,12 +1376,16 @@ class TestDynamicToolDestination(unittest.TestCase):
     # ==============================Testing bytes_to_str=============================
     def test_bytes_to_str_invalid(self):
         testValue = ""
-        self.assertRaises(ValueError, dt.bytes_to_str, testValue)
+        with self.assertRaises(ValueError):
+            dt.bytes_to_str(testValue)
         testValue = "5564fads"
-        self.assertRaises(ValueError, dt.bytes_to_str, testValue)
+        with self.assertRaises(ValueError):
+            dt.bytes_to_str(testValue)
         testValue = "45.0.1"
-        self.assertRaises(ValueError, dt.bytes_to_str, testValue)
-        self.assertRaises(ValueError, dt.bytes_to_str, "1 024")
+        with self.assertRaises(ValueError):
+            dt.bytes_to_str(testValue)
+        with self.assertRaises(ValueError):
+            dt.bytes_to_str("1 024")
 
     def test_bytes_to_str_valid(self):
         assert dt.bytes_to_str(-1) == "Infinity"
