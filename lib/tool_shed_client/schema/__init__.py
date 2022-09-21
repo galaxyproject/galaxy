@@ -149,6 +149,15 @@ class ToolSearchResults(BaseModel):
         return matching_hit
 
 
+class RepositoryIndexRequest(BaseModel):
+    owner: Optional[str]
+    name: Optional[str]
+
+
+class RepositoryIndexResponse(BaseModel):
+    __root__: List[Repository]
+
+
 class RepositorySearchRequest(BaseModel):
     q: str
     page: Optional[int]

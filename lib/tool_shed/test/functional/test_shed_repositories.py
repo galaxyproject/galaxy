@@ -49,13 +49,18 @@ class ShedRepositoriesApiTestCase(ShedApiTestCase):
 
     def test_index_simple(self):
         populator = self.populator
-        repository_id = populator.setup_column_maker_repo(prefix="repoforindex").id
+        repo = populator.setup_column_maker_repo(prefix="repoforindex")
+        repository_id = repo.id
         show_response = self.api_interactor.get(f"repositories/{repository_id}")
         index_response = self.api_interactor.get("repositories")
         api_asserts.assert_status_code_is_ok(show_response)
         api_asserts.assert_status_code_is_ok(index_response)
         repository_ids = [r["id"] for r in index_response.json()]
         assert repository_id in repository_ids
+
+        repository = self.populator.get_repository_for(repo.owner, repo.name)
+        assert repository.owner == repo.owner
+        assert repository.name == repo.name
 
     def test_get_ordered_installable_revisions(self):
         # Used in ephemeris...
