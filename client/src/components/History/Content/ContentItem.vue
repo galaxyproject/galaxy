@@ -96,7 +96,6 @@
 </template>
 
 <script>
-import { iframeAdd } from "components/plugins/legacyNavigation";
 import { StatelessTags } from "components/Tags";
 import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./model/states";
 import CollectionDescription from "./Collection/CollectionDescription";
@@ -204,7 +203,7 @@ export default {
             }
         },
         onDisplay() {
-            iframeAdd({ path: this.itemUrls.display, title: this.name, $router: this.$router });
+            this.$router.push(this.itemUrls.display, this.name);
         },
         onDragStart(evt) {
             evt.dataTransfer.dropEffect = "move";

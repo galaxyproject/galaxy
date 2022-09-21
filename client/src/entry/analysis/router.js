@@ -60,7 +60,7 @@ Vue.use(VueRouter);
 
 // patches $router.push() to trigger an event and hide duplication warnings
 const originalPush = VueRouter.prototype.push;
-VueRouter.prototype.push = function push(location) {
+VueRouter.prototype.push = function push(location, windowManagerTitle = null) {
     // verify if confirmation is required
     console.debug("VueRouter - push: ", location);
     if (this.confirmation) {
@@ -70,17 +70,15 @@ VueRouter.prototype.push = function push(location) {
             return;
         }
     }
-
     // show location in window manager
     const Galaxy = getGalaxyInstance();
-    if (Galaxy.frame && Galaxy.frame.active) {
+    if (windowManagerTitle && Galaxy.frame && Galaxy.frame.active) {
         Galaxy.frame.add({
             title: "Data",
             url: location,
         });
         return true;
     }
-
     // always emit event when a route is pushed
     this.app.$emit("router-push");
     // avoid console warning when user clicks to revisit same route

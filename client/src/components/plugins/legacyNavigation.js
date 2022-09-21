@@ -2,15 +2,7 @@
  * Navigation mixin for legacy code. Supplies functions to components
  * to navigation to locations not controlled by Vue.
  */
-
-import { getGalaxyInstance } from "app";
 import { redirectToUrl, prependPath } from "utils/redirect";
-import _l from "utils/localization";
-
-// wrapper for window manager
-export function iframeAdd({ path, title = "Galaxy", $router = null }) {
-    $router.push(path);
-}
 
 // straight ifrme redirect
 export function iframeRedirect(path, target = "galaxy_main") {
@@ -37,7 +29,6 @@ export function redirect(path) {
 export const legacyNavigationMixin = {
     methods: {
         redirect,
-        iframeAdd,
         iframeRedirect,
         prependPath,
     },

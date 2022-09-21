@@ -74,7 +74,6 @@ import { copy as sendToClipboard } from "utils/clipboard";
 import { absPath, prependPath } from "utils/redirect.js";
 import { downloadUrlMixin } from "./mixins.js";
 import DatasetDownload from "./DatasetDownload";
-import { iframeAdd } from "components/plugins/legacyNavigation";
 
 export default {
     components: {
@@ -140,11 +139,8 @@ export default {
             this.$router.push(`/root?job_id=${this.item.creating_job}`);
         },
         onVisualize() {
-            iframeAdd({
-                path: this.itemUrls.visualize,
-                title: `Visualization of ${this.item.name || ""}`,
-                $router: this.$router,
-            });
+            const title = `Visualization of ${this.item.name || ""}`;
+            this.$router.push(this.itemUrls.visualize, title);
         },
         onHighlight() {
             this.$emit("toggleHighlights");
