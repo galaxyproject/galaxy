@@ -249,7 +249,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             dependency_tuple = (
                 self.url,
                 column_maker_repository.name,
-                column_maker_repository.user.username,
+                column_maker_repository.owner,
                 self.get_repository_tip(column_maker_repository),
             )
             self.create_repository_dependency(
@@ -280,7 +280,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             dependency_tuple = (
                 self.url,
                 column_maker_repository.name,
-                column_maker_repository.user.username,
+                column_maker_repository.owner,
                 self.get_repository_tip(column_maker_repository),
             )
             self.create_repository_dependency(
@@ -311,7 +311,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             dependency_tuple = (
                 self.url,
                 emboss_5_repository.name,
-                emboss_5_repository.user.username,
+                emboss_5_repository.owner,
                 self.get_repository_tip(emboss_5_repository),
             )
             self.create_repository_dependency(
@@ -322,7 +322,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             dependency_tuple = (
                 self.url,
                 emboss_6_repository.name,
-                emboss_6_repository.user.username,
+                emboss_6_repository.owner,
                 self.get_repository_tip(emboss_6_repository),
             )
             self.create_repository_dependency(
@@ -373,15 +373,13 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 strings_displayed=[],
                 strings_not_displayed=[],
             )
-            repository = self.test_db_util.get_repository_by_name_and_owner("freebayes_0040", common.test_user_1_name)
-            filtering_repository = self.test_db_util.get_repository_by_name_and_owner(
-                "filtering_0040", common.test_user_1_name
-            )
+            repository = self._get_repository_by_name_and_owner("freebayes_0040", common.test_user_1_name)
+            filtering_repository = self._get_repository_by_name_and_owner("filtering_0040", common.test_user_1_name)
             repository_dependencies_path = self.generate_temp_path("test_1340", additional_paths=["filtering"])
             repository_tuple = (
                 self.url,
                 repository.name,
-                repository.user.username,
+                repository.owner,
                 self.get_repository_tip(repository),
             )
             self.create_repository_dependency(
@@ -389,15 +387,13 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 repository_tuples=[repository_tuple],
                 filepath=repository_dependencies_path,
             )
-            repository = self.test_db_util.get_repository_by_name_and_owner("filtering_0040", common.test_user_1_name)
-            freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
-                "freebayes_0040", common.test_user_1_name
-            )
+            repository = self._get_repository_by_name_and_owner("filtering_0040", common.test_user_1_name)
+            freebayes_repository = self._get_repository_by_name_and_owner("freebayes_0040", common.test_user_1_name)
             repository_dependencies_path = self.generate_temp_path("test_1340", additional_paths=["freebayes"])
             repository_tuple = (
                 self.url,
                 repository.name,
-                repository.user.username,
+                repository.owner,
                 self.get_repository_tip(repository),
             )
             self.create_repository_dependency(
@@ -472,7 +468,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             dependency_tuple = (
                 self.url,
                 emboss_repository.name,
-                emboss_repository.user.username,
+                emboss_repository.owner,
                 self.get_repository_tip(emboss_repository),
             )
             self.create_repository_dependency(
@@ -484,7 +480,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             dependency_tuple = (
                 self.url,
                 filtering_repository.name,
-                filtering_repository.user.username,
+                filtering_repository.owner,
                 self.get_repository_tip(filtering_repository),
             )
             self.create_repository_dependency(
@@ -496,19 +492,19 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 (
                     self.url,
                     emboss_repository.name,
-                    emboss_repository.user.username,
+                    emboss_repository.owner,
                     self.get_repository_tip(emboss_repository),
                 ),
                 (
                     self.url,
                     filtering_repository.name,
-                    filtering_repository.user.username,
+                    filtering_repository.owner,
                     self.get_repository_tip(filtering_repository),
                 ),
                 (
                     self.url,
                     freebayes_repository.name,
-                    freebayes_repository.user.username,
+                    freebayes_repository.owner,
                     self.get_repository_tip(freebayes_repository),
                 ),
             ]

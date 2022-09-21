@@ -65,7 +65,7 @@ class TestDependencyDefinitionValidation(ShedTwillTestCase):
 
         This is step 3 - Verify repository. The uploaded tool dependency XML should not have resulted in a new changeset.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         assert self.repository_is_new(
             repository
         ), "Uploading an incorrectly defined tool_dependencies.xml resulted in a changeset being generated."

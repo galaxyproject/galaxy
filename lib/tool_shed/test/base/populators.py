@@ -18,14 +18,14 @@ from tool_shed_client.schema import (
     GetOrderedInstallableRevisionsRequest,
     OrderedInstallableRevisions,
     Repository,
+    RepositoryIndexRequest,
+    RepositoryIndexResponse,
     RepositoryMetadata,
     RepositorySearchRequest,
     RepositorySearchResults,
     RepositoryUpdate,
     ResetMetadataOnRepositoryRequest,
     ResetMetadataOnRepositoryResponse,
-    RepositoryIndexRequest,
-    RepositoryIndexResponse,
     ToolSearchRequest,
     ToolSearchResults,
 )
@@ -148,24 +148,25 @@ class ToolShedPopulator:
         api_asserts.assert_status_code_is_ok(revisions_response)
         return OrderedInstallableRevisions(__root__=revisions_response.json())
 
-    def get_repository_for(self, owner: str, name: str) -> Optional[Repository]:
+    def get_repository_for(self, owner: str, name: str, deleted: str = "false") -> Optional[Repository]:
         request = RepositoryIndexRequest(
             owner=owner,
             name=name,
+            deleted=deleted,
         )
         index = self.repository_index(request)
         return index.__root__[0] if index.__root__ else None
 
     def repository_index(self, request: Optional[RepositoryIndexRequest]) -> RepositoryIndexResponse:
-        repository_response = self._api_interactor.get(
-            "repositories", params=(request.dict() if request else {})
-        )
+        repository_response = self._api_interactor.get("repositories", params=(request.dict() if request else {}))
         api_asserts.assert_status_code_is_ok(repository_response)
         return RepositoryIndexResponse(__root__=repository_response.json())
 
-    def get_metadata(self, repository: HasRepositoryId) -> RepositoryMetadata:
+    def get_metadata(self, repository: HasRepositoryId, downloadable_only=True) -> RepositoryMetadata:
         repository_id = self._repository_id(repository)
-        metadata_response = self._api_interactor.get(f"repositories/{repository_id}/metadata")
+        metadata_response = self._api_interactor.get(
+            f"repositories/{repository_id}/metadata?downloadable_only={downloadable_only}"
+        )
         api_asserts.assert_status_code_is_ok(metadata_response)
         return RepositoryMetadata(__root__=metadata_response.json())
 

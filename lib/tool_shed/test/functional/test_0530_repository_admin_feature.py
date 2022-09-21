@@ -83,11 +83,11 @@ class TestRepositoryAdminRole(ShedTwillTestCase):
 
         This is step 3 - Check to make sure a new repository_role_association record was created with appropriate repository id and role id.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
         repository_admin_role = self.test_db_util.get_role(test_user_1, "filtering_0530_user1_admin")
         repository_role_association = self.test_db_util.get_repository_role_association(
-            repository.id, repository_admin_role.id
+            self._db_repository(repository).id, repository_admin_role.id
         )
         assert (
             repository_role_association is not None
@@ -99,9 +99,9 @@ class TestRepositoryAdminRole(ShedTwillTestCase):
         This is step 4 - Change the name of the repository created in step 1 - this can be done as long as the repository has not
         been installed or cloned.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.edit_repository_information(repository, revert=False, repo_name="renamed_filtering_0530")
-        self.test_db_util.refresh(repository)
+        repository = self._get_repository_by_name_and_owner("renamed_filtering_0530", common.test_user_1_name)
         assert repository.name == "renamed_filtering_0530", "Repository was not renamed to renamed_filtering_0530."
 
     def test_0030_verify_access_denied(self):
@@ -111,9 +111,7 @@ class TestRepositoryAdminRole(ShedTwillTestCase):
         name and description cannot be changed.
         """
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            "renamed_filtering_0530", common.test_user_1_name
-        )
+        repository = self._get_repository_by_name_and_owner("renamed_filtering_0530", common.test_user_1_name)
         strings_not_displayed = ["Manage repository"]
         strings_displayed = ["View repository"]
         self.display_manage_repository_page(repository, strings_not_displayed=strings_not_displayed)
@@ -129,9 +127,7 @@ class TestRepositoryAdminRole(ShedTwillTestCase):
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_2 = self.test_db_util.get_user(common.test_user_2_email)
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            "renamed_filtering_0530", common.test_user_1_name
-        )
+        repository = self._get_repository_by_name_and_owner("renamed_filtering_0530", common.test_user_1_name)
         self.assign_admin_role(repository, test_user_2)
 
     def test_0040_rename_repository_as_repository_admin(self):
@@ -140,11 +136,9 @@ class TestRepositoryAdminRole(ShedTwillTestCase):
         This is step 8 - Log into the Tool Shed as user user2 and make sure the repository name and description can now be changed.
         """
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            "renamed_filtering_0530", common.test_user_1_name
-        )
+        repository = self._get_repository_by_name_and_owner("renamed_filtering_0530", common.test_user_1_name)
         self.edit_repository_information(repository, revert=False, repo_name="filtering_0530")
-        self.test_db_util.refresh(repository)
+        repository = self._get_repository_by_name_and_owner("filtering_0530", common.test_user_1_name)
         assert repository.name == "filtering_0530", "User with admin role failed to rename repository."
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
         old_repository_admin_role = self.test_db_util.get_role(test_user_1, "renamed_filtering_0530_user1_admin")

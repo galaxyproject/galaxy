@@ -84,14 +84,12 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
         # Filtering revision 0 -> freebayes revision 0.
         # Freebayes revision 0 -> filtering revision 1.
         # Filtering will have two revisions, one with just the filtering tool, and one with the filtering tool and a dependency on freebayes.
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            freebayes_repository_name, common.test_user_1_name
-        )
-        filtering_repository = self.test_db_util.get_repository_by_name_and_owner(
+        repository = self._get_repository_by_name_and_owner(freebayes_repository_name, common.test_user_1_name)
+        filtering_repository = self._get_repository_by_name_and_owner(
             filtering_repository_name, common.test_user_1_name
         )
         repository_dependencies_path = self.generate_temp_path("test_0040", additional_paths=["filtering"])
-        repository_tuple = (self.url, repository.name, repository.user.username, self.get_repository_tip(repository))
+        repository_tuple = (self.url, repository.name, repository.owner, self.get_repository_tip(repository))
         self.create_repository_dependency(
             repository=filtering_repository, repository_tuples=[repository_tuple], filepath=repository_dependencies_path
         )
@@ -102,24 +100,22 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
         # Filtering revision 0 -> freebayes revision 0.
         # Freebayes revision 0 -> filtering revision 1.
         # Filtering will have two revisions, one with just the filtering tool, and one with the filtering tool and a dependency on freebayes.
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            filtering_repository_name, common.test_user_1_name
-        )
-        freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
+        repository = self._get_repository_by_name_and_owner(filtering_repository_name, common.test_user_1_name)
+        freebayes_repository = self._get_repository_by_name_and_owner(
             freebayes_repository_name, common.test_user_1_name
         )
         repository_dependencies_path = self.generate_temp_path("test_0040", additional_paths=["freebayes"])
-        repository_tuple = (self.url, repository.name, repository.user.username, self.get_repository_tip(repository))
+        repository_tuple = (self.url, repository.name, repository.owner, self.get_repository_tip(repository))
         self.create_repository_dependency(
             repository=freebayes_repository, repository_tuples=[repository_tuple], filepath=repository_dependencies_path
         )
 
     def test_0030_verify_repository_dependencies(self):
         """Verify that each repository can depend on the other without causing an infinite loop."""
-        filtering_repository = self.test_db_util.get_repository_by_name_and_owner(
+        filtering_repository = self._get_repository_by_name_and_owner(
             filtering_repository_name, common.test_user_1_name
         )
-        freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
+        freebayes_repository = self._get_repository_by_name_and_owner(
             freebayes_repository_name, common.test_user_1_name
         )
         # The dependency structure should look like:
@@ -136,10 +132,10 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
 
     def test_0035_verify_repository_metadata(self):
         """Verify that resetting the metadata does not change it."""
-        freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
+        freebayes_repository = self._get_repository_by_name_and_owner(
             freebayes_repository_name, common.test_user_1_name
         )
-        filtering_repository = self.test_db_util.get_repository_by_name_and_owner(
+        filtering_repository = self._get_repository_by_name_and_owner(
             filtering_repository_name, common.test_user_1_name
         )
         for repository in [freebayes_repository, filtering_repository]:
@@ -147,9 +143,7 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
 
     def test_0040_verify_tool_dependencies(self):
         """Verify that freebayes displays tool dependencies."""
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            freebayes_repository_name, common.test_user_1_name
-        )
+        repository = self._get_repository_by_name_and_owner(freebayes_repository_name, common.test_user_1_name)
         self.display_manage_repository_page(
             repository,
             strings_displayed=["freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18", "Valid tools", "package"],

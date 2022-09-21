@@ -82,7 +82,7 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self.test_db_util.get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)
+            self._get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)
             self.upload_file(
                 repository,
                 filename="bwa/complex/bwa_base.tar",
@@ -100,15 +100,13 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
         global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path("test_0100", additional_paths=["complex", "shed"])
-            base_repository = self.test_db_util.get_repository_by_name_and_owner(
-                bwa_base_repository_name, common.test_user_1_name
-            )
-            tool_repository = self.test_db_util.get_repository_by_name_and_owner(
+            base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
+            tool_repository = self._get_repository_by_name_and_owner(
                 bwa_package_repository_name, common.test_user_1_name
             )
             url = "http://http://this is not an url!"
             name = tool_repository.name
-            owner = tool_repository.user.username
+            owner = tool_repository.owner
             changeset_revision = self.get_repository_tip(tool_repository)
             strings_displayed = ["Repository dependencies are currently supported only within the same tool shed"]
             repository_tuple = (url, name, owner, changeset_revision)
@@ -127,15 +125,13 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
         global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path("test_0100", additional_paths=["complex", "shed"])
-            base_repository = self.test_db_util.get_repository_by_name_and_owner(
-                bwa_base_repository_name, common.test_user_1_name
-            )
-            tool_repository = self.test_db_util.get_repository_by_name_and_owner(
+            base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
+            tool_repository = self._get_repository_by_name_and_owner(
                 bwa_package_repository_name, common.test_user_1_name
             )
             url = self.url
             name = "invalid_repository!?"
-            owner = tool_repository.user.username
+            owner = tool_repository.owner
             changeset_revision = self.get_repository_tip(tool_repository)
             strings_displayed = ["because the name is invalid."]
             repository_tuple = (url, name, owner, changeset_revision)
@@ -154,10 +150,8 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
         global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path("test_0100", additional_paths=["complex", "shed"])
-            base_repository = self.test_db_util.get_repository_by_name_and_owner(
-                bwa_base_repository_name, common.test_user_1_name
-            )
-            tool_repository = self.test_db_util.get_repository_by_name_and_owner(
+            base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
+            tool_repository = self._get_repository_by_name_and_owner(
                 bwa_package_repository_name, common.test_user_1_name
             )
             url = self.url
@@ -181,15 +175,13 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
         global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path("test_0100", additional_paths=["complex", "shed"])
-            base_repository = self.test_db_util.get_repository_by_name_and_owner(
-                bwa_base_repository_name, common.test_user_1_name
-            )
-            tool_repository = self.test_db_util.get_repository_by_name_and_owner(
+            base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
+            tool_repository = self._get_repository_by_name_and_owner(
                 bwa_package_repository_name, common.test_user_1_name
             )
             url = self.url
             name = tool_repository.name
-            owner = tool_repository.user.username
+            owner = tool_repository.owner
             changeset_revision = "1234abcd"
             strings_displayed = ["because the changeset revision is invalid."]
             repository_tuple = (url, name, owner, changeset_revision)
@@ -207,16 +199,14 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
         """Generate and upload a valid tool_dependencies.xml file that specifies package_bwa_0_5_9_0100."""
         global running_standalone
         if running_standalone:
-            base_repository = self.test_db_util.get_repository_by_name_and_owner(
-                bwa_base_repository_name, common.test_user_1_name
-            )
-            tool_repository = self.test_db_util.get_repository_by_name_and_owner(
+            base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
+            tool_repository = self._get_repository_by_name_and_owner(
                 bwa_package_repository_name, common.test_user_1_name
             )
             dependency_path = self.generate_temp_path("test_0100", additional_paths=["complex"])
             url = self.url
             name = tool_repository.name
-            owner = tool_repository.user.username
+            owner = tool_repository.owner
             changeset_revision = self.get_repository_tip(tool_repository)
             repository_tuple = (url, name, owner, changeset_revision)
             self.create_repository_dependency(
@@ -234,10 +224,8 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
         """Upload a new tool_dependencies.xml to the tool repository, and verify that the base repository displays the new changeset."""
         global running_standalone
         if running_standalone:
-            base_repository = self.test_db_util.get_repository_by_name_and_owner(
-                bwa_base_repository_name, common.test_user_1_name
-            )
-            tool_repository = self.test_db_util.get_repository_by_name_and_owner(
+            base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
+            tool_repository = self._get_repository_by_name_and_owner(
                 bwa_package_repository_name, common.test_user_1_name
             )
             previous_changeset = self.get_repository_tip(tool_repository)
@@ -268,12 +256,8 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
     def test_0045_install_base_repository(self):
         """Verify installation of the repository with complex repository dependencies."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        base_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_base_repository_name, common.test_user_1_name
-        )
-        tool_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_package_repository_name, common.test_user_1_name
-        )
+        base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
+        tool_repository = self._get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)
         preview_strings_displayed = [tool_repository.name, self.get_repository_tip(tool_repository)]
         self.install_repository(
             bwa_base_repository_name,

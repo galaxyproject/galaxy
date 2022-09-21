@@ -75,15 +75,15 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
 
     def test_0025_generate_and_upload_repository_dependencies_xml(self):
         """Generate and upload the repository_dependencies.xml file"""
-        repository = self.test_db_util.get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
-        column_maker_repository = self.test_db_util.get_repository_by_name_and_owner(
+        repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
+        column_maker_repository = self._get_repository_by_name_and_owner(
             column_maker_repository_name, common.test_user_1_name
         )
         repository_dependencies_path = self.generate_temp_path("test_0020", additional_paths=["emboss", "5"])
         repository_tuple = (
             self.url,
             column_maker_repository.name,
-            column_maker_repository.user.username,
+            column_maker_repository.owner,
             self.get_repository_tip(column_maker_repository),
         )
         self.create_repository_dependency(
@@ -92,8 +92,8 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
 
     def test_0030_verify_emboss_5_dependencies(self):
         """Verify that the emboss_5 repository now depends on the emboss_datatypes repository with correct name, owner, and changeset revision."""
-        repository = self.test_db_util.get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
-        column_maker_repository = self.test_db_util.get_repository_by_name_and_owner(
+        repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
+        column_maker_repository = self._get_repository_by_name_and_owner(
             column_maker_repository_name, common.test_user_1_name
         )
         changeset_revision = self.get_repository_tip(column_maker_repository)
@@ -110,10 +110,8 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
 
     def test_0040_verify_repository_metadata(self):
         """Verify that resetting the metadata does not change it."""
-        emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
-        column_maker_repository = self.test_db_util.get_repository_by_name_and_owner(
+        emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
+        column_maker_repository = self._get_repository_by_name_and_owner(
             column_maker_repository_name, common.test_user_1_name
         )
         self.verify_unchanged_repository_metadata(emboss_repository)

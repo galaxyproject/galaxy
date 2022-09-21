@@ -52,6 +52,7 @@ class TestFreebayesRepository(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
+        assert repository
         self.upload_file(
             repository,
             filename="freebayes/freebayes.xml",
@@ -76,7 +77,7 @@ class TestFreebayesRepository(ShedTwillTestCase):
         We are at step 2 - Upload the tool_data_table_conf.xml.sample file.
         Uploading the tool_data_table_conf.xml.sample alone should not make the tool valid, but the error message should change.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(
             repository,
             filename="freebayes/tool_data_table_conf.xml.sample",
@@ -101,7 +102,7 @@ class TestFreebayesRepository(ShedTwillTestCase):
         We are at step 3 - Upload the tool_data_table_conf.xml.sample file.
         Uploading the tool_data_table_conf.xml.sample alone should not make the tool valid, but the error message should change.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(
             repository,
             filename="freebayes/sam_fa_indices.loc.sample",
@@ -120,7 +121,7 @@ class TestFreebayesRepository(ShedTwillTestCase):
         We are at step 4 - Upload a tool_dependencies.xml file that should not parse correctly.
         Upload a tool_dependencies.xml file that contains <> in the text of the readme tag. This should show an error message about malformed xml.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(
             repository,
             filename=os.path.join("freebayes", "malformed_tool_dependencies", "tool_dependencies.xml"),
@@ -139,7 +140,7 @@ class TestFreebayesRepository(ShedTwillTestCase):
         We are at step 5 - Upload a tool_dependencies.xml file that specifies a version that does not match the tool's requirements.
         This should result in a message about the tool dependency configuration not matching the tool's requirements.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(
             repository,
             filename=os.path.join("freebayes", "invalid_tool_dependencies", "tool_dependencies.xml"),
@@ -160,7 +161,7 @@ class TestFreebayesRepository(ShedTwillTestCase):
         We are at step 6 - Upload a valid tool_dependencies.xml file.
         At this stage, there should be no errors on the upload page, as every missing or invalid file has been corrected.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(
             repository,
             filename=os.path.join("freebayes", "tool_dependencies.xml"),
@@ -179,7 +180,7 @@ class TestFreebayesRepository(ShedTwillTestCase):
         We are at step 7 - Check for the appropriate strings on the manage repository page.
         Verify that the manage repository page now displays the valid tool dependencies, and that there are no invalid tools shown on the manage page.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         strings_displayed = ["freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18", "Valid tools", "package"]
         strings_not_displayed = ["Invalid tools"]
         self.display_manage_repository_page(

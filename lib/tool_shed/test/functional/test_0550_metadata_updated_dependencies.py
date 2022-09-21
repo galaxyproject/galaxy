@@ -133,31 +133,19 @@ class TestGetUpdatedMetadata(ShedTwillTestCase):
 
     def test_0020_check_repository_dependency(self):
         """Make filtering depend on samtools and freebayes."""
-        freebayes = self.test_db_util.get_repository_by_name_and_owner(
-            repositories["freebayes"]["name"], common.test_user_1_name
-        )
-        samtools = self.test_db_util.get_repository_by_name_and_owner(
-            repositories["samtools"]["name"], common.test_user_1_name
-        )
-        filtering = self.test_db_util.get_repository_by_name_and_owner(
-            repositories["filtering"]["name"], common.test_user_1_name
-        )
-        strings_displayed = [self.security.encode_id(freebayes.id), self.security.encode_id(samtools.id)]
+        freebayes = self._get_repository_by_name_and_owner(repositories["freebayes"]["name"], common.test_user_1_name)
+        samtools = self._get_repository_by_name_and_owner(repositories["samtools"]["name"], common.test_user_1_name)
+        filtering = self._get_repository_by_name_and_owner(repositories["filtering"]["name"], common.test_user_1_name)
+        strings_displayed = [freebayes.id, samtools.id]
         self.display_manage_repository_page(filtering, strings_displayed=strings_displayed)
 
     def test_0025_update_dependent_repositories(self):
         """
         Update freebayes and samtools, load the API endpoint again.
         """
-        freebayes = self.test_db_util.get_repository_by_name_and_owner(
-            repositories["freebayes"]["name"], common.test_user_1_name
-        )
-        samtools = self.test_db_util.get_repository_by_name_and_owner(
-            repositories["samtools"]["name"], common.test_user_1_name
-        )
-        filtering = self.test_db_util.get_repository_by_name_and_owner(
-            repositories["filtering"]["name"], common.test_user_1_name
-        )
+        freebayes = self._get_repository_by_name_and_owner(repositories["freebayes"]["name"], common.test_user_1_name)
+        samtools = self._get_repository_by_name_and_owner(repositories["samtools"]["name"], common.test_user_1_name)
+        filtering = self._get_repository_by_name_and_owner(repositories["filtering"]["name"], common.test_user_1_name)
         self.upload_file(
             freebayes,
             filename="0550_files/package_freebayes_2_0550.tgz",

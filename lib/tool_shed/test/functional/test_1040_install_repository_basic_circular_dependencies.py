@@ -90,17 +90,17 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
         # Filtering will have two revisions, one with just the filtering tool, and one with the filtering tool and a dependency on freebayes.
         global running_standalone
         if running_standalone:
-            freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
+            freebayes_repository = self._get_repository_by_name_and_owner(
                 freebayes_repository_name, common.test_user_1_name
             )
-            filtering_repository = self.test_db_util.get_repository_by_name_and_owner(
+            filtering_repository = self._get_repository_by_name_and_owner(
                 filtering_repository_name, common.test_user_1_name
             )
             repository_dependencies_path = self.generate_temp_path("test_1040", additional_paths=["circular"])
             repository_tuple = (
                 self.url,
                 freebayes_repository.name,
-                freebayes_repository.user.username,
+                freebayes_repository.owner,
                 self.get_repository_tip(freebayes_repository),
             )
             self.create_repository_dependency(
@@ -111,7 +111,7 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
             repository_tuple = (
                 self.url,
                 filtering_repository.name,
-                filtering_repository.user.username,
+                filtering_repository.owner,
                 self.get_repository_tip(filtering_repository),
             )
             self.create_repository_dependency(

@@ -106,11 +106,11 @@ class TestRepairRepository(ShedTwillTestCase):
         This is step 3 - Upload a repository_dependencies.xml file to the column_1430 repository that creates a repository
         dependency on the filter_1430 repository.
         """
-        column_repository = self.test_db_util.get_repository_by_name_and_owner("column_1430", common.test_user_1_name)
-        filter_repository = self.test_db_util.get_repository_by_name_and_owner("filter_1430", common.test_user_1_name)
+        column_repository = self._get_repository_by_name_and_owner("column_1430", common.test_user_1_name)
+        filter_repository = self._get_repository_by_name_and_owner("filter_1430", common.test_user_1_name)
         tool_shed_url = self.url
         name = filter_repository.name
-        owner = filter_repository.user.username
+        owner = filter_repository.owner
         changeset_revision = self.get_repository_tip(filter_repository)
         repository_dependency_tuple = (tool_shed_url, name, owner, changeset_revision)
         filepath = self.generate_temp_path("1430_repository_dependency")

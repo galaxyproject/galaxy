@@ -335,35 +335,29 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
         """Create the dependency structure for test 0030."""
         global running_standalone
         if running_standalone:
-            column_maker_repository = self.test_db_util.get_repository_by_name_and_owner(
+            column_maker_repository = self._get_repository_by_name_and_owner(
                 "column_maker_0030", common.test_user_1_name
             )
-            emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-                "emboss_0030", common.test_user_1_name
-            )
-            emboss_5_repository = self.test_db_util.get_repository_by_name_and_owner(
-                "emboss_5_0030", common.test_user_1_name
-            )
-            emboss_6_repository = self.test_db_util.get_repository_by_name_and_owner(
-                "emboss_6_0030", common.test_user_1_name
-            )
+            emboss_repository = self._get_repository_by_name_and_owner("emboss_0030", common.test_user_1_name)
+            emboss_5_repository = self._get_repository_by_name_and_owner("emboss_5_0030", common.test_user_1_name)
+            emboss_6_repository = self._get_repository_by_name_and_owner("emboss_6_0030", common.test_user_1_name)
             repository_dependencies_path = self.generate_temp_path("test_0330", additional_paths=["emboss"])
             column_maker_tuple = (
                 self.url,
                 column_maker_repository.name,
-                column_maker_repository.user.username,
+                column_maker_repository.owner,
                 self.get_repository_tip(column_maker_repository),
             )
             emboss_5_tuple = (
                 self.url,
                 emboss_5_repository.name,
-                emboss_5_repository.user.username,
+                emboss_5_repository.owner,
                 self.get_repository_tip(emboss_5_repository),
             )
             emboss_6_tuple = (
                 self.url,
                 emboss_6_repository.name,
-                emboss_6_repository.user.username,
+                emboss_6_repository.owner,
                 self.get_repository_tip(emboss_6_repository),
             )
             self.create_repository_dependency(
@@ -447,23 +441,19 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
         """Create the dependency structure for test 0040."""
         global running_standalone
         if running_standalone:
-            freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
-                "freebayes_0040", common.test_user_1_name
-            )
-            filtering_repository = self.test_db_util.get_repository_by_name_and_owner(
-                "filtering_0040", common.test_user_1_name
-            )
+            freebayes_repository = self._get_repository_by_name_and_owner("freebayes_0040", common.test_user_1_name)
+            filtering_repository = self._get_repository_by_name_and_owner("filtering_0040", common.test_user_1_name)
             repository_dependencies_path = self.generate_temp_path("test_0340", additional_paths=["dependencies"])
             freebayes_tuple = (
                 self.url,
                 freebayes_repository.name,
-                freebayes_repository.user.username,
+                freebayes_repository.owner,
                 self.get_repository_tip(freebayes_repository),
             )
             filtering_tuple = (
                 self.url,
                 filtering_repository.name,
-                filtering_repository.user.username,
+                filtering_repository.owner,
                 self.get_repository_tip(filtering_repository),
             )
             self.create_repository_dependency(
@@ -647,22 +637,18 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
         global running_standalone
         if running_standalone:
             self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-            column_repository = self.test_db_util.get_repository_by_name_and_owner(
-                column_repository_name, common.test_user_1_name
-            )
-            convert_repository = self.test_db_util.get_repository_by_name_and_owner(
+            column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
+            convert_repository = self._get_repository_by_name_and_owner(
                 convert_repository_name, common.test_user_1_name
             )
-            emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-                emboss_repository_name, common.test_user_1_name
-            )
-            filtering_repository = self.test_db_util.get_repository_by_name_and_owner(
+            emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
+            filtering_repository = self._get_repository_by_name_and_owner(
                 filtering_repository_name, common.test_user_1_name
             )
-            freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
+            freebayes_repository = self._get_repository_by_name_and_owner(
                 freebayes_repository_name, common.test_user_1_name
             )
-            bismark_repository = self.test_db_util.get_repository_by_name_and_owner(
+            bismark_repository = self._get_repository_by_name_and_owner(
                 bismark_repository_name, common.test_user_1_name
             )
             dependency_xml_path = self.generate_temp_path("test_0050", additional_paths=["freebayes"])
@@ -675,31 +661,31 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
             column_tuple = (
                 self.url,
                 column_repository.name,
-                column_repository.user.username,
+                column_repository.owner,
                 self.get_repository_tip(column_repository),
             )
             convert_tuple = (
                 self.url,
                 convert_repository.name,
-                convert_repository.user.username,
+                convert_repository.owner,
                 self.get_repository_tip(convert_repository),
             )
             freebayes_tuple = (
                 self.url,
                 freebayes_repository.name,
-                freebayes_repository.user.username,
+                freebayes_repository.owner,
                 self.get_repository_tip(freebayes_repository),
             )
             emboss_tuple = (
                 self.url,
                 emboss_repository.name,
-                emboss_repository.user.username,
+                emboss_repository.owner,
                 self.get_repository_tip(emboss_repository),
             )
             bismark_tuple = (
                 self.url,
                 bismark_repository.name,
-                bismark_repository.user.username,
+                bismark_repository.owner,
                 self.get_repository_tip(bismark_repository),
             )
             self.create_repository_dependency(
@@ -728,12 +714,12 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
         repositories = self.test_db_util.get_all_repositories()
         for repository in repositories:
             old_metadata[self.security.encode_id(repository.id)] = dict()
-            for metadata in self.get_repository_metadata(repository):
+            for metadata in self.get_repository_metadata_for_db_object(repository):
                 old_metadata[self.security.encode_id(repository.id)][metadata.changeset_revision] = metadata.metadata
         self.reset_metadata_on_selected_repositories(list(old_metadata.keys()))
         for repository in repositories:
             new_metadata[self.security.encode_id(repository.id)] = dict()
-            for metadata in self.get_repository_metadata(repository):
+            for metadata in self.get_repository_metadata_for_db_object(repository):
                 new_metadata[self.security.encode_id(repository.id)][metadata.changeset_revision] = metadata.metadata
             if (
                 old_metadata[self.security.encode_id(repository.id)]

@@ -87,7 +87,7 @@ class TestHgWebFeatures(ShedTwillTestCase):
         test-data/filter1_test3.sam
         test-data/filter1_test4.bed
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         clone_path = self.generate_temp_path("test_0310", additional_paths=["filtering_0310", "user2"])
         self.clone_repository(repository, clone_path)
         files_in_repository = os.listdir(clone_path)

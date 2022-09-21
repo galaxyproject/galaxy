@@ -99,10 +99,8 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         set to True. When matplotlib is selected for installation, the result should be that numpy is compiled
         and installed first.
         """
-        numpy_repository = self.test_db_util.get_repository_by_name_and_owner(
-            numpy_repository_name, common.test_user_1_name
-        )
-        matplotlib_repository = self.test_db_util.get_repository_by_name_and_owner(
+        numpy_repository = self._get_repository_by_name_and_owner(numpy_repository_name, common.test_user_1_name)
+        matplotlib_repository = self._get_repository_by_name_and_owner(
             matplotlib_repository_name, common.test_user_1_name
         )
         # Generate the new dependency XML. Normally, the create_repository_dependency method would be used for this, but
@@ -114,7 +112,7 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         new_xml += "    </package>\n"
         url = self.url
         name = numpy_repository.name
-        owner = numpy_repository.user.username
+        owner = numpy_repository.owner
         changeset_revision = self.get_repository_tip(numpy_repository)
         processed_xml = new_xml % (url, name, owner, changeset_revision)
         original_xml = open(self.get_filename("package_matplotlib/tool_dependencies.xml")).read()
@@ -142,10 +140,8 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         'Inherited' in this case means that matplotlib should show a package tool dependency on numpy version 1.7, and a repository
         dependency on the latest revision of package_numpy_1_7_0170.
         """
-        numpy_repository = self.test_db_util.get_repository_by_name_and_owner(
-            numpy_repository_name, common.test_user_1_name
-        )
-        matplotlib_repository = self.test_db_util.get_repository_by_name_and_owner(
+        numpy_repository = self._get_repository_by_name_and_owner(numpy_repository_name, common.test_user_1_name)
+        matplotlib_repository = self._get_repository_by_name_and_owner(
             matplotlib_repository_name, common.test_user_1_name
         )
         changeset_revision = self.get_repository_tip(numpy_repository)

@@ -73,7 +73,7 @@ class RepositoryRevisionMetadata(BaseModel):
     id: str
     repository: Repository
     repository_dependencies: List[RepositoryDependency]
-    tools: List[RepositoryTool]
+    tools: Optional[List[RepositoryTool]]
     repository_id: str
     numeric_revision: int
     changeset_revision: str
@@ -95,6 +95,17 @@ class RepositoryMetadata(BaseModel):
     @property
     def latest_revision(self) -> RepositoryRevisionMetadata:
         return list(self.__root__.values())[-1]
+
+    @property
+    def tip(self) -> str:
+        if self.is_new:
+            return "000000000000"
+        else:
+            return self.latest_revision.changeset_revision
+
+    @property
+    def is_new(self) -> bool:
+        return len(self.__root__) == 0
 
 
 class ResetMetadataOnRepositoryRequest(BaseModel):
@@ -152,6 +163,7 @@ class ToolSearchResults(BaseModel):
 class RepositoryIndexRequest(BaseModel):
     owner: Optional[str]
     name: Optional[str]
+    deleted: str = "false"
 
 
 class RepositoryIndexResponse(BaseModel):

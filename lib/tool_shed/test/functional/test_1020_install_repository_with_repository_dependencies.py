@@ -70,7 +70,7 @@ class ToolWithRepositoryDependencies(ShedTwillTestCase):
             repository_tuple = (
                 self.url,
                 column_maker_repository.name,
-                column_maker_repository.user.username,
+                column_maker_repository.owner,
                 self.get_repository_tip(column_maker_repository),
             )
             self.create_repository_dependency(
