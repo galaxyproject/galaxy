@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import pwd
+import shlex
 import shutil
 import sys
 import time
@@ -2261,6 +2262,7 @@ class MinimalJobWrapper(HasResourceParameters):
             return None
 
         exec_dir = kwds.get("exec_dir", os.path.abspath(os.getcwd()))
+        monitor_command = self.get_destination_configuration("container_monitor_command")
         work_dir = self.working_directory
         configs_dir = ensure_configs_directory(work_dir)
         container_config = os.path.join(configs_dir, "container_config.json")
@@ -2285,7 +2287,10 @@ class MinimalJobWrapper(HasResourceParameters):
         with open(container_config, "w") as f:
             json.dump(container_config_dict, f)
 
-        return f"(python '{exec_dir}'/lib/galaxy_ext/container_monitor/monitor.py &); sleep 1 "
+        if not monitor_command:
+            _monitor_py = shlex.quote(os.path.join(exec_dir, "lib/galaxy_ext/container_monitor/monitor.py"))
+            monitor_command = f"python {_monitor_py}"
+        return f"({monitor_command} &); sleep 1 "
 
     @property
     def user(self):
