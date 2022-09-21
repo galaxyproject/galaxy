@@ -2,7 +2,6 @@
 Test lib/galaxy/visualization/plugins/registry.
 """
 import os
-import unittest
 
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.util import (
@@ -178,6 +177,3 @@ class VisualizationsRegistry_TestCase(VisualizationsBase_TestCase):
 
 # -----------------------------------------------------------------------------
 # TODO: config parser tests (in separate file)
-
-if __name__ == "__main__":
-    unittest.main()

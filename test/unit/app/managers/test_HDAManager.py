@@ -1,4 +1,3 @@
-import unittest
 from unittest import mock
 
 import sqlalchemy
@@ -684,9 +683,3 @@ class HDAFilterParserTestCase(HDATestCase):
 
 #     def test_data_type_filters( self ):
 #         pass
-
-
-# =============================================================================
-if __name__ == "__main__":
-    # or more generally, nosetests test_resourcemanagers.py -s -v
-    unittest.main()

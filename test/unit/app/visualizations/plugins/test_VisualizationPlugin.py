@@ -1,8 +1,6 @@
 """
 Test lib/galaxy/visualization/plugins/plugin.
 """
-import unittest
-
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.util import clean_multiline_string
 from galaxy.visualization.plugins import (
@@ -158,6 +156,3 @@ class VisualizationsPlugin_TestCase(VisualizationsBase_TestCase):
 
 # -----------------------------------------------------------------------------
 # TODO: config parser tests (in separate file)
-
-if __name__ == "__main__":
-    unittest.main()

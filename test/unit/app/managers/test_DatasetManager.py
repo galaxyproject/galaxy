@@ -1,6 +1,5 @@
 """
 """
-import unittest
 from unittest import mock
 
 import sqlalchemy
@@ -317,8 +316,3 @@ class DatasetSerializerTestCase(BaseTestCase):
 #   DatasetAssociationSerializer,
 #   DatasetAssociationDeserializer,
 #   DatasetAssociationFilterParser
-
-# =============================================================================
-if __name__ == "__main__":
-    # or more generally, nosetests test_resourcemanagers.py -s -v
-    unittest.main()

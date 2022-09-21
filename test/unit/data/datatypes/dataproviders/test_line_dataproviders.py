@@ -3,7 +3,6 @@ Unit tests for base DataProviders.
 .. seealso:: galaxy.datatypes.dataproviders.base
 """
 import logging
-import unittest
 from typing import Type
 
 from galaxy.datatypes.dataproviders import (
@@ -310,7 +309,3 @@ class Test_BlockDataProvider(test_base_dataproviders.Test_FilteredDataProvider):
         )
         assert data == [{"id": "One", "seq": "ABCD"}, {"id": "Two", "seq": "ABCDEFGH"}]
         self.assertCounters(provider, 2, 2, 2)
-
-
-if __name__ == "__main__":
-    unittest.main()

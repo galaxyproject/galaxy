@@ -104,7 +104,3 @@ class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
         trans.request.headers["Origin"] = "http://öbb.at"
         trans.set_cors_headers()
         assert trans.response.headers["access-control-allow-origin"] == "http://öbb.at"
-
-
-if __name__ == "__main__":
-    unittest.main()

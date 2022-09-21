@@ -395,7 +395,3 @@ class TempFileCache:
                 log.debug("unlinking tmpfile: %s", tmpfile)
                 os.unlink(tmpfile)
         self._content_dict = {}
-
-
-if __name__ == "__main__":
-    unittest.main()

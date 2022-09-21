@@ -1421,7 +1421,3 @@ class TestDynamicToolDestination(unittest.TestCase):
         assert dt.bytes_to_str("\t\t1000000") == "976.56 KB"
         assert dt.bytes_to_str("1000000000\n") == "953.67 MB"
         assert dt.bytes_to_str(1024, "fda") == "1.00 KB"
-
-
-if __name__ == "__main__":
-    unittest.main()

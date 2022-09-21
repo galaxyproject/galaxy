@@ -3,7 +3,6 @@ User Manager testing.
 
 Executable directly using: python -m test.unit.managers.test_UserManager
 """
-import unittest
 from datetime import datetime
 
 from sqlalchemy import desc
@@ -375,8 +374,3 @@ class AdminUserFilterParserTestCase(BaseTestCase):
         self.assertORMFilter(self.filter_parser.parse_filter("active", "eq", True))
         self.assertORMFilter(self.filter_parser.parse_filter("disk_usage", "le", 500000.00))
         self.assertORMFilter(self.filter_parser.parse_filter("disk_usage", "ge", 500000.00))
-
-
-# =============================================================================
-if __name__ == "__main__":
-    unittest.main()
