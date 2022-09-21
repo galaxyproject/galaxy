@@ -187,7 +187,7 @@ export default {
             }
             return {
                 display: `/datasets/${id}/preview`,
-                edit: `/datasets/edit/${id}`,
+                edit: `/datasets/${id}/edit`,
                 showDetails: `/datasets/${id}/details`,
                 reportError: `/datasets/${id}/error`,
                 rerun: `/tool_runner/rerun?id=${id}`,

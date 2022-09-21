@@ -9,17 +9,7 @@ import _l from "utils/localization";
 
 // wrapper for window manager
 export function iframeAdd({ path, title = "Galaxy", $router = null }) {
-    const Galaxy = getGalaxyInstance();
-    if (Galaxy.frame && Galaxy.frame.active) {
-        Galaxy.frame.add({
-            title: _l(title),
-            url: path,
-        });
-        return true;
-    } else if ($router) {
-        $router.push(path);
-        return true;
-    }
+    $router.push(path);
 }
 
 // straight ifrme redirect

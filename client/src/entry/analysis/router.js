@@ -70,6 +70,17 @@ VueRouter.prototype.push = function push(location) {
             return;
         }
     }
+
+    // show location in window manager
+    const Galaxy = getGalaxyInstance();
+    if (Galaxy.frame && Galaxy.frame.active) {
+        Galaxy.frame.add({
+            title: "Data",
+            url: location,
+        });
+        return true;
+    }
+
     // always emit event when a route is pushed
     this.app.$emit("router-push");
     // avoid console warning when user clicks to revisit same route
@@ -114,12 +125,12 @@ export function getRouter(Galaxy) {
                         redirect: redirectAnon(),
                     },
                     {
-                        path: "collection/edit/:collection_id",
+                        path: "collection/:collection_id/edit",
                         component: CollectionEditView,
                         props: true,
                     },
                     {
-                        path: "datasets/edit/:datasetId",
+                        path: "datasets/:datasetId/edit",
                         component: DatasetAttributes,
                         props: true,
                     },

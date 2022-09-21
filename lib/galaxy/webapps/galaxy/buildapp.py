@@ -241,7 +241,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/histories/view")
     webapp.add_client_route("/histories/view_multiple")
     webapp.add_client_route("/datasets/list")
-    webapp.add_client_route("/datasets/edit")
+    webapp.add_client_route("/datasets/{dataset_id}/edit")
     webapp.add_client_route("/datasets/{dataset_id}/error")
     webapp.add_client_route("/datasets/{dataset_id}/details")
     webapp.add_client_route("/datasets/{dataset_id}/preview")
