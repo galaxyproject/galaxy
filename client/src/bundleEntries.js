@@ -18,18 +18,8 @@ import Circster from "viz/circster";
 export { PhylovizView as phyloviz } from "viz/phyloviz";
 export { SweepsterVisualization, SweepsterVisualizationView } from "viz/sweepster";
 export { createTabularDatasetChunkedView } from "mvc/dataset/data";
-export { History } from "mvc/history/history-model";
-export { HistoryContents } from "mvc/history/history-contents";
-// TODO: there are side effects in history-view-edit somewhere; follow up as legacy history panel bits are removed.
-import { HistoryViewEdit } from "mvc/history/history-view-edit"; // eslint-disable-line no-unused-vars
-export { historyEntry as history } from "mvc/history/history-view";
-export { default as HistoryViewAnnotated } from "mvc/history/history-view-annotated";
-export { default as HistoryCopyDialog } from "mvc/history/copy-dialog";
-export { default as HDAListItemEdit } from "mvc/history/hda-li-edit";
-export { default as HDAModel } from "mvc/history/hda-model";
 export { default as LegacyGridView } from "legacy/grid/grid-view";
 export { create_chart, create_histogram } from "reports/run_stats";
-export { default as ToolshedGroups } from "toolshed/toolshed.groups";
 export { openGlobalUploadModal } from "components/Upload";
 export { runTour } from "components/Tour/runTour";
 export { Toast } from "ui/toast"; // TODO: remove when external consumers are updated/gone (IES right now)
