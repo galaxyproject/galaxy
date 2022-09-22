@@ -143,6 +143,9 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         this.loading_chunk = false;
         // Configure delimiter for parsing data
         this.delimiter = this.model?.attributes?.file_ext === "csv" ? "," : "\t";
+        this.parseArgs = {
+            delimiter: this.delimiter,
+        };
         // load trackster button
         new TabularButtonTracksterView({
             model: options.model,
@@ -244,7 +247,6 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     _renderRow: function (rowData) {
         var row = $("<tr>");
         var num_columns = this.model.get_metadata("columns");
-
         if (this.row_count % 2 !== 0) {
             row.addClass("dark_row");
         }
@@ -315,9 +317,24 @@ var TabularDatasetChunkedView = Backbone.View.extend({
 
     _renderChunk: function (chunk) {
         var data_table = this.$el.find("table");
-        const parsedChunk = parse(chunk.ck_data, {
-            delimiter: this.delimiter,
-        });
+        let parsedChunk = [];
+        try {
+            parsedChunk = parse(chunk.ck_data, this.parseArgs);
+        } catch (error) {
+            // If this blows up it's likely data in a comment or header line
+            // (e.g. VCF files) so just split it by newline first then parse
+            // each line individually.
+            parsedChunk = chunk.ck_data.trim().split("\n");
+            parsedChunk = parsedChunk.map((line) => {
+                try {
+                    return parse(line, this.parseArgs)[0];
+                } catch (error) {
+                    // Failing lines get passed through intact for row-level
+                    // rendering/parsing.
+                    return [line];
+                }
+            });
+        }
         _.each(
             parsedChunk,
             (rowData, index) => {
