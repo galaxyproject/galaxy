@@ -313,7 +313,7 @@ class MetadataGenerator:
             # can load tools that depend on them.
             data_table_conf_xml_sample_files = []
             for sample_file in sample_file_copy_paths:
-                tool_util.copy_sample_file(self.app, sample_file, dest_path=work_dir)
+                tool_util.copy_sample_file(self.app.config.tool_data_path, sample_file, dest_path=work_dir)
                 # If the list of sample files includes a tool_data_table_conf.xml.sample file, load
                 # its table elements into memory.
                 relative_path, filename = os.path.split(sample_file)
