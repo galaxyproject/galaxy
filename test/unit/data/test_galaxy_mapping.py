@@ -1050,9 +1050,3 @@ class MockObjectStore:
 
     def update_from_file(self, *arg, **kwds):
         pass
-
-
-def get_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(MappingTests("test_basic"))
-    return suite

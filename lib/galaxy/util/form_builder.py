@@ -199,11 +199,3 @@ class HistoryField(BaseField):
                 if not a.deleted:
                     d["data"].append({"label": a.name, "value": self.security.encode_id(a.id)})
         return d
-
-
-def get_suite():
-    """Get unittest suite for this module"""
-    import doctest
-    import sys
-
-    return doctest.DocTestSuite(sys.modules[__name__])
