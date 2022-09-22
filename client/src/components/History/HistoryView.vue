@@ -44,14 +44,12 @@
 import { mapGetters } from "vuex";
 import CurrentUser from "components/providers/CurrentUser";
 import UserHistories from "components/providers/UserHistories";
-import LoadingSpan from "components/LoadingSpan";
 import CollectionPanel from "./CurrentCollection/CollectionPanel";
 import HistoryPanel from "./CurrentHistory/HistoryPanel";
 import CopyModal from "./Modals/CopyModal";
 
 export default {
     components: {
-        LoadingSpan,
         HistoryPanel,
         CollectionPanel,
         CurrentUser,
