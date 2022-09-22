@@ -560,14 +560,6 @@ def get_repository_ids_requiring_prior_import_or_install(app, tsr_ids, repositor
     return prior_tsr_ids
 
 
-def get_repository_in_tool_shed(app, id, eagerload_columns=None):
-    """Get a repository on the tool shed side from the database via id."""
-    q = get_repository_query(app)
-    if eagerload_columns:
-        q = q.options(joinedload(*eagerload_columns))
-    return q.get(app.security.decode_id(id))
-
-
 def get_repository_owner(cleaned_repository_url):
     """Gvien a "cleaned" repository clone URL, return the owner of the repository."""
     items = cleaned_repository_url.split("/repos/")
@@ -757,7 +749,6 @@ __all__ = (
     "get_repository_dependency_types",
     "get_repository_for_dependency_relationship",
     "get_repository_ids_requiring_prior_import_or_install",
-    "get_repository_in_tool_shed",
     "get_repository_owner",
     "get_repository_owner_from_clone_url",
     "get_repository_query",
