@@ -53,11 +53,11 @@ class BaseInteractiveToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
                 print(e)
                 return None
 
-        content = wait_on(get_hosted_content, "realtime hosted content at %s" % target)
+        content = wait_on(get_hosted_content, f"realtime hosted content at {target}")
         return content
 
     def entry_point_target(self, entry_point_id):
-        entry_point_access_response = self._get("entry_points/%s/access" % entry_point_id)
+        entry_point_access_response = self._get(f"entry_points/{entry_point_id}/access")
         api_asserts.assert_status_code_is(entry_point_access_response, 200)
         access_json = entry_point_access_response.json()
         api_asserts.assert_has_key(access_json, "target")
@@ -81,7 +81,7 @@ class BaseInteractiveToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
         return wait_on(active_entry_points, "entry points to become active", timeout=120)
 
     def entry_points_for_job(self, job_id):
-        entry_points_response = self._get("entry_points?job_id=%s" % job_id)
+        entry_points_response = self._get(f"entry_points?job_id={job_id}")
         api_asserts.assert_status_code_is(entry_points_response, 200)
         return entry_points_response.json()
 

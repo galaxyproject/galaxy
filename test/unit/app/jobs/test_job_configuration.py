@@ -37,7 +37,7 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
     def setUp(self):
         self.temp_directory = tempfile.mkdtemp()
         self.config = mock.Mock(
-            job_config_file=os.path.join(self.temp_directory, "job_conf.%s" % self.extension),
+            job_config_file=os.path.join(self.temp_directory, f"job_conf.{self.extension}"),
             use_tasked_jobs=False,
             job_resource_params_file="/tmp/fake_absent_path",
             config_dict={},
@@ -79,10 +79,12 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
     def _with_handlers_config(self, assign_with=None, default=None, handlers=None, base_pools=None):
         handlers = handlers or []
         template = {
-            "assign_with": ' assign_with="%s"' % assign_with if assign_with is not None else "",
-            "default": ' default="%s"' % default if default is not None else "",
+            "assign_with": f' assign_with="{assign_with}"' if assign_with is not None else "",
+            "default": f' default="{default}"' if default is not None else "",
             "handlers": "\n".join(
-                '<handler id="{id}"{tags}/>'.format(id=x["id"], tags=' tags="%s"' % x["tags"] if "tags" in x else "")
+                '<handler id="{id}"{tags}/>'.format(
+                    id=x["id"], tags=' tags="{}"'.format(x["tags"]) if "tags" in x else ""
+                )
                 for x in handlers
             ),
         }
@@ -111,7 +113,7 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
         self._write_config(contents)
 
     def _write_config(self, contents):
-        with open(os.path.join(self.temp_directory, "job_conf.%s" % self.extension), "w") as f:
+        with open(os.path.join(self.temp_directory, f"job_conf.{self.extension}"), "w") as f:
             f.write(contents)
 
     def _with_advanced_config(self):

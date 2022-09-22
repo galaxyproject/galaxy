@@ -2360,9 +2360,9 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             new_collections = (
                 len([c for c in history_contents if c["history_content_type"] == "dataset_collection"]) - 1
             )
-            assert new_collections == 2, (
-                "Expected to generate 4 new, filtered collections, but got %d collections" % new_collections
-            )
+            assert (
+                new_collections == 2
+            ), f"Expected to generate 4 new, filtered collections, but got {new_collections} collections"
             assert (
                 filtered_collection["collection_type"] == discarded_collection["collection_type"] == "list:list"
             ), filtered_collection

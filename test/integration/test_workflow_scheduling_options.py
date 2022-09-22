@@ -32,10 +32,10 @@ class MaximumWorkflowInvocationDurationTestCase(integration_util.IntegrationTest
         hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
         index_map = {"0": dict(src="hda", id=hda1["id"])}
         request = {}
-        request["history"] = "hist_id=%s" % history_id
+        request["history"] = f"hist_id={history_id}"
         request["inputs"] = dumps(index_map)
         request["inputs_by"] = "step_index"
-        url = "workflows/%s/invocations" % (workflow_id)
+        url = f"workflows/{workflow_id}/invocations"
         invocation_response = self._post(url, data=request)
         invocation_url = url + "/" + invocation_response.json()["id"]
         time.sleep(5)

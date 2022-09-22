@@ -57,7 +57,7 @@ def disable_dependency_resolution(config):
 
 def skip_if_container_type_unavailable(cls):
     if not which(cls.container_type):
-        raise unittest.SkipTest("Executable '%s' not found on PATH" % cls.container_type)
+        raise unittest.SkipTest(f"Executable '{cls.container_type}' not found on PATH")
 
 
 class DockerizedJobsIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
@@ -123,8 +123,6 @@ class DockerizedJobsIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         assert job_env.home.endswith("/home")
 
     def test_build_mulled(self):
-        if not which("docker"):
-            raise unittest.SkipTest("Docker not found on PATH, required for building images via involucro")
         resolver_type = self.build_mulled_resolver
         tool_ids = ["mulled_example_multi_1"]
         endpoint = "dependency_resolvers/toolbox/install"

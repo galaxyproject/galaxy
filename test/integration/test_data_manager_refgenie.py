@@ -71,7 +71,7 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
         config["tool_data_path"] = cls.shed_tool_data_dir
         config["watch_tool_data_dir"] = True
         cls.username = cls.get_secure_ascii_digits()
-        config["admin_users"] = "%s@galaxy.org" % cls.username
+        config["admin_users"] = f"{cls.username}@galaxy.org"
         config["refgenie_config_file"] = REFGENIE_CONFIG_FILE
 
     def test_data_manager_manual_refgenie(self):
@@ -79,7 +79,7 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
         Test that data_manager_manual works with refgenie enabled, which uses a significant amount of Galaxy-internal code
         """
         self.install_repository("iuc", "data_manager_manual", "1ed87dee9e68")
-        with self._different_user(email="%s@galaxy.org" % self.username):
+        with self._different_user(email=f"{self.username}@galaxy.org"):
             with self.dataset_populator.test_history() as history_id:
                 run_response = self.dataset_populator.run_tool_raw(
                     tool_id=DATA_MANAGER_MANUAL_ID,
@@ -104,7 +104,7 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
         Test that data_manager_manual works with refgenie enabled, with a table defined first by refgenie
         """
         self.install_repository("iuc", "data_manager_manual", "1ed87dee9e68")
-        with self._different_user(email="%s@galaxy.org" % self.username):
+        with self._different_user(email=f"{self.username}@galaxy.org"):
             with self.dataset_populator.test_history() as history_id:
                 run_response = self.dataset_populator.run_tool_raw(
                     tool_id=DATA_MANAGER_MANUAL_ID,

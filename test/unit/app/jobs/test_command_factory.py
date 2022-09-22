@@ -119,7 +119,7 @@ class TestCommandFactory(TestCase):
         self._test_set_metadata()
 
     def test_strips_trailing_semicolons(self):
-        self.job_wrapper.command_line = "%s;" % MOCK_COMMAND_LINE
+        self.job_wrapper.command_line = f"{MOCK_COMMAND_LINE};"
         self._test_set_metadata()
 
     def _test_set_metadata(self):

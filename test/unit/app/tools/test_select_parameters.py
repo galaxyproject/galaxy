@@ -87,8 +87,7 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
             data_ref_text = ""
             if self.set_data_ref:
                 data_ref_text = 'data_ref="input_bam"'
-            template_xml = """<param name="my_name" type="%s" %s %s %s>%s</param>"""
-            param_str = template_xml % (self.type, data_ref_text, multi_text, optional_text, options_text)
+            param_str = f"""<param name="my_name" type="{self.type}" {data_ref_text} {multi_text} {optional_text}>{options_text}</param>"""
             self._param = self._parameter_for(xml=param_str)
 
         return self._param

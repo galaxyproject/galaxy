@@ -168,7 +168,7 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
                       <filter type="add_value" value="bar" />
                       <filter type="add_value" value="baz" />
                     </options>"""
-            param_xml = XML("""<param name="data2" type="data" format="txt">%s</param>""" % option_xml)
+            param_xml = XML(f"""<param name="data2" type="data" format="txt">{option_xml}</param>""")
             self.param = basic.DataToolParameter(
                 self.tool,
                 param_xml,

@@ -27,9 +27,9 @@ BASE_REPEAT_TOOL_CONTENTS = """<tool id="test_tool" name="Test Tool">
 """
 
 # Tool with a repeat parameter, to test state update.
-REPEAT_TOOL_CONTENTS = BASE_REPEAT_TOOL_CONTENTS % """<param type="text" name="param2" value="" />"""
-REPEAT_COLLECTION_PARAM_CONTENTS = (
-    BASE_REPEAT_TOOL_CONTENTS % """<param type="data_collection" name="param2" collection_type="paired" />"""
+REPEAT_TOOL_CONTENTS = BASE_REPEAT_TOOL_CONTENTS % ("""<param type="text" name="param2" value="" />""",)
+REPEAT_COLLECTION_PARAM_CONTENTS = BASE_REPEAT_TOOL_CONTENTS % (
+    """<param type="data_collection" name="param2" collection_type="paired" />""",
 )
 
 

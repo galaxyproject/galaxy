@@ -209,7 +209,7 @@ class KubernetesDependencyResolutionIntegrationTestCase(BaseKubernetesStagingTes
 
 
 def set_infrastucture_url(config):
-    infrastructure_url = "http://%s:$GALAXY_WEB_PORT" % GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST
+    infrastructure_url = f"http://{GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST}:$GALAXY_WEB_PORT"
     config["galaxy_infrastructure_url"] = infrastructure_url
 
 

@@ -12,10 +12,12 @@ class WritesConfig:
     def _with_handlers_config(self, assign_with=None, default=None, handlers=None):
         handlers = handlers or []
         template = {
-            "assign_with": ' assign_with="%s"' % assign_with if assign_with is not None else "",
-            "default": ' default="%s"' % default if default is not None else "",
+            "assign_with": f' assign_with="{assign_with}"' if assign_with is not None else "",
+            "default": f' default="{default}"' if default is not None else "",
             "handlers": "\n".join(
-                '<handler id="{id}"{tags}/>'.format(id=x["id"], tags=' tags="%s"' % x["tags"] if "tags" in x else "")
+                '<handler id="{id}"{tags}/>'.format(
+                    id=x["id"], tags=' tags="{}"'.format(x["tags"]) if "tags" in x else ""
+                )
                 for x in handlers
             ),
         }

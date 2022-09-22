@@ -485,19 +485,13 @@ class MappingTests(BaseModelTestCase):
 
         # Make some changes and commit them
         u = model.User(email="james@foo.bar.baz", password="password")
-        # gs = model.GalaxySession()
         h1 = model.History(name="History 1", user=u)
-        # h1.queries.append( model.Query( "h1->q1" ) )
-        # h1.queries.append( model.Query( "h1->q2" ) )
         h2 = model.History(name=("H" * 1024))
         self.persist(u, h1, h2)
-        # q1 = model.Query( "h2->q1" )
         metadata = dict(chromCol=1, startCol=2, endCol=3)
         d1 = model.HistoryDatasetAssociation(
             extension="interval", metadata=metadata, history=h2, create_dataset=True, sa_session=self.model.session
         )
-        # h2.queries.append( q1 )
-        # h2.queries.append( model.Query( "h2->q2" ) )
         self.persist(d1)
 
         # Check
@@ -509,8 +503,8 @@ class MappingTests(BaseModelTestCase):
         assert len(user.histories) == 1
         assert user.histories[0].name == "History 1"
         hists = self.model.session.query(model.History).all()
-        hist0 = [history for history in hists if history.name == "History 1"][0]
-        hist1 = [history for history in hists if history.name == "H" * 255][0]
+        hist0 = [history for history in hists if history.id == h1.id][0]
+        hist1 = [history for history in hists if history.id == h2.id][0]
         assert hist0.name == "History 1"
         assert hist1.name == ("H" * 255)
         assert hist0.user == user
@@ -518,7 +512,7 @@ class MappingTests(BaseModelTestCase):
         assert hist1.datasets[0].metadata.chromCol == 1
         # The filename test has moved to objectstore
         # id = hist1.datasets[0].id
-        # assert hist1.datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + ( "/dataset_%d.dat" % id )
+        # assert hist1.datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + f"/dataset_{id}.dat"
         # Do an update and check
         hist1.name = "History 2b"
         self.expunge()
@@ -570,7 +564,7 @@ class MappingTests(BaseModelTestCase):
         task.add_metric("gx", "galaxy_slots", 5)
         task.add_metric("system", "system_name", "localhost")
 
-        big_value = ":".join("%d" % i for i in range(2000))
+        big_value = ":".join(f"{i}" for i in range(2000))
         task.add_metric("env", "BIG_PATH", big_value)
         self.persist(task)
         # Ensure big values truncated

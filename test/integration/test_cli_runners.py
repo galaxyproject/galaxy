@@ -110,7 +110,7 @@ class BaseCliIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
     def setUpClass(cls):
         if cls is BaseCliIntegrationTestCase:
             raise unittest.SkipTest("Base class")
-        cls.container_name = "%s_container" % cls.__name__
+        cls.container_name = f"{cls.__name__}_container"
         cls.jobs_directory = tempfile.mkdtemp()
         cls.remote_connection = start_ssh_docker(
             container_name=cls.container_name, jobs_directory=cls.jobs_directory, image=cls.image

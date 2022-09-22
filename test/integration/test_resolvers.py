@@ -71,7 +71,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         tool_id = "legacy_R"
         dataset_populator = DatasetPopulator(self.galaxy_interactor)
         history_id = dataset_populator.new_history()
-        endpoint = "tools/%s/install_dependencies" % tool_id
+        endpoint = f"tools/{tool_id}/install_dependencies"
         data = {"id": tool_id}
         create_response = self._post(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
@@ -86,25 +86,25 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
 
     def test_conda_install_through_tools_api(self):
         tool_id = "mulled_example_multi_1"
-        endpoint = "tools/%s/install_dependencies" % tool_id
+        endpoint = f"tools/{tool_id}/install_dependencies"
         data = {"id": tool_id}
         create_response = self._post(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
         response = create_response.json()
         assert any(True for d in response if d["dependency_type"] == "conda")
-        endpoint = "tools/%s/build_dependency_cache" % tool_id
+        endpoint = f"tools/{tool_id}/build_dependency_cache"
         create_response = self._post(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
 
     def test_uninstall_through_tools_api(self):
         tool_id = "mulled_example_multi_1"
-        endpoint = "tools/%s/dependencies" % tool_id
+        endpoint = f"tools/{tool_id}/dependencies"
         data = {"id": tool_id}
         create_response = self._post(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
         response = create_response.json()
         assert any(True for d in response if d["dependency_type"] == "conda")
-        endpoint = "tools/%s/dependencies" % tool_id
+        endpoint = f"tools/{tool_id}/dependencies"
         create_response = self._delete(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
         response = create_response.json()
@@ -112,7 +112,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
 
     def _uninstall_mulled_example_multi_1(self, resolver_type=None):
         tool_id = "mulled_example_multi_1"
-        endpoint = "tools/%s/dependencies" % tool_id
+        endpoint = f"tools/{tool_id}/dependencies"
         data = {"id": tool_id, "resolver_type": resolver_type}
         create_response = self._delete(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
@@ -124,7 +124,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         self._uninstall_mulled_example_multi_1(resolver_type="conda")
         # Now do the actual test
         tool_id = "mulled_example_multi_1"
-        endpoint = "tools/%s/dependencies" % tool_id
+        endpoint = f"tools/{tool_id}/dependencies"
         data = {"id": tool_id, "resolver_type": "conda"}
         create_response = self._post(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
@@ -142,9 +142,9 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
 
     def _assert_dependency_type(self, response, type="conda", exact=True):
         if "dependency_type" not in response:
-            raise Exception("Response [%s] did not contain key 'dependency_type'" % response)
+            raise Exception(f"Response [{response}] did not contain key 'dependency_type'")
         dependency_type = response["dependency_type"]
         assert dependency_type == type, f"Dependency type [{dependency_type}] not the expected value [{type}]"
         if "exact" not in response:
-            raise Exception("Response [%s] did not contain key 'exact'" % response)
+            raise Exception(f"Response [{response}] did not contain key 'exact'")
         assert response["exact"] is exact

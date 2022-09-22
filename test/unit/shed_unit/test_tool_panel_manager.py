@@ -74,10 +74,10 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
         previous_guid = None
         for v in "1", "2", "3":
             self.__toolbox = self.get_new_toolbox()
-            changeset = "0123456789abcde%s" % v
-            guid = DEFAULT_GUID + ("v/%s" % v)
-            tool = self._init_ts_tool(guid=guid, filename="tool_v%s.xml" % v, version=v)
-            tool_path = self._tool_path(name="tool_v%s.xml" % v)
+            changeset = f"0123456789abcde{v}"
+            guid = DEFAULT_GUID + (f"v/{v}")
+            tool = self._init_ts_tool(guid=guid, filename=f"tool_v{v}.xml", version=v)
+            tool_path = self._tool_path(name=f"tool_v{v}.xml")
             new_tools = [{"guid": guid, "tool_config": tool_path}]
             self._repo_install(changeset)
             repository_tools_tups = [
@@ -107,8 +107,8 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
             # New GUID replaced old one in tool panel but both
             # appear in integrated tool panel.
             if previous_guid:
-                assert ("tool_%s" % previous_guid) not in section.panel_items()
-            assert ("tool_%s" % guid) in self.toolbox._integrated_tool_panel["tid1"].panel_items()
+                assert (f"tool_{previous_guid}") not in section.panel_items()
+            assert (f"tool_{guid}") in self.toolbox._integrated_tool_panel["tid1"].panel_items()
             previous_guid = guid
 
     def test_uninstall_in_section(self):
@@ -185,8 +185,9 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
         try:
             parse_xml(filename)
         except Exception:
-            message_template = "file %s does not contain valid XML, content %s"
-            message = message_template % (filename, open(filename).read())
+            with open(filename) as fh:
+                content = fh.read()
+            message = f"file {filename} does not contain valid XML, content {content}"
             raise AssertionError(message)
 
     def _init_ts_tool(self, guid=DEFAULT_GUID, **kwds):

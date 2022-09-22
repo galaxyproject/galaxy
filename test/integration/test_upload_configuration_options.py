@@ -116,7 +116,7 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
 
     def test_disallowed_for_primary_file(self):
         payload = self.dataset_populator.upload_payload(
-            self.history_id, "file://%s/1.RData" % TEST_DATA_DIRECTORY, file_type="binary"
+            self.history_id, f"file://{TEST_DATA_DIRECTORY}/1.RData", file_type="binary"
         )
         create_response = self.dataset_populator.tools_post(payload)
         # Ideally this would be 403 but the tool API endpoint isn't using
@@ -134,7 +134,7 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
             extra_inputs={
                 "files_1|url_paste": "roadmaps content",
                 "files_1|type": "upload_dataset",
-                "files_2|url_paste": "file://%s" % path,
+                "files_2|url_paste": f"file://{path}",
                 "files_2|type": "upload_dataset",
             },
         )
@@ -171,7 +171,7 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
     def test_disallowed_for_fetch_urls(self):
         path = os.path.join(TEST_DATA_DIRECTORY, "1.txt")
         assert os.path.exists(path)
-        elements = [{"src": "url", "url": "file://%s" % path}]
+        elements = [{"src": "url", "url": f"file://{path}"}]
         target = {
             "destination": {"type": "hdca"},
             "elements": elements,
@@ -194,7 +194,7 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
     def test_admin_path_paste(self):
         payload = self.dataset_populator.upload_payload(
             self.history_id,
-            "file://%s/random-file" % TEST_DATA_DIRECTORY,
+            f"file://{TEST_DATA_DIRECTORY}/random-file",
         )
         create_response = self.dataset_populator.tools_post(payload)
         # Is admin - so this should work fine!
@@ -202,7 +202,7 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
 
     def test_admin_path_paste_libraries(self):
         library = self.library_populator.new_private_library("pathpasteallowedlibraries")
-        path = "%s/1.txt" % TEST_DATA_DIRECTORY
+        path = f"{TEST_DATA_DIRECTORY}/1.txt"
         assert os.path.exists(path)
         payload, files = self.library_populator.create_dataset_request(
             library, upload_option="upload_paths", paths=path
@@ -215,7 +215,7 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
 
     def test_admin_path_paste_libraries_link(self):
         library = self.library_populator.new_private_library("pathpasteallowedlibraries")
-        path = "%s/1.txt" % TEST_DATA_DIRECTORY
+        path = f"{TEST_DATA_DIRECTORY}/1.txt"
         assert os.path.exists(path)
         payload, files = self.library_populator.create_dataset_request(
             library, upload_option="upload_paths", paths=path, link_data=True
@@ -241,7 +241,7 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
 
     def test_admin_fetch_file_url(self):
         path = os.path.join(TEST_DATA_DIRECTORY, "1.txt")
-        elements = [{"src": "url", "url": "file://%s" % path}]
+        elements = [{"src": "url", "url": f"file://{path}"}]
         target = {
             "destination": {"type": "hdca"},
             "elements": elements,
@@ -263,14 +263,14 @@ class DefaultBinaryContentFiltersTestCase(BaseUploadContentConfigurationTestCase
 
     def test_random_binary_allowed(self):
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, "file://%s/random-file" % TEST_DATA_DIRECTORY, file_type="auto", wait=True
+            self.history_id, f"file://{TEST_DATA_DIRECTORY}/random-file", file_type="auto", wait=True
         )
         dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset)
         assert dataset["file_ext"] == "binary", dataset
 
     def test_gzipped_html_content_blocked_by_default(self):
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, "file://%s/bad.html.gz" % TEST_DATA_DIRECTORY, file_type="auto", wait=True, assert_ok=False
+            self.history_id, f"file://{TEST_DATA_DIRECTORY}/bad.html.gz", file_type="auto", wait=True, assert_ok=False
         )
         dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset, assert_ok=False)
         assert dataset["file_size"] == 0
@@ -288,7 +288,7 @@ class DisableContentCheckingTestCase(BaseUploadContentConfigurationTestCase):
 
     def test_gzipped_html_content_now_allowed(self):
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, "file://%s/bad.html.gz" % TEST_DATA_DIRECTORY, file_type="auto", wait=True
+            self.history_id, f"file://{TEST_DATA_DIRECTORY}/bad.html.gz", file_type="auto", wait=True
         )
         dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset)
         # Same file was empty above!
@@ -307,7 +307,7 @@ class AutoDecompressTestCase(BaseUploadContentConfigurationTestCase):
     def test_auto_decompress_off(self):
         dataset = self.dataset_populator.new_dataset(
             self.history_id,
-            "file://%s/1.sam.gz" % TEST_DATA_DIRECTORY,
+            f"file://{TEST_DATA_DIRECTORY}/1.sam.gz",
             file_type="auto",
             auto_decompress=False,
             wait=True,
@@ -317,7 +317,7 @@ class AutoDecompressTestCase(BaseUploadContentConfigurationTestCase):
 
     def test_auto_decompress_on(self):
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, "file://%s/1.sam.gz" % TEST_DATA_DIRECTORY, file_type="auto", wait=True
+            self.history_id, f"file://{TEST_DATA_DIRECTORY}/1.sam.gz", file_type="auto", wait=True
         )
         dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset)
         assert dataset["file_ext"] == "sam", dataset
@@ -475,7 +475,7 @@ class TemplatedFtpDirectoryUploadConfigurationTestCase(SimpleFtpUploadConfigurat
         config["ftp_upload_dir_template"] = "${ftp_upload_dir}/moo_${ftp_upload_dir_identifier}_cow"
 
     def _get_user_ftp_path(self):
-        return os.path.join(self.ftp_dir(), "moo_%s_cow" % TEST_USER)
+        return os.path.join(self.ftp_dir(), f"moo_{TEST_USER}_cow")
 
 
 class DisableFtpPurgeUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
@@ -934,7 +934,7 @@ class TestDirectoryAndCompressedTypes(BaseUploadContentConfigurationTestCase):
     def test_tar_to_directory(self):
         dataset = self.dataset_populator.new_dataset(
             self.history_id,
-            "file://%s/testdir.tar" % TEST_DATA_DIRECTORY,
+            f"file://{TEST_DATA_DIRECTORY}/testdir.tar",
             file_type="tar",
             auto_decompress=False,
             wait=True,

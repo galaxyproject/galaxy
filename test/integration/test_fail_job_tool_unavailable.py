@@ -56,7 +56,7 @@ steps:
         time.sleep(5)
         self._app.toolbox.remove_tool_by_id("cat1")
         self.dataset_populator.wait_for_history(self.history_id, assert_ok=False)
-        state_details = self.galaxy_interactor.get("histories/%s" % self.history_id).json()["state_details"]
+        state_details = self.galaxy_interactor.get(f"histories/{self.history_id}").json()["state_details"]
         assert state_details["running"] == 0
         assert state_details["ok"] == 1
         assert state_details["error"] == 1
@@ -64,5 +64,5 @@ steps:
             history_id=self.history_id, assert_ok=False, details=True
         )
         assert failed_hda["state"] == "error"
-        job = self.galaxy_interactor.get("jobs/%s" % failed_hda["creating_job"]).json()
+        job = self.galaxy_interactor.get("jobs/{}".format(failed_hda["creating_job"])).json()
         assert job["state"] == "error"

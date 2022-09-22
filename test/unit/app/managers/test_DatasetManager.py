@@ -187,21 +187,18 @@ class DatasetManagerTestCase(BaseTestCase):
         assert not self.dataset_manager.permissions.access.is_permitted(dataset, None)
 
 
-# =============================================================================
-class DatasetRBACPermissionsTestCase(BaseTestCase):
-    def set_up_managers(self):
-        super().set_up_managers()
-        self.dataset_manager = DatasetManager(self.app)
-
-    # def test_manage( self ):
-    #     self.log("should be able to create a new Dataset")
-    #     dataset1 = self.dataset_manager.create()
-    #     assert isinstance(dataset1, model.Dataset)
-    #     assert dataset1 == self.app.model.context.query(model.Dataset).get(dataset1.id)
-    #
+# class DatasetRBACPermissionsTestCase(BaseTestCase):
+#     def set_up_managers(self):
+#         super().set_up_managers()
+#         self.dataset_manager = DatasetManager(self.app)
+#
+#     def test_manage( self ):
+#         self.log("should be able to create a new Dataset")
+#         dataset1 = self.dataset_manager.create()
+#         assert isinstance(dataset1, model.Dataset)
+#         assert dataset1 == self.app.model.context.query(model.Dataset).get(dataset1.id)
 
 
-# =============================================================================
 # web.url_for doesn't work well in the framework
 def testable_url_for(*a, **k):
     return f"(fake url): {a}, {k}"

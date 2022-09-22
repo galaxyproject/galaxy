@@ -280,7 +280,7 @@ invocation_time(invocation_id=1)
         invocation = self._new_invocation()
         self.app.workflow_manager.get_invocation.side_effect = [invocation]  # type: ignore[attr-defined,union-attr]
         result = self._to_basic(example)
-        assert "\n    %s" % invocation.create_time.isoformat() in result
+        assert f"\n    {invocation.create_time.isoformat()}" in result
 
     def test_job_parameters(self):
         job = model.Job()

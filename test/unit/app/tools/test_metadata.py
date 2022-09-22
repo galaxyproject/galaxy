@@ -88,8 +88,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
         }
         command = self.metadata_command(output_datasets)
         self._write_galaxy_json(
-            """{"type": "dataset", "dataset_id": "%s", "name": "my dynamic name", "ext": "fasta", "info": "my dynamic info"}"""
-            % output_dataset.dataset.id
+            f"""{{"type": "dataset", "dataset_id": "{output_dataset.dataset.id}", "name": "my dynamic name", "ext": "fasta", "info": "my dynamic info"}}"""
         )
         self._write_output_dataset_contents(output_dataset, ">seq1\nGCTGCATG\n")
         self._write_job_files()
@@ -127,8 +126,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
         }
         command = self.metadata_command(output_datasets)
         self._write_galaxy_json(
-            """{"type": "dataset", "dataset_id": "%s", "name": "my dynamic name", "ext": "fasta", "info": "my dynamic info", "metadata": {"sequences": 42}}"""
-            % output_dataset.dataset.id
+            f"""{{"type": "dataset", "dataset_id": "{output_dataset.dataset.id}", "name": "my dynamic name", "ext": "fasta", "info": "my dynamic info", "metadata": {{"sequences": 42}}}}"""
         )
         self._write_output_dataset_contents(output_dataset, ">seq1\nGCTGCATG\n")
         self._write_job_files()

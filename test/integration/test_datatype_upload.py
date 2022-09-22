@@ -16,9 +16,9 @@ from galaxy_test.driver import integration_util
 from .test_upload_configuration_options import BaseUploadContentConfigurationInstance
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
-TEST_FILE_DIR = "%s/../../lib/galaxy/datatypes/test" % SCRIPT_DIRECTORY
+TEST_FILE_DIR = f"{SCRIPT_DIRECTORY}/../../lib/galaxy/datatypes/test"
 TestData = collections.namedtuple("TestData", "path datatype uploadable")
-GALAXY_ROOT = os.path.abspath("%s/../../" % SCRIPT_DIRECTORY)
+GALAXY_ROOT = os.path.abspath(f"{SCRIPT_DIRECTORY}/../../")
 DATATYPES_CONFIG = os.path.join(GALAXY_ROOT, "lib/galaxy/config/sample/datatypes_conf.xml.sample")
 PARENT_SNIFFER_MAP = {"fastqsolexa": "fastq"}
 
@@ -29,7 +29,7 @@ def find_datatype(registry, filename):
     for extension in sorted_extensions:
         if filename.endswith(extension) or filename.startswith(extension):
             return registry.datatypes_by_extension[extension]
-    raise Exception("Couldn't guess datatype for file '%s'" % filename)
+    raise Exception(f"Couldn't guess datatype for file '{filename}'")
 
 
 def collect_test_data(registry):
