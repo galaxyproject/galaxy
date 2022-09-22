@@ -54,7 +54,7 @@ if (props.size) {
 <style lang="scss" scoped>
 @import "scss/theme/blue.scss";
 
-.heading::v-deep > svg {
+.heading:deep(svg) {
     font-size: 0.75em;
 }
 
@@ -62,7 +62,7 @@ if (props.size) {
 h1, h2, h3, h4, h5, h6 {
     display: flex;
     align-items: center;
-    gap: 0.25em;
+    gap: 0.4em;
 
     &.inline {
         display: inline-flex;
