@@ -106,11 +106,14 @@ const showVersions = computed(() => props.options.versions?.length > 1);
             </div>
         </div>
 
-        <FormMessage variant="danger" :message="errorText" :persistent="true" />
-        <FormMessage :variant="props.messageVariant" :message="props.messageText" />
-        <slot name="body" />
+        <div id="tool-card-body">
+            <FormMessage variant="danger" :message="errorText" :persistent="true" />
+            <FormMessage :variant="props.messageVariant" :message="props.messageText" />
+            <slot name="body" />
+            <div v-if="props.disabled" class="portlet-backdrop" />
+        </div>
+
         <slot name="buttons" />
-        <div v-if="props.disabled" class="portlet-backdrop" />
 
         <div>
             <ToolCardSection title="Help">

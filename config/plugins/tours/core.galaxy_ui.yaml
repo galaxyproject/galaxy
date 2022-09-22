@@ -71,7 +71,7 @@ steps:
       intro: "Your tool is loaded into the main Galaxy page and ready for use."
 
     - title: "Tool parameters"
-      element: '.center-panel .portlet-content'
+      element: '.center-panel #tool-card-body'
       intro: "Here you can choose your tool parameters. Select your input dataset from your history and specify parameters for your analysis."
 
     - title: "Tool help"
