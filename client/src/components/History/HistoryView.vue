@@ -31,13 +31,11 @@
                     v-else
                     v-on="handlers"
                     :history="history"
+                    :writable="user.id == history.user_id"
                     :show-controls="false"
                     @view-collection="onViewCollection" />
                 <CopyModal id="copy-history-modal" :history="history" />
             </div>
-            <b-alert v-else class="m-2" variant="info" show>
-                <LoadingSpan message="Loading History" />
-            </b-alert>
         </UserHistories>
     </CurrentUser>
 </template>
@@ -46,14 +44,12 @@
 import { mapGetters } from "vuex";
 import CurrentUser from "components/providers/CurrentUser";
 import UserHistories from "components/providers/UserHistories";
-import LoadingSpan from "components/LoadingSpan";
 import CollectionPanel from "./CurrentCollection/CollectionPanel";
 import HistoryPanel from "./CurrentHistory/HistoryPanel";
 import CopyModal from "./Modals/CopyModal";
 
 export default {
     components: {
-        LoadingSpan,
         HistoryPanel,
         CollectionPanel,
         CurrentUser,

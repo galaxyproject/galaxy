@@ -26,7 +26,7 @@
 import Vue from "vue";
 import _l from "utils/localization";
 import BootstrapVue from "bootstrap-vue";
-import { RULES, MAPPING_TARGETS } from "mvc/rules/rule-definitions";
+import { RULES, MAPPING_TARGETS } from "./rule-definitions";
 import UtcDate from "components/UtcDate";
 
 Vue.use(BootstrapVue);

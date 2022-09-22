@@ -6,6 +6,7 @@ import { getGalaxyInstance } from "app";
 // these modules are mounted below the masthead.
 import Analysis from "entry/analysis/modules/Analysis";
 import Home from "entry/analysis/modules/Home";
+import CenterFrame from "entry/analysis/modules/CenterFrame";
 import Login from "entry/analysis/modules/Login";
 import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
 
@@ -59,7 +60,7 @@ Vue.use(VueRouter);
 
 // patches $router.push() to trigger an event and hide duplication warnings
 const originalPush = VueRouter.prototype.push;
-VueRouter.prototype.push = function push(location) {
+VueRouter.prototype.push = function push(location, windowManagerTitle = null) {
     // verify if confirmation is required
     console.debug("VueRouter - push: ", location);
     if (this.confirmation) {
@@ -68,6 +69,12 @@ VueRouter.prototype.push = function push(location) {
         } else {
             return;
         }
+    }
+    // show location in window manager
+    const Galaxy = getGalaxyInstance();
+    if (windowManagerTitle && Galaxy.frame && Galaxy.frame.active) {
+        Galaxy.frame.add({ title: windowManagerTitle, url: location });
+        return;
     }
     // always emit event when a route is pushed
     this.app.$emit("router-push");
@@ -113,12 +120,12 @@ export function getRouter(Galaxy) {
                         redirect: redirectAnon(),
                     },
                     {
-                        path: "collection/edit/:collection_id",
+                        path: "collection/:collection_id/edit",
                         component: CollectionEditView,
                         props: true,
                     },
                     {
-                        path: "datasets/edit/:datasetId",
+                        path: "datasets/:datasetId/edit",
                         component: DatasetAttributes,
                         props: true,
                     },
@@ -130,6 +137,13 @@ export function getRouter(Galaxy) {
                         path: "datasets/:datasetId/details",
                         component: DatasetDetails,
                         props: true,
+                    },
+                    {
+                        path: "datasets/:datasetId/preview",
+                        component: CenterFrame,
+                        props: (route) => ({
+                            src: `datasets/${route.params.datasetId}/display/?preview=True`,
+                        }),
                     },
                     {
                         // legacy route, potentially used by 3rd parties

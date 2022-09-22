@@ -35,7 +35,10 @@
                         :filter-text.sync="filterText"
                         :show-advanced.sync="showAdvanced" />
                     <section v-if="!showAdvanced">
-                        <HistoryDetails :history="history" @update:history="$emit('updateHistory', $event)" />
+                        <HistoryDetails
+                            :history="history"
+                            :writeable="writable"
+                            @update:history="$emit('updateHistory', $event)" />
                         <HistoryMessages :history="history" />
                         <HistoryCounter
                             v-if="showControls"
@@ -108,6 +111,7 @@
                                         is-history-item
                                         :item="item"
                                         :name="item.name"
+                                        :writable="writable"
                                         :expand-dataset="isExpanded(item)"
                                         :is-dataset="isDataset(item)"
                                         :highlight="getHighlight(item)"
@@ -177,6 +181,7 @@ export default {
         listOffset: { type: Number, default: 0 },
         history: { type: Object, required: true },
         filter: { type: String, default: "" },
+        writable: { type: Boolean, default: true },
         showControls: { type: Boolean, default: true },
     },
     data() {

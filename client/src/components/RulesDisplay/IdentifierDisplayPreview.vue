@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import RuleDefs from "mvc/rules/rule-definitions";
+import RuleDefs from "components/RuleBuilder/rule-definitions";
 
 export default {
     props: {

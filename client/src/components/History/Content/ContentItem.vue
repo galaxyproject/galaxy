@@ -52,6 +52,7 @@
                 </span>
                 <ContentOptions
                     v-else
+                    :writable="writable"
                     :is-dataset="isDataset"
                     :is-deleted="item.deleted"
                     :is-history-item="isHistoryItem"
@@ -85,6 +86,7 @@
             <DatasetDetails
                 v-if="expandDataset"
                 :dataset="item"
+                :writable="writable"
                 :show-highlight="isHistoryItem"
                 :item-urls="itemUrls"
                 @edit="onEdit"
@@ -94,7 +96,6 @@
 </template>
 
 <script>
-import { iframeAdd } from "components/plugins/legacyNavigation";
 import { StatelessTags } from "components/Tags";
 import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./model/states";
 import CollectionDescription from "./Collection/CollectionDescription";
@@ -117,6 +118,7 @@ export default {
         FontAwesomeIcon,
     },
     props: {
+        writable: { type: Boolean, default: true },
         expandDataset: { type: Boolean, required: true },
         highlight: { type: String, default: null },
         id: { type: Number, required: true },
@@ -169,7 +171,7 @@ export default {
             return this.item.tags;
         },
         tagsDisabled() {
-            return !this.expandDataset || !this.isHistoryItem;
+            return !this.writable || !this.expandDataset || !this.isHistoryItem;
         },
         isCollection() {
             return "collection_type" in this.item;
@@ -179,12 +181,12 @@ export default {
             const id = this.item.id;
             if (this.isCollection) {
                 return {
-                    edit: `/collection/edit/${id}`,
+                    edit: `/collection/${id}/edit`,
                 };
             }
             return {
-                display: `/datasets/${id}/display/?preview=True`,
-                edit: `/datasets/edit/${id}`,
+                display: `/datasets/${id}/preview`,
+                edit: `/datasets/${id}/edit`,
                 showDetails: `/datasets/${id}/details`,
                 reportError: `/datasets/${id}/error`,
                 rerun: `/tool_runner/rerun?id=${id}`,
@@ -201,7 +203,7 @@ export default {
             }
         },
         onDisplay() {
-            iframeAdd({ path: this.itemUrls.display, title: this.name });
+            this.$router.push(this.itemUrls.display, this.name);
         },
         onDragStart(evt) {
             evt.dataTransfer.dropEffect = "move";

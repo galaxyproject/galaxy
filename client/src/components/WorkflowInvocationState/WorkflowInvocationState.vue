@@ -36,7 +36,7 @@ import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
 import WorkflowInvocationDetails from "./WorkflowInvocationDetails.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
 
-import JOB_STATES_MODEL from "mvc/history/job-states-model";
+import JOB_STATES_MODEL from "utils/job-states-model";
 import mixin from "components/JobStates/mixin";
 import { mapGetters, mapActions } from "vuex";
 
