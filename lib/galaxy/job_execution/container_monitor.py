@@ -26,6 +26,10 @@ def parse_ports(container_name, connection_configuration):
                 return ports_raw
 
 
+def get_ip_tailscale():
+    return subprocess.check_output(["tailscale", "ip", "-4"], text=True).strip()
+
+
 def main():
     if not os.path.exists("configs"):
         # on Pulsar and in tool working directory instead of job directory
@@ -37,9 +41,17 @@ def main():
     container_type = container_config["container_type"]
     container_name = container_config["container_name"]
     callback_url = container_config.get("callback_url")
+    get_ip_method = container_config.get("get_ip_method")
     connection_configuration = container_config["connection_configuration"]
     if container_type != "docker":
         raise Exception(f"Monitoring container type [{container_type}], not yet implemented.")
+
+    if get_ip_method == "tailscale":
+        _get_ip = get_ip_tailscale
+    elif get_ip_method is not None:
+        raise Exception(f"get_ip method [{get_ip_method}], not yet implemented.")
+    else:
+        _get_ip = get_ip
 
     ports_raw = None
     exc_traceback = ""
@@ -47,7 +59,7 @@ def main():
         try:
             ports_raw = parse_ports(container_name, connection_configuration)
             if ports_raw is not None:
-                host_ip = get_ip()
+                host_ip = _get_ip()
                 ports = docker_util.parse_port_text(ports_raw)
                 if host_ip is not None:
                     for key in ports:
