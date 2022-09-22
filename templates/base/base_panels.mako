@@ -20,7 +20,6 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    <!--- base/base_panels.mako stylesheets() -->
     ${h.css(
         'bootstrap-tour',
     )}
@@ -32,7 +31,6 @@
 ## Default javascripts
 ## TODO: remove when all libs are required directly in modules
 <%def name="javascripts()">
-    <!--- base/base_panels.mako javascripts() -->
     ${ h.dist_js(
         'libs.bundled',
         'generic.bundled'
@@ -40,14 +38,11 @@
 </%def>
 
 <%def name="javascript_app()">
-    <!--- base/base_panels.mako javascript_app() -->
     ${ galaxy_client.load() }
 </%def>
 
 ## Default late-load javascripts
 <%def name="late_javascripts()">
-    <!--- base/base_panels.mako late_javascripts() -->
-
     %if t.webapp.name == 'galaxy' and app.config.ga_code:
         ${galaxy_client.config_google_analytics(app.config.ga_code)}
     %endif
@@ -99,7 +94,6 @@
 
 ## Document
 <html>
-    <!--base_panels.mako-->
     ${self.init()}
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
