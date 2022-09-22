@@ -42,7 +42,7 @@ const mutations = {
         const newMap = enrichedHistories.reduce((acc, h) => ({ ...acc, [h.id]: h }), {});
         // Ensure that already stored histories, which are not available in the incoming array,
         // are not lost. This happens e.g. with shared histories since they have different owners.
-        state.histories.forEach((history) => {
+        Object.values(state.histories).forEach((history) => {
             const historyId = history.id;
             if (!newMap[historyId]) {
                 newMap[historyId] = history;

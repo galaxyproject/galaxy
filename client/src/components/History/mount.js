@@ -12,7 +12,7 @@ Vue.use(VueRouter);
 export const mountHistory = (el, propsData) => {
     const component = Vue.extend(HistoryView);
     const router = new VueRouter();
-    router.push = function (url) {
+    router.push = (url) => {
         window.location.href = safePath(url);
     };
     return new component({
