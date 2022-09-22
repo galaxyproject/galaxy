@@ -35,7 +35,8 @@ pre {
 .dropdown-menu {
     .dropdown-item {
         text-decoration: none;
-        .fa, .svg-inline--fa {
+        .fa,
+        .svg-inline--fa {
             @extend .fa-fw;
             @extend .mr-2;
         }
