@@ -73,11 +73,8 @@ VueRouter.prototype.push = function push(location, windowManagerTitle = null) {
     // show location in window manager
     const Galaxy = getGalaxyInstance();
     if (windowManagerTitle && Galaxy.frame && Galaxy.frame.active) {
-        Galaxy.frame.add({
-            title: "Data",
-            url: location,
-        });
-        return true;
+        Galaxy.frame.add({ title: windowManagerTitle, url: location });
+        return;
     }
     // always emit event when a route is pushed
     this.app.$emit("router-push");
