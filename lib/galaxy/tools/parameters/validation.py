@@ -963,11 +963,3 @@ validator_types = dict(
 
 deprecated_validator_types = dict(dataset_metadata_in_file=MetadataInFileColumnValidator)
 validator_types.update(deprecated_validator_types)
-
-
-def get_suite():
-    """Get unittest suite for this module"""
-    import doctest
-    import sys
-
-    return doctest.DocTestSuite(sys.modules[__name__])

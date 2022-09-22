@@ -1,4 +1,3 @@
-import unittest
 from unittest import mock
 
 from galaxy.managers import (
@@ -88,8 +87,6 @@ class HDCASerializerTestCase(HDCATestCase):
                 or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))
             ):
                 self.fail(f"no serializer for: {key} ({instantiated_attribute})")
-        else:
-            self.assertTrue(True, "all serializable keys have a serializer")
 
     def test_views_and_keys(self):
         serializer = self.hdca_serializer
@@ -104,9 +101,3 @@ class HDCASerializerTestCase(HDCATestCase):
         self.log("should be able to use keys on their own")
         serialized = serializer.serialize_to_view(item, keys=only_keys)
         self.assertKeys(serialized, only_keys)
-
-
-# =============================================================================
-if __name__ == "__main__":
-    # or more generally, nosetests test_resourcemanagers.py -s -v
-    unittest.main()

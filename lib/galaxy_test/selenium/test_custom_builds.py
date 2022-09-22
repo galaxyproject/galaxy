@@ -27,9 +27,9 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
         actual_builds = self.get_custom_builds()
         intersection = set(actual_builds).intersection(expected_builds)
         if present:
-            self.assertEqual(intersection, set(expected_builds))
+            assert intersection == set(expected_builds)
         else:
-            self.assertEqual(intersection, set())
+            assert intersection == set()
 
     def _login(self):
         self.home()  # ensure Galaxy is loaded

@@ -244,7 +244,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
     @retry_assertion_during_transitions
     def assert_name_changed(self):
         name = self.history_panel_name()
-        self.assertEqual(name, NEW_HISTORY_NAME)
+        assert name == NEW_HISTORY_NAME
 
     def _refresh(self):
         if self.is_beta_history():

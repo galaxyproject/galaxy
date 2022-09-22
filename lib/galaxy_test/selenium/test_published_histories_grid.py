@@ -105,7 +105,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
             if tag_button_text == target_tag_button_text:
                 break
 
-        self.assertEqual(tag_button_text, target_tag_button_text)
+        assert tag_button_text == target_tag_button_text
         tag_button.click()
 
         self.assert_grid_histories_are([self.history1_name, self.history3_name], False)
@@ -139,16 +139,16 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         if not sort_matters:
             actual_histories = set(actual_histories)
             expected_histories = set(expected_histories)
-        self.assertEqual(actual_histories, expected_histories)
+        assert actual_histories == expected_histories
 
     @retry_assertion_during_transitions
     def assert_histories_in_grid(self, expected_histories, present=True):
         actual_histories = self.get_histories()
         intersection = set(actual_histories).intersection(expected_histories)
         if present:
-            self.assertEqual(intersection, set(expected_histories))
+            assert intersection == set(expected_histories)
         else:
-            self.assertEqual(intersection, set())
+            assert intersection == set()
 
     def set_filter(self, selector, value):
         filter_input = self.wait_for_selector_clickable(selector)

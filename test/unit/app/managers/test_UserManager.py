@@ -3,7 +3,6 @@ User Manager testing.
 
 Executable directly using: python -m test.unit.managers.test_UserManager
 """
-import unittest
 from datetime import datetime
 
 from sqlalchemy import desc
@@ -34,53 +33,49 @@ lowercase_email_user = dict(email="user5@user5.user5", username="user5", passwor
 class UserManagerTestCase(BaseTestCase):
     def test_framework(self):
         self.log("(for testing) should have admin_user, and admin_user is current")
-        self.assertEqual(self.trans.user, self.admin_user)
+        assert self.trans.user == self.admin_user
 
     def test_base(self):
         self.log("should be able to create a user")
         user2 = self.user_manager.create(**user2_data)
-        self.assertIsInstance(user2, model.User)
-        self.assertIsNotNone(user2.id)
-        self.assertEqual(user2.email, user2_data["email"])
-        self.assertTrue(check_password(default_password, user2.password))
+        assert isinstance(user2, model.User)
+        assert user2.id is not None
+        assert user2.email == user2_data["email"]
+        assert check_password(default_password, user2.password)
 
         user3 = self.user_manager.create(**user3_data)
 
         self.log("should be able to query")
         users = self.trans.sa_session.query(model.User).all()
-        self.assertEqual(self.user_manager.list(), users)
+        assert self.user_manager.list() == users
 
-        self.assertEqual(self.user_manager.by_id(user2.id), user2)
-        self.assertEqual(self.user_manager.by_ids([user3.id, user2.id]), [user3, user2])
+        assert self.user_manager.by_id(user2.id) == user2
+        assert self.user_manager.by_ids([user3.id, user2.id]) == [user3, user2]
 
         self.log("should be able to limit and offset")
-        self.assertEqual(self.user_manager.list(limit=1), users[0:1])
-        self.assertEqual(self.user_manager.list(offset=1), users[1:])
-        self.assertEqual(self.user_manager.list(limit=1, offset=1), users[1:2])
+        assert self.user_manager.list(limit=1) == users[0:1]
+        assert self.user_manager.list(offset=1) == users[1:]
+        assert self.user_manager.list(limit=1, offset=1) == users[1:2]
 
-        self.assertEqual(self.user_manager.list(limit=0), [])
-        self.assertEqual(self.user_manager.list(offset=3), [])
+        assert self.user_manager.list(limit=0) == []
+        assert self.user_manager.list(offset=3) == []
 
         self.log("should be able to order")
-        self.assertEqual(
-            self.user_manager.list(order_by=(desc(model.User.create_time))), [user3, user2, self.admin_user]
-        )
+        assert self.user_manager.list(order_by=(desc(model.User.create_time))) == [user3, user2, self.admin_user]
 
     def test_invalid_create(self):
         self.user_manager.create(**user2_data)
 
         self.log("emails must be unique")
-        self.assertRaises(
-            exceptions.Conflict,
-            self.user_manager.create,
-            **dict(email="user2@user2.user2", username="user2a", password=default_password),
-        )
+        with self.assertRaises(exceptions.Conflict):
+            self.user_manager.create(
+                **dict(email="user2@user2.user2", username="user2a", password=default_password),
+            )
         self.log("usernames must be unique")
-        self.assertRaises(
-            exceptions.Conflict,
-            self.user_manager.create,
-            **dict(email="user2a@user2.user2", username="user2", password=default_password),
-        )
+        with self.assertRaises(exceptions.Conflict):
+            self.user_manager.create(
+                **dict(email="user2a@user2.user2", username="user2", password=default_password),
+            )
 
     def test_trimming(self):
         self.log("emails must be trimmed")
@@ -91,8 +86,8 @@ class UserManagerTestCase(BaseTestCase):
             password=default_password,
             confirm=default_password,
         )
-        self.assertIsNone(message)
-        self.assertEqual(user2b.email, "user2b@user2.user2")
+        assert message is None
+        assert user2b.email == "user2b@user2.user2"
         self.log("usernames must be trimmed")
         user2c, message = self.user_manager.register(
             self.trans,
@@ -101,24 +96,25 @@ class UserManagerTestCase(BaseTestCase):
             password=default_password,
             confirm=default_password,
         )
-        self.assertIsNone(message)
-        self.assertEqual(user2c.username, "user2c")
+        assert message is None
+        assert user2c.username == "user2c"
 
     def test_email_queries(self):
         user2 = self.user_manager.create(**user2_data)
 
         self.log("should be able to query by email")
-        self.assertEqual(self.user_manager.by_email(user2_data["email"]), user2)
+        assert self.user_manager.by_email(user2_data["email"]) == user2
 
     def test_admin(self):
         user2 = self.user_manager.create(**user2_data)
 
         self.log("should be able to test whether admin")
-        self.assertTrue(self.user_manager.is_admin(self.admin_user))
-        self.assertFalse(self.user_manager.is_admin(user2))
-        self.assertEqual(self.user_manager.admins(), [self.admin_user])
-        self.assertRaises(exceptions.AdminRequiredException, self.user_manager.error_unless_admin, user2)
-        self.assertEqual(self.user_manager.error_unless_admin(self.admin_user), self.admin_user)
+        assert self.user_manager.is_admin(self.admin_user)
+        assert not self.user_manager.is_admin(user2)
+        assert self.user_manager.admins() == [self.admin_user]
+        with self.assertRaises(exceptions.AdminRequiredException):
+            self.user_manager.error_unless_admin(user2)
+        assert self.user_manager.error_unless_admin(self.admin_user) == self.admin_user
 
     def test_anonymous(self):
         anon = None
@@ -126,69 +122,69 @@ class UserManagerTestCase(BaseTestCase):
 
         self.log("should be able to tell if a user is anonymous")
         self.assertRaises(exceptions.AuthenticationFailed, self.user_manager.error_if_anonymous, anon)
-        self.assertEqual(self.user_manager.error_if_anonymous(user2), user2)
+        assert self.user_manager.error_if_anonymous(user2) == user2
 
     def test_current(self):
         user2 = self.user_manager.create(**user2_data)
 
         self.log("should be able to tell if a user is the current (trans) user")
-        self.assertEqual(self.user_manager.current_user(self.trans), self.admin_user)
-        self.assertNotEqual(self.user_manager.current_user(self.trans), user2)
+        assert self.user_manager.current_user(self.trans) == self.admin_user
+        assert self.user_manager.current_user(self.trans) != user2
 
     def test_change_password(self):
         self.log("should be able to change password")
         user2 = self.user_manager.create(**user2_data)
         encoded_id = self.app.security.encode_id(user2.id)
-        self.assertIsInstance(user2, model.User)
-        self.assertIsNotNone(user2.id)
-        self.assertEqual(user2.email, user2_data["email"])
-        self.assertTrue(check_password(default_password, user2.password))
+        assert isinstance(user2, model.User)
+        assert user2.id is not None
+        assert user2.email == user2_data["email"]
+        assert check_password(default_password, user2.password)
         user, message = self.user_manager.change_password(self.trans)
-        self.assertEqual(message, "Please provide a token or a user and password.")
+        assert message == "Please provide a token or a user and password."
         user, message = self.user_manager.change_password(self.trans, id=encoded_id, current=changed_password)
-        self.assertEqual(message, "Invalid current password.")
+        assert message == "Invalid current password."
         user, message = self.user_manager.change_password(
             self.trans, id=encoded_id, current=default_password, password=changed_password, confirm=default_password
         )
-        self.assertEqual(message, "Passwords do not match.")
+        assert message == "Passwords do not match."
         user, message = self.user_manager.change_password(
             self.trans, id=encoded_id, current=default_password, password=default_password, confirm=changed_password
         )
-        self.assertEqual(message, "Passwords do not match.")
+        assert message == "Passwords do not match."
         user, message = self.user_manager.change_password(
             self.trans, id=encoded_id, current=default_password, password=changed_password, confirm=changed_password
         )
-        self.assertFalse(check_password(default_password, user2.password))
-        self.assertTrue(check_password(changed_password, user2.password))
+        assert not check_password(default_password, user2.password)
+        assert check_password(changed_password, user2.password)
         reset_user, prt = self.user_manager.get_reset_token(self.trans, user2.email)
         user, message = self.user_manager.change_password(
             self.trans, token=prt.token, password=default_password, confirm=default_password
         )
-        self.assertTrue(check_password(default_password, user2.password))
-        self.assertFalse(check_password(changed_password, user2.password))
+        assert check_password(default_password, user2.password)
+        assert not check_password(changed_password, user2.password)
         prt.expiration_time = datetime.utcnow()
         user, message = self.user_manager.change_password(
             self.trans, token=prt.token, password=default_password, confirm=default_password
         )
-        self.assertEqual(message, "Invalid or expired password reset token, please request a new one.")
+        assert message == "Invalid or expired password reset token, please request a new one."
 
     def test_login(self):
         self.log("should be able to validate user credentials")
         user2 = self.user_manager.create(**user2_data)
         self.app.security.encode_id(user2.id)
-        self.assertIsInstance(user2, model.User)
-        self.assertIsNotNone(user2.id)
-        self.assertEqual(user2.email, user2_data["email"])
-        self.assertTrue(check_password(default_password, user2.password))
+        assert isinstance(user2, model.User)
+        assert user2.id is not None
+        assert user2.email == user2_data["email"]
+        assert check_password(default_password, user2.password)
 
     def test_empty_password(self):
         self.log("should be able to create a user with no password")
         user = self.user_manager.create(email="user@nopassword.com", username="nopassword")
-        self.assertIsNotNone(user.id)
-        self.assertIsNotNone(user.password)
+        assert user.id is not None
+        assert user.password is not None
         # should not be able to login with a null or empty password
-        self.assertFalse(check_password("", user.password))
-        self.assertFalse(check_password(None, user.password))
+        assert not check_password("", user.password)
+        assert not check_password(None, user.password)
 
     def test_get_user_by_identity(self):
         # return None if username/email not found
@@ -246,8 +242,6 @@ class UserSerializerTestCase(BaseTestCase):
                 or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))
             ):
                 self.fail(f"no serializer for: {key} ({instantiated_attribute})")
-        else:
-            self.assertTrue(True, "all serializable keys have a serializer")
 
     def test_views_and_keys(self):
         user = self.user_manager.create(**user2_data)
@@ -270,15 +264,15 @@ class UserSerializerTestCase(BaseTestCase):
         self.assertEncodedId(serialized["id"])
         self.assertDate(serialized["create_time"])
         self.assertDate(serialized["update_time"])
-        self.assertIsInstance(serialized["deleted"], bool)
-        self.assertIsInstance(serialized["purged"], bool)
+        assert isinstance(serialized["deleted"], bool)
+        assert isinstance(serialized["purged"], bool)
 
-        # self.assertIsInstance( serialized[ 'active' ], bool )
-        self.assertIsInstance(serialized["is_admin"], bool)
-        self.assertIsInstance(serialized["total_disk_usage"], float)
-        self.assertIsInstance(serialized["nice_total_disk_usage"], str)
-        self.assertIsInstance(serialized["quota_percent"], (type(None), float))
-        self.assertIsInstance(serialized["tags_used"], list)
+        # assert isinstance(serialized['active'], bool)
+        assert isinstance(serialized["is_admin"], bool)
+        assert isinstance(serialized["total_disk_usage"], float)
+        assert isinstance(serialized["nice_total_disk_usage"], str)
+        assert isinstance(serialized["quota_percent"], (type(None), float))
+        assert isinstance(serialized["tags_used"], list)
 
         self.log("serialized should jsonify well")
         self.assertIsJsonifyable(serialized)
@@ -300,11 +294,11 @@ class CurrentUserSerializerTestCase(BaseTestCase):
         self.assertKeys(serialized, ["id", "total_disk_usage", "nice_total_disk_usage", "quota_percent"])
 
         self.log("anonymous's id should be None")
-        self.assertEqual(serialized["id"], None)
+        assert serialized["id"] is None
         self.log("everything serialized should be of the proper type")
-        self.assertIsInstance(serialized["total_disk_usage"], float)
-        self.assertIsInstance(serialized["nice_total_disk_usage"], str)
-        self.assertIsInstance(serialized["quota_percent"], (type(None), float))
+        assert isinstance(serialized["total_disk_usage"], float)
+        assert isinstance(serialized["nice_total_disk_usage"], str)
+        assert isinstance(serialized["quota_percent"], (type(None), float))
 
         self.log("serialized should jsonify well")
         self.assertIsJsonifyable(serialized)
@@ -320,7 +314,6 @@ class UserDeserializerTestCase(BaseTestCase):
         try:
             fn(*args, **kwargs)
         except exception_class as exception:
-            self.assertTrue(True)
             return exception
         raise AssertionError(f"{exception_class.__name__} not raised")
 
@@ -338,29 +331,27 @@ class UserDeserializerTestCase(BaseTestCase):
             {"username": ""},
             trans=self.trans,
         )
-        self.assertTrue("Public name cannot be empty" in str(exception))
-        self.assertRaises(
-            base_manager.ModelDeserializingError,
-            self.deserializer.deserialize,
-            user,
-            {"username": "f,d,r,"},
-            trans=self.trans,
-        )
+        assert "Public name cannot be empty" in str(exception)
+        with self.assertRaises(base_manager.ModelDeserializingError):
+            self.deserializer.deserialize(
+                user,
+                {"username": "f,d,r,"},
+                trans=self.trans,
+            )
 
         self.log("usernames must be unique")
         self.user_manager.create(**user3_data)
-        self.assertRaises(
-            base_manager.ModelDeserializingError,
-            self.deserializer.deserialize,
-            user,
-            {"username": "user3"},
-            trans=self.trans,
-        )
+        with self.assertRaises(base_manager.ModelDeserializingError):
+            self.deserializer.deserialize(
+                user,
+                {"username": "user3"},
+                trans=self.trans,
+            )
 
         self.log("username should be updatable")
         new_name = "double-plus-good"
         self.deserializer.deserialize(user, {"username": new_name}, trans=self.trans)
-        self.assertEqual(self.user_manager.by_id(user.id).username, new_name)
+        assert self.user_manager.by_id(user.id).username == new_name
 
 
 # =============================================================================
@@ -380,8 +371,3 @@ class AdminUserFilterParserTestCase(BaseTestCase):
         self.assertORMFilter(self.filter_parser.parse_filter("active", "eq", True))
         self.assertORMFilter(self.filter_parser.parse_filter("disk_usage", "le", 500000.00))
         self.assertORMFilter(self.filter_parser.parse_filter("disk_usage", "ge", 500000.00))
-
-
-# =============================================================================
-if __name__ == "__main__":
-    unittest.main()
