@@ -1,4 +1,4 @@
-import RuleDefs from "mvc/rules/rule-definitions";
+import RuleDefs from "components/RuleBuilder/rule-definitions";
 import SPEC_TEST_CASES from "./rules_dsl_spec.yml";
 
 function applyRules(rules, data, sources) {

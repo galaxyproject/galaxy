@@ -112,7 +112,7 @@ import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
 import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
-import Webhooks from "mvc/webhooks";
+import Webhooks from "utils/webhooks";
 import { addFavorite, removeFavorite } from "components/Tool/services";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";

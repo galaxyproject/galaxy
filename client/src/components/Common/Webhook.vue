@@ -2,7 +2,7 @@
     <div id="webhook-view" ref="webhook" />
 </template>
 <script>
-import Webhooks from "mvc/webhooks";
+import Webhooks from "utils/webhooks";
 
 export default {
     props: {

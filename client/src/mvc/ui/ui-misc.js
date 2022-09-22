@@ -287,7 +287,6 @@ export default {
     RadioButton: Options.RadioButton,
     Checkbox: Options.Checkbox,
     Radio: Options.Radio,
-    Switch: Switch,
     Select: Select,
     NullableText: NullableText,
     TextSelect: TextSelect,

@@ -1,6 +1,6 @@
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
-import baseMVC from "mvc/base-mvc";
+import baseMVC from "./base-mvc";
 import _l from "utils/localization";
 
 var logNamespace = "user";
