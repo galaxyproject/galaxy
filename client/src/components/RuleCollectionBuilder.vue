@@ -574,7 +574,7 @@ import _l from "utils/localization";
 import { refreshContentsWrapper } from "utils/data";
 import HotTable from "@handsontable/vue";
 import UploadUtils from "mvc/upload/upload-utils";
-import JobStatesModel from "mvc/history/job-states-model";
+import JobStatesModel from "utils/job-states-model";
 import RuleDefs from "mvc/rules/rule-definitions";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
