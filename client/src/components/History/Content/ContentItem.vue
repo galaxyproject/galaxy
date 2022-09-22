@@ -181,7 +181,7 @@ export default {
             const id = this.item.id;
             if (this.isCollection) {
                 return {
-                    edit: `/collection/edit/${id}`,
+                    edit: `/collection/${id}/edit`,
                 };
             }
             return {
