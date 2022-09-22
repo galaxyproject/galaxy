@@ -25,7 +25,7 @@ class ToolShedRepoBaseTestCase(BaseToolBoxTestCase):
         self._init_dynamic_tool_conf()
         self.app.config.tool_configs = self.config_files
         self.app.config.manage_dependency_relationships = False
-        self.app.toolbox = self.toolbox
+        self.app._toolbox = self.toolbox
 
     def _setup_repository(self):
         return self._repo_install(changeset="1", config_filename=self.config_files[0])

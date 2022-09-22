@@ -94,7 +94,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
     config: "MockAppConfig"
     amqp_type: str
     job_search: Optional[JobSearch] = None
-    toolbox: ToolBox
+    _toolbox: ToolBox
     tool_cache: ToolCache
     install_model: ModelMapping
     watchers: ConfigWatchers
@@ -110,6 +110,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
         super().__init__()
         config = config or MockAppConfig(**kwargs)
         GalaxyDataTestApp.__init__(self, config=config, **kwargs)
+        self.install_model = self.model
         self[BasicSharedApp] = cast(BasicSharedApp, self)
         self[MinimalManagerApp] = cast(MinimalManagerApp, self)  # type: ignore[type-abstract]
         self[StructuredApp] = cast(StructuredApp, self)  # type: ignore[type-abstract]
@@ -152,6 +153,10 @@ class MockApp(di.Container, GalaxyDataTestApp):
             return "/mock/url"
 
         self.url_for = url_for
+
+    @property
+    def toolbox(self) -> ToolBox:
+        return self._toolbox
 
     def wait_for_toolbox_reload(self, toolbox):
         # TODO: If the tpm test case passes, does the operation really

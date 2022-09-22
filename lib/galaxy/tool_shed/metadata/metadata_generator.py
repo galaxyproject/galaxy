@@ -8,13 +8,18 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Union,
 )
 
 from typing_extensions import Protocol
 
 from galaxy import util
 from galaxy.model.tool_shed_install import ToolShedRepository
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.structured_app import BasicSharedApp
+from galaxy.tool_shed.galaxy_install.client import (
+    DataManagerInterface,
+    InstallationTarget,
+)
 from galaxy.tool_shed.repository_type import (
     REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
     TOOL_DEPENDENCY_DEFINITION_FILENAME,
@@ -34,7 +39,6 @@ from galaxy.tool_shed.util.metadata_util import get_updated_changeset_revisions_
 from galaxy.tool_shed.util.repository_util import get_repository_for_dependency_relationship
 from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.tool_util.parser.interface import TestCollectionDef
-from galaxy.tools.data_manager.manager import DataManager
 from galaxy.tools.repositories import ValidationContext
 from galaxy.util.tool_shed.common_util import (
     generate_clone_url_for_installed_repository,
@@ -66,7 +70,7 @@ class RepositoryProtocol(Protocol):
 
 
 class BaseMetadataGenerator:
-    app: MinimalManagerApp
+    app: Union[BasicSharedApp, InstallationTarget]
     repository: Optional[RepositoryProtocol]
     invalid_file_tups: List[InvalidFileT]
     changeset_revision: Optional[str]
@@ -142,8 +146,8 @@ class BaseMetadataGenerator:
                 continue
             # FIXME: default behavior is to fall back to tool.name.
             data_manager_name = data_manager_elem.get("name", data_manager_id)
-            version = data_manager_elem.get("version", DataManager.DEFAULT_VERSION)
-            guid = self._generate_guid_for_object(DataManager.GUID_TYPE, data_manager_id, version)
+            version = data_manager_elem.get("version", DataManagerInterface.DEFAULT_VERSION)
+            guid = self._generate_guid_for_object(DataManagerInterface.GUID_TYPE, data_manager_id, version)
             data_tables = []
             if tool_file is None:
                 log.error(f'Data Manager entry is missing tool_file attribute in "{data_manager_config_filename}".')
@@ -699,7 +703,8 @@ class BaseMetadataGenerator:
             if original_valid_tool_dependencies_dict:
                 # We're generating metadata on an update pulled to a tool shed repository installed
                 # into a Galaxy instance, so handle changes to tool dependencies appropriately.
-                irm = self.app.installed_repository_manager
+                installation_target = cast(InstallationTarget, self.app)
+                irm = installation_target.installed_repository_manager
                 (
                     updated_tool_dependency_names,
                     deleted_tool_dependency_names,
@@ -851,7 +856,7 @@ class GalaxyMetadataGenerator(BaseMetadataGenerator):
 
     def __init__(
         self,
-        app: MinimalManagerApp,
+        app: InstallationTarget,
         repository=None,
         changeset_revision: Optional[str] = None,
         repository_clone_url: Optional[str] = None,
