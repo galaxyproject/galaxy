@@ -36,7 +36,7 @@ const mutations = {
         // histories, so we ensure that already available details are not getting lost.
         const enrichedHistories = newHistories.map((history) => {
             const historyState = state.histories[history.id] || {};
-            return Object.assign({}, history, historyState);
+            return Object.assign({}, historyState, history);
         });
         // Histories are provided as list but stored as map.
         const newMap = enrichedHistories.reduce((acc, h) => ({ ...acc, [h.id]: h }), {});
