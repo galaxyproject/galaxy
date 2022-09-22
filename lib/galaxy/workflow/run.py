@@ -1,11 +1,20 @@
 import logging
 import uuid
 from typing import (
+    Any,
+    Dict,
     List,
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
     Union,
 )
 
 from galaxy import model
+from galaxy.model import (
+    WorkflowInvocation,
+    WorkflowInvocationStep,
+)
 from galaxy.util import ExecutionTimer
 from galaxy.workflow import modules
 from galaxy.workflow.run_request import (
@@ -14,15 +23,39 @@ from galaxy.workflow.run_request import (
     WorkflowRunConfig,
 )
 
+if TYPE_CHECKING:
+    from galaxy.model import (
+        Workflow,
+        WorkflowOutput,
+        WorkflowStep,
+        WorkflowStepConnection,
+    )
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
+    from galaxy.work.context import WorkRequestContext
+    from galaxy.workflow.modules import WorkflowModuleInjector
+
 log = logging.getLogger(__name__)
+
+WorkflowOutputsType = Dict[int, Any]
 
 
 # Entry point for core workflow scheduler.
-def schedule(trans, workflow, workflow_run_config, workflow_invocation):
+def schedule(
+    trans: "WorkRequestContext",
+    workflow: "Workflow",
+    workflow_run_config: WorkflowRunConfig,
+    workflow_invocation: WorkflowInvocation,
+) -> Tuple[WorkflowOutputsType, WorkflowInvocation]:
     return __invoke(trans, workflow, workflow_run_config, workflow_invocation)
 
 
-def __invoke(trans, workflow, workflow_run_config, workflow_invocation=None, populate_state=False):
+def __invoke(
+    trans: "WorkRequestContext",
+    workflow: "Workflow",
+    workflow_run_config: WorkflowRunConfig,
+    workflow_invocation: Optional[WorkflowInvocation] = None,
+    populate_state: bool = False,
+) -> Tuple[WorkflowOutputsType, WorkflowInvocation]:
     """Run the supplied workflow in the supplied target_history."""
     if populate_state:
         modules.populate_module_and_state(
@@ -38,34 +71,35 @@ def __invoke(trans, workflow, workflow_run_config, workflow_invocation=None, pop
         workflow_run_config,
         workflow_invocation=workflow_invocation,
     )
+    workflow_invocation = invoker.workflow_invocation
     try:
         outputs = invoker.invoke()
     except modules.CancelWorkflowEvaluation:
-        if workflow_invocation:
-            if workflow_invocation.cancel():
-                trans.sa_session.add(workflow_invocation)
-        outputs = []
+        if workflow_invocation.cancel():
+            trans.sa_session.add(workflow_invocation)
+        outputs = {}
     except Exception:
         log.exception("Failed to execute scheduled workflow.")
-        if workflow_invocation:
-            # Running workflow invocation in background, just mark
-            # persistent workflow invocation as failed.
-            workflow_invocation.fail()
-            trans.sa_session.add(workflow_invocation)
-        else:
-            # Running new transient workflow invocation in legacy
-            # controller action - propage the exception up.
-            raise
-        outputs = []
+        # Running workflow invocation in background, just mark
+        # persistent workflow invocation as failed.
+        workflow_invocation.fail()
+        trans.sa_session.add(workflow_invocation)
+        outputs = {}
 
-    if workflow_invocation:
-        # Be sure to update state of workflow_invocation.
-        trans.sa_session.flush()
+    # Be sure to update state of workflow_invocation.
+    trans.sa_session.flush()
 
-    return outputs, invoker.workflow_invocation
+    return outputs, workflow_invocation
 
 
-def queue_invoke(trans, workflow, workflow_run_config, request_params=None, populate_state=True, flush=True):
+def queue_invoke(
+    trans: "GalaxyWebTransaction",
+    workflow: "Workflow",
+    workflow_run_config: WorkflowRunConfig,
+    request_params: Optional[Dict[str, Any]] = None,
+    populate_state: bool = True,
+    flush: bool = True,
+) -> WorkflowInvocation:
     request_params = request_params or {}
     if populate_state:
         modules.populate_module_and_state(
@@ -80,9 +114,17 @@ def queue_invoke(trans, workflow, workflow_run_config, request_params=None, popu
 
 
 class WorkflowInvoker:
-    def __init__(self, trans, workflow, workflow_run_config, workflow_invocation=None, progress=None):
+    def __init__(
+        self,
+        trans: "WorkRequestContext",
+        workflow: "Workflow",
+        workflow_run_config: WorkflowRunConfig,
+        workflow_invocation: Optional[WorkflowInvocation] = None,
+        progress: Optional["WorkflowProgress"] = None,
+    ) -> None:
         self.trans = trans
         self.workflow = workflow
+        self.workflow_invocation: WorkflowInvocation
         if progress is not None:
             assert workflow_invocation is None
             workflow_invocation = progress.workflow_invocation
@@ -90,7 +132,7 @@ class WorkflowInvoker:
         if workflow_invocation is None:
             invocation_uuid = uuid.uuid1()
 
-            workflow_invocation = model.WorkflowInvocation()
+            workflow_invocation = WorkflowInvocation()
             workflow_invocation.workflow = self.workflow
 
             # In one way or another, following attributes will become persistent
@@ -98,13 +140,7 @@ class WorkflowInvoker:
             workflow_invocation.uuid = invocation_uuid
             workflow_invocation.history = workflow_run_config.target_history
 
-            self.workflow_invocation = workflow_invocation
-        else:
-            self.workflow_invocation = workflow_invocation
-
-        self.workflow_invocation.copy_inputs_to_history = workflow_run_config.copy_inputs_to_history
-        self.workflow_invocation.use_cached_job = workflow_run_config.use_cached_job
-        self.workflow_invocation.replacement_dict = workflow_run_config.replacement_dict
+        self.workflow_invocation = workflow_invocation
 
         module_injector = modules.WorkflowModuleInjector(trans)
         if progress is None:
@@ -116,10 +152,13 @@ class WorkflowInvoker:
                 jobs_per_scheduling_iteration=getattr(
                     trans.app.config, "maximum_workflow_jobs_per_scheduling_iteration", -1
                 ),
+                copy_inputs_to_history=workflow_run_config.copy_inputs_to_history,
+                use_cached_job=workflow_run_config.use_cached_job,
+                replacement_dict=workflow_run_config.replacement_dict,
             )
         self.progress = progress
 
-    def invoke(self):
+    def invoke(self) -> Dict[int, Any]:
         workflow_invocation = self.workflow_invocation
         config = self.trans.app.config
         maximum_duration = getattr(config, "maximum_workflow_invocation_duration", -1)
@@ -153,13 +192,15 @@ class WorkflowInvoker:
                 self.__check_implicitly_dependent_steps(step)
 
                 if not workflow_invocation_step:
-                    workflow_invocation_step = model.WorkflowInvocationStep()
+                    workflow_invocation_step = WorkflowInvocationStep()
+                    assert workflow_invocation_step
                     workflow_invocation_step.workflow_invocation = workflow_invocation
                     workflow_invocation_step.workflow_step = step
                     workflow_invocation_step.state = "new"
 
                     workflow_invocation.steps.append(workflow_invocation_step)
 
+                assert workflow_invocation_step
                 incomplete_or_none = self._invoke_step(workflow_invocation_step)
                 if incomplete_or_none is False:
                     step_delayed = delayed_steps = True
@@ -228,9 +269,9 @@ class WorkflowInvoker:
             if job.state != job.states.OK:
                 raise modules.CancelWorkflowEvaluation()
 
-    def _invoke_step(self, invocation_step):
+    def _invoke_step(self, invocation_step: WorkflowInvocationStep) -> Optional[bool]:
         incomplete_or_none = invocation_step.workflow_step.module.execute(
-            self.trans, self.progress, invocation_step, use_cached_job=self.workflow_invocation.use_cached_job
+            self.trans, self.progress, invocation_step, use_cached_job=self.progress.use_cached_job
         )
         return incomplete_or_none
 
@@ -240,27 +281,40 @@ STEP_OUTPUT_DELAYED = object()
 
 class WorkflowProgress:
     def __init__(
-        self, workflow_invocation, inputs_by_step_id, module_injector, param_map, jobs_per_scheduling_iteration=-1
-    ):
-        self.outputs = {}
+        self,
+        workflow_invocation: WorkflowInvocation,
+        inputs_by_step_id: Any,
+        module_injector: "WorkflowModuleInjector",
+        param_map: Dict[int, Dict[str, Any]],
+        jobs_per_scheduling_iteration: int = -1,
+        copy_inputs_to_history: bool = False,
+        use_cached_job: bool = False,
+        replacement_dict: Optional[Dict[str, str]] = None,
+    ) -> None:
+        self.outputs: Dict[int, Any] = {}
         self.module_injector = module_injector
         self.workflow_invocation = workflow_invocation
         self.inputs_by_step_id = inputs_by_step_id
         self.param_map = param_map
         self.jobs_per_scheduling_iteration = jobs_per_scheduling_iteration
         self.jobs_scheduled_this_iteration = 0
+        self.copy_inputs_to_history = copy_inputs_to_history
+        self.use_cached_job = use_cached_job
+        self.replacement_dict = replacement_dict or {}
 
     @property
-    def maximum_jobs_to_schedule_or_none(self):
+    def maximum_jobs_to_schedule_or_none(self) -> Optional[int]:
         if self.jobs_per_scheduling_iteration > 0:
             return self.jobs_per_scheduling_iteration - self.jobs_scheduled_this_iteration
         else:
             return None
 
-    def record_executed_job_count(self, job_count):
+    def record_executed_job_count(self, job_count: int) -> None:
         self.jobs_scheduled_this_iteration += job_count
 
-    def remaining_steps(self):
+    def remaining_steps(
+        self,
+    ) -> List[Tuple["WorkflowStep", Optional[WorkflowInvocationStep]]]:
         # Previously computed and persisted step states.
         step_states = self.workflow_invocation.step_states_by_step_id()
         steps = self.workflow_invocation.workflow.steps
@@ -287,7 +341,7 @@ class WorkflowProgress:
                 remaining_steps.append((step, invocation_step))
         return remaining_steps
 
-    def replacement_for_input(self, step, input_dict):
+    def replacement_for_input(self, step: "WorkflowStep", input_dict: Dict[str, Any]) -> Any:
         replacement: Union[
             modules.NoReplacement,
             model.DatasetCollectionInstance,
@@ -315,7 +369,7 @@ class WorkflowProgress:
 
         return replacement
 
-    def replacement_for_connection(self, connection, is_data=True):
+    def replacement_for_connection(self, connection: "WorkflowStepConnection", is_data: bool = True) -> Any:
         output_step_id = connection.output_step.id
         if output_step_id not in self.outputs:
             message = f"No outputs found for step id {output_step_id}, outputs are {self.outputs}"
@@ -368,7 +422,7 @@ class WorkflowProgress:
 
         return replacement
 
-    def get_replacement_workflow_output(self, workflow_output):
+    def get_replacement_workflow_output(self, workflow_output: "WorkflowOutput") -> Any:
         step = workflow_output.workflow_step
         output_name = workflow_output.output_name
         step_outputs = self.outputs[step.id]
@@ -378,7 +432,9 @@ class WorkflowProgress:
         else:
             return step_outputs[output_name]
 
-    def set_outputs_for_input(self, invocation_step, outputs=None, already_persisted=False):
+    def set_outputs_for_input(
+        self, invocation_step: WorkflowInvocationStep, outputs: Any = None, already_persisted: bool = False
+    ) -> None:
         step = invocation_step.workflow_step
 
         if outputs is None:
@@ -399,7 +455,9 @@ class WorkflowProgress:
 
         self.set_step_outputs(invocation_step, outputs, already_persisted=already_persisted)
 
-    def set_step_outputs(self, invocation_step, outputs, already_persisted=False):
+    def set_step_outputs(
+        self, invocation_step: WorkflowInvocationStep, outputs: Dict[str, Any], already_persisted: bool = False
+    ) -> None:
         step = invocation_step.workflow_step
         if invocation_step.output_value:
             outputs[invocation_step.output_value.workflow_output.output_name] = invocation_step.output_value.value
@@ -435,25 +493,27 @@ class WorkflowProgress:
                     output=output,
                 )
 
-    def _record_workflow_output(self, step, workflow_output, output):
+    def _record_workflow_output(self, step: "WorkflowStep", workflow_output: "WorkflowOutput", output: Any) -> None:
         self.workflow_invocation.add_output(workflow_output, step, output)
 
-    def mark_step_outputs_delayed(self, step, why=None):
+    def mark_step_outputs_delayed(self, step: "WorkflowStep", why: Optional[str] = None) -> None:
         if why:
             message = f"Marking step {step.id} outputs of invocation {self.workflow_invocation.id} delayed ({why})"
             log.debug(message)
         self.outputs[step.id] = STEP_OUTPUT_DELAYED
 
-    def _subworkflow_invocation(self, step):
+    def _subworkflow_invocation(self, step: "WorkflowStep") -> WorkflowInvocation:
         workflow_invocation = self.workflow_invocation
         subworkflow_invocation = workflow_invocation.get_subworkflow_invocation_for_step(step)
         if subworkflow_invocation is None:
             raise Exception(f"Failed to find persisted workflow invocation for step [{step.id}]")
         return subworkflow_invocation
 
-    def subworkflow_invoker(self, trans, step, use_cached_job=False):
+    def subworkflow_invoker(
+        self, trans: "WorkRequestContext", step: "WorkflowStep", use_cached_job: bool = False
+    ) -> WorkflowInvoker:
         subworkflow_invocation = self._subworkflow_invocation(step)
-        workflow_run_config = workflow_request_to_run_config(trans, subworkflow_invocation)
+        workflow_run_config = workflow_request_to_run_config(subworkflow_invocation, use_cached_job)
         subworkflow_progress = self.subworkflow_progress(subworkflow_invocation, step, workflow_run_config.param_map)
         subworkflow_invocation = subworkflow_progress.workflow_invocation
         return WorkflowInvoker(
@@ -463,7 +523,9 @@ class WorkflowProgress:
             progress=subworkflow_progress,
         )
 
-    def subworkflow_progress(self, subworkflow_invocation, step, param_map):
+    def subworkflow_progress(
+        self, subworkflow_invocation: WorkflowInvocation, step: "WorkflowStep", param_map: Dict
+    ) -> "WorkflowProgress":
         subworkflow = subworkflow_invocation.workflow
         subworkflow_inputs = {}
         for input_subworkflow_step in subworkflow.input_steps:
@@ -483,9 +545,16 @@ class WorkflowProgress:
             if not connection_found:
                 raise Exception("Could not find connections for all subworkflow inputs.")
 
-        return WorkflowProgress(subworkflow_invocation, subworkflow_inputs, self.module_injector, param_map=param_map)
+        return WorkflowProgress(
+            subworkflow_invocation,
+            subworkflow_inputs,
+            self.module_injector,
+            param_map=param_map,
+            use_cached_job=self.use_cached_job,
+            replacement_dict=self.replacement_dict,
+        )
 
-    def _recover_mapping(self, step_invocation):
+    def _recover_mapping(self, step_invocation: WorkflowInvocationStep) -> None:
         try:
             step_invocation.workflow_step.module.recover_mapping(step_invocation, self)
         except modules.DelayedWorkflowEvaluation as de:

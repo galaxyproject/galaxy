@@ -76,7 +76,7 @@ class WorkflowProgressTestCase(unittest.TestCase):
         self.invocation.workflow = workflow
 
     def _new_workflow_progress(self):
-        return WorkflowProgress(self.invocation, self.inputs_by_step_id, MockModuleInjector(self.progress), {})
+        return WorkflowProgress(self.invocation, self.inputs_by_step_id, MockModuleInjector(self.progress), {})  # type: ignore[arg-type]
 
     def _set_previous_progress(self, outputs):
         for i, (step_id, step_value) in enumerate(outputs):
