@@ -169,7 +169,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
         if value_mod:
             wrapped_class_name = f"{value_mod.__name__}.{wrapped_class_name}"
         wrapped_class_name = (
-            f"SafeStringWrapper__{wrapped_class_name}__{'__'.join(sorted([c.__name__ for c in no_wrap_classes]))}"
+            f"SafeStringWrapper__{wrapped_class_name}__{'__'.join(sorted(c.__name__ for c in no_wrap_classes))}"
         )
         do_wrap_func_name = f"__do_wrap_{wrapped_class_name}"
         do_wrap_func = __do_wrap
