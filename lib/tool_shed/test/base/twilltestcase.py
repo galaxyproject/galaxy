@@ -1,6 +1,5 @@
 import logging
 import os
-import re
 import string
 import tempfile
 import time
@@ -22,10 +21,8 @@ from mercurial import (
     hg,
     ui,
 )
-from twill.utils import ResultWrapper
 
 import galaxy.model.tool_shed_install as galaxy_model
-import galaxy.util
 from galaxy.security import idencoding
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
@@ -1033,37 +1030,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
             tc.fv("user_access", "allow_push", f"+{username}")
         tc.submit("user_access_button")
         self.check_for_strings(post_submit_strings_displayed, post_submit_strings_not_displayed)
-
-    def _initiate_installation_process(
-        self,
-        install_tool_dependencies=False,
-        install_repository_dependencies=True,
-        no_changes=True,
-        new_tool_panel_section_label=None,
-    ):
-        html = self.last_page()
-        # Since the installation process is by necessity asynchronous, we have to get the parameters to 'manually' initiate the
-        # installation process. This regex will return the tool shed repository IDs in group(1), the encoded_kwd parameter in
-        # group(2), and the reinstalling flag in group(3) and pass them to the manage_repositories method in the Galaxy
-        # admin_toolshed controller.
-        install_parameters = re.search(r'initiate_repository_installation\( "([^"]+)", "([^"]+)", "([^"]+)" \);', html)
-        if install_parameters:
-            iri_ids = install_parameters.group(1)
-            # In some cases, the returned iri_ids are of the form: "[u'<encoded id>', u'<encoded id>']"
-            # This regex ensures that non-hex characters are stripped out of the list, so that galaxy.util.listify/decode_id
-            # will handle them correctly. It's safe to pass the cleaned list to manage_repositories, because it can parse
-            # comma-separated values.
-            repository_ids = str(iri_ids)
-            repository_ids = re.sub("[^a-fA-F0-9,]+", "", repository_ids)
-            encoded_kwd = install_parameters.group(2)
-            reinstalling = install_parameters.group(3)
-            params = {
-                "tool_shed_repository_ids": ",".join(galaxy.util.listify(repository_ids)),
-                "encoded_kwd": encoded_kwd,
-                "reinstalling": reinstalling,
-            }
-            self.visit_galaxy_url("/admin_toolshed/install_repositories", params=params)
-            return galaxy.util.listify(repository_ids)
 
     def install_repository(
         self,
