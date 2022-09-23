@@ -152,20 +152,20 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if show_published or user is None and show_published is None:
             filter1 = or_(filter1, (trans.app.model.StoredWorkflow.published == true()))
         ## AMP Customization
-        amp_filters = None
-        if 'search' in kwd:
-            search = kwd['search']
-            temp_filters = []
-            if 'name' in search.keys():
-                temp_filters.append(trans.app.model.StoredWorkflow.name.like(F"%{search['name']}%"))
-            if 'annotation' in search.keys():
-                temp_filters.append(trans.app.model.StoredWorkflowAnnotationAssociation.annotation.like(F"%{search['annotation']}%"))
-            if 'tag' in search.keys():
-                temp_filters.append(trans.app.model.StoredWorkflowTagAssociation.value.like(F"%{search['tag']}%")) 
-            if 'creator' in search.keys():
-                temp_filters.append(trans.app.model.Workflow.creator_metadata.like(F"%{search['creator']}%"))
-            if len(temp_filters) > 0:
-                amp_filters = and_(*[temp_filters])
+        # amp_filters = None
+        # if 'search' in kwd:
+        #     search = kwd['search']
+        #     temp_filters = []
+        #     if 'name' in search.keys():
+        #         temp_filters.append(trans.app.model.StoredWorkflow.name.like(F"%{search['name']}%"))
+        #     if 'annotation' in search.keys():
+        #         temp_filters.append(trans.app.model.StoredWorkflowAnnotationAssociation.annotation.like(F"%{search['annotation']}%"))
+        #     if 'tag' in search.keys():
+        #         temp_filters.append(trans.app.model.StoredWorkflowTagAssociation.value.like(F"%{search['tag']}%")) 
+        #     if 'creator' in search.keys():
+        #         temp_filters.append(trans.app.model.Workflow.creator_metadata.like(F"%{search['creator']}%"))
+        #     if len(temp_filters) > 0:
+        #         amp_filters = and_(*[temp_filters])
 
         query = trans.sa_session.query(trans.app.model.StoredWorkflow).options(
             joinedload("annotations")).options(
@@ -174,8 +174,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         ).filter(filter1)
         query = query.filter_by(hidden=true() if show_hidden else false(), deleted=true() if show_deleted else false())
         ## AMP Customization
-        if amp_filters is not None:
-            query = query.filter(amp_filters)
+        # if amp_filters is not None:
+        #     query = query.filter(amp_filters)
         
         for wf in query.order_by(desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
             item = wf.to_dict(value_mapper={'id': trans.security.encode_id})
@@ -198,8 +198,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 joinedload("stored_workflow").joinedload("user")).options(
                 joinedload("stored_workflow").joinedload("tags")).filter(model.StoredWorkflowUserShareAssociation.user == trans.user).filter(
                 model.StoredWorkflow.deleted == false())
-        if amp_filters is not None:
-            sa_query = sa_query.filter(amp_filters)
+        # if amp_filters is not None:
+        #     sa_query = sa_query.filter(amp_filters)
         for wf_sa in sa_query.order_by(
                 desc(model.StoredWorkflow.update_time)).all():
             item = wf_sa.stored_workflow.to_dict(value_mapper={'id': trans.security.encode_id})
