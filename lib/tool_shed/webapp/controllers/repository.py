@@ -1042,22 +1042,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     else:
                         a = "view_repository"
                     return trans.response.send_redirect(web.url_for(controller="repository", action=a, **kwd))
-                if operation == "install to galaxy":
-                    # We've received a list of RepositoryMetadata ids, so we need to build a list of associated Repository ids.
-                    encoded_repository_ids = []
-                    changeset_revisions = []
-                    for repository_metadata_id in util.listify(item_id):
-                        repository_metadata = metadata_util.get_repository_metadata_by_id(
-                            trans.app, repository_metadata_id
-                        )
-                        encoded_repository_ids.append(trans.security.encode_id(repository_metadata.repository.id))
-                        changeset_revisions.append(repository_metadata.changeset_revision)
-                    new_kwd = {}
-                    new_kwd["repository_ids"] = encoded_repository_ids
-                    new_kwd["changeset_revisions"] = changeset_revisions
-                    return trans.response.send_redirect(
-                        web.url_for(controller="repository", action="install_repositories_by_revision", **new_kwd)
-                    )
             else:
                 # This can only occur when there is a multi-select grid with check boxes and an operation,
                 # and the user clicked the operation button without checking any of the check boxes.
@@ -1663,39 +1647,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             message=message,
             status=status,
         )
-
-    @web.expose
-    def install_repositories_by_revision(self, trans, **kwd):
-        """
-        Send the list of repository_ids and changeset_revisions to Galaxy so it can begin the installation
-        process.  If the value of repository_ids is not received, then the name and owner of a single repository
-        must be received to install a single repository.
-        """
-        repository_ids = kwd.get("repository_ids", None)
-        changeset_revisions = kwd.get("changeset_revisions", None)
-        name = kwd.get("name", None)
-        owner = kwd.get("owner", None)
-        if not repository_ids:
-            repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
-            repository_ids = trans.security.encode_id(repository.id)
-        galaxy_url = common_util.handle_galaxy_url(trans, **kwd)
-        if galaxy_url:
-            # Redirect back to local Galaxy to perform install.
-            params = dict(
-                tool_shed_url=web.url_for("/", qualified=True),
-                repository_ids=",".join(util.listify(repository_ids)),
-                changeset_revisions=",".join(util.listify(changeset_revisions)),
-            )
-            pathspec = ["admin_toolshed", "prepare_for_install"]
-            url = util.build_url(galaxy_url, pathspec=pathspec, params=params)
-            return trans.response.send_redirect(url)
-        else:
-            message = f"Repository installation is not possible due to an invalid Galaxy URL: <b>{galaxy_url}</b>.  "
-            message += "You may need to enable third-party cookies in your browser.  "
-            status = "error"
-            return trans.response.send_redirect(
-                web.url_for(controller="repository", action="browse_valid_categories", message=message, status=status)
-            )
 
     @web.expose
     def load_invalid_tool(self, trans, repository_id, tool_config, changeset_revision, **kwd):
