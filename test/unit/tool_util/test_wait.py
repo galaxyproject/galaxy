@@ -1,3 +1,5 @@
+from time import sleep
+
 from galaxy.tool_util.verify.wait import (
     TimeoutAssertionError,
     wait_on,
@@ -9,6 +11,7 @@ class Sleeper:
         self.sleeps = []
 
     def sleep(self, delta):
+        sleep(delta)
         self.sleeps.append(delta)
 
 
@@ -30,7 +33,7 @@ def test_immediate_return():
     condition = WaitCondition(return_value="first")
     sleeper = Sleeper()
 
-    assert "first" == wait_on(condition, "condition", 100, sleep_=sleeper.sleep)
+    assert "first" == wait_on(condition, "condition", 100, _sleep=sleeper.sleep)
     assert len(sleeper.sleeps) == 0
 
 
@@ -40,10 +43,10 @@ def test_timeout_first_call():
 
     exception_called = False
     try:
-        wait_on(condition, "never met condition", 1, delta=2, sleep_=sleeper.sleep)
+        wait_on(condition, "never met condition", 1, delta=2, _sleep=sleeper.sleep)
     except TimeoutAssertionError as e:
         assert "never met condition" in str(e)
-        assert "after 2.0 seconds" in str(e)
+        assert "after 2 seconds" in str(e)
         exception_called = True
     assert len(sleeper.sleeps) == 1
     assert sleeper.sleeps[0] == 2  # delta of 2
@@ -56,7 +59,7 @@ def test_timeout_third_call():
 
     exception_called = False
     try:
-        wait_on(condition, "condition", 5, delta=2, sleep_=sleeper.sleep)
+        wait_on(condition, "condition", 5, delta=2, _sleep=sleeper.sleep)
     except TimeoutAssertionError:
         exception_called = True
     assert len(sleeper.sleeps) == 3
@@ -70,7 +73,7 @@ def test_return_on_third_call():
     condition = WaitCondition(after_call_count=2, return_value="second")
     sleeper = Sleeper()
 
-    assert "second" == wait_on(condition, "condition", 5, delta=2, sleep_=sleeper.sleep)
+    assert "second" == wait_on(condition, "condition", 5, delta=2, _sleep=sleeper.sleep)
     assert len(sleeper.sleeps) == 2
     assert sleeper.sleeps[0] == 2  # delta of 2
     assert sleeper.sleeps[1] == 2  # delta of 2
@@ -82,7 +85,7 @@ def test_timeout_backoff():
 
     exception_called = False
     try:
-        wait_on(condition, "condition", 8, delta=2, polling_backoff=1, sleep_=sleeper.sleep)
+        wait_on(condition, "condition", 8, delta=2, polling_backoff=1, _sleep=sleeper.sleep)
     except TimeoutAssertionError:
         exception_called = True
     assert len(sleeper.sleeps) == 3

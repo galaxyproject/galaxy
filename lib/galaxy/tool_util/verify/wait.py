@@ -5,6 +5,7 @@ from time import (
 )
 from typing import (
     Callable,
+    Optional,
     Union,
 )
 DEFAULT_POLLING_BACKOFF = 0
@@ -20,6 +21,7 @@ def wait_on(
     timeout: timeout_type,
     delta: timeout_type = DEFAULT_POLLING_DELTA,
     polling_backoff: timeout_type = DEFAULT_POLLING_BACKOFF,
+    _sleep: Optional[Callable] = None,  # only used in tests
 ):
     """Wait for function to return non-None value.
 
@@ -29,15 +31,18 @@ def wait_on(
     Throw a TimeoutAssertionError if the supplied timeout is reached without
     supplied function ever returning a non-None value.
     """
+    sleep_foo = _sleep or sleep
     start = time()
     while True:
         total_wait = time() - start
+        print(f"{total_wait=} > {timeout=} {total_wait > timeout}")
         if total_wait > timeout:
+            print(f"TIMEOUT")
             raise TimeoutAssertionError(TIMEOUT_MESSAGE_TEMPLATE.format(int(total_wait), desc))
         value = function()
         if value is not None:
             return value
-        sleep(delta)
+        sleep_foo(delta)
         delta += polling_backoff
 
 
