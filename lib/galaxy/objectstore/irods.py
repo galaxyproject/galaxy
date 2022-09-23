@@ -279,8 +279,10 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             },
             name="ConnectionPoolMonitorThread",
         )
-        self.connection_pool_monitor_thread.start()
         log.info("Connection pool monitor started")
+
+    def start(self):
+        self.start_connection_pool_monitor()
 
     def _connection_pool_monitor(self, *args, **kwargs):
         refresh_time = kwargs["refresh_time"]

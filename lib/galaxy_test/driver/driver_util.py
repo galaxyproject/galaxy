@@ -864,7 +864,7 @@ def launch_server(app_factory, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, gal
 
     server, port, thread = uvicorn_serve(asgi_app, host=host, port=port)
     set_and_wait_for_http_target(prefix, host, port, url_prefix=url_prefix)
-    log.info(f"Embedded uvicorn web server for {name} started at {host}:{port}{url_prefix}")
+    log.debug(f"Embedded uvicorn web server for {name} started at {host}:{port}{url_prefix}")
     return EmbeddedServerWrapper(app, server, name, host, port, thread=thread, prefix=url_prefix)
 
 

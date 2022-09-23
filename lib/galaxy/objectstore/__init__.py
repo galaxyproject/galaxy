@@ -289,6 +289,14 @@ class BaseObjectStore(ObjectStore):
         extra_dirs.update({e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])})
         self.extra_dirs = extra_dirs
 
+    def start(self):
+        """
+        Call all postfork function(s) here. These functions spawn a thread,
+        but do not start it. We register start() with app, so app starts
+        the threads. Override this function in subclasses, if needed.
+        """
+        return
+
     def shutdown(self):
         """Close any connections for this ObjectStore."""
         self.running = False

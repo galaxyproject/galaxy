@@ -743,6 +743,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.tool_shed_repository_cache = None
         self.api_spec = None
         self.legacy_mapper = None
+        self.application_stack.register_postfork_function(self.object_store.start)
         log.info(f"Galaxy app startup finished {startup_timer}")
 
     def _shutdown_queue_worker(self):
