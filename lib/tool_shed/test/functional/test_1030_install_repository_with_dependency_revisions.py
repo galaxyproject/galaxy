@@ -192,7 +192,7 @@ class RepositoryWithDependencyRevisions(ShedTwillTestCase):
         strings_displayed.extend(["Installed tool shed repository", "Valid tools", "antigenic"])
         self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)
         self.verify_tool_metadata_for_installed_repository(installed_repository)
-        self.update_installed_repository(installed_repository, strings_displayed=["there are no updates available"])
+        self.update_installed_repository_api(installed_repository, verify_no_updates=True)
 
     def test_0025_verify_installed_repository_metadata(self):
         """Verify that resetting the metadata on an installed repository does not change the metadata."""

@@ -1383,15 +1383,23 @@ class ShedTwillTestCase(ShedBaseTestCase):
         )
         assert response.status_code != 403, response.content
 
-    def update_installed_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
+    def update_installed_repository_api(self, installed_repository, verify_no_updates=False):
+        repository_id = self.security.encode_id(installed_repository.id)
         params = {
-            "name": installed_repository.name,
-            "owner": installed_repository.owner,
-            "changeset_revision": installed_repository.installed_changeset_revision,
-            "galaxy_url": self.galaxy_url,
+            "id": repository_id,
         }
-        self.visit_url("/repository/check_for_updates", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
+        api_key = get_admin_api_key()
+        response = requests.get(
+            f"{self.galaxy_url}/api/tool_shed_repositories/check_for_updates?key={api_key}",
+            params=params,
+            timeout=DEFAULT_SOCKET_TIMEOUT,
+        )
+        response.raise_for_status()
+        response_dict = response.json()
+        if verify_no_updates:
+            assert "message" in response_dict
+            message = response_dict["message"]
+            assert "The status has not changed in the tool shed for repository" in message, str(response_dict)
 
     def update_tool_shed_status(self):
         api_key = get_admin_api_key()

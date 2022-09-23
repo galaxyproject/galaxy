@@ -91,7 +91,7 @@ class TestFreebayesRepository(ShedTwillTestCase):
             installed_repository, strings_displayed=strings_displayed, strings_not_displayed=["bisulfite mapper"]
         )
         self.verify_tool_metadata_for_installed_repository(installed_repository)
-        self.update_installed_repository(installed_repository, strings_displayed=["there are no updates available"])
+        self.update_installed_repository_api(installed_repository, verify_no_updates=True)
         assert "invalid_tools" in installed_repository.metadata_, (
             "No invalid tools were defined in %s." % installed_repository.name
         )
