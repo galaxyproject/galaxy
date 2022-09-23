@@ -9,7 +9,6 @@ import os
 import shutil
 import struct
 import subprocess
-import sys
 import tarfile
 import tempfile
 import zipfile
@@ -4196,9 +4195,3 @@ class HexrdEtaOmeNpz(Npz):
             return dataset.peek
         except Exception:
             return "Binary Numpy npz file (%s)" % (nice_size(dataset.get_size()))
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

@@ -1852,9 +1852,3 @@ class StructuredExecutionTimer:
     @property
     def elapsed(self):
         return time.time() - self.begin
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__], verbose=False)
