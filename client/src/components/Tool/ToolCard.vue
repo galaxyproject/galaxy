@@ -7,8 +7,6 @@ import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
 import ToolCardSection from "./ToolCardSection";
 
-import ariaAlert from "utils/ariaAlert";
-import Webhooks from "utils/webhooks";
 import { computed, ref, watch } from "vue";
 import { useCurrentUser } from "composables/user";
 

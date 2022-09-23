@@ -2,7 +2,7 @@
 import { computed, ref } from "vue";
 import { copyLink, copyId, downloadTool, openLink } from "../utilities";
 import { useCurrentUser } from "composables/user";
-import Webhooks from "mvc/webhooks";
+import Webhooks from "utils/webhooks";
 import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
