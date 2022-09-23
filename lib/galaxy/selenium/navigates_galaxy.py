@@ -320,21 +320,15 @@ class NavigatesGalaxy(HasDriver):
         return self.history_panel_name_element().text
 
     def history_panel_collection_rename(self, hid: int, new_name: str, assert_old_name: Optional[str] = None):
-        self.__rename_collection(new_name)
-        self.sleep_for(WAIT_TYPES.UX_RENDER)
+        toggle = self.history_element("editor toggle")
+        toggle.wait_for_and_click()
+        self.history_panel_rename(new_name)
 
     def history_panel_expand_collection(self, collection_hid: int) -> SmartComponent:
         self.history_panel_click_item_title(collection_hid)
-
         collection_view = self.components.history_panel.collection_view
         collection_view._.wait_for_present()
         return collection_view
-
-    @edit_details
-    def __rename_collection(self, new_name):
-        title_element = self.history_element("name input").wait_for_clickable()
-        title_element.clear()
-        title_element.send_keys(new_name)
 
     def history_panel_collection_name_element(self):
         title_element = self.history_element("collection name display").wait_for_present()

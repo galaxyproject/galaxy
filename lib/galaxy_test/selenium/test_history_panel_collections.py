@@ -145,6 +145,8 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
     def test_rename_collection(self):
         input_collection = self._populated_paired_and_wait_for_it()
         collection_hid = input_collection["hid"]
+        self.history_panel_expand_collection(collection_hid)
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.history_panel_wait_for_hid_state(collection_hid, "ok")
         new_name = "My New Name"
         self.history_panel_collection_rename(collection_hid, new_name, assert_old_name=input_collection["name"])

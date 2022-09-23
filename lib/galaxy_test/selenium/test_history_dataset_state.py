@@ -27,6 +27,7 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
     @selenium_test
     def test_dataset_state(self):
+        self._prepare_dataset()
         self.history_panel_item_body_component(FIRST_HID, wait=True)
         self.assert_item_summary_includes(FIRST_HID, "1 sequence")
         self.assert_item_dbkey_displayed_as(FIRST_HID, "?")
