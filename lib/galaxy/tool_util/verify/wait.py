@@ -8,6 +8,7 @@ from typing import (
     Optional,
     Union,
 )
+
 DEFAULT_POLLING_BACKOFF = 0
 DEFAULT_POLLING_DELTA = 0.25
 
@@ -35,9 +36,7 @@ def wait_on(
     start = time()
     while True:
         total_wait = time() - start
-        print(f"{total_wait=} > {timeout=} {total_wait > timeout}")
         if total_wait > timeout:
-            print(f"TIMEOUT")
             raise TimeoutAssertionError(TIMEOUT_MESSAGE_TEMPLATE.format(int(total_wait), desc))
         value = function()
         if value is not None:
