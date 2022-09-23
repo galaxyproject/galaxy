@@ -126,12 +126,10 @@ class BasicToolShedFeatures(ShedTwillTestCase):
         )
         # The page displayed after installation is the ajaxian "Montior installing tool shed repositories" page.  Since the filter
         # repository was already installed, nothing will be in the process of being installed, so the grid will not display 'filtering_0000'.
-        post_submit_strings_not_displayed = ["filtering_0000"]
         self.install_repository(
             "filtering_0000",
             common.test_user_1_name,
             "Test 0000 Basic Repository Features 1",
-            post_submit_strings_not_displayed=post_submit_strings_not_displayed,
         )
         strings_displayed = [
             "filtering_0000",

@@ -174,16 +174,12 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         We are at step 1, Galaxy side.
         Install blastxml_to_top_descr_0120 to Galaxy, with repository dependencies, so that the datatypes repository is also installed.
         """
-        global base_datatypes_count
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        base_datatypes_count = int(self.get_datatypes_count())
-        post_submit_strings_displayed = ["blastxml_to_top_descr_0120", "blast_datatypes_0120", "New"]
         self.install_repository(
             name="blastxml_to_top_descr_0120",
             owner=common.test_user_1_name,
             category_name="Test 0120",
             install_repository_dependencies=True,
-            post_submit_strings_displayed=post_submit_strings_displayed,
             new_tool_panel_section_label="Test 0120",
         )
 

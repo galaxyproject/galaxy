@@ -32,6 +32,7 @@ from galaxy.util import (
     smart_str,
     unicodify,
 )
+from galaxy_test.base.api_asserts import assert_status_code_is_ok
 from galaxy_test.base.api_util import get_admin_api_key
 from tool_shed.util import (
     hg_util,
@@ -48,7 +49,10 @@ from . import (
     common,
     test_db_util,
 )
-from .api import ShedBaseTestCase
+from .api import (
+    ShedBaseTestCase,
+    ShedGalaxyInteractorApi,
+)
 
 # Set a 10 minute timeout for repository installation.
 repository_installation_timeout = 600
@@ -1030,7 +1034,7 @@ class ShedTwillTestCase(ShedBaseTestCase):
         tc.submit("user_access_button")
         self.check_for_strings(post_submit_strings_displayed, post_submit_strings_not_displayed)
 
-    def initiate_installation_process(
+    def _initiate_installation_process(
         self,
         install_tool_dependencies=False,
         install_repository_dependencies=True,
@@ -1063,69 +1067,48 @@ class ShedTwillTestCase(ShedBaseTestCase):
 
     def install_repository(
         self,
-        name,
-        owner,
-        category_name,
-        install_resolver_dependencies=False,
-        install_tool_dependencies=False,
-        install_repository_dependencies=True,
-        changeset_revision=None,
-        strings_displayed=None,
-        strings_not_displayed=None,
-        preview_strings_displayed=None,
-        post_submit_strings_displayed=None,
-        new_tool_panel_section_label=None,
-        includes_tools_for_display_in_tool_panel=True,
-        **kwd,
-    ):
+        name: str,
+        owner: str,
+        category_name: str,
+        install_tool_dependencies: bool = False,
+        install_repository_dependencies: bool = True,
+        changeset_revision: Optional[str] = None,
+        preview_strings_displayed: Optional[List[str]] = None,
+        new_tool_panel_section_label: Optional[str] = None,
+    ) -> None:
         self.browse_tool_shed(url=self.url)
-        self.browse_category(self.populator.get_category_with_name(category_name))
+        category = self.populator.get_category_with_name(category_name)
+        assert category
+        self.browse_category(category)
         self.preview_repository_in_tool_shed(name, owner, strings_displayed=preview_strings_displayed)
         repository = self._get_repository_by_name_and_owner(name, owner)
-        repository_id = repository.id
+        assert repository
+        galaxy_interactor = ShedGalaxyInteractorApi(self.galaxy_url)
+        # repository_id = repository.id
         if changeset_revision is None:
             changeset_revision = self.get_repository_tip(repository)
-        params = {
-            "changeset_revisions": changeset_revision,
-            "repository_ids": repository_id,
-            "galaxy_url": self.galaxy_url,
-        }
-        self.visit_url("/repository/install_repositories_by_revision", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-        form = tc.browser.form("select_tool_panel_section")
-        if form is None:
-            form = tc.browser.form("select_shed_tool_panel_config")
-        assert form is not None, "Could not find form select_shed_tool_panel_config or select_tool_panel_section."
-        kwds = {
+        payload = {
+            "tool_shed_url": self.url,
+            "name": name,
+            "owner": owner,
+            "changeset_revision": changeset_revision,
             "install_tool_dependencies": install_tool_dependencies,
             "install_repository_dependencies": install_repository_dependencies,
-            "install_resolver_dependencies": install_resolver_dependencies,
-            "shed_tool_conf": self.shed_tool_conf,
+            "install_resolver_dependencies": False,
         }
-        if new_tool_panel_section_label is not None:
-            kwds["new_tool_panel_section_label"] = new_tool_panel_section_label
-        submit_button = [inp.name for inp in form.inputs if getattr(inp, "type", None) == "submit"]
-        if len(submit_button) == 0:
-            # TODO: refactor, use regular TS install API
-            submit_kwargs = {
-                inp.name: inp.value for inp in tc.browser.forms[0].inputs if getattr(inp, "type", None) == "submit"
-            }
-            payload = {_: form.inputs[_].value for _ in form.fields.keys()}
-            payload.update(kwds)
-            payload.update(submit_kwargs)
-            r = tc.browser._session.post(
-                self.galaxy_url + form.action,
-                data=payload,
-            )
-            tc.browser.result = ResultWrapper(r)
-        else:
-            assert (
-                len(submit_button) == 1
-            ), f"Expected to find a single submit button, found {len(submit_button)} ({','.join(submit_button)})"
-            submit_button = submit_button[0]
-            self.submit_form(form=form, button=submit_button, **kwds)
-        self.check_for_strings(post_submit_strings_displayed, strings_not_displayed)
-        repository_ids = self.initiate_installation_process(new_tool_panel_section_label=new_tool_panel_section_label)
+        if new_tool_panel_section_label:
+            payload["new_tool_panel_section_label"] = new_tool_panel_section_label
+        create_response = galaxy_interactor._post(
+            "tool_shed_repositories/new/install_repository_revision", data=payload, admin=True
+        )
+        assert_status_code_is_ok(create_response)
+        create_response_object = create_response.json()
+        if isinstance(create_response_object, dict):
+            assert "status" in create_response_object
+            assert "ok" == create_response_object["status"]  # repo already installed...
+            return
+        assert isinstance(create_response_object, list)
+        repository_ids = [repo["id"] for repo in create_response.json()]
         log.debug(f"Waiting for the installation of repository IDs: {repository_ids}")
         self.wait_for_repository_installation(repository_ids)
 
@@ -1266,8 +1249,8 @@ class ShedTwillTestCase(ShedBaseTestCase):
         url = "/admin_toolshed/reinstall_repository"
         self.visit_galaxy_url(url, params=params, doseq=doseq)
         # Manually initiate the install process, as with installing a repository. See comments in the
-        # initiate_installation_process method for details.
-        repository_ids = self.initiate_installation_process(
+        # _initiate_installation_process method for details.
+        repository_ids = self._initiate_installation_process(
             install_tool_dependencies, install_repository_dependencies, no_changes, new_tool_panel_section_label
         )
         # Finally, wait until all repositories are in a final state (either Error or Installed) before returning.

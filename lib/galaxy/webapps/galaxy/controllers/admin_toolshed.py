@@ -14,11 +14,7 @@ from galaxy.exceptions import ConfigDoesNotAllowException
 from galaxy.tool_shed.galaxy_install import install_manager
 from galaxy.tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
-from galaxy.tool_shed.util import (
-    hg_util,
-    tool_dependency_util,
-    tool_util,
-)
+from galaxy.tool_shed.util import tool_util
 from galaxy.tool_util.deps import views
 from galaxy.util import unicodify
 from galaxy.util.tool_shed import (

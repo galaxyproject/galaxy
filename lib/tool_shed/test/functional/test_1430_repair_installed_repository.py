@@ -124,13 +124,11 @@ class TestRepairRepository(ShedTwillTestCase):
         the repositories in a specified section of the tool panel.
         """
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        post_submit_strings_displayed = ["column_1430", "filter_1430"]
         self.install_repository(
             "column_1430",
             common.test_user_1_name,
             category_name,
             new_tool_panel_section_label="repair",
-            post_submit_strings_displayed=post_submit_strings_displayed,
             install_tool_dependencies=False,
             install_repository_dependencies=True,
         )

@@ -136,7 +136,6 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
         preview_strings_displayed = ["column_maker_0150", self.get_repository_tip(column_repository)]
-        strings_displayed = ["Choose the tool panel section"]
         self.install_repository(
             column_repository_name,
             common.test_user_1_name,
@@ -144,10 +143,6 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
             install_tool_dependencies=False,
             install_repository_dependencies=True,
             preview_strings_displayed=preview_strings_displayed,
-            strings_displayed=strings_displayed,
-            strings_not_displayed=[],
-            post_submit_strings_displayed=["column_maker_0150", "New"],
-            includes_tools_for_display_in_tool_panel=True,
         )
 
     def test_0030_verify_installation_order(self):
