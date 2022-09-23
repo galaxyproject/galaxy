@@ -26,7 +26,7 @@ ATTRIB_VALIDATOR_COMPATIBILITY = {
     "expression": ["substitute_value_in_message"],
     "table_name": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table"],
     "filename": ["dataset_metadata_in_file"],
-    "metadata_name": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "dataset_metadata_in_file"],
+    "metadata_name": ["dataset_metadata_in_range", "dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "dataset_metadata_in_file"],
     "metadata_column": ["dataset_metadata_in_data_table", "dataset_metadata_not_in_data_table", "value_in_data_table", "value_not_in_data_table", "dataset_metadata_in_file"],
     "line_startswith": ["dataset_metadata_in_file"],
     "min": ["in_range", "length", "dataset_metadata_in_range"],
