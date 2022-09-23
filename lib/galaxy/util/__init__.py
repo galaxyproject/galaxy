@@ -85,6 +85,7 @@ from .path import (  # noqa: F401
     safe_contains,
     safe_makedirs,
     safe_relpath,
+    StrPath,
 )
 
 try:
@@ -283,7 +284,7 @@ def unique_id(KEY_SIZE=128):
     return md5(random_bits).hexdigest()
 
 
-def parse_xml(fname: typing.Union[str, os.PathLike], strip_whitespace=True, remove_comments=True):
+def parse_xml(fname: StrPath, strip_whitespace=True, remove_comments=True) -> etree.ElementTree:
     """Returns a parsed xml tree"""
     parser = None
     if remove_comments and LXML_AVAILABLE:
@@ -310,7 +311,7 @@ def parse_xml(fname: typing.Union[str, os.PathLike], strip_whitespace=True, remo
     return tree
 
 
-def parse_xml_string(xml_string, strip_whitespace=True):
+def parse_xml_string(xml_string, strip_whitespace=True) -> etree.Element:
     try:
         tree = etree.fromstring(xml_string)
     except ValueError as e:

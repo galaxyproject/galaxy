@@ -17,7 +17,7 @@ from galaxy.util.path import StrPath
 log = logging.getLogger(__name__)
 
 
-def create_and_write_tmp_file(elem):
+def create_and_write_tmp_file(elem: etree.Element) -> str:
     tmp_str = xml_to_string(elem, pretty=True)
     with tempfile.NamedTemporaryFile(prefix="tmp-toolshed-cawrf", delete=False) as fh:
         tmp_filename = fh.name
