@@ -24,7 +24,6 @@ from typing import (
 import requests
 import yaml
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
 
 from galaxy.navigation.components import (
@@ -1904,7 +1903,6 @@ class NavigatesGalaxy(HasDriver):
         return element
 
     def set_history_annotation(self, annotation, clear_text=False):
-        history_panel = self.components.history_panel
         toggle = self.beta_history_element("editor toggle")
         toggle.wait_for_and_click()
         annotation_input = self.beta_history_element("annotation input").wait_for_visible()

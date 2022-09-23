@@ -1,7 +1,5 @@
 import time
 
-import pytest
-
 from galaxy.selenium.navigates_galaxy import WAIT_TYPES
 from galaxy_test.base.api_asserts import assert_status_code_is
 from galaxy_test.base.populators import flakey

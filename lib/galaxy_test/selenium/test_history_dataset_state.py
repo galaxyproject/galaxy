@@ -132,7 +132,7 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def _assert_buttons(self, hid, expected_buttons):
-        # TODO: Refactor for current history 
+        # TODO: Refactor for current history
         '''item_button = self.history_panel_item_component(hid=hid)
         for i, expected_button in enumerate(expected_buttons):
             if i > 0:

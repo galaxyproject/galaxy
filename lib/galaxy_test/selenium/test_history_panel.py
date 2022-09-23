@@ -1,5 +1,3 @@
-import pytest
-
 from galaxy.selenium.navigates_galaxy import edit_details
 from .framework import (
     retry_assertion_during_transitions,
@@ -41,7 +39,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         history_editor = self.components.history_panel.editor.selector(scope=".history-index")
         history_editor.annotation_input.wait_for_clickable()
         history_editor.tags_input.wait_for_clickable()
-        
+
         '''tag_icon_selector = self.navigation.history_panel.selectors.tag_icon
         annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
 
@@ -207,4 +205,3 @@ class HistoryPanelTestCase(SeleniumTestCase):
 
     def _refresh(self):
         self.home()
-
