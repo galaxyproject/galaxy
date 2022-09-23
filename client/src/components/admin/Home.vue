@@ -9,7 +9,7 @@
             keep your Galaxy in best shape.
         </p>
 
-        <Heading h2 icon="fa-server" size="medium">Server</Heading>
+        <Heading h2 icon="fa-server" size="md">Server</Heading>
         <ul>
             <li>
                 <strong>
@@ -45,7 +45,7 @@
             </li>
         </ul>
 
-        <Heading h2 icon="fa-user" size="medium">User Management</Heading>
+        <Heading h2 icon="fa-user" size="md">User Management</Heading>
         <ul>
             <li>
                 <strong>
@@ -85,7 +85,7 @@
             </li>
         </ul>
 
-        <Heading h2 icon="fa-wrench" size="medium">Tool Management</Heading>
+        <Heading h2 icon="fa-wrench" size="md">Tool Management</Heading>
         <ul>
             <li>
                 <strong>

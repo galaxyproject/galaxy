@@ -479,16 +479,20 @@ $ui-margin-horizontal-large: $margin-v * 2;
 }
 
 /* Heading Sizes */
-.h-large {
+.h-xl {
     font-size: $h1-font-size;
 }
 
-.h-medium {
+.h-lg {
     font-size: $h2-font-size;
 }
 
-.h-small {
+.h-md {
     font-size: $h3-font-size;
+}
+
+.h-sm {
+    font-size: $h4-font-size;
 }
 
 .h-text {

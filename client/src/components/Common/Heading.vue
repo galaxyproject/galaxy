@@ -2,7 +2,7 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 let element = "h1";
-let sizeClass = "h-large";
+let sizeClass = "h-lg";
 
 const props = defineProps({
     h1: Boolean,
@@ -14,7 +14,7 @@ const props = defineProps({
     bold: Boolean,
     separator: Boolean,
     inline: Boolean,
-    // acceptable sizes are "large", "medium", "small", and "text"
+    // acceptable sizes are "xl", "lg", "md", "sm", and "text"
     size: String,
     icon: String,
 });
