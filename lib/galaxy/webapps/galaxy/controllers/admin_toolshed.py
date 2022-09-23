@@ -311,18 +311,13 @@ class AdminToolshed(AdminGalaxy):
             # This should be handled somewhere in the grids system, but given the legacy status
             # this should be OK.
             repository_id = [r for r in repository_id if "=" not in r][0]  # This method only work for a single repo id
-        operation = kwd.get("operation", None)
         repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
         if repository is None:
             return trans.show_error_message("Invalid repository specified.")
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, str(repository.tool_shed))
         name = str(repository.name)
-        owner = str(repository.owner)
-        installed_changeset_revision = str(repository.installed_changeset_revision)
         description = kwd.get("description", repository.description)
-        shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir(
-            trans.app, repository
-        )
+        _, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir(trans.app, repository)
         if relative_install_dir:
             repo_files_dir = os.path.abspath(os.path.join(tool_path, relative_install_dir, name))
         else:
