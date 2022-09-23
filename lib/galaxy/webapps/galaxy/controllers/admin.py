@@ -1584,6 +1584,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                 "message": f"User '{user.email}' has been updated with {len(in_roles) - 1} associated roles and {len(in_groups)} associated groups (private roles are not displayed)."
             }
 
+
 # ---- Utility methods -------------------------------------------------------
 
 

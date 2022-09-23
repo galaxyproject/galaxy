@@ -109,7 +109,7 @@ class PageListGrid(grids.Grid):
     global_actions = [grids.GridAction("Add new page", dict(controller="", action="pages/create"))]
     operations = [
         grids.DisplayByUsernameAndSlugGridOperation("View", allow_multiple=False),
-        grids.GridOperation("Edit content", allow_multiple=False, url_args=dict(action="edit_content")),
+        grids.GridOperation("Edit content", allow_multiple=False, url_args=dict(controller="", action="pages/editor")),
         grids.GridOperation("Edit attributes", allow_multiple=False, url_args=dict(controller="", action="pages/edit")),
         grids.GridOperation(
             "Share or Publish",
@@ -531,14 +531,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                 trans.sa_session.add(p)
                 trans.sa_session.flush()
             return {"message": "Attributes of '%s' successfully saved." % p.title, "status": "success"}
-
-    @web.expose
-    @web.require_login("edit pages")
-    def edit_content(self, trans, id):
-        """
-        Render the main page editor interface.
-        """
-        return trans.fill_template("page/editor.mako", id=id)
 
     @web.expose
     @web.require_login()
