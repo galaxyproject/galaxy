@@ -17,13 +17,18 @@ export default {
             const temp = document.createElement("div");
             temp.id = "formattedContent";
             temp.insertAdjacentHTML("beforeend", this.content);
-            temp.getElementsByTagName("a").forEach((elem) => elem.setAttribute("target", "_blank"));
-            temp.getElementsByTagName("img").forEach((elem) => {
-                const imgSrc = elem.getAttribute("src");
-                if (elem.src.indexOf("admin_toolshed") !== -1) {
-                    elem.setAttribute("src", getAppRoot() + imgSrc);
-                }
-            });
+            const anchorElements = temp.getElementsByTagName("a");
+            anchorElements.length > 0 ? anchorElements.forEach((elem) => elem.setAttribute("target", "_blank")) : null;
+            const imageElements = temp.getElementsByTagName("img");
+            imageElements.length > 0
+                ? imageElements.forEach((elem) => {
+                      const imgSrc = elem.getAttribute("src");
+                      if (elem.src.indexOf("admin_toolshed") !== -1) {
+                          elem.setAttribute("src", getAppRoot() + imgSrc);
+                      }
+                  })
+                : null;
+
             return temp.innerHTML;
         },
     },
