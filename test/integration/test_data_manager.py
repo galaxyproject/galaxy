@@ -41,7 +41,7 @@ DATA_MANAGER_MANUAL_INPUT = {
 }
 
 
-class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesShed):
+class TestDataManagerIntegration(integration_util.IntegrationTestCase, UsesShed):
 
     """Test data manager installation and table reload through the API"""
 

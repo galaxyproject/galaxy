@@ -9,7 +9,7 @@ from galaxy_test.driver import integration_util
 GNUPLOT = {"version": "4.6", "type": "package", "name": "gnuplot"}
 
 
-class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestCondaResolutionIntegration(integration_util.IntegrationTestCase):
 
     """Test conda dependency resolution through API."""
 

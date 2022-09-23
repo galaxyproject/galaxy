@@ -31,7 +31,7 @@ class CancelsJob:
         )
 
 
-class LocalJobCancellationTestCase(CancelsJob, integration_util.IntegrationTestCase):
+class TestLocalJobCancellation(CancelsJob, integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
 

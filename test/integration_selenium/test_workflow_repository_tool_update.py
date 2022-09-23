@@ -1,11 +1,17 @@
+from typing import TYPE_CHECKING
+
 from galaxy_test.driver.uses_shed import UsesShed
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
 )
 
+if TYPE_CHECKING:
+    from galaxy_test.selenium.framework import SeleniumSessionDatasetPopulator
 
-class WorkflowEditorToolUpgradeWithToolShedToolTestCase(SeleniumIntegrationTestCase, UsesShed):
+
+class TestWorkflowEditorToolUpgradeWithToolShedTool(SeleniumIntegrationTestCase, UsesShed):
+    dataset_populator: "SeleniumSessionDatasetPopulator"
     requires_admin = True
 
     @classmethod

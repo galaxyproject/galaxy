@@ -1,5 +1,4 @@
 import os
-from unittest import TestCase
 
 from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.job_execution.compute_environment import SimpleComputeEnvironment
@@ -30,6 +29,7 @@ from galaxy.tools.parameters.grouping import (
 )
 from galaxy.util import XML
 from galaxy.util.bunch import Bunch
+from galaxy.util.unittest import TestCase
 
 # To Test:
 # - param_file handling.
@@ -37,7 +37,7 @@ TEST_TOOL_DIRECTORY = "/path/to/the/tool"
 TEST_GALAXY_URL = "http://mycool.galaxyproject.org:8456"
 
 
-class ToolEvaluatorTestCase(TestCase, UsesApp):
+class TestToolEvaluator(TestCase, UsesApp):
     def setUp(self):
         self.setup_app()
         self.tool = MockTool(self.app)

@@ -1,7 +1,7 @@
 from galaxy_test.driver import integration_util
 
 
-class EdamToolboxIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestEdamToolboxIntegration(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
 
@@ -31,7 +31,7 @@ class EdamToolboxIntegrationTestCase(integration_util.IntegrationTestCase):
         assert edam_panel_view["view_type"] == "ontology"
 
 
-class EdamToolboxDefaultIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestEdamToolboxDefaultIntegration(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
 

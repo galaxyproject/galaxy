@@ -7,7 +7,7 @@ from galaxy.util import bunch
 from .util import BaseParameterTestCase
 
 
-class DataColumnParameterTestCase(BaseParameterTestCase):
+class TestDataColumnParameter(BaseParameterTestCase):
     def test_not_optional_by_default(self):
         assert not self.__param_optional()
 

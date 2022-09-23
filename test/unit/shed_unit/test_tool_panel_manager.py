@@ -11,7 +11,7 @@ from ..app.tools.test_toolbox import (
 DEFAULT_GUID = "123456"
 
 
-class ToolPanelManagerTestCase(BaseToolBoxTestCase):
+class TestToolPanelManager(BaseToolBoxTestCase):
     def get_new_toolbox(self):
         return SimplifiedToolBox(self)
 

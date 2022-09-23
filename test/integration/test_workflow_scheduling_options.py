@@ -11,8 +11,8 @@ from galaxy_test.base.populators import (
 from galaxy_test.driver import integration_util
 
 
-class MaximumWorkflowInvocationDurationTestCase(integration_util.IntegrationTestCase):
-
+class TestMaximumWorkflowInvocationDuration(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
     def setUp(self):
@@ -46,8 +46,8 @@ class MaximumWorkflowInvocationDurationTestCase(integration_util.IntegrationTest
         assert state == "failed", state
 
 
-class MaximumWorkflowJobsPerSchedulingIterationTestCase(integration_util.IntegrationTestCase):
-
+class TestMaximumWorkflowJobsPerSchedulingIteration(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
     def setUp(self):

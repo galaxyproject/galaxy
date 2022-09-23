@@ -4,7 +4,6 @@ Unit tests for base DataProviders.
 """
 import os
 import tempfile
-import unittest
 from io import StringIO
 from typing import Type
 
@@ -13,6 +12,7 @@ from galaxy.datatypes.dataproviders import (
     exceptions,
 )
 from galaxy.util import clean_multiline_string
+from galaxy.util.unittest import TestCase
 
 # TODO: fix imports there after dist and retry
 # TODO: fix off by ones in FilteredDataProvider counters
@@ -43,7 +43,7 @@ class TempFileCache:
         self._content_dict = {}
 
 
-class BaseTestCase(unittest.TestCase):
+class BaseTestCase(TestCase):
     default_file_contents = """
             One
             Two

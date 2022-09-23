@@ -12,7 +12,7 @@ class _BaseUserExposeIntegerationTestCase(integration_util.IntegrationTestCase):
         return users
 
 
-class DefaultUserExposeIntegrationTestCase(_BaseUserExposeIntegerationTestCase):
+class TestDefaultUserExposeIntegration(_BaseUserExposeIntegerationTestCase):
     def test_defaults(self):
         original_user_ids = self.original_user_ids()
         self.galaxy_interactor.ensure_user_with_email("defaultuserexposetest@galaxyproject.org")
@@ -22,7 +22,7 @@ class DefaultUserExposeIntegrationTestCase(_BaseUserExposeIntegerationTestCase):
         assert len(new_users) == 0
 
 
-class EmailUserExposeIntegrationTestCase(_BaseUserExposeIntegerationTestCase):
+class TestEmailUserExposeIntegration(_BaseUserExposeIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -39,7 +39,7 @@ class EmailUserExposeIntegrationTestCase(_BaseUserExposeIntegerationTestCase):
         assert "last_password_change" not in user
 
 
-class UsernameUserExposeIntegrationTestCase(_BaseUserExposeIntegerationTestCase):
+class TestUsernameUserExposeIntegration(_BaseUserExposeIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)

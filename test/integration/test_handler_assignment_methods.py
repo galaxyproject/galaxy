@@ -46,7 +46,7 @@ class BaseHandlerAssignmentMethodIntegrationTestCase(integration_util.Integratio
         config["tool_dependency_dir"] = "none"
 
 
-class DBPreassignHandlerAssignmentMethodIntegrationTestCase(BaseHandlerAssignmentMethodIntegrationTestCase):
+class TestDBPreassignHandlerAssignmentMethodIntegration(BaseHandlerAssignmentMethodIntegrationTestCase):
     def setUp(self):
         self._with_handlers_config(assign_with="db-preassign", handlers=[{"id": "main"}])
         super().setUp()
@@ -56,7 +56,7 @@ class DBPreassignHandlerAssignmentMethodIntegrationTestCase(BaseHandlerAssignmen
         self._run_tool_test(tool_id)
 
 
-class DBTransactionIsolationHandlerAssignmentMethodIntegrationTestCase(BaseHandlerAssignmentMethodIntegrationTestCase):
+class TestDBTransactionIsolationHandlerAssignmentMethodIntegration(BaseHandlerAssignmentMethodIntegrationTestCase):
     def setUp(self):
         self._with_handlers_config(assign_with="db-transaction-isolation", handlers=[{"id": "main"}])
         super().setUp()
@@ -67,7 +67,7 @@ class DBTransactionIsolationHandlerAssignmentMethodIntegrationTestCase(BaseHandl
         self._run_tool_test(tool_id)
 
 
-class DBSkipLockedHandlerAssignmentMethodIntegrationTestCase(BaseHandlerAssignmentMethodIntegrationTestCase):
+class TestDBSkipLockedHandlerAssignmentMethodIntegration(BaseHandlerAssignmentMethodIntegrationTestCase):
     def setUp(self):
         self._with_handlers_config(assign_with="db-skip-locked", handlers=[{"id": "main"}])
         super().setUp()

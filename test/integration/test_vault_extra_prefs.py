@@ -15,7 +15,7 @@ from galaxy_test.driver import integration_util
 TEST_USER_EMAIL = "vault_test_user@bx.psu.edu"
 
 
-class ExtraUserPreferencesTestCase(integration_util.IntegrationTestCase):
+class TestExtraUserPreferences(integration_util.IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)

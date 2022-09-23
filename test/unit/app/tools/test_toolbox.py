@@ -4,7 +4,6 @@ import logging
 import os
 import string
 import time
-import unittest
 from typing import Optional
 
 import pytest
@@ -22,6 +21,7 @@ from galaxy.tool_util.unittest_utils.sample_data import (
 )
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
+from galaxy.util.unittest import TestCase
 
 log = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ class SimplifiedToolBox(ToolBox):
         self.app.watchers.start()
 
 
-class BaseToolBoxTestCase(unittest.TestCase, UsesTools):
+class BaseToolBoxTestCase(TestCase, UsesTools):
     _toolbox: Optional[SimplifiedToolBox] = None
 
     @property
@@ -187,7 +187,7 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesTools):
         self.reindexed = True
 
 
-class ToolBoxTestCase(BaseToolBoxTestCase):
+class TestToolBox(BaseToolBoxTestCase):
     def test_load_file(self):
         self._init_tool()
         self._add_config("""<toolbox><tool file="tool.xml" /></toolbox>""")

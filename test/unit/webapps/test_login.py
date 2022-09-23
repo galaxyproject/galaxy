@@ -3,12 +3,12 @@ from datetime import (
     datetime,
     timedelta,
 )
-from unittest import TestCase
 
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.managers.users import UserManager
 from galaxy.security.passwords import check_password
+from galaxy.util.unittest import TestCase
 from galaxy.webapps.galaxy.controllers.user import User
 
 admin_email = "admin@admin.admin"
@@ -18,7 +18,7 @@ changed_password = "654321"
 user2_data = dict(email="user2@user2.user2", username="user2", password=default_password)
 
 
-class LoginControllerTestCase(TestCase):
+class TestLoginController(TestCase):
     def setUp(self):
         admin_users_list = [u for u in admin_users.split(",") if u]
         self.trans = galaxy_mock.MockTrans(admin_users=admin_users, admin_users_list=admin_users_list)

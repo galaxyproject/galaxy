@@ -31,7 +31,7 @@ class ToolShedRepoBaseTestCase(BaseToolBoxTestCase):
         return self._repo_install(changeset="1", config_filename=self.config_files[0])
 
 
-class InstallRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
+class TestInstallRepositoryManager(ToolShedRepoBaseTestCase):
     def setUp(self):
         super().setUp()
         self.irm = InstallRepositoryManager(self.app)
@@ -89,7 +89,7 @@ class InstallRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
         assert repository.changeset_revision == changeset_revision
 
 
-class InstalledRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
+class TestInstalledRepositoryManager(ToolShedRepoBaseTestCase):
     def setUp(self):
         super().setUp()
         self.irm = InstalledRepositoryManager(self.app)

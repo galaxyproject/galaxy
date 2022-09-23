@@ -42,7 +42,7 @@ class BaseHistories:
         assert len(contents) == n, contents
 
 
-class HistoriesApiTestCase(ApiTestCase, BaseHistories):
+class TestHistoriesApi(ApiTestCase, BaseHistories):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -556,7 +556,7 @@ class ImportExportTests(BaseHistories):
             elements_checker(imported_collection_metadata["elements"])
 
 
-class ImportExportHistoryTestCase(ApiTestCase, ImportExportTests):
+class TestImportExportHistory(ApiTestCase, ImportExportTests):
     task_based = False
 
     def setUp(self):
@@ -564,7 +564,7 @@ class ImportExportHistoryTestCase(ApiTestCase, ImportExportTests):
         self._set_up_populators()
 
 
-class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
+class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
     """Tests specific for the particularities of sharing Histories."""
 
     api_name = "histories"

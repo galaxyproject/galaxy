@@ -38,7 +38,7 @@ steps:
 """
 
 
-class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCase, UsesShedApi):
+class TestWorkflowRefactoringIntegration(integration_util.IntegrationTestCase, UsesShedApi):
 
     framework_tool_and_types = True
 

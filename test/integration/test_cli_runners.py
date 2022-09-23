@@ -153,17 +153,17 @@ class SecureShell:
     shell_plugin = "SecureShell"
 
 
-class ParamikoCliSlurmIntegrationTestCase(SlurmSetup, ParamikoShell, AbstractTestCases.BaseCliIntegrationTestCase):
+class TestParamikoCliSlurmIntegration(SlurmSetup, ParamikoShell, AbstractTestCases.BaseCliIntegrationTestCase):
     pass
 
 
-class ShellJobCliSlurmIntegrationTestCase(SlurmSetup, SecureShell, AbstractTestCases.BaseCliIntegrationTestCase):
+class TestShellJobCliSlurmIntegration(SlurmSetup, SecureShell, AbstractTestCases.BaseCliIntegrationTestCase):
     pass
 
 
-class ParamikoCliOpenPBSIntegrationTestCase(OpenPBSSetup, ParamikoShell, AbstractTestCases.BaseCliIntegrationTestCase):
+class TestParamikoCliOpenPBSIntegration(OpenPBSSetup, ParamikoShell, AbstractTestCases.BaseCliIntegrationTestCase):
     pass
 
 
-class ShellJobCliOpenPBSIntegrationTestCase(OpenPBSSetup, SecureShell, AbstractTestCases.BaseCliIntegrationTestCase):
+class TestShellJobCliOpenPBSIntegration(OpenPBSSetup, SecureShell, AbstractTestCases.BaseCliIntegrationTestCase):
     pass

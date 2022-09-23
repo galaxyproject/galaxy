@@ -22,10 +22,8 @@ from galaxy_test.driver.integration_setup import PosixFileSourceSetup
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
-class WorkflowTasksIntegrationTestCase(
-    PosixFileSourceSetup, IntegrationTestCase, UsesCeleryTasks, RunsWorkflowFixtures
-):
-
+class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, UsesCeleryTasks, RunsWorkflowFixtures):
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
     @classmethod

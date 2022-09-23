@@ -84,7 +84,7 @@ class BaseExportTestCase(BaseTestCase):
         return collection
 
 
-class ToBasicMarkdownTestCase(BaseExportTestCase):
+class TestToBasicMarkdown(BaseExportTestCase):
     def setUp(self):
         super().setUp()
         self.test_dataset_path = None
@@ -329,7 +329,7 @@ job_metrics(job_id=1)
         return to_basic_markdown(self.trans, example)
 
 
-class ReadyExportTestCase(BaseExportTestCase):
+class TestReadyExport(BaseExportTestCase):
     def test_ready_dataset_display(self):
         hda = self._new_hda()
         example = """

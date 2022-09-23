@@ -1,8 +1,8 @@
 import os
 import string
 import tempfile
-import unittest
 
+import pytest
 from cryptography.fernet import InvalidToken
 
 from galaxy.model.unittest_utils.data_app import (
@@ -14,6 +14,7 @@ from galaxy.security.vault import (
     Vault,
     VaultFactory,
 )
+from galaxy.util.unittest import TestCase
 
 
 class AbstractTestCases:
@@ -26,7 +27,7 @@ class AbstractTestCases:
     classes even if they are abstract, and therefore their tests fails.
     """
 
-    class VaultTestBase(unittest.TestCase):
+    class VaultTestBase(TestCase):
         vault: Vault
 
         def test_read_write_secret(self):
@@ -53,9 +54,9 @@ class AbstractTestCases:
 VAULT_CONF_HASHICORP = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_hashicorp.yml")
 
 
-@unittest.skipIf(
+@pytest.mark.skipif(
     not os.environ.get("VAULT_ADDRESS") or not os.environ.get("VAULT_TOKEN"),
-    "VAULT_ADDRESS and VAULT_TOKEN env vars not set",
+    reason="VAULT_ADDRESS and VAULT_TOKEN env vars not set",
 )
 class TestHashicorpVault(AbstractTestCases.VaultTestBase):
     def setUp(self) -> None:
@@ -113,9 +114,9 @@ class TestDatabaseVault(AbstractTestCases.VaultTestBase):
 VAULT_CONF_CUSTOS = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_custos.yml")
 
 
-@unittest.skipIf(
+@pytest.mark.skipif(
     not os.environ.get("CUSTOS_CLIENT_ID") or not os.environ.get("CUSTOS_CLIENT_SECRET"),
-    "CUSTOS_CLIENT_ID and CUSTOS_CLIENT_SECRET env vars not set",
+    reason="CUSTOS_CLIENT_ID and CUSTOS_CLIENT_SECRET env vars not set",
 )
 class TestCustosVault(AbstractTestCases.VaultTestBase):
     def setUp(self) -> None:

@@ -16,7 +16,9 @@ execution:
 """
 
 
-class WorkQueuePutFailureTestCase(integration_util.IntegrationTestCase):
+class TestWorkQueuePutFailure(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)

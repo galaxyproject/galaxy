@@ -2,7 +2,6 @@
 """
 from collections import OrderedDict
 from typing import cast
-from unittest import TestCase
 
 import webob.exc
 
@@ -11,6 +10,7 @@ from galaxy.app_unittest_utils import tools_support
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.util.bunch import Bunch
+from galaxy.util.unittest import TestCase
 
 BASE_REPEAT_TOOL_CONTENTS = """<tool id="test_tool" name="Test Tool">
     <command>echo "$param1" #for $r in $repeat# "$r.param2" #end for# &lt; $out1</command>
@@ -33,7 +33,7 @@ REPEAT_COLLECTION_PARAM_CONTENTS = BASE_REPEAT_TOOL_CONTENTS % (
 )
 
 
-class ToolExecutionTestCase(TestCase, tools_support.UsesTools):
+class TestToolExecution(TestCase, tools_support.UsesTools):
     tool_action: "MockAction"
 
     def setUp(self):

@@ -1,12 +1,11 @@
-import unittest
-
 from galaxy import model
+from galaxy.util.unittest import TestCase
 from galaxy.workflow import extract
 
 UNDEFINED_JOB = object()
 
 
-class TestWorkflowExtractSummary(unittest.TestCase):
+class TestWorkflowExtractSummary(TestCase):
     def setUp(self):
         self.history = MockHistory()
         self.trans = MockTrans(self.history)

@@ -1,5 +1,3 @@
-from unittest import TestCase
-
 from galaxy import model
 from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.tools.parameters import (
@@ -10,6 +8,7 @@ from galaxy.util import (
     bunch,
     XML,
 )
+from galaxy.util.unittest import TestCase
 from .test_data_parameters import MockHistoryDatasetAssociation
 
 
@@ -20,7 +19,7 @@ class MockTool:
         self.valid_input_states = model.Dataset.valid_input_states
 
 
-class DatasetMatcherTestCase(TestCase, UsesApp):
+class TestDatasetMatcher(TestCase, UsesApp):
     def test_hda_mismatches(self):
         # Datasets not visible are not "valid" for param.
         self.mock_hda.visible = False

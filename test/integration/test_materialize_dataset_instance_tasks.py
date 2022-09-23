@@ -11,12 +11,13 @@ from galaxy_test.base.api import UsesCeleryTasks
 from galaxy_test.base.populators import (
     DatasetPopulator,
     LibraryPopulator,
-    uses_test_history,
 )
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
-class MaterializeDatasetInstanceTasaksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
+class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesCeleryTasks):
+    dataset_populator: DatasetPopulator
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -34,7 +35,6 @@ class MaterializeDatasetInstanceTasaksIntegrationTestCase(IntegrationTestCase, U
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
-    @uses_test_history(require_new=True)
     def test_materialize_history_dataset(self, history_id: str):
         as_list = self.dataset_populator.create_contents_from_store(
             history_id,
@@ -54,7 +54,6 @@ class MaterializeDatasetInstanceTasaksIntegrationTestCase(IntegrationTestCase, U
         assert new_hda_details["state"] == "ok"
         assert not new_hda_details["deleted"]
 
-    @uses_test_history(require_new=True)
     def test_materialize_gxfiles_uri(self, history_id: str):
         as_list = self.dataset_populator.create_contents_from_store(
             history_id,
@@ -75,7 +74,6 @@ class MaterializeDatasetInstanceTasaksIntegrationTestCase(IntegrationTestCase, U
         assert new_hda_details["state"] == "ok"
         assert not new_hda_details["deleted"]
 
-    @uses_test_history(require_new=True)
     def test_materialize_history_dataset_bam(self, history_id: str):
         as_list = self.dataset_populator.create_contents_from_store(
             history_id,
@@ -107,7 +105,6 @@ class MaterializeDatasetInstanceTasaksIntegrationTestCase(IntegrationTestCase, U
         assert ">chrM" in new_hda_details["metadata_reference_names"]
         assert "metadata_bam_index" in new_hda_details
 
-    @uses_test_history(require_new=True)
     def test_materialize_library_dataset(self, history_id: str):
         response = self.library_populator.create_from_store(store_dict=one_ld_library_deferred_model_store_dict())
         assert isinstance(response, list)
@@ -126,7 +123,6 @@ class MaterializeDatasetInstanceTasaksIntegrationTestCase(IntegrationTestCase, U
         assert new_hda_details["state"] == "ok"
         assert not new_hda_details["deleted"]
 
-    @uses_test_history(require_new=True)
     def test_upload_vs_materialize_simplest_upload(self, history_id: str):
         item = {"src": "url", "url": "gxfiles://testdatafiles//simple_line_no_newline.txt", "ext": "txt"}
         output = self.dataset_populator.fetch_hda(history_id, item)
@@ -141,7 +137,6 @@ class MaterializeDatasetInstanceTasaksIntegrationTestCase(IntegrationTestCase, U
         content = self.dataset_populator.get_history_dataset_content(new_history_id, hid=2, assert_ok=False)
         assert content == "This is a line of text."
 
-    @uses_test_history(require_new=True)
     def test_upload_vs_materialize_to_posix_lines(self, history_id: str):
         item = {
             "src": "url",
@@ -167,7 +162,6 @@ class MaterializeDatasetInstanceTasaksIntegrationTestCase(IntegrationTestCase, U
         content = self.dataset_populator.get_history_dataset_content(new_history_id, hid=2, assert_ok=False)
         assert content == "This is a line of text.\n"
 
-    @uses_test_history(require_new=True)
     def test_upload_vs_materialize_space_to_tab(self, history_id: str):
         item = {
             "src": "url",
@@ -193,7 +187,6 @@ class MaterializeDatasetInstanceTasaksIntegrationTestCase(IntegrationTestCase, U
         content = self.dataset_populator.get_history_dataset_content(new_history_id, hid=2, assert_ok=False)
         assert content == "This\tis\ta\tline\tof\ttext."
 
-    @uses_test_history(require_new=True)
     def test_upload_vs_materialize_to_posix_and_space_to_tab(self, history_id: str):
         item = {
             "src": "url",
@@ -220,7 +213,6 @@ class MaterializeDatasetInstanceTasaksIntegrationTestCase(IntegrationTestCase, U
         content = self.dataset_populator.get_history_dataset_content(new_history_id, hid=2, assert_ok=False)
         assert content == "This\tis\ta\tline\tof\ttext.\n"
 
-    @uses_test_history(require_new=True)
     def test_upload_vs_materialize_grooming(self, history_id: str):
         item = {
             "src": "url",

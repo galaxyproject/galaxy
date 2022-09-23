@@ -1,7 +1,6 @@
 import collections
 import os
 import random
-import unittest
 import uuid
 from tempfile import NamedTemporaryFile
 from typing import List
@@ -23,6 +22,7 @@ from galaxy.model.orm.util import (
     get_object_session,
 )
 from galaxy.model.security import GalaxyRBACAgent
+from galaxy.util.unittest import TestCase
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes()
@@ -37,7 +37,7 @@ skip_if_not_postgres_base = pytest.mark.skipif(
 )
 
 
-class BaseModelTestCase(unittest.TestCase):
+class BaseModelTestCase(TestCase):
     model: mapping.GalaxyModelMapping
 
     @classmethod
@@ -76,7 +76,7 @@ class BaseModelTestCase(unittest.TestCase):
         cls.model.session.expunge_all()
 
 
-class MappingTests(BaseModelTestCase):
+class TestMappings(BaseModelTestCase):
     def test_ratings(self):
         user_email = "rater@example.com"
         u = model.User(email=user_email, password="password")
@@ -991,7 +991,7 @@ class MappingTests(BaseModelTestCase):
 
 
 @skip_if_not_postgres_base
-class PostgresMappingTests(MappingTests):
+class TestPostgresMappings(TestMappings):
     @classmethod
     def _db_uri(cls):
         base = os.environ.get("GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE")

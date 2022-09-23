@@ -19,7 +19,6 @@ from galaxy_test.base.api_asserts import (
 )
 from galaxy_test.base.populators import (
     BaseDatasetCollectionPopulator,
-    BaseDatasetPopulator,
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
@@ -54,7 +53,7 @@ MINIMAL_TOOL_NO_ID = {
 
 
 class TestsTools:
-    dataset_populator: BaseDatasetPopulator
+    dataset_populator: DatasetPopulator
     dataset_collection_populator: BaseDatasetCollectionPopulator
 
     def _build_pair(self, history_id, contents):

@@ -7,8 +7,8 @@ from galaxy_test.base.populators import (
 from galaxy_test.driver import integration_util
 
 
-class FailJobWhenToolUnavailableTestCase(integration_util.IntegrationTestCase):
-
+class TestFailJobWhenToolUnavailable(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
     require_admin_user = True
 
     def setUp(self):

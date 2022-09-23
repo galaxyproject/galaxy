@@ -2,7 +2,6 @@ import os
 import threading
 import time
 from typing import Optional
-from unittest import TestCase
 
 import psutil
 
@@ -13,6 +12,7 @@ from galaxy import (
 from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.jobs.runners import local
 from galaxy.util import bunch
+from galaxy.util.unittest import TestCase
 
 
 class TestLocalJobRunner(TestCase, UsesTools):

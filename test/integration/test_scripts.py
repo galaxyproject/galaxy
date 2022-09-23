@@ -16,7 +16,7 @@ from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 
-class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestScriptsIntegration(integration_util.IntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)

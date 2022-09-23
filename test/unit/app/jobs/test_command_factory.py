@@ -6,7 +6,6 @@ from typing import (
     List,
     Tuple,
 )
-from unittest import TestCase
 
 from galaxy.jobs.command_factory import (
     build_command,
@@ -15,6 +14,7 @@ from galaxy.jobs.command_factory import (
 )
 from galaxy.tool_util.deps.container_classes import TRAP_KILL_CONTAINER
 from galaxy.util.bunch import Bunch
+from galaxy.util.unittest import TestCase
 
 MOCK_COMMAND_LINE = "/opt/galaxy/tools/bowtie /mnt/galaxyData/files/000/input000.dat"
 TEST_METADATA_LINE = "set_metadata_and_stuff.sh"

@@ -176,7 +176,7 @@ class KubernetesDatasetPopulator(DatasetPopulator):
 
 
 @integration_util.skip_unless_kubernetes()
-class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
+class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
     def setUp(self):
         super().setUp()
         self.dataset_populator = KubernetesDatasetPopulator(self.galaxy_interactor)

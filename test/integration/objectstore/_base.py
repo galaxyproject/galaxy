@@ -51,6 +51,7 @@ def stop_minio(container_name):
 
 class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase):
 
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
     @classmethod

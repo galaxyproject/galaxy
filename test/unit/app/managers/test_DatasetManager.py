@@ -23,7 +23,7 @@ user3_data = dict(email="user3@user3.user3", username="user3", password=default_
 
 
 # =============================================================================
-class DatasetManagerTestCase(BaseTestCase):
+class TestDatasetManager(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.dataset_manager = DatasetManager(self.app)
@@ -187,7 +187,7 @@ class DatasetManagerTestCase(BaseTestCase):
         assert not self.dataset_manager.permissions.access.is_permitted(dataset, None)
 
 
-# class DatasetRBACPermissionsTestCase(BaseTestCase):
+# class TestDatasetRBACPermissions(BaseTestCase):
 #     def set_up_managers(self):
 #         super().set_up_managers()
 #         self.dataset_manager = DatasetManager(self.app)
@@ -205,7 +205,7 @@ def testable_url_for(*a, **k):
 
 
 @mock.patch("galaxy.managers.datasets.DatasetSerializer.url_for", testable_url_for)
-class DatasetSerializerTestCase(BaseTestCase):
+class TestDatasetSerializer(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.dataset_manager = DatasetManager(self.app)

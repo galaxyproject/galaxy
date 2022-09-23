@@ -60,7 +60,7 @@ def skip_if_container_type_unavailable(cls):
         raise unittest.SkipTest(f"Executable '{cls.container_type}' not found on PATH")
 
 
-class DockerizedJobsIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
+class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
 
     job_config_file = DOCKERIZED_JOB_CONFIG_FILE
     build_mulled_resolver = "build_mulled"
@@ -152,7 +152,7 @@ class DockerizedJobsIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         assert status[0]["container_description"]["identifier"].startswith("quay.io/local/mulled-v2-")
 
 
-class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
+class TestMappingContainerResolver(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
     container_type = "docker"
@@ -195,7 +195,7 @@ class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
         assert "0.7.15-r1140" in output
 
 
-class InlineContainerConfigurationTestCase(MappingContainerResolverTestCase):
+class TestInlineContainerConfiguration(TestMappingContainerResolver):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -218,7 +218,7 @@ class InlineContainerConfigurationTestCase(MappingContainerResolverTestCase):
         config["container_resolvers"] = container_resolvers_config
 
 
-class InlineJobEnvironmentContainerResolverTestCase(integration_util.IntegrationTestCase):
+class TestInlineJobEnvironmentContainerResolver(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
     container_type = "docker"
@@ -251,8 +251,8 @@ class InlineJobEnvironmentContainerResolverTestCase(integration_util.Integration
 # Singularity 2.4 in the official Vagrant issue has some problems running this test
 # case by default because subdirectories of /tmp don't bind correctly. Overridding
 # TMPDIR can fix this.
-# TMPDIR=/home/vagrant/tmp/ pytest test/integration/test_containerized_jobs.py::SingularityJobsIntegrationTestCase
-class SingularityJobsIntegrationTestCase(DockerizedJobsIntegrationTestCase):
+# TMPDIR=/home/vagrant/tmp/ pytest test/integration/test_containerized_jobs.py::TestSingularityJobsIntegration
+class TestSingularityJobsIntegration(TestDockerizedJobsIntegration):
 
     job_config_file = SINGULARITY_JOB_CONFIG_FILE
     build_mulled_resolver = "build_mulled_singularity"

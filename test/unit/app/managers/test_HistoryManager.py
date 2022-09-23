@@ -28,7 +28,7 @@ user4_data = dict(email="user4@user4.user4", username="user4", password=default_
 parsed_filter = base.ModelFilterParser.parsed_filter
 
 
-class HistoryManagerTestCase(BaseTestCase):
+class TestHistoryManager(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.history_manager = self.app[HistoryManager]
@@ -384,7 +384,7 @@ def testable_url_for(*a, **k):
 
 @mock.patch("galaxy.managers.histories.HistorySerializer.url_for", testable_url_for)
 @mock.patch("galaxy.managers.hdas.HDASerializer.url_for", testable_url_for)
-class HistorySerializerTestCase(BaseTestCase):
+class TestHistorySerializer(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.history_manager = self.app[HistoryManager]
@@ -606,7 +606,7 @@ class HistorySerializerTestCase(BaseTestCase):
 
 
 # =============================================================================
-class HistoryDeserializerTestCase(BaseTestCase):
+class TestHistoryDeserializer(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.history_manager = self.app[HistoryManager]
@@ -667,7 +667,7 @@ class HistoryDeserializerTestCase(BaseTestCase):
 
 
 # =============================================================================
-class HistoryFiltersTestCase(BaseTestCase):
+class TestHistoryFilters(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.history_manager = self.app[HistoryManager]

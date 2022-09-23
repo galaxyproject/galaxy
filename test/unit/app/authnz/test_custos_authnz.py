@@ -1,7 +1,6 @@
 import hashlib
 import json
 import os
-import unittest
 import uuid
 from datetime import (
     datetime,
@@ -24,9 +23,10 @@ from galaxy.model import (
     User,
 )
 from galaxy.util import unicodify
+from galaxy.util.unittest import TestCase
 
 
-class CustosAuthnzTestCase(unittest.TestCase):
+class TestCustosAuthnz(TestCase):
 
     _create_oauth2_session_called = False
     _fetch_token_called = False

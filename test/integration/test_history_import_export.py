@@ -15,7 +15,7 @@ from galaxy_test.base.populators import (
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
-class ImportExportHistoryOutputsToWorkingDirIntegrationTestCase(ImportExportTests, IntegrationTestCase):
+class TestImportExportHistoryOutputsToWorkingDirIntegration(ImportExportTests, IntegrationTestCase):
     task_based = False
     framework_tool_and_types = True
 
@@ -29,7 +29,7 @@ class ImportExportHistoryOutputsToWorkingDirIntegrationTestCase(ImportExportTest
         self._set_up_populators()
 
 
-class ImportExportHistoryViaTasksIntegrationTestCase(ImportExportTests, IntegrationTestCase, UsesCeleryTasks):
+class TestImportExportHistoryViaTasksIntegration(ImportExportTests, IntegrationTestCase, UsesCeleryTasks):
     task_based = True
     framework_tool_and_types = True
 
@@ -49,7 +49,8 @@ class ImportExportHistoryViaTasksIntegrationTestCase(ImportExportTests, Integrat
         )
 
 
-class ImportExportHistoryContentsViaTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
+class TestImportExportHistoryContentsViaTasksIntegration(IntegrationTestCase, UsesCeleryTasks):
+    dataset_populator: DatasetPopulator
     task_based = True
     framework_tool_and_types = True
 

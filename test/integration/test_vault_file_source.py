@@ -11,7 +11,8 @@ FILE_SOURCES_VAULT_CONF = os.path.join(SCRIPT_DIRECTORY, "file_sources_conf_vaul
 VAULT_CONF = os.path.join(SCRIPT_DIRECTORY, "vault_conf.yml")
 
 
-class VaultFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestVaultFileSourceIntegration(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
     USER_1_APP_VAULT_ENTRY = "randomvaultuser1@universe.com"
     USER_2_APP_VAULT_ENTRY = "randomvaultuser2@universe.com"
 

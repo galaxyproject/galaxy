@@ -34,7 +34,7 @@ class HDATestCase(BaseTestCase):
 
 
 # =============================================================================
-class HDAManagerTestCase(HDATestCase):
+class TestHDAManager(HDATestCase):
     def test_base(self):
         hda_model = model.HistoryDatasetAssociation
         owner = self.user_manager.create(**user2_data)
@@ -365,7 +365,7 @@ def testable_url_for(*a, **k):
 
 
 @mock.patch("galaxy.managers.hdas.HDASerializer.url_for", testable_url_for)
-class HDASerializerTestCase(HDATestCase):
+class TestHDASerializer(HDATestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.hda_serializer = hdas.HDASerializer(self.app)
@@ -526,7 +526,7 @@ class HDASerializerTestCase(HDATestCase):
 
 
 # =============================================================================
-class HDADeserializerTestCase(HDATestCase):
+class TestHDADeserializer(HDATestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.hda_deserializer = hdas.HDADeserializer(self.app)
@@ -633,7 +633,7 @@ class HDADeserializerTestCase(HDATestCase):
 
 
 # =============================================================================
-class HDAFilterParserTestCase(HDATestCase):
+class TestHDAFilterParser(HDATestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.filter_parser = hdas.HDAFilterParser(self.app)

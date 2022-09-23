@@ -10,7 +10,7 @@ user2_data = dict(email="user2@user2.user2", username="user2", password=default_
 
 
 # =============================================================================
-class TagHandlerTestCase(BaseTestCase):
+class TestTagHandler(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.app.hda_manager = self.app[hdas.HDAManager]

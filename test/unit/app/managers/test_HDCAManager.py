@@ -58,7 +58,7 @@ def testable_url_for(*a, **k):
 
 
 @mock.patch("galaxy.managers.hdcas.HDCASerializer.url_for", testable_url_for)
-class HDCASerializerTestCase(HDCATestCase):
+class TestHDCASerializer(HDCATestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.hdca_serializer = hdcas.HDCASerializer(self.app)

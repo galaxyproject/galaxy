@@ -225,7 +225,7 @@ class GalaxyTestSeleniumContext(GalaxySeleniumContext):
     """Extend GalaxySeleniumContext with Selenium-aware galaxy_test.base.populators."""
 
     @property
-    def dataset_populator(self) -> populators.BaseDatasetPopulator:
+    def dataset_populator(self) -> "SeleniumSessionDatasetPopulator":
         """A dataset populator connected to the Galaxy session described by Selenium context."""
         return SeleniumSessionDatasetPopulator(self)
 

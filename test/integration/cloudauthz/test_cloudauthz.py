@@ -1,6 +1,6 @@
 """
 You may run this test using the following command:
-./run_tests.sh test/integration/cloudauthz/test_cloudauthz.py:DefineCloudAuthzTestCase.test_post_cloudauthz_without_authn -s
+./run_tests.sh test/integration/cloudauthz/test_cloudauthz.py:TestDefineCloudAuthz.test_post_cloudauthz_without_authn -s
 """
 
 import json
@@ -8,7 +8,7 @@ import json
 from galaxy_test.driver import integration_util
 
 
-class DefineCloudAuthzTestCase(integration_util.IntegrationTestCase):
+class TestDefineCloudAuthz(integration_util.IntegrationTestCase):
     framework_tool_and_types = True
 
     def test_post_cloudauthz_without_authn(self):

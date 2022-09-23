@@ -1,6 +1,5 @@
 import json
 import os
-import unittest
 from typing import cast
 
 from galaxy import (
@@ -15,12 +14,13 @@ from galaxy.tool_util.provided_metadata import (
     LegacyToolProvidedMetadata,
     NullToolProvidedMetadata,
 )
+from galaxy.util.unittest import TestCase
 
 DEFAULT_TOOL_OUTPUT = "out1"
 DEFAULT_EXTRA_NAME = "test1"
 
 
-class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools):
+class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
     def setUp(self):
         self.setup_app()
         object_store = cast(ObjectStore, MockObjectStore())

@@ -30,7 +30,9 @@ def process_page(request: CreatePagePayload):
     return f"content_format is {request.content_format} with annotation {request.annotation}"
 
 
-class CeleryTasksIntegrationTestCase(IntegrationTestCase):
+class TestCeleryTasksIntegration(IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)

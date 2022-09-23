@@ -2,7 +2,6 @@ import datetime
 import os
 import shutil
 import tempfile
-import unittest
 from unittest import mock
 
 from pykwalify.core import Core
@@ -14,6 +13,7 @@ from galaxy.util import (
     galaxy_directory,
     galaxy_samples_directory,
 )
+from galaxy.util.unittest import TestCase
 from galaxy.web_stack import ApplicationStack
 from galaxy.web_stack.handlers import HANDLER_ASSIGNMENT_METHODS
 
@@ -31,7 +31,7 @@ class TestApplicationStack(ApplicationStack):
         return HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
 
 
-class BaseJobConfXmlParserTestCase(unittest.TestCase):
+class BaseJobConfXmlParserTestCase(TestCase):
     extension = "xml"
 
     def setUp(self):
@@ -123,7 +123,7 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
             self._write_config_from(ADVANCED_JOB_CONF_YAML)
 
 
-class SimpleJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
+class TestSimpleJobConfXmlParser(BaseJobConfXmlParserTestCase):
     extension = "xml"
 
     def test_load_simple_runner(self):
@@ -239,7 +239,7 @@ class SimpleJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
             assert self.job_config.destinations[name]
 
 
-class AdvancedJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
+class TestAdvancedJobConfXmlParser(BaseJobConfXmlParserTestCase):
     def test_disable_job_metrics(self):
         self._with_advanced_config()
         self.job_config.destinations["multicore_local"]
@@ -350,7 +350,7 @@ class AdvancedJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
         assert self.job_config.resource_groups["memoryonly"] == ["memory"]
 
 
-class AdvancedJobConfYamlParserTestCase(AdvancedJobConfXmlParserTestCase):
+class TestAdvancedJobConfYamlParser(TestAdvancedJobConfXmlParser):
     extension = "yml"
 
 

@@ -49,7 +49,7 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 REFGENIE_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "refgenie.yml")
 
 
-class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesShed):
+class TestDataManagerIntegration(integration_util.IntegrationTestCase, UsesShed):
 
     """Test data manager installation and table reload through the API"""
 

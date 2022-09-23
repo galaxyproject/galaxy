@@ -124,7 +124,7 @@ def job_config(template_str, jobs_directory):
 @integration_util.skip_unless_kubernetes()
 @integration_util.skip_unless_amqp()
 @integration_util.skip_if_github_workflow()
-class BaseKubernetesStagingTest(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
+class TestKubernetesStaging(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
     def setUp(self):
         super().setUp()
         self.dataset_populator = KubernetesDatasetPopulator(self.galaxy_interactor)
@@ -137,7 +137,7 @@ class BaseKubernetesStagingTest(BaseJobEnvironmentIntegrationTestCase, MulledJob
         super().setUpClass()
 
 
-class KubernetesStagingContainerIntegrationTestCase(CancelsJob, BaseKubernetesStagingTest):
+class TestKubernetesStagingContainerIntegration(CancelsJob, TestKubernetesStaging):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["jobs_directory"] = cls.jobs_directory
@@ -189,7 +189,7 @@ class KubernetesStagingContainerIntegrationTestCase(CancelsJob, BaseKubernetesSt
         return active
 
 
-class KubernetesDependencyResolutionIntegrationTestCase(BaseKubernetesStagingTest):
+class TestKubernetesDependencyResolutionIntegration(TestKubernetesStaging):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["jobs_directory"] = cls.jobs_directory

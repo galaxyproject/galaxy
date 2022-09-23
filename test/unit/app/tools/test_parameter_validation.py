@@ -1,7 +1,7 @@
 from .util import BaseParameterTestCase
 
 
-class ParameterValidationTestCase(BaseParameterTestCase):
+class TestParameterValidation(BaseParameterTestCase):
     def test_simple_ExpressionValidator(self):
         p = self._parameter_for(
             xml="""

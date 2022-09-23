@@ -1,6 +1,5 @@
-import unittest
-
 from galaxy import model
+from galaxy.util.unittest import TestCase
 from galaxy.workflow.run import WorkflowProgress
 from .workflow_support import (
     MockApp,
@@ -64,7 +63,7 @@ steps:
 UNSCHEDULED_STEP = object()
 
 
-class WorkflowProgressTestCase(unittest.TestCase):
+class TestWorkflowProgress(TestCase):
     def setUp(self):
         self.app = MockApp()
         self.inputs_by_step_id = {}

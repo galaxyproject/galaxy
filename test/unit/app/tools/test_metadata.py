@@ -1,6 +1,5 @@
 import os
 import subprocess
-import unittest
 
 from galaxy import model
 from galaxy.app_unittest_utils import tools_support
@@ -11,9 +10,10 @@ from galaxy.util import (
     galaxy_directory,
     safe_makedirs,
 )
+from galaxy.util.unittest import TestCase
 
 
-class MetadataTestCase(unittest.TestCase, tools_support.UsesTools):
+class TestMetadata(TestCase, tools_support.UsesTools):
     def setUp(self):
         super().setUp()
         self.setup_app()

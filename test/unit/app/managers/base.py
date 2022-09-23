@@ -2,12 +2,12 @@
 """
 
 import json
-import unittest
 
 import sqlalchemy
 
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.managers.users import UserManager
+from galaxy.util.unittest import TestCase
 
 # =============================================================================
 admin_email = "admin@admin.admin"
@@ -16,7 +16,7 @@ default_password = "123456"
 
 
 # =============================================================================
-class BaseTestCase(unittest.TestCase):
+class BaseTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         print("\n", "-" * 20, "begin class", cls)

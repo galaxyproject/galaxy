@@ -6,7 +6,6 @@ from typing import (
     Dict,
     Type,
 )
-from unittest import TestCase
 
 from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.jobs import (
@@ -22,6 +21,7 @@ from galaxy.model import (
 from galaxy.objectstore import ObjectStore
 from galaxy.tools import ToolBox
 from galaxy.util.bunch import Bunch
+from galaxy.util.unittest import TestCase
 
 TEST_TOOL_ID = "cufftest"
 TEST_VERSION_COMMAND = "bwa --version"
@@ -86,12 +86,12 @@ class AbstractTestCases:
             pass
 
 
-class JobWrapperTestCase(AbstractTestCases.BaseWrapperTestCase):
+class TestJobWrapper(AbstractTestCases.BaseWrapperTestCase):
     def _wrapper(self):
         return JobWrapper(self.job, self.queue)  # type: ignore[arg-type]
 
 
-class TaskWrapperTestCase(AbstractTestCases.BaseWrapperTestCase):
+class TestTaskWrapper(AbstractTestCases.BaseWrapperTestCase):
     def setUp(self):
         super().setUp()
         self.task = Task(self.job, self.working_directory, "prepare_bwa_job.sh")

@@ -9,7 +9,7 @@ from galaxy.app_unittest_utils import galaxy_mock
 from .util import BaseParameterTestCase
 
 
-class DataToolParameterTestCase(BaseParameterTestCase):
+class TestDataToolParameter(BaseParameterTestCase):
     def test_to_python_none_values(self):
         assert self.param.to_python(None, self.app) is None
         assert self.param.to_python("None", self.app) is None
