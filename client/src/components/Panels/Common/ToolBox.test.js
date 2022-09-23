@@ -1,8 +1,8 @@
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
-import { toolSearch } from "../utilities";
+import { filterToolSections, filterTools } from "../utilities";
 
-describe("ToolSearch", () => {
+describe("ToolBox", () => {
     const toolsMock = [
         {
             model_class: "ToolSection",
@@ -46,11 +46,9 @@ describe("ToolSearch", () => {
     const resultsMock = ["tool1", "tool3"];
 
     let axiosMock;
-    let getToolSearch;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        getToolSearch = new toolSearch();
     });
 
     it("test filter functions correctly matching: (1) Tools store array-of-objects with (2) Results array", async () => {
@@ -59,8 +57,8 @@ describe("ToolSearch", () => {
             .replyOnce(200, toolsMock)
             .onGet(/api\/tools?.*/)
             .replyOnce(200, resultsMock);
-        let toolsResults = getToolSearch.filter(toolsMock, resultsMock);
-        let toolsResultsSection = getToolSearch.filterSections(toolsMock, resultsMock);
+        let toolsResults = filterTools(toolsMock, resultsMock);
+        let toolsResultsSection = filterToolSections(toolsMock, resultsMock);
         expect(toolsResults.length).toBe(2);
         expect(toolsResultsSection.length).toBe(2);
     });
