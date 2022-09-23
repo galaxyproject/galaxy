@@ -27,7 +27,12 @@
                 :filter-text="filterText"
                 :total-items-in-query="totalItemsInQuery"
                 @query-selection-break="querySelectionBreak = true">
-                <section class="history-layout d-flex flex-column w-100">
+                <section
+                    class="history-layout d-flex flex-column w-100"
+                    @drop.prevent="onDrop"
+                    @dragenter.prevent="onDragEnter"
+                    @dragover.prevent
+                    @dragleave.prevent="onDragLeave">
                     <slot name="navigation" :history="history" />
                     <HistoryFilters
                         v-if="showControls"
@@ -83,6 +88,7 @@
                             @hide="operationError = null" />
                     </section>
                     <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
+                        <history-drop-zone v-if="showDropZone" />
                         <div>
                             <div v-if="loading && itemsLoaded && itemsLoaded.length === 0">
                                 <b-alert class="m-2" variant="info" show>
@@ -138,6 +144,8 @@
 
 <script>
 import Vue from "vue";
+import { Toast } from "ui/toast";
+import { mapActions } from "vuex";
 import { HistoryItemsProvider } from "components/providers/storeProviders";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
@@ -149,6 +157,7 @@ import ListingLayout from "components/History/Layout/ListingLayout";
 import HistoryCounter from "./HistoryCounter";
 import HistoryOperations from "./HistoryOperations/Index";
 import HistoryDetails from "./HistoryDetails";
+import HistoryDropZone from "./HistoryDropZone";
 import HistoryEmpty from "./HistoryEmpty";
 import HistoryFilters from "./HistoryFilters/HistoryFilters";
 import HistoryMessages from "./HistoryMessages";
@@ -157,6 +166,7 @@ import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
 import SelectionChangeWarning from "./HistoryOperations/SelectionChangeWarning";
 import OperationErrorDialog from "./HistoryOperations/OperationErrorDialog";
 import { rewatchHistory } from "store/historyStore/model/watchHistory";
+import { Services as DatasetServices } from "components/Dataset/services";
 
 export default {
     components: {
@@ -165,6 +175,7 @@ export default {
         HistoryCounter,
         HistoryMessages,
         HistoryDetails,
+        HistoryDropZone,
         HistoryEmpty,
         HistoryFilters,
         HistoryItemsProvider,
@@ -192,6 +203,7 @@ export default {
             invisible: {},
             offset: 0,
             showAdvanced: false,
+            showDropZone: false,
             operationRunning: null,
             operationError: null,
             querySelectionBreak: false,
@@ -242,7 +254,11 @@ export default {
             this.filterText = newVal;
         },
     },
+    created() {
+        this.datasetServices = new DatasetServices();
+    },
     methods: {
+        ...mapActions("history", ["loadHistoryById"]),
         getHighlight(item) {
             return this.highlights[this.getItemKey(item)];
         },
@@ -307,6 +323,38 @@ export default {
         resetHighlights() {
             this.highlights = {};
             this.highlightsKey = null;
+        },
+        onDragEnter(e) {
+            this.dragTarget = e.target;
+            this.showDropZone = true;
+        },
+        onDragLeave(e) {
+            if (this.dragTarget == e.target) {
+                this.showDropZone = false;
+            }
+        },
+        onDrop(evt) {
+            this.showDropZone = false;
+            const data = JSON.parse(evt.dataTransfer.getData("text"))[0];
+            const dataSource = data.history_content_type === "dataset" ? "hda" : "hdca";
+            if (data.history_id != this.historyId) {
+                this.datasetServices
+                    .copyDataset(data.id, this.historyId, data.history_content_type, dataSource)
+                    .then(() => {
+                        if (data.history_content_type === "dataset") {
+                            Toast.info("Dataset copied to history");
+                        } else {
+                            Toast.info("Collection copied to history");
+                        }
+                        this.loadHistoryById(this.historyId);
+                    })
+                    .catch((error) => {
+                        this.onError(error);
+                    });
+            }
+        },
+        onError(error) {
+            Toast.error(error);
         },
     },
 };

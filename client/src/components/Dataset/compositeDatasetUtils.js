@@ -1,9 +1,8 @@
-import { getAppRoot } from "onload/loadConfig";
 import { Services } from "components/Dataset/services";
 import store from "../../store/index";
 
 export const getPathDestination = async (history_dataset_id, path) => {
-    const services = new Services({ root: getAppRoot() });
+    const services = new Services();
 
     const computePathDestination = (pathDestination) => {
         if (path === undefined || path === "undefined") {

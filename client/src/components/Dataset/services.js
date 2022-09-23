@@ -1,12 +1,9 @@
 import axios from "axios";
+import { safePath } from "utils/redirect";
 import { rethrowSimple } from "utils/simple-error";
 
 /** Datasets request helper **/
 export class Services {
-    constructor(options = {}) {
-        this.root = options.root;
-    }
-
     async getDatasets(options = {}) {
         let params = "";
         if (options.sortBy) {
@@ -22,72 +19,54 @@ export class Services {
         if (options.query) {
             params += `q=name-contains&qv=${options.query}&`;
         }
-        const url = `${this.root}api/datasets?${params}`;
+        const url = `/api/datasets?${params}`;
         try {
-            const { data } = await axios.get(url);
+            const { data } = await axios.get(safePath(url));
             return data;
         } catch (e) {
-            this._errorMessage(e);
+            rethrowSimple(e);
         }
     }
 
-    async copyDataset(dataset_id, history_id) {
-        const url = `${this.root}api/histories/${history_id}/contents`;
+    async copyDataset(datasetId, historyId, type = "dataset", source = "hda") {
+        const url = `/api/histories/${historyId}/contents`;
         try {
-            const response = await axios.post(url, {
-                type: "dataset",
-                source: "hda",
-                content: dataset_id,
+            const response = await axios.post(safePath(url), {
+                type: type,
+                source: source,
+                content: datasetId,
             });
-            return response.data;
-        } catch (e) {
-            this._errorMessage(e);
-        }
-    }
-
-    async updateTags(item_id, item_class, item_tags) {
-        const url = `${this.root}api/tags`;
-        try {
-            const response = await axios.put(url, {
-                item_id: item_id,
-                item_class: item_class,
-                item_tags: item_tags,
-            });
-            return response.data;
-        } catch (e) {
-            this._errorMessage(e);
-        }
-    }
-
-    async getCompositeDatasetContentFiles(id) {
-        const url = `${this.root}api/histories/${id}/contents/${id}/extra_files`;
-        try {
-            const response = await axios.get(url);
             return response.data;
         } catch (e) {
             rethrowSimple(e);
         }
     }
 
-    getCompositeDatasetLink(history_dataset_id, path) {
-        return `${this.root}api/histories/${history_dataset_id}/contents/${history_dataset_id}/display?filename=${path}`;
+    async updateTags(itemId, itemClass, itemTags) {
+        const url = `/api/tags`;
+        try {
+            const response = await axios.put(safePath(url), {
+                item_id: itemId,
+                item_class: itemClass,
+                item_tags: itemTags,
+            });
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+
+    getCompositeDatasetLink(historyDatasetId, path) {
+        return safePath(`/api/histories/${historyDatasetId}/contents/${historyDatasetId}/display?filename=${path}`);
     }
 
     async getCompositeDatasetInfo(id) {
-        const url = `${this.root}api/histories/${id}/contents/${id}`;
+        const url = `/api/histories/${id}/contents/${id}`;
         try {
-            const response = await axios.get(url);
+            const response = await axios.get(safePath(url));
             return response.data;
         } catch (e) {
             rethrowSimple(e);
         }
-    }
-
-    _errorMessage(e) {
-        let message = "Request failed.";
-        if (e.response) {
-            message = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
-        }
-        throw message;
     }
 }
