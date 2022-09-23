@@ -1,10 +1,12 @@
 import json
 import os
+import shlex
 import subprocess
 import sys
 import tempfile
 import time
 import traceback
+from functools import partial
 
 import requests
 
@@ -26,8 +28,8 @@ def parse_ports(container_name, connection_configuration):
                 return ports_raw
 
 
-def get_ip_tailscale():
-    return subprocess.check_output(["tailscale", "ip", "-4"], text=True).strip()
+def get_ip_command(cmd):
+    return subprocess.check_output(shlex.split(cmd), text=True).strip()
 
 
 def main():
@@ -46,10 +48,12 @@ def main():
     if container_type != "docker":
         raise Exception(f"Monitoring container type [{container_type}], not yet implemented.")
 
-    if get_ip_method == "tailscale":
-        _get_ip = get_ip_tailscale
-    elif get_ip_method is not None:
-        raise Exception(f"get_ip method [{get_ip_method}], not yet implemented.")
+    if get_ip_method is not None:
+        method, arg = [e.strip() for e in get_ip_method.split(":", 1)]
+        if method == "command":
+            _get_ip = partial(get_ip_command, arg)
+        else:
+            raise Exception(f"get_ip method [{get_ip_method}], not yet implemented.")
     else:
         _get_ip = get_ip
 
