@@ -1,8 +1,8 @@
 <template>
-    <div class="invocations-list">
-        <h2 class="mb-3">
-            <span id="invocations-title">{{ title }}</span>
-        </h2>
+    <div class="invocations-list" aria-labelledby="invocations-title">
+        <h1 id="invocations-title" class="mb-3 h-lg">
+            {{ title }}
+        </h1>
         <b-alert v-if="headerMessage" variant="info" show>
             {{ headerMessage }}
         </b-alert>

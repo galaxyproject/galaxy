@@ -1,12 +1,12 @@
 <template>
-    <div>
-        <h2 id="jobs-title">Jobs</h2>
+    <div aria-labelledby="jobs-title">
+        <h1 id="jobs-title" class="h-lg">Jobs</h1>
         <b-alert v-if="message" :variant="status" show>
             {{ message }}
         </b-alert>
-        <h3>Job Lock</h3>
+        <Heading h2 size="md" separator>Job Lock</Heading>
         <job-lock />
-        <h3>Job Overview</h3>
+        <Heading h2 size="md" separator>Job Overview</Heading>
         <p>
             Below unfinished jobs are displayed (in the 'new', 'queued', 'running', or 'upload' states) and recently
             completed jobs (in 'error' or 'ok' states).
@@ -55,7 +55,7 @@
                 </b-form-group>
             </b-form>
         </transition>
-        <h4>Unfinished Jobs</h4>
+        <h3 class="mb-0 h-sm">Unfinished Jobs</h3>
         <jobs-table
             v-model="jobsItemsModel"
             :fields="unfinishedJobFields"
@@ -81,7 +81,7 @@
         </jobs-table>
 
         <template v-if="!showAllRunning">
-            <h4>Finished Jobs</h4>
+            <h3 class="mb-0 h-sm">Finished Jobs</h3>
             <jobs-table
                 :table-caption="finishedTableCaption"
                 :fields="finishedJobFields"
@@ -104,6 +104,7 @@ import JOB_STATES_MODEL from "utils/job-states-model";
 import { commonJobFields } from "./JobFields";
 import { errorMessageAsString } from "utils/simple-error";
 import { jobsProvider } from "components/providers/JobProvider";
+import Heading from "components/Common/Heading";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;
@@ -111,7 +112,7 @@ function cancelJob(jobId, message) {
 }
 
 export default {
-    components: { JobLock, JobsTable },
+    components: { JobLock, JobsTable, Heading },
     data() {
         return {
             jobs: [],
