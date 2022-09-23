@@ -123,7 +123,12 @@ section (serving port 443):
             proxy_pass http://localhost:4002/$5$is_args$args;
 	}
 
-In both cases, you will most likely also want to replace localhost with your server domain (or possibly ``127.0.0.1``).
+This example config works for default values of `interactivetools_base_path` and `interactivetools_prefix` as defined in
+`galaxy.yml`. For other values, you will need to adjust the regex and rename patterns accordingly. This solution also
+requires `interactivetools_shorten_url` to be set to `false` (not default).
+
+In both nginx config examples, you will most likely also want to replace localhost with your server domain (or possibly
+``127.0.0.1``).
 
 You will also need to enable a docker destination in the job_conf.xml file.
 An example ``job_conf.xml`` file as seen in ``config/job_conf.xml.interactivetools``:
