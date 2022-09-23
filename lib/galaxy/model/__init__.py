@@ -7034,6 +7034,10 @@ class WorkflowStep(Base, RepresentById):
         self.uuid = uuid4()
         self._input_connections_by_name = None
 
+    @reconstructor
+    def init_on_load(self):
+        self._input_connections_by_name = None
+
     @property
     def tool_uuid(self):
         return self.dynamic_tool and self.dynamic_tool.uuid
@@ -7047,12 +7051,16 @@ class WorkflowStep(Base, RepresentById):
 
     @property
     def input_default_value(self):
-        tool_inputs = self.tool_inputs
-        tool_state = tool_inputs
+        tool_state = self.tool_inputs
         default_value = tool_state.get("default")
         if default_value:
             default_value = json.loads(default_value)["value"]
         return default_value
+
+    @property
+    def input_optional(self):
+        tool_state = self.tool_inputs
+        return tool_state.get("optional") or False
 
     def get_input(self, input_name):
         for step_input in self.inputs:
@@ -7196,7 +7204,9 @@ class WorkflowStep(Base, RepresentById):
         copied_step.workflow_outputs = copy_list(self.workflow_outputs, copied_step)
 
     def log_str(self):
-        return "WorkflowStep[index=%d,type=%s]" % (self.order_index, self.type)
+        return (
+            f"WorkflowStep[index={self.order_index},type={self.type},label={self.label},uuid={self.uuid},id={self.id}]"
+        )
 
     def clear_module_extras(self):
         # the module code adds random dynamic state to the step, this

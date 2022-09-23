@@ -614,6 +614,44 @@ steps:
 """
 
 
+WORKFLOW_OPTIONAL_INPUT_DELAYED_SCHEDULING = """
+class: GalaxyWorkflow
+inputs:
+  required:
+    type: data
+  optional:
+    type: data
+    optional: true
+outputs:
+  out1:
+    outputSource: count_multi_file/out_file1
+steps:
+  expression:
+    tool_id: expression_parse_int
+    state:
+      input1: 1
+  head:
+    tool_id: head
+    in:
+      input: required
+    state:
+      lineNum:
+        $link:  expression/out1
+  count_multi_file:
+    tool_id: count_multi_file
+    in:
+      input1:
+      - optional
+      - head/out_file1
+    out:
+      out_file1: out_file1
+test_data:
+  required:
+    value: 1.bed
+    type: File
+"""
+
+
 WORKFLOW_RUNTIME_PARAMETER_SIMPLE = """
 class: GalaxyWorkflow
 inputs:

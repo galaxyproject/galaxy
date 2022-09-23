@@ -189,6 +189,8 @@ class WorkflowProgressTestCase(unittest.TestCase):
         subworkflow_invocation = self.invocation.create_subworkflow_invocation_for_step(
             self.invocation.workflow.step_by_index(1)
         )
+        self.app.model.session.add(subworkflow_invocation)
+        self.app.model.session.flush()
         progress = self._new_workflow_progress()
         remaining_steps = progress.remaining_steps()
         (subworkflow_step, subworkflow_invocation_step) = remaining_steps[0]
