@@ -40,7 +40,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         history_editor.annotation_input.wait_for_clickable()
         history_editor.tags_input.wait_for_clickable()
 
-        '''tag_icon_selector = self.navigation.history_panel.selectors.tag_icon
+        """tag_icon_selector = self.navigation.history_panel.selectors.tag_icon
         annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
 
         tag_area_selector = self.navigation.history_panel.selectors.tag_area
@@ -68,7 +68,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_TRANSITION)
 
         self.assert_absent_or_hidden(tag_area_selector)
-        self.assert_absent_or_hidden(annotation_area_selector)'''
+        self.assert_absent_or_hidden(annotation_area_selector)"""
 
     @selenium_test
     def test_history_panel_annotations_change(self):

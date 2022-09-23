@@ -118,8 +118,8 @@ class CollectionBuildersTestCase(SeleniumTestCase):
             self.history_panel_muli_operation_select_hid(hid)
 
     def _show_hidden_content(self):
-        """Switches the beta hidden filter toggle on"""
+        """Switches the hidden filter toggle on"""
         self.sleep_for(self.wait_types.UX_RENDER)
-        filter_element = self.beta_history_element("filter text input").wait_for_and_click()
+        filter_element = self.history_element("filter text input").wait_for_and_click()
         filter_element.send_keys("visible:false")
         self.sleep_for(self.wait_types.UX_RENDER)

@@ -132,14 +132,8 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def _assert_buttons(self, hid, expected_buttons):
-        # TODO: Refactor for current history
-        '''item_button = self.history_panel_item_component(hid=hid)
-        for i, expected_button in enumerate(expected_buttons):
-            if i > 0:
-                previous_button = item_button[f"{expected_buttons[i - 1]}_button"].wait_for_visible()
-                if previous_button.get_attribute("aria-describedby") is not None:
-                    # wait for tooltip to disappear
-                    self.components._.tooltip_balloon.wait_for_absent()
-            button = item_button[f"{expected_button}_button"]
-            self.assert_tooltip_text(button.wait_for_visible(), BUTTON_TOOLTIPS[expected_button])'''
-        pass
+        # item = self.history_panel_item_component(hid=hid)
+        # for expected_button in expected_buttons:
+        #    button = item[f"{expected_button}_button"]
+        #    self.assert_tooltip_text(button.wait_for_visible(), BUTTON_TOOLTIPS[expected_button])'''
+        return

@@ -290,7 +290,6 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         """
         if self.ensure_registered:
             self.login()
-            self.use_beta_history()
 
     def tear_down_selenium(self):
         self.tear_down_driver()

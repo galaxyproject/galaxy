@@ -72,7 +72,7 @@ class WAIT_TYPES:
     SHED_SEARCH = WaitType("shed_search", 30)
     # Wait time for repository installation
     REPO_INSTALL = WaitType("repo_install", 60)
-    # Beta history Polling Duration
+    # History Polling Duration
     HISTORY_POLL = WaitType("history_poll", 3)
 
 
@@ -312,7 +312,7 @@ class NavigatesGalaxy(HasDriver):
         return {"galaxysession": self.get_galaxy_session()}
 
     def history_panel_name_element(self):
-        component = self.beta_history_element("name display")
+        component = self.history_element("name display")
         return component.wait_for_present()
 
     @retry_during_transitions
@@ -320,7 +320,7 @@ class NavigatesGalaxy(HasDriver):
         return self.history_panel_name_element().text
 
     def history_panel_collection_rename(self, hid: int, new_name: str, assert_old_name: Optional[str] = None):
-        self.__beta_rename_collection(new_name)
+        self.__rename_collection(new_name)
         self.sleep_for(WAIT_TYPES.UX_RENDER)
 
     def history_panel_expand_collection(self, collection_hid: int) -> SmartComponent:
@@ -331,13 +331,13 @@ class NavigatesGalaxy(HasDriver):
         return collection_view
 
     @edit_details
-    def __beta_rename_collection(self, new_name):
-        title_element = self.beta_history_element("name input").wait_for_clickable()
+    def __rename_collection(self, new_name):
+        title_element = self.history_element("name input").wait_for_clickable()
         title_element.clear()
         title_element.send_keys(new_name)
 
     def history_panel_collection_name_element(self):
-        title_element = self.beta_history_element("collection name display").wait_for_present()
+        title_element = self.history_element("collection name display").wait_for_present()
         return title_element
 
     def make_accessible_and_publishable(self):
@@ -434,7 +434,6 @@ class NavigatesGalaxy(HasDriver):
             self.history_item_wait_for(history_item_selector, allowed_force_refreshes)
         except SeleniumTimeoutException as e:
             selector = self.navigation.history_panel.selectors.contents
-            selector = self.navigation.history_panel.selectors.contents_beta
             contents_elements = self.find_elements(selector)
             div_ids = [f"#{d.get_attribute('id')}" for d in contents_elements]
             template = "Failed waiting on history item %d to become visible, visible datasets include [%s]."
@@ -1445,7 +1444,7 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def click_history_options(self):
-        component = self.components.history_panel.options_button_icon_beta
+        component = self.components.history_panel.options_button_icon
         component.wait_for_and_click()
 
     def click_history_option_export_to_file(self):
@@ -1471,14 +1470,11 @@ class NavigatesGalaxy(HasDriver):
             option_component = option_label_or_component
             option_component.wait_for_and_click()
 
-    def use_beta_history(self):
-        return
-
     # avoids problematic ID and classes on markup
-    def beta_history_element(self, attribute_value, attribute_name="data-description", scope=".history-index"):
+    def history_element(self, attribute_value, attribute_name="data-description", scope=".history-index"):
         return self.components._.by_attribute(name=attribute_name, value=attribute_value, scope=scope)
 
-    # join list of attrs into css attribute selectors and append to base beta_item selector
+    # join list of attrs into css attribute selectors and append to base item selector
     def content_item_by_attributes(self, multi_history_panel=False, **attrs):
         suffix_list = [f'[data-{k}="{v}"]' for (k, v) in attrs.items() if v is not None]
         suffix = "".join(suffix_list)
@@ -1491,7 +1487,7 @@ class NavigatesGalaxy(HasDriver):
         self.components.history_panel.new_history_button.wait_for_and_click()
 
     def history_click_editor_save(self):
-        option = self.beta_history_element("editor save button")
+        option = self.history_element("editor save button")
         option.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
 
@@ -1504,9 +1500,9 @@ class NavigatesGalaxy(HasDriver):
             raise TypeError
         if menu is None:
             raise TypeError
-        toggle = self.beta_history_element(menu).descendant("button")
+        toggle = self.history_element(menu).descendant("button")
         self.wait_for_and_click(toggle)
-        return self.beta_history_element(option).wait_for_and_click()
+        return self.history_element(option).wait_for_and_click()
 
     @retry_during_transitions
     def histories_click_advanced_search(self):
@@ -1588,7 +1584,7 @@ class NavigatesGalaxy(HasDriver):
 
     def open_history_multi_view(self):
         self.components.history_panel.histories_operation_menu.wait_for_and_click()
-        self.components.history_panel.multi_view_button_beta.wait_for_and_click()
+        self.components.history_panel.multi_view_button.wait_for_and_click()
 
     def history_multi_view_display_collection_contents(self, collection_hid, collection_type="list"):
         self.open_history_multi_view()
@@ -1903,9 +1899,9 @@ class NavigatesGalaxy(HasDriver):
         return element
 
     def set_history_annotation(self, annotation, clear_text=False):
-        toggle = self.beta_history_element("editor toggle")
+        toggle = self.history_element("editor toggle")
         toggle.wait_for_and_click()
-        annotation_input = self.beta_history_element("annotation input").wait_for_visible()
+        annotation_input = self.history_element("annotation input").wait_for_visible()
         if clear_text:
             annotation_input.clear()
         annotation_input.send_keys(annotation)

@@ -134,10 +134,10 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         self.history_panel_wait_for_hid_state(collection_hid, "ok")
 
     def _back_to_history(self):
-        menu = self.beta_history_element("collection breadcrumbs menu")
+        menu = self.history_element("collection breadcrumbs menu")
         if not menu.is_absent:
             menu.wait_for_and_click()
-        back = self.beta_history_element("back to history")
+        back = self.history_element("back to history")
         back.wait_for_and_click()
         self.sleep_for(WAIT_TYPES.UX_RENDER)
 
@@ -180,7 +180,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         collection_hid = input_collection["hid"]
         collection_view = self.history_panel_expand_collection(collection_hid)
         self.sleep_for(WAIT_TYPES.UX_TRANSITION)
-        dataset_elements = collection_view.list_items_beta.all()
+        dataset_elements = collection_view.list_items.all()
         assert len(dataset_elements) == 2, dataset_elements
         selector = ".title .name"
         selector = ".content-title"
@@ -201,7 +201,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         @retry_assertion_during_transitions
         def check_four_datasets_shown():
             self.sleep_for(WAIT_TYPES.HISTORY_POLL)
-            dataset_elements = collection_view.list_items_beta.all()
+            dataset_elements = collection_view.list_items.all()
             assert len(dataset_elements) == 4, dataset_elements
             selector = ".title .name"
             selector = ".content-title"
