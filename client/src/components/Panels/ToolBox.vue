@@ -66,7 +66,7 @@ import ToolSearch from "./Common/ToolSearch";
 import { UploadButton, openGlobalUploadModal } from "components/Upload";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
-import { toolSearch } from "./utilities";
+import { filterToolSections, filterTools } from "./utilities";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
@@ -99,9 +99,6 @@ export default {
             default: _l("Workflows"),
         },
     },
-    created: function () {
-        this.toolSearch = new toolSearch();
-    },
     data() {
         return {
             query: null,
@@ -123,9 +120,9 @@ export default {
         },
         sections() {
             if (this.showSections) {
-                return this.toolSearch.filterSections(this.toolbox, this.results);
+                return filterToolSections(this.toolbox, this.results);
             } else {
-                return this.toolSearch.filter(this.toolbox, this.results);
+                return filterTools(this.toolbox, this.results);
             }
         },
         isUser() {

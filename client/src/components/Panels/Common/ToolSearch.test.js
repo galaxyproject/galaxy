@@ -5,43 +5,43 @@ import { toolSearch } from "../utilities";
 describe("ToolSearch", () => {
     const toolsMock = [
         {
-            "model_class": "ToolSection",
-            "id": "group_1",
-            "name": "Group 1",
-            "elems": [
-              {
-                "model_class": "Tool1",
-                "id": "tool1",
-                "name": "Tool 1",
-                "link": "/tool_runner?tool_id=tool1",
-                "panel_section_id": "group_1",
-                "panel_section_name": "Group 1"
-              },
-              {
-                "model_class": "Tool2",
-                "id": "tool2",
-                "name": "Tool 2",
-                "link": "/tool_runner?tool_id=tool2",
-                "panel_section_id": "group_1",
-                "panel_section_name": "Group 1"
-              }
-            ]
-          },
-          {
-            "model_class": "ToolSection",
-            "id": "group_2",
-            "name": "Group 2",
-            "elems": [
-              {
-                "model_class": "Tool3",
-                "id": "tool3",
-                "name": "Tool 3",
-                "link": "/tool_runner?tool_id=tool3",
-                "panel_section_id": "group_2",
-                "panel_section_name": "Group 2"
-              }
-            ]
-        }
+            model_class: "ToolSection",
+            id: "group_1",
+            name: "Group 1",
+            elems: [
+                {
+                    model_class: "Tool1",
+                    id: "tool1",
+                    name: "Tool 1",
+                    link: "/tool_runner?tool_id=tool1",
+                    panel_section_id: "group_1",
+                    panel_section_name: "Group 1",
+                },
+                {
+                    model_class: "Tool2",
+                    id: "tool2",
+                    name: "Tool 2",
+                    link: "/tool_runner?tool_id=tool2",
+                    panel_section_id: "group_1",
+                    panel_section_name: "Group 1",
+                },
+            ],
+        },
+        {
+            model_class: "ToolSection",
+            id: "group_2",
+            name: "Group 2",
+            elems: [
+                {
+                    model_class: "Tool3",
+                    id: "tool3",
+                    name: "Tool 3",
+                    link: "/tool_runner?tool_id=tool3",
+                    panel_section_id: "group_2",
+                    panel_section_name: "Group 2",
+                },
+            ],
+        },
     ];
     const resultsMock = ["tool1", "tool3"];
 
@@ -50,7 +50,7 @@ describe("ToolSearch", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        getToolSearch = new toolSearch;
+        getToolSearch = new toolSearch();
     });
 
     it("test filter functions correctly matching: (1) Tools store array-of-objects with (2) Results array", async () => {
@@ -59,8 +59,8 @@ describe("ToolSearch", () => {
             .replyOnce(200, toolsMock)
             .onGet(/api\/tools?.*/)
             .replyOnce(200, resultsMock);
-            let toolsResults = getToolSearch.filter(toolsMock, resultsMock);
-            let toolsResultsSection = getToolSearch.filterSections(toolsMock, resultsMock);
+        let toolsResults = getToolSearch.filter(toolsMock, resultsMock);
+        let toolsResultsSection = getToolSearch.filterSections(toolsMock, resultsMock);
         expect(toolsResults.length).toBe(2);
         expect(toolsResultsSection.length).toBe(2);
     });
