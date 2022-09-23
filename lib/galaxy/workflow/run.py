@@ -10,6 +10,8 @@ from typing import (
     Union,
 )
 
+from typing_extensions import Protocol
+
 from galaxy import model
 from galaxy.model import (
     WorkflowInvocation,
@@ -32,7 +34,6 @@ if TYPE_CHECKING:
     )
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
     from galaxy.work.context import WorkRequestContext
-    from galaxy.workflow.modules import WorkflowModuleInjector
 
 log = logging.getLogger(__name__)
 
@@ -279,12 +280,17 @@ class WorkflowInvoker:
 STEP_OUTPUT_DELAYED = object()
 
 
+class ModuleInjector(Protocol):
+    def inject(self, step, step_args=None, steps=None, **kwargs):
+        pass
+
+
 class WorkflowProgress:
     def __init__(
         self,
         workflow_invocation: WorkflowInvocation,
         inputs_by_step_id: Any,
-        module_injector: "WorkflowModuleInjector",
+        module_injector: ModuleInjector,
         param_map: Dict[int, Dict[str, Any]],
         jobs_per_scheduling_iteration: int = -1,
         copy_inputs_to_history: bool = False,
