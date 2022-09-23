@@ -75,6 +75,7 @@
                 :collapsed-enable-icon="collapsedEnableIcon"
                 :collapsed-disable-text="collapsedDisableText"
                 :collapsed-disable-icon="collapsedDisableIcon"
+                :workflow-building-mode="workflowBuildingMode"
                 @change="onChange" />
         </div>
     </div>
