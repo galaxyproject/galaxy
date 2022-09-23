@@ -77,7 +77,8 @@ Set these values in `galaxy.yml`:
           # ...
 
 
-If you do want to use nginx as an upstream proxy server you can use the following server section to route requests to the InteractiveTool proxy:
+If you do want to use nginx as an upstream proxy server you can use the following server section to route requests to
+the InteractiveTool proxy:
 
 .. code-block:: nginx
 
@@ -87,7 +88,7 @@ If you do want to use nginx as an upstream proxy server you can use the followin
             # Match all requests for the interactive tools subdomain
             server_name  *.interactivetool.localhost;
 
-            # Proxy all requests to the GIE Proxy application
+            # Route all domain-based interactive tool requests to the InteractiveTool proxy application
             location / {
                 proxy_redirect off;
                 proxy_http_version 1.1;
@@ -101,8 +102,28 @@ If you do want to use nginx as an upstream proxy server you can use the followin
 
 
 Note that this nginx example uses https, so you need to have a wildcard certificate for your domain,
-and you need to adjust ``galaxy_infrastructure_url`` as appropriate. You will most likely also want
-to replace localhost with your server domain.
+and you need to adjust ``galaxy_infrastructure_url`` as appropriate.
+
+It is also possible to set up nginx to route path-based interactive tool URLs to the InteractiveTool proxy.
+Path-based interactive tool URLs will only be created for tools that have defined ``requires_domain=False`` in the tool
+XML file (which signals that the web server running on the container does not require a domain name to serve pages
+correctly). To support path-based interactive tools through nginx proxy, add the following to the main Galaxy "server"
+section (serving port 443):
+
+.. code-block:: nginx
+
+        # Route all path-based interactive tool requests to the InteractiveTool proxy application
+	    location ~* ^/(interactivetool)/access/(.+)/([0-9a-f]+)/([0-9a-f]+)/(.*)$ {
+            proxy_redirect off;
+            proxy_http_version 1.1;
+            proxy_set_header Host $3-$4.$1.$host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header Upgrade $http_upgrade;
+	        proxy_set_header Connection "upgrade";
+            proxy_pass http://localhost:4002/$5$is_args$args;
+	}
+
+In both cases, you will most likely also want to replace localhost with your server domain (or possibly ``127.0.0.1``).
 
 You will also need to enable a docker destination in the job_conf.xml file.
 An example ``job_conf.xml`` file as seen in ``config/job_conf.xml.interactivetools``:
