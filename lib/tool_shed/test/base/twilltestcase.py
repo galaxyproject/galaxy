@@ -1223,12 +1223,8 @@ class ShedTwillTestCase(ShedBaseTestCase):
         install_tool_dependencies=False,
         no_changes=True,
         new_tool_panel_section_label="",
-        strings_displayed=None,
-        strings_not_displayed=None,
     ):
         params = {"id": self.security.encode_id(installed_repository.id)}
-        self.visit_galaxy_url("/admin_toolshed/reselect_tool_panel_section", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed=None)
         # Build the url that will simulate a filled-out form being submitted. Due to a limitation in twill, the reselect_tool_panel_section
         # form doesn't get parsed correctly.
         encoded_repository_id = self.security.encode_id(installed_repository.id)
@@ -1248,13 +1244,11 @@ class ShedTwillTestCase(ShedBaseTestCase):
             params["install_tool_dependencies"] = False
         url = "/admin_toolshed/reinstall_repository"
         self.visit_galaxy_url(url, params=params, doseq=doseq)
-        # Manually initiate the install process, as with installing a repository. See comments in the
-        # _initiate_installation_process method for details.
-        repository_ids = self._initiate_installation_process(
-            install_tool_dependencies, install_repository_dependencies, no_changes, new_tool_panel_section_label
-        )
+        html = self.last_page()
+        repository_ids = loads(html)
         # Finally, wait until all repositories are in a final state (either Error or Installed) before returning.
-        self.wait_for_repository_installation(repository_ids)
+        if repository_ids:
+            self.wait_for_repository_installation(repository_ids)
 
     def repository_is_new(self, repository: Repository) -> bool:
         repo = self.get_hg_repo(self.get_repo_path(repository))
