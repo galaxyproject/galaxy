@@ -20,9 +20,6 @@ class HistoryCopyElementsTestCase(SeleniumTestCase):
         failed_collection = failed_response["implicit_collections"][0]
         failed_hid = failed_collection["hid"]
 
-        if not self.is_beta_history():
-            self.home()
-
         self.history_panel_wait_for_hid_state(input_hid, "ok")
         self.history_panel_wait_for_hid_state(failed_hid, "error")
         self.history_panel_click_copy_elements()
