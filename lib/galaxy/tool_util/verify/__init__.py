@@ -10,6 +10,12 @@ import os.path
 import re
 import shutil
 import tempfile
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Optional,
+)
 
 try:
     import pysam
@@ -31,14 +37,14 @@ DEFAULT_TEST_DATA_RESOLVER = TestDataResolver()
 
 
 def verify(
-    item_label,
-    output_content,
-    attributes,
-    filename=None,
-    get_filecontent=None,
-    get_filename=None,
-    keep_outputs_dir=None,
-    verify_extra_files=None,
+    item_label: str,
+    output_content: bytes,
+    attributes: Dict[str, Any],
+    filename: Optional[str] = None,
+    get_filecontent: Optional[Callable[[str], bytes]] = None,
+    get_filename: Optional[Callable[[str], str]] = None,
+    keep_outputs_dir: Optional[str] = None,
+    verify_extra_files: Optional[Callable] = None,
     mode="file",
 ):
     """Verify the content of a test output using test definitions described by attributes.
@@ -46,15 +52,20 @@ def verify(
     Throw an informative assertion error if any of these tests fail.
     """
     if get_filename is None:
+        get_filecontent_: Callable[[str], bytes]
         if get_filecontent is None:
-            get_filecontent = DEFAULT_TEST_DATA_RESOLVER.get_filecontent
+            get_filecontent_ = DEFAULT_TEST_DATA_RESOLVER.get_filecontent
+        else:
+            get_filecontent_ = get_filecontent
 
-        def get_filename(filename):
-            file_content = get_filecontent(filename)
+        def get_filename(filename: str) -> str:
+            file_content = get_filecontent_(filename)
             local_name = make_temp_fname(fname=filename)
             with open(local_name, "wb") as f:
                 f.write(file_content)
             return local_name
+
+    assert get_filename
 
     # Check assertions...
     assertions = attributes.get("assert_list", None)
@@ -136,7 +147,9 @@ def verify(
             # filename already point to a file that exists on disk
             local_name = filename
         else:
-            local_name = get_filename(filename)
+            filename_ = get_filename(filename)
+            assert filename_, f"Failed to find output target for test {filename_}"
+            local_name = filename_
 
         compare = attributes.get("compare", "diff")
         try:

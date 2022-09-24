@@ -12,6 +12,7 @@ from concurrent.futures import (
     thread,
     ThreadPoolExecutor,
 )
+from typing import List
 
 import yaml
 
@@ -34,11 +35,13 @@ TestException = namedtuple("TestException", ["tool_id", "exception", "was_record
 
 
 class Results:
+    test_exceptions: List[Exception]
+
     def __init__(self, default_suitename, test_json, append=False, galaxy_url=None):
         self.test_json = test_json or "-"
         self.galaxy_url = galaxy_url
         test_results = []
-        test_exceptions = []
+        test_exceptions: List[Exception] = []
         suitename = default_suitename
         if append:
             assert test_json != "-"
