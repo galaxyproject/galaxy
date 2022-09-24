@@ -40,36 +40,6 @@ class HistoryPanelTestCase(SeleniumTestCase):
         history_editor.annotation_input.wait_for_clickable()
         history_editor.tags_input.wait_for_clickable()
 
-        """tag_icon_selector = self.navigation.history_panel.selectors.tag_icon
-        annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
-
-        tag_area_selector = self.navigation.history_panel.selectors.tag_area
-        annotation_area_selector = self.navigation.history_panel.selectors.annotation_area
-
-        tag_icon = self.wait_for_clickable(tag_icon_selector)
-        annon_icon = self.wait_for_clickable(annotation_icon_selector)
-
-        self.assert_absent_or_hidden(tag_area_selector)
-        self.assert_absent_or_hidden(annotation_area_selector)
-
-        tag_icon.click()
-
-        self.wait_for_visible(tag_area_selector)
-        self.assert_absent_or_hidden(annotation_area_selector)
-
-        tag_icon.click()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        annon_icon.click()
-
-        self.wait_for_visible(annotation_area_selector)
-        self.assert_absent_or_hidden(tag_area_selector)
-
-        annon_icon.click()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-
-        self.assert_absent_or_hidden(tag_area_selector)
-        self.assert_absent_or_hidden(annotation_area_selector)"""
-
     @selenium_test
     def test_history_panel_annotations_change(self):
         history_panel = self.components.history_panel
