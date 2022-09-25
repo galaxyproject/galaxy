@@ -32,10 +32,10 @@ export default {
     },
     methods: {
         navigateToCreate: function () {
-            window.location.assign(`${this.root}workflows/create`);
+            this.$router.push(`${this.root}workflows/create`);
         },
         navigateToImport: function () {
-            window.location.assign(`${this.root}workflows/import`);
+            this.$router.push(`${this.root}workflows/import`);
         },
     },
 };
