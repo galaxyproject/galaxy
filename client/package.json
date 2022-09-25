@@ -38,6 +38,7 @@
     "@popperjs/core": "^2.11.5",
     "@sentry/browser": "^6.17.4",
     "@vueuse/core": "^9.6.0",
+    "@vueuse/gesture": "^2.0.0-beta.1",
     "assert": "^2.0.0",
     "axios": "^0.25.0",
     "babel-runtime": "^6.26.0",

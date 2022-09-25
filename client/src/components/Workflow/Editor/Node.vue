@@ -1,6 +1,7 @@
 <template>
     <draggable-wrapper
         ref="el"
+        :scale="scale"
         @updatePosition="onUpdatePosition"
         @mouseup="makeActive"
         @move="onMove"
@@ -161,6 +162,9 @@ export default {
             type: Object,
             required: true,
         },
+        scale: {
+            type: Number,
+        },
     },
     data() {
         return {
@@ -262,12 +266,11 @@ export default {
         },
     },
     methods: {
-        onMove(e) {
-            const { deltaX, deltaY } = e.data;
-            this.offset = { x: this.offset.x + deltaX, y: this.offset.y + deltaY };
+        onMove(deltaPosition) {
+            this.offset = { x: this.offset.x + deltaPosition.x, y: this.offset.y + deltaPosition.y };
             this.onUpdatePosition({
-                top: this.step.position.top + deltaY,
-                left: this.step.position.left + deltaX,
+                top: this.step.position.top + deltaPosition.y,
+                left: this.step.position.left + deltaPosition.x,
             });
         },
         onStopDragging() {

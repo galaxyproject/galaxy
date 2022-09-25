@@ -1,32 +1,63 @@
 <template>
-    <draggable
-        :draggable-options="draggableOptions"
-        @start="onDragStart"
-        @move="move"
-        :stop="onStopDragging"
-        :start="stopPropagation"
-        :drag="stopPropagation"
-        v-on="$listeners">
+    <div ref="draggable">
         <slot></slot>
-    </draggable>
+    </div>
 </template>
 
 <script>
-import { Draggable } from "@braks/revue-draggable";
+import { reactive, ref } from "vue";
+import { useElementBounding } from "@vueuse/core";
+
+import { useDraggable } from "@vueuse/core";
 
 export default {
-    components: {
-        Draggable,
+    setup(props, { emit }) {
+        const draggable = ref();
+        let lastPosition = null;
+        const deltaPosition = { x: 0, y: 0 };
+        const startPosition = reactive(useElementBounding(draggable));
+
+        const onStart = (position, event) => {
+            emit("mousedown", event);
+        };
+
+        const onMove = (position, event) => {
+            deltaPosition.x = (position.x - (lastPosition?.x || startPosition.x)) / props.scale;
+            deltaPosition.y = (position.y - (lastPosition?.y || startPosition.y)) / props.scale;
+            console.log("delta xy", deltaPosition.x, deltaPosition.y);
+            lastPosition = { ...position };
+            emit("move", deltaPosition);
+        };
+
+        const onEnd = (position, event) => {
+            // lastPosition = null;
+            emit("mouseup");
+        };
+
+        const { x, y, isDragging, position } = useDraggable(draggable, {
+            preventDefault: true,
+            onStart: onStart,
+            onMove: onMove,
+            onEnd: onEnd,
+        });
+        return {
+            draggable,
+            x,
+            y,
+            isDragging,
+            position,
+            deltaPosition,
+        };
     },
     props: {
         rootOffset: {
             type: Object,
             required: false,
         },
-        applyScale: {
-            type: Boolean,
+        scale: {
+            type: Number,
             required: false,
-            default: true,
+            default: 1,
         },
     },
     data() {
@@ -41,17 +72,9 @@ export default {
             programmaticDelta: { x: 0, y: 0 },
         };
     },
-    computed: {
-        scale() {
-            if (this.applyScale) {
-                return this.$store.getters["workflowState/getScale"]();
-            }
-            return 1;
-        },
-        draggableOptions() {
-            return {
-                mouseDown: this.stopPropagation,
-            };
+    watch: {
+        position(newVal) {
+            console.log(newVal.x, newVal.y);
         },
     },
     methods: {

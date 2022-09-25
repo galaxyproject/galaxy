@@ -40,6 +40,7 @@
                     :get-manager="getManager"
                     :activeNodeId="activeNodeId"
                     :root-offset="position"
+                    :scale="zoomLevel"
                     @pan-by="onPan"
                     @stopDragging="onStopDragging"
                     @onDragConnector="onDragConnector"
