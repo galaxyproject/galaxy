@@ -1375,12 +1375,6 @@ class SharableMixin:
         """Returns item's name and link."""
         raise NotImplementedError()
 
-    @web.expose
-    @web.require_login("get item content asynchronously")
-    def get_item_content_async(self, trans, id):
-        """Returns item content in HTML format."""
-        raise NotImplementedError()
-
     def get_item(self, trans, id):
         """Return item based on id."""
         raise NotImplementedError()

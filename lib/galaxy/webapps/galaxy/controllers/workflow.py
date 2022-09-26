@@ -296,24 +296,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         )
 
     @web.expose
-    def get_item_content_async(self, trans, id):
-        """Returns item content in HTML format."""
-
-        stored = self.get_stored_workflow(trans, id, False, True)
-        if stored is None:
-            raise web.httpexceptions.HTTPNotFound()
-
-        # Get data for workflow's steps.
-        self.get_stored_workflow_steps(trans, stored)
-        # Get annotations.
-        stored.annotation = self.get_item_annotation_str(trans.sa_session, stored.user, stored)
-        for step in stored.latest_workflow.steps:
-            step.annotation = self.get_item_annotation_str(trans.sa_session, stored.user, step)
-        return trans.fill_template_mako(
-            "/workflow/item_content.mako", item=stored, item_data=stored.latest_workflow.steps
-        )
-
-    @web.expose
     @web.require_login("to import a workflow", use_panels=True)
     def imp(self, trans, id, **kwargs):
         """Imports a workflow shared by other users."""

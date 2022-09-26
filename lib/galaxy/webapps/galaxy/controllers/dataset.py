@@ -621,22 +621,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             )
 
     @web.expose
-    def get_item_content_async(self, trans, id):
-        """Returns item content in HTML format."""
-
-        decoded_id = self.decode_id(id)
-        dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
-        dataset = self.hda_manager.error_if_uploading(dataset)
-        if dataset is None:
-            raise web.httpexceptions.HTTPNotFound()
-        truncated, dataset_data = self.hda_manager.text_data(dataset, preview=True)
-        # Get annotation.
-        dataset.annotation = self.get_item_annotation_str(trans.sa_session, trans.user, dataset)
-        return trans.fill_template_mako(
-            "/dataset/item_content.mako", item=dataset, item_data=dataset_data, truncated=truncated
-        )
-
-    @web.expose
     def annotate_async(self, trans, id, new_annotation=None, **kwargs):
         # TODO:?? why is this an access check only?
         decoded_id = self.decode_id(id)

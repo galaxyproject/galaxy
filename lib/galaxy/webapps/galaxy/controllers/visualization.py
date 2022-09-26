@@ -567,25 +567,6 @@ class VisualizationController(
         }
         return return_dict
 
-    @web.expose
-    def get_item_content_async(self, trans, id):
-        """Returns item content in HTML format."""
-
-        # Get visualization, making sure it's accessible.
-        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
-        if visualization is None:
-            raise web.httpexceptions.HTTPNotFound()
-
-        # Return content.
-        visualization_config = self.get_visualization_config(trans, visualization)
-        return trans.fill_template_mako(
-            "visualization/item_content.mako",
-            encoded_id=trans.security.encode_id(visualization.id),
-            item=visualization,
-            item_data=visualization_config,
-            content_only=True,
-        )
-
     @web.json
     def save(self, trans, vis_json=None, type=None, id=None, title=None, dbkey=None, annotation=None):
         """
