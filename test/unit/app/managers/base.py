@@ -58,17 +58,14 @@ class BaseTestCase(unittest.TestCase):
 
     def assertHasKeys(self, obj, key_list):
         for key in key_list:
-            if key not in obj:
-                self.fail("Missing key: " + key)
+            assert key in obj
 
     def assertNullableBasestring(self, item):
-        if not isinstance(item, (str, type(None))):
-            self.fail("Non-nullable basestring: " + str(type(item)))
+        assert isinstance(item, (str, type(None)))
         # TODO: len mod 8 and hex re
 
     def assertEncodedId(self, item):
-        if not isinstance(item, str):
-            self.fail("Non-string: " + str(type(item)))
+        assert isinstance(item, str)
         # TODO: len mod 8 and hex re
 
     def assertNullableEncodedId(self, item):
@@ -76,29 +73,25 @@ class BaseTestCase(unittest.TestCase):
             self.assertEncodedId(item)
 
     def assertDate(self, item):
-        if not isinstance(item, str):
-            self.fail("Non-string: " + str(type(item)))
+        assert isinstance(item, str)
         # TODO: no great way to parse this fully (w/o python-dateutil)
         # TODO: re?
 
     def assertUUID(self, item):
-        if not isinstance(item, str):
-            self.fail("Non-string: " + str(type(item)))
+        assert isinstance(item, str)
         # TODO: re for d4d76d69-80d4-4ed7-80c7-211ebcc1a358
 
     def assertORMFilter(self, item):
-        if not isinstance(
+        assert isinstance(
             item.filter, (sqlalchemy.sql.elements.BinaryExpression, sqlalchemy.sql.elements.BooleanClauseList)
-        ):
-            self.fail("Not an orm filter: " + str(type(item.filter)))
+        ), "Not an orm filter"
 
     def assertORMFunctionFilter(self, item):
         assert item.filter_type == "orm_function"
         assert callable(item.filter)
 
     def assertFnFilter(self, item):
-        if not item.filter or not callable(item.filter):
-            self.fail("Not a fn filter: " + str(type(item.filter)))
+        assert item.filter and callable(item.filter), "Not a fn filter"
 
     def assertIsJsonifyable(self, item):
         # TODO: use galaxy's override

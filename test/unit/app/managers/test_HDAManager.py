@@ -400,12 +400,11 @@ class HDASerializerTestCase(HDATestCase):
         self.log("should have a serializer for all serializable keys")
         for key in self.hda_serializer.serializable_keyset:
             instantiated_attribute = getattr(hda, key, None)
-            if not (
-                (key in self.hda_serializer.serializers)
-                or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))
-                or (is_metadata(key))
-            ):
-                self.fail(f"no serializer for: {key} ({instantiated_attribute})")
+            assert (
+                key in self.hda_serializer.serializers
+                or isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS)
+                or is_metadata(key)
+            ), f"No serializer for: {key} ({instantiated_attribute})"
 
     def test_views_and_keys(self):
         hda = self._create_vanilla_hda()

@@ -226,11 +226,9 @@ class DatasetSerializerTestCase(BaseTestCase):
         self.log("should have a serializer for all serializable keys")
         for key in self.dataset_serializer.serializable_keyset:
             instantiated_attribute = getattr(dataset, key, None)
-            if not (
-                (key in self.dataset_serializer.serializers)
-                or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))
-            ):
-                self.fail(f"no serializer for: {key} ({instantiated_attribute})")
+            assert key in self.dataset_serializer.serializers or isinstance(
+                instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS
+            ), f"No serializer for: {key} ({instantiated_attribute})"
 
     def test_views_and_keys(self):
         dataset = self.dataset_manager.create()
