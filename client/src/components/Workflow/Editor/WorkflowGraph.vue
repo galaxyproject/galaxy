@@ -7,17 +7,9 @@
             @reset-all="onResetAll"
             @update:pan="onPan" />
         <div ref="el" class="canvas-viewport" @drop.prevent>
-            <d3-zoom
-                id="canvas-container"
-                ref="zoomControl"
-                :within="false"
-                throttleDelay="16"
-                wheelVelocity="0.0015"
-                @transform="onTransform"
-                @dragging="onDrag"
-                @scaling="onScale">
+            <d3-zoom id="canvas-container" @transform="onTransform" @dragging="onDrag" @scaling="onScale">
                 <div ref="nodes" class="node-area">
-                    <svg class="canvas-svg">
+                    <svg class="canvas-svg node-area">
                         <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
                         <terminal-connector
                             v-for="connection in connections"
@@ -116,13 +108,13 @@ export default {
         onPan(pan) {
             console.log("onPan", pan);
             this.pan = pan;
-            this.$refs.zoomControl.setData({
-                scale: this.scale,
-                originX: pan.x,
-                originY: pan.y,
-                translateX: pan.x,
-                translateY: pan.y,
-            });
+            // this.$refs.zoomControl.setData({
+            //     scale: this.scale,
+            //     originX: pan.x,
+            //     originY: pan.y,
+            //     translateX: pan.x,
+            //     translateY: pan.y,
+            // });
         },
         onMoveTo(moveTo) {
             // implement me
@@ -130,13 +122,13 @@ export default {
         onResetAll() {
             this.pan = { x: 0, y: 0 };
             this.setScale(1);
-            this.$refs.zoomControl.setData({
-                scale: 1,
-                originX: 0,
-                originY: 0,
-                translateX: 0,
-                translateY: 0,
-            });
+            // this.$refs.zoomControl.setData({
+            //     scale: 1,
+            //     originX: 0,
+            //     originY: 0,
+            //     translateX: 0,
+            //     translateY: 0,
+            // });
         },
         onDrag(panData) {
             console.log("panData", panData);
