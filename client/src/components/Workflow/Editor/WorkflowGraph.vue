@@ -7,47 +7,46 @@
             @reset-all="onResetAll"
             @update:pan="onPan" />
         <div ref="el" class="canvas-viewport" @drop.prevent>
-            <PinchScrollZoom
+            <d3-zoom
                 id="canvas-container"
                 ref="zoomControl"
-                :width="position.width"
-                :height="position.height"
                 :within="false"
-                minScale="0.1"
-                maxScale="10"
                 throttleDelay="16"
                 wheelVelocity="0.0015"
+                @transform="onTransform"
                 @dragging="onDrag"
                 @scaling="onScale">
-                <svg class="canvas-svg" width="100%" height="100%" ref="svg">
-                    <g class="zoomable">
+                <svg :width="position.width" :height="position.height" class="canvas-svg">
+                    <svg>
                         <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
                         <terminal-connector
                             v-for="connection in connections"
                             :key="connection.id"
                             :connection="connection"></terminal-connector>
-                    </g>
+                    </svg>
                 </svg>
-                <WorkflowNode
-                    v-for="(step, key) in steps"
-                    :id="key"
-                    :key="key"
-                    :name="step.name"
-                    :type="step.type"
-                    :content-id="step.content_id"
-                    :step="step"
-                    :datatypes-mapper="datatypesMapper"
-                    :get-manager="getManager"
-                    :activeNodeId="activeNodeId"
-                    :root-offset="position"
-                    :scale="zoomLevel"
-                    @pan-by="onPan"
-                    @stopDragging="onStopDragging"
-                    @onDragConnector="onDragConnector"
-                    @onActivate="onActivate"
-                    @onRemove="onRemove"
-                    v-on="$listeners" />
-            </PinchScrollZoom>
+                <div ref="nodes" class="nodeArea">
+                    <WorkflowNode
+                        v-for="(step, key) in steps"
+                        :id="key"
+                        :key="key"
+                        :name="step.name"
+                        :type="step.type"
+                        :content-id="step.content_id"
+                        :step="step"
+                        :datatypes-mapper="datatypesMapper"
+                        :get-manager="getManager"
+                        :activeNodeId="activeNodeId"
+                        :root-offset="position"
+                        :scale="zoomLevel"
+                        @pan-by="onPan"
+                        @stopDragging="onStopDragging"
+                        @onDragConnector="onDragConnector"
+                        @onActivate="onActivate"
+                        @onRemove="onRemove"
+                        v-on="$listeners" />
+                </div>
+            </d3-zoom>
         </div>
         <Minimap
             :nodes="nodes"
@@ -65,10 +64,9 @@ import WorkflowNode from "./Node";
 import RawConnector from "./Connector";
 import TerminalConnector from "./TerminalConnector";
 import Minimap from "./Minimap.vue";
-import SvgPanZoom from "vue-svg-pan-zoom";
 import { reactive, ref } from "vue";
 import { useElementBounding } from "@vueuse/core";
-import PinchScrollZoom, { PinchScrollZoomEmitData } from "@coddicat/vue-pinch-scroll-zoom";
+import D3Zoom from "./D3Zoom.vue";
 
 export default {
     setup() {
@@ -77,13 +75,12 @@ export default {
         return { el, position };
     },
     components: {
+        D3Zoom,
         RawConnector,
-        SvgPanZoom,
         TerminalConnector,
         WorkflowNode,
         Minimap,
         ZoomControl,
-        PinchScrollZoom,
     },
     data() {
         return {
@@ -92,6 +89,7 @@ export default {
             svgpanzoom: null,
             transform: null,
             pan: { x: 0, y: 0 },
+            transform: "",
         };
     },
     props: {
@@ -113,6 +111,11 @@ export default {
         },
     },
     methods: {
+        onTransform(transform) {
+            const cssTransform = `translate(${transform.x}px, ${transform.y}px) scale(${transform.k})`;
+            this.transform = transform.toString();
+            this.$refs.nodes.style.transform = cssTransform;
+        },
         onPan(pan) {
             console.log("onPan", pan);
             this.pan = pan;

@@ -6,12 +6,15 @@
     // not sure if hack or not ...
     overflow: visible;
     display: block;
-    }
-
-    .nodeArea {
-        position: absolute;
+    position: absolute;
         top: 0px;
-        left: 0px;
+        left: 0px
+}
+
+.nodeArea {
+    position: absolute;
+    top: 0px;
+    left: 0px;
 }
 .workflow-client {
     .workflow-panel {
