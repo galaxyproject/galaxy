@@ -9,6 +9,7 @@ import Analysis from "entry/analysis/modules/Analysis";
 import Home from "entry/analysis/modules/Home";
 import CenterFrame from "entry/analysis/modules/CenterFrame";
 import Login from "entry/analysis/modules/Login";
+import Published from "entry/analysis/modules/Published";
 import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
 
 // routes
@@ -81,14 +82,9 @@ export function getRouter(Galaxy) {
         routes: [
             ...AdminRoutes,
             ...LibraryRoutes,
+            /** Login entry route */
             { path: "/login/start", component: Login },
-            {
-                path: "/pages/display",
-                component: PageDisplay,
-                props: (route) => ({
-                    pageId: route.query.id,
-                }),
-            },
+            /** Page editor */
             {
                 path: "/pages/editor",
                 component: PageEditor,
@@ -96,7 +92,21 @@ export function getRouter(Galaxy) {
                     pageId: route.query.id,
                 }),
             },
+            /** Workflow editor */
             { path: "/workflows/edit", component: WorkflowEditorModule },
+            /** Published resources routes */
+            {
+                path: "/published",
+                component: Published,
+                children: [
+                    {
+                        path: "pages",
+                        component: PageDisplay,
+                        props: (route) => ({ pageId: route.query.id, }),
+                    },
+                ],
+            },
+            /** Analysis routes */
             {
                 path: "/",
                 component: Analysis,

@@ -561,10 +561,8 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             processor.feed(page.latest_revision.content)
             # Output is string, so convert to unicode for display.
             page_content = unicodify(processor.output(), "utf-8")
-            template = "page/display.mako"
         else:
             page_content = trans.security.encode_id(page.id)
-            template = "page/display_markdown.mako"
 
         # Get rating data.
         user_item_rating = 0
@@ -575,16 +573,14 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             else:
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, page)
-        return trans.response.send_redirect(web.url_for(controller="pages", action="display", id=page_content))
-        return trans.fill_template_mako(
-            template,
-            item=page,
-            item_data=page_content,
+        return trans.response.send_redirect(web.url_for(
+            controller="published",
+            action="pages",
+            id=page_content,
             user_item_rating=user_item_rating,
             ave_item_rating=ave_item_rating,
             num_ratings=num_ratings,
-            content_only=True,
-        )
+        ))
 
     @web.expose
     @web.require_login("use Galaxy pages")
