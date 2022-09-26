@@ -5,7 +5,6 @@ import json
 import os
 import subprocess
 import tempfile
-import unittest
 
 import yaml
 
@@ -15,17 +14,6 @@ from galaxy.util import (
 )
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
-
-
-def skip_unless_module(module):
-    available = True
-    try:
-        __import__(module)
-    except ImportError:
-        available = False
-    if available:
-        return lambda func: func
-    return unittest.skip(f"Module {module} could not be loaded, dependent test skipped.")
 
 
 class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
