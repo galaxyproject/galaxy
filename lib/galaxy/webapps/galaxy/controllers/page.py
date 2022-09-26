@@ -575,7 +575,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             else:
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, page)
-
+        return trans.response.send_redirect(web.url_for(controller="pages", action="display", id=page_content))
         return trans.fill_template_mako(
             template,
             item=page,

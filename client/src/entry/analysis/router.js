@@ -37,6 +37,7 @@ import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
 import NewUserConfirmation from "components/login/NewUserConfirmation";
 import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
+import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageEditor from "components/PageEditor/PageEditor";
 import Sharing from "components/Sharing/Sharing";
 import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
@@ -81,6 +82,13 @@ export function getRouter(Galaxy) {
             ...AdminRoutes,
             ...LibraryRoutes,
             { path: "/login/start", component: Login },
+            {
+                path: "/pages/display",
+                component: PageDisplay,
+                props: (route) => ({
+                    pageId: route.query.id,
+                }),
+            },
             {
                 path: "/pages/editor",
                 component: PageEditor,

@@ -1,9 +1,7 @@
 <%inherit file="/display_base.mako"/>
 
 <%def name="javascript_app()">
-
     ${parent.javascript_app()}
-
     <script type="text/javascript">
         config.addInitialization(function() {
             console.log("page/display.mako, javascript_app", "Setup embedded content");
