@@ -77,7 +77,7 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesTools):
 
     def test_output_label(self):
         _, output = self._simple_execute()
-        self.assertEqual(output["out1"].name, "Output (moo)")
+        assert output["out1"].name == "Output (moo)"
 
     def test_output_label_data(self):
         hda1 = self.__add_dataset()
@@ -92,12 +92,12 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesTools):
             tools_support.SIMPLE_CAT_TOOL_CONTENTS,
             incoming,
         )
-        self.assertEqual(output["out1"].name, "Test Tool on data 2 and data 1")
+        assert output["out1"].name == "Test Tool on data 2 and data 1"
 
     def test_object_store_ids(self):
         _, output = self._simple_execute(contents=TWO_OUTPUTS)
-        self.assertEqual(output["out1"].name, "Output (moo)")
-        self.assertEqual(output["out2"].name, "Output 2 (moo)")
+        assert output["out1"].name == "Output (moo)"
+        assert output["out2"].name == "Output 2 (moo)"
 
     def test_params_wrapped(self):
         hda1 = self.__add_dataset()
@@ -106,7 +106,7 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesTools):
             incoming=dict(repeat1=[dict(param1=hda1)]),
         )
         # Again this is a stupid way to ensure data parameters are wrapped.
-        self.assertEqual(output["out1"].name, "Output (%s)" % hda1.dataset.get_file_name())
+        assert output["out1"].name == f"Output ({hda1.dataset.get_file_name()})"
 
     def test_inactive_user_job_create_failure(self):
         self.trans.user_is_active = False

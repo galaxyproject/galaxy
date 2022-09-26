@@ -310,7 +310,7 @@ class MappingTests(BaseModelTestCase):
             .first()
             .collection
         )
-        self.assertEqual(len(loaded_dataset_collection.elements), 2)
+        assert len(loaded_dataset_collection.elements) == 2
         assert loaded_dataset_collection.collection_type == "pair"
         assert loaded_dataset_collection["left"] == dce1
         assert loaded_dataset_collection["right"] == dce2
@@ -332,7 +332,7 @@ class MappingTests(BaseModelTestCase):
 
         # TODO:
         # loaded_dataset_collection = self.query( model.DatasetCollection ).filter( model.DatasetCollection.name == "LibraryCollectionTest1" ).first()
-        # self.assertEqual(len(loaded_dataset_collection.datasets), 2)
+        # assert len(loaded_dataset_collection.datasets) == 2
         # assert loaded_dataset_collection.collection_type == "pair"
 
     def test_nested_collection_attributes(self):
@@ -606,7 +606,7 @@ class MappingTests(BaseModelTestCase):
             )
             return list(map(lambda hda: hda.name, history.contents_iter(**kwds)))
 
-        self.assertEqual(contents_iter_names(), ["1", "2", "3", "4"])
+        assert contents_iter_names() == ["1", "2", "3", "4"]
         assert contents_iter_names(deleted=False) == ["1", "2"]
         assert contents_iter_names(visible=True) == ["1", "3"]
         assert contents_iter_names(visible=False) == ["2", "4"]
@@ -1050,9 +1050,3 @@ class MockObjectStore:
 
     def update_from_file(self, *arg, **kwds):
         pass
-
-
-def get_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(MappingTests("test_basic"))
-    return suite

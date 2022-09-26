@@ -1,8 +1,5 @@
 from typing import Optional
-from unittest import (
-    SkipTest,
-    TestCase,
-)
+from unittest import SkipTest
 
 from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
@@ -18,7 +15,7 @@ except ImportError:
     GalaxyTestDriver = None  # type: ignore[misc,assignment]
 
 
-class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, UsesCeleryTasks, TestCase):
+class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, UsesCeleryTasks):
     galaxy_driver_class = GalaxyTestDriver
     _test_driver: Optional[GalaxyTestDriver]
 

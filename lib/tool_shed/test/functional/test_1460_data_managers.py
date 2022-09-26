@@ -33,22 +33,9 @@ class TestDataManagers(ShedTwillTestCase):
     def test_0000_initiate_users_and_category(self):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
         self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
-        test_user_2 = self.test_db_util.get_user(common.test_user_2_email)
-        assert (
-            test_user_2 is not None
-        ), f"Problem retrieving user with email {common.test_user_2_email} from the database"
-        self.test_db_util.get_private_role(test_user_2)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
 
     def test_0010_create_data_manager_repository(self):
         """Create and populate data_manager_1460.
@@ -57,13 +44,13 @@ class TestDataManagers(ShedTwillTestCase):
 
         Create and populate a repository that contains a Data manager.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=data_manager_repository_name,
             description=data_manager_repository_description,
             long_description=data_manager_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         # Upload the data manager files to the repository.

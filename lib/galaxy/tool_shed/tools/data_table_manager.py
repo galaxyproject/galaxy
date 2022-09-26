@@ -1,7 +1,9 @@
 import logging
 import os
 import shutil
+from typing import List
 
+from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.util import hg_util
 from galaxy.util import etree
 from galaxy.util.tool_shed import xml_util
@@ -10,12 +12,12 @@ log = logging.getLogger(__name__)
 
 
 class ShedToolDataTableManager:
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         self.app = app
 
     def generate_repository_info_elem(
-        self, tool_shed, repository_name, changeset_revision, owner, parent_elem=None, **kwd
-    ):
+        self, tool_shed: str, repository_name: str, changeset_revision: str, owner: str, parent_elem=None, **kwd
+    ) -> etree.Element:
         """Create and return an ElementTree repository info Element."""
         if parent_elem is None:
             elem = etree.Element("tool_shed_repository")
@@ -46,7 +48,7 @@ class ShedToolDataTableManager:
             **kwd,
         )
 
-    def get_tool_index_sample_files(self, sample_files):
+    def get_tool_index_sample_files(self, sample_files: List[str]) -> List[str]:
         """
         Try to return the list of all appropriate tool data sample files included
         in the repository.

@@ -22,19 +22,8 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_galaxy_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_galaxy_private_role(admin_user)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_ensure_repositories_and_categories_exist(self):
         """Create the 0030 category and upload the emboss repository to the tool shed, if necessary."""
@@ -49,7 +38,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             description=column_maker_repository_description,
             long_description=column_maker_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(column_maker_repository):
@@ -59,7 +48,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -90,7 +79,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -121,7 +110,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(

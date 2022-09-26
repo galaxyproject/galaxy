@@ -87,7 +87,7 @@ class LibraryLandingTestCase(SeleniumTestCase):
     @retry_assertion_during_transitions
     def _assert_names_are(self, expected_names):
         names = [e.find_element(self.by.CSS_SELECTOR, "td a").text for e in self.libraries_index_table_elements()]
-        self.assertEqual(names, expected_names)
+        assert names == expected_names
 
     @retry_assertion_during_transitions
     def _assert_at_least_one_library_displayed(self):
@@ -95,7 +95,7 @@ class LibraryLandingTestCase(SeleniumTestCase):
 
     @retry_assertion_during_transitions
     def _assert_num_displayed_libraries_is(self, n):
-        self.assertEqual(n, self._num_displayed_libraries())
+        assert n == self._num_displayed_libraries()
 
     def _num_displayed_libraries(self):
         return len(self.libraries_index_table_elements())

@@ -263,10 +263,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 return trans.response.send_redirect(
                     web.url_for(controller="repository", action="browse_repositories_by_user", **kwd)
                 )
-            elif operation == "reviewed_repositories_i_own":
-                return trans.response.send_redirect(
-                    web.url_for(controller="repository_review", action="reviewed_repositories_i_own")
-                )
             elif operation == "repositories_by_category":
                 category_id = kwd.get("id", None)
                 message = escape(kwd.get("message", ""))
@@ -1632,14 +1628,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         # TODO: move the following to some in-memory register so these queries can be done once
         # at startup.  The in-memory register can then be managed during the current session.
         can_administer_repositories = False
-        has_reviewed_repositories = False
         has_deprecated_repositories = False
         if current_user:
-            # See if the current user owns any repositories that have been reviewed.
-            for repository in current_user.active_repositories:
-                if repository.reviews:
-                    has_reviewed_repositories = True
-                    break
             # See if the current user has any repositories that have been marked as deprecated.
             for repository in current_user.active_repositories:
                 if repository.deprecated:
@@ -1666,7 +1656,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             "/webapps/tool_shed/index.mako",
             repository_metadata=repository_metadata,
             can_administer_repositories=can_administer_repositories,
-            has_reviewed_repositories=has_reviewed_repositories,
             has_deprecated_repositories=has_deprecated_repositories,
             user_id=user_id,
             repository_id=repository_id,
@@ -1822,7 +1811,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         description = kwd.get("description", repository.description)
         long_description = kwd.get("long_description", repository.long_description)
         avg_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, repository, webapp_model=trans.model)
-        display_reviews = util.string_as_bool(kwd.get("display_reviews", False))
         alerts = kwd.get("alerts", "")
         alerts_checked = CheckboxField.is_checked(alerts)
         category_ids = util.listify(kwd.get("category_id", ""))
@@ -2016,7 +2004,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             categories=categories,
             metadata=metadata,
             avg_rating=avg_rating,
-            display_reviews=display_reviews,
             num_ratings=num_ratings,
             alerts_check_box=alerts_check_box,
             malicious_check_box=malicious_check_box,
@@ -2072,13 +2059,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             out_groups=out_groups,
             message=message,
             status=status,
-        )
-
-    @web.expose
-    @require_login("review repository revision")
-    def manage_repository_reviews_of_revision(self, trans, **kwd):
-        return trans.response.send_redirect(
-            web.url_for(controller="repository_review", action="manage_repository_reviews_of_revision", **kwd)
         )
 
     @web.expose
@@ -2268,7 +2248,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             comment = kwd.get("comment", "")
             rating = self.rate_item(trans, trans.user, repository, rating, comment)
         avg_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, repository, webapp_model=trans.model)
-        display_reviews = util.string_as_bool(kwd.get("display_reviews", False))
         rra = self.get_user_item_rating(trans.sa_session, trans.user, repository, webapp_model=trans.model)
         metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision(
             trans.app, id, changeset_revision, metadata_only=True
@@ -2281,7 +2260,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             metadata=metadata,
             revision_label=revision_label,
             avg_rating=avg_rating,
-            display_reviews=display_reviews,
             num_ratings=num_ratings,
             rra=rra,
             repository_type_select_field=repository_type_select_field,
@@ -2763,7 +2741,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             repository, changeset_revision=changeset_revision
         )
         repository.clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(trans.user, repository)
-        display_reviews = kwd.get("display_reviews", False)
         alerts = kwd.get("alerts", "")
         alerts_checked = CheckboxField.is_checked(alerts)
         if repository.email_alerts:
@@ -2833,7 +2810,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             metadata=metadata,
             containers_dict=containers_dict,
             avg_rating=avg_rating,
-            display_reviews=display_reviews,
             num_ratings=num_ratings,
             alerts_check_box=alerts_check_box,
             changeset_revision=changeset_revision,

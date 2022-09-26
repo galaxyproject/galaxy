@@ -43,7 +43,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools)
 
         datasets = self._collect()
         assert DEFAULT_TOOL_OUTPUT in datasets
-        self.assertEqual(len(datasets[DEFAULT_TOOL_OUTPUT]), 2)
+        assert len(datasets[DEFAULT_TOOL_OUTPUT]) == 2
 
         # Test default order of collection.
         assert list(datasets[DEFAULT_TOOL_OUTPUT].keys()) == ["test1", "test2"]
@@ -74,7 +74,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools)
 
         datasets = self._collect()
         assert DEFAULT_TOOL_OUTPUT in datasets
-        self.assertEqual(len(datasets[DEFAULT_TOOL_OUTPUT]), 3)
+        assert len(datasets[DEFAULT_TOOL_OUTPUT]) == 3
 
         # Test default order of collection.
         assert list(datasets[DEFAULT_TOOL_OUTPUT].keys()) == ["test1", "test2", "test3"]
@@ -113,7 +113,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools)
 
         datasets = self._collect()
         assert DEFAULT_TOOL_OUTPUT in datasets
-        self.assertEqual(len(datasets[DEFAULT_TOOL_OUTPUT]), 3)
+        assert len(datasets[DEFAULT_TOOL_OUTPUT]) == 3
 
         # Test default order of collection.
         assert list(datasets[DEFAULT_TOOL_OUTPUT].keys()) == ["test1", "test2", "test3"]

@@ -943,7 +943,7 @@ steps:
         search_payload = self._search_payload(history_id=history_id, tool_id=tool_id, inputs=inputs)
         empty_search_response = self._post("jobs/search", data=search_payload)
         self._assert_status_code_is(empty_search_response, 200)
-        self.assertEqual(len(empty_search_response.json()), 0)
+        assert len(empty_search_response.json()) == 0
         tool_response = self._post("tools", data=search_payload)
         self.dataset_populator.wait_for_tool_run(history_id, run_response=tool_response)
         self._search(search_payload, expected_search_count=1)

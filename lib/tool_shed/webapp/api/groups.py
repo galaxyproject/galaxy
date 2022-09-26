@@ -125,15 +125,7 @@ class GroupsController(BaseAPIController):
                 time_repo_updated_full = repo.update_time.strftime("%Y-%m-%d %I:%M %p")
                 time_repo_created = pretty_print_time_interval(repo.create_time, True)
                 time_repo_updated = pretty_print_time_interval(repo.update_time, True)
-                approved = ""
-                ratings = []
-                for review in repo.reviews:
-                    if review.rating:
-                        ratings.append(review.rating)
-                    if review.approved == "yes":
-                        approved = "yes"
                 # TODO add user ratings
-                ratings_mean = str(float(sum(ratings)) / len(ratings)) if len(ratings) > 0 else ""
                 total_downloads += repo.times_downloaded
                 group_repos.append(
                     {
@@ -145,8 +137,6 @@ class GroupsController(BaseAPIController):
                         "time_updated_full": time_repo_updated_full,
                         "time_updated": time_repo_updated,
                         "description": repo.description,
-                        "approved": approved,
-                        "ratings_mean": ratings_mean,
                         "categories": categories,
                     }
                 )

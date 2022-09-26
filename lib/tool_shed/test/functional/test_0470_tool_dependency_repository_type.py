@@ -68,22 +68,9 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
     def test_0000_initiate_users_and_category(self):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
         self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
-        test_user_2 = self.test_db_util.get_user(common.test_user_2_email)
-        assert (
-            test_user_2 is not None
-        ), f"Problem retrieving user with email {common.test_user_2_email} from the database"
-        self.test_db_util.get_private_role(test_user_2)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
 
     def test_0005_create_libx11_repository(self):
         """Create and populate package_x11_client_1_5_proto_7_0_0470.
@@ -93,13 +80,13 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         Create and populate a repository named package_x11_client_1_5_proto_7_0 that contains only a single file named tool_dependencies.xml.
         Keep the repository type as the default "Unrestricted".
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=package_libx11_repository_name,
             description=package_libx11_repository_description,
             long_description=package_libx11_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         # Upload the tool dependency definition to the package_x11_client_1_5_proto_7_0_0470 repository.
@@ -124,13 +111,13 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         above package_x11_client_1_5_proto_7_0 repository. Upload the tool_dependencues.xml file such that it does not have a changeset_revision
         defined so it will get automatically populated.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=package_emboss_repository_name,
             description=package_emboss_repository_description,
             long_description=package_emboss_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         # Upload the edited tool dependency definition to the package_emboss_5_0_0 repository.
@@ -155,13 +142,13 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         on the package_emboss_5_0_0 repository above. Upload the tool_dependencies.xml file such that it does not have a change set_revision defined
         so it will get automatically populated.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=emboss_repository_name,
             description=emboss_repository_description,
             long_description=emboss_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         # Populate emboss_5 with tool and dependency definitions.

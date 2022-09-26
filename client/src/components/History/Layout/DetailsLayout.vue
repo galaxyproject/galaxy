@@ -1,7 +1,7 @@
 <template>
     <section class="m-3 details" data-description="edit details">
         <b-button
-            :disabled="currentUser.isAnonymous || !writeable"
+            v-if="writeable && !currentUser.isAnonymous"
             class="edit-button ml-1 float-right"
             data-description="editor toggle"
             size="sm"

@@ -86,6 +86,7 @@
 <script>
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters, mapActions } from "vuex";
+import WorkflowIcons from "components/Workflow/icons";
 import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
 import GenericHistoryItem from "components/History/Content/GenericItem";
@@ -134,18 +135,7 @@ export default {
             return ["data_input", "data_collection_input"].includes(this.workflowStepType);
         },
         stepIcon() {
-            switch (this.workflowStepType) {
-                case "data_input":
-                    return "fa-file";
-                case "data_collection_input":
-                    return "fa-folder-o";
-                case "parameter_input":
-                    return "fa-pencil";
-                case "subworkflow":
-                    return "fa-tasks";
-                default:
-                    return "fa-wrench";
-            }
+            return WorkflowIcons[this.workflowStepType];
         },
         stepLabel() {
             return this.labelForWorkflowStep(this.workflowStep.id);

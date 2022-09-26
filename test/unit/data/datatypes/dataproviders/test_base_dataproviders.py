@@ -83,19 +83,19 @@ class Test_BaseDataProvider(BaseTestCase):
         provider = self.provider_class(source)
         data = list(provider)
         log.debug("data: %s", str(data))
-        self.assertEqual(data, [str(x) for x in range(1, 10)])
+        assert data == [str(x) for x in range(1, 10)]
 
         source = (str(x) for x in range(1, 10))
         provider = self.provider_class(source)
         data = list(provider)
         log.debug("data: %s", str(data))
-        self.assertEqual(data, [str(x) for x in range(1, 10)])
+        assert data == [str(x) for x in range(1, 10)]
 
         source = (str(x) for x in range(1, 10))
         provider = self.provider_class(source)
         data = list(provider)
         log.debug("data: %s", str(data))
-        self.assertEqual(data, [str(x) for x in range(1, 10)])
+        assert data == [str(x) for x in range(1, 10)]
 
     def test_validate_source(self):
         """validate_source should throw an error if the source doesn't have attr '__iter__'"""
@@ -104,8 +104,10 @@ class Test_BaseDataProvider(BaseTestCase):
             return self.provider_class(source)
 
         # two objects without __iter__ method: build in function and int
-        self.assertRaises(exceptions.InvalidDataProviderSource, non_iterator_dprov, sum)
-        self.assertRaises(exceptions.InvalidDataProviderSource, non_iterator_dprov, 40)
+        with self.assertRaises(exceptions.InvalidDataProviderSource):
+            non_iterator_dprov(sum)
+        with self.assertRaises(exceptions.InvalidDataProviderSource):
+            non_iterator_dprov(40)
 
     def test_writemethods(self):
         """should throw an error if any write methods are called"""
@@ -117,9 +119,12 @@ class Test_BaseDataProvider(BaseTestCase):
             method = getattr(provider, method_name)
             return method(*args)
 
-        self.assertRaises(NotImplementedError, call_method, provider, "truncate", 20)
-        self.assertRaises(NotImplementedError, call_method, provider, "write", "bler")
-        self.assertRaises(NotImplementedError, call_method, provider, "writelines", ["one", "two"])
+        with self.assertRaises(NotImplementedError):
+            call_method(provider, "truncate", 20)
+        with self.assertRaises(NotImplementedError):
+            call_method(provider, "write", "bler")
+        with self.assertRaises(NotImplementedError):
+            call_method(provider, "writelines", ["one", "two"])
 
     def test_readlines(self):
         """readlines should return all the data in list form"""
@@ -127,7 +132,7 @@ class Test_BaseDataProvider(BaseTestCase):
         provider = self.provider_class(source)
         data = provider.readlines()
         log.debug("data: %s", str(data))
-        self.assertEqual(data, [str(x) for x in range(1, 10)])
+        assert data == [str(x) for x in range(1, 10)]
 
     def test_stringio(self):
         """should work with StringIO"""
@@ -143,25 +148,25 @@ class Test_BaseDataProvider(BaseTestCase):
         data = list(provider)
         log.debug("data: %s", str(data))
         # provider should call close on file
-        self.assertEqual(data, self.parses_default_content_as())
-        self.assertTrue(source.closed)
+        assert data == self.parses_default_content_as()
+        assert source.closed
 
     def test_file(self):
         """should work with files"""
         (contents, provider, data) = self.contents_provider_and_data()
-        self.assertEqual(data, self.parses_default_content_as())
+        assert data == self.parses_default_content_as()
         # provider should call close on file
-        self.assertTrue(hasattr(provider.source, "read"))
-        self.assertTrue(provider.source.closed)
+        assert hasattr(provider.source, "read")
+        assert provider.source.closed
 
 
 class Test_FilteredDataProvider(Test_BaseDataProvider):
     provider_class: Type[base.DataProvider] = base.FilteredDataProvider
 
     def assertCounters(self, provider, read, valid, returned):
-        self.assertEqual(provider.num_data_read, read)
-        self.assertEqual(provider.num_valid_data_read, valid)
-        self.assertEqual(provider.num_data_returned, returned)
+        assert provider.num_data_read == read
+        assert provider.num_valid_data_read == valid
+        assert provider.num_data_returned == returned
 
     def test_counters(self):
         """should count: lines read, lines that passed the filter, lines returned"""
@@ -188,57 +193,57 @@ class Test_LimitedOffsetDataProvider(Test_FilteredDataProvider):
     def test_offset_1(self):
         """when offset is 1, should skip first"""
         (contents, provider, data) = self.contents_provider_and_data(offset=1)
-        self.assertEqual(data, self.parses_default_content_as()[1:])
+        assert data == self.parses_default_content_as()[1:]
         self.assertCounters(provider, 3, 3, 2)
 
     def test_offset_all(self):
         """when offset >= num lines, should return empty list"""
         (contents, provider, data) = self.contents_provider_and_data(offset=4)
-        self.assertEqual(data, [])
+        assert data == []
         self.assertCounters(provider, 3, 3, 0)
 
     def test_offset_none(self):
         """when offset is 0, should return all"""
         (contents, provider, data) = self.contents_provider_and_data(offset=0)
-        self.assertEqual(data, self.parses_default_content_as())
+        assert data == self.parses_default_content_as()
         self.assertCounters(provider, 3, 3, 3)
 
     def test_offset_negative(self):
         """when offset is negative, should return all"""
         (contents, provider, data) = self.contents_provider_and_data(offset=-1)
-        self.assertEqual(data, self.parses_default_content_as())
+        assert data == self.parses_default_content_as()
         self.assertCounters(provider, 3, 3, 3)
 
     def test_limit_1(self):
         """when limit is one, should return first"""
         (contents, provider, data) = self.contents_provider_and_data(limit=1)
-        self.assertEqual(data, self.parses_default_content_as()[:1])
+        assert data == self.parses_default_content_as()[:1]
         self.assertCounters(provider, 1, 1, 1)
 
     def test_limit_all(self):
         """when limit >= num lines, should return all"""
         (contents, provider, data) = self.contents_provider_and_data(limit=4)
-        self.assertEqual(data, self.parses_default_content_as())
+        assert data == self.parses_default_content_as()
         self.assertCounters(provider, 3, 3, 3)
 
     def test_limit_zero(self):
         """when limit >= num lines, should return empty list"""
         (contents, provider, data) = self.contents_provider_and_data(limit=0)
-        self.assertEqual(data, [])
+        assert data == []
         self.assertCounters(provider, 0, 0, 0)
 
     def test_limit_none(self):
         """when limit is None, should return all"""
         (contents, provider, data) = self.contents_provider_and_data(limit=None)
-        self.assertEqual(data, self.parses_default_content_as())
+        assert data == self.parses_default_content_as()
         self.assertCounters(provider, 3, 3, 3)
 
     # TODO: somehow re-use tmpfile here
     def test_limit_with_offset(self):
         def limit_offset_combo(limit, offset, data_should_be, read, valid, returned):
             (contents, provider, data) = self.contents_provider_and_data(limit=limit, offset=offset)
-            self.assertEqual(data, data_should_be)
-            # self.assertCounters( provider, read, valid, returned )
+            assert data == data_should_be
+            # self.assertCounters(provider, read, valid, returned)
 
         result_data = self.parses_default_content_as()
         test_data = [
@@ -265,8 +270,8 @@ class Test_LimitedOffsetDataProvider(Test_FilteredDataProvider):
                 return string
 
             (contents, provider, data) = self.contents_provider_and_data(limit=limit, offset=offset, filter_fn=only_ts)
-            self.assertEqual(data, data_should_be)
-            # self.assertCounters( provider, read, valid, returned )
+            assert data == data_should_be
+            # self.assertCounters(provider, read, valid, returned)
 
         result_data = [c for c in self.parses_default_content_as() if c.lower().startswith("t")]
         test_data = [
@@ -322,7 +327,7 @@ class Test_MultiSourceDataProvider(BaseTestCase):
         log.debug("provider: %s", provider)
         data = list(provider)
         log.debug("data: %s", str(data))
-        self.assertEqual("".join(data), "".join(contents))
+        assert "".join(data) == "".join(contents)
 
     def test_multiple_compound_sources(self):
         # clean the following contents, write them to tmpfiles, open them,
@@ -365,7 +370,7 @@ class Test_MultiSourceDataProvider(BaseTestCase):
         log.debug("provider: %s", provider)
         data = list(provider)
         log.debug("data: %s", str(data))
-        self.assertEqual("".join(data), "Two\nThree\nNine\nEleven\n")
+        assert "".join(data) == "Two\nThree\nNine\nEleven\n"
 
 
 class TempFileCache:
@@ -395,7 +400,3 @@ class TempFileCache:
                 log.debug("unlinking tmpfile: %s", tmpfile)
                 os.unlink(tmpfile)
         self._content_dict = {}
-
-
-if __name__ == "__main__":
-    unittest.main()

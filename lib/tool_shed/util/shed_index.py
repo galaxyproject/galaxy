@@ -69,8 +69,6 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
             tool_index_writer.delete_by_term("repo_id", repo_id)
             for tool in tools_list:
                 tool_contents = tool.copy()
-                # tool_id = tool_contents["id"]
-                # tool_contents["path"] = f"{repo_id}/{tool_id}"
                 tool_contents["repo_owner_username"] = repo.get("repo_owner_username")
                 tool_contents["repo_name"] = repo.get("name")
                 tool_contents["repo_id"] = repo_id
@@ -123,12 +121,6 @@ def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
             user = sa_session.query(model.User).filter(model.User.id == repo.user_id).one()
             repo_owner_username = user.username.lower()
 
-        approved = "no"
-        for review in repo.reviews:
-            if review.approved == "yes":
-                approved = "yes"
-                break
-
         last_updated = pretty_print_time_interval(repo.update_time)
         full_last_updated = repo.update_time.strftime("%Y-%m-%d %I:%M %p")
 
@@ -165,7 +157,7 @@ def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
                 remote_repository_url=unicodify(remote_repository_url),
                 repo_owner_username=unicodify(repo_owner_username),
                 times_downloaded=unicodify(times_downloaded),
-                approved=unicodify(approved),
+                approved=unicodify("no"),
                 last_updated=unicodify(last_updated),
                 full_last_updated=unicodify(full_last_updated),
                 tools_list=tools_list,

@@ -1228,7 +1228,10 @@ class Tool(Dictifiable):
             # Fallback to Galaxy test data directory for builtin tools, tools
             # under development, and some older ToolShed published tools that
             # used stock test data.
-            test_data = self.app.test_data_resolver.get_filename(filename)
+            try:
+                test_data = self.app.test_data_resolver.get_filename(filename)
+            except ValueError:
+                test_data = None
         return test_data
 
     def __walk_test_data(self, dir, filename):

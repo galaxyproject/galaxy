@@ -42,4 +42,5 @@ class ToolboxFiltersSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.home()
         # But now it should raise NoSuchElementException
-        self.assertRaises(NoSuchElementException, lambda: self.driver.find_element(By.LINK_TEXT, "Test Section"))
+        with self.assertRaises(NoSuchElementException):
+            self.driver.find_element(By.LINK_TEXT, "Test Section")

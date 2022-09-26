@@ -173,10 +173,10 @@ class TestCommandFactory(TestCase):
 
     def _assert_command_is(self, expected_command, **command_kwds):
         command = self.__command(**command_kwds)
-        self.assertEqual(command, expected_command)
+        assert command == expected_command
 
     def __assert_tool_script_is(self, expected_command):
-        self.assertEqual(open(self.__tool_script).read(), expected_command)
+        assert open(self.__tool_script).read() == expected_command
 
     @property
     def __tool_script(self):

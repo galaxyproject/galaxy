@@ -42,19 +42,19 @@ class DataColumnParameterTestCase(BaseParameterTestCase):
         assert value == ["1", "2", "3"]
 
     def test_get_initial_value_default(self):
-        self.assertEqual("1", self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()}))
+        assert "1" == self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()})
 
     def test_get_initial_value_override_legacy(self):
         self.other_attributes = "default_value='2'"
-        self.assertEqual("2", self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()}))
+        assert "2" == self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()})
 
     def test_get_initial_value_override_newstyle(self):
         self.other_attributes = "value='2'"
-        self.assertEqual("2", self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()}))
+        assert "2" == self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()})
 
     def test_get_initial_value_override_newstyle_strips_c(self):
         self.other_attributes = "value='c2'"
-        self.assertEqual("2", self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()}))
+        assert "2" == self.param.get_initial_value(self.trans, {"input_tsv": self.build_ready_hda()})
 
     def setUp(self):
         super().setUp()

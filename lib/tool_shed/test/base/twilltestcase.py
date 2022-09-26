@@ -5,6 +5,7 @@ import string
 import tempfile
 import time
 from json import loads
+from typing import List
 from urllib.parse import (
     quote_plus,
     urlencode,
@@ -34,6 +35,7 @@ from tool_shed.util import (
     hgweb_config,
     xml_util,
 )
+from tool_shed_client.schema import Category
 from . import (
     common,
     test_db_util,
@@ -237,11 +239,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
             fh.write(smart_str(content))
         return fh.name
 
-    def add_repository_review_component(self, **kwd):
-        params = {"operation": "create"}
-        self.visit_url("/repository_review/create_component", params=params)
-        self.submit_form(button="create_component_button", **kwd)
-
     def assign_admin_role(self, repository, user):
         # As elsewhere, twill limits the possibility of submitting the form, this time due to not executing the javascript
         # attached to the role selection form. Visit the action url directly with the necessary parameters.
@@ -253,23 +250,13 @@ class ShedTwillTestCase(ShedBaseTestCase):
         self.visit_url("/repository/manage_repository_admins", params=params)
         self.check_for_strings(strings_displayed=["Role", "has been associated"])
 
-    def browse_category(self, category, strings_displayed=None, strings_not_displayed=None):
+    def browse_category(self, category: Category, strings_displayed=None, strings_not_displayed=None):
         params = {
             "sort": "name",
             "operation": "valid_repositories_by_category",
-            "id": self.security.encode_id(category.id),
+            "id": category.id,
         }
         self.visit_url("/repository/browse_valid_categories", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def browse_component_review(self, review, strings_displayed=None, strings_not_displayed=None):
-        params = {"id": self.security.encode_id(review.id)}
-        self.visit_url("/repository_review/browse_review", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def browse_custom_datatypes(self, strings_displayed=None, strings_not_displayed=None):
-        url = "/repository/browse_datatypes"
-        self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def browse_repository(self, repository, strings_displayed=None, strings_not_displayed=None):
@@ -461,13 +448,14 @@ class ShedTwillTestCase(ShedBaseTestCase):
                 return True
         raise
 
-    def create_category(self, **kwd):
-        category = test_db_util.get_category_by_name(kwd["name"])
+    def create_category(self, **kwd) -> Category:
+        category = self.populator.get_category_with_name(kwd["name"])
         if category is None:
             params = {"operation": "create"}
             self.visit_url("/admin/manage_categories", params=params)
             self.submit_form(button="create_category_button", **kwd)
-            category = test_db_util.get_category_by_name(kwd["name"])
+            category = self.populator.get_category_with_name(kwd["name"])
+            assert category
         return category
 
     def create_repository_dependency(
@@ -516,34 +504,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
             strings_displayed=None,
             strings_not_displayed=None,
         )
-
-    def create_repository_review(self, repository, review_contents_dict, changeset_revision=None, copy_from=None):
-        strings_displayed = []
-        if not copy_from:
-            strings_displayed.append("Begin your review")
-        strings_not_displayed = []
-        if not changeset_revision:
-            changeset_revision = self.get_repository_tip(repository)
-        params = {"changeset_revision": changeset_revision, "id": self.security.encode_id(repository.id)}
-        self.visit_url("/repository_review/create_review", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-        strings_displayed = []
-        if copy_from:
-            old_changeset_revision, review_id = copy_from
-            strings_displayed = [
-                "You have elected to create a new review",
-                "Select previous revision",
-                changeset_revision,
-            ]
-            self.check_for_strings(strings_displayed)
-            strings_displayed = []
-            params = {
-                "changeset_revision": self.get_repository_tip(repository),
-                "id": self.security.encode_id(repository.id),
-                "previous_review_id": self.security.encode_id(review_id),
-            }
-            self.visit_url("/repository_review/create_review", params=params)
-        self.fill_review_form(review_contents_dict, strings_displayed, strings_not_displayed)
 
     def create_user_in_galaxy(
         self, cntrller="user", email="test@bx.psu.edu", password="testuser", username="admin-user", redirect=""
@@ -668,16 +628,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
         self.visit_url(url, params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def display_reviewed_repositories_owned_by_user(self, strings_displayed=None, strings_not_displayed=None):
-        url = "/repository_review/reviewed_repositories_i_own"
-        self.visit_url(url)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def display_repository_reviews_by_user(self, user, strings_displayed=None, strings_not_displayed=None):
-        params = {"id": self.security.encode_id(user.id)}
-        self.visit_url("/repository_review/repository_reviews_by_user", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
     def edit_repository_categories(
         self, repository, categories_to_add=None, categories_to_remove=None, restore_original=True
     ):
@@ -752,25 +702,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
     def fetch_repository_metadata(self, repository, strings_displayed=None, strings_not_displayed=None):
         url = f"/api/repositories/{self.security.encode_id(repository.id)}/metadata"
         self.visit_url(url)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def fill_review_form(self, review_contents_dict, strings_displayed=None, strings_not_displayed=None):
-        kwd = dict()
-        changed = False
-        for label, contents in review_contents_dict.items():
-            if contents:
-                changed = True
-                kwd[f"{label}__ESEP__comment"] = contents["comment"]
-                kwd[f"{label}__ESEP__rating"] = contents["rating"]
-                if "private" in contents:
-                    kwd[f"{label}__ESEP__private"] = contents["private"]
-                kwd[f"{label}__ESEP__approved"] = contents["approved"]
-            else:
-                kwd[f"{label}__ESEP__approved"] = "not_applicable"
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-        self.submit_form(button="Workflows__ESEP__review_button", **kwd)
-        if changed:
-            strings_displayed.append("Reviews were saved")
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def galaxy_token(self):
@@ -882,24 +813,17 @@ class ShedTwillTestCase(ShedBaseTestCase):
     def get_hg_repo(self, path):
         return hg.repository(ui.ui(), path.encode("utf-8"))
 
-    def get_last_reviewed_revision_by_user(self, user, repository):
-        changelog_tuples = self.get_repository_changelog_tuples(repository)
-        reviews = test_db_util.get_reviews_ordered_by_changeset_revision(
-            repository.id, changelog_tuples, reviewer_user_id=user.id
-        )
-        if reviews:
-            last_review = reviews[-1]
-        else:
-            last_review = None
-        return last_review
-
-    def get_repositories_category_api(self, categories, strings_displayed=None, strings_not_displayed=None):
+    def get_repositories_category_api(
+        self, categories: List[Category], strings_displayed=None, strings_not_displayed=None
+    ):
         for category in categories:
-            url = f"/api/categories/{self.security.encode_id(category.id)}/repositories"
+            url = f"/api/categories/{category.id}/repositories"
             self.visit_url(url)
             self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def get_or_create_repository(self, owner=None, strings_displayed=None, strings_not_displayed=None, **kwd):
+    def get_or_create_repository(
+        self, category: Category, owner=None, strings_displayed=None, strings_not_displayed=None, **kwd
+    ):
         # If not checking for a specific string, it should be safe to assume that
         # we expect repository creation to be successful.
         if strings_displayed is None:
@@ -907,9 +831,11 @@ class ShedTwillTestCase(ShedBaseTestCase):
         if strings_not_displayed is None:
             strings_not_displayed = []
         repository = test_db_util.get_repository_by_name_and_owner(kwd["name"], owner)
+        category_id = category.id
+        assert category_id
         if repository is None:
             self.visit_url("/repository/create_repository")
-            self.submit_form(button="create_repository_button", **kwd)
+            self.submit_form(button="create_repository_button", category_id=category_id, **kwd)
             self.check_for_strings(strings_displayed, strings_not_displayed)
             repository = test_db_util.get_repository_by_name_and_owner(kwd["name"], owner)
         return repository
@@ -931,13 +857,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
             ctx = repo[changeset]
             changelog_tuples.append((ctx.rev(), ctx))
         return changelog_tuples
-
-    def get_repository_datatypes_count(self, repository):
-        metadata = self.get_repository_metadata(repository)[0].metadata
-        if "datatypes" not in metadata:
-            return 0
-        else:
-            return len(metadata["datatypes"])
 
     def get_repository_file_list(self, repository, base_path, current_path=None):
         """Recursively load repository folder contents and append them to a list. Similar to os.walk but via /repository/open_folder."""
@@ -989,13 +908,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
     def get_repository_tip(self, repository):
         repo = self.get_hg_repo(self.get_repo_path(repository))
         return str(repo[repo.changelog.tip()])
-
-    def get_sniffers_count(self):
-        url = "/api/datatypes/sniffers"
-        self.visit_galaxy_url(url)
-        html = self.last_page()
-        sniffers = loads(html)
-        return len(sniffers)
 
     def get_tools_from_repository_metadata(self, repository, include_invalid=False):
         """Get a list of valid and (optionally) invalid tool dicts from the repository metadata."""
@@ -1129,7 +1041,7 @@ class ShedTwillTestCase(ShedBaseTestCase):
         **kwd,
     ):
         self.browse_tool_shed(url=self.url)
-        self.browse_category(test_db_util.get_category_by_name(category_name))
+        self.browse_category(self.populator.get_category_with_name(category_name))
         self.preview_repository_in_tool_shed(name, owner, strings_displayed=preview_strings_displayed)
         repository = test_db_util.get_repository_by_name_and_owner(name, owner)
         repository_id = self.security.encode_id(repository.id)
@@ -1256,16 +1168,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
         self.visit_url("/repository/load_invalid_tool", params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def load_page_for_installed_tool(self, tool_guid, strings_displayed=None, strings_not_displayed=None):
-        params = {"tool_id": tool_guid}
-        self.visit_galaxy_url("/tool_runner", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def manage_review_components(self, strings_displayed=None, strings_not_displayed=None):
-        url = "/repository_review/manage_components"
-        self.visit_url(url)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
     def preview_repository_in_tool_shed(
         self, name, owner, changeset_revision=None, strings_displayed=None, strings_not_displayed=None
     ):
@@ -1354,19 +1256,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
         params = {"id": self.security.encode_id(repository.id)}
         self.visit_url("/repository/reset_all_metadata", params=params)
         self.check_for_strings(["All repository metadata has been reset."])
-
-    def review_repository(self, repository, review_contents_dict, user=None, changeset_revision=None):
-        strings_displayed = []
-        strings_not_displayed = []
-        if not changeset_revision:
-            changeset_revision = self.get_repository_tip(repository)
-        if user:
-            review = test_db_util.get_repository_review_by_user_id_changeset_revision(
-                user.id, repository.id, changeset_revision
-            )
-        params = {"id": self.security.encode_id(review.id)}
-        self.visit_url("/repository_review/edit_review", params=params)
-        self.fill_review_form(review_contents_dict, strings_displayed, strings_not_displayed)
 
     def revoke_write_access(self, repository, username):
         params = {"user_access_button": "Remove", "id": self.security.encode_id(repository.id), "remove_auth": username}
@@ -1650,20 +1539,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
         # We better have an entry like: <table comment_char="#" name="sam_fa_indexes"> in our parsed data_tables
         # or we know that the repository was not correctly installed!
         assert found, f"No entry for {required_data_table_entry} in {self.shed_tool_data_table_conf}."
-
-    def verify_repository_reviews(self, repository, reviewer=None, strings_displayed=None, strings_not_displayed=None):
-        changeset_revision = self.get_repository_tip(repository)
-        # Verify that the currently logged in user has a repository review for the specified repository, reviewer, and changeset revision.
-        strings_displayed = [repository.name, reviewer.username]
-        self.display_reviewed_repositories_owned_by_user(strings_displayed=strings_displayed)
-        # Verify that the reviewer has reviewed the specified repository's changeset revision.
-        strings_displayed = [repository.name, repository.description]
-        self.display_repository_reviews_by_user(reviewer, strings_displayed=strings_displayed)
-        # Load the review and check for the components passed in strings_displayed.
-        review = test_db_util.get_repository_review_by_user_id_changeset_revision(
-            reviewer.id, repository.id, changeset_revision
-        )
-        self.browse_component_review(review, strings_displayed=strings_displayed)
 
     def verify_tool_metadata_for_installed_repository(
         self, installed_repository, strings_displayed=None, strings_not_displayed=None

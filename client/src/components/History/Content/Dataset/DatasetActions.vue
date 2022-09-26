@@ -33,7 +33,7 @@
                     <span class="fa fa-info-circle" />
                 </b-button>
                 <b-button
-                    v-if="showRerun"
+                    v-if="writable && showRerun"
                     class="rerun-btn px-1"
                     title="Run Job Again"
                     size="sm"
@@ -74,7 +74,6 @@ import { copy as sendToClipboard } from "utils/clipboard";
 import { absPath, prependPath } from "utils/redirect.js";
 import { downloadUrlMixin } from "./mixins.js";
 import DatasetDownload from "./DatasetDownload";
-import { iframeAdd } from "components/plugins/legacyNavigation";
 
 export default {
     components: {
@@ -83,6 +82,7 @@ export default {
     mixins: [downloadUrlMixin],
     props: {
         item: { type: Object, required: true },
+        writable: { type: Boolean, default: true },
         showHighlight: { type: Boolean, default: false },
         itemUrls: { type: Object, required: true },
     },
@@ -139,11 +139,8 @@ export default {
             this.$router.push(`/root?job_id=${this.item.creating_job}`);
         },
         onVisualize() {
-            iframeAdd({
-                path: this.itemUrls.visualize,
-                title: `Visualization of ${this.item.name || ""}`,
-                $router: this.$router,
-            });
+            const title = `Visualization of ${this.item.name || ""}`;
+            this.$router.push(this.itemUrls.visualize, title);
         },
         onHighlight() {
             this.$emit("toggleHighlights");

@@ -520,6 +520,24 @@ execution:
       # the deployer.
       #require_container: true
 
+      # Flag for appending the container monitor command to jobs. The monitor is
+      # responsible for determining the IP and port of the container and
+      # reporting it to Galaxy. This should be set to false when running
+      # Interactive Tools with the kubernetes runner, but is needed for running
+      # with local, DRM, and non-Kubernetes Pulsar docker runners.
+      #container_monitor: true
+
+      # Store container connection information to a file in the job working
+      # directory ('file') or the Galaxy job ports API ('callback'). You should
+      # generally use 'file' unless you are using a non-Kubernetes Pulsar
+      # runner.
+      #container_monitor_result: file
+
+      # Override the command that runs the container monitor. It can be run via
+      # the `galaxy-container-monitor` command from the galaxy-job-execution
+      # package if you wish to install it somewhere (e.g. on a Pulsar server)
+      #container_monitor_command: python /path/to/galaxy/lib/galaxy_ext/container_monitor/monitor.py
+
     singularity_local:
       runner: local
       # Enable Singularity execution of tools with the follow property.

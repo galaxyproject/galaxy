@@ -5,8 +5,18 @@ import copy
 import logging
 import os
 import shutil
+from typing import (
+    Any,
+    Dict,
+    List,
+    no_type_check,
+    Optional,
+    Tuple,
+)
 
 from galaxy import util
+from galaxy.model.tool_shed_install import ToolShedRepository
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
@@ -26,9 +36,18 @@ from galaxy.util.tool_shed.xml_util import parse_xml
 
 log = logging.getLogger(__name__)
 
+RepositoryTupleT = Tuple[str, str, str, str]
+
 
 class InstalledRepositoryManager:
-    def __init__(self, app):
+    app: MinimalManagerApp
+    _tool_paths: List[str]
+    installed_repository_dicts: List[Dict[str, Any]]
+    repository_dependencies_of_installed_repositories: Dict[RepositoryTupleT, List[RepositoryTupleT]]
+    installed_repository_dependencies_of_installed_repositories: Dict[RepositoryTupleT, List[RepositoryTupleT]]
+    installed_dependent_repositories_of_installed_repositories: Dict[RepositoryTupleT, List[RepositoryTupleT]]
+
+    def __init__(self, app: MinimalManagerApp):
         """
         Among other things, keep in in-memory sets of tuples defining installed repositories and tool dependencies along with
         the relationships between each of them.  This will allow for quick discovery of those repositories or components that
@@ -77,7 +96,7 @@ class InstalledRepositoryManager:
             self._tool_paths = tool_paths
         return self._tool_paths
 
-    def activate_repository(self, repository):
+    def activate_repository(self, repository: ToolShedRepository) -> None:
         """Activate an installed tool shed repository that has been marked as deactivated."""
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir(
             self.app, repository
@@ -123,7 +142,9 @@ class InstalledRepositoryManager:
         self.install_model.session.add(repository)
         self.install_model.session.flush()
 
-    def add_entry_to_installed_repository_dependencies_of_installed_repositories(self, repository):
+    def add_entry_to_installed_repository_dependencies_of_installed_repositories(
+        self, repository: ToolShedRepository
+    ) -> None:
         """
         Add an entry to self.installed_repository_dependencies_of_installed_repositories.  A side-effect of this method
         is the population of self.installed_dependent_repositories_of_installed_repositories.  Since this method discovers
@@ -161,7 +182,7 @@ class InstalledRepositoryManager:
                     repository_tup
                 ]
 
-    def add_entry_to_repository_dependencies_of_installed_repositories(self, repository):
+    def add_entry_to_repository_dependencies_of_installed_repositories(self, repository: ToolShedRepository) -> None:
         """Add an entry to self.repository_dependencies_of_installed_repositories."""
         repository_tup = self.get_repository_tuple_for_installed_repository_manager(repository)
         if repository_tup not in self.repository_dependencies_of_installed_repositories:
@@ -176,25 +197,29 @@ class InstalledRepositoryManager:
             )
             self.repository_dependencies_of_installed_repositories[repository_tup] = repository_dependency_tups
 
-    def get_containing_repository_for_tool_dependency(self, tool_dependency_tup):
+    def get_containing_repository_for_tool_dependency(self, tool_dependency_tup: tuple) -> ToolShedRepository:
         tool_shed_repository_id, name, version, type = tool_dependency_tup
         return self.app.install_model.context.query(self.app.install_model.ToolShedRepository).get(
             tool_shed_repository_id
         )
 
     def get_dependencies_for_repository(
-        self, tool_shed_url, repo_info_dict, includes_tool_dependencies, updating=False
-    ):
+        self,
+        tool_shed_url: str,
+        repo_info_dict: Dict[str, repository_util.AnyRepositoryTupleT],
+        includes_tool_dependencies,
+        updating=False,
+    ) -> Dict[str, Any]:
         """
         Return dictionaries containing the sets of installed and missing tool dependencies and repository
         dependencies associated with the repository defined by the received repo_info_dict.
         """
         rdim = repository_dependency_manager.RepositoryDependencyInstallManager(self.app)
         repository = None
-        installed_rd = {}
-        installed_td = {}
-        missing_rd = {}
-        missing_td = {}
+        installed_rd: Dict[str, Any] = {}
+        installed_td: repository_util.ToolDependenciesDictT = {}
+        missing_rd: Dict[str, Any] = {}
+        missing_td: repository_util.ToolDependenciesDictT = {}
         name = next(iter(repo_info_dict))
         repo_info_tuple = repo_info_dict[name]
         (
@@ -306,7 +331,9 @@ class InstalledRepositoryManager:
         )
         return dependencies_for_repository_dict
 
-    def get_installed_and_missing_repository_dependencies(self, repository):
+    def get_installed_and_missing_repository_dependencies(
+        self, repository: ToolShedRepository
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """
         Return the installed and missing repository dependencies for a tool shed repository that has a record
         in the Galaxy database, but may or may not be installed.  In this case, the repository dependencies are
@@ -315,8 +342,8 @@ class InstalledRepositoryManager:
         dependencies are really a dependency of the dependent repository's contained tool dependency, and only
         if that tool dependency requires compilation.
         """
-        missing_repository_dependencies = {}
-        installed_repository_dependencies = {}
+        missing_repository_dependencies: Dict[str, Any] = {}
+        installed_repository_dependencies: Dict[str, Any] = {}
         has_repository_dependencies = repository.has_repository_dependencies
         if has_repository_dependencies:
             # The repository dependencies container will include only the immediate repository
@@ -469,7 +496,12 @@ class InstalledRepositoryManager:
             missing_repository_dependencies["description"] = description
         return installed_repository_dependencies, missing_repository_dependencies
 
-    def get_installed_and_missing_tool_dependencies_for_repository(self, tool_dependencies_dict):
+    # The following function will be removed at some point and has clear issues the type checking
+    # makes clear... I'm going to skip type checking for now rather than fix bugs in deprecated code
+    @no_type_check
+    def get_installed_and_missing_tool_dependencies_for_repository(
+        self, tool_dependencies_dict: repository_util.ToolDependenciesDictT
+    ) -> Tuple[repository_util.ToolDependenciesDictT, repository_util.ToolDependenciesDictT]:
         """
         Return the lists of installed tool dependencies and missing tool dependencies for a set of repositories
         being installed into Galaxy.
@@ -480,16 +512,17 @@ class InstalledRepositoryManager:
         # package repository approach).  If 2 repositories contain the same tool_dependencies.xml file, one dependency
         # will be lost since the values in these returned dictionaries are not lists.  All tool dependency dictionaries
         # should have lists as values.  These scenarios are probably extreme corner cases, but still should be handled.
-        installed_tool_dependencies = {}
-        missing_tool_dependencies = {}
+        installed_tool_dependencies: dict = {}
+        missing_tool_dependencies: dict = {}
         if tool_dependencies_dict:
             # Make sure not to change anything in the received tool_dependencies_dict as that would be a bad side-effect!
-            tmp_tool_dependencies_dict = copy.deepcopy(tool_dependencies_dict)
+            tmp_tool_dependencies_dict: dict = copy.deepcopy(tool_dependencies_dict)
             for td_key, val in tmp_tool_dependencies_dict.items():
                 # Default the status to NEVER_INSTALLED.
                 tool_dependency_status = self.install_model.ToolDependency.installation_status.NEVER_INSTALLED
-                # Set environment tool dependencies are a list.
                 if td_key == "set_environment":
+                    # Set environment tool dependencies are a list.
+                    assert isinstance(val, list)
                     new_val = []
                     for requirement_dict in val:
                         # {'repository_name': 'xx',
@@ -564,7 +597,7 @@ class InstalledRepositoryManager:
                     )
         return dependency_tups
 
-    def get_repository_tuple_for_installed_repository_manager(self, repository):
+    def get_repository_tuple_for_installed_repository_manager(self, repository: ToolShedRepository) -> RepositoryTupleT:
         return (
             str(repository.tool_shed),
             str(repository.name),
@@ -572,7 +605,7 @@ class InstalledRepositoryManager:
             str(repository.installed_changeset_revision),
         )
 
-    def get_repository_install_dir(self, tool_shed_repository):
+    def get_repository_install_dir(self, tool_shed_repository: ToolShedRepository) -> Optional[str]:
         for tool_path in self.tool_paths:
             ts = common_util.remove_port_from_tool_shed_url(str(tool_shed_repository.tool_shed))
             relative_path = os.path.join(
@@ -588,8 +621,8 @@ class InstalledRepositoryManager:
         return None
 
     def handle_existing_tool_dependencies_that_changed_in_update(
-        self, repository, original_dependency_dict, new_dependency_dict
-    ):
+        self, repository: ToolShedRepository, original_dependency_dict, new_dependency_dict
+    ) -> Tuple[List[str], List[str]]:
         """
         This method is called when a Galaxy admin is getting updates for an installed tool shed
         repository in order to cover the case where an existing tool dependency was changed (e.g.,
@@ -603,7 +636,7 @@ class InstalledRepositoryManager:
         deleted_tool_dependency_names = []
         for original_dependency_key, original_dependency_val_dict in original_dependency_dict.items():
             if original_dependency_key not in new_dependency_dict:
-                updated_tool_dependency = self.update_existing_tool_dependency(
+                updated_tool_dependency = self._update_existing_tool_dependency(
                     repository, original_dependency_val_dict, new_dependency_dict
                 )
                 if updated_tool_dependency:
@@ -612,7 +645,7 @@ class InstalledRepositoryManager:
                     deleted_tool_dependency_names.append(original_dependency_val_dict["name"])
         return updated_tool_dependency_names, deleted_tool_dependency_names
 
-    def uninstall_repository(self, repository, remove_from_disk=True):
+    def uninstall_repository(self, repository: ToolShedRepository, remove_from_disk=True):
         errors = ""
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir(
             app=self.app, repository=repository
@@ -663,7 +696,7 @@ class InstalledRepositoryManager:
         self.app.install_model.session.flush()
         return errors
 
-    def purge_repository(self, repository):
+    def purge_repository(self, repository: ToolShedRepository) -> Tuple[str, str]:
         """Purge a repository with status New (a white ghost) from the database."""
         sa_session = self.app.model.session
         status = "ok"
@@ -800,7 +833,9 @@ class InstalledRepositoryManager:
             message += f" the status {repository.status}."
         return status, message
 
-    def remove_entry_from_installed_repository_dependencies_of_installed_repositories(self, repository):
+    def remove_entry_from_installed_repository_dependencies_of_installed_repositories(
+        self, repository: ToolShedRepository
+    ):
         """
         Remove an entry from self.installed_repository_dependencies_of_installed_repositories.  A side-effect of this method
         is removal of appropriate value items from self.installed_dependent_repositories_of_installed_repositories.
@@ -832,7 +867,9 @@ class InstalledRepositoryManager:
             log.debug(debug_msg)
             del self.installed_repository_dependencies_of_installed_repositories[repository_tup]
 
-    def remove_entry_from_repository_dependencies_of_installed_repositories(self, repository):
+    def remove_entry_from_repository_dependencies_of_installed_repositories(
+        self, repository: ToolShedRepository
+    ) -> None:
         """Remove an entry from self.repository_dependencies_of_installed_repositories."""
         repository_tup = self.get_repository_tuple_for_installed_repository_manager(repository)
         if repository_tup in self.repository_dependencies_of_installed_repositories:
@@ -844,7 +881,9 @@ class InstalledRepositoryManager:
             log.debug(debug_msg)
             del self.repository_dependencies_of_installed_repositories[repository_tup]
 
-    def repository_dependency_needed_only_for_compiling_tool_dependency(self, repository, repository_dependency):
+    def repository_dependency_needed_only_for_compiling_tool_dependency(
+        self, repository: ToolShedRepository, repository_dependency
+    ) -> bool:
         for rd_tup in repository.tuples_of_repository_dependencies_needed_for_compiling_td:
             (
                 tool_shed,
@@ -918,7 +957,9 @@ class InstalledRepositoryManager:
                 return str(required_rd_tup[4])
         return "False"
 
-    def update_existing_tool_dependency(self, repository, original_dependency_dict, new_dependencies_dict):
+    def _update_existing_tool_dependency(
+        self, repository: ToolShedRepository, original_dependency_dict, new_dependencies_dict
+    ):
         """
         Update an exsiting tool dependency whose definition was updated in a change set
         pulled by a Galaxy administrator when getting updates to an installed tool shed

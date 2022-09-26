@@ -1394,6 +1394,10 @@ class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
         self.galaxy_interactor._summarize_history(history_id)
 
 
+# Things gxformat2 knows how to upload as workflows
+YamlContentT = Union[str, os.PathLike, dict]
+
+
 class BaseWorkflowPopulator(BasePopulator):
     dataset_populator: BaseDatasetPopulator
     dataset_collection_populator: "BaseDatasetCollectionPopulator"
@@ -1446,11 +1450,11 @@ class BaseWorkflowPopulator(BasePopulator):
         upload_response = self._post("workflows/upload", data=data)
         return upload_response
 
-    def upload_yaml_workflow(self, has_yaml, **kwds) -> str:
+    def upload_yaml_workflow(self, yaml_content: YamlContentT, **kwds) -> str:
         round_trip_conversion = kwds.get("round_trip_format_conversion", False)
         client_convert = kwds.pop("client_convert", not round_trip_conversion)
         kwds["convert"] = client_convert
-        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
+        workflow = convert_and_import_workflow(yaml_content, galaxy_interface=self, **kwds)
         workflow_id = workflow["id"]
         if round_trip_conversion:
             workflow_yaml_wrapped = self.download_workflow(workflow_id, style="format2_wrapped_yaml")
@@ -1719,18 +1723,18 @@ class BaseWorkflowPopulator(BasePopulator):
 
     def run_workflow(
         self,
-        has_workflow,
-        test_data=None,
-        history_id=None,
-        wait=True,
-        source_type=None,
+        has_workflow: YamlContentT,
+        test_data: Optional[Union[str, dict]] = None,
+        history_id: Optional[str] = None,
+        wait: bool = True,
+        source_type: Optional[str] = None,
         jobs_descriptions=None,
-        expected_response=200,
-        assert_ok=True,
-        client_convert=None,
-        round_trip_format_conversion=False,
-        invocations=1,
-        raw_yaml=False,
+        expected_response: int = 200,
+        assert_ok: bool = True,
+        client_convert: Optional[bool] = None,
+        round_trip_format_conversion: bool = False,
+        invocations: int = 1,
+        raw_yaml: bool = False,
     ):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
         workflow_populator = self
@@ -1748,19 +1752,24 @@ class BaseWorkflowPopulator(BasePopulator):
         if test_data is None:
             if jobs_descriptions is None:
                 assert source_type != "path"
-                jobs_descriptions = yaml.safe_load(has_workflow)
+                if isinstance(has_workflow, dict):
+                    jobs_descriptions = has_workflow
+                else:
+                    assert isinstance(has_workflow, str)
+                    jobs_descriptions = yaml.safe_load(has_workflow)
 
-            test_data = jobs_descriptions.get("test_data", {})
+            test_data_dict = jobs_descriptions.get("test_data", {})
+        elif not isinstance(test_data, dict):
+            test_data_dict = yaml.safe_load(test_data)
+        else:
+            test_data_dict = test_data
 
-        if not isinstance(test_data, dict):
-            test_data = yaml.safe_load(test_data)
-
-        parameters = test_data.pop("step_parameters", {})
-        replacement_parameters = test_data.pop("replacement_parameters", {})
+        parameters = test_data_dict.pop("step_parameters", {})
+        replacement_parameters = test_data_dict.pop("replacement_parameters", {})
         if history_id is None:
             history_id = self.dataset_populator.new_history()
         inputs, label_map, has_uploads = load_data_dict(
-            history_id, test_data, self.dataset_populator, self.dataset_collection_populator
+            history_id, test_data_dict, self.dataset_populator, self.dataset_collection_populator
         )
         workflow_request: Dict[str, Any] = dict(
             history=f"hist_id={history_id}",

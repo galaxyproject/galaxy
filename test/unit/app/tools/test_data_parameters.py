@@ -32,7 +32,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         # Selection is Optional. may be selected with other stuff,
         # not sure the UI should really allow this but easy enough
         # to just filter it out.
-        self.assertEqual([hda], self.param.to_python("%s,None" % hda.id, self.app))
+        assert [hda] == self.param.to_python(f"{hda.id},None", self.app)
 
     def test_field_filter_on_types(self):
         hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)
@@ -176,8 +176,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
             optional_text = ""
             if self.optional:
                 optional_text = 'optional="True"'
-            template_xml = """<param name="data2" type="data" format="txt" %s %s></param>"""
-            param_str = template_xml % (multi_text, optional_text)
+            param_str = f"""<param name="data2" type="data" format="txt" {multi_text} {optional_text}></param>"""
             self._param = self._parameter_for(tool=self.mock_tool, xml=param_str)
 
         return self._param

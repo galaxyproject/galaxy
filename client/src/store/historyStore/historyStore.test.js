@@ -7,8 +7,28 @@ let nHistories = 3;
 let currentHistory = 0;
 const histories = {};
 for (let i = 0; i < nHistories; i++) {
-    histories[i] = { id: i };
+    histories[i] = { id: i, name: `default` };
 }
+
+// add secondary sets of histories
+const buildDetails = (key, count = 0) => {
+    const historyList = [];
+    for (let i = 0; i < nHistories + count; i++) {
+        const element = { id: i, name: `name_${key}` };
+        element[key] = true;
+        historyList.push(element);
+    }
+    return historyList;
+};
+
+// detail counter
+const countDetails = (histories, key, value = true) => {
+    let n = 0;
+    histories.forEach((h) => {
+        h[key] == value && n++;
+    });
+    return n;
+};
 
 describe("historyStore", () => {
     let axiosMock;
@@ -37,8 +57,24 @@ describe("historyStore", () => {
         axiosMock.restore();
     });
 
-    it("store initialization", async () => {
+    it("history lists", async () => {
         expect(store.getters["history/currentHistoryId"]).toBe(null);
+        let hlist = store.getters["history/histories"];
+        expect(hlist.length).toBe(0);
+        await store.commit("history/setHistories", buildDetails("a", 5));
+        hlist = store.getters["history/histories"];
+        expect(countDetails(hlist, "a")).toBe(8);
+        expect(countDetails(hlist, "b")).toBe(0);
+        expect(countDetails(hlist, "name", "name_a")).toBe(8);
+        await store.commit("history/setHistories", buildDetails("b"));
+        hlist = store.getters["history/histories"];
+        expect(countDetails(hlist, "a")).toBe(8);
+        expect(countDetails(hlist, "b")).toBe(3);
+        expect(countDetails(hlist, "name", "name_a")).toBe(5);
+        expect(countDetails(hlist, "name", "name_b")).toBe(3);
+    });
+
+    it("store initialization", async () => {
         await store.dispatch("history/loadCurrentHistory");
         expect(store.getters["history/currentHistoryId"]).toBe(0);
         await store.dispatch("history/loadHistoryById", 1);

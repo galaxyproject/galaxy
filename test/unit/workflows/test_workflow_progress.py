@@ -87,7 +87,7 @@ class WorkflowProgressTestCase(unittest.TestCase):
                 workflow_invocation_step.workflow_step_id = step_id
                 workflow_invocation_step.state = "scheduled"
                 workflow_invocation_step.workflow_step = self._step(i)
-                self.assertEqual(step_id, self._step(i).id)
+                assert step_id == self._step(i).id
                 # workflow_invocation_step.workflow_invocation = self.invocation
                 self.invocation.steps.append(workflow_invocation_step)
 
@@ -189,6 +189,8 @@ class WorkflowProgressTestCase(unittest.TestCase):
         subworkflow_invocation = self.invocation.create_subworkflow_invocation_for_step(
             self.invocation.workflow.step_by_index(1)
         )
+        self.app.model.session.add(subworkflow_invocation)
+        self.app.model.session.flush()
         progress = self._new_workflow_progress()
         remaining_steps = progress.remaining_steps()
         (subworkflow_step, subworkflow_invocation_step) = remaining_steps[0]
@@ -221,7 +223,7 @@ class MockModuleInjector:
     def __init__(self, progress):
         self.progress = progress
 
-    def inject(self, step, step_args=None):
+    def inject(self, step, step_args=None, steps=None, **kwargs):
         step.module = MockModule(self.progress)
 
 

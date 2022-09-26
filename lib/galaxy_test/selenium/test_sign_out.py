@@ -17,7 +17,7 @@ class SignOutTestCase(SeleniumTestCase):
         self.components.sign_out.cancel_button.wait_for_and_click()
         assert self.is_logged_in()
         new_email = self.driver.find_element(By.ID, "user-preferences-current-email").text
-        self.assertTrue(email == new_email)
+        assert email == new_email
         self.components.preferences.sign_out.wait_for_and_click()
         self.components.sign_out.sign_out_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)

@@ -3,6 +3,8 @@
 import os
 import tempfile
 
+from galaxy.util.path import StrOrBytesPath
+
 
 class RenamedTemporaryFile:
     """
@@ -10,7 +12,9 @@ class RenamedTemporaryFile:
     path on exit.
     """
 
-    def __init__(self, final_path, **kwargs):
+    final_path: StrOrBytesPath
+
+    def __init__(self, final_path: StrOrBytesPath, **kwargs):
         """
         >>> dir = tempfile.mkdtemp()
         >>> with RenamedTemporaryFile(os.path.join(dir, 'test.txt'), mode="w") as out:
@@ -27,7 +31,7 @@ class RenamedTemporaryFile:
         self.tmpfile = tempfile.NamedTemporaryFile(dir=tmpfile_dir, delete=False, **kwargs)
         self.final_path = final_path
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str):
         """
         Delegate attribute access to the underlying temporary file object.
         """

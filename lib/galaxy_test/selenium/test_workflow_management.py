@@ -75,7 +75,7 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkfl
 
         @retry_assertion_during_transitions
         def check_tags():
-            self.assertEqual(self.workflow_index_tags(), ["cooltag"])
+            assert self.workflow_index_tags() == ["cooltag"]
 
         check_tags()
         self.screenshot("workflow_manage_tags")

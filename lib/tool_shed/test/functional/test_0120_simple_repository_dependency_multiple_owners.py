@@ -22,9 +22,6 @@ Tool shed side:
 3a) Check for appropriate strings.
 """
 
-base_datatypes_count = 0
-repository_datatypes_count = 0
-
 
 class TestRepositoryMultipleOwners(ShedTwillTestCase):
     def test_0000_initiate_users(self):
@@ -34,21 +31,8 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
         Previously created accounts will not be re-created.
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
-        test_user_2 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_2 is not None
-        ), f"Problem retrieving user with email {common.test_user_2_email} from the database"
-        self.test_db_util.get_private_role(test_user_2)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_datatypes_repository(self):
         """Create and populate the blast_datatypes_0120 repository
@@ -64,7 +48,7 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
             description=datatypes_repository_description,
             long_description=datatypes_repository_long_description,
             owner=common.test_user_2_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=strings_displayed,
         )
         self.upload_file(
@@ -86,7 +70,6 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
         Check for appropriate strings, most importantly BlastXml, BlastNucDb, and BlastProtDb,
         the datatypes that are defined in datatypes_conf.xml.
         """
-        global repository_datatypes_count
         repository = self.test_db_util.get_repository_by_name_and_owner(
             datatypes_repository_name, common.test_user_2_name
         )
@@ -101,7 +84,6 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
             "blastdbp",
         ]
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
-        repository_datatypes_count = int(self.get_repository_datatypes_count(repository))
 
     def test_0015_create_tool_repository(self):
         """Create and populate the blastxml_to_top_descr_0120 repository
@@ -117,7 +99,7 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
             description=tool_repository_description,
             long_description=tool_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=strings_displayed,
         )
         self.upload_file(
