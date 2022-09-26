@@ -31,6 +31,7 @@ import GridShared from "components/Grid/GridShared";
 import GridHistory from "components/Grid/GridHistory";
 import HistoryImport from "components/HistoryImport";
 import HistoryView from "components/History/HistoryView";
+import HistoryPublished from "components/History/HistoryPublished";
 import HistoryMultipleView from "components/History/Multiple/MultipleView";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
@@ -96,7 +97,7 @@ export function getRouter(Galaxy) {
             /** Published resources routes */
             {
                 path: "/published/history",
-                component: HistoryView,
+                component: HistoryPublished,
                 props: (route) => ({ id: route.query.id }),
             },
             {

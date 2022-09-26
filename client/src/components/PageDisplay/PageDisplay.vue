@@ -1,11 +1,11 @@
 <template>
     <config-provider v-slot="{ config, loading }">
-        <Published :details="pageConfig">
+        <Published :details="contentDetails">
             <template v-slot>
                 <div v-if="!loading">
                     <markdown
-                        v-if="pageConfig.content_format == 'markdown'"
-                        :markdown-config="pageConfig"
+                        v-if="contentDetails.content_format == 'markdown'"
+                        :markdown-config="contentDetails"
                         :enable_beta_markdown_export="config.enable_beta_markdown_export"
                         :download-endpoint="stsUrl(config)"
                         :export-link="exportUrl"
@@ -18,8 +18,8 @@
 </template>
 
 <script>
-import { safePath } from "utils/redirect";
 import { urlData } from "utils/url";
+import { safePath } from "utils/redirect";
 import ConfigProvider from "components/providers/ConfigProvider";
 import Markdown from "components/Markdown/Markdown";
 import Published from "components/Common/Published";
