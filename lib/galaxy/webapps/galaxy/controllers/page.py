@@ -20,8 +20,6 @@ from galaxy.managers.histories import (
     HistorySerializer,
 )
 from galaxy.managers.pages import (
-    get_page_identifiers,
-    PageContentProcessor,
     PageManager,
 )
 from galaxy.managers.sharable import SlugBuilder
@@ -29,7 +27,6 @@ from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.schema.schema import CreatePagePayload
 from galaxy.structured_app import StructuredApp
-from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
     error,

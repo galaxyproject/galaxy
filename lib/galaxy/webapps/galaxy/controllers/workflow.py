@@ -270,7 +270,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         )
         for step in stored_workflow.latest_workflow.steps:
             step.annotation = self.get_item_annotation_str(trans.sa_session, stored_workflow.user, step)
- 
+
         # Get rating data.
         user_item_rating = 0
         if trans.get_user():
