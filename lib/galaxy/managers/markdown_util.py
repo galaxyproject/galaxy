@@ -452,7 +452,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         return (content, True)
 
     def handle_workflow_display(self, line, stored_workflow):
-        # workflows/display.mako as markdown... meh...
+        # simple markdown
         markdown = "---\n"
         markdown += f"**Workflow:** {stored_workflow.name}\n\n"
         markdown += "**Steps:**\n\n"

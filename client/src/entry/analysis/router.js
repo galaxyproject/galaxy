@@ -53,6 +53,7 @@ import UserPreferences from "components/User/UserPreferences";
 import UserPreferencesForm from "components/User/UserPreferencesForm";
 import VisualizationsList from "components/Visualizations/Index";
 import WorkflowExport from "components/Workflow/WorkflowExport";
+import VisualizationPublished from "components/Visualizations/VisualizationPublished";
 import WorkflowImport from "components/Workflow/WorkflowImport";
 import WorkflowList from "components/Workflow/WorkflowList";
 import WorkflowPublished from "components/Workflow/WorkflowPublished";
@@ -105,6 +106,11 @@ export function getRouter(Galaxy) {
                 path: "/published/page",
                 component: PageDisplay,
                 props: (route) => ({ pageId: route.query.id }),
+            },
+            {
+                path: "/published/visualization",
+                component: VisualizationPublished,
+                props: (route) => ({ id: route.query.id }),
             },
             {
                 path: "/published/workflow",

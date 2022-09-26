@@ -232,6 +232,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/pages/sharing")
     webapp.add_client_route("/published/history")
     webapp.add_client_route("/published/page")
+    webapp.add_client_route("/published/visualization")
     webapp.add_client_route("/published/workflow")
     webapp.add_client_route("/histories/citations")
     webapp.add_client_route("/histories/list")

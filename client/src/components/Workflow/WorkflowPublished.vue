@@ -29,7 +29,7 @@ export default {
     },
     computed: {
         workflows() {
-            return [][this.id] = this.contentDetails;
+            return ([][this.id] = this.contentDetails);
         },
     },
     created() {
