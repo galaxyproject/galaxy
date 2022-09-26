@@ -172,11 +172,6 @@ body {
             padding: $margin-h $margin-v;
             background: $white;
         }
-        .center-frame {
-            @extend .position-absolute;
-            @extend .w-100;
-            @extend .h-100;
-        }
     }
     // Replaces unnecessary if/then logic in base_panels.mako
     &:first-child {
